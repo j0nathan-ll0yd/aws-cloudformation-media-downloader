@@ -1,0 +1,53 @@
+{
+  "name": "lifegames-app",
+  "version": "1.0.0",
+  "engines": {
+    "node": "8.1.x",
+    "npm": "5.0.x"
+  },
+  "scripts": {
+    "check-types": "tsc",
+    "build": "./node_modules/.bin/babel src --out-dir dist --extensions '.ts'",
+    "deploy-code": "./bin/update-lambda-functions.sh",
+    "deploy-node-modules": "./bin/update-node-modules.sh",
+    "deploy-cloudformation": "./bin/update-cloudformation.sh"
+  },
+  "keywords": [
+    "lifegames"
+  ],
+  "author": "Jonathan Lloyd",
+  "dependencies": {
+    "@babel/runtime": "^7.3.1",
+    "aws-sdk": "^2.269.1",
+    "axios": "^0.18.0",
+    "request": "^2.87.0",
+    "urlsafe-base64": "^1.0.0",
+    "validate.js": "^0.12.0",
+    "ytdl-core": "^0.20.4"
+  },
+  "bundleDependencies": [],
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.3",
+    "@babel/plugin-proposal-class-properties": "^7.3.3",
+    "@babel/plugin-proposal-object-rest-spread": "^7.3.2",
+    "@babel/plugin-transform-runtime": "^7.2.0",
+    "@babel/preset-env": "^7.3.1",
+    "@babel/preset-typescript": "^7.3.3",
+    "@types/aws-lambda": "^8.10.7",
+    "@types/es6-promise": "^3.3.0",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.5.2",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^5.2.0",
+    "nock": "^10.0.0",
+    "npm-pack-zip": "^1.2.7",
+    "nyc": "^13.3.0",
+    "sinon": "^6.3.4",
+    "sinon-as-promised": "^4.0.3",
+    "spectacle-docs": "^1.0.7",
+    "tslint": "^5.10.0",
+    "typescript": "^3.3.3333"
+  }
+}
