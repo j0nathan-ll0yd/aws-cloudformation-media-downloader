@@ -7,7 +7,7 @@
   },
   "scripts": {
     "check-types": "tsc",
-    "build": "./node_modules/.bin/babel src --out-dir dist --extensions '.ts'",
+    "build": "./node_modules/@babel/cli/bin/babel.js src --out-dir dist --extensions '.ts'",
     "deploy-code": "./bin/update-lambda-functions.sh",
     "deploy-node-modules": "./bin/update-node-modules.sh",
     "deploy-cloudformation": "./bin/update-cloudformation.sh"
