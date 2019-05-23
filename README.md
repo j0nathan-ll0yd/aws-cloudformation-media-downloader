@@ -14,11 +14,16 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 nvm use 8.10
-npm install
-npm run deploy-cloudformation
+npm install --production
+npm run build
+
+# verify the application works locally
 sam local invoke "FeedlyWebhook" -e swagger/event.json
 sam local invoke "ListFiles" -e swagger/empty.json
 
+# deploy the cloudformation template and associated code
+npm run deploy-node-modules
+npm run deploy-cloudformation
 ```
 
 This will deploy the CloudFormation stack to AWS.
@@ -116,3 +121,6 @@ curl -v -H "Content-Type: application/json" \
 ## TODO
 
 * After deploying to CloudFormation, extract the values for these curl requests in this documentation so you can execute these calls from the command line
+* Reduce dependencies so development + production modules can be stored as a layer
+* (0) Fix ordering of service construction in the template.yaml file to ensure resources are created in the appropriate order
+
