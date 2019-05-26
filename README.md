@@ -122,5 +122,4 @@ curl -v -H "Content-Type: application/json" \
 
 * After deploying to CloudFormation, extract the values for these curl requests in this documentation so you can execute these calls from the command line
 * Reduce dependencies so development + production modules can be stored as a layer
-* (0) Fix ordering of service construction in the template.yaml file to ensure resources are created in the appropriate order
 
