@@ -7,6 +7,7 @@ Globals:
     Runtime: nodejs8.10
     Timeout: 300
 
+# Values to pass to your template at runtime (when you create or update a stack).
 Parameters:
   ContentBucket:
     Type: String
@@ -298,6 +299,10 @@ Resources:
       RestApiId: !Ref MyApi
 
   MyStateMachine:
+    DependsOn:
+      - StartFileUpload
+      - UploadPart
+      - CompleteFileUpload
     Type: AWS::StepFunctions::StateMachine
     Properties:
       DefinitionString: !Sub
