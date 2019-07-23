@@ -106,7 +106,7 @@ In order to test your endpoint in production, you can use the `curl` request bel
 ```bash
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
-"https://1gu4ab3k1i.execute-api.us-west-1.amazonaws.com/Prod/files?ApiKey=nFtAlszBjr7p8RuLMZREd2vtMqgcoXtO9rHIlQ4E"
+"https://9ei5pv4y4c.execute-api.us-west-2.amazonaws.com/Prod/files?ApiKey=eoaQK1eaLy5RvHFKD6saZ5I6gpQLq3DGat6IrYRA"
 ```
 
 #### Downloading files
@@ -115,11 +115,12 @@ curl -v -H "Content-Type: application/json" \
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
 --data @./swagger/feedly.json \
-"https://1gu4ab3k1i.execute-api.us-west-1.amazonaws.com/Prod/feedly?ApiKey=nFtAlszBjr7p8RuLMZREd2vtMqgcoXtO9rHIlQ4E"
+"https://9ei5pv4y4c.execute-api.us-west-2.amazonaws.com/Prod/feedly?ApiKey=eoaQK1eaLy5RvHFKD6saZ5I6gpQLq3DGat6IrYRA"
 ```
+
 
 ## TODO
 
 * After deploying to CloudFormation, extract the values for these curl requests in this documentation so you can execute these calls from the command line
 * Reduce dependencies so development + production modules can be stored as a layer
-
+* Use AWS EventBridge for EventSourcing
