@@ -1,5 +1,5 @@
 {
-  "name": "lifegames-app",
+  "name": "lifegames-fileviewer",
   "version": "1.0.0",
   "engines": {
     "node": "8.1.x",
@@ -8,6 +8,10 @@
   "scripts": {
     "check-types": "tsc",
     "build": "./node_modules/@babel/cli/bin/babel.js src --out-dir dist --extensions '.ts'",
+    "test-remote-list": "./bin/test-list.sh",
+    "test-local-list": "sam local invoke \"ListFiles\" -e swagger/empty.json",
+    "test-remote-hook": "./bin/test-hook.sh",
+    "test-local-hook": "sam local invoke \"FeedlyWebhook\" -e swagger/event.json",
     "deploy-code": "./bin/update-lambda-functions.sh",
     "deploy-node-modules": "./bin/update-node-modules.sh",
     "deploy-cloudformation": "./bin/update-cloudformation.sh"
@@ -19,7 +23,9 @@
   "dependencies": {
     "@babel/runtime": "^7.3.1",
     "aws-sdk": "^2.269.1",
+    "aws-xray-sdk": "^2.3.3",
     "axios": "^0.18.0",
+    "redoc": "^2.0.0-rc.10",
     "request": "^2.87.0",
     "urlsafe-base64": "^1.0.0",
     "validate.js": "^0.12.0",
