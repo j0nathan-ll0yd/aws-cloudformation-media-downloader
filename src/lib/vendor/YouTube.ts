@@ -1,3 +1,6 @@
+import * as AWSXRay from 'aws-xray-sdk'
+import * as http from 'http'
+AWSXRay.captureHTTPsGlobal(http)
 
 // noinspection SpellCheckingInspection
 import {Readable} from 'stream'

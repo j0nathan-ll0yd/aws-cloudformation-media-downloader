@@ -6,8 +6,9 @@ import {
   GetUsageRequest, Usage, UsagePlans
 } from '../../../../node_modules/aws-sdk/clients/apigateway'
 
-const AWS = require('aws-sdk')
-const apigateway = new AWS.APIGateway({apiVersion: '2016-11-23'})
+import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
+const apigateway = AWSXRay.captureAWSClient(new AWS.APIGateway({apiVersion: '2016-11-23'}))
 
 export function getApiKey(apiKey): Promise<ApiKey> {
   return new Promise((resolve, reject) => {
