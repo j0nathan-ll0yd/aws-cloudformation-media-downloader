@@ -27,7 +27,7 @@ export STACK_NAME=`cat ${package_path} | jq -r '.name'`
 echo "Preparing to deploy ${STACK_NAME}"
 
 echo "Preparing the S3 bucket for artifacts"
-export AWS_REGION=us-west-1
+export AWS_REGION=$(aws configure get region) # us-west-2
 echo "Getting AWS Account ID"
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --output text --query 'Account')
 echo "Using AWS Account with ID: ${AWS_ACCOUNT_ID}"
