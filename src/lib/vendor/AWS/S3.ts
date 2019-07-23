@@ -1,6 +1,7 @@
 import * as S3 from 'aws-sdk/clients/s3'
-const AWS = require('aws-sdk')
-const s3 = new AWS.S3({apiVersion: '2006-03-01'})
+import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
+const s3 = AWSXRay.captureAWSClient(new AWS.S3({apiVersion: '2006-03-01'}))
 
 export function uploadToS3(params) {
   return new Promise((resolve, reject) => {
