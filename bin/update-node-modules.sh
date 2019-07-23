@@ -44,9 +44,11 @@ if [ $hash_next != $hash_prev ]; then
   mv ${node_modules_artifact_path_next} ${node_modules_artifact_path_prev}
   echo "Updating node_modules layer"
   echo "Updating zip to S3"
+  # possible error: upload failed: artifacts/layer-node-modules.zip to s3://lifegames-app-artifacts/layer-node-modules.zip An error occurred (NoSuchBucket) when calling the CreateMultipartUpload operation: The specified bucket does not exist
   aws --region ${AWS_REGION} s3 cp ${node_modules_artifact_path_prev} s3://${DEPLOYMENT_BUCKET}
 
   echo "Updating layer"
+  # possible error: An error occurred (RequestEntityTooLargeException) when calling the PublishLayerVersion operation: Request must be smaller than 69905067 bytes for the PublishLayerVersion operation
   layer_version_arn=`aws lambda publish-layer-version --layer-name "NodeModulesLayer" \
   --description "NodeJS module of Moment JS library" \
   --license-info "MIT" \
