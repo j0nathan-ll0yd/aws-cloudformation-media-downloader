@@ -50,10 +50,7 @@ Resources:
   Account:
     Type: AWS::ApiGateway::Account
     Properties:
-      CloudWatchRoleArn:
-        "Fn::GetAtt":
-        - GatewayLogRole
-        - Arn
+      CloudWatchRoleArn: !GetAtt GatewayLogRole.Arn
 
   GatewayLogRole:
     Type: AWS::IAM::Role
@@ -181,11 +178,11 @@ Resources:
       RestApiId: !Ref MyApi
       #RequestModels:
       #  application/json: !Ref IFTTTWebhookFeedlyModel
-      # RequestValidatorId: !Ref IFTTTWebhookFeedlyMethodPostRequestValidator
+      #RequestValidatorId: !Ref IFTTTWebhookFeedlyMethodPostRequestValidator
       #MethodResponses:
-      #- StatusCode: 400
-      #  ResponseModels:
-      #    application/json: !Ref IFTTTWebhookFeedlyBadRequest
+      #  - StatusCode: 400
+      #    ResponseModels:
+      #      application/json: !Ref IFTTTWebhookFeedlyBadRequest
 
   IFTTTWebhookFeedlyMethodPostRequestValidator:
     Type: AWS::ApiGateway::RequestValidator
@@ -388,6 +385,35 @@ Resources:
           - 'states:StartExecution'
           Resource:
           - !Ref MyStateMachine
+      Tracing: Active
+
+  DocumentationPart:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      Location:
+        Type: REQUEST_BODY
+        Path: "/feedly"
+        Method: POST
+      RestApiId: !Ref MyApi
+      Properties: >+
+        {
+          "ArticleFirstImageURL": "https://i.ytimg.com/vi/ZfVMalJEHRw/maxresdefault.jpg",
+          "ArticleCategories": "YouTube",
+          "ArticlePublishedAt": "July 4, 2018 at 03:27PM",
+          "ArticleTitle": "Why People Are Freaking Out At Scarlett Johansson, Poland Purge Controversy, & American Pride Dips",
+          "ArticleURL": "https://www.youtube.com/watch?v=K1HTMYxjF5Y",
+          "CreatedAt": "July 4, 2018 at 04:02PM",
+          "SourceFeedURL": "https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw",
+          "SourceTitle": "Philip DeFranco (uploads) on YouTube",
+          "SourceURL": "https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw"
+        }
+  DocumentationVersion:
+    Type: AWS::ApiGateway::DocumentationVersion
+    Properties:
+      Description: The description of the API documentation snapshot.
+      DocumentationVersion: 1.0.0
+      RestApiId: !Ref MyApi
+    DependsOn: DocumentationPart
 
   ListFiles:
     DependsOn: S3Bucket
@@ -406,6 +432,7 @@ Resources:
       Policies:
       - S3CrudPolicy:
           BucketName: !Ref S3Bucket
+      Tracing: Active
 
   StartFileUpload:
     Type: AWS::Serverless::Function
@@ -417,6 +444,7 @@ Resources:
       Description:  The function that starts the multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Tracing: Active
 
   UploadPart:
     Type: AWS::Serverless::Function
@@ -428,6 +456,7 @@ Resources:
       Description:  The function uploads a part of a multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Tracing: Active
 
   CompleteFileUpload:
     Type: AWS::Serverless::Function
@@ -439,6 +468,7 @@ Resources:
       Description:  The function that completes the multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Tracing: Active
 
   AuthorizationFunction:
     Type: AWS::Serverless::Function
@@ -463,6 +493,7 @@ Resources:
           - !Sub arn:aws:apigateway:${AWS::Region}::/apikeys/*
           - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans
           - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans/*/usage
+      Tracing: Active
 
   UploadFileTopic:
     Type: AWS::SNS::Topic
