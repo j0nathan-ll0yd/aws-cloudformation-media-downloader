@@ -4,7 +4,8 @@ import {Metadata} from '../types/main'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
     try {
-        const highestVideoFormat = chooseFormat(myVideoInfo, {quality: 'highestvideo'})
+        // quality 22 = highest quality MP4 format
+        const highestVideoFormat = chooseFormat(myVideoInfo, {quality: '22'})
         if (highestVideoFormat instanceof Error) { throw highestVideoFormat } else { return highestVideoFormat }
     } catch (error) {
         throw new Error('Unable to find format')
