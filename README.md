@@ -87,40 +87,42 @@ npm run deploy-node-modules
 ```
 ## Local Testing
 
-Using SAM
+Locally test the listing of files
 
 ```bash
-sam local invoke "ListFiles" -e swagger/empty.json
+npm run test-local-list
 ```
 
+Locally test the feedly webhook
+
 ```bash
-sam local invoke "FeedlyWebhook" -e swagger/event.json
+npm run test-local-hook
 ```
 
 ### Live Testing
 
-In order to test your endpoint in production, you can use the `curl` request below by substituting your API Gateway ID and iOS Access Key.
+In order to test your endpoint in production, you can use the npm commands below.
 
-#### Viewing files
+Remotely test the listing of files
 
 ```bash
-curl -v -H "Content-Type: application/json" \
--H "Accept: application/json" \
-"https://9ei5pv4y4c.execute-api.us-west-2.amazonaws.com/Prod/files?ApiKey=eoaQK1eaLy5RvHFKD6saZ5I6gpQLq3DGat6IrYRA"
+npm run test-remote-list
 ```
 
-#### Downloading files
+Remotely test the feedly webhook
 
 ```bash
-curl -v -H "Content-Type: application/json" \
--H "Accept: application/json" \
---data @./swagger/feedly.json \
-"https://9ei5pv4y4c.execute-api.us-west-2.amazonaws.com/Prod/feedly?ApiKey=eoaQK1eaLy5RvHFKD6saZ5I6gpQLq3DGat6IrYRA"
+npm run test-remote-hook
 ```
 
 
-## TODO
+## PRODUCTION TODO
 
-* After deploying to CloudFormation, extract the values for these curl requests in this documentation so you can execute these calls from the command line
+* Fix the UploadPart function; currently stopped after 1 part
+* Revise filenames to be YYYYMMDD-[{$author}], with description in body
+* Support push notifications
+
+## NICE TODOS
+
 * Reduce dependencies so development + production modules can be stored as a layer
 * Use AWS EventBridge for EventSourcing
