@@ -22,4 +22,13 @@ echo "AWS API Gateway API Resource ID: ${API_RESOURCE_ID}"
 export API_KEY=`aws apigateway get-api-key --api-key ${API_RESOURCE_ID} --include-value | jq -r '.value'`
 echo "AWS API Gateway API Key: ${API_KEY}"
 
+export TOPIC_ARN=`echo $LIST_STACK_RESOURCES_OUTPUT | jq '.StackResourceSummaries[] | select(.ResourceType == "AWS::SNS::Topic")' | jq -r '.PhysicalResourceId'`
+echo "AWS SNS Topic ARN: ${TOPIC_ARN}"
+
+export BUCKET_ARN=`echo $LIST_STACK_RESOURCES_OUTPUT | jq '.StackResourceSummaries[] | select(.ResourceType == "AWS::S3::Bucket")' | jq -r '.PhysicalResourceId'`
+echo "AWS S3 Bucket ARN: ${BUCKET_ARN}"
+
+export STATE_MACHINE_ARN=`echo $LIST_STACK_RESOURCES_OUTPUT | jq '.StackResourceSummaries[] | select(.ResourceType == "AWS::StepFunctions::StateMachine")' | jq -r '.PhysicalResourceId'`
+echo "AWS StepFunctions StateMachine ARN: ${STATE_MACHINE_ARN}"
+
 echo "AWS API Region: ${AWS_REGION}"
