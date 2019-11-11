@@ -1,0 +1,36 @@
+{
+  "Comment": "A multipart file upload via S3",
+  "StartAt": "StartUpload",
+  "States": {
+    "StartUpload": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-west-2:203465012143:function:StartFileUpload",
+      "Next": "UploadOrComplete"
+    },
+    "UploadPart": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-west-2:203465012143:function:UploadPart",
+      "Next": "UploadOrComplete"
+    },
+    "CompleteUpload": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-west-2:203465012143:function:CompleteFileUpload",
+      "End": true
+    },
+    "UploadOrComplete": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.bytesRemaining",
+          "NumericGreaterThan": 0,
+          "Next": "UploadPart"
+        },
+        {
+          "Variable": "$.bytesRemaining",
+          "NumericEquals": 0,
+          "Next": "CompleteUpload"
+        }
+      ]
+    }
+  }
+}
