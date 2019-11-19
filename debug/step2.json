@@ -1,0 +1,43 @@
+{
+  "Type": "LambdaFunctionSucceeded",
+  "PreviousEventId": 4,
+  "LambdaFunctionSucceededEventDetails": {
+    "Output": "{\"bucket\":\"lifegames-fileviewer-s3bucket-yqm2cswg5ozl\",\"bytesRemaining\":82784319,\"bytesTotal\":82784319,\"key\":\"20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4\",\"partBeg\":0,\"partEnd\":5242879,\"partNumber\":1,\"partSize\":5242880,\"partTags\":[],\"uploadId\":\"FF.gO6QdKxqnUy_WVM781eBrKt73tfe3ZTsES.ntebBqcFCoDMWgH7yxzvJ9p54Kbd3dAXX0tmclYEQ8RhPOEli.N5Aeu2YqPXTTilOgAgE-\",\"url\":\"fileUrl\"}"
+  }
+}
+
+{
+  "Type": "TaskStateExited",
+  "PreviousEventId": 5,
+  "StateExitedEventDetails": {
+    "Name": "StartUpload",
+    "Output": "{\"bucket\":\"lifegames-fileviewer-s3bucket-yqm2cswg5ozl\",\"bytesRemaining\":82784319,\"bytesTotal\":82784319,\"key\":\"20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4\",\"partBeg\":0,\"partEnd\":5242879,\"partNumber\":1,\"partSize\":5242880,\"partTags\":[],\"uploadId\":\"FF.gO6QdKxqnUy_WVM781eBrKt73tfe3ZTsES.ntebBqcFCoDMWgH7yxzvJ9p54Kbd3dAXX0tmclYEQ8RhPOEli.N5Aeu2YqPXTTilOgAgE-\",\"url\":\"fileUrl\"}"
+  }
+}
+
+{
+  "Type": "ChoiceStateEntered",
+  "PreviousEventId": 6,
+  "StateEnteredEventDetails": {
+    "Name": "UploadOrComplete",
+    "Input": "{\"bucket\":\"lifegames-fileviewer-s3bucket-yqm2cswg5ozl\",\"bytesRemaining\":82784319,\"bytesTotal\":82784319,\"key\":\"20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4\",\"partBeg\":0,\"partEnd\":5242879,\"partNumber\":1,\"partSize\":5242880,\"partTags\":[],\"uploadId\":\"FF.gO6QdKxqnUy_WVM781eBrKt73tfe3ZTsES.ntebBqcFCoDMWgH7yxzvJ9p54Kbd3dAXX0tmclYEQ8RhPOEli.N5Aeu2YqPXTTilOgAgE-\",\"url\":\"fileUrl\"}"
+  }
+}
+
+{
+  "Type": "ChoiceStateExited",
+  "PreviousEventId": 7,
+  "StateExitedEventDetails": {
+    "Name": "UploadOrComplete",
+    "Output": "{\"bucket\":\"lifegames-fileviewer-s3bucket-yqm2cswg5ozl\",\"bytesRemaining\":82784319,\"bytesTotal\":82784319,\"key\":\"20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4\",\"partBeg\":0,\"partEnd\":5242879,\"partNumber\":1,\"partSize\":5242880,\"partTags\":[],\"uploadId\":\"FF.gO6QdKxqnUy_WVM781eBrKt73tfe3ZTsES.ntebBqcFCoDMWgH7yxzvJ9p54Kbd3dAXX0tmclYEQ8RhPOEli.N5Aeu2YqPXTTilOgAgE-\",\"url\":\"fileUrl\"}"
+  }
+}
+
+{
+  "Type": "TaskStateEntered",
+  "PreviousEventId": 8,
+  "StateEnteredEventDetails": {
+    "Name": "UploadPart",
+    "Input": "{\"bucket\":\"lifegames-fileviewer-s3bucket-yqm2cswg5ozl\",\"bytesRemaining\":82784319,\"bytesTotal\":82784319,\"key\":\"20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4\",\"partBeg\":0,\"partEnd\":5242879,\"partNumber\":1,\"partSize\":5242880,\"partTags\":[],\"uploadId\":\"FF.gO6QdKxqnUy_WVM781eBrKt73tfe3ZTsES.ntebBqcFCoDMWgH7yxzvJ9p54Kbd3dAXX0tmclYEQ8RhPOEli.N5Aeu2YqPXTTilOgAgE-\",\"url\":\"fileUrl\"}"
+  }
+}

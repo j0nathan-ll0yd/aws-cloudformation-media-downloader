@@ -6,7 +6,8 @@
     // Search under node_modules for non-relative imports.
     "moduleResolution": "node",
     // Process & infer types from .js files.
-    "allowJs": true,
+    // NOTE: Changing this to `true` could break mocha tests
+    "allowJs": false,
     // Don't emit; allow Babel to transform files.
     "noEmit": true,
     // Enable strictest settings like strictNullChecks & noImplicitAny.

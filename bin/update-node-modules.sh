@@ -6,6 +6,9 @@ bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "${bin_dir}/environment-setup.sh"
 source "${bin_dir}/deployment-setup.sh"
 
+# TODO: Add the command to automatically use only production node_modules
+# npm install --only=prod
+
 cd "$bin_dir/../"
 temp_node_modules="build/nodejs/node_modules"
 node_modules_path="node_modules"
