@@ -15,7 +15,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
 export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
     //noinspection SpellCheckingInspection
-    const {author, description, iurlmaxres, published, thumbnail_url, title, view_count} = myVideoInfo
+    const {author, description, iurlmaxres, published, thumbnail_url, title} = myVideoInfo
     return {
         author,
         description,
@@ -24,8 +24,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
         imageUri: iurlmaxres || thumbnail_url,
         mimeType: myVideoFormat.type,
         published,
-        title,
-        viewCount: parseInt(view_count, 10)
+        title
     }
 }
 
