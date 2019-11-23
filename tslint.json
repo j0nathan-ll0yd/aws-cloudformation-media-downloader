@@ -7,7 +7,7 @@
         "quotemark": [true, "single"],
         "max-line-length": {
             "options": [
-                120
+                250
             ]
         },
         "new-parens": true,
@@ -23,7 +23,7 @@
     "jsRules": {
         "max-line-length": {
             "options": [
-                120
+                250
             ]
         }
     }
