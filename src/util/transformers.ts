@@ -39,19 +39,20 @@ export function sourceFilenameFromVideoInfo(myVideoInfo: videoInfo): string {
 
 export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: string) {
     // const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    const {video_url} = myVideoInfo
+    const {video_url, title} = myVideoInfo
     return {
         Body: video_url,
         Bucket: myBucket,
-        Key: sourceFilenameFromVideoInfo(myVideoInfo)
+        Key: sourceFilenameFromVideoInfo(myVideoInfo),
+        Metadata: { title }
     }
 }
 
 export function objectKeysToLowerCase(input) {
-  if (typeof input !== 'object') return input
-  if (Array.isArray(input)) return input.map(objectKeysToLowerCase);
-  return Object.keys(input).reduce(function (newObj, key) {
-    let val = input[key]
+  if (typeof input !== 'object') { return input }
+  if (Array.isArray(input)) { return input.map(objectKeysToLowerCase) }
+  return Object.keys(input).reduce((newObj, key) => {
+    const val = input[key]
     newObj[key.charAt(0).toLowerCase() + key.slice(1)] = (typeof val === 'object') ? objectKeysToLowerCase(val) : val
     return newObj
   }, {})
