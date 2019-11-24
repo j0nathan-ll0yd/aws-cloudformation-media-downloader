@@ -64,6 +64,7 @@ interface StartFileUploadEvent {
   bytesTotal: number,
   contentType: string,
   key: string,
+  metadata?: object,
   url: string
 }
 

@@ -119,7 +119,6 @@ npm run test-remote-hook
 ## PRODUCTION TODO
 
 * Upgrade to Node.js 10.x (whatever is supported by AWS)
-* Fix the UploadPart function; currently stopped after 1 part
 * Revise filenames to be YYYYMMDD-[{$author}], with description in body
 * Support push notifications
 
