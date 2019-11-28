@@ -1,5 +1,5 @@
--r ts-node/register
--r source-map-support/register
+--require ts-node/register/transpile-only
+--require source-map-support/register
 --full-trace
 --bail
 test/**/*.test.ts

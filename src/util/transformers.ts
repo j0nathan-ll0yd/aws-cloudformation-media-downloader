@@ -22,7 +22,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
         ext: myVideoFormat.container,
         formats: [myVideoFormat],
         imageUri: iurlmaxres || thumbnail_url,
-        mimeType: myVideoFormat.type,
+        mimeType: myVideoFormat.mimeType,
         published,
         title
     }
