@@ -1,7 +1,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {expect} from 'chai'
-import * as crypto from 'crypto'
+import crypto from 'crypto'
 import * as fs from 'fs'
 import * as sinon from 'sinon'
 import {handleAuthorization, uploadFilePart} from '../src/main'
@@ -52,18 +52,18 @@ function mockIterationsOfUploadPart(bytesTotal, partSize) {
 }
 describe('main', () => {
     beforeEach(() => {
-        /*this.consoleLogStub = sinon.stub(console, 'log')
+        this.consoleLogStub = sinon.stub(console, 'log')
         this.consoleInfoStub = sinon.stub(console, 'info')
         this.consoleDebugStub = sinon.stub(console, 'debug')
         this.consoleWarnStub = sinon.stub(console, 'warn')
-        this.consoleErrorStub = sinon.stub(console, 'error')*/
+        this.consoleErrorStub = sinon.stub(console, 'error')
     })
     afterEach(() => {
-        /*this.consoleLogStub.restore()
+        this.consoleLogStub.restore()
         this.consoleInfoStub.restore()
         this.consoleDebugStub.restore()
         this.consoleWarnStub.restore()
-        this.consoleErrorStub.restore()*/
+        this.consoleErrorStub.restore()
     })
     describe('#handleAuthorization', () => {
         const validApiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'

@@ -1,12 +1,5 @@
-import * as AWSXRay from 'aws-xray-sdk'
-import * as http from 'http'
-// AWSXRay.captureHTTPsGlobal(http)
-
-// noinspection SpellCheckingInspection
-import {Readable} from 'stream'
 import * as ytdl from 'ytdl-core'
 import {videoInfo} from 'ytdl-core'
-import {Metadata} from '../../types/main'
 
 export function fetchVideoInfo(uri): Promise<videoInfo> {
     return new Promise(async (resolve, reject) => {
@@ -19,14 +12,6 @@ export function fetchVideoInfo(uri): Promise<videoInfo> {
     })
 }
 
-export function filterFormats(info, filter) {
-    return ytdl.filterFormats(info.formats, filter)
-}
-
 export function chooseFormat(info, options) {
     return ytdl.chooseFormat(info.formats, options)
-}
-
-export function fetchVideo(uri, options): Readable {
-    return ytdl(uri, options)
 }
