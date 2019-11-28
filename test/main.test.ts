@@ -1,5 +1,3 @@
-import {CustomAuthorizerEvent} from 'aws-lambda'
-import * as AWS from 'aws-sdk'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {expect} from 'chai'
@@ -7,32 +5,17 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as sinon from 'sinon'
 import {handleAuthorization, uploadFilePart} from '../src/main'
-import {CompleteFileUploadEvent, UploadPartEvent} from '../src/types/main'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
 import * as S3 from './../src/lib/vendor/AWS/S3'
-
-const bucket = 'lifegames-fileviewer-s3bucket-yqm2cswg5ozl'
-const key = '20191107-[sxephil]-Title'
-const uploadId = 'some-id1'
-const url = 'https://example.com/some-video.mp4'
-const partSize = 5242880
-
-// setup mocks for axios
-const mock = new MockAdapter(axios)
-
-// setup mocks for S3 to mock uploadPart behavior
-sinon.stub(S3, 'uploadPart').returns({
-    ETag: crypto.createHash('md5').update('some_string').digest('hex')
-})
 
 function getFixture(file) {
     const fixturePath = './test/fixtures'
     return JSON.parse(fs.readFileSync(`${fixturePath}/${file}`, 'utf8'))
 }
 
-function mockResponseUploadPart(config, bytesTotal) {
+function mockResponseUploadPart(config, bytesTotal, partSize) {
     return new Promise<any[]>((resolve, reject) => {
-        const [, beg, end] = /bytes=(\d+)\-(\d+)/.exec(config.headers['Range'])
+        const [, beg, end] = /bytes=(\d+)\-(\d+)/.exec(config.headers.Range)
         return resolve([206, 'hello', {
             'accept-ranges': 'bytes',
             'content-length': partSize,
@@ -42,7 +25,11 @@ function mockResponseUploadPart(config, bytesTotal) {
     })
 }
 
-async function mockIterationsOfUploadPart(bytesTotal) {
+function mockIterationsOfUploadPart(bytesTotal, partSize) {
+    const bucket = 'lifegames-fileviewer-s3bucket-yqm2cswg5ozl'
+    const key = '20191107-[sxephil]-Title'
+    const uploadId = 'some-id1'
+    const url = 'https://example.com/some-video.mp4'
     return new Promise<any[]>(async (resolve, reject) => {
         const responses = []
         const partTags = []
@@ -51,9 +38,8 @@ async function mockIterationsOfUploadPart(bytesTotal) {
         let partEnd = Math.min(partSize, bytesTotal) - 1
         let partBeg = 0
         while (bytesRemaining > 0) {
-            // tslint:disable-next-line:max-line-length
-            const event: UploadPartEvent = {bucket, bytesRemaining, bytesTotal, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url}
-            const output: CompleteFileUploadEvent|UploadPartEvent = await uploadFilePart(event)
+            const event = {bucket, bytesRemaining, bytesTotal, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url}
+            const output = await uploadFilePart(event)
             responses.push(output)
             if (output.bytesRemaining > 0) {
                 // @ts-ignore
@@ -64,22 +50,6 @@ async function mockIterationsOfUploadPart(bytesTotal) {
         resolve(responses)
     })
 }
-
-/*
-const response = {
-            context: {},
-            policyDocument: {
-                Statement: [{
-                        Action: 'execute-api:Invoke',
-                        Effect: 'Allow',
-                        Resource: 'arn:aws:execute-api:us-west-2:203465012143:zc21p8daqc/Prod/POST/feedly'
-                }],
-                Version: '2012-10-17'
-            },
-            principalId: 'me',
-            usageIdentifierKey: 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
-        }
- */
 describe('main', () => {
     beforeEach(() => {
         /*this.consoleLogStub = sinon.stub(console, 'log')
@@ -96,72 +66,82 @@ describe('main', () => {
         this.consoleErrorStub.restore()*/
     })
     describe('#handleAuthorization', () => {
+        const validApiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
+        const baseEvent = {
+            methodArn: 'arn:aws:execute-api:us-west-2:203465012143:zc21p8daqc/Prod/POST/feedly',
+            queryStringParameters: {},
+            type: 'REQUEST'
+        }
+        let getApiKeyStub
         beforeEach(() => {
-            this.getApiKeyStub = sinon.stub(ApiGateway, 'getApiKeys').returns(getFixture('getApiKeys-200-OK.json'))
+            getApiKeyStub = sinon.stub(ApiGateway, 'getApiKeys')
             this.getUsagePlansStub = sinon.stub(ApiGateway, 'getUsagePlans').returns(getFixture('getUsagePlans-200-OK.json'))
             this.getUsageStub = sinon.stub(ApiGateway, 'getUsage').returns(getFixture('getUsage-200-OK.json'))
         })
         afterEach(() => {
-            this.getApiKeyStub.restore()
+            getApiKeyStub.restore()
             this.getUsagePlansStub.restore()
             this.getUsageStub.restore()
         })
         it('should accept a valid request', async () => {
-            const apiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
-            const event: CustomAuthorizerEvent = {
-                methodArn: 'string',
-                queryStringParameters: {ApiKey: apiKey},
-                type: 'test'
-            }
+            getApiKeyStub.returns(getFixture('getApiKeys-200-OK.json'))
+            const event = baseEvent
+            event.queryStringParameters = {ApiKey: validApiKey}
             const output = await handleAuthorization(event)
             expect(output.principalId).to.equal('me')
-            // @ts-ignore
             expect(output.policyDocument.Statement[0].Effect).to.equal('Allow')
-            expect(output.usageIdentifierKey).to.equal(apiKey)
+            expect(output.usageIdentifierKey).to.equal(validApiKey)
         })
         it('should deny an invalid ApiKey', async () => {
-            const apiKey = '1234'
-            const event: CustomAuthorizerEvent = {
-                methodArn: 'string',
-                queryStringParameters: {ApiKey: apiKey},
-                type: 'test'
-            }
+            getApiKeyStub.returns(getFixture('getApiKeys-200-OK.json'))
+            const event = baseEvent
+            event.queryStringParameters = {ApiKey: 1234}
             const output = await handleAuthorization(event)
             expect(output.principalId).to.equal('me')
-            // @ts-ignore
             expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
         })
         it('should deny a disabled ApiKey', async () => {
-            // this.getApiKeyStub.value(getFixture('getApiKeys-400-DisabledKey.json'))
+            getApiKeyStub.returns(getFixture('getApiKeys-400-DisabledKey.json'))
+            const event = baseEvent
+            event.queryStringParameters = {ApiKey: validApiKey}
+            const output = await handleAuthorization(event)
+            expect(output.principalId).to.equal('me')
+            expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
         })
     })
-    /*
     describe('#uploadPart', () => {
+        const partSize = 5242880
+        const mock = new MockAdapter(axios)
+        let uploadPartStub
+        beforeEach(() => {
+            uploadPartStub = sinon.stub(S3, 'uploadPart').resolves({
+                ETag: crypto.createHash('md5').update('some_string').digest('hex')
+            })
+        })
         afterEach(() => {
             mock.resetHandlers()
+            uploadPartStub.restore()
         })
         it('should handle a multipart file', async () => {
             const bytesTotal = 82784319
-            mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal))
+            mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal, partSize))
             const totalParts = Math.round(bytesTotal / partSize)
-            const responses = await mockIterationsOfUploadPart(bytesTotal)
+            const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
             const finalPart = responses.pop()
             const uploadPart = responses.pop()
             expect(uploadPart.partNumber).to.equal(totalParts)
             expect(finalPart.partTags.length).to.equal(totalParts)
             expect(finalPart.bytesRemaining).to.equal(0)
-
         })
         it('should handle a single part file', async () => {
             const bytesTotal = 5242880 - 1000
-            mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal))
+            mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal, partSize))
             const totalParts = Math.round(bytesTotal / partSize)
-            const responses = await mockIterationsOfUploadPart(bytesTotal)
+            const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
             expect(responses.length).to.equal(totalParts)
             const finalPart = responses.pop()
             expect(finalPart.partTags.length).to.equal(totalParts)
             expect(finalPart.bytesRemaining).to.equal(0)
         })
     })
-    */
 })

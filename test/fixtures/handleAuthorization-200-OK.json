@@ -1,0 +1,15 @@
+{
+  "context": {},
+  "policyDocument": {
+    "Statement": [
+      {
+        "Action": "execute-api:Invoke",
+        "Effect": "Allow",
+        "Resource": "arn:aws:execute-api:us-west-2:203465012143:zc21p8daqc/Prod/POST/feedly"
+      }
+    ],
+    "Version": "2012-10-17"
+  },
+  "principalId": "me",
+  "usageIdentifierKey": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+}

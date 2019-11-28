@@ -61,28 +61,3 @@ export function getUsagePlans(params?: GetUsagePlansRequest): Promise<UsagePlans
     })
   })
 }
-
-// Help function to generate an IAM policy
-const generatePolicy = (principalId, effect, resource, usageIdentifierKey) => {
-  const authResponse = {context: {}, policyDocument: {}, principalId, usageIdentifierKey}
-  if (effect && resource) {
-    const policyDocument = {Statement: [], Version: '2012-10-17'}
-    const statementOne = {
-      Action: 'execute-api:Invoke',
-      Effect: effect,
-      Resource: resource
-    }
-    statementOne.Resource = resource
-    policyDocument.Statement[0] = statementOne
-    authResponse.policyDocument = policyDocument
-  }
-  return authResponse
-}
-
-export function generateAllow(principalId, resource, usageIdentifierKey?) {
-  return generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
-}
-
-export function generateDeny(principalId, resource, usageIdentifierKey?) {
-  return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
-}

@@ -116,9 +116,10 @@ npm run test-remote-hook
 ```
 
 
-## PRODUCTION TODO
+## PRODUCTION TODOS
 
-* TODO: Fix coverage reports so they only reflect typescript
+* Extract types from aws-sdk for handleAuthorization response
+* Fix coverage reports so they only reflect typescript
 * Upgrade to Node.js 10.x (whatever is supported by AWS)
 * Revise filenames to be YYYYMMDD-[{$author}], with description in body
 * Support push notifications
