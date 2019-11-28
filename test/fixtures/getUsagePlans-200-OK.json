@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "apiStages": [
+        {
+          "apiId": "zc21p8daqc",
+          "stage": "Prod"
+        }
+      ],
+      "description": "Internal consumption",
+      "id": "fujp25",
+      "name": "Basic"
+    }
+  ]
+}

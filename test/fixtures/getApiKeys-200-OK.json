@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "createdDate": "2019-07-23T17:24:49.000Z",
+      "description": "The key for the iOS App",
+      "enabled": true,
+      "id": "yzr34xwmb0",
+      "lastUpdatedDate": "2019-07-23T17:24:49.000Z",
+      "name": "iOSAppKey",
+      "stageKeys": [],
+      "value": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+    }
+  ]
+}
