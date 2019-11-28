@@ -1,7 +1,7 @@
-import {AmazonSNSEvent, Record, Sns} from './vendor/Amazon/SNS/Event'
+import {S3} from 'aws-sdk'
 import {videoFormat} from 'ytdl-core'
 import {Part} from '../../node_modules/aws-sdk/clients/s3'
-import {S3} from 'aws-sdk'
+import {AmazonSNSEvent, Record, Sns} from './vendor/Amazon/SNS/Event'
 
 interface SomeSns extends Sns {
     Message: string
