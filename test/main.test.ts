@@ -3,12 +3,15 @@ import MockAdapter from 'axios-mock-adapter'
 import {expect} from 'chai'
 import crypto from 'crypto'
 import * as sinon from 'sinon'
-import {handleAuthorization} from '../src/main'
+import {handleAuthorization, handleFeedlyEvent} from '../src/main'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
 import * as S3 from './../src/lib/vendor/AWS/S3'
+import * as StepFunctions from './../src/lib/vendor/AWS/StepFunctions'
+import * as YouTube from './../src/lib/vendor/YouTube'
 import {getFixture, mockIterationsOfUploadPart, mockResponseUploadPart} from './helper'
-
+const mock = new MockAdapter(axios)
 describe('main', () => {
+    /*
     beforeEach(() => {
         this.consoleLogStub = sinon.stub(console, 'log')
         this.consoleInfoStub = sinon.stub(console, 'info')
@@ -23,6 +26,7 @@ describe('main', () => {
         this.consoleWarnStub.restore()
         this.consoleErrorStub.restore()
     })
+    */
     describe('#handleAuthorization', () => {
         const validApiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
         const baseEvent = {
@@ -66,10 +70,17 @@ describe('main', () => {
             expect(output.principalId).to.equal('me')
             expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
         })
+        it('should deny if an error occurs', async () => {
+            getApiKeyStub.rejects('TypeError')
+            const event = baseEvent
+            event.queryStringParameters = {ApiKey: validApiKey}
+            const output = await handleAuthorization(event)
+            expect(output.principalId).to.equal('me')
+            expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
+        })
     })
     describe('#uploadPart', () => {
         const partSize = 5242880
-        const mock = new MockAdapter(axios)
         let uploadPartStub
         beforeEach(() => {
             uploadPartStub = sinon.stub(S3, 'uploadPart').resolves({
@@ -100,6 +111,35 @@ describe('main', () => {
             const finalPart = responses.pop()
             expect(finalPart.partTags.length).to.equal(totalParts)
             expect(finalPart.bytesRemaining).to.equal(0)
+        })
+    })
+    describe('#handleFeedlyEvent', () => {
+        const event = getFixture('APIGatewayEvent.json')
+        const context = getFixture('Context.json')
+        beforeEach(() => {
+            this.startExecutionStub = sinon.stub(StepFunctions, 'startExecution').returns(getFixture('startExecution-200-OK.json'))
+            this.fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(getFixture('fetchVideoInfo-200-OK.json'))
+        })
+        afterEach(() => {
+            mock.resetHandlers()
+            this.startExecutionStub.restore()
+            this.fetchVideoInfoStub.restore()
+        })
+        it('should handle a feedly event', async () => {
+            event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
+            mock.onAny().reply(200, '', {
+                'accept-ranges': 'bytes',
+                'content-length': 82784319,
+                'content-type': 'video/mp4'
+            })
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(202)
+        })
+        it('should handle an invalid request', async () => {
+            event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-MissingRequired.json'))
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(400)
+            // expect(response.message).to.have.property('ArticleURL')
         })
     })
 })

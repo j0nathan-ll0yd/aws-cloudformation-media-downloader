@@ -10,6 +10,6 @@ REQUEST_URL="https://${SUBDOMAIN}.execute-api.${AWS_REGION}.amazonaws.com/${STAG
 echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
---data @./swagger/feedly.json \
+--data @./test/fixtures/handleFeedlyEvent-200-OK.json \
 $REQUEST_URL | jsonpp
 

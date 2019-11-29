@@ -7,15 +7,11 @@ if (!ytdl.validateURL(youTubeVideoUrl)) {
 import * as validate from 'validate.js'
 import {validateURL} from 'ytdl-core'
 
-validate.validators.isYouTubeURL = (value, options, key, attributes) => {
-    console.log(value)
-    console.log(options)
-    console.log(key)
-    console.log(attributes)
-    if (!validateURL(value)) {
+validate.validators.isYouTubeURL = (value) => {
+    if (value && !validateURL(value)) {
         return validate.format('^%{value} is not a valid YouTube URL', {value})
     }
-    return null
+    return
 }
 
 export const feedlyEventConstraints = {
