@@ -18,8 +18,8 @@ npm install --production
 npm run build
 
 # verify the application works locally
-sam local invoke "FeedlyWebhook" -e swagger/event.json
-sam local invoke "ListFiles" -e swagger/empty.json
+npm run test-local-list
+npm run test-local-hook
 
 # deploy the cloudformation template and associated code
 npm run deploy-node-modules

@@ -1,4 +1,5 @@
 import * as AWS from 'aws-sdk'
+import {CompleteMultipartUploadOutput, CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
 import * as S3 from 'aws-sdk/clients/s3'
 import * as AWSXRay from 'aws-xray-sdk'
 //const s3 = AWSXRay.captureAWSClient(new AWS.S3({apiVersion: '2006-03-01'}))
@@ -26,7 +27,7 @@ export function uploadToS3(params) {
   })
 }
 
-export function createMultipartUpload(params: S3.CreateMultipartUploadRequest) {
+export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {
   return new Promise((resolve, reject) => {
     console.log('Creating multipart upload for:', params.Key)
     s3.createMultipartUpload(params, (error, multipart) => {
@@ -34,13 +35,12 @@ export function createMultipartUpload(params: S3.CreateMultipartUploadRequest) {
         console.error(error)
         return reject(error)
       }
-      console.log('Got upload ID', JSON.stringify(multipart))
-      return resolve(multipart.UploadId)
+      return resolve(multipart)
     })
   })
 }
 
-export function completeMultipartUpload(params: S3.CompleteMultipartUploadRequest) {
+export function completeMultipartUpload(params: S3.CompleteMultipartUploadRequest): Promise<CompleteMultipartUploadOutput> {
   return new Promise((resolve, reject) => {
     console.log('Completing multipart upload for:', params.Key)
     s3.completeMultipartUpload(params, (err, data) => {
