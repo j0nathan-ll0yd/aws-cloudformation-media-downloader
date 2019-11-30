@@ -11,7 +11,6 @@ import * as YouTube from './../src/lib/vendor/YouTube'
 import {getFixture, mockIterationsOfUploadPart, mockResponseUploadPart} from './helper'
 const mock = new MockAdapter(axios)
 describe('main', () => {
-    /*
     beforeEach(() => {
         this.consoleLogStub = sinon.stub(console, 'log')
         this.consoleInfoStub = sinon.stub(console, 'info')
@@ -26,7 +25,6 @@ describe('main', () => {
         this.consoleWarnStub.restore()
         this.consoleErrorStub.restore()
     })
-    */
     describe('#handleAuthorization', () => {
         const validApiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
         const baseEvent = {
@@ -71,7 +69,7 @@ describe('main', () => {
             expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
         })
         it('should deny if an error occurs', async () => {
-            getApiKeyStub.rejects('TypeError')
+            getApiKeyStub.rejects('Error')
             const event = baseEvent
             event.queryStringParameters = {ApiKey: validApiKey}
             const output = await handleAuthorization(event)
@@ -116,30 +114,50 @@ describe('main', () => {
     describe('#handleFeedlyEvent', () => {
         const event = getFixture('APIGatewayEvent.json')
         const context = getFixture('Context.json')
+        const mockSuccessHeaders = {
+            'accept-ranges': 'bytes',
+            'content-length': 82784319,
+            'content-type': 'video/mp4'
+        }
+        let startExecutionStub
         beforeEach(() => {
-            this.startExecutionStub = sinon.stub(StepFunctions, 'startExecution').returns(getFixture('startExecution-200-OK.json'))
+            startExecutionStub = sinon.stub(StepFunctions, 'startExecution')
             this.fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(getFixture('fetchVideoInfo-200-OK.json'))
         })
         afterEach(() => {
             mock.resetHandlers()
-            this.startExecutionStub.restore()
+            startExecutionStub.restore()
             this.fetchVideoInfoStub.restore()
         })
         it('should handle a feedly event', async () => {
             event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
-            mock.onAny().reply(200, '', {
-                'accept-ranges': 'bytes',
-                'content-length': 82784319,
-                'content-type': 'video/mp4'
-            })
+            startExecutionStub.returns(getFixture('startExecution-200-OK.json'))
+            mock.onAny().reply(200, '', mockSuccessHeaders)
             const output = await handleFeedlyEvent(event, context)
             expect(output.statusCode).to.equal(202)
+        })
+        it('should fail gracefully if the startExecution fails', async () => {
+            event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
+            startExecutionStub.rejects('Error')
+            mock.onAny().reply(200, '', mockSuccessHeaders)
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(500)
         })
         it('should handle an invalid request', async () => {
             event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-MissingRequired.json'))
             const output = await handleFeedlyEvent(event, context)
             expect(output.statusCode).to.equal(400)
-            // expect(response.message).to.have.property('ArticleURL')
+            const body = JSON.parse(output.body)
+            expect(body.error.message).to.have.property('ArticleURL')
+            expect(body.error.message.ArticleURL[0]).to.have.string('blank')
+        })
+        it('should handle an invalid (non-YouTube) URL', async () => {
+            event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-InvalidURL.json'))
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(400)
+            const body = JSON.parse(output.body)
+            expect(body.error.message).to.have.property('ArticleURL')
+            expect(body.error.message.ArticleURL[0]).to.have.string('not a valid YouTube URL')
         })
     })
 })
