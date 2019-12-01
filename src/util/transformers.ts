@@ -30,11 +30,11 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
 
 export function sourceFilenameFromVideoInfo(myVideoInfo: videoInfo): string {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    const {author: {user}, published, title} = myVideoInfo
+    const {author: {user}, published} = myVideoInfo
     const date = new Date(published)
     const ext = myVideoFormat.container
     const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
-    return `${uploadDate}-[${user}]-${title}.${ext}`
+    return `${uploadDate}-[${user}].${ext}`
 }
 
 export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: string) {
