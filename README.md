@@ -121,6 +121,10 @@ npm run test-remote-hook
 * PREREQ: Convert from YAML to JSON, and generate template.yaml file
 * PREREQ: Allow variables to be injected in to template.yaml
 * TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)
+* TODO: Send push notification when new file ready
+* Swagger documentation
+* API Gateway documentation
+* Automatic generation of JSON fixtures :mind_blown:
 
 ## NICE TODOS
 
