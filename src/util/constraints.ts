@@ -20,3 +20,9 @@ export const feedlyEventConstraints = {
         presence: true
     }
 }
+
+export const registerDeviceConstraints = {
+    Token: {
+        presence: true
+    }
+}

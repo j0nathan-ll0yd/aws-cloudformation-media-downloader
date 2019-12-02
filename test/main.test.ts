@@ -5,10 +5,12 @@ import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import crypto from 'crypto'
 import * as sinon from 'sinon'
-import {completeFileUpload, handleAuthorization, handleFeedlyEvent, listFiles, startFileUpload} from '../src/main'
+import {createPlatformEndpoint} from '../src/lib/vendor/AWS/SNS'
+import {completeFileUpload, handleAuthorization, handleDeviceRegistration, handleFeedlyEvent, listFiles, startFileUpload} from '../src/main'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
 import {createMultipartUpload, listObjects} from './../src/lib/vendor/AWS/S3'
 import * as S3 from './../src/lib/vendor/AWS/S3'
+import * as SNS from './../src/lib/vendor/AWS/SNS'
 import * as StepFunctions from './../src/lib/vendor/AWS/StepFunctions'
 import * as YouTube from './../src/lib/vendor/YouTube'
 import {getFixture, mockIterationsOfUploadPart, mockResponseUploadPart} from './helper'
@@ -169,6 +171,35 @@ describe('main', () => {
             const body = JSON.parse(output.body)
             expect(body.error.message).to.have.property('ArticleURL')
             expect(body.error.message.ArticleURL[0]).to.have.string('not a valid YouTube URL')
+        })
+    })
+    describe('#handleRegisterDevice', () => {
+        const event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
+        const context = getFixture('handleRegisterDevice/Context.json')
+        let createPlatformEndpointStub
+        beforeEach(() => {
+            createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
+        })
+        afterEach(() => {
+            mock.resetHandlers()
+            createPlatformEndpointStub.restore()
+        })
+        it('should create a new remote endpoint (for the mobile phone)', async () => {
+            createPlatformEndpointStub.returns(getFixture('createPlatformEndpoint-200-OK.json'))
+            const output = await handleDeviceRegistration(event, context)
+            expect(output.statusCode).to.equal(200)
+        })
+        it('should handle an invalid request (no token)', async () => {
+            event.body = null
+            const output = await handleDeviceRegistration(event, context)
+            expect(output.statusCode).to.equal(400)
+            const body = JSON.parse(output.body)
+            expect(body.error.message).to.have.property('Token')
+            expect(body.error.message.Token[0]).to.have.string('blank')
+        })
+        it('should fail gracefully if createPlatformEndpoint fails', async () => {
+            createPlatformEndpointStub.rejects('Error')
+            expect(handleDeviceRegistration(event, context)).to.be.rejectedWith(Error)
         })
     })
     describe('#startFileUpload', () => {
