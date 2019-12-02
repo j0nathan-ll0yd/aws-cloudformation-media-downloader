@@ -118,11 +118,9 @@ npm run test-remote-hook
 
 ## PRODUCTION TODOS
 
-* Extract types from aws-sdk for handleAuthorization response
-* Fix coverage reports so they only reflect typescript
-* Upgrade to Node.js 10.x (whatever is supported by AWS)
-* Revise filenames to be YYYYMMDD-[{$author}], with description in body
-* Support push notifications
+* PREREQ: Convert from YAML to JSON, and generate template.yaml file
+* PREREQ: Allow variables to be injected in to template.yaml
+* TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)
 
 ## NICE TODOS
 
