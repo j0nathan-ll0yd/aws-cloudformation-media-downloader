@@ -13,7 +13,7 @@ my_state_machine_create_response=`aws stepfunctions --endpoint http://localhost:
 my_state_machine_arn=`echo $my_state_machine_create_response | jq -r '.stateMachineArn'`
 echo "Local AWS state machine ARN: ${my_state_machine_arn}"
 my_execution_name=`mktemp -u XXXXXXXXX`
-my_execution_input=`cat "${bin_dir}/../swagger/start-download.json" | jq -c`
+my_execution_input=`cat "${bin_dir}/../test/fixtures/createMultipartUpload-200-OK.json" | jq -c`
 echo "Executing local state machine"
 my_state_machine_execution_response=`aws stepfunctions --endpoint http://localhost:8083 start-execution --state-machine $my_state_machine_arn --name $my_execution_name --input "$my_execution_input"`
 my_state_machine_execution_arn=`echo $my_state_machine_execution_response | jq -r '.executionArn'`
