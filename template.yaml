@@ -463,7 +463,7 @@ Resources:
       Layers:
         - !Ref NodeModulesLayer
       Policies:
-      - S3CrudPolicy:
+      - S3ReadPolicy:
           BucketName: !Ref S3Bucket
       Tracing: Active
 
@@ -500,6 +500,9 @@ Resources:
       Description:  The function that starts the multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
       Tracing: Active
 
   UploadPart:
@@ -512,6 +515,9 @@ Resources:
       Description:  The function uploads a part of a multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
       Tracing: Active
 
   CompleteFileUpload:
@@ -524,6 +530,9 @@ Resources:
       Description:  The function that completes the multipart upload.
       Layers:
         - !Ref NodeModulesLayer
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3Bucket
       Tracing: Active
 
   AuthorizationFunction:
@@ -564,7 +573,7 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: PublicReadWrite
+      AccessControl: PublicRead
 
 Outputs:
   ApiUrl:
