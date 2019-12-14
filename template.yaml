@@ -4,7 +4,7 @@ Description: My first serverless application.
 
 Globals:
   Function:
-    Runtime: nodejs8.10
+    Runtime: nodejs10.x
     Timeout: 300
 
 # Values to pass to your template at runtime (when you create or update a stack).
@@ -389,8 +389,7 @@ Resources:
         Bucket: !Ref ContentBucket
         Key: !Ref ContentKey
       CompatibleRuntimes:
-        - nodejs6.10
-        - nodejs8.10
+        - nodejs10.x
       RetentionPolicy: Retain
 
   FeedlyWebhook:
