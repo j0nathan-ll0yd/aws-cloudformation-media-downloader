@@ -118,6 +118,8 @@ npm run test-remote-hook
 
 ## PRODUCTION TODOS
 
+* TODO: Handle warm ups for Lambda (https://medium.com/thundra/dealing-with-cold-starts-in-aws-lambda-a5e3aa8f532)
+* Notes: https://github.com/awslabs/aws-cfn-template-flip
 * PREREQ: Convert from YAML to JSON, and generate template.yaml file
 * PREREQ: Allow variables to be injected in to template.yaml
 * TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)
