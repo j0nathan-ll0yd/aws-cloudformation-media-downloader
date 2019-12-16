@@ -574,6 +574,44 @@ Resources:
     Properties:
       AccessControl: PublicRead
 
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(10 minutes)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt FeedlyWebhook.Arn
+          Id: "FeedlyWebhook"
+        - Arn: !GetAtt ListFiles.Arn
+          Id: "ListFiles"
+        - Arn: !GetAtt RegisterDevice.Arn
+          Id: "RegisterDevice"
+
+  ScheduleRuleInvokeLambdaFeedlyWebhook:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt FeedlyWebhook.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+  ScheduleRuleInvokeLambdaListFiles:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ListFiles.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+  ScheduleRuleInvokeLambdaRegisterDevice:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt RegisterDevice.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
+
 Outputs:
   ApiUrl:
     Description: URL of the Prod stage of the API endpoint

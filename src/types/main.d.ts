@@ -71,3 +71,11 @@ interface StartFileUploadEvent {
 interface ExtendedS3Object extends S3.Object {
   FileUrl: string
 }
+
+interface DeviceRegistration {
+    Name: string,
+    Token: string,
+    SystemVersion: string,
+    UUID: string,
+    SystemName: string
+}

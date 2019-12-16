@@ -125,20 +125,21 @@ describe('main', () => {
         })
     })
     describe('#handleFeedlyEvent', () => {
-        const event = getFixture('handleFeedlyEvent/APIGatewayEvent.json')
         const context = getFixture('handleFeedlyEvent/Context.json')
         const mockSuccessHeaders = {
             'accept-ranges': 'bytes',
             'content-length': 82784319,
             'content-type': 'video/mp4'
         }
-        let startExecutionStub
+        let event, startExecutionStub
         beforeEach(() => {
+            event = getFixture('handleFeedlyEvent/APIGatewayEvent.json')
             startExecutionStub = sinon.stub(StepFunctions, 'startExecution')
             this.fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(getFixture('fetchVideoInfo-200-OK.json'))
         })
         afterEach(() => {
             mock.resetHandlers()
+            event = getFixture('handleFeedlyEvent/APIGatewayEvent.json')
             startExecutionStub.restore()
             this.fetchVideoInfoStub.restore()
         })
@@ -149,6 +150,11 @@ describe('main', () => {
             const output = await handleFeedlyEvent(event, context)
             expect(output.statusCode).to.equal(202)
         })
+        it('should handle a CloudWatch scheduled event', async () => {
+            event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(200)
+        })
         it('should fail gracefully if the startExecution fails', async () => {
             event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
             startExecutionStub.rejects('Error')
@@ -156,13 +162,21 @@ describe('main', () => {
             const output = await handleFeedlyEvent(event, context)
             expect(output.statusCode).to.equal(500)
         })
-        it('should handle an invalid request', async () => {
+        it('should handle an invalid request body', async () => {
             event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-MissingRequired.json'))
             const output = await handleFeedlyEvent(event, context)
             expect(output.statusCode).to.equal(400)
             const body = JSON.parse(output.body)
             expect(body.error.message).to.have.property('ArticleURL')
             expect(body.error.message.ArticleURL[0]).to.have.string('blank')
+        })
+        it('should handle an invalid event body', async () => {
+            event.body = 'hello'
+            const output = await handleFeedlyEvent(event, context)
+            expect(output.statusCode).to.equal(400)
+            const body = JSON.parse(output.body)
+            expect(body.error.code).to.equal('custom-4XX-generic')
+            expect(body.error.message).to.equal('Request body must be valid JSON')
         })
         it('should handle an invalid (non-YouTube) URL', async () => {
             event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-InvalidURL.json'))
@@ -174,18 +188,24 @@ describe('main', () => {
         })
     })
     describe('#handleRegisterDevice', () => {
-        const event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
         const context = getFixture('handleRegisterDevice/Context.json')
-        let createPlatformEndpointStub
+        let event, createPlatformEndpointStub
         beforeEach(() => {
             createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
+            event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
         })
         afterEach(() => {
             mock.resetHandlers()
             createPlatformEndpointStub.restore()
+            event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
         })
         it('should create a new remote endpoint (for the mobile phone)', async () => {
             createPlatformEndpointStub.returns(getFixture('createPlatformEndpoint-200-OK.json'))
+            const output = await handleDeviceRegistration(event, context)
+            expect(output.statusCode).to.equal(200)
+        })
+        it('should handle a CloudWatch scheduled event', async () => {
+            event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
             const output = await handleDeviceRegistration(event, context)
             expect(output.statusCode).to.equal(200)
         })
@@ -257,14 +277,15 @@ describe('main', () => {
         })
     })
     describe('#listFiles', () => {
-        const event = getFixture('listFiles/APIGatewayEvent.json')
         const context = getFixture('listFiles/Context.json')
-        let listObjectsStub
+        let event, listObjectsStub
         beforeEach(() => {
+            event = getFixture('listFiles/APIGatewayEvent.json')
             listObjectsStub = sinon.stub(S3, 'listObjects')
         })
         afterEach(() => {
             mock.resetHandlers()
+            event = getFixture('listFiles/APIGatewayEvent.json')
             listObjectsStub.restore()
         })
         it('should list files, if present', async () => {
@@ -275,6 +296,11 @@ describe('main', () => {
             expect(body.body).to.have.all.keys('IsTruncated', 'Contents', 'Name', 'Prefix', 'MaxKeys', 'KeyCount', 'CommonPrefixes')
             expect(body.body.KeyCount).to.equal(1)
             expect(body.body.Contents[0]).to.have.property('FileUrl').that.is.a('string')
+        })
+        it('should handle a CloudWatch scheduled event', async () => {
+            event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
+            const output = await listFiles(event, context)
+            expect(output.statusCode).to.equal(200)
         })
         it('should gracefully handle an empty list', async () => {
             listObjectsStub.returns(getFixture('listObjects-200-Empty.json'))
