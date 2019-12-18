@@ -403,9 +403,7 @@ Resources:
       Description:  A webhook from Feedly via IFTTT
       Environment:
         Variables:
-          TopicArn: !Ref UploadFileTopic
           StateMachineArn: !Ref MyStateMachine
-          Bucket: !Ref S3Bucket
       Layers:
         - !Ref NodeModulesLayer
       Policies:
@@ -497,6 +495,9 @@ Resources:
         Key: !Ref CodeKey
       Handler: dist/main.startFileUpload
       Description:  The function that starts the multipart upload.
+      Environment:
+        Variables:
+          Bucket: !Ref S3Bucket
       Layers:
         - !Ref NodeModulesLayer
       Policies:
@@ -575,11 +576,15 @@ Resources:
       AccessControl: PublicRead
 
   ScheduledRule:
+    DependsOn:
+      - FeedlyWebhook
+      - ListFiles
+      - RegisterDevice
     Type: AWS::Events::Rule
     Properties:
       Description: "ScheduledRule"
       ScheduleExpression: "rate(10 minutes)"
-      State: "ENABLED"
+      State: "DISABLED"
       Targets:
         - Arn: !GetAtt FeedlyWebhook.Arn
           Id: "FeedlyWebhook"
@@ -589,6 +594,9 @@ Resources:
           Id: "RegisterDevice"
 
   ScheduleRuleInvokeLambdaFeedlyWebhook:
+    DependsOn:
+      - ScheduledRule
+      - FeedlyWebhook
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt FeedlyWebhook.Arn
@@ -597,6 +605,9 @@ Resources:
       SourceArn: !GetAtt ScheduledRule.Arn
 
   ScheduleRuleInvokeLambdaListFiles:
+    DependsOn:
+      - ScheduledRule
+      - ListFiles
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt ListFiles.Arn
@@ -605,6 +616,9 @@ Resources:
       SourceArn: !GetAtt ScheduledRule.Arn
 
   ScheduleRuleInvokeLambdaRegisterDevice:
+    DependsOn:
+      - ScheduledRule
+      - RegisterDevice
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt RegisterDevice.Arn
