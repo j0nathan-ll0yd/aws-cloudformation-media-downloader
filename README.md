@@ -120,6 +120,12 @@ Remotely test the feedly webhook
 npm run test-remote-hook
 ```
 
+Remotely test the register device method for registering for push notifications on iOS
+
+```bash
+npm run test-remote-registerDevice
+```
+
 ## PRODUCTION TODOS
 
 * TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)

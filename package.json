@@ -13,6 +13,7 @@
     "test-remote-list": "./bin/test-list.sh",
     "test-local-list": "npm run build && sam local invoke \"ListFiles\"",
     "test-remote-hook": "./bin/test-hook.sh",
+    "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "test-local-hook": "npm run build && sam local invoke --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/APIGatewayEvent.json",
     "test-local-schedule": "npm run build && sam local invoke --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/CloudWatchEventRuleEvent.json",
     "deploy-code": "./bin/update-lambda-functions.sh",
