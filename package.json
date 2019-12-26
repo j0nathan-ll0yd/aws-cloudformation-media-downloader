@@ -17,7 +17,7 @@
     "test-local-schedule": "npm run build && sam local invoke --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/CloudWatchEventRuleEvent.json",
     "deploy-code": "./bin/update-lambda-functions.sh",
     "deploy-node-modules": "./bin/update-node-modules.sh",
-    "deploy-cloudformation": "./bin/update-cloudformation.sh"
+    "deploy-cloudformation": ". ./bin/environment-setup.sh && ./node_modules/cfpack.js/bin/cfpack.js deploy"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
@@ -51,6 +51,7 @@
     "@types/sinon": "^7.5.1",
     "aws-sdk-mock": "^4.5.0",
     "axios-mock-adapter": "^1.17.0",
+    "cfpack.js": "^1.3.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "mocha": "^6.2.2",

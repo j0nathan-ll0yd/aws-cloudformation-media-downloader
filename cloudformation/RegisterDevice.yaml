@@ -1,0 +1,57 @@
+Resources:
+  RegisterDevice:
+    DependsOn: S3Bucket
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.handleDeviceRegistration
+      Description:  A lambda function that registers a device.
+      Environment:
+        Variables:
+          PlatformApplicationArn: 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+      Layers:
+        - !Ref NodeModulesLayer
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:CreatePlatformEndpoint
+              Resource:
+                - 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+      Tracing: Active
+  RegisterDeviceResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MyApi
+      ParentId: !GetAtt MyApi.RootResourceId
+      PathPart: "registerDevice"
+
+  RegisterDeviceMethodPost:
+    DependsOn: RegisterDevice
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref MyAuthorizer
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterDevice.Arn}/invocations
+      OperationName: registerDevice
+      ResourceId: !Ref RegisterDeviceResource
+      RestApiId: !Ref MyApi
+
+  RegisterDeviceMethodFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*/*
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt RegisterDevice.Arn
+  PushNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: PushNotificationTopic

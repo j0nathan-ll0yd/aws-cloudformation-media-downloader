@@ -13,17 +13,17 @@ This repository is the source code, cloud formation template, deployment scripts
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ```bash
-nvm use 8.10
-npm install --production
+nvm use 10.16.3
+npm install --prod=only
 npm run build
-
-# verify the application works locally
-npm run test-local-list
-npm run test-local-hook
 
 # deploy the cloudformation template and associated code
 npm run deploy-node-modules
 npm run deploy-cloudformation
+
+# verify the application works locally
+npm run test-local-list
+npm run test-local-hook
 ```
 
 This will deploy the CloudFormation stack to AWS.
@@ -38,8 +38,8 @@ This will deploy the CloudFormation stack to AWS.
 
 ```bash
 brew install nvm
-nvm install 8.10.0
-nvm use 8.10.0
+nvm install 10.16.3
+nvm use 10.16.3
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
@@ -64,6 +64,11 @@ brew install jq
 
 ```bash
 brew install md5sha1sum
+```
+* Install [yq](https://mikefarah.github.io/yq/) (used for deployment scripts)
+
+```bash
+brew install yq
 ```
 
 ## Deployment
@@ -115,21 +120,16 @@ Remotely test the feedly webhook
 npm run test-remote-hook
 ```
 
-
 ## PRODUCTION TODOS
 
-* TODO: Handle warm ups for Lambda (https://medium.com/thundra/dealing-with-cold-starts-in-aws-lambda-a5e3aa8f532)
-* Notes: https://github.com/awslabs/aws-cfn-template-flip
-* PREREQ: Convert from YAML to JSON, and generate template.yaml file
-* PREREQ: Allow variables to be injected in to template.yaml
 * TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)
 * TODO: Send push notification when new file is ready
-* Add lambda alarms in case errors are experienced
-* Swagger documentation
-* API Gateway documentation
-* Automatic generation of JSON fixtures :mind_blown:
+* TODO: Add lambda alarms in case errors are experienced
+* TODO: Swagger documentation
+* TODO: API Gateway documentation
 
 ## NICE TODOS
 
-* Reduce dependencies so development + production modules can be stored as a layer
+* Service Maps
+* Automatic generation of JSON fixtures :mind_blown:
 * Use AWS EventBridge for EventSourcing

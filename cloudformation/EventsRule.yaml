@@ -1,0 +1,50 @@
+Resources:
+  ScheduledRule:
+    DependsOn:
+      - FeedlyWebhook
+      - ListFiles
+      - RegisterDevice
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(10 minutes)"
+      State: "DISABLED"
+      Targets:
+        - Arn: !GetAtt FeedlyWebhook.Arn
+          Id: "FeedlyWebhook"
+        - Arn: !GetAtt ListFiles.Arn
+          Id: "ListFiles"
+        - Arn: !GetAtt RegisterDevice.Arn
+          Id: "RegisterDevice"
+  ScheduleRuleInvokeLambdaFeedlyWebhook:
+    DependsOn:
+      - ScheduledRule
+      - FeedlyWebhook
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt FeedlyWebhook.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+  ScheduleRuleInvokeLambdaListFiles:
+    DependsOn:
+      - ScheduledRule
+      - ListFiles
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ListFiles.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
+
+  ScheduleRuleInvokeLambdaRegisterDevice:
+    DependsOn:
+      - ScheduledRule
+      - RegisterDevice
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt RegisterDevice.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
