@@ -1,0 +1,50 @@
+Resources:
+  Files:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MyApi
+      ParentId: !GetAtt MyApi.RootResourceId
+      PathPart: "files"
+  ListFilesMethodGet:
+    DependsOn: ListFiles
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref MyAuthorizer
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListFiles.Arn}/invocations
+      OperationName: listFiles
+      ResourceId: !Ref Files
+      RestApiId: !Ref MyApi
+  ListFilesMethodFunctionPermission:
+    DependsOn:
+      - ListFiles
+      - MyApi
+    Type: AWS::Lambda::Permission
+    Properties:
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*/*
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ListFiles.Arn
+  ListFiles:
+    DependsOn: S3Bucket
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.listFiles
+      Description:  A lambda function that lists files in S3.
+      Environment:
+        Variables:
+          Bucket: !Ref S3Bucket
+      Layers:
+        - !Ref NodeModulesLayer
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref S3Bucket
+      Tracing: Active

@@ -6,3 +6,4 @@ coverage
 node_modules
 docs
 .idea
+cloudformation.json

@@ -1,0 +1,16 @@
+Resources:
+  NodeModulesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: NodeModulesLayer
+      Description: Base Layer for my Alexa Skills
+      ContentUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref ContentKey
+      CompatibleRuntimes:
+        - nodejs10.x
+      RetentionPolicy: Retain
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
