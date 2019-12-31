@@ -1,0 +1,23 @@
+description: Bad Request
+content:
+  application/json:
+    schema:
+      allOf:
+        - $ref: ./../../schemas/ResponseFailure.yaml
+        - properties:
+            error:
+              type: "object"
+              properties:
+                message:
+                  type: "object"
+                  properties:
+                    ArticleURL:
+                      description: An array of each error for the given field
+                      type: "array"
+                      items:
+                        type: "string"
+                        enum:
+                          - "is not a valid YouTube URL"
+                          - "is required"
+    example:
+      $ref: ./400-BadRequest.json

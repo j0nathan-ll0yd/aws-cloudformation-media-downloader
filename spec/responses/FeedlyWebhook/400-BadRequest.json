@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "custom-4XX-generic",
+    "message": {
+      "ArticleURL": [
+        "Article url can't be blank"
+      ]
+    }
+  },
+  "requestId": "f4ef7c93-c35a-4d49-a960-2175f0a00478"
+}

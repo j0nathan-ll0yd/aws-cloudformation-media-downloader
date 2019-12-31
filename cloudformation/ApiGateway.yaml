@@ -25,7 +25,7 @@ Resources:
       KeyId: !Ref iOSApiKey
       KeyType: API_KEY
       UsagePlanId: !Ref MyUsagePlan
-  MyDeployment20191226:
+  MyDeployment1577661765:
     DependsOn:
       - IFTTTWebhookFeedlyMethodPost
       - MyApi
@@ -54,13 +54,13 @@ Resources:
   StageProduction:
     DependsOn:
       - GatewayLogRole
-      - MyDeployment20191226
+      - MyDeployment1577661765
     Type: AWS::ApiGateway::Stage
     Properties:
       StageName: Prod
       Description: Production environment
       RestApiId: !Ref MyApi
-      DeploymentId: !Ref MyDeployment20191226
+      DeploymentId: !Ref MyDeployment1577661765
       Variables:
         Stack: Prod
       MethodSettings:
@@ -75,7 +75,7 @@ Resources:
       Name: iOSAppKey
       Description: The key for the iOS App
       Enabled: true
-  GatewayResponse:
+  Default400GatewayResponse:
     DependsOn:
       - MyApi
     Type: AWS::ApiGateway::GatewayResponse
@@ -86,4 +86,16 @@ Resources:
       ResponseTemplates:
         application/json: "{\"error\":{\"code\":\"custom-4XX-generic\",\"message\":$context.error.messageString},\"requestId\":\"$context.requestId\"}"
       ResponseType: DEFAULT_4XX
+      RestApiId: !Ref MyApi
+  Default500GatewayResponse:
+    DependsOn:
+      - MyApi
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      ResponseTemplates:
+        application/json: "{\"error\":{\"code\":\"custom-5XX-generic\",\"message\":$context.error.messageString},\"requestId\":\"$context.requestId\"}"
+      ResponseType: DEFAULT_5XX
       RestApiId: !Ref MyApi

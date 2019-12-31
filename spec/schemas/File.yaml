@@ -1,0 +1,37 @@
+title: "An S3 file"
+description: "An S3 file"
+externalDocs:
+  description: aws-sdk-js
+  url: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#listObjectsV2-property
+required:
+  - Key
+  - LastModified
+  - ETag
+  - Size
+  - StorageClass
+type: object
+properties:
+  Key:
+    description: The filename
+    type: string
+  LastModified:
+    description: The date the file was last modified
+    type: date-time
+  ETag:
+    description: The entity tag is an MD5 hash of the object. ETag reflects only changes to the contents of an object, not its metadata.
+    type: string
+  Size:
+    description: Size (in bytes) of the file
+    type: integer
+    format: int64
+  StorageClass:
+    description:
+    type: string
+    enum:
+      - "STANDARD"
+      - "REDUCED_REDUNDANCY"
+      - "GLACIER"
+      - "STANDARD_IA"
+      - "ONEZONE_IA"
+      - "INTELLIGENT_TIERING"
+      - "DEEP_ARCHIVE"

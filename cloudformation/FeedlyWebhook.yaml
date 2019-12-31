@@ -34,9 +34,9 @@ Resources:
       - IFTTTWebhookFeedlyModel
     Type: AWS::ApiGateway::Method
     Properties:
-      ApiKeyRequired: true
-      #RequestParameters:
-      #  method.request.header.x-api-key: true
+      ApiKeyRequired: false # because our DefaultAuthorizer requires the key
+      RequestParameters:
+        method.request.querystring.ApiKey: true
       AuthorizationType: CUSTOM
       AuthorizerId: !Ref MyAuthorizer
       HttpMethod: POST
@@ -52,10 +52,10 @@ Resources:
       RequestModels:
         application/json: !Ref IFTTTWebhookFeedlyModel
       # RequestValidatorId: !Ref IFTTTWebhookFeedlyMethodPostRequestValidator
-      #MethodResponses:
-      #- StatusCode: 400
-      #  ResponseModels:
-      #    application/json: !Ref IFTTTWebhookFeedlyBadRequest
+      MethodResponses:
+      - StatusCode: 400
+        ResponseModels:
+          application/json: !Ref IFTTTWebhookFeedlyBadRequest
   IFTTTWebhookFeedlyBadRequest:
     DependsOn:
       - MyApi
@@ -87,27 +87,38 @@ Resources:
       Schema:
         "$schema": "http://json-schema.org/draft-04/schema#"
         type: object
+        title: A proper title
+        description: A property description
         required:
           - ArticleURL
+        minProperties: 1
+        maxProperties: 9
         properties:
           ArticleFirstImageURL:
             type: string
+            format: uri
           ArticleCategories:
             type: string
           ArticlePublishedAt:
             type: string
+            format: date-time
           ArticleTitle:
             type: string
           ArticleURL:
             type: string
+            format: uri
+            description: The URL of the YouTube video to download
           CreatedAt:
             type: string
+            format: date-time
           SourceFeedURL:
             type: string
+            format: uri
           SourceTitle:
             type: string
           SourceURL:
             type: string
+            format: uri
   FeedlyWebhook:
     DependsOn:
       - S3Bucket
@@ -132,7 +143,7 @@ Resources:
               Resource:
                 - !Ref MyStateMachine
       Tracing: Active
-  DocumentationPart:
+  FeedlyWebhookRequestBodyDocPart:
     DependsOn:
       - MyApi
     Type: AWS::ApiGateway::DocumentationPart
@@ -154,14 +165,49 @@ Resources:
           "SourceTitle": "Philip DeFranco (uploads) on YouTube",
           "SourceURL": "https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw"
         }
+  FeedlyWebhookResponse202DocPart:
+    DependsOn:
+      - MyApi
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      Location:
+        Type: RESPONSE
+        Path: "/feedly"
+        Method: POST
+        StatusCode: 202
+      RestApiId: !Ref MyApi
+      Properties: >+
+        {
+          "body": {
+            "status": "OK"
+          },
+          "requestId": "b127ec8a-203a-4105-801f-c98d670985d1"
+        }
+  QueryParameterApiKey:
+    DependsOn:
+      - MyApi
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      Location:
+        Type: QUERY_PARAMETER
+        Path: "/files"
+        Method: POST
+        Name: "LalaKey"
+      RestApiId: !Ref MyApi
+      Properties: >+
+        {
+          "description": "The LaLa Key"
+        }
   DocumentationVersion:
     DependsOn:
       - MyApi
-      - DocumentationPart
+      - FeedlyWebhookResponse202DocPart
+      - FeedlyWebhookRequestBodyDocPart
+      - QueryParameterApiKey
     Type: AWS::ApiGateway::DocumentationVersion
     Properties:
       Description: The description of the API documentation snapshot.
-      DocumentationVersion: 1.0.0
+      DocumentationVersion: 1.0.1
       RestApiId: !Ref MyApi
   StatesExecutionRole:
     Type: AWS::IAM::Role

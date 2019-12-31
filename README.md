@@ -128,14 +128,15 @@ npm run test-remote-registerDevice
 
 ## PRODUCTION TODOS
 
-* TODO: Force API Gateway deploy on each push (https://currentlyunnamed-theclassic.blogspot.com/2018/12/mastering-cloudformation-for-api.html)
+* In-Progress: API documentation
+** Rename files/assets
+** Cleanup cloudformation templates
 * TODO: Send push notification when new file is ready
 * TODO: Add lambda alarms in case errors are experienced
-* TODO: Swagger documentation
-* TODO: API Gateway documentation
 
 ## NICE TODOS
 
 * Service Maps
+* CloudWatch Alarm that posts an issue to Github
 * Automatic generation of JSON fixtures :mind_blown:
 * Use AWS EventBridge for EventSourcing

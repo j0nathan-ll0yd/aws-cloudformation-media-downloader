@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "custom-4XX-generic",
+    "message": {
+      "Token": [
+        "Token can't be blank"
+      ]
+    }
+  },
+  "requestId": "a5ef3d90-f054-4608-acaf-60cb2cba797d"
+}

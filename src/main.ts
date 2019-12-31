@@ -141,7 +141,7 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
   console.log('createPlatformEndpoint <=', JSON.stringify(params, null, 2))
   const data = await createPlatformEndpoint(params)
   console.log('createPlatformEndpoint =>', JSON.stringify(data, null, 2))
-  return response(context, 200, data)
+  return response(context, 201, {endpointArn: data.EndpointArn})
 }
 
 export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context: Context) {

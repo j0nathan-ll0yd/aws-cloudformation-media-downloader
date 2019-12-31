@@ -1,0 +1,27 @@
+type: object
+description: The values sent when a device registers for push notifications.
+required:
+  - Token
+properties:
+  Name:
+    type: string
+    description: The name identifying the user's device.
+    example: "Programmer's iPhone"
+  Token:
+    type: string
+    description: A device token is an identifier for the Apple Push Notification System for iOS devices. Apple assigns a Device Token on a per-app basis (iOS 7 and later) which is used as a unique identifier for sending push notifications.
+    example: "708b5db254e2f33ec8cf3e05bb271d1401a2d01ed2458920ede5523d6e310b33"
+  SystemName:
+    type: string
+    description: The name of the operating system running on the device represented by the user.
+    enum:
+      - iOS
+    example: "iOS"
+  SystemVersion:
+    type: string
+    description: The current version of the user's operating system.
+    example: "13.1.2"
+  UUID:
+    type: string
+    description: An alphanumeric string that uniquely identifies a device to the app's vendor.
+    example: "AC3E4BEE-E20D-4F0B-8684-8E3AA7D6DC67"

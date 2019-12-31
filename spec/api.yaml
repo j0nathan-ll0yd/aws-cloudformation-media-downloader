@@ -1,0 +1,97 @@
+openapi: "3.0.1"
+info:
+  title: "Lifegames iOS App"
+  version: "2019-12-27T19:49:49Z"
+servers:
+  - url: "https://m0l9d6rzcb.execute-api.us-west-2.amazonaws.com/{basePath}"
+    variables:
+      basePath:
+        default: "/Prod"
+paths:
+  /registerDevice:
+    post:
+      description: This endpoint will register an iOS device to receive push notifications.
+      operationId: "registerDevice"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/RegisterDevice"
+            example:
+              $ref: ./../test/fixtures/handleRegisterDevice-200-OK.json
+        required: true
+      responses:
+        201:
+          $ref: "#/components/responses/RegisterDeviceCreated"
+        400:
+          $ref: "#/components/responses/RegisterDeviceBadRequest"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+      security:
+        - DefaultAuthorizer: []
+  /files:
+    get:
+      description: This endpoint will return all files available.
+      operationId: "listFiles"
+      responses:
+        200:
+          $ref: "#/components/responses/ListFilesOK"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+      security:
+        - DefaultAuthorizer: []
+  /feedly:
+    post:
+      operationId: "PostFeedlyWebhook"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IFTTTWebhookFeedly"
+            example:
+              $ref: ./../test/fixtures/handleFeedlyEvent-200-OK.json
+        required: true
+      responses:
+        202:
+          $ref: "#/components/responses/IFTTTWebhookSuccess"
+        400:
+          $ref: "#/components/responses/IFTTTWebhookBadRequest"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+      security:
+        - DefaultAuthorizer: []
+components:
+  schemas:
+    IFTTTWebhookFeedly:
+      $ref: ./schemas/FeedlyWebhook.yaml
+  requestBodies:
+    RegisterDevice:
+      $ref: ./requestBodies/RegisterDevice-200-OK.yaml
+  responses:
+    IFTTTWebhookBadRequest:
+      $ref: ./responses/FeedlyWebhook/400-BadRequest.yaml
+    IFTTTWebhookSuccess:
+      $ref: ./responses/FeedlyWebhook/202-Accepted.yaml
+    RegisterDeviceBadRequest:
+      $ref: ./responses/RegisterDevice/400-BadRequest.yaml
+    Forbidden:
+      $ref: ./responses/Common/403-Forbidden.yaml
+    InternalServerError:
+      $ref: ./responses/Common/500-InternalServerError.yaml
+    RegisterDeviceCreated:
+      $ref: ./responses/RegisterDevice/201-Created.yaml
+    ListFilesOK:
+      $ref: ./responses/ListFiles/200-OK.yaml
+
+  securitySchemes:
+    DefaultAuthorizer:
+      type: "apiKey"
+      name: "ApiKey"
+      in: "query"
+      x-amazon-apigateway-authtype: "custom"
