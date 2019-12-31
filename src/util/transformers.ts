@@ -6,7 +6,11 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
     try {
         // quality 22 = highest quality MP4 format
         const highestVideoFormat = chooseFormat(myVideoInfo, {quality: '22'})
-        if (highestVideoFormat instanceof Error) { throw highestVideoFormat } else { return highestVideoFormat }
+        if (highestVideoFormat instanceof Error) {
+            throw highestVideoFormat
+        } else {
+            return highestVideoFormat
+        }
     } catch (error) {
         throw new Error('Unable to find format')
     }
@@ -44,16 +48,25 @@ export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: strin
         Body: video_url,
         Bucket: myBucket,
         Key: sourceFilenameFromVideoInfo(myVideoInfo),
-        Metadata: { title }
+        Metadata: {title}
     }
 }
 
 export function objectKeysToLowerCase(input) {
-  if (typeof input !== 'object') { return input }
-  if (Array.isArray(input)) { return input.map(objectKeysToLowerCase) }
-  return Object.keys(input).reduce((newObj, key) => {
-    const val = input[key]
-    newObj[key.charAt(0).toLowerCase() + key.slice(1)] = (typeof val === 'object') ? objectKeysToLowerCase(val) : val
-    return newObj
-  }, {})
+    console.log(`typeof = ${typeof input}, input = ${input}`)
+    if (typeof input !== 'object') {
+        return input
+    }
+    if (Array.isArray(input)) {
+        return input.map(objectKeysToLowerCase)
+    }
+    if ((input instanceof Date)) {
+        return input
+    }
+    return Object.keys(input).reduce((newObj, key) => {
+        const val = input[key]
+        const newVal = (typeof val === 'object') ? objectKeysToLowerCase(val) : val
+        newObj[key.toLowerCase()] = newVal
+        return newObj
+    }, {})
 }
