@@ -168,7 +168,7 @@ describe('main', () => {
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
       expect(body.error.message).to.have.property('ArticleURL')
-      expect(body.error.message.ArticleURL[0]).to.have.string('blank')
+      expect(body.error.message.ArticleURL[0]).to.have.string('is required')
     })
     it('should handle an invalid event body', async () => {
       event.body = 'hello'
@@ -202,7 +202,9 @@ describe('main', () => {
     it('should create a new remote endpoint (for the mobile phone)', async () => {
       createPlatformEndpointStub.returns(getFixture('createPlatformEndpoint-200-OK.json'))
       const output = await handleDeviceRegistration(event, context)
-      expect(output.statusCode).to.equal(200)
+      const body = JSON.parse(output.body)
+      expect(output.statusCode).to.equal(201)
+      expect(body.body).to.have.property('endpointArn').that.is.not.empty
     })
     it('should handle a CloudWatch scheduled event', async () => {
       event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
@@ -215,7 +217,7 @@ describe('main', () => {
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
       expect(body.error.message).to.have.property('Token')
-      expect(body.error.message.Token[0]).to.have.string('blank')
+      expect(body.error.message.Token[0]).to.have.string('is required')
     })
     it('should fail gracefully if createPlatformEndpoint fails', async () => {
       createPlatformEndpointStub.rejects('Error')

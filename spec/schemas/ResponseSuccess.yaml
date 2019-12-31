@@ -1,0 +1,10 @@
+required:
+  - body
+  - requestId
+type: object
+properties:
+  body:
+    description: The response body; indicating the request was successful
+    type: object
+  requestId:
+    $ref: ./../parameters/RequestId.yaml

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "custom-5XX-generic",
+    "message": "Internal server error"
+  },
+  "requestId": "4060676b-16bd-4486-9bb4-085407abf4f5"
+}

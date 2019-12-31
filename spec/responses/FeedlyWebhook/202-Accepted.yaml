@@ -1,0 +1,16 @@
+description: Accepted
+content:
+  application/json:
+    schema:
+      allOf:
+        - $ref: ./../../schemas/ResponseSuccess.yaml
+        - properties:
+            body:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - OK
+    example:
+      $ref: ./202-Accepted.json
