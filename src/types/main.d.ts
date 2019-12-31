@@ -73,9 +73,9 @@ interface ExtendedS3Object extends S3.Object {
 }
 
 interface DeviceRegistration {
-    Name: string,
-    Token: string,
-    SystemVersion: string,
+    name: string,
+    token: string,
+    systemVersion: string,
     UUID: string,
-    SystemName: string
+    systemName: string
 }

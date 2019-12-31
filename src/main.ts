@@ -2,6 +2,8 @@ import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult}
 import axios, {AxiosRequestConfig} from 'axios'
 import {validate} from 'validate.js'
 import {videoInfo} from 'ytdl-core'
+import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
+import {StartExecutionInput} from '../node_modules/aws-sdk/clients/stepfunctions'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
 import {createPlatformEndpoint} from './lib/vendor/AWS/SNS'
@@ -20,9 +22,7 @@ import {Webhook} from './types/vendor/IFTTT/Feedly/Webhook'
 import {generateAllow, generateDeny} from './util/apigateway-helpers'
 import {feedlyEventConstraints, registerDeviceConstraints} from './util/constraints'
 import {response} from './util/lambda-helpers'
-import {transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
-import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
-import {StartExecutionInput} from '../node_modules/aws-sdk/clients/stepfunctions'
+import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
 
 function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {
   let requestBody: Webhook | DeviceRegistration
@@ -111,14 +111,14 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
   try {
     const body = (requestBody as Webhook)
     const params: StartExecutionInput = {
-      input: JSON.stringify({fileUrl: body.ArticleURL}),
+      input: JSON.stringify({fileUrl: body.articleURL}),
       name: (new Date()).getTime().toString(),
       stateMachineArn: process.env.StateMachineArn
     }
     console.log('startExecution <=', JSON.stringify(params, null, 2))
     const data = await startExecution(params)
     console.log('startExecution =>', JSON.stringify(data, null, 2))
-    return response(context, 202, {status: 'OK'})
+    return response(context, 202, {status: 'ExecutionStarted'})
   } catch (error) {
     console.error(error)
     return response(context, 500, error.message)
@@ -136,7 +136,7 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
   const params = {
     Attributes: {UserId: '1234', ChannelId: '1234'},
     PlatformApplicationArn: process.env.PlatformApplicationArn,
-    Token: body.Token
+    Token: body.token
   }
   console.log('createPlatformEndpoint <=', JSON.stringify(params, null, 2))
   const data = await createPlatformEndpoint(params)
@@ -162,7 +162,7 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
       file.FileUrl = `https://${files.Name}.s3.amazonaws.com/${encodeURIComponent(file.Key)}`
       return file
     })
-    return response(context, 200, files)
+    return response(context, 200, objectKeysToLowerCase(files))
   } catch (error) {
     console.error(error)
     throw new Error(error)

@@ -2,8 +2,8 @@
   "error": {
     "code": "custom-4XX-generic",
     "message": {
-      "ArticleURL": [
-        "Article url can't be blank"
+      "articleURL": [
+        "is required"
       ]
     }
   },

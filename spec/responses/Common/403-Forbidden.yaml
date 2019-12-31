@@ -6,16 +6,16 @@ content:
         - $ref: ./../../schemas/ResponseFailure.yaml
         - properties:
             error:
-              type: "object"
+              type: object
               properties:
                 code:
-                  type: "string"
+                  type: string
                   enum:
-                    - "custom-4xx-generic"
+                    - custom-4xx-generic
                 message:
-                  type: "string"
+                  type: string
                   enum:
-                    - "User is not authorized to access this resource with an explicit deny"
-                    - "Unauthorized"
+                    - User is not authorized to access this resource with an explicit deny
+                    - Unauthorized
     example:
       $ref: ./403-Forbidden.json
