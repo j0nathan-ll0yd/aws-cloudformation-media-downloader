@@ -128,9 +128,10 @@ npm run test-remote-registerDevice
 
 ## PRODUCTION TODOS
 
-* In-Progress: API documentation
-** Rename files/assets
-** Cleanup cloudformation templates
+* TODO: Rename CloudFormation Resources
+* TODO: Rename Function Names
+* TODO: Cleanup Logging
+* TODO: Cleanup Cloudformation Templates (removing documentation)
 * TODO: Send push notification when new file is ready
 * TODO: Add lambda alarms in case errors are experienced
 
