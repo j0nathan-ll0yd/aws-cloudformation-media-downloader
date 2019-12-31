@@ -1,9 +1,9 @@
 import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {StartExecutionInput} from 'aws-sdk/clients/stepfunctions'
 import axios, {AxiosRequestConfig} from 'axios'
 import {validate} from 'validate.js'
 import {videoInfo} from 'ytdl-core'
 import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
-import {StartExecutionInput} from '../node_modules/aws-sdk/clients/stepfunctions'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
 import {createPlatformEndpoint} from './lib/vendor/AWS/SNS'
@@ -14,7 +14,6 @@ import {
   DeviceRegistration,
   ExtendedS3Object,
   Metadata,
-  StartFileUploadEvent,
   UploadPartEvent
 } from './types/main'
 import {ScheduledEvent} from './types/vendor/Amazon/CloudWatch/ScheduledEvent'
@@ -157,8 +156,7 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
     const files = await listObjects({Bucket: process.env.Bucket, MaxKeys: 1000})
     console.log('listObjects =>', JSON.stringify(files, null, 2))
     files.Contents.forEach((file: ExtendedS3Object) => {
-      // tslint:disable-next-line:max-line-length
-      // https://lifegames-app-s3bucket-pq2lluyi2i12.s3.amazonaws.com/20150402-%5Bcondenasttraveler%5D-Shorties%20Winner%3A%20One%20Year%20of%20Travel%20in%20One%20Minute.mp4
+      // https://lifegames-app-s3bucket-pq2lluyi2i12.s3.amazonaws.com/20191209-[sxephil].mp4
       file.FileUrl = `https://${files.Name}.s3.amazonaws.com/${encodeURIComponent(file.Key)}`
       return file
     })
