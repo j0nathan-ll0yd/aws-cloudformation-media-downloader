@@ -10,7 +10,6 @@ content:
               properties:
                 status:
                   type: string
-                  enum:
-                    - OK
+                  default: ExecutionStarted
     example:
       $ref: ./202-Accepted.json

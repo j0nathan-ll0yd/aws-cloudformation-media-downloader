@@ -1,10 +1,10 @@
-import {AWSError} from 'aws-sdk'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import crypto from 'crypto'
 import * as sinon from 'sinon'
+import {createMultipartUpload, listObjects} from '../src/lib/vendor/AWS/S3'
 import {createPlatformEndpoint} from '../src/lib/vendor/AWS/SNS'
 import {
   completeFileUpload,
@@ -15,7 +15,6 @@ import {
   startFileUpload
 } from '../src/main'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
-import {createMultipartUpload, listObjects} from './../src/lib/vendor/AWS/S3'
 import * as S3 from './../src/lib/vendor/AWS/S3'
 import * as SNS from './../src/lib/vendor/AWS/SNS'
 import * as StepFunctions from './../src/lib/vendor/AWS/StepFunctions'
@@ -150,6 +149,8 @@ describe('main', () => {
       startExecutionStub.returns(getFixture('startExecution-200-OK.json'))
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(202)
+      const body = JSON.parse(output.body)
+      expect(body.body.status).to.equal('ExecutionStarted')
     })
     it('should handle a CloudWatch scheduled event', async () => {
       event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
@@ -167,8 +168,8 @@ describe('main', () => {
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
-      expect(body.error.message).to.have.property('ArticleURL')
-      expect(body.error.message.ArticleURL[0]).to.have.string('is required')
+      expect(body.error.message).to.have.property('articleURL')
+      expect(body.error.message.articleURL[0]).to.have.string('is required')
     })
     it('should handle an invalid event body', async () => {
       event.body = 'hello'
@@ -183,13 +184,14 @@ describe('main', () => {
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
-      expect(body.error.message).to.have.property('ArticleURL')
-      expect(body.error.message.ArticleURL[0]).to.have.string('not a valid YouTube URL')
+      expect(body.error.message).to.have.property('articleURL')
+      expect(body.error.message.articleURL[0]).to.have.string('not a valid YouTube URL')
     })
   })
   describe('#handleRegisterDevice', () => {
     const context = getFixture('handleRegisterDevice/Context.json')
-    let event, createPlatformEndpointStub
+    let createPlatformEndpointStub
+    let event
     beforeEach(() => {
       createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
       event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
@@ -204,7 +206,7 @@ describe('main', () => {
       const output = await handleDeviceRegistration(event, context)
       const body = JSON.parse(output.body)
       expect(output.statusCode).to.equal(201)
-      expect(body.body).to.have.property('endpointArn').that.is.not.empty
+      expect(body.body).to.have.property('endpointArn')
     })
     it('should handle a CloudWatch scheduled event', async () => {
       event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
@@ -216,8 +218,8 @@ describe('main', () => {
       const output = await handleDeviceRegistration(event, context)
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
-      expect(body.error.message).to.have.property('Token')
-      expect(body.error.message.Token[0]).to.have.string('is required')
+      expect(body.error.message).to.have.property('token')
+      expect(body.error.message.token[0]).to.have.string('is required')
     })
     it('should fail gracefully if createPlatformEndpoint fails', async () => {
       createPlatformEndpointStub.rejects('Error')
@@ -289,7 +291,8 @@ describe('main', () => {
   })
   describe('#listFiles', () => {
     const context = getFixture('listFiles/Context.json')
-    let event, listObjectsStub
+    let event
+    let listObjectsStub
     beforeEach(() => {
       event = getFixture('listFiles/APIGatewayEvent.json')
       listObjectsStub = sinon.stub(S3, 'listObjects')
@@ -304,9 +307,9 @@ describe('main', () => {
       const output = await listFiles(event, context)
       expect(output.statusCode).to.equal(200)
       const body = JSON.parse(output.body)
-      expect(body.body).to.have.all.keys('IsTruncated', 'Contents', 'Name', 'Prefix', 'MaxKeys', 'KeyCount', 'CommonPrefixes')
-      expect(body.body.KeyCount).to.equal(1)
-      expect(body.body.Contents[0]).to.have.property('FileUrl').that.is.a('string')
+      expect(body.body).to.have.all.keys('isTruncated', 'contents', 'name', 'prefix', 'maxKeys', 'keyCount', 'commonPrefixes')
+      expect(body.body.keyCount).to.equal(1)
+      expect(body.body.contents[0]).to.have.property('fileUrl').that.is.a('string')
     })
     it('should handle a CloudWatch scheduled event', async () => {
       event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
@@ -318,8 +321,8 @@ describe('main', () => {
       const output = await listFiles(event, context)
       expect(output.statusCode).to.equal(200)
       const body = JSON.parse(output.body)
-      expect(body.body).to.have.all.keys('IsTruncated', 'Contents', 'Name', 'Prefix', 'MaxKeys', 'KeyCount', 'CommonPrefixes')
-      expect(body.body.KeyCount).to.equal(0)
+      expect(body.body).to.have.all.keys('isTruncated', 'contents', 'name', 'prefix', 'maxKeys', 'keyCount', 'commonPrefixes')
+      expect(body.body.keyCount).to.equal(0)
     })
     it('should fail gracefully if listObjects fails', async () => {
       listObjectsStub.rejects('Error')

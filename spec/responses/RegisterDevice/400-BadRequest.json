@@ -2,8 +2,8 @@
   "error": {
     "code": "custom-4XX-generic",
     "message": {
-      "Token": [
-        "Token can't be blank"
+      "token": [
+        "is required"
       ]
     }
   },

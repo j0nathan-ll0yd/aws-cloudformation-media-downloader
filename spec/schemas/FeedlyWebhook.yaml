@@ -1,41 +1,19 @@
-title: "A proper title"
-description: "A property description"
-maxProperties: 9
-minProperties: 1
 required:
-  - "ArticleURL"
-type: "object"
+  - articleURL
+type: object
 properties:
-  SourceURL:
-    description: The RSS feed URL provided by YouTube
-    type: "string"
-    format: "uri"
-  SourceTitle:
-    description: The RSS feed title provided by YouTube
-    type: "string"
-  SourceFeedURL:
-    description: The RSS feed URL provided by YouTube
-    type: "string"
-    format: "uri"
-  ArticleFirstImageURL:
-    description: The image URL for the video thumbnail
-    type: "string"
-    format: "uri"
-  CreatedAt:
-    description: The datetime when the video was created
-    type: "string"
-    format: "date-time"
-  ArticleCategories:
-    description: The categories the RSS feed is associated with
-    type: "string"
-  ArticleTitle:
-    description: The title of the YouTube video
-    type: "string"
-  ArticlePublishedAt:
-    description: The datetime when the video was published to Feedly
-    type: "string"
-    format: "date-time"
-  ArticleURL:
-    description: The YouTube video URL to be downloaded
-    type: "string"
-    format: "uri"
+  articleFirstImageURL:
+    description: The image URL for the video thumbnail.
+    type: string
+    format: uri
+  articleTitle:
+    description: The title of the YouTube video.
+    type: string
+  articlePublishedAt:
+    description: The datetime when the video was published to Feedly.
+    type: string
+    format: date-time
+  articleURL:
+    description: The YouTube video URL to be downloaded.
+    type: string
+    format: uri

@@ -1,21 +1,21 @@
 {
   "body": {
-    "IsTruncated": false,
-    "Contents": [
+    "isTruncated": false,
+    "contents": [
       {
-        "Key": "20191209-[sxephil].mp4",
-        "LastModified": "2019-12-27T19:30:11.000Z",
-        "ETag": "\"5823b712dadb80810cc4c688af112b52-10\"",
-        "Size": 51839177,
-        "StorageClass": "STANDARD",
-        "FileUrl": "https://lifegames-sandbox-s3bucket-17tdf13i505gq.s3.amazonaws.com/20191209-%5Bsxephil%5D.mp4"
+        "key": "20191209-[sxephil].mp4",
+        "lastModified": {},
+        "eTag": "\"5823b712dadb80810cc4c688af112b52-10\"",
+        "size": 51839177,
+        "storageClass": "STANDARD",
+        "fileUrl": "https://lifegames-sandbox-s3bucket-17tdf13i505gq.s3.amazonaws.com/20191209-%5Bsxephil%5D.mp4"
       }
     ],
-    "Name": "lifegames-sandbox-s3bucket-17tdf13i505gq",
-    "Prefix": "",
-    "MaxKeys": 1000,
-    "CommonPrefixes": [],
-    "KeyCount": 1
+    "name": "lifegames-sandbox-s3bucket-17tdf13i505gq",
+    "prefix": "",
+    "maxKeys": 1000,
+    "commonPrefixes": [],
+    "keyCount": 1
   },
-  "requestId": "65e65279-0b1c-4b66-b7a2-90fb34e4c407"
+  "requestId": "a6b5a58c-424e-44b2-b584-11bc5984378e"
 }

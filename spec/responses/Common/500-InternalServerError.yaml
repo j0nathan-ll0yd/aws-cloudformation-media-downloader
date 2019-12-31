@@ -6,11 +6,11 @@ content:
         - $ref: ./../../schemas/ResponseFailure.yaml
         - properties:
             error:
-              type: "object"
+              type: object
               properties:
                 message:
-                  type: "string"
+                  type: string
                   enum:
-                    - "Internal server error"
+                    - Internal server error
     example:
       $ref: ./500-InternalServerError.json

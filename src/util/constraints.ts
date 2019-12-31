@@ -10,14 +10,14 @@ validate.validators.isYouTubeURL = (value) => {
 }
 
 export const feedlyEventConstraints = {
-    ArticleURL: {
+    articleURL: {
         isYouTubeURL: true,
         presence: true
     }
 }
 
 export const registerDeviceConstraints = {
-    Token: {
+    token: {
         presence: true
     }
 }

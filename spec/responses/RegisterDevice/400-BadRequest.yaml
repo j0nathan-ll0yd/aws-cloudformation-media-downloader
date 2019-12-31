@@ -6,17 +6,17 @@ content:
         - $ref: ./../../schemas/ResponseFailure.yaml
         - properties:
             error:
-              type: "object"
+              type: object
               properties:
                 message:
-                  type: "object"
+                  type: object
                   properties:
                     Token:
                       description: An array of each error for the given field
-                      type: "array"
+                      type: array
                       items:
-                        type: "string"
+                        type: string
                         enum:
-                          - "is required"
+                          - is required
     example:
       $ref: ./400-BadRequest.json
