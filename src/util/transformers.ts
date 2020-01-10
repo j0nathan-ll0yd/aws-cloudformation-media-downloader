@@ -60,13 +60,14 @@ export function objectKeysToLowerCase(input) {
     if (Array.isArray(input)) {
         return input.map(objectKeysToLowerCase)
     }
-    if ((input instanceof Date)) {
+    if (Object.prototype.toString.call(input) === '[object Date]') {
         return input
     }
     return Object.keys(input).reduce((newObj, key) => {
         const val = input[key]
+        const newKey = (key.charAt(0).toLowerCase() + key.slice(1) || key).toString()
         const newVal = (typeof val === 'object') ? objectKeysToLowerCase(val) : val
-        newObj[key.toLowerCase()] = newVal
+        newObj[newKey] = newVal
         return newObj
     }, {})
 }
