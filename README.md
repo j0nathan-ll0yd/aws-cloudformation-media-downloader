@@ -130,7 +130,6 @@ npm run test-remote-registerDevice
 
 * TODO: Rename CloudFormation Resources
 * TODO: Rename Function Names
-* TODO: Cleanup Logging
 * TODO: Cleanup Cloudformation Templates (removing documentation)
 * TODO: Send push notification when new file is ready
 * TODO: Add lambda alarms in case errors are experienced
@@ -141,3 +140,4 @@ npm run test-remote-registerDevice
 * CloudWatch Alarm that posts an issue to Github
 * Automatic generation of JSON fixtures :mind_blown:
 * Use AWS EventBridge for EventSourcing
+* Investigate `throw` vs. proper JSON response from API Gateway and non-API Gateway methods

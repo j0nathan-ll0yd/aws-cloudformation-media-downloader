@@ -27,3 +27,22 @@ export function response(context, statusCode, body, headers?) {
         }
     }
 }
+
+function stringify(stringOrObject) {
+    if (typeof stringOrObject === 'object') {
+        stringOrObject = JSON.stringify(stringOrObject, null, 2)
+    }
+    return stringOrObject
+}
+
+export function logInfo(message, stringOrObject) {
+    console.info(message, stringify(stringOrObject))
+}
+
+export function logDebug(message, stringOrObject) {
+    console.log(message, stringify(stringOrObject))
+}
+
+export function logError(message, stringOrObject) {
+    console.error(message, stringify(stringOrObject))
+}
