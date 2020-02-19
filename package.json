@@ -14,6 +14,7 @@
     "test-local-list": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"ListFiles\"",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
+    "test-remote-dispatchNotification": "./bin/test-dispatchNotification.sh",
     "test-local-hook": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/APIGatewayEvent.json",
     "test-local-schedule": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/CloudWatchEventRuleEvent.json",
     "deploy-code": "./bin/update-lambda-functions.sh",

@@ -1,4 +1,4 @@
-export function response(context, statusCode, body, headers?) {
+export function response(context, statusCode, body?, headers?) {
     let code = 'custom-5XX-generic'
     let error = false
     if (/^4/.test(statusCode)) {
@@ -13,6 +13,12 @@ export function response(context, statusCode, body, headers?) {
                 error: { code, message:  body },
                 requestId: context.awsRequestId
             }),
+            headers,
+            statusCode
+        }
+    } else if (body) {
+        return {
+            body: '',
             headers,
             statusCode
         }
@@ -35,14 +41,14 @@ function stringify(stringOrObject) {
     return stringOrObject
 }
 
-export function logInfo(message, stringOrObject) {
-    console.info(message, stringify(stringOrObject))
+export function logInfo(message, stringOrObject?) {
+    console.info(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-export function logDebug(message, stringOrObject) {
-    console.log(message, stringify(stringOrObject))
+export function logDebug(message, stringOrObject?) {
+    console.log(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-export function logError(message, stringOrObject) {
-    console.error(message, stringify(stringOrObject))
+export function logError(message, stringOrObject?) {
+    console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
