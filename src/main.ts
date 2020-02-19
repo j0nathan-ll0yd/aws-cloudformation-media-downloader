@@ -1,4 +1,5 @@
 import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {PublishInput} from 'aws-sdk/clients/sns'
 import {StartExecutionInput} from 'aws-sdk/clients/stepfunctions'
 import axios, {AxiosRequestConfig} from 'axios'
 import {validate} from 'validate.js'
@@ -6,7 +7,11 @@ import {videoInfo} from 'ytdl-core'
 import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
-import {createPlatformEndpoint} from './lib/vendor/AWS/SNS'
+import {
+  createPlatformEndpoint,
+  listEndpointsByPlatformApplication,
+  listPlatformApplications, publishSnsEvent
+} from './lib/vendor/AWS/SNS'
 import {startExecution} from './lib/vendor/AWS/StepFunctions'
 import {fetchVideoInfo} from './lib/vendor/YouTube'
 import {
@@ -39,7 +44,7 @@ function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constr
   if (constraints) {
     const invalidAttributes = validate(requestBody, constraints)
     if (invalidAttributes) {
-      logError('processEventAndValidate =>   ', invalidAttributes)
+      logError('processEventAndValidate =>', invalidAttributes)
       return {statusCode: 400, message: invalidAttributes}
     }
   }
@@ -153,6 +158,30 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
   } catch (error) {
     logError('response =>', error)
     throw new Error(error)
+  }
+}
+
+export async function dispatchNotification(event: APIGatewayEvent, context: Context) {
+  logInfo('listPlatformApplications <=')
+  const platformApplications = await listPlatformApplications({})
+  logInfo('listPlatformApplications =>', platformApplications)
+  for (const platformApplication of platformApplications.PlatformApplications) {
+    const listEndpointParams = { PlatformApplicationArn: platformApplication.PlatformApplicationArn }
+    logDebug('listEndpointsByPlatformApplication <=', listEndpointParams)
+    const endpoints = await listEndpointsByPlatformApplication(listEndpointParams)
+    logDebug('listEndpointsByPlatformApplication =>', endpoints)
+    for (const endpoint of endpoints.Endpoints) {
+      const publishParams: PublishInput = {
+        Message: JSON.stringify({APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, key: 'value'})}),
+        MessageAttributes: {'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '10'}},
+        MessageStructure: 'json',
+        TargetArn: endpoint.EndpointArn
+      }
+      logDebug('publishSnsEvent <=', publishParams)
+      const publishResponse = await publishSnsEvent(publishParams)
+      logDebug('publishSnsEvent <=', publishResponse)
+    }
+    return response(context, 204)
   }
 }
 
