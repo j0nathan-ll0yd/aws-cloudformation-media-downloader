@@ -1,0 +1,16 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "59e5f081-8806-5a73-8287-a64cc5e6f284"
+  },
+  "Endpoints": [
+    {
+      "EndpointArn": "arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/Sandbox/fc54b0a9-a414-397f-a7dd-c086644c13bf",
+      "Attributes": {
+        "UserId": "1234",
+        "Enabled": "true",
+        "Token": "6305d0bfc0facd34d72dec2cd59e5687ea76767d75a774441cd8f7ac16c04c71",
+        "ChannelId": "1234"
+      }
+    }
+  ]
+}

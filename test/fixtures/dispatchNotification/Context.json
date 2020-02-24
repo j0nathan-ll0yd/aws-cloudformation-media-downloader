@@ -1,0 +1,11 @@
+{
+  "callbackWaitsForEmptyEventLoop": true,
+  "logGroupName": "/aws/lambda/lifegames-fileviewer-FeedlyWebhook-1NPH53MDETI69",
+  "logStreamName": "2019/11/29/[$LATEST]d6caf220788447b5b568d68d945ccb09",
+  "functionName": "lifegames-fileviewer-FeedlyWebhook-1NPH53MDETI69",
+  "memoryLimitInMB": "128",
+  "functionVersion": "$LATEST",
+  "invokeid": "55cb4a4e-f810-48f5-b4ad-e2039b4e686e",
+  "awsRequestId": "55cb4a4e-f810-48f5-b4ad-e2039b4e686e",
+  "invokedFunctionArn": "arn:aws:lambda:us-west-2:203465012143:function:lifegames-fileviewer-FeedlyWebhook-1NPH53MDETI69"
+}

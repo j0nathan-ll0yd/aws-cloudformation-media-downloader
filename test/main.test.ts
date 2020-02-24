@@ -7,7 +7,7 @@ import * as sinon from 'sinon'
 import {createMultipartUpload, listObjects} from '../src/lib/vendor/AWS/S3'
 import {createPlatformEndpoint} from '../src/lib/vendor/AWS/SNS'
 import {
-  completeFileUpload,
+  completeFileUpload, dispatchNotification,
   handleAuthorization,
   handleDeviceRegistration,
   handleFeedlyEvent,
@@ -327,6 +327,31 @@ describe('main', () => {
     it('should fail gracefully if listObjects fails', async () => {
       listObjectsStub.rejects('Error')
       expect(listFiles(event, context)).to.be.rejectedWith(Error)
+    })
+  })
+  describe('#dispatchNotification', () => {
+    const event = getFixture('dispatchNotification/APIGatewayEvent.json')
+    const context = getFixture('dispatchNotification/Context.json')
+    let listPlatformApplicationsStub
+    let listEndpointsByPlatformApplicationStub
+    let publishSnsEventStub
+    beforeEach(() => {
+      listPlatformApplicationsStub = sinon.stub(SNS, 'listPlatformApplications')
+      listEndpointsByPlatformApplicationStub = sinon.stub(SNS, 'listEndpointsByPlatformApplication')
+      listPlatformApplicationsStub.returns(getFixture('dispatchNotification/listPlatformApplications-200-OK.json'))
+      listEndpointsByPlatformApplicationStub.returns(getFixture('dispatchNotification/listEndpointsByPlatformApplication-200-OK.json'))
+      publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
+    })
+    afterEach(() => {
+      mock.resetHandlers()
+      listPlatformApplicationsStub.restore()
+      listEndpointsByPlatformApplicationStub.restore()
+      publishSnsEventStub.restore()
+    })
+    it('should publish the event to all endpoints', async () => {
+      publishSnsEventStub.returns(getFixture('dispatchNotification/publishSnsEvent-200-OK.json'))
+      const output = await dispatchNotification(event, context)
+      expect(output.statusCode).to.equal(204)
     })
   })
 })
