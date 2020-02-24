@@ -18,16 +18,16 @@ export function response(context, statusCode, body?, headers?) {
         }
     } else if (body) {
         return {
-            body: '',
+            body: JSON.stringify({
+                body,
+                requestId: context.awsRequestId
+            }),
             headers,
             statusCode
         }
     } else {
         return {
-            body: JSON.stringify({
-                body,
-                requestId: context.awsRequestId
-            }),
+            body: '',
             headers,
             statusCode
         }

@@ -161,6 +161,7 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
   }
 }
 
+// https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html#mobile-push-send-message-apns-background-notification
 export async function dispatchNotification(event: APIGatewayEvent, context: Context) {
   logInfo('listPlatformApplications <=')
   const platformApplications = await listPlatformApplications({})
@@ -173,7 +174,11 @@ export async function dispatchNotification(event: APIGatewayEvent, context: Cont
     for (const endpoint of endpoints.Endpoints) {
       const publishParams: PublishInput = {
         Message: JSON.stringify({APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, key: 'value'})}),
-        MessageAttributes: {'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '10'}},
+        MessageAttributes: {
+          'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
+          'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
+          // 'AWS.SNS.MOBILE.APNS.TOPIC': {DataType: 'String', StringValue: 'lifegames.Sandbox'}
+        },
         MessageStructure: 'json',
         TargetArn: endpoint.EndpointArn
       }
