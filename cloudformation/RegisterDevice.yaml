@@ -1,6 +1,8 @@
 Resources:
   RegisterDevice:
-    DependsOn: S3Bucket
+    DependsOn:
+      - S3Bucket
+      - PushNotificationTopic
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -11,6 +13,7 @@ Resources:
       Environment:
         Variables:
           PlatformApplicationArn: 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+          PushNotificationTopicArn: !Ref PushNotificationTopic
       Layers:
         - !Ref NodeModulesLayer
       Policies:
@@ -18,8 +21,10 @@ Resources:
             - Effect: Allow
               Action:
                 - sns:CreatePlatformEndpoint
+                - sns:Subscribe
               Resource:
                 - 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+                - !Ref PushNotificationTopic
       Tracing: Active
   RegisterDeviceResource:
     Type: AWS::ApiGateway::Resource
@@ -51,7 +56,3 @@ Resources:
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*/*
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt RegisterDevice.Arn
-  PushNotificationTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      DisplayName: PushNotificationTopic

@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult, S3Event} from 'aws-lambda'
 import {PublishInput} from 'aws-sdk/clients/sns'
 import {StartExecutionInput} from 'aws-sdk/clients/stepfunctions'
 import axios, {AxiosRequestConfig} from 'axios'
@@ -10,7 +10,7 @@ import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart}
 import {
   createPlatformEndpoint,
   listEndpointsByPlatformApplication,
-  listPlatformApplications, publishSnsEvent
+  listPlatformApplications, publishSnsEvent, subscribe
 } from './lib/vendor/AWS/SNS'
 import {startExecution} from './lib/vendor/AWS/StepFunctions'
 import {fetchVideoInfo} from './lib/vendor/YouTube'
@@ -127,15 +127,25 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
     return response(context, statusCode, message)
   }
   const body = (requestBody as DeviceRegistration)
-  const params = {
+  const createPlatformEndpointParams = {
     Attributes: {UserId: '1234', ChannelId: '1234'},
     PlatformApplicationArn: process.env.PlatformApplicationArn,
     Token: body.token
   }
-  logDebug('createPlatformEndpoint <=', params)
-  const data = await createPlatformEndpoint(params)
-  logDebug('createPlatformEndpoint =>', data)
-  return response(context, 201, {endpointArn: data.EndpointArn})
+  logDebug('createPlatformEndpoint <=', createPlatformEndpointParams)
+  const createPlatformEndpointResponse = await createPlatformEndpoint(createPlatformEndpointParams)
+  logDebug('createPlatformEndpoint =>', createPlatformEndpointParams)
+
+  const subscribeParams = {
+    Endpoint: createPlatformEndpointResponse.EndpointArn,
+    Protocol: 'application',
+    TopicArn: process.env.PushNotificationTopicArn,
+  }
+  logDebug('subscribe <=', subscribeParams)
+  const subscribeResponse = await subscribe(subscribeParams)
+  logDebug('subscribe =>', subscribeResponse)
+
+  return response(context, 201, {endpointArn: createPlatformEndpointResponse.EndpointArn})
 }
 
 export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context: Context) {
@@ -259,9 +269,10 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       url
     }
 
-    logInfo('axios <=', url)
+    logInfo('axios <=', options)
     const fileInfo = await axios(options)
-    logDebug('axios.fileInfo.data =>', fileInfo.data)
+    logInfo('axios done')
+    //logDebug('axios.fileInfo.data =>', fileInfo.data)
     logDebug('axios.fileInfo.status =>', `${fileInfo.status} ${fileInfo.statusText}`)
     logDebug('axios.fileInfo.headers =>', fileInfo.headers)
 
@@ -273,7 +284,8 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       PartNumber: partNumber,
       UploadId: uploadId
     }
-    logInfo('uploadPart <=', params)
+    logInfo('uploadPart before')
+    //logInfo('uploadPart <=', params)
     const partData = await uploadPart(params)
     logInfo('uploadPart =>', partData)
 
@@ -331,4 +343,42 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
     logError('response =>', error)
     throw new Error(error)
   }
+}
+
+// Why do I have hard-coded S3 bucket names? The below links explain the challenge.
+// https://www.itonaut.com/2018/10/03/implement-s3-bucket-lambda-triggers-in-aws-cloudformation/
+// https://aws.amazon.com/premiumsupport/knowledge-center/unable-validate-circular-dependency-cloudformation/
+// https://aws.amazon.com/blogs/mt/resolving-circular-dependency-in-provisioning-of-amazon-s3-buckets-with-aws-lambda-event-notifications/
+export async function fileUploadWebhook(event: S3Event) {
+  logDebug('event', event)
+  const record = event.Records[0]
+  const file = {
+    ETag: record.s3.object.eTag,
+    FileUrl: `https://${record.s3.bucket.name}.s3.amazonaws.com/${record.s3.object.key}`,
+    Key: record.s3.object.key,
+    LastModified: record.eventTime,
+    Size: record.s3.object.size,
+    StorageClass: 'STANDARD'
+  }
+  const publishParams: PublishInput = {
+    Message: JSON.stringify({
+      APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: objectKeysToLowerCase(file)}),
+      default: 'Default message'
+    }),
+    MessageAttributes: {
+      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
+      // 'AWS.SNS.MOBILE.APNS.TOPIC': {DataType: 'String', StringValue: 'lifegames.Sandbox'}
+    },
+    MessageStructure: 'json',
+    TopicArn: process.env.PushNotificationTopicArn
+  }
+  logDebug('publishSnsEvent <=', publishParams)
+  const publishResponse = await publishSnsEvent(publishParams)
+  logDebug('publishSnsEvent <=', publishResponse)
+}
+
+export async function handleClientEvent(event: APIGatewayEvent, context: Context) {
+  logDebug('event', event)
+  return response(context, 204)
 }

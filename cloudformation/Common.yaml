@@ -13,4 +13,9 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketName: lifegames-sandbox-testbucket
       AccessControl: PublicRead
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:CompleteMultipartUpload
+            Function: !GetAtt FileUploadWebhook.Arn

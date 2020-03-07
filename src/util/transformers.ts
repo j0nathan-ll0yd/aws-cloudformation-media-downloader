@@ -5,7 +5,10 @@ import {Metadata} from '../types/main'
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
     try {
         // quality 22 = highest quality MP4 format
-        const highestVideoFormat = chooseFormat(myVideoInfo, {quality: '22'})
+        const highestVideoFormat = chooseFormat(myVideoInfo, {
+            filter: (format) => format.container === 'mp4',
+            quality: 'highestvideo'
+        })
         if (highestVideoFormat instanceof Error) {
             throw highestVideoFormat
         } else {
@@ -20,6 +23,8 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
     //noinspection SpellCheckingInspection
     const {author, description, iurlmaxres, published, thumbnail_url, title} = myVideoInfo
+    // TODO: Strip non-alphanumeric characters in the title to avoid this AWS error:
+    // NetworkingError: Invalid character in header content ["x-amz-meta-title"]
     return {
         author,
         description,

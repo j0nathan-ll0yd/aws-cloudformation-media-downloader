@@ -141,3 +141,8 @@ npm run test-remote-registerDevice
 * Automatic generation of JSON fixtures :mind_blown:
 * Use AWS EventBridge for EventSourcing
 * Investigate `throw` vs. proper JSON response from API Gateway and non-API Gateway methods
+
+## CloudFormation Naming Conventions
+
+* https://serverless.com/framework/docs/providers/aws/guide/resources/
+* Names must begin with a letter; contain only ASCII letters, digits, and hyphens; and not end with a hyphen or contain two consecutive hyphens.
