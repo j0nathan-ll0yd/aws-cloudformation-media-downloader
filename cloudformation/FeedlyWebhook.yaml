@@ -249,6 +249,7 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3Bucket
+      Timeout: 900
       Tracing: Active
 
   UploadPart:

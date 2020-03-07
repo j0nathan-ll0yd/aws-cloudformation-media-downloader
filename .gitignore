@@ -7,4 +7,3 @@ dist
 docs
 node_modules
 cloudformation.json
-cloudformation/ApiGateway.yaml
