@@ -1,14 +1,15 @@
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseFormat} from '../lib/vendor/YouTube'
 import {Metadata} from '../types/main'
+import {logDebug} from './lambda-helpers'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
     try {
         // quality 22 = highest quality MP4 format
         const highestVideoFormat = chooseFormat(myVideoInfo, {
-            filter: (format) => format.container === 'mp4',
-            quality: 'highestvideo'
+            filter: (format) => format.container === 'mp4'
         })
+        logDebug('getHighestVideoFormatFromVideoInfo', highestVideoFormat)
         if (highestVideoFormat instanceof Error) {
             throw highestVideoFormat
         } else {
@@ -39,11 +40,11 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
 
 export function sourceFilenameFromVideoInfo(myVideoInfo: videoInfo): string {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    const {author: {user}, published} = myVideoInfo
+    const {author: {name}, published} = myVideoInfo
     const date = new Date(published)
     const ext = myVideoFormat.container
     const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
-    return `${uploadDate}-[${user}].${ext}`
+    return `${uploadDate}-[${name}].${ext}`
 }
 
 export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: string) {
