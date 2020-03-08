@@ -271,10 +271,8 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
 
     logInfo('axios <=', options)
     const fileInfo = await axios(options)
-    logInfo('axios done')
-    //logDebug('axios.fileInfo.data =>', fileInfo.data)
-    logDebug('axios.fileInfo.status =>', `${fileInfo.status} ${fileInfo.statusText}`)
-    logDebug('axios.fileInfo.headers =>', fileInfo.headers)
+    logDebug('axios.status =>', `${fileInfo.status} ${fileInfo.statusText}`)
+    logDebug('axios.headers =>', fileInfo.headers)
 
     const params: UploadPartRequest = {
       Body: fileInfo.data,
@@ -284,8 +282,8 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       PartNumber: partNumber,
       UploadId: uploadId
     }
-    logInfo('uploadPart before')
-    //logInfo('uploadPart <=', params)
+    const { Body, ...escapedParams } = params
+    logInfo('uploadPart <=', escapedParams)
     const partData = await uploadPart(params)
     logInfo('uploadPart =>', partData)
 
@@ -345,6 +343,7 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
   }
 }
 
+// TODO: Clean up the templates to support hardcoded bucket names
 // Why do I have hard-coded S3 bucket names? The below links explain the challenge.
 // https://www.itonaut.com/2018/10/03/implement-s3-bucket-lambda-triggers-in-aws-cloudformation/
 // https://aws.amazon.com/premiumsupport/knowledge-center/unable-validate-circular-dependency-cloudformation/
@@ -352,10 +351,11 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
 export async function fileUploadWebhook(event: S3Event) {
   logDebug('event', event)
   const record = event.Records[0]
+  const escapedKey = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
   const file = {
     ETag: record.s3.object.eTag,
-    FileUrl: `https://${record.s3.bucket.name}.s3.amazonaws.com/${record.s3.object.key}`,
-    Key: record.s3.object.key,
+    FileUrl: `https://${record.s3.bucket.name}.s3.amazonaws.com/${encodeURIComponent(escapedKey)}`,
+    Key: escapedKey,
     LastModified: record.eventTime,
     Size: record.s3.object.size,
     StorageClass: 'STANDARD'
@@ -368,7 +368,6 @@ export async function fileUploadWebhook(event: S3Event) {
     MessageAttributes: {
       'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
       'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
-      // 'AWS.SNS.MOBILE.APNS.TOPIC': {DataType: 'String', StringValue: 'lifegames.Sandbox'}
     },
     MessageStructure: 'json',
     TopicArn: process.env.PushNotificationTopicArn
