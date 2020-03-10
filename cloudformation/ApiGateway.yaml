@@ -25,7 +25,7 @@ Resources:
       KeyId: !Ref iOSApiKey
       KeyType: API_KEY
       UsagePlanId: !Ref MyUsagePlan
-  MyDeployment1583180467:
+  MyDeployment1583778879:
     DependsOn:
       - IFTTTWebhookFeedlyMethodPost
       - MyApi
@@ -54,13 +54,13 @@ Resources:
   StageProduction:
     DependsOn:
       - GatewayLogRole
-      - MyDeployment1583180467
+      - MyDeployment1583778879
     Type: AWS::ApiGateway::Stage
     Properties:
       StageName: Prod
       Description: Production environment
       RestApiId: !Ref MyApi
-      DeploymentId: !Ref MyDeployment1583180467
+      DeploymentId: !Ref MyDeployment1583778879
       Variables:
         Stack: Prod
       MethodSettings:
