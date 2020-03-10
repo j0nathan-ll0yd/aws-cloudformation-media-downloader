@@ -115,7 +115,6 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
     logDebug('startExecution =>', data)
     return response(context, 202, {status: 'ExecutionStarted'})
   } catch (error) {
-    logError('response =>', error)
     return response(context, 500, error.message)
   }
 }
@@ -166,7 +165,6 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
     })
     return response(context, 200, objectKeysToLowerCase(files))
   } catch (error) {
-    logError('response =>', error)
     throw new Error(error)
   }
 }
@@ -253,7 +251,6 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
       url: videoUrl
     } as UploadPartEvent
   } catch (error) {
-    logError('response =>', error)
     throw new Error(error)
   }
 }
@@ -318,7 +315,6 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       return nextPart
     }
   } catch (error) {
-    logError('response =>', error)
     throw new Error(error)
   }
 }
@@ -338,7 +334,6 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
     logInfo('completeMultipartUpload =>', data)
     return data
   } catch (error) {
-    logError('response =>', error)
     throw new Error(error)
   }
 }

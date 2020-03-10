@@ -143,72 +143,6 @@ Resources:
               Resource:
                 - !Ref MyStateMachine
       Tracing: Active
-  FeedlyWebhookRequestBodyDocPart:
-    DependsOn:
-      - MyApi
-    Type: AWS::ApiGateway::DocumentationPart
-    Properties:
-      Location:
-        Type: REQUEST_BODY
-        Path: "/feedly"
-        Method: POST
-      RestApiId: !Ref MyApi
-      Properties: >+
-        {
-          "ArticleFirstImageURL": "https://i.ytimg.com/vi/ZfVMalJEHRw/maxresdefault.jpg",
-          "ArticleCategories": "YouTube",
-          "ArticlePublishedAt": "July 4, 2018 at 03:27PM",
-          "ArticleTitle": "Why People Are Freaking Out At Scarlett Johansson, Poland Purge Controversy, & American Pride Dips",
-          "ArticleURL": "https://www.youtube.com/watch?v=K1HTMYxjF5Y",
-          "CreatedAt": "July 4, 2018 at 04:02PM",
-          "SourceFeedURL": "https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw",
-          "SourceTitle": "Philip DeFranco (uploads) on YouTube",
-          "SourceURL": "https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw"
-        }
-  FeedlyWebhookResponse202DocPart:
-    DependsOn:
-      - MyApi
-    Type: AWS::ApiGateway::DocumentationPart
-    Properties:
-      Location:
-        Type: RESPONSE
-        Path: "/feedly"
-        Method: POST
-        StatusCode: 202
-      RestApiId: !Ref MyApi
-      Properties: >+
-        {
-          "body": {
-            "status": "OK"
-          },
-          "requestId": "b127ec8a-203a-4105-801f-c98d670985d1"
-        }
-  QueryParameterApiKey:
-    DependsOn:
-      - MyApi
-    Type: AWS::ApiGateway::DocumentationPart
-    Properties:
-      Location:
-        Type: QUERY_PARAMETER
-        Path: "/files"
-        Method: POST
-        Name: "LalaKey"
-      RestApiId: !Ref MyApi
-      Properties: >+
-        {
-          "description": "The LaLa Key"
-        }
-  DocumentationVersion:
-    DependsOn:
-      - MyApi
-      - FeedlyWebhookResponse202DocPart
-      - FeedlyWebhookRequestBodyDocPart
-      - QueryParameterApiKey
-    Type: AWS::ApiGateway::DocumentationVersion
-    Properties:
-      Description: The description of the API documentation snapshot.
-      DocumentationVersion: 1.0.1
-      RestApiId: !Ref MyApi
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -229,6 +163,21 @@ Resources:
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - logs:GetLogEvents
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
                 Resource: "*"
 
   StartFileUpload:
@@ -285,6 +234,8 @@ Resources:
         - S3CrudPolicy:
             BucketName: !Ref S3Bucket
       Tracing: Active
+  MyStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
   MyStateMachine:
     DependsOn:
       - StartFileUpload
@@ -331,3 +282,9 @@ Resources:
             }
           }
         }
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt MyStateMachineLogGroup.Arn
+        IncludeExecutionData: FALSE
+        Level: ALL
