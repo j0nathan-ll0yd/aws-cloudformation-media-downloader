@@ -7,11 +7,7 @@ import {videoInfo} from 'ytdl-core'
 import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
-import {
-  createPlatformEndpoint,
-  listEndpointsByPlatformApplication,
-  listPlatformApplications, publishSnsEvent, subscribe
-} from './lib/vendor/AWS/SNS'
+import {createPlatformEndpoint, publishSnsEvent, subscribe} from './lib/vendor/AWS/SNS'
 import {startExecution} from './lib/vendor/AWS/StepFunctions'
 import {fetchVideoInfo} from './lib/vendor/YouTube'
 import {
@@ -126,6 +122,8 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
     return response(context, statusCode, message)
   }
   const body = (requestBody as DeviceRegistration)
+  // TODO: Add the device ID attribute, and figure out how to stop multiple subscriptions
+  // const deviceId = event.headers['x-device-uuid']
   const createPlatformEndpointParams = {
     Attributes: {UserId: '1234', ChannelId: '1234'},
     PlatformApplicationArn: process.env.PlatformApplicationArn,
@@ -169,35 +167,6 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
   }
 }
 
-// https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html#mobile-push-send-message-apns-background-notification
-export async function dispatchNotification(event: APIGatewayEvent, context: Context) {
-  logInfo('listPlatformApplications <=')
-  const platformApplications = await listPlatformApplications({})
-  logInfo('listPlatformApplications =>', platformApplications)
-  for (const platformApplication of platformApplications.PlatformApplications) {
-    const listEndpointParams = { PlatformApplicationArn: platformApplication.PlatformApplicationArn }
-    logDebug('listEndpointsByPlatformApplication <=', listEndpointParams)
-    const endpoints = await listEndpointsByPlatformApplication(listEndpointParams)
-    logDebug('listEndpointsByPlatformApplication =>', endpoints)
-    for (const endpoint of endpoints.Endpoints) {
-      const publishParams: PublishInput = {
-        Message: JSON.stringify({APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, key: 'value'})}),
-        MessageAttributes: {
-          'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
-          'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
-          // 'AWS.SNS.MOBILE.APNS.TOPIC': {DataType: 'String', StringValue: 'lifegames.Sandbox'}
-        },
-        MessageStructure: 'json',
-        TargetArn: endpoint.EndpointArn
-      }
-      logDebug('publishSnsEvent <=', publishParams)
-      const publishResponse = await publishSnsEvent(publishParams)
-      logDebug('publishSnsEvent <=', publishResponse)
-    }
-    return response(context, 204)
-  }
-}
-
 export async function startFileUpload(event): Promise<UploadPartEvent> {
   logInfo('event <=', event)
   try {
@@ -211,7 +180,7 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
     const videoUrl = myMetadata.formats[0].url
     const options: AxiosRequestConfig = {
       method: 'head',
-      timeout: 1000,
+      timeout: 900000,
       url: videoUrl
     }
 
@@ -251,6 +220,7 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
       url: videoUrl
     } as UploadPartEvent
   } catch (error) {
+    logError(`startFileUpload <= ${error.message}`)
     throw new Error(error)
   }
 }
@@ -367,12 +337,19 @@ export async function fileUploadWebhook(event: S3Event) {
     MessageStructure: 'json',
     TopicArn: process.env.PushNotificationTopicArn
   }
-  logDebug('publishSnsEvent <=', publishParams)
-  const publishResponse = await publishSnsEvent(publishParams)
-  logDebug('publishSnsEvent <=', publishResponse)
+  try {
+    logDebug('publishSnsEvent <=', publishParams)
+    const publishResponse = await publishSnsEvent(publishParams)
+    logDebug('publishSnsEvent <=', publishResponse)
+    return {messageId: publishResponse.MessageId}
+  } catch (error) {
+    throw new Error(error)
+  }
 }
 
 export async function handleClientEvent(event: APIGatewayEvent, context: Context) {
-  logDebug('event', event)
+  const deviceId = event.headers['x-device-uuid']
+  const message = event.body
+  logInfo('Event received', {deviceId, message})
   return response(context, 204)
 }
