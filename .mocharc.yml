@@ -1,0 +1,8 @@
+bail: true
+full-trace: true
+require:
+  - 'ts-node/register'
+  - 'source-map-support/register'
+extension:
+  - ts
+package: ./package.json

@@ -22,7 +22,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
 
 export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    for (const key of ['author', 'description', 'iurlmaxres', 'published', 'thumbnail_url', 'title']) {
+    for (const key of ['author', 'description', 'published', 'title']) {
         if (!myVideoInfo.hasOwnProperty(key)) {
             throw new Error(`myVideoInfo missing property ${key}`)
         }
