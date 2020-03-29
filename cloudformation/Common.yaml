@@ -17,5 +17,5 @@ Resources:
       AccessControl: PublicRead
       NotificationConfiguration:
         LambdaConfigurations:
-          - Event: s3:ObjectCreated:CompleteMultipartUpload
+          - Event: s3:ObjectCreated:*
             Function: !GetAtt FileUploadWebhook.Arn

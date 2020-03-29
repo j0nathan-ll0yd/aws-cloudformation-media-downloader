@@ -31,7 +31,6 @@ Resources:
       - MyAuthorizer
       - Feedly
       - MyApi
-      - IFTTTWebhookFeedlyModel
     Type: AWS::ApiGateway::Method
     Properties:
       ApiKeyRequired: false # because our DefaultAuthorizer requires the key
@@ -49,76 +48,6 @@ Resources:
       OperationName: PostFeedlyWebhook
       ResourceId: !Ref Feedly
       RestApiId: !Ref MyApi
-      RequestModels:
-        application/json: !Ref IFTTTWebhookFeedlyModel
-      # RequestValidatorId: !Ref IFTTTWebhookFeedlyMethodPostRequestValidator
-      MethodResponses:
-      - StatusCode: 400
-        ResponseModels:
-          application/json: !Ref IFTTTWebhookFeedlyBadRequest
-  IFTTTWebhookFeedlyBadRequest:
-    DependsOn:
-      - MyApi
-    Type: AWS::ApiGateway::Model
-    Properties:
-      ContentType: application/json
-      Description: A webhook from Feedly via IFTT
-      Name: IFTTTWebhookBadRequest
-      RestApiId: !Ref MyApi
-      Schema:
-        "$schema": "http://json-schema.org/draft-04/schema#"
-        type: object
-        required:
-          - ArticleURL
-        properties:
-          ArticleURL:
-            type: array
-            items:
-              type: string
-  IFTTTWebhookFeedlyModel:
-    DependsOn:
-      - MyApi
-    Type: AWS::ApiGateway::Model
-    Properties:
-      ContentType: application/json
-      Description: A webhook from Feedly via IFTT
-      Name: IFTTTWebhookFeedly
-      RestApiId: !Ref MyApi
-      Schema:
-        "$schema": "http://json-schema.org/draft-04/schema#"
-        type: object
-        title: A proper title
-        description: A property description
-        required:
-          - ArticleURL
-        minProperties: 1
-        maxProperties: 9
-        properties:
-          ArticleFirstImageURL:
-            type: string
-            format: uri
-          ArticleCategories:
-            type: string
-          ArticlePublishedAt:
-            type: string
-            format: date-time
-          ArticleTitle:
-            type: string
-          ArticleURL:
-            type: string
-            format: uri
-            description: The URL of the YouTube video to download
-          CreatedAt:
-            type: string
-            format: date-time
-          SourceFeedURL:
-            type: string
-            format: uri
-          SourceTitle:
-            type: string
-          SourceURL:
-            type: string
-            format: uri
   FeedlyWebhook:
     DependsOn:
       - S3Bucket
@@ -253,6 +182,8 @@ Resources:
             "StartUpload": {
               "Type" : "Task",
               "Resource": "${StartFileUpload.Arn}",
+              "TimeoutSeconds": 900,
+              "HeartbeatSeconds": 600,
               "Next": "UploadOrComplete"
             },
             "UploadPart": {

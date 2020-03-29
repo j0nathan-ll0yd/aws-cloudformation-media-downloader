@@ -7,7 +7,8 @@ import * as sinon from 'sinon'
 import {createMultipartUpload, listObjects} from '../src/lib/vendor/AWS/S3'
 import {createPlatformEndpoint} from '../src/lib/vendor/AWS/SNS'
 import {
-  completeFileUpload, dispatchNotification,
+  completeFileUpload,
+  fileUploadWebhook,
   handleAuthorization,
   handleDeviceRegistration,
   handleFeedlyEvent,
@@ -28,11 +29,11 @@ const expect = chai.expect
 describe('main', () => {
   const partSize = 1024 * 1024 * 5
   beforeEach(() => {
-    this.consoleLogStub = sinon.stub(console, 'log')
-    this.consoleInfoStub = sinon.stub(console, 'info')
-    this.consoleDebugStub = sinon.stub(console, 'debug')
-    this.consoleWarnStub = sinon.stub(console, 'warn')
-    this.consoleErrorStub = sinon.stub(console, 'error')
+  this.consoleLogStub = sinon.stub(console, 'log')
+  this.consoleInfoStub = sinon.stub(console, 'info')
+  this.consoleDebugStub = sinon.stub(console, 'debug')
+  this.consoleWarnStub = sinon.stub(console, 'warn')
+  this.consoleErrorStub = sinon.stub(console, 'error')
   })
   afterEach(() => {
     this.consoleLogStub.restore()
@@ -191,18 +192,22 @@ describe('main', () => {
   describe('#handleRegisterDevice', () => {
     const context = getFixture('handleRegisterDevice/Context.json')
     let createPlatformEndpointStub
+    let subscribeStub
     let event
     beforeEach(() => {
       createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
+      subscribeStub = sinon.stub(SNS, 'subscribe')
       event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
     })
     afterEach(() => {
       mock.resetHandlers()
       createPlatformEndpointStub.restore()
+      subscribeStub.restore()
       event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
     })
     it('should create a new remote endpoint (for the mobile phone)', async () => {
       createPlatformEndpointStub.returns(getFixture('createPlatformEndpoint-200-OK.json'))
+      subscribeStub.returns(getFixture('handleRegisterDevice/subscribe-200-OK.json'))
       const output = await handleDeviceRegistration(event, context)
       const body = JSON.parse(output.body)
       expect(output.statusCode).to.equal(201)
@@ -329,29 +334,24 @@ describe('main', () => {
       expect(listFiles(event, context)).to.be.rejectedWith(Error)
     })
   })
-  describe('#dispatchNotification', () => {
-    const event = getFixture('dispatchNotification/APIGatewayEvent.json')
-    const context = getFixture('dispatchNotification/Context.json')
-    let listPlatformApplicationsStub
-    let listEndpointsByPlatformApplicationStub
+  describe('#fileUploadWebhook', () => {
+    const event = getFixture('fileUploadWebhook/Event.json')
     let publishSnsEventStub
     beforeEach(() => {
-      listPlatformApplicationsStub = sinon.stub(SNS, 'listPlatformApplications')
-      listEndpointsByPlatformApplicationStub = sinon.stub(SNS, 'listEndpointsByPlatformApplication')
-      listPlatformApplicationsStub.returns(getFixture('dispatchNotification/listPlatformApplications-200-OK.json'))
-      listEndpointsByPlatformApplicationStub.returns(getFixture('dispatchNotification/listEndpointsByPlatformApplication-200-OK.json'))
       publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
     })
     afterEach(() => {
       mock.resetHandlers()
-      listPlatformApplicationsStub.restore()
-      listEndpointsByPlatformApplicationStub.restore()
       publishSnsEventStub.restore()
     })
-    it('should publish the event to all endpoints', async () => {
-      publishSnsEventStub.returns(getFixture('dispatchNotification/publishSnsEvent-200-OK.json'))
-      const output = await dispatchNotification(event, context)
-      expect(output.statusCode).to.equal(204)
+    it('should publish the event to the topic', async () => {
+      publishSnsEventStub.returns(getFixture('fileUploadWebhook/publishSnsEvent-200-OK.json'))
+      const output = await fileUploadWebhook(event)
+      expect(output).to.have.all.keys('messageId')
+    })
+    it('should handle an invalid parameter', async () => {
+      publishSnsEventStub.rejects('Error')
+      expect(fileUploadWebhook(event)).to.be.rejectedWith(Error)
     })
   })
 })

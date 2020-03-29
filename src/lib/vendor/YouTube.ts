@@ -1,18 +1,18 @@
-import * as ytdl from 'ytdl-core'
-import {videoInfo} from 'ytdl-core'
-import {logDebug} from '../../util/lambda-helpers'
+import {getInfo, videoInfo, chooseFormat} from 'ytdl-core'
+import {logDebug, logError} from '../../util/lambda-helpers'
 
 export async function fetchVideoInfo(uri): Promise<videoInfo> {
+  logDebug('fetchVideoInfo =>')
   try {
-    logDebug("fetchVideoInfo =>")
-    const data = await ytdl.getInfo(uri)
-    logDebug("fetchVideoInfo <=")
-    return data
+    const info = await getInfo(uri)
+    logDebug('fetchVideoInfo <=')
+    return info
   } catch (error) {
-    throw new Error(error)
+    logError(`fetchVideoInfo <= ${error.message}`)
+    throw new Error(error.message)
   }
 }
 
-export function chooseFormat(info, options) {
-  return ytdl.chooseFormat(info.formats, options)
+export function chooseVideoFormat(info, options) {
+  return chooseFormat(info.formats, options)
 }

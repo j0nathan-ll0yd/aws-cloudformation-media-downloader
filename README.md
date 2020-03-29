@@ -133,6 +133,7 @@ npm run test-remote-registerDevice
 * TODO: Cleanup Cloudformation Templates (removing documentation)
 * TODO: Send push notification when new file is ready
 * TODO: Add lambda alarms in case errors are experienced
+* TODO: Replace ytdl-core with https://www.npmjs.com/package/youtube-dl
 
 ## NICE TODOS
 
@@ -141,6 +142,7 @@ npm run test-remote-registerDevice
 * Automatic generation of JSON fixtures :mind_blown:
 * Use AWS EventBridge for EventSourcing
 * Investigate `throw` vs. proper JSON response from API Gateway and non-API Gateway methods
+* Add logging for SNS notifications: https://stackoverflow.com/questions/59053854/enable-sns-delivery-status-logging-configuration-in-cloudformation
 
 ## CloudFormation Naming Conventions
 

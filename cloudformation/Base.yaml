@@ -6,6 +6,8 @@ Globals:
   Function:
     Runtime: nodejs10.x
     Timeout: 300
+    MemorySize: 512
+
 
 # Values to pass to your template at runtime (when you create or update a stack).
 Parameters:

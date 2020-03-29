@@ -1,8 +1,7 @@
 import * as AWS from 'aws-sdk'
 import {
   CreateEndpointResponse,
-  CreatePlatformEndpointInput, ListEndpointsByPlatformApplicationInput, ListEndpointsByPlatformApplicationResponse,
-  ListPlatformApplicationsInput, ListPlatformApplicationsResponse,
+  CreatePlatformEndpointInput,
   PublishInput,
   PublishResponse, SubscribeInput, SubscribeResponse
 } from 'aws-sdk/clients/sns'
@@ -24,30 +23,6 @@ export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> 
 export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
   return new Promise((resolve, reject) => {
     sns.subscribe(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
-}
-
-export function listPlatformApplications(params: ListPlatformApplicationsInput): Promise<ListPlatformApplicationsResponse> {
-  return new Promise((resolve, reject) => {
-    sns.listPlatformApplications(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
-}
-
-export function listEndpointsByPlatformApplication(params: ListEndpointsByPlatformApplicationInput): Promise<ListEndpointsByPlatformApplicationResponse> {
-  return new Promise((resolve, reject) => {
-    sns.listEndpointsByPlatformApplication(params, (error, data) => {
       if (error) {
         reject(error)
       } else {
