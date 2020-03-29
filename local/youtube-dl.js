@@ -1,5 +1,11 @@
-
-let title = 'The next outbreak? We’re not ready | Bill Gates'
-console.log(title)
-const escapedTitle = title.replace(/[\(\)\@\,\;\:\"\/\[\]\\\?\=\{\}\’]/g, '')
-console.log(escapedTitle)
+var ytdl = require('ytdl-core');
+//var url = 'http://www.youtube.com/watch?v=K1HTMYxjF5Y';
+//var url = 'http://www.youtube.com/watch?v=WKsjaOqDXgg';
+var url = 'https://www.youtube.com/watch?v=x8VgBfsRvsc';
+var options = {};
+ytdl.getInfo(url, options, function(err, info) {
+    if (err) throw err;
+    // var format = ytdl.chooseFormat(info.formats, {quality: '22'});
+    //console.log(JSON.stringify(format));
+    console.log(JSON.stringify(info));
+});
