@@ -9,6 +9,7 @@
     "check-types": "tsc",
     "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js npm run test",
     "build": "./node_modules/@babel/cli/bin/babel.js src --out-dir dist --extensions '.ts'",
+    "install-prod": "npm install --only=production",
     "test": "AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "test-remote-list": "./bin/test-list.sh",
     "test-local-list": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"ListFiles\"",
