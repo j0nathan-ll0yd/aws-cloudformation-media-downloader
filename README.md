@@ -4,7 +4,7 @@ A media downloader designed to integrate with [it's companion iOS App](https://g
 
 ## Background
 
-When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released they announced "exclusive original content, access to audio-only versions of videos and offline playback on your mobile device." I wasn't interested in the content, but I was excited about offline playback due to poor connectivity when commuting via the [MUNI](https://www.sfmta.com/). However, there was a monthly fee of $11.99.
+When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released they announced "exclusive original content, access to audio-only versions of videos and offline playback on your mobile device." I wasn't interested in the content, but I was excited about offline playback due to poor connectivity when commuting via the [MUNI](https://www.sfmta.com/). _Buuuuuuut_, there was a monthly fee of $11.99.
 
 So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportunity to build my own media downloader service, experiment with the latest AWS features, along with a [companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader) using SwiftUI and Combine.
 
@@ -28,9 +28,13 @@ I share this for any engineer to be able to build a basic backend and iOS App fo
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ```bash
-nvm use 10.16.3
+nvm use lts/erbium
 npm install --prod=only
 npm run build
+
+# edit the stack.name for CloudFormation
+# this must be unique across all of AWS
+vi cfpack.config.js
 
 # deploy the cloudformation template and associated code
 npm run deploy-node-modules
