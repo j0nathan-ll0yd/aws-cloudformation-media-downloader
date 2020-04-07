@@ -1,6 +1,4 @@
 var ytdl = require('ytdl-core');
-//var url = 'http://www.youtube.com/watch?v=K1HTMYxjF5Y';
-//var url = 'http://www.youtube.com/watch?v=WKsjaOqDXgg';
 var url = 'https://www.youtube.com/watch?v=x8VgBfsRvsc';
 var options = {};
 ytdl.getInfo(url, options, function(err, info) {
