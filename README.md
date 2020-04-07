@@ -1,12 +1,27 @@
-# YouTube Black
+# Media Downloader
 
-An AWS Serverless project for downloading YouTube videos (via Feedly).
+A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [AWS CloudFormation](https://aws.amazon.com/cloudformation/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Background
 
-When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released I was excited that I could download YouTube videos to my phone for offline use when commuting via the subway ([MUNI](https://www.sfmta.com/)). However, there was a monthly fee of $11.99 that, for me, wasn't justifiable. So, [as an engineer](https://www.linkedin.com/in/lifegames), I decided to use this opportunity to build my own version of YouTube Premium using [AWS Serverless](https://aws.amazon.com/serverless/). I dubbed it YouTube Black.
+When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released they announced "exclusive original content, access to audio-only versions of videos and offline playback on your mobile device." I wasn't interested in the content, but I was excited about offline playback due to poor connectivity when commuting via the [MUNI](https://www.sfmta.com/). However, there was a monthly fee of $11.99.
 
-This repository is the source code, cloud formation template, deployment scripts, and documentation that supports **YouTube Black**.
+So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportunity to build my own media downloader service, experiment with the latest AWS features, along with a [companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader) using SwiftUI and Combine.
+
+The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, CloudFormation templates, deployment scripts, documentation and tests that power the App's backend. This includes:
+
+* The ability to download videos and have them stored to an S3 bucket.
+* The ability to view downloaded videos (via API).
+* The ability to register for and dispatch push notifications to the mobile App.
+* It also has a custom authorizer Lambda function that supports query-based API tokens. This was needed for integration with Feedly.
+
+I share this for any engineer to be able to build a basic backend and iOS App for a future pet project or idea.
+
+## Project Tenants
+
+* The costs per month should be less than $12.
+* Minimize external dependencies.
+* [Convention over configuration](https://en.wikipedia.org/wiki/Convention_over_configuration). Minimize code, leverage AWS services.
 
 ## Getting Started
 
@@ -28,18 +43,14 @@ npm run test-local-hook
 
 This will deploy the CloudFormation stack to AWS.
 
-## Implementation
-
-
-
 ## Installation
 
 * Install the [Node Version Manager](https://github.com/creationix/nvm). This will allow you to download the specific version of NodeJS supported by AWS Lambda (8.10).
 
 ```bash
 brew install nvm
-nvm install 10.16.3
-nvm use 10.16.3
+nvm install lts/erbium
+nvm use lts/erbium
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
@@ -125,21 +136,3 @@ Remotely test the register device method for registering for push notifications 
 ```bash
 npm run test-remote-registerDevice
 ```
-
-## PRODUCTION TODOS
-
-* TODO: Rename CloudFormation Resources
-* TODO: Rename Function Names
-* TODO: Add lambda alarms in case errors are experienced
-
-## NICE TODOS
-
-* Service Maps
-* CloudWatch Alarm that posts an issue to Github
-* Automatic generation of JSON fixtures :mind_blown:
-* Use AWS EventBridge for EventSourcing
-
-## CloudFormation Naming Conventions
-
-* https://serverless.com/framework/docs/providers/aws/guide/resources/
-* Names must begin with a letter; contain only ASCII letters, digits, and hyphens; and not end with a hyphen or contain two consecutive hyphens.
