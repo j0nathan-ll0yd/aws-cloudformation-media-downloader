@@ -4,7 +4,7 @@ module.exports = {
   verbose: true, // whether or not to display additional details
   silent: false, // whether or not to prevent output from being displayed in stdout
   stack: {
-    name: "your-stack-name",
+    name: "lifegames-media-downloader",
     region: "us-west-2",
     params: {
       Capabilities: ['CAPABILITY_AUTO_EXPAND', 'CAPABILITY_IAM'],

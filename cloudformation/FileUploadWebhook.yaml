@@ -24,7 +24,7 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
-      SourceArn: !Sub arn:aws:s3:::lifegames-sandbox-testbucket
+      SourceArn: !Sub arn:aws:s3:::lifegames-media-downloader-files
       FunctionName: !Ref FileUploadWebhook
   PushNotificationTopic:
     Type: AWS::SNS::Topic
