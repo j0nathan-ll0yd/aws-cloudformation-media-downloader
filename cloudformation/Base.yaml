@@ -17,16 +17,3 @@ Parameters:
     Type: String
   CodeKey:
     Type: String
-
-Outputs:
-  ApiUrl:
-    Description: URL of the Prod stage of the API endpoint
-    Value: !Sub "https://lifegames-app.execute-api.${AWS::Region}.amazonaws.com/Prod"
-  FeedlyWebhookArn:
-    Description: The ARN of the feedly webhook
-    Value: !GetAtt FeedlyWebhook.Arn
-  LayerARN:
-    Description: The ARN for that Layer
-    Value: !Ref NodeModulesLayer
-    Export:
-      Name: !Sub "${AWS::StackName}-LayerARN"

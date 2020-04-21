@@ -13,7 +13,7 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: lifegames-sandbox-testbucket
+      BucketName: lifegames-media-downloader-files
       AccessControl: PublicRead
       NotificationConfiguration:
         LambdaConfigurations:

@@ -23,9 +23,8 @@ if [ ! -d "$artifact_dir" ]; then
 fi
 
 # Extract the project name from the package.json file
-export STACK_NAME=`cat ${package_path} | jq -r '.name'`
+export STACK_NAME=`node -e 'console.log(require("./cfpack.config.js").stack.name)'`
 echo "Preparing to deploy ${STACK_NAME}"
-
 echo "Preparing the S3 bucket for artifacts"
 export AWS_REGION=$(aws configure get region) # us-west-2
 echo "Getting AWS Account ID"

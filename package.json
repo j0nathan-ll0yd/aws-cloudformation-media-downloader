@@ -1,5 +1,5 @@
 {
-  "name": "lifegames-sandbox",
+  "name": "aws-cloudformation-media-downloader",
   "version": "1.0.0",
   "engines": {
     "node": "10.16.3",
@@ -33,7 +33,7 @@
     "only": "0.0.2",
     "urlsafe-base64": "^1.0.0",
     "validate.js": "^0.13.1",
-    "ytdl-core": "^2.0.1"
+    "ytdl-core": "^2.1.0"
   },
   "bundleDependencies": [],
   "devDependencies": {

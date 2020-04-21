@@ -1,7 +1,6 @@
 Resources:
   RegisterDevice:
     DependsOn:
-      - S3Bucket
       - PushNotificationTopic
     Type: AWS::Serverless::Function
     Properties:
