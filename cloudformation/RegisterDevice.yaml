@@ -11,7 +11,7 @@ Resources:
       Description:  A lambda function that registers a device.
       Environment:
         Variables:
-          PlatformApplicationArn: 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+          PlatformApplicationArn: 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/OfflineMediaDownloader'
           PushNotificationTopicArn: !Ref PushNotificationTopic
       Layers:
         - !Ref NodeModulesLayer
@@ -22,7 +22,7 @@ Resources:
                 - sns:CreatePlatformEndpoint
                 - sns:Subscribe
               Resource:
-                - 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox'
+                - 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/OfflineMediaDownloader'
                 - !Ref PushNotificationTopic
       Tracing: Active
   RegisterDeviceResource:
