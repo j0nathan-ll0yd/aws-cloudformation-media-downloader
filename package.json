@@ -30,6 +30,7 @@
     "aws-xray-sdk": "^2.5.0",
     "axios": "^0.19.2",
     "clear-require": "^3.0.0",
+    "https-proxy-agent": "^5.0.0",
     "only": "0.0.2",
     "urlsafe-base64": "^1.0.0",
     "validate.js": "^0.13.1",
