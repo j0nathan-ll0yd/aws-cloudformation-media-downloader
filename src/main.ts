@@ -6,10 +6,11 @@ import {validate} from 'validate.js'
 import {videoInfo} from 'ytdl-core'
 import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
+import {scan, updateItem} from './lib/vendor/AWS/DynamoDB'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
 import {createPlatformEndpoint, publishSnsEvent, subscribe} from './lib/vendor/AWS/SNS'
 import {startExecution} from './lib/vendor/AWS/StepFunctions'
-import {fetchVideoInfo} from './lib/vendor/YouTube'
+import {fetchVideoInfo, getVideoID} from './lib/vendor/YouTube'
 import {
   CompleteFileUploadEvent,
   DeviceRegistration,
@@ -21,6 +22,7 @@ import {ScheduledEvent} from './types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {Webhook} from './types/vendor/IFTTT/Feedly/Webhook'
 import {generateAllow, generateDeny} from './util/apigateway-helpers'
 import {feedlyEventConstraints, registerDeviceConstraints} from './util/constraints'
+import {newItemParams, scanForItemParams, updateCompletedItemParams} from './util/dynamodb-helpers'
 import {logDebug, logError, logInfo, response} from './util/lambda-helpers'
 import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
 
@@ -101,15 +103,16 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
   }
   try {
     const body = (requestBody as Webhook)
-    const params: StartExecutionInput = {
-      input: JSON.stringify({fileUrl: body.articleURL}),
-      name: (new Date()).getTime().toString(),
-      stateMachineArn: process.env.StateMachineArn
+    const fileId = await getVideoID(body.articleURL)
+    const updateItemParams = newItemParams(process.env.DynamoDBTable, fileId)
+    logDebug('updateItem <=', updateItemParams)
+    const updateItemResponse = await updateItem(updateItemParams)
+    logDebug('updateItem =>', updateItemResponse)
+    if (updateItemResponse.Attributes && updateItemResponse.Attributes.hasOwnProperty('fileName')) {
+      return response(context, 204)
+    } else {
+      return response(context, 202, {status: 'Accepted'})
     }
-    logDebug('startExecution <=', params)
-    const data = await startExecution(params)
-    logDebug('startExecution =>', data)
-    return response(context, 202, {status: 'ExecutionStarted'})
   } catch (error) {
     return response(context, 500, error.message)
   }
@@ -136,7 +139,7 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
   const subscribeParams = {
     Endpoint: createPlatformEndpointResponse.EndpointArn,
     Protocol: 'application',
-    TopicArn: process.env.PushNotificationTopicArn,
+    TopicArn: process.env.PushNotificationTopicArn
   }
   logDebug('subscribe <=', subscribeParams)
   const subscribeResponse = await subscribe(subscribeParams)
@@ -169,9 +172,10 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
 
 export async function startFileUpload(event): Promise<UploadPartEvent> {
   logInfo('event <=', event)
+  const fileId = event.fileId.S
+  const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
   try {
-    const {fileUrl} = event
-    logDebug('fetchVideoInfo <=', fileUrl)
+    logDebug('fetchVideoInfo <=', fileId)
     const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
     logDebug('fetchVideoInfo =>', myVideoInfo)
     const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
@@ -210,6 +214,7 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
       bucket,
       bytesRemaining: bytesTotal,
       bytesTotal,
+      fileId,
       key,
       partBeg: 0,
       partEnd: newPartEnd - 1,
@@ -228,7 +233,7 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
 export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFileUploadEvent | UploadPartEvent> {
   logInfo('event <=', event)
   try {
-    const {bucket, bytesRemaining, bytesTotal, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url} = event
+    const {bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url} = event
     const options: AxiosRequestConfig = {
       headers: {Range: `bytes=${partBeg}-${partEnd}`},
       method: 'get',
@@ -261,6 +266,7 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       bucket,
       bytesRemaining: newBytesRemaining,
       bytesTotal,
+      fileId,
       key,
       partBeg: partEnd + 1,
       partEnd: newPartEnd,
@@ -274,6 +280,7 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       const finalPart = {
         bucket,
         bytesRemaining: 0,
+        fileId,
         key,
         partTags,
         uploadId
@@ -292,7 +299,7 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
 export async function completeFileUpload(event: CompleteFileUploadEvent) {
   logDebug('event', event)
   try {
-    const {bucket, key, partTags, uploadId} = event
+    const {bucket, fileId, key, partTags, uploadId} = event
     const params: CompleteMultipartUploadRequest = {
       Bucket: bucket,
       Key: key,
@@ -302,6 +309,12 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
     logInfo('completeMultipartUpload <=', params)
     const data = await completeMultipartUpload(params)
     logInfo('completeMultipartUpload =>', data)
+
+    const updateItemParams = updateCompletedItemParams(process.env.DynamoDBTable, fileId, key)
+    logDebug('updateItem <=', updateItemParams)
+    const updateItemResponse = await updateItem(updateItemParams)
+    logDebug('updateItem =>', updateItemResponse)
+
     return data
   } catch (error) {
     throw new Error(error)
@@ -352,4 +365,24 @@ export async function handleClientEvent(event: APIGatewayEvent, context: Context
   const message = event.body
   logInfo('Event received', {deviceId, message})
   return response(context, 204)
+}
+
+export async function schedulerFileCoordinator(event: APIGatewayEvent, context: Context) {
+  logInfo('event', event)
+  logInfo('context', context)
+  const scanParams = scanForItemParams(process.env.DynamoDBTable)
+  logDebug('scan <=', scanParams)
+  const scanResponse = await scan(scanParams)
+  logDebug('scan =>', scanResponse)
+  for (const item of scanResponse.Items) {
+    const params = {
+      input: JSON.stringify({fileId: item.fileId}),
+      name: (new Date()).getTime().toString(),
+      stateMachineArn: process.env.StateMachineArn
+    }
+    logDebug('startExecution <=', params)
+    const output = await startExecution(params)
+    logDebug('startExecution =>', output)
+  }
+  return response(context, 200)
 }

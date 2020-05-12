@@ -50,8 +50,7 @@ Resources:
       RestApiId: !Ref MyApi
   FeedlyWebhook:
     DependsOn:
-      - S3Bucket
-      - MyStateMachine
+      - DynamoFileTable
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -61,16 +60,14 @@ Resources:
       Description:  A webhook from Feedly via IFTTT
       Environment:
         Variables:
-          StateMachineArn: !Ref MyStateMachine
+          DynamoDBTable: !Ref DynamoFileTable
       Layers:
         - !Ref NodeModulesLayer
       Policies:
         - Statement:
-            - Effect: Allow
-              Action:
-                - 'states:StartExecution'
-              Resource:
-                - !Ref MyStateMachine
+          - Effect: Allow
+            Action: 'dynamodb:UpdateItem'
+            Resource: !GetAtt DynamoFileTable.Arn
       Tracing: Active
   StatesExecutionRole:
     Type: AWS::IAM::Role
@@ -111,6 +108,7 @@ Resources:
 
   StartFileUpload:
     DependsOn:
+      - DynamoFileTable
       - S3Bucket
     Type: AWS::Serverless::Function
     Properties:
@@ -122,11 +120,16 @@ Resources:
       Environment:
         Variables:
           Bucket: !Ref S3Bucket
+          DynamoDBTable: !Ref DynamoFileTable
       Layers:
         - !Ref NodeModulesLayer
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3Bucket
+        - Statement:
+          - Effect: Allow
+            Action: 'dynamodb:UpdateItem'
+            Resource: !GetAtt DynamoFileTable.Arn
       Timeout: 900
       Tracing: Active
 
@@ -157,11 +160,18 @@ Resources:
         Key: !Ref CodeKey
       Handler: dist/main.completeFileUpload
       Description:  The function that completes the multipart upload.
+      Environment:
+        Variables:
+          DynamoDBTable: !Ref DynamoFileTable
       Layers:
         - !Ref NodeModulesLayer
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3Bucket
+        - Statement:
+          - Effect: Allow
+            Action: 'dynamodb:UpdateItem'
+            Resource: !GetAtt DynamoFileTable.Arn
       Tracing: Active
   MyStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
@@ -219,3 +229,16 @@ Resources:
               LogGroupArn: !GetAtt MyStateMachineLogGroup.Arn
         IncludeExecutionData: FALSE
         Level: ALL
+  DynamoFileTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: fileId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fileId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Files
