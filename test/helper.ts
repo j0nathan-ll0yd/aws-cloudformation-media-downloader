@@ -30,8 +30,9 @@ export function mockIterationsOfUploadPart(bytesTotal, partSize) {
         let bytesRemaining = bytesTotal
         let partEnd = Math.min(partSize, bytesTotal) - 1
         let partBeg = 0
+        let fileId = 'yqm2cswg5ozl'
         while (bytesRemaining > 0) {
-            const event = {bucket, bytesRemaining, bytesTotal, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url}
+            const event = {bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url}
             const output = await uploadFilePart(event)
             responses.push(output)
             if (output.bytesRemaining > 0) {

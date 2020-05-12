@@ -12,10 +12,11 @@ import {
   handleAuthorization,
   handleDeviceRegistration,
   handleFeedlyEvent,
-  listFiles,
+  listFiles, schedulerFileCoordinator,
   startFileUpload
 } from '../src/main'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
+import * as DynamoDB from './../src/lib/vendor/AWS/DynamoDB'
 import * as S3 from './../src/lib/vendor/AWS/S3'
 import * as SNS from './../src/lib/vendor/AWS/SNS'
 import * as StepFunctions from './../src/lib/vendor/AWS/StepFunctions'
@@ -135,37 +136,32 @@ describe('main', () => {
   describe('#handleFeedlyEvent', () => {
     const context = getFixture('handleFeedlyEvent/Context.json')
     let event
-    let startExecutionStub
+    let updateItemStub
     beforeEach(() => {
       event = getFixture('handleFeedlyEvent/APIGatewayEvent.json')
-      startExecutionStub = sinon.stub(StepFunctions, 'startExecution')
+      updateItemStub = sinon.stub(DynamoDB, 'updateItem')
     })
     afterEach(() => {
       mock.resetHandlers()
       event = getFixture('handleFeedlyEvent/APIGatewayEvent.json')
-      startExecutionStub.restore()
+      updateItemStub.restore()
     })
     it('should handle a feedly event', async () => {
-      event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
-      startExecutionStub.returns(getFixture('startExecution-200-OK.json'))
+      event.body = JSON.stringify(getFixture('handleFeedlyEvent/handleFeedlyEvent-200-OK.json'))
+      updateItemStub.returns(getFixture('handleFeedlyEvent/updateItem-202-Accepted.json'))
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(202)
       const body = JSON.parse(output.body)
-      expect(body.body.status).to.equal('ExecutionStarted')
-    })
-    it('should handle a CloudWatch scheduled event', async () => {
-      event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
-      const output = await handleFeedlyEvent(event, context)
-      expect(output.statusCode).to.equal(200)
+      expect(body.body.status).to.equal('Accepted')
     })
     it('should fail gracefully if the startExecution fails', async () => {
-      event.body = JSON.stringify(getFixture('handleFeedlyEvent-200-OK.json'))
-      startExecutionStub.rejects('Error')
+      event.body = JSON.stringify(getFixture('handleFeedlyEvent/handleFeedlyEvent-200-OK.json'))
+      updateItemStub.rejects('Error')
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(500)
     })
     it('should handle an invalid request body', async () => {
-      event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-MissingRequired.json'))
+      event.body = JSON.stringify(getFixture('handleFeedlyEvent/handleFeedlyEvent-400-MissingRequired.json'))
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
@@ -181,7 +177,7 @@ describe('main', () => {
       expect(body.error.message).to.equal('Request body must be valid JSON')
     })
     it('should handle an invalid (non-YouTube) URL', async () => {
-      event.body = JSON.stringify(getFixture('handleFeedlyEvent-400-InvalidURL.json'))
+      event.body = JSON.stringify(getFixture('handleFeedlyEvent/handleFeedlyEvent-400-InvalidURL.json'))
       const output = await handleFeedlyEvent(event, context)
       expect(output.statusCode).to.equal(400)
       const body = JSON.parse(output.body)
@@ -212,11 +208,6 @@ describe('main', () => {
       const body = JSON.parse(output.body)
       expect(output.statusCode).to.equal(201)
       expect(body.body).to.have.property('endpointArn')
-    })
-    it('should handle a CloudWatch scheduled event', async () => {
-      event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
-      const output = await handleDeviceRegistration(event, context)
-      expect(output.statusCode).to.equal(200)
     })
     it('should handle an invalid request (no token)', async () => {
       event.body = null
@@ -274,14 +265,19 @@ describe('main', () => {
   describe('#completeFileUpload', () => {
     const event = getFixture('completeFileUpload-200-OK.json')
     const completeMultipartUploadResponse = getFixture('completeMultipartUpload-200-OK.json')
+    const updateItemResponse = getFixture('updateItem-200-OK.json')
     let completeMultipartUploadStub
+    let updateItemStub
     beforeEach(() => {
       completeMultipartUploadStub = sinon.stub(S3, 'completeMultipartUpload')
+      updateItemStub = sinon.stub(DynamoDB, 'updateItem')
     })
     afterEach(() => {
       completeMultipartUploadStub.restore()
+      updateItemStub.restore()
     })
     it('should successfully handle a multipart upload', async () => {
+      updateItemStub.returns(updateItemResponse)
       completeMultipartUploadStub.returns(completeMultipartUploadResponse)
       const output = await completeFileUpload(event)
       expect(output).to.have.all.keys('Location', 'Bucket', 'Key', 'ETag')
@@ -316,11 +312,6 @@ describe('main', () => {
       expect(body.body.keyCount).to.equal(1)
       expect(body.body.contents[0]).to.have.property('fileUrl').that.is.a('string')
     })
-    it('should handle a CloudWatch scheduled event', async () => {
-      event = getFixture('handleFeedlyEvent/CloudWatchEventRuleEvent.json')
-      const output = await listFiles(event, context)
-      expect(output.statusCode).to.equal(200)
-    })
     it('should gracefully handle an empty list', async () => {
       listObjectsStub.returns(getFixture('listObjects-200-Empty.json'))
       const output = await listFiles(event, context)
@@ -352,6 +343,36 @@ describe('main', () => {
     it('should handle an invalid parameter', async () => {
       publishSnsEventStub.rejects('Error')
       expect(fileUploadWebhook(event)).to.be.rejectedWith(Error)
+    })
+  })
+  describe('#schedulerFileCoordinator', () => {
+    process.env.DynamoDBTable = 'Files' // set in the cloudformation file
+    const context = getFixture('schedulerFileCoordinator/Context.json')
+    const event = getFixture('schedulerFileCoordinator/APIGatewayEvent.json')
+    let scanStub
+    let startExecutionStub
+    beforeEach(() => {
+      scanStub = sinon.stub(DynamoDB, 'scan')
+      startExecutionStub = sinon.stub(StepFunctions, 'startExecution')
+    })
+    afterEach(() => {
+      mock.resetHandlers()
+      scanStub.restore()
+      startExecutionStub.restore()
+    })
+    it('should handle scheduled event (with no events)', async () => {
+      scanStub.returns(getFixture('schedulerFileCoordinator/scan-204-NoContent.json'))
+      startExecutionStub.returns(getFixture('schedulerFileCoordinator/startExecution-200-OK.json'))
+      const output = await schedulerFileCoordinator(event, context)
+      expect(output.statusCode).to.equal(200)
+      expect(startExecutionStub.callCount).to.equal(0)
+    })
+    it('should handle scheduled event (with 1 event)', async () => {
+      scanStub.returns(getFixture('schedulerFileCoordinator/scan-200-OK.json'))
+      startExecutionStub.returns(getFixture('schedulerFileCoordinator/startExecution-200-OK.json'))
+      const output = await schedulerFileCoordinator(event, context)
+      expect(output.statusCode).to.equal(200)
+      expect(startExecutionStub.callCount).to.equal(1)
     })
   })
 })

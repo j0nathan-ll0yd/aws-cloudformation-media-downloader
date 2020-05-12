@@ -1,0 +1,13 @@
+{
+  "version": "0",
+  "id": "bd260287-451f-483c-9ac3-83e7963ae5ac",
+  "detail-type": "Scheduled Event",
+  "source": "aws.events",
+  "account": "203465012143",
+  "time": "2020-05-12T02:06:58Z",
+  "region": "us-west-2",
+  "resources": [
+    "arn:aws:events:us-west-2:203465012143:rule/lifegames-media-downloade-FileCoordinatorScheduled-1VH0X1SL4DH3N"
+  ],
+  "detail": {}
+}

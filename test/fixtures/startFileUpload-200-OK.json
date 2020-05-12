@@ -1,10 +1,5 @@
 {
-  "bucket": "lifegames-fileviewer-s3bucket-yqm2cswg5ozl",
-  "bytesTotal": 82784319,
-  "contentType": "video/mp4",
-  "key": "20191107-[sxephil]-WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More.mp4",
-  "metaData": {
-    "title": "WOW! Youtube's New Adpocalypse Fight, Chris Evans, Continued Whistleblower Fallout Explained, & More"
-  },
-  "url": "https://r3---sn-nx5s7n76.googlevideo.com/videoplayback?expire=1575158543&ei=r67iXdu2GJXJkgbvvKDoCw&ip=54.244.218.241&id=o-AFZ2kU9Wf8BrP28c7tlJMII_GQ7mZHDbdfAJfnpNOyAE&itag=22&source=youtube&requiressl=yes&mm=31%2C26&mn=sn-nx5s7n76%2Csn-a5mekner&ms=au%2Conr&mv=m&mvi=2&pl=20&initcwndbps=895000&mime=video%2Fmp4&ratebypass=yes&dur=1421.270&lmt=1573302485521840&mt=1575136819&fvip=3&fexp=23842630&c=WEB&txp=6535432&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cmime%2Cratebypass%2Cdur%2Clmt&sig=ALgxI2wwRgIhAOOtRrZMtaqSdk3HztJGuySTUlQa8GR1cPFexg1aHGamAiEA-tqRfzkVR7UQ8sX4v_AKsy7nfVuxCKG1gU0d5FaIUaU%3D&lsparams=mm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AHylml4wRgIhAIJYgCHYKNcVlrsexGosUnlMOLAJM9w3f3OQjDHBKFxrAiEA4hebu_RxlsZ6DEYJk1a4Wd0EGIc2X397c5BT0-4IrqQ%3D"
+  "fileId": {
+    "S": "YcuKhcqzt7w"
+  }
 }
