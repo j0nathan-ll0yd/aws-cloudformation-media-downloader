@@ -1,12 +1,12 @@
 import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult, S3Event} from 'aws-lambda'
 import {PublishInput} from 'aws-sdk/clients/sns'
-import {StartExecutionInput} from 'aws-sdk/clients/stepfunctions'
 import axios, {AxiosRequestConfig} from 'axios'
+import * as querystring from 'querystring'
 import {validate} from 'validate.js'
 import {videoInfo} from 'ytdl-core'
 import {CompleteMultipartUploadRequest, UploadPartRequest} from '../node_modules/aws-sdk/clients/s3'
 import {getApiKeys, getUsage, getUsagePlans} from './lib/vendor/AWS/ApiGateway'
-import {scan, updateItem} from './lib/vendor/AWS/DynamoDB'
+import {putItem, scan, updateItem} from './lib/vendor/AWS/DynamoDB'
 import {completeMultipartUpload, createMultipartUpload, listObjects, uploadPart} from './lib/vendor/AWS/S3'
 import {createPlatformEndpoint, publishSnsEvent, subscribe} from './lib/vendor/AWS/SNS'
 import {startExecution} from './lib/vendor/AWS/StepFunctions'
@@ -16,18 +16,20 @@ import {
   DeviceRegistration,
   ExtendedS3Object,
   Metadata,
-  UploadPartEvent
+  UploadPartEvent, UserRegistration
 } from './types/main'
 import {ScheduledEvent} from './types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {Webhook} from './types/vendor/IFTTT/Feedly/Webhook'
 import {generateAllow, generateDeny} from './util/apigateway-helpers'
-import {feedlyEventConstraints, registerDeviceConstraints} from './util/constraints'
-import {newItemParams, scanForItemParams, updateCompletedItemParams} from './util/dynamodb-helpers'
+import {feedlyEventConstraints, registerDeviceConstraints, registerUserConstraints} from './util/constraints'
+import {newFileParams, newUserParams, scanForFileParams, updateCompletedFileParams} from './util/dynamodb-helpers'
 import {logDebug, logError, logInfo, response} from './util/lambda-helpers'
+import {createAccessToken, getSignInWithAppleClientSecret, getSignInWithAppleConfig, verifyAppleToken} from './util/secretsmanager-helpers'
 import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
+import { v4 as uuidv4 } from 'uuid'
 
 function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {
-  let requestBody: Webhook | DeviceRegistration
+  let requestBody: Webhook | DeviceRegistration | UserRegistration
   if ('source' in event && event.source === 'aws.events') {
     return {statusCode: 200, message: {status: 'OK'}}
   } else if ('body' in event) {
@@ -104,7 +106,7 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
   try {
     const body = (requestBody as Webhook)
     const fileId = await getVideoID(body.articleURL)
-    const updateItemParams = newItemParams(process.env.DynamoDBTable, fileId)
+    const updateItemParams = newFileParams(process.env.DynamoDBTable, fileId)
     logDebug('updateItem <=', updateItemParams)
     const updateItemResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateItemResponse)
@@ -172,7 +174,7 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
 
 export async function startFileUpload(event): Promise<UploadPartEvent> {
   logInfo('event <=', event)
-  const fileId = event.fileId.S
+  const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
   try {
     logDebug('fetchVideoInfo <=', fileId)
@@ -310,7 +312,7 @@ export async function completeFileUpload(event: CompleteFileUploadEvent) {
     const data = await completeMultipartUpload(params)
     logInfo('completeMultipartUpload =>', data)
 
-    const updateItemParams = updateCompletedItemParams(process.env.DynamoDBTable, fileId, key)
+    const updateItemParams = updateCompletedFileParams(process.env.DynamoDBTable, fileId, key)
     logDebug('updateItem <=', updateItemParams)
     const updateItemResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateItemResponse)
@@ -370,7 +372,7 @@ export async function handleClientEvent(event: APIGatewayEvent, context: Context
 export async function schedulerFileCoordinator(event: APIGatewayEvent, context: Context) {
   logInfo('event', event)
   logInfo('context', context)
-  const scanParams = scanForItemParams(process.env.DynamoDBTable)
+  const scanParams = scanForFileParams(process.env.DynamoDBTable)
   logDebug('scan <=', scanParams)
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)
@@ -385,4 +387,71 @@ export async function schedulerFileCoordinator(event: APIGatewayEvent, context: 
     logDebug('startExecution =>', output)
   }
   return response(context, 200)
+}
+
+export async function handleRegisterUser(event: APIGatewayEvent, context: Context) {
+  logInfo('event <=', event)
+  const {requestBody, statusCode, message} = processEventAndValidate(event, registerUserConstraints)
+  if (statusCode && message) {
+    return response(context, statusCode, message)
+  }
+  const body = (requestBody as UserRegistration)
+  logDebug('getSignInWithAppleClientSecret')
+  const clientSecret = await getSignInWithAppleClientSecret()
+  logDebug('getSignInWithAppleConfig')
+  const config = await getSignInWithAppleConfig()
+  const requestData = {
+    grant_type: 'authorization_code',
+    code: body.authorizationCode,
+    redirect_uri: process.env.REDIRECT_URI,
+    client_id: config.client_id,
+    client_secret: clientSecret,
+    scope: config.scope
+  }
+  const options: AxiosRequestConfig = {
+    method: 'POST',
+    url: 'https://appleid.apple.com/auth/token',
+    data: querystring.stringify(requestData),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  }
+  logDebug('axios <=', options)
+  const keyResponse = await axios(options)
+  const {status, data} = keyResponse
+  logDebug('axios =>', status)
+  logDebug('axios =>', data)
+
+  logDebug('verifyToken <=')
+  const decodedToken = await verifyAppleToken(data.id_token)
+  logDebug('verifyToken =>', decodedToken)
+
+  const user = {
+    userId: uuidv4(),
+    email: decodedToken.email,
+    emailVerified: decodedToken.emailVerified,
+    firstName: body.firstName,
+    lastName: body.lastName
+  }
+
+  const identityProviderApple = {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    tokenType: data.token_type,
+    expiresAt: new Date(Date.now() + data.expires_in).getTime(),
+    userId: decodedToken.sub,
+    email: decodedToken.email,
+    emailVerified: decodedToken.email_verified,
+    isPrivateEmail: decodedToken.is_private_email
+  }
+  const putItemParams = newUserParams(process.env.DynamoDBTable, user, identityProviderApple)
+  logDebug('putItem <=', putItemParams)
+  const putItemResponse = await putItem(putItemParams)
+  logDebug('putItem =>', putItemResponse)
+  const token = createAccessToken(user.userId)
+  return response(context, 200, {token})
+}
+
+export async function handleLoginUser(event: APIGatewayEvent, context: Context) {
+  logInfo('event <=', event)
+  const token = createAccessToken(uuidv4())
+  return response(context, 200, {token})
 }

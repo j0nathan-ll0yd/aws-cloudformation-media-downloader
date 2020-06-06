@@ -4,7 +4,6 @@ Resources:
     Properties:
       ApiKeySourceType: AUTHORIZER
       Name: Lifegames iOS App
-      Description: The API that supports the iOS App.
   MyUsagePlan:
     DependsOn:
       - MyApi
@@ -17,18 +16,12 @@ Resources:
       Description: Internal consumption
       UsagePlanName: Basic
   MyUsagePlanKey:
-    DependsOn:
-      - iOSApiKey
-      - MyUsagePlan
     Type: AWS::ApiGateway::UsagePlanKey
     Properties:
       KeyId: !Ref iOSApiKey
       KeyType: API_KEY
       UsagePlanId: !Ref MyUsagePlan
-  MyDeployment1589233275:
-    DependsOn:
-      - IFTTTWebhookFeedlyMethodPost
-      - MyApi
+  MyDeployment1591477946:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref MyApi
@@ -54,13 +47,13 @@ Resources:
   StageProduction:
     DependsOn:
       - GatewayLogRole
-      - MyDeployment1589233275
+      - MyDeployment1591477946
     Type: AWS::ApiGateway::Stage
     Properties:
       StageName: Prod
       Description: Production environment
       RestApiId: !Ref MyApi
-      DeploymentId: !Ref MyDeployment1589233275
+      DeploymentId: !Ref MyDeployment1591477946
       Variables:
         Stack: Prod
       MethodSettings:

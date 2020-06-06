@@ -6,7 +6,6 @@ Resources:
       ParentId: !GetAtt MyApi.RootResourceId
       PathPart: "files"
   ListFilesMethodGet:
-    DependsOn: ListFiles
     Type: AWS::ApiGateway::Method
     Properties:
       ApiKeyRequired: true
@@ -21,9 +20,6 @@ Resources:
       ResourceId: !Ref Files
       RestApiId: !Ref MyApi
   ListFilesMethodFunctionPermission:
-    DependsOn:
-      - ListFiles
-      - MyApi
     Type: AWS::Lambda::Permission
     Properties:
       Principal: apigateway.amazonaws.com
@@ -31,7 +27,6 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt ListFiles.Arn
   ListFiles:
-    DependsOn: S3Bucket
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -47,4 +42,3 @@ Resources:
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref S3Bucket
-      Tracing: Active

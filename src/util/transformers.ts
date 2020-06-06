@@ -55,7 +55,7 @@ export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: strin
     const {video_url, title} = myVideoInfo
     // NetworkingError: Invalid character in header content ["x-amz-meta-title"]
     // Must adhere to https://tools.ietf.org/html/rfc2616#section-4.2
-    const escapedTitle = title.replace(/[\(\)\@\,\;\:\"\/\[\]\\\?\=\{\}\’]/g, '')
+    const escapedTitle = title.replace(/[\°\(\)\@\,\;\:\"\/\[\]\\\?\=\{\}\’]/g, '')
     return {
         Body: video_url,
         Bucket: myBucket,

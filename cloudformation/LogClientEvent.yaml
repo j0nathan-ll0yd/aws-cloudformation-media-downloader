@@ -9,15 +9,12 @@ Resources:
       Description: A lambda function that records an event from a client environment (e.g. App or Web).
       Layers:
         - !Ref NodeModulesLayer
-      Tracing: Active
-
   LogClientEventResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref MyApi
       ParentId: !GetAtt MyApi.RootResourceId
       PathPart: "logEvent"
-
   LogClientEventMethodPost:
     DependsOn: LogClientEvent
     Type: AWS::ApiGateway::Method
@@ -33,7 +30,6 @@ Resources:
       OperationName: logClientEvent
       ResourceId: !Ref LogClientEventResource
       RestApiId: !Ref MyApi
-
   LogClientEventMethodFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:

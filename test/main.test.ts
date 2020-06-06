@@ -11,7 +11,7 @@ import {
   fileUploadWebhook,
   handleAuthorization,
   handleDeviceRegistration,
-  handleFeedlyEvent,
+  handleFeedlyEvent, handleRegisterUser,
   listFiles, schedulerFileCoordinator,
   startFileUpload
 } from '../src/main'
@@ -30,11 +30,11 @@ const expect = chai.expect
 describe('main', () => {
   const partSize = 1024 * 1024 * 5
   beforeEach(() => {
-  this.consoleLogStub = sinon.stub(console, 'log')
-  this.consoleInfoStub = sinon.stub(console, 'info')
-  this.consoleDebugStub = sinon.stub(console, 'debug')
-  this.consoleWarnStub = sinon.stub(console, 'warn')
-  this.consoleErrorStub = sinon.stub(console, 'error')
+    this.consoleLogStub = sinon.stub(console, 'log')
+    this.consoleInfoStub = sinon.stub(console, 'info')
+    this.consoleDebugStub = sinon.stub(console, 'debug')
+    this.consoleWarnStub = sinon.stub(console, 'warn')
+    this.consoleErrorStub = sinon.stub(console, 'error')
   })
   afterEach(() => {
     this.consoleLogStub.restore()
@@ -373,6 +373,37 @@ describe('main', () => {
       const output = await schedulerFileCoordinator(event, context)
       expect(output.statusCode).to.equal(200)
       expect(startExecutionStub.callCount).to.equal(1)
+    })
+  })
+  describe('#handleRegisterUser', () => {
+    const event = getFixture('handleRegisterUser/APIGatewayEvent.json')
+    const context = getFixture('handleRegisterUser/Context.json')
+    const dependencyModule = require('../src/util/secretsmanager-helpers')
+    let getSignInWithAppleConfigStub
+    let getSignInWithAppleClientSecretStub
+    let putItemStub
+    let verifyTokenStub
+    beforeEach(() => {
+      getSignInWithAppleConfigStub = sinon.stub(dependencyModule, 'getSignInWithAppleConfig')
+        .returns(getFixture('handleRegisterUser/getSecretValue.Config-200-OK.json'))
+      getSignInWithAppleClientSecretStub = sinon.stub(dependencyModule, 'getSignInWithAppleClientSecret').returns({})
+      putItemStub = sinon.stub(DynamoDB, 'putItem').returns(getFixture('handleRegisterUser/putItem-200-OK.json'))
+      verifyTokenStub = sinon.stub(dependencyModule, 'verifyToken')
+        .returns(getFixture('handleRegisterUser/verifyToken-200-OK.json'))
+    })
+    afterEach(() => {
+      getSignInWithAppleConfigStub.restore()
+      getSignInWithAppleClientSecretStub.restore()
+      verifyTokenStub.restore()
+      putItemStub.restore()
+    })
+    it('should successfully handle a multipart upload', async () => {
+      const mockResponse = getFixture('handleRegisterUser/axios-200-OK.json')
+      mock.onAny().reply(200, mockResponse)
+      const output = await handleRegisterUser(event, context)
+      expect(output.statusCode).to.equal(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.userId).to.be.a('string')
     })
   })
 })

@@ -21,3 +21,9 @@ export const registerDeviceConstraints = {
         presence: true
     }
 }
+
+export const registerUserConstraints = {
+    authorizationCode: {
+        presence: true
+    }
+}

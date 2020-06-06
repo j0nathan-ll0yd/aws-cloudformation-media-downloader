@@ -15,10 +15,8 @@ Resources:
       Policies:
         - Statement:
             - Effect: Allow
-              Action:
-                - sns:publish
+              Action: sns:publish
               Resource: !Ref PushNotificationTopic
-      Tracing: Active
   FileUploadWebhookFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:

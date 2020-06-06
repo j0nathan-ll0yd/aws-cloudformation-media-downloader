@@ -1,7 +1,5 @@
 Resources:
   AuthorizationFunction:
-    DependsOn:
-      - iOSApiKey
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -24,10 +22,7 @@ Resources:
                 - !Sub arn:aws:apigateway:${AWS::Region}::/apikeys/*
                 - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans
                 - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans/*/usage
-      Tracing: Active
   RestApiAuthorizerRole:
-    DependsOn:
-      - AuthorizationFunction
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -44,15 +39,9 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
+                Action: lambda:InvokeFunction
                 Resource: !GetAtt AuthorizationFunction.Arn
-
   MyAuthorizer:
-    DependsOn:
-      - RestApiAuthorizerRole
-      - AuthorizationFunction
-      - MyApi
     Type: AWS::ApiGateway::Authorizer
     Properties:
       AuthorizerCredentials: !GetAtt RestApiAuthorizerRole.Arn
