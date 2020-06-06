@@ -15,6 +15,7 @@ import {
   listFiles, schedulerFileCoordinator,
   startFileUpload
 } from '../src/main'
+import {validateAuthCodeForToken, verifyAppleToken} from '../src/util/secretsmanager-helpers'
 import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
 import * as DynamoDB from './../src/lib/vendor/AWS/DynamoDB'
 import * as S3 from './../src/lib/vendor/AWS/S3'
@@ -29,6 +30,9 @@ const expect = chai.expect
 
 describe('main', () => {
   const partSize = 1024 * 1024 * 5
+  let fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+  fakeJWT += '.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9'
+  fakeJWT += '.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
   beforeEach(() => {
     this.consoleLogStub = sinon.stub(console, 'log')
     this.consoleInfoStub = sinon.stub(console, 'info')
@@ -380,26 +384,23 @@ describe('main', () => {
     const context = getFixture('handleRegisterUser/Context.json')
     const dependencyModule = require('../src/util/secretsmanager-helpers')
     let createAccessTokenStub
-    let getSignInWithAppleConfigStub
-    let getSignInWithAppleClientSecretStub
     let putItemStub
-    let verifyTokenStub
+    let validateAuthCodeForTokenStub
+    let verifyAppleTokenStub
     beforeEach(() => {
-      getSignInWithAppleConfigStub = sinon.stub(dependencyModule, 'getSignInWithAppleConfig')
-        .returns(getFixture('handleRegisterUser/getSecretValue.Config-200-OK.json'))
       createAccessTokenStub = sinon.stub(dependencyModule, 'createAccessToken')
         .returns('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M')
-      getSignInWithAppleClientSecretStub = sinon.stub(dependencyModule, 'getSignInWithAppleClientSecret').returns({})
       putItemStub = sinon.stub(DynamoDB, 'putItem').returns(getFixture('handleRegisterUser/putItem-200-OK.json'))
-      verifyTokenStub = sinon.stub(dependencyModule, 'verifyAppleToken')
-        .returns(getFixture('handleRegisterUser/verifyToken-200-OK.json'))
+      validateAuthCodeForTokenStub = sinon.stub(dependencyModule, 'validateAuthCodeForToken')
+        .returns(getFixture('handleRegisterUser/validateAuthCodeForToken-200-OK.json'))
+      verifyAppleTokenStub = sinon.stub(dependencyModule, 'verifyAppleToken')
+        .returns(getFixture('handleRegisterUser/verifyAppleToken-200-OK.json'))
     })
     afterEach(() => {
       createAccessTokenStub.restore()
-      getSignInWithAppleConfigStub.restore()
-      getSignInWithAppleClientSecretStub.restore()
-      verifyTokenStub.restore()
       putItemStub.restore()
+      validateAuthCodeForTokenStub.restore()
+      verifyAppleTokenStub.restore()
     })
     it('should successfully handle a multipart upload', async () => {
       const mockResponse = getFixture('handleRegisterUser/axios-200-OK.json')
@@ -417,7 +418,7 @@ describe('main', () => {
     let createAccessTokenStub
     beforeEach(() => {
       createAccessTokenStub = sinon.stub(dependencyModule, 'createAccessToken')
-        .returns('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M')
+        .returns(fakeJWT)
     })
     afterEach(() => {
       createAccessTokenStub.restore()
