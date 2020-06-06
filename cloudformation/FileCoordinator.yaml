@@ -1,8 +1,5 @@
 Resources:
   FileCoordinator:
-    DependsOn:
-      - MyStateMachine
-      - DynamoFileTable
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -25,10 +22,7 @@ Resources:
           - Effect: Allow
             Action: 'dynamodb:Scan'
             Resource: !GetAtt DynamoFileTable.Arn
-      Tracing: Active
   FileCoordinatorScheduledRule:
-    DependsOn:
-      - FileCoordinator
     Type: AWS::Events::Rule
     Properties:
       Description: "FileCoordinator"
@@ -38,9 +32,6 @@ Resources:
         - Arn: !GetAtt FileCoordinator.Arn
           Id: "FileCoordinator"
   FileCoordinatorPermission:
-    DependsOn:
-      - FileCoordinatorScheduledRule
-      - FileCoordinator
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !GetAtt FileCoordinator.Arn

@@ -1,7 +1,5 @@
 Resources:
   RegisterDevice:
-    DependsOn:
-      - PushNotificationTopic
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -24,14 +22,12 @@ Resources:
               Resource:
                 - 'arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/OfflineMediaDownloader'
                 - !Ref PushNotificationTopic
-      Tracing: Active
   RegisterDeviceResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref MyApi
       ParentId: !GetAtt MyApi.RootResourceId
       PathPart: "registerDevice"
-
   RegisterDeviceMethodPost:
     DependsOn: RegisterDevice
     Type: AWS::ApiGateway::Method
@@ -47,7 +43,6 @@ Resources:
       OperationName: registerDevice
       ResourceId: !Ref RegisterDeviceResource
       RestApiId: !Ref MyApi
-
   RegisterDeviceMethodFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:

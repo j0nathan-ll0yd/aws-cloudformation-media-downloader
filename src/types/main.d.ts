@@ -82,3 +82,31 @@ interface DeviceRegistration {
   UUID: string,
   systemName: string
 }
+
+interface UserRegistration {
+  authorizationCode: string,
+  firstName?: string,
+  lastName?: string
+}
+
+interface User {
+  userId: string,
+  email: string,
+  emailVerified: boolean,
+  firstName: string,
+  lastName?: string,
+}
+
+interface IdentityProvider {
+  accessToken: string,
+  refreshToken: string,
+  tokenType: string,
+  expiresAt: number
+}
+
+interface IdentityProviderApple extends IdentityProvider {
+  userId: string,
+  email: string,
+  emailVerified: boolean,
+  isPrivateEmail: boolean
+}

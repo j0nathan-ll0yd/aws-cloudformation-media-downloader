@@ -1,0 +1,11 @@
+{
+  "callbackWaitsForEmptyEventLoop": true,
+  "logGroupName": "/aws/lambda/lifegames-fileviewer-RegisterDevice-1W0HX8WSVHJ0X",
+  "logStreamName": "2019/12/02/[$LATEST]ec73601751ec4b1aa3a76182c327ea0c",
+  "functionName": "lifegames-fileviewer-RegisterDevice-1W0HX8WSVHJ0X",
+  "memoryLimitInMB": "128",
+  "functionVersion": "$LATEST",
+  "invokeid": "c4223434-ebe5-42a9-aec9-05f11cc26d9f",
+  "awsRequestId": "c4223434-ebe5-42a9-aec9-05f11cc26d9f",
+  "invokedFunctionArn": "arn:aws:lambda:us-west-2:203465012143:function:lifegames-fileviewer-RegisterDevice-1W0HX8WSVHJ0X"
+}

@@ -1,13 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: My first serverless application.
 
 Globals:
   Function:
     Runtime: nodejs12.x
     Timeout: 300
     MemorySize: 512
-
 
 # Values to pass to your template at runtime (when you create or update a stack).
 Parameters:

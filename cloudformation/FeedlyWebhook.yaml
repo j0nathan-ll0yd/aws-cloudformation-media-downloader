@@ -1,24 +1,17 @@
 Resources:
   Feedly:
-    DependsOn:
-      - MyApi
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref MyApi
       ParentId: !GetAtt MyApi.RootResourceId
       PathPart: "feedly"
   IFTTTWebhookFeedlyMethodPostRequestValidator:
-    DependsOn:
-      - MyApi
     Type: AWS::ApiGateway::RequestValidator
     Properties:
       Name: FeedlyMethodPostRequestValidator
       RestApiId: !Ref MyApi
       ValidateRequestBody: true
   IFTTTWebhookFeedlyMethodFunctionPermission:
-    DependsOn:
-      - MyApi
-      - FeedlyWebhook
     Type: AWS::Lambda::Permission
     Properties:
       Principal: apigateway.amazonaws.com
@@ -26,11 +19,6 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt FeedlyWebhook.Arn
   IFTTTWebhookFeedlyMethodPost:
-    DependsOn:
-      - FeedlyWebhook
-      - MyAuthorizer
-      - Feedly
-      - MyApi
     Type: AWS::ApiGateway::Method
     Properties:
       ApiKeyRequired: false # because our DefaultAuthorizer requires the key
@@ -42,15 +30,11 @@ Resources:
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
-        #IntegrationResponses:
-        #- StatusCode: 400
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FeedlyWebhook.Arn}/invocations
       OperationName: PostFeedlyWebhook
       ResourceId: !Ref Feedly
       RestApiId: !Ref MyApi
   FeedlyWebhook:
-    DependsOn:
-      - DynamoFileTable
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -68,7 +52,6 @@ Resources:
           - Effect: Allow
             Action: 'dynamodb:UpdateItem'
             Resource: !GetAtt DynamoFileTable.Arn
-      Tracing: Active
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -90,26 +73,7 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: "*"
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:DescribeLogStreams
-                  - logs:PutLogEvents
-                  - logs:GetLogEvents
-                  - logs:CreateLogDelivery
-                  - logs:GetLogDelivery
-                  - logs:UpdateLogDelivery
-                  - logs:DeleteLogDelivery
-                  - logs:ListLogDeliveries
-                  - logs:PutResourcePolicy
-                  - logs:DescribeResourcePolicies
-                  - logs:DescribeLogGroups
-                Resource: "*"
-
   StartFileUpload:
-    DependsOn:
-      - DynamoFileTable
-      - S3Bucket
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -131,11 +95,7 @@ Resources:
             Action: 'dynamodb:UpdateItem'
             Resource: !GetAtt DynamoFileTable.Arn
       Timeout: 900
-      Tracing: Active
-
   UploadPart:
-    DependsOn:
-      - S3Bucket
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -148,11 +108,7 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3Bucket
-      Tracing: Active
-
   CompleteFileUpload:
-    DependsOn:
-      - S3Bucket
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
@@ -172,7 +128,6 @@ Resources:
           - Effect: Allow
             Action: 'dynamodb:UpdateItem'
             Resource: !GetAtt DynamoFileTable.Arn
-      Tracing: Active
   MyStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
   MyStateMachine:
@@ -180,7 +135,6 @@ Resources:
       - StartFileUpload
       - UploadPart
       - CompleteFileUpload
-      - StatesExecutionRole
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
