@@ -85,6 +85,7 @@ interface DeviceRegistration {
 
 interface UserRegistration {
   authorizationCode: string,
+  email: string,
   firstName?: string,
   lastName?: string
 }
@@ -109,4 +110,13 @@ interface IdentityProviderApple extends IdentityProvider {
   email: string,
   emailVerified: boolean,
   isPrivateEmail: boolean
+}
+
+// https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse
+interface AppleTokenResponse {
+  access_token: string, // A token used to access allowed data.
+  expires_in: number, // The amount of time, in seconds, before the access token expires.
+  id_token: string, // A JSON Web Token that contains the user’s identity information.
+  refresh_token: string, // The refresh token used to regenerate new access tokens.
+  token_type: string // The type of access token. It will always be bearer.
 }

@@ -24,7 +24,7 @@ import {generateAllow, generateDeny} from './util/apigateway-helpers'
 import {feedlyEventConstraints, registerDeviceConstraints, registerUserConstraints} from './util/constraints'
 import {newFileParams, newUserParams, scanForFileParams, updateCompletedFileParams} from './util/dynamodb-helpers'
 import {logDebug, logError, logInfo, response} from './util/lambda-helpers'
-import {createAccessToken, getSignInWithAppleClientSecret, getSignInWithAppleConfig, verifyAppleToken} from './util/secretsmanager-helpers'
+import {createAccessToken, getAppleClientSecret, getAppleConfig, validateAuthCodeForToken, verifyAppleToken} from './util/secretsmanager-helpers'
 import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -396,62 +396,43 @@ export async function handleRegisterUser(event: APIGatewayEvent, context: Contex
     return response(context, statusCode, message)
   }
   const body = (requestBody as UserRegistration)
-  logDebug('getSignInWithAppleClientSecret')
-  const clientSecret = await getSignInWithAppleClientSecret()
-  logDebug('getSignInWithAppleConfig')
-  const config = await getSignInWithAppleConfig()
-  const requestData = {
-    grant_type: 'authorization_code',
-    code: body.authorizationCode,
-    redirect_uri: process.env.REDIRECT_URI,
-    client_id: config.client_id,
-    client_secret: clientSecret,
-    scope: config.scope
-  }
-  const options: AxiosRequestConfig = {
-    method: 'POST',
-    url: 'https://appleid.apple.com/auth/token',
-    data: querystring.stringify(requestData),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  }
-  logDebug('axios <=', options)
-  const keyResponse = await axios(options)
-  const {status, data} = keyResponse
-  logDebug('axios =>', status)
-  logDebug('axios =>', data)
 
-  logDebug('verifyToken <=')
-  const decodedToken = await verifyAppleToken(data.id_token)
-  logDebug('verifyToken =>', decodedToken)
+  logDebug('validateAuthCodeForToken <=')
+  const appleToken = await validateAuthCodeForToken(body.authorizationCode)
+  logDebug('validateAuthCodeForToken =>', appleToken)
+
+  logDebug('verifyAppleToken <=')
+  const verifiedToken = await verifyAppleToken(appleToken.id_token)
+  logDebug('verifyAppleToken =>', verifiedToken)
 
   const user = {
     userId: uuidv4(),
-    email: decodedToken.email,
-    emailVerified: decodedToken.emailVerified,
+    email: verifiedToken.email,
+    emailVerified: verifiedToken.emailVerified,
     firstName: body.firstName,
     lastName: body.lastName
   }
 
   const identityProviderApple = {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    tokenType: data.token_type,
-    expiresAt: new Date(Date.now() + data.expires_in).getTime(),
-    userId: decodedToken.sub,
-    email: decodedToken.email,
-    emailVerified: decodedToken.email_verified,
-    isPrivateEmail: decodedToken.is_private_email
+    accessToken: appleToken.access_token,
+    refreshToken: appleToken.refresh_token,
+    tokenType: appleToken.token_type,
+    expiresAt: new Date(Date.now() + appleToken.expires_in).getTime(),
+    userId: verifiedToken.sub,
+    email: verifiedToken.email,
+    emailVerified: verifiedToken.email_verified,
+    isPrivateEmail: verifiedToken.is_private_email
   }
   const putItemParams = newUserParams(process.env.DynamoDBTable, user, identityProviderApple)
   logDebug('putItem <=', putItemParams)
   const putItemResponse = await putItem(putItemParams)
   logDebug('putItem =>', putItemResponse)
-  const token = createAccessToken(user.userId)
+  const token = await createAccessToken(user.userId)
   return response(context, 200, {token})
 }
 
 export async function handleLoginUser(event: APIGatewayEvent, context: Context) {
   logInfo('event <=', event)
-  const token = createAccessToken(uuidv4())
+  const token = await createAccessToken(uuidv4())
   return response(context, 200, {token})
 }
