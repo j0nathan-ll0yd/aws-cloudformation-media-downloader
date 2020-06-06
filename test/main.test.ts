@@ -11,7 +11,7 @@ import {
   fileUploadWebhook,
   handleAuthorization,
   handleDeviceRegistration,
-  handleFeedlyEvent, handleRegisterUser,
+  handleFeedlyEvent, handleLoginUser, handleRegisterUser,
   listFiles, schedulerFileCoordinator,
   startFileUpload
 } from '../src/main'
@@ -379,6 +379,7 @@ describe('main', () => {
     const event = getFixture('handleRegisterUser/APIGatewayEvent.json')
     const context = getFixture('handleRegisterUser/Context.json')
     const dependencyModule = require('../src/util/secretsmanager-helpers')
+    let createAccessTokenStub
     let getSignInWithAppleConfigStub
     let getSignInWithAppleClientSecretStub
     let putItemStub
@@ -386,12 +387,15 @@ describe('main', () => {
     beforeEach(() => {
       getSignInWithAppleConfigStub = sinon.stub(dependencyModule, 'getSignInWithAppleConfig')
         .returns(getFixture('handleRegisterUser/getSecretValue.Config-200-OK.json'))
+      createAccessTokenStub = sinon.stub(dependencyModule, 'createAccessToken')
+        .returns('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M')
       getSignInWithAppleClientSecretStub = sinon.stub(dependencyModule, 'getSignInWithAppleClientSecret').returns({})
       putItemStub = sinon.stub(DynamoDB, 'putItem').returns(getFixture('handleRegisterUser/putItem-200-OK.json'))
-      verifyTokenStub = sinon.stub(dependencyModule, 'verifyToken')
+      verifyTokenStub = sinon.stub(dependencyModule, 'verifyAppleToken')
         .returns(getFixture('handleRegisterUser/verifyToken-200-OK.json'))
     })
     afterEach(() => {
+      createAccessTokenStub.restore()
       getSignInWithAppleConfigStub.restore()
       getSignInWithAppleClientSecretStub.restore()
       verifyTokenStub.restore()
@@ -403,7 +407,28 @@ describe('main', () => {
       const output = await handleRegisterUser(event, context)
       expect(output.statusCode).to.equal(200)
       const body = JSON.parse(output.body)
-      expect(body.body.userId).to.be.a('string')
+      expect(body.body.token).to.be.a('string')
+    })
+  })
+  describe('#handleLoginUser', () => {
+    const event = getFixture('handleRegisterUser/APIGatewayEvent.json')
+    const context = getFixture('handleRegisterUser/Context.json')
+    const dependencyModule = require('../src/util/secretsmanager-helpers')
+    let createAccessTokenStub
+    beforeEach(() => {
+      createAccessTokenStub = sinon.stub(dependencyModule, 'createAccessToken')
+        .returns('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M')
+    })
+    afterEach(() => {
+      createAccessTokenStub.restore()
+    })
+    it('should successfully login a user', async () => {
+      const mockResponse = getFixture('handleRegisterUser/axios-200-OK.json')
+      mock.onAny().reply(200, mockResponse)
+      const output = await handleLoginUser(event, context)
+      expect(output.statusCode).to.equal(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.token).to.be.a('string')
     })
   })
 })
