@@ -5,8 +5,20 @@ resource "aws_api_gateway_rest_api" "MyApi" {
 }
 
 resource "aws_api_gateway_deployment" "MyDeployment" {
-  depends_on  = [aws_api_gateway_integration.MyGatewayIntegration]
+  depends_on = [
+    aws_api_gateway_integration.MyGatewayIntegration,
+    aws_api_gateway_integration.ListFilesMethodGetIntegration
+  ]
   rest_api_id = aws_api_gateway_rest_api.MyApi.id
+  triggers = {
+    redeployment = sha1(join(",", list(
+      jsonencode(aws_api_gateway_integration.MyGatewayIntegration),
+      jsonencode(aws_api_gateway_integration.ListFilesMethodGetIntegration),
+    )))
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_api_gateway_stage" "StageProduction" {
@@ -40,43 +52,13 @@ resource "aws_api_gateway_usage_plan" "MyUsagePlan" {
 resource "aws_api_gateway_api_key" "iOSApiKey" {
   name        = "iOSAppKey"
   description = "The key for the iOS App"
-  enabled     = "true"
+  enabled     = true
 }
 
 resource "aws_api_gateway_usage_plan_key" "main" {
   key_id        = aws_api_gateway_api_key.iOSApiKey.id
   key_type      = "API_KEY"
   usage_plan_id = aws_api_gateway_usage_plan.MyUsagePlan.id
-}
-
-resource "aws_iam_role" "GatewayLogRole" {
-  name               = "foobar"
-  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
-}
-
-data "aws_iam_policy_document" "assume-role-policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["apigateway.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "assume-role-policy" {
-  name   = "instance_role"
-  path   = "/"
-  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
-  role       = aws_iam_role.GatewayLogRole.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-}
-
-resource "aws_api_gateway_account" "demo" {
-  cloudwatch_role_arn = aws_iam_role.GatewayLogRole.arn
 }
 
 resource "aws_api_gateway_resource" "MockResource" {
@@ -113,4 +95,28 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
   response_templates = {
     "application/json" = "{\"error\":{\"code\":\"custom-5XX-generic\",\"message\":$context.error.messageString},\"requestId\":\"$context.requestId\"}"
   }
+}
+
+resource "aws_iam_role" "GatewayLogRole" {
+  name               = "GatewayLogRole"
+  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
+}
+
+data "aws_iam_policy_document" "assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
+  role       = aws_iam_role.GatewayLogRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+resource "aws_api_gateway_account" "demo" {
+  cloudwatch_role_arn = aws_iam_role.GatewayLogRole.arn
 }
