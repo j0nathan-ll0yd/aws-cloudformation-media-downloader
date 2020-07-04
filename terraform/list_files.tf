@@ -39,7 +39,7 @@ resource "aws_lambda_function" "ListFiles" {
   handler          = "dist/main.listFiles"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.lambda_layer.arn]
-  depends_on       = [aws_iam_role.ListFilesRole]
+  depends_on    = [aws_iam_role_policy_attachment.blahblah]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
 
   environment {
