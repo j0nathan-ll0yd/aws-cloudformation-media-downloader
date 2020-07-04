@@ -82,3 +82,13 @@ resource "aws_iam_policy" "ListFilesRolePolicy" {
   name = "ListFilesRolePolicy"
   policy = data.aws_iam_policy_document.example.json
 }
+
+data "aws_iam_policy_document" "gateway-assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
+    }
+  }
+}

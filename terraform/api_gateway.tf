@@ -99,17 +99,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 
 resource "aws_iam_role" "GatewayLogRole" {
   name               = "GatewayLogRole"
-  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
-}
-
-data "aws_iam_policy_document" "assume-role-policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
-    }
-  }
+  assume_role_policy = data.aws_iam_policy_document.gateway-assume-role-policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
