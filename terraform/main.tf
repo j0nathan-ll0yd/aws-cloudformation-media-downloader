@@ -79,7 +79,7 @@ data "aws_iam_policy_document" "example" {
 }
 
 resource "aws_iam_policy" "ListFilesRolePolicy" {
-  name = "ListFilesRolePolicy"
+  name   = "ListFilesRolePolicy"
   policy = data.aws_iam_policy_document.example.json
 }
 
@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "gateway-assume-role-policy" {
   }
 }
 
-output "api_gateway_subdomain" { value = aws_api_gateway_rest_api.MyApi.id }
+output "api_gateway_subdomain" { value = aws_api_gateway_rest_api.Main.id }
 output "api_gateway_region" { value = data.aws_region.current.name }
-output "api_gateway_stage" { value = aws_api_gateway_stage.StageProduction.stage_name }
+output "api_gateway_stage" { value = aws_api_gateway_stage.Production.stage_name }
 output "api_gateway_api_key" { value = aws_api_gateway_api_key.iOSApiKey.value }

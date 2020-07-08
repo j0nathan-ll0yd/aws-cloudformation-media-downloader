@@ -39,7 +39,7 @@ resource "aws_lambda_function" "ListFiles" {
   handler          = "dist/main.listFiles"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.lambda_layer.arn]
-  depends_on    = [aws_iam_role_policy_attachment.blahblah]
+  depends_on       = [aws_iam_role_policy_attachment.blahblah]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
 
   environment {
@@ -50,13 +50,13 @@ resource "aws_lambda_function" "ListFiles" {
 }
 
 resource "aws_api_gateway_resource" "Files" {
-  rest_api_id = aws_api_gateway_rest_api.MyApi.id
-  parent_id   = aws_api_gateway_rest_api.MyApi.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.Main.id
+  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
   path_part   = "files"
 }
 
 resource "aws_api_gateway_method" "ListFilesMethodGet" {
-  rest_api_id      = aws_api_gateway_rest_api.MyApi.id
+  rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Files.id
   http_method      = "GET"
   authorization    = "CUSTOM"
@@ -65,7 +65,7 @@ resource "aws_api_gateway_method" "ListFilesMethodGet" {
 }
 
 resource "aws_api_gateway_integration" "ListFilesMethodGetIntegration" {
-  rest_api_id             = aws_api_gateway_rest_api.MyApi.id
+  rest_api_id             = aws_api_gateway_rest_api.Main.id
   resource_id             = aws_api_gateway_resource.Files.id
   http_method             = aws_api_gateway_method.ListFilesMethodGet.http_method
   integration_http_method = "POST"

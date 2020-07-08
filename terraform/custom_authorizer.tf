@@ -1,44 +1,23 @@
 resource "aws_iam_role" "CustomAuthorizerInvocationRole" {
-  name = "CustomAuthorizerInvocationRole"
-  path = "/"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
+  name               = "CustomAuthorizerInvocationRole"
+  assume_role_policy = data.aws_iam_policy_document.gateway-assume-role-policy.json
 }
-EOF
+
+data "aws_iam_policy_document" "CustomAuthorizer" {
+  statement {
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.CustomAuthorizer.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "CustomAuthorizerInvocationPolicy" {
-  name = "CustomAuthorizerInvocationPolicy"
-  role = aws_iam_role.CustomAuthorizerInvocationRole.id
-
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "lambda:InvokeFunction",
-      "Effect": "Allow",
-      "Resource": "${aws_lambda_function.CustomAuthorizer.arn}"
-    }
-  ]
-}
-EOF
+  name   = "CustomAuthorizerInvocationPolicy"
+  role   = aws_iam_role.CustomAuthorizerInvocationRole.id
+  policy = data.aws_iam_policy_document.CustomAuthorizer.json
 }
 
 resource "aws_iam_role" "CustomAuthorizer" {
-  name = "CustomAuthorizer"
+  name               = "CustomAuthorizer"
   assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
 }
 
@@ -65,12 +44,12 @@ resource "aws_lambda_function" "CustomAuthorizer" {
   handler       = "dist/main.handleAuthorization"
   runtime       = "nodejs12.x"
   layers        = [aws_lambda_layer_version.lambda_layer.arn]
-  depends_on    = [
+  depends_on = [
     aws_iam_role_policy_attachment.CustomAuthorizerPolicy,
     aws_iam_role_policy_attachment.CustomAuthorizerPolicyLogging
   ]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
-  timeout = 300
+  timeout          = 300
 
   environment {
     variables = {
@@ -88,7 +67,7 @@ resource "aws_lambda_permission" "CustomAuthorizer" {
 
 resource "aws_api_gateway_authorizer" "CustomAuthorizer" {
   name                             = "CustomAuthorizer"
-  rest_api_id                      = aws_api_gateway_rest_api.MyApi.id
+  rest_api_id                      = aws_api_gateway_rest_api.Main.id
   authorizer_uri                   = aws_lambda_function.CustomAuthorizer.invoke_arn
   authorizer_result_ttl_in_seconds = 0
   authorizer_credentials           = aws_iam_role.CustomAuthorizerInvocationRole.arn
