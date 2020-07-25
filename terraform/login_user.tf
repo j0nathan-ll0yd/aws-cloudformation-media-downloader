@@ -79,7 +79,7 @@ resource "aws_api_gateway_integration" "LoginUserPost" {
 }
 
 resource "aws_secretsmanager_secret" "ServerPrivateKey" {
-  name = "ServerPrivateKey"
+  name        = "ServerPrivateKey"
   description = "The secret for generating/validating server-issued JWTs."
 }
 
@@ -89,6 +89,6 @@ resource "aws_secretsmanager_secret_version" "ServerPrivateKey" {
 }
 
 resource "random_password" "ServerPrivateKey" {
-  length = 50
+  length  = 50
   special = true
 }

@@ -90,7 +90,7 @@ data "aws_iam_policy_document" "MultipartUpload" {
     resources = [aws_dynamodb_table.Files.arn]
   }
   statement {
-    actions   = [
+    actions = [
       "s3:PutObject",
       "s3:PutObjectAcl",
       "s3:GetObject",
@@ -98,7 +98,7 @@ data "aws_iam_policy_document" "MultipartUpload" {
     resources = ["${aws_s3_bucket.Files.arn}/*"]
   }
   statement {
-    actions   = [
+    actions = [
       "s3:ListBucket",
       "s3:AbortMultipartUpload",
       "s3:ListMultipartUploadParts",
@@ -138,7 +138,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
-  timeout = 900
+  timeout          = 900
 
   environment {
     variables = {
