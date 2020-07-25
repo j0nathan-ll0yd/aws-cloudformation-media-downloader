@@ -1,26 +1,31 @@
-data "aws_iam_policy_document" "lambda-assume-role-policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
-    }
-  }
-}
-
 resource "aws_iam_role" "ListFilesRole" {
   name               = "ListFilesRole"
-  path               = "/"
   assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
 }
 
-resource "aws_iam_role_policy_attachment" "blahblah" {
+data "aws_iam_policy_document" "ListFiles" {
+  statement {
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.Files.bucket}/*"]
+  }
+}
+
+resource "aws_iam_policy" "ListFilesRolePolicy" {
+  name   = "ListFilesRolePolicy"
+  policy = data.aws_iam_policy_document.ListFiles.json
+}
+
+resource "aws_iam_role_policy_attachment" "ListFilesPolicy" {
   role       = aws_iam_role.ListFilesRole.name
   policy_arn = aws_iam_policy.ListFilesRolePolicy.arn
 }
 
-resource "aws_lambda_permission" "ListFilesLambdaPermission" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
+  role       = aws_iam_role.ListFilesRole.name
+  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+}
+
+resource "aws_lambda_permission" "ListFiles" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ListFiles.function_name
   principal     = "apigateway.amazonaws.com"
@@ -38,13 +43,13 @@ resource "aws_lambda_function" "ListFiles" {
   role             = aws_iam_role.ListFilesRole.arn
   handler          = "dist/main.listFiles"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.lambda_layer.arn]
-  depends_on       = [aws_iam_role_policy_attachment.blahblah]
+  layers           = [aws_lambda_layer_version.NodeModules.arn]
+  depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
 
   environment {
     variables = {
-      Bucket = aws_s3_bucket.file_bucket.id
+      Bucket = aws_s3_bucket.Files.id
     }
   }
 }
@@ -55,7 +60,7 @@ resource "aws_api_gateway_resource" "Files" {
   path_part   = "files"
 }
 
-resource "aws_api_gateway_method" "ListFilesMethodGet" {
+resource "aws_api_gateway_method" "ListFilesGet" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Files.id
   http_method      = "GET"
@@ -64,10 +69,10 @@ resource "aws_api_gateway_method" "ListFilesMethodGet" {
   api_key_required = true
 }
 
-resource "aws_api_gateway_integration" "ListFilesMethodGetIntegration" {
+resource "aws_api_gateway_integration" "ListFilesGet" {
   rest_api_id             = aws_api_gateway_rest_api.Main.id
   resource_id             = aws_api_gateway_resource.Files.id
-  http_method             = aws_api_gateway_method.ListFilesMethodGet.http_method
+  http_method             = aws_api_gateway_method.ListFilesGet.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.ListFiles.invoke_arn

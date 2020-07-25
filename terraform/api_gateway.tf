@@ -6,12 +6,13 @@ resource "aws_api_gateway_rest_api" "Main" {
 
 resource "aws_api_gateway_deployment" "Main" {
   depends_on = [
-    aws_api_gateway_integration.ListFilesMethodGetIntegration
+    aws_api_gateway_integration.ListFilesGet
   ]
   rest_api_id = aws_api_gateway_rest_api.Main.id
   triggers = {
     redeployment = sha1(join(",", list(
-      jsonencode(aws_api_gateway_integration.ListFilesMethodGetIntegration),
+      jsonencode(aws_api_gateway_integration.ListFilesGet),
+      jsonencode(aws_api_gateway_integration.WebhookFeedlyPost),
     )))
   }
   lifecycle {
@@ -36,8 +37,8 @@ resource "aws_api_gateway_method_settings" "Production" {
   }
 }
 
-resource "aws_api_gateway_usage_plan" "Basic" {
-  name        = "Basic"
+resource "aws_api_gateway_usage_plan" "iOSApp" {
+  name        = "iOSApp"
   description = "Internal consumption"
   api_stages {
     api_id = aws_api_gateway_rest_api.Main.id
@@ -45,22 +46,16 @@ resource "aws_api_gateway_usage_plan" "Basic" {
   }
 }
 
-resource "aws_api_gateway_api_key" "iOSApiKey" {
+resource "aws_api_gateway_api_key" "iOSApp" {
   name        = "iOSAppKey"
   description = "The key for the iOS App"
   enabled     = true
 }
 
-resource "aws_api_gateway_usage_plan_key" "main" {
-  key_id        = aws_api_gateway_api_key.iOSApiKey.id
+resource "aws_api_gateway_usage_plan_key" "iOSApp" {
+  key_id        = aws_api_gateway_api_key.iOSApp.id
   key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.Basic.id
-}
-
-resource "aws_api_gateway_resource" "MockResource" {
-  rest_api_id = aws_api_gateway_rest_api.Main.id
-  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
-  path_part   = "mock"
+  usage_plan_id = aws_api_gateway_usage_plan.iOSApp.id
 }
 
 resource "aws_api_gateway_gateway_response" "Default400GatewayResponse" {
@@ -89,6 +84,6 @@ resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
-resource "aws_api_gateway_account" "demo" {
+resource "aws_api_gateway_account" "Main" {
   cloudwatch_role_arn = aws_iam_role.GatewayLogRole.arn
 }
