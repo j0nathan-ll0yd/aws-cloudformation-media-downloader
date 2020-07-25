@@ -14,6 +14,7 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_integration.ListFilesGet),
       jsonencode(aws_api_gateway_integration.LogClientEventPost),
       jsonencode(aws_api_gateway_integration.LoginUserPost),
+      jsonencode(aws_api_gateway_integration.RegisterDevicePost),
       jsonencode(aws_api_gateway_integration.WebhookFeedlyPost)
     )))
   }

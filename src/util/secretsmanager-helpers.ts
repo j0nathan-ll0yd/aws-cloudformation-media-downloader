@@ -33,8 +33,8 @@ export async function getServerPrivateKey() {
     return PRIVATEKEY
   }
   // This SecretId has to map to the CloudFormation file (LoginUser)
-  logDebug('getSecretValue', {SecretId: 'ServerPrivateKey'})
-  const privateKeySecretResponse = await getSecretValue({SecretId: 'ServerPrivateKey'})
+  logDebug('getSecretValue', {SecretId: 'ServerEncryptionKey'})
+  const privateKeySecretResponse = await getSecretValue({SecretId: 'ServerEncryptionKey'})
   logDebug('getSecretValue', privateKeySecretResponse)
   PRIVATEKEY = privateKeySecretResponse.SecretString
   return PRIVATEKEY
