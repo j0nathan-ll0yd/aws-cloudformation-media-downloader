@@ -6,11 +6,6 @@ provider "aws" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-resource "aws_s3_bucket" "Files" {
-  bucket = "lifegames-media-downloader-files"
-  acl    = "public-read"
-}
-
 resource "aws_lambda_layer_version" "NodeModules" {
   filename            = "./../build/artifacts/layer-node-modules.zip"
   layer_name          = "NodeModules"
@@ -68,6 +63,16 @@ data "aws_iam_policy_document" "states-assume-role-policy" {
     principals {
       type        = "Service"
       identifiers = ["states.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "sns-assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
     }
   }
 }

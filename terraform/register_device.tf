@@ -90,8 +90,20 @@ resource "aws_sns_topic" "PushNotifications" {
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
-  name                = "OfflineMediaDownloader"
-  platform            = "APNS_SANDBOX"
-  platform_credential = file("./../secure/APNS_SANDBOX/privateKey.txt")  # APNS PRIVATE KEY
-  platform_principal  = file("./../secure/APNS_SANDBOX/certificate.txt") # APNS CERTIFICATE
+  name                      = "OfflineMediaDownloader"
+  platform                  = "APNS_SANDBOX"
+  platform_credential       = file("./../secure/APNS_SANDBOX/privateKey.txt")  # APNS PRIVATE KEY
+  platform_principal        = file("./../secure/APNS_SANDBOX/certificate.txt") # APNS CERTIFICATE
+  success_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
+  failure_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
+}
+
+resource "aws_iam_role" "SNSLoggingRole" {
+  name               = "SNSLoggingRole"
+  assume_role_policy = data.aws_iam_policy_document.sns-assume-role-policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {
+  role       = aws_iam_role.SNSLoggingRole.name
+  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
