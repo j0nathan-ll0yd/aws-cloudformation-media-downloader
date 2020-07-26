@@ -1,0 +1,40 @@
+Resources:
+  FileCoordinator:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.schedulerFileCoordinator
+      Description: A lambda function that checks for files to be downloaded and triggers their execution.
+      Environment:
+        Variables:
+          StateMachineArn: !Ref MyStateMachine
+          DynamoDBTable: !Ref DynamoFileTable
+      Layers:
+        - !Ref NodeModulesLayer
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action: 'states:StartExecution'
+            Resource: !Ref MyStateMachine
+        - Statement:
+          - Effect: Allow
+            Action: 'dynamodb:Scan'
+            Resource: !GetAtt DynamoFileTable.Arn
+  FileCoordinatorScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "FileCoordinator"
+      ScheduleExpression: "rate(4 minutes)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt FileCoordinator.Arn
+          Id: "FileCoordinator"
+  FileCoordinatorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt FileCoordinator.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt FileCoordinatorScheduledRule.Arn

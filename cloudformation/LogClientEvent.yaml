@@ -1,0 +1,39 @@
+Resources:
+  LogClientEvent:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.handleClientEvent
+      Description: A lambda function that records an event from a client environment (e.g. App or Web).
+      Layers:
+        - !Ref NodeModulesLayer
+  LogClientEventResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MyApi
+      ParentId: !GetAtt MyApi.RootResourceId
+      PathPart: "logEvent"
+  LogClientEventMethodPost:
+    DependsOn: LogClientEvent
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref MyAuthorizer
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LogClientEvent.Arn}/invocations
+      OperationName: logClientEvent
+      ResourceId: !Ref LogClientEventResource
+      RestApiId: !Ref MyApi
+  LogClientEventMethodFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*/*
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LogClientEvent.Arn

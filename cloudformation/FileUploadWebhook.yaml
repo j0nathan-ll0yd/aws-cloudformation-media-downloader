@@ -1,0 +1,80 @@
+Resources:
+  FileUploadWebhook:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.fileUploadWebhook
+      Description:  A lambda function that dispatches a notification.
+      Environment:
+        Variables:
+          PushNotificationTopicArn: !Ref PushNotificationTopic
+      Layers:
+        - !Ref NodeModulesLayer
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: sns:publish
+              Resource: !Ref PushNotificationTopic
+  FileUploadWebhookFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::lifegames-media-downloader-files
+      FunctionName: !Ref FileUploadWebhook
+  PushNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: PushNotificationTopic
+  SNSSuccessFeedbackRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sns.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: SNSSuccessFeedbackRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:PutMetricFilter
+                  - logs:PutRetentionPolicy
+                Resource: "*"
+  SNSFailureFeedbackRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sns.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: SNSFailureFeedbackRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:PutMetricFilter
+                  - logs:PutRetentionPolicy
+                Resource: "*"

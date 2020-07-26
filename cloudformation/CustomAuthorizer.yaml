@@ -1,0 +1,53 @@
+Resources:
+  AuthorizationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Ref ContentBucket
+        Key: !Ref CodeKey
+      Handler: dist/main.handleAuthorization
+      Description:  The function that handles authorization for the API Gateway.
+      Environment:
+        Variables:
+          ApiKeyID: !Ref iOSApiKey
+      Layers:
+        - !Ref NodeModulesLayer
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:aws:apigateway:${AWS::Region}::/apikeys
+                - !Sub arn:aws:apigateway:${AWS::Region}::/apikeys/*
+                - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans
+                - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans/*/usage
+  RestApiAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'apigateway.amazonaws.com'
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: lambda
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt AuthorizationFunction.Arn
+  MyAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      AuthorizerCredentials: !GetAtt RestApiAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 0
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizationFunction.Arn}/invocations
+      Type: REQUEST
+      IdentitySource: method.request.querystring.ApiKey
+      Name: DefaultAuthorizer
+      RestApiId: !Ref MyApi
