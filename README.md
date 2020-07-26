@@ -28,24 +28,24 @@ I share this for any engineer to be able to build a basic backend and iOS App fo
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ```bash
+# Ensure the correct version of NodeJS (via NVM)
 nvm use lts/erbium
-npm install --prod=only
-npm run build
 
-# edit the stack.name for CloudFormation
-# this must be unique across all of AWS
-vi cfpack.config.js
+# Install dependencies
+npm install
 
-# deploy the cloudformation template and associated code
-npm run deploy-node-modules
-npm run deploy-cloudformation
+# Run the tests to ensure everything is working
+npm run test
 
-# verify the application works locally
+# Use Terraform to deploy the infrastructure
+cd terraform
+terraform init
+terraform apply
+
+# Verify the application works locally
 npm run test-local-list
 npm run test-local-hook
 ```
-
-This will deploy the CloudFormation stack to AWS.
 
 ## Installation
 
@@ -64,62 +64,32 @@ brew install awscli
 aws configure
 ```
 
-* Install [AWS Serverless Application Model (SAM)](https://github.com/awslabs/aws-sam-cli/). This is for developing on your local environment.
-
-```bash
-brew tap aws/tap
-brew install aws-sam-cli
-```
 * Install [jq](https://stedolan.github.io/jq/) (used for deployment scripts)
 
 ```bash
 brew install jq
 ```
-* Install [md5sha1sum](http://microbrew.org/tools/md5sha1sum/) (used for deployment scripts)
+* Install [terraform](https://www.terraform.io/) (used for deployment scripts)
 
 ```bash
-brew install md5sha1sum
-```
-* Install [yq](https://mikefarah.github.io/yq/) (used for deployment scripts)
-
-```bash
-brew install yq
+brew install terraform
 ```
 
 ## Deployment
 
-* Deploy CloudFormation - This will deploy your entire CloudFormation template, including your `node_modules` and latest Lambda function code.
-
-```bash
-npm run deploy-cloudformation
-```
-
-* Deploy Lambda - If there are no changes to your CloudFormation template, you can deploy just your latest source code to your stack.
+* Deploy Code - To deploy code changes only, this command will package the distribution files and trigger a terraform apply.
 
 ```bash
 npm run deploy-code
 ```
 
-* Deploy `node_modules` - If changes are made to your package dependencies, you can upload your `node_modules` and update all associated lambda functions.
+* Deploy `node_modules` - If you changed your package dependencies, run this command to update the Lambda layer.
 
 ```bash
 npm run deploy-node-modules
 ```
-## Local Testing
 
-Locally test the listing of files
-
-```bash
-npm run test-local-list
-```
-
-Locally test the feedly webhook
-
-```bash
-npm run test-local-hook
-```
-
-### Live Testing
+### Production Testing
 
 In order to test your endpoint in production, you can use the npm commands below.
 
