@@ -12,16 +12,10 @@
     "install-prod": "npm install --only=production",
     "test": "AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "test-remote-list": "./bin/test-list.sh",
-    "test-local-list": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"ListFiles\"",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
-    "test-remote-dispatchNotification": "./bin/test-dispatchNotification.sh",
-    "test-local-hook": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/APIGatewayEvent.json",
-    "test-local-schedule": "npm run build && sam local invoke -t cloudformation.json --env-vars env.json \"FeedlyWebhook\" -e test/fixtures/handleFeedlyEvent/CloudWatchEventRuleEvent.json",
     "deploy-code": "./bin/update-lambda-functions.sh",
-    "deploy-node-modules": "./bin/update-node-modules.sh",
-    "deploy-cloudformation": ". ./bin/environment-setup.sh && ./bin/predeploy-cloudformation.sh && ./node_modules/cfpack.js/bin/cfpack.js deploy",
-    "destroy-cloudformation": ". ./bin/environment-setup.sh && ./node_modules/cfpack.js/bin/cfpack.js delete"
+    "deploy-node-modules": "./bin/update-node-modules.sh"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
@@ -55,7 +49,6 @@
     "aws-sdk-mock": "^5.1.0",
     "axios-mock-adapter": "^1.18.1",
     "benny": "^3.6.14",
-    "cfpack.js": "^1.3.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "mocha": "^7.1.1",

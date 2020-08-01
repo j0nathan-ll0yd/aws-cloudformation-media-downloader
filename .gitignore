@@ -7,3 +7,5 @@ dist
 docs
 node_modules
 cloudformation.json
+terraform/terraform.tfstate*
+terraform/.terraform
