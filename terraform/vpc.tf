@@ -67,17 +67,23 @@ resource "aws_security_group" "Lambdas" {
   name = "Lambdas"
   description = "Security group for Lambdas"
   vpc_id = aws_vpc.Default.id
+
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    protocol  = -1
+    self      = true
+    from_port = 0
+    to_port   = 0
+    cidr_blocks = ["10.2.0.0/16"]
   }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    prefix_list_ids = [
+      aws_vpc_endpoint.S3.prefix_list_id,
+      aws_vpc_endpoint.DynamoDB.prefix_list_id
+    ]
   }
 }
 
@@ -86,7 +92,11 @@ resource "aws_security_group" "Lambdas" {
 # SECOND: https://stackoverflow.com/questions/60678826/aws-route-from-public-api-gateway-to-in-vpc-lambda
 # TODO: https://www.infoq.com/articles/aws-vpc-explained/
 # TODO: https://medium.com/tensult/creating-vpc-endpoint-for-amazon-s3-using-terraform-7a15c840d36f
-# Connecting to other : ListFiles
+
+# TODO: To be even more paranoid, I could create separate private subnets to narrow scope lambdas to the services they need
+# TODO: Access Required: ListFiles: S3
+#
+# Allows lambda functions in a private VPC to access S3
 resource "aws_vpc_endpoint" "S3" {
   vpc_id       = aws_vpc.Default.id
   service_name = "com.amazonaws.us-west-2.s3"
@@ -95,4 +105,64 @@ resource "aws_vpc_endpoint" "S3" {
 resource "aws_vpc_endpoint_route_table_association" "PrivateS3" {
   vpc_endpoint_id = aws_vpc_endpoint.S3.id
   route_table_id = aws_route_table.Private.id
+}
+
+# Allows lambda functions in a private VPC to access DynamoDB
+resource "aws_vpc_endpoint" "DynamoDB" {
+  vpc_id       = aws_vpc.Default.id
+  service_name = "com.amazonaws.us-west-2.dynamodb"
+}
+
+resource "aws_vpc_endpoint_route_table_association" "PrivateDynamoDB" {
+  vpc_endpoint_id = aws_vpc_endpoint.DynamoDB.id
+  route_table_id = aws_route_table.Private.id
+}
+
+
+# Flow Logging
+resource "aws_flow_log" "Default" {
+  iam_role_arn    = aws_iam_role.VPCFlowLogRole.arn
+  log_destination = aws_cloudwatch_log_group.VPCFlowLog.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.Default.id
+  max_aggregation_interval = 60
+}
+
+resource "aws_cloudwatch_log_group" "VPCFlowLog" {
+  name = "VPCFlowLog"
+}
+
+resource "aws_iam_role" "VPCFlowLogRole" {
+  name = "VPCFlowLogRole"
+  assume_role_policy = data.aws_iam_policy_document.vpc-flow-logs-assume-role-policy.json
+}
+
+data "aws_iam_policy_document" "vpc-flow-logs-assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "VPCLogging" {
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["*"]
+  }
+}
+
+
+resource "aws_iam_role_policy" "VPCLogging" {
+  name = "VPCLogging"
+  role = aws_iam_role.VPCFlowLogRole.id
+  policy = data.aws_iam_policy_document.VPCLogging.json
 }

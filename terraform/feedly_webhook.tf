@@ -13,9 +13,9 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicy" {
   policy_arn = aws_iam_policy.WebhookFeedlyRolePolicy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyLogging" {
-  role       = aws_iam_role.WebhookFeedlyRole.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyVPCExecution" {
+  role = aws_iam_role.WebhookFeedlyRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_lambda_permission" "WebhookFeedly" {
@@ -44,6 +44,11 @@ resource "aws_lambda_function" "WebhookFeedly" {
     variables = {
       DynamoDBTable = aws_dynamodb_table.Files.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 

@@ -20,11 +20,6 @@ resource "aws_iam_role_policy_attachment" "ListFilesPolicy" {
   policy_arn = aws_iam_policy.ListFilesRolePolicy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
-  role       = aws_iam_role.ListFilesRole.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-}
-
 resource "aws_iam_role_policy_attachment" "ListFilesPolicyVPCExecution" {
   role = aws_iam_role.ListFilesRole.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
