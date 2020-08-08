@@ -198,6 +198,7 @@ describe('main', () => {
       createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
       subscribeStub = sinon.stub(SNS, 'subscribe')
       event = getFixture('handleRegisterDevice/APIGatewayEvent.json')
+      process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
     })
     afterEach(() => {
       mock.resetHandlers()
@@ -212,6 +213,14 @@ describe('main', () => {
       const body = JSON.parse(output.body)
       expect(output.statusCode).to.equal(201)
       expect(body.body).to.have.property('endpointArn')
+    })
+    it('should return a valid response if APNS is not configured', async () => {
+      delete process.env.PlatformApplicationArn
+      const output = await handleDeviceRegistration(event, context)
+      expect(output.statusCode).to.equal(200)
+      const body = JSON.parse(output.body)
+      expect(body.body).to.have.property('endpointArn')
+      expect(body.body.endpointArn).to.have.string('requires configuration')
     })
     it('should handle an invalid request (no token)', async () => {
       event.body = null
