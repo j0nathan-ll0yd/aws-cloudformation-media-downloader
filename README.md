@@ -34,6 +34,12 @@ nvm use lts/erbium
 # Install dependencies
 npm install
 
+# Build the AWS Lambda functions
+npm run build-code
+
+# Build the AWS Lambda node modules dependencies layer
+npm run build-node-modules
+
 # Run the tests to ensure everything is working
 npm run test
 
