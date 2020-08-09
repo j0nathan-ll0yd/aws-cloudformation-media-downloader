@@ -81,6 +81,28 @@ brew install jq
 brew install terraform
 ```
 
+## Configuring Push Notifications
+
+In order for this project to work out-of-the-box, you will need to do some additional configuration in order to support push notifications. This includes generating a certificate to use the Apple Push Notification Service (APNS) and a subsequent p12 file. Instructions can be found [here](https://calvium.com/how-to-make-a-p12-file/).
+
+Once created, you will extract the certificate and the private key in to separate files and move them in to the `secure/APNS_SANDBOX` directory at the root of the project:
+
+```bash
+# Extract the private key
+openssl pkcs12 -in certificate.p12 -nodes -nocerts | sed -ne '/-BEGIN PRIVATE KEY-/,/-END PRIVATE KEY-/p' > privateKey.txt
+
+# Extract the certificate file
+openssl pkcs12 -in certificate.p12 -clcerts -nokeys | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > certificate.txt
+
+# Create the directories
+mkdir -p secure/APNS_SANDBOX
+
+# Move the files in to the directory
+mv privateKey.txt certificate.txt secure/APNS_SANDBOX
+```
+
+Once complete, run `terraform apply` and a new platform application will be created so you can register your device to receive push notifications.
+
 ## Deployment
 
 * Deploy Code - To deploy code changes only, this command will package the distribution files and trigger a terraform apply.

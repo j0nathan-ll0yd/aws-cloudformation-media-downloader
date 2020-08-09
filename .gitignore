@@ -5,7 +5,9 @@ build
 coverage
 dist
 docs
+secure
 node_modules
 cloudformation.json
 terraform/terraform.tfstate*
+terraform/.terraform.tfstate.lock.info
 terraform/.terraform
