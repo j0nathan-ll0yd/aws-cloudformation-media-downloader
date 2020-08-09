@@ -6,7 +6,7 @@ resource "aws_iam_role" "LoginUserRole" {
 data "aws_iam_policy_document" "LoginUser" {
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.ServerEncryptionKey.arn]
+    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
   }
 }
 
@@ -78,17 +78,17 @@ resource "aws_api_gateway_integration" "LoginUserPost" {
   uri                     = aws_lambda_function.LoginUser.invoke_arn
 }
 
-resource "aws_secretsmanager_secret" "ServerEncryptionKey" {
-  name        = "ServerEncryptionKey"
+resource "aws_secretsmanager_secret" "PrivateEncryptionKey" {
+  name        = "PrivateEncryptionKey"
   description = "The secret for generating/validating server-issued JWTs."
 }
 
-resource "aws_secretsmanager_secret_version" "ServerEncryptionKey" {
-  secret_id     = aws_secretsmanager_secret.ServerEncryptionKey.id
-  secret_string = random_password.ServerEncryptionKey.result
+resource "aws_secretsmanager_secret_version" "PrivateEncryptionKey" {
+  secret_id     = aws_secretsmanager_secret.PrivateEncryptionKey.id
+  secret_string = random_password.PrivateEncryptionKey.result
 }
 
-resource "random_password" "ServerEncryptionKey" {
+resource "random_password" "PrivateEncryptionKey" {
   length  = 50
   special = true
 }

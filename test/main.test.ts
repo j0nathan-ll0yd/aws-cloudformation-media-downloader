@@ -215,7 +215,7 @@ describe('main', () => {
       expect(body.body).to.have.property('endpointArn')
     })
     it('should return a valid response if APNS is not configured', async () => {
-      delete process.env.PlatformApplicationArn
+      process.env.PlatformApplicationArn = ""
       const output = await handleDeviceRegistration(event, context)
       expect(output.statusCode).to.equal(200)
       const body = JSON.parse(output.body)

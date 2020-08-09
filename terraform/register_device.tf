@@ -9,10 +9,10 @@ data "aws_iam_policy_document" "RegisterDevice" {
       "sns:CreatePlatformEndpoint",
       "sns:Subscribe"
     ]
-    resources = [
+    resources = compact([
       aws_sns_topic.PushNotifications.arn,
       length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
-    ]
+    ])
   }
 }
 
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "RegisterDevice" {
 
   environment {
     variables = {
-      PlatformApplicationArn   = aws_sns_platform_application.OfflineMediaDownloader[0].arn
+      PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
     }
   }
@@ -96,7 +96,7 @@ variable "apnsPrivateKeyPath" {
 
 variable "apnsCertificatePath" {
   type    = string
-  default = "./../secure/APNS_SANDBOX/privateKey.txt"
+  default = "./../secure/APNS_SANDBOX/certificate.txt"
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
