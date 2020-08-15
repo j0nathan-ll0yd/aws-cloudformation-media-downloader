@@ -50,6 +50,7 @@ resource "aws_lambda_function" "LoginUser" {
   environment {
     variables = {
       Bucket = aws_s3_bucket.Files.id
+      EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
 }
@@ -81,6 +82,7 @@ resource "aws_api_gateway_integration" "LoginUserPost" {
 resource "aws_secretsmanager_secret" "PrivateEncryptionKey" {
   name        = "PrivateEncryptionKey"
   description = "The secret for generating/validating server-issued JWTs."
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "PrivateEncryptionKey" {
