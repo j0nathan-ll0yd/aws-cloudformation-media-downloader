@@ -440,7 +440,6 @@ export async function handleRegisterUser(event: APIGatewayEvent, context: Contex
 
 export async function handleLoginUser(event: APIGatewayEvent, context: Context) {
   logInfo('event <=', event)
-  logInfo('ENV <=', process.env)
   const token = await createAccessToken(uuidv4())
   return response(context, 200, {token})
 }
