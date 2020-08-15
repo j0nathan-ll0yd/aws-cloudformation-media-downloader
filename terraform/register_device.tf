@@ -9,10 +9,10 @@ data "aws_iam_policy_document" "RegisterDevice" {
       "sns:CreatePlatformEndpoint",
       "sns:Subscribe"
     ]
-    resources = [
-      aws_sns_platform_application.OfflineMediaDownloader.arn,
-      aws_sns_topic.PushNotifications.arn
-    ]
+    resources = compact([
+      aws_sns_topic.PushNotifications.arn,
+      length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+    ])
   }
 }
 
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "RegisterDevice" {
 
   environment {
     variables = {
-      PlatformApplicationArn   = aws_sns_platform_application.OfflineMediaDownloader.arn
+      PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
     }
   }
@@ -89,11 +89,22 @@ resource "aws_sns_topic" "PushNotifications" {
   name = "PushNotifications"
 }
 
+variable "apnsPrivateKeyPath" {
+  type    = string
+  default = "./../secure/APNS_SANDBOX/privateKey.txt"
+}
+
+variable "apnsCertificatePath" {
+  type    = string
+  default = "./../secure/APNS_SANDBOX/certificate.txt"
+}
+
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
+  count                     = fileexists(var.apnsPrivateKeyPath) && fileexists(var.apnsCertificatePath) ? 1 : 0
   name                      = "OfflineMediaDownloader"
   platform                  = "APNS_SANDBOX"
-  platform_credential       = file("./../secure/APNS_SANDBOX/privateKey.txt")  # APNS PRIVATE KEY
-  platform_principal        = file("./../secure/APNS_SANDBOX/certificate.txt") # APNS CERTIFICATE
+  platform_credential       = file(var.apnsPrivateKeyPath)  # APNS PRIVATE KEY
+  platform_principal        = file(var.apnsCertificatePath) # APNS CERTIFICATE
   success_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
   failure_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
 }

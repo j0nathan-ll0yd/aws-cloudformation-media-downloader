@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "RegisterUser" {
     actions = ["secretsmanager:GetSecretValue"]
     resources = [
       "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:prod/SignInWithApple/*",
-      aws_secretsmanager_secret.ServerEncryptionKey.arn
+      aws_secretsmanager_secret.PrivateEncryptionKey.arn
     ]
   }
 }
@@ -57,6 +57,7 @@ resource "aws_lambda_function" "RegisterUser" {
   environment {
     variables = {
       DynamoDBTable = aws_dynamodb_table.Users.arn
+      EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
 }

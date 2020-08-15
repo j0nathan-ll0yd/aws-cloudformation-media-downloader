@@ -127,6 +127,13 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
     return response(context, statusCode, message)
   }
   const body = (requestBody as DeviceRegistration)
+  logInfo('process.env.PlatformApplicationArn <=', process.env.PlatformApplicationArn)
+  if (process.env.PlatformApplicationArn.length === 0) {
+    return response(context, 200, {
+      endpointArn: 'requires configuration'
+    })
+  }
+
   // TODO: Add the device ID attribute, and figure out how to stop multiple subscriptions
   // const deviceId = event.headers['x-device-uuid']
   const createPlatformEndpointParams = {
