@@ -2,12 +2,7 @@ resource "aws_api_gateway_rest_api" "Main" {
   name           = "OfflineMediaDownloader"
   description    = "The API that supports the App"
   api_key_source = "AUTHORIZER"
-  #endpoint_configuration {
-  #  types = ["PRIVATE"]
-  #}
 }
-
-// YES!!! https://gruntwork.io/guides/networking/how-to-deploy-production-grade-vpc-aws/#next_steps
 
 resource "aws_api_gateway_deployment" "Main" {
   depends_on = [

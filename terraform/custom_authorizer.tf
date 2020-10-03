@@ -31,6 +31,11 @@ resource "aws_iam_role_policy_attachment" "CustomAuthorizerPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "CustomAuthorizerPolicyVPCExecution" {
+  role = aws_iam_role.CustomAuthorizer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 data "aws_iam_policy_document" "CustomAuthorizerRolePolicy" {
   statement {
     actions = ["apigateway:GET"]

@@ -133,6 +133,11 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyVPCExecution" {
+  role = aws_iam_role.MultipartUploadRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
   description      = "Starts the multipart upload"
   filename         = "./../build/artifacts/dist.zip"
@@ -150,6 +155,11 @@ resource "aws_lambda_function" "StartFileUpload" {
       Bucket        = aws_s3_bucket.Files.id
       DynamoDBTable = aws_dynamodb_table.Files.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 
@@ -181,6 +191,11 @@ resource "aws_lambda_function" "UploadPart" {
       DynamoDBTable = aws_dynamodb_table.Files.name
     }
   }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "UploadPart" {
@@ -204,6 +219,11 @@ resource "aws_lambda_function" "CompleteFileUpload" {
       Bucket        = aws_s3_bucket.Files.id
       DynamoDBTable = aws_dynamodb_table.Files.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 

@@ -29,6 +29,11 @@ resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyVPCExecution" {
+  role = aws_iam_role.FileCoordinatorRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_cloudwatch_event_target" "FileCoordinator" {
   rule = aws_cloudwatch_event_rule.FileCoordinator.name
   arn  = aws_lambda_function.FileCoordinator.arn
@@ -38,7 +43,7 @@ resource "aws_cloudwatch_event_target" "FileCoordinator" {
 resource "aws_cloudwatch_event_rule" "FileCoordinator" {
   name                = "FileCoordinator"
   schedule_expression = "rate(4 minutes)"
-  is_enabled          = true
+  is_enabled          = false
 }
 
 resource "aws_lambda_permission" "FileCoordinator" {
@@ -69,5 +74,10 @@ resource "aws_lambda_function" "FileCoordinator" {
       StateMachineArn = aws_sfn_state_machine.MultipartUpload.id
       DynamoDBTable   = aws_dynamodb_table.Files.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }

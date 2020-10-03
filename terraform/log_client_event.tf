@@ -8,6 +8,11 @@ resource "aws_iam_role_policy_attachment" "LogClientEventPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "LogClientEventPolicyVPCExecution" {
+  role = aws_iam_role.LogClientEventRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_permission" "LogClientEvent" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.LogClientEvent.function_name
@@ -29,6 +34,11 @@ resource "aws_lambda_function" "LogClientEvent" {
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
+  }
 }
 
 resource "aws_api_gateway_resource" "LogEvent" {

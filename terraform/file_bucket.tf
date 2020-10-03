@@ -39,6 +39,11 @@ resource "aws_lambda_function" "S3ObjectCreated" {
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
     }
   }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
+  }
 }
 
 resource "aws_iam_role" "S3ObjectCreatedRole" {
@@ -66,4 +71,9 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicy" {
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyLogging" {
   role       = aws_iam_role.S3ObjectCreatedRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+}
+
+resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyVPCExecution" {
+  role = aws_iam_role.S3ObjectCreatedRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }

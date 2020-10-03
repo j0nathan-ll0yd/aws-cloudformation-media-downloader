@@ -1,30 +1,6 @@
-variable "cidr_vpc" {
-  description = "CIDR block for the VPC"
-  default = "10.1.0.0/16"
-}
-variable "cidr_subnet" {
-  description = "CIDR block for the subnet"
-  default = "10.1.0.0/24"
-}
 variable "availability_zone" {
   description = "availability zone to create subnet"
   default = "us-west-2a"
-}
-variable "public_key_path" {
-  description = "Public key path"
-  default = "~/.ssh/id_rsa.pub"
-}
-variable "instance_ami" {
-  description = "AMI for aws EC2 instance"
-  default = "ami-0cf31d971a3ca20d6"
-}
-variable "instance_type" {
-  description = "type for aws EC2 instance"
-  default = "t2.micro"
-}
-variable "environment_tag" {
-  description = "Environment tag"
-  default = "Production"
 }
 
 resource "aws_vpc" "Default" {
@@ -36,15 +12,14 @@ resource "aws_vpc" "Default" {
   }
 }
 
-resource "aws_internet_gateway" "Default" {
-  vpc_id = aws_vpc.Default.id
-}
-
 resource "aws_subnet" "Public" {
   vpc_id = aws_vpc.Default.id
   cidr_block = "10.0.0.0/24"
   map_public_ip_on_launch = true
   availability_zone = var.availability_zone
+  tags = {
+    Name = "Public"
+  }
 }
 
 resource "aws_subnet" "Private" {
@@ -52,15 +27,43 @@ resource "aws_subnet" "Private" {
   cidr_block = "10.0.1.0/24"
   map_public_ip_on_launch = true
   availability_zone = var.availability_zone
-}
-
-resource "aws_route_table" "Private" {
-  vpc_id = aws_vpc.Default.id
+  tags = {
+    Name = "Private"
+  }
 }
 
 resource "aws_route_table_association" "rta_subnet_private" {
   subnet_id      = aws_subnet.Private.id
   route_table_id = aws_route_table.Private.id
+}
+
+resource "aws_route_table" "Public" {
+  vpc_id = aws_vpc.Default.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.gw.id
+  }
+  tags = {
+    Name = "Public"
+  }
+}
+
+resource "aws_route_table" "Private" {
+  vpc_id = aws_vpc.Default.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.gw.id
+  }
+  tags = {
+    Name = "Private"
+  }
+}
+
+resource "aws_route_table_association" "rta_subnet_public" {
+  subnet_id      = aws_subnet.Public.id
+  route_table_id = aws_route_table.Public.id
 }
 
 resource "aws_security_group" "Lambdas" {
@@ -76,6 +79,21 @@ resource "aws_security_group" "Lambdas" {
     cidr_blocks = ["10.2.0.0/16"]
   }
 
+  /*
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+  }
+  */
+
+  egress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -85,6 +103,25 @@ resource "aws_security_group" "Lambdas" {
       aws_vpc_endpoint.DynamoDB.prefix_list_id
     ]
   }
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.Default.id
+}
+resource "aws_eip" "one" {
+  vpc                       = true
+  associate_with_private_ip = "10.0.1.10"
+}
+
+resource "aws_nat_gateway" "gw" {
+  subnet_id = aws_subnet.Public.id
+  depends_on = [aws_internet_gateway.gw]
+  allocation_id = aws_eip.one.id
+}
+
+resource "aws_route_table_association" "InternetGatewayRouteAssociation" {
+  subnet_id     = aws_subnet.Private.id
+  route_table_id = aws_route_table.Private.id
 }
 
 # It's alive! A Lambda (in a VPC) accessing an S3 bucket
@@ -118,6 +155,29 @@ resource "aws_vpc_endpoint_route_table_association" "PrivateDynamoDB" {
   route_table_id = aws_route_table.Private.id
 }
 
+data "aws_vpc_endpoint_service" "states" {
+  count = 1
+  service = "states"
+}
+
+# Allows lambda functions in a private VPC to access StepFunctions
+resource "aws_vpc_endpoint" "StepFunctions" {
+  vpc_id       = aws_vpc.Default.id
+  service_name = data.aws_vpc_endpoint_service.states[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids = [
+    aws_security_group.Lambdas.id,
+  ]
+
+  subnet_ids = [aws_subnet.Private.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint_route_table_association" "PrivateStepFunctions" {
+  vpc_endpoint_id = aws_vpc_endpoint.StepFunctions.id
+  route_table_id = aws_route_table.Private.id
+}
 
 # Flow Logging
 resource "aws_flow_log" "Default" {
