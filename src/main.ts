@@ -184,6 +184,13 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
   try {
+
+    logDebug('axios <= ', 'Getting google')
+    const testInfo = await axios.get('https://www.google.com/')
+    logDebug('axios => ', testInfo.status)
+    logDebug('axios => ', testInfo.statusText)
+    logDebug('axios => ', testInfo.headers)
+
     logDebug('fetchVideoInfo <=', fileId)
     const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
     logDebug('fetchVideoInfo =>', myVideoInfo)

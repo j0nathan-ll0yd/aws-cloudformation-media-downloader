@@ -32,6 +32,11 @@ resource "aws_iam_role_policy_attachment" "RegisterUserPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterUserPolicyVPCExecution" {
+  role = aws_iam_role.RegisterUserRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_permission" "RegisterUser" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterUser.function_name
@@ -59,6 +64,11 @@ resource "aws_lambda_function" "RegisterUser" {
       DynamoDBTable = aws_dynamodb_table.Users.arn
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 

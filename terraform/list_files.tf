@@ -20,9 +20,9 @@ resource "aws_iam_role_policy_attachment" "ListFilesPolicy" {
   policy_arn = aws_iam_policy.ListFilesRolePolicy.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
-  role       = aws_iam_role.ListFilesRole.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy_attachment" "ListFilesPolicyVPCExecution" {
+  role = aws_iam_role.ListFilesRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_lambda_permission" "ListFiles" {
@@ -51,6 +51,11 @@ resource "aws_lambda_function" "ListFiles" {
     variables = {
       Bucket = aws_s3_bucket.Files.id
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 

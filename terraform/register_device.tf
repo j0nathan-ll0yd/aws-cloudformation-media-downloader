@@ -31,6 +31,11 @@ resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyVPCExecution" {
+  role = aws_iam_role.RegisterDeviceRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_permission" "RegisterDevice" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterDevice.function_name
@@ -58,6 +63,11 @@ resource "aws_lambda_function" "RegisterDevice" {
       PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 

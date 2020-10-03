@@ -25,6 +25,11 @@ resource "aws_iam_role_policy_attachment" "LoginUserPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "LoginUserPolicyVPCExecution" {
+  role = aws_iam_role.LoginUserRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_permission" "LoginUser" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.LoginUser.function_name
@@ -52,6 +57,11 @@ resource "aws_lambda_function" "LoginUser" {
       Bucket = aws_s3_bucket.Files.id
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
+  }
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.Private.id]
+    security_group_ids = [aws_security_group.Lambdas.id]
   }
 }
 
