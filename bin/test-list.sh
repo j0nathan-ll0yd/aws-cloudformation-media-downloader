@@ -4,12 +4,10 @@
 bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cd "${bin_dir}/../terraform"
-subdomain=`terraform output api_gateway_subdomain`
-region=`terraform output api_gateway_region`
-stage=`terraform output api_gateway_stage`
+domain=`terraform output cloudfront_distribution_domain`
 api_key=`terraform output api_gateway_api_key`
 
-REQUEST_URL="https://${subdomain}.execute-api.${region}.amazonaws.com/${stage}/files?ApiKey=${api_key}"
+REQUEST_URL="https://${domain}/files?ApiKey=${api_key}"
 echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \

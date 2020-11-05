@@ -56,7 +56,7 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTable = aws_dynamodb_table.Users.arn
+      DynamoDBTable         = aws_dynamodb_table.Users.arn
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
@@ -72,8 +72,7 @@ resource "aws_api_gateway_method" "RegisterUserPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.RegisterUser.id
   http_method      = "POST"
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.CustomAuthorizer.id
+  authorization    = "NONE"
   api_key_required = true
 }
 

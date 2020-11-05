@@ -49,7 +49,7 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      Bucket = aws_s3_bucket.Files.id
+      Bucket                = aws_s3_bucket.Files.id
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
@@ -65,8 +65,7 @@ resource "aws_api_gateway_method" "LoginUserPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Login.id
   http_method      = "POST"
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.CustomAuthorizer.id
+  authorization    = "NONE"
   api_key_required = true
 }
 
@@ -80,8 +79,8 @@ resource "aws_api_gateway_integration" "LoginUserPost" {
 }
 
 resource "aws_secretsmanager_secret" "PrivateEncryptionKey" {
-  name        = "PrivateEncryptionKey"
-  description = "The secret for generating/validating server-issued JWTs."
+  name                    = "PrivateEncryptionKey"
+  description             = "The secret for generating/validating server-issued JWTs."
   recovery_window_in_days = 0
 }
 

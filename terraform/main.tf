@@ -47,6 +47,16 @@ data "aws_iam_policy_document" "gateway-assume-role-policy" {
   }
 }
 
+data "aws_iam_policy_document" "lamdba-edge-assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com", "edgelambda.amazonaws.com"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "lambda-assume-role-policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -81,3 +91,4 @@ output "api_gateway_subdomain" { value = aws_api_gateway_rest_api.Main.id }
 output "api_gateway_region" { value = data.aws_region.current.name }
 output "api_gateway_stage" { value = aws_api_gateway_stage.Production.stage_name }
 output "api_gateway_api_key" { value = aws_api_gateway_api_key.iOSApp.value }
+output "cloudfront_distribution_domain" { value = aws_cloudfront_distribution.Default.domain_name }
