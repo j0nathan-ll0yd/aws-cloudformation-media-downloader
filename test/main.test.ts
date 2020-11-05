@@ -9,14 +9,12 @@ import {createPlatformEndpoint} from '../src/lib/vendor/AWS/SNS'
 import {
   completeFileUpload,
   fileUploadWebhook,
-  handleAuthorization,
   handleDeviceRegistration,
   handleFeedlyEvent, handleLoginUser, handleRegisterUser,
   listFiles, schedulerFileCoordinator,
   startFileUpload
 } from '../src/main'
 import {validateAuthCodeForToken, verifyAppleToken} from '../src/util/secretsmanager-helpers'
-import * as ApiGateway from './../src/lib/vendor/AWS/ApiGateway'
 import * as DynamoDB from './../src/lib/vendor/AWS/DynamoDB'
 import * as S3 from './../src/lib/vendor/AWS/S3'
 import * as SNS from './../src/lib/vendor/AWS/SNS'
@@ -46,58 +44,6 @@ describe('main', () => {
     this.consoleDebugStub.restore()
     this.consoleWarnStub.restore()
     this.consoleErrorStub.restore()
-  })
-  describe('#handleAuthorization', () => {
-    const validApiKey = 'pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc'
-    const baseEvent = {
-      methodArn: 'arn:aws:execute-api:us-west-2:203465012143:zc21p8daqc/Prod/POST/feedly',
-      queryStringParameters: {},
-      type: 'REQUEST'
-    }
-    let getApiKeyStub
-    beforeEach(() => {
-      getApiKeyStub = sinon.stub(ApiGateway, 'getApiKeys')
-      this.getUsagePlansStub = sinon.stub(ApiGateway, 'getUsagePlans').returns(getFixture('getUsagePlans-200-OK.json'))
-      this.getUsageStub = sinon.stub(ApiGateway, 'getUsage').returns(getFixture('getUsage-200-OK.json'))
-    })
-    afterEach(() => {
-      getApiKeyStub.restore()
-      this.getUsagePlansStub.restore()
-      this.getUsageStub.restore()
-    })
-    it('should accept a valid request', async () => {
-      getApiKeyStub.returns(getFixture('getApiKeys-200-OK.json'))
-      const event = baseEvent
-      event.queryStringParameters = {ApiKey: validApiKey}
-      const output = await handleAuthorization(event)
-      expect(output.principalId).to.equal('me')
-      expect(output.policyDocument.Statement[0].Effect).to.equal('Allow')
-      expect(output.usageIdentifierKey).to.equal(validApiKey)
-    })
-    it('should deny an invalid ApiKey', async () => {
-      getApiKeyStub.returns(getFixture('getApiKeys-200-OK.json'))
-      const event = baseEvent
-      event.queryStringParameters = {ApiKey: 1234}
-      const output = await handleAuthorization(event)
-      expect(output.principalId).to.equal('me')
-      expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
-    })
-    it('should deny a disabled ApiKey', async () => {
-      getApiKeyStub.returns(getFixture('getApiKeys-400-DisabledKey.json'))
-      const event = baseEvent
-      event.queryStringParameters = {ApiKey: validApiKey}
-      const output = await handleAuthorization(event)
-      expect(output.principalId).to.equal('me')
-      expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
-    })
-    it('should deny if an error occurs', async () => {
-      getApiKeyStub.rejects('Error')
-      const event = baseEvent
-      event.queryStringParameters = {ApiKey: validApiKey}
-      const output = await handleAuthorization(event)
-      expect(output.principalId).to.equal('me')
-      expect(output.policyDocument.Statement[0].Effect).to.equal('Deny')
-    })
   })
   describe('#uploadPart', () => {
     let uploadPartStub
@@ -215,7 +161,7 @@ describe('main', () => {
       expect(body.body).to.have.property('endpointArn')
     })
     it('should return a valid response if APNS is not configured', async () => {
-      process.env.PlatformApplicationArn = ""
+      process.env.PlatformApplicationArn = ''
       const output = await handleDeviceRegistration(event, context)
       expect(output.statusCode).to.equal(200)
       const body = JSON.parse(output.body)
