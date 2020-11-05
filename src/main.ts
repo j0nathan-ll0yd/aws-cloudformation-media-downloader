@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context, CustomAuthorizerEvent, CustomAuthorizerResult, S3Event} from 'aws-lambda'
+import {APIGatewayEvent, CloudFrontRequest, CloudFrontRequestEvent, CloudFrontResponse, Context, CustomAuthorizerEvent, CustomAuthorizerResult, S3Event} from 'aws-lambda'
 import {PublishInput} from 'aws-sdk/clients/sns'
 import axios, {AxiosRequestConfig} from 'axios'
 import * as querystring from 'querystring'
@@ -49,52 +49,6 @@ function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constr
     }
   }
   return {requestBody}
-}
-
-export async function handleAuthorization(event: CustomAuthorizerEvent): Promise<CustomAuthorizerResult> {
-  logInfo('event <=', event)
-  const responseDeny = generateDeny('me', event.methodArn)
-  try {
-    const queryStringParameters = event.queryStringParameters
-    const apiKeyValue = queryStringParameters.ApiKey
-    const getApiKeysParams = {includeValues: true}
-    logDebug('getApiKeys <=', getApiKeysParams)
-    const apiKeyResponse = await getApiKeys(getApiKeysParams)
-    logDebug('getApiKeys =>', apiKeyResponse)
-    const matchedApiKeys = apiKeyResponse.items.filter((item) => item.value === apiKeyValue)
-    if (matchedApiKeys.length > 0) {
-      const apiKey = matchedApiKeys[0]
-      if (apiKey.enabled === false) {
-        return generateDeny('me', event.methodArn)
-      }
-      const getUsagePlansParams = {keyId: apiKey.id}
-      logDebug('getUsagePlans <=', getUsagePlansParams)
-      const usagePlansResponse = await getUsagePlans(getUsagePlansParams)
-      logDebug('getUsagePlans =>', usagePlansResponse)
-      let responseAllow = generateAllow('me', event.methodArn)
-      if (usagePlansResponse.items) {
-        const usagePlanId = usagePlansResponse.items[0].id
-        responseAllow = generateAllow('me', event.methodArn, apiKeyValue)
-        const usageDate = (new Date()).toISOString().split('T')[0]
-        const params = {
-          endDate: usageDate,
-          keyId: apiKey.id,
-          startDate: usageDate,
-          usagePlanId
-        }
-        logDebug('getUsage <=', params)
-        const usageResponse = await getUsage(params)
-        logDebug('getUsage =>', usageResponse)
-      }
-      logInfo('response =>', responseAllow)
-      return responseAllow
-    }
-    logInfo('response =>', responseDeny)
-    return responseDeny
-  } catch (error) {
-    logError('response =>', responseDeny)
-    return responseDeny
-  }
 }
 
 export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent, context: Context) {

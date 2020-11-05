@@ -64,8 +64,7 @@ resource "aws_api_gateway_method" "ListFilesGet" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Files.id
   http_method      = "GET"
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.CustomAuthorizer.id
+  authorization    = "NONE"
   api_key_required = true
 }
 

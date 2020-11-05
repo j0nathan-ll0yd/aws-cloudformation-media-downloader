@@ -57,9 +57,8 @@ resource "aws_api_gateway_method" "WebhookFeedlyPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Feedly.id
   http_method      = "POST"
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.CustomAuthorizer.id
-  api_key_required = false
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "WebhookFeedlyPost" {

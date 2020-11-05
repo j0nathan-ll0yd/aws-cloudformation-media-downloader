@@ -65,8 +65,7 @@ resource "aws_api_gateway_method" "LoginUserPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Login.id
   http_method      = "POST"
-  authorization    = "CUSTOM"
-  authorizer_id    = aws_api_gateway_authorizer.CustomAuthorizer.id
+  authorization    = "NONE"
   api_key_required = true
 }
 
