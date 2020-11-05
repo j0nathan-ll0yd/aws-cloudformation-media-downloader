@@ -46,27 +46,27 @@ EOF
 }
 
 resource "aws_lambda_function" "CloudfrontMiddleware" {
-  description = "A lambda that acts as middleware before hitting the API."
+  description      = "A lambda that acts as middleware before hitting the API."
   filename         = data.archive_file.lambda_edge_zip.output_path
   source_code_hash = data.archive_file.lambda_edge_zip.output_base64sha256
-  function_name = "CloudfrontMiddleware"
-  role = aws_iam_role.CloudfrontMiddlewareRole.arn
-  handler = "main.handler"
-  runtime = "nodejs12.x"
-  publish = true
-  provider = aws.us_east_1
+  function_name    = "CloudfrontMiddleware"
+  role             = aws_iam_role.CloudfrontMiddlewareRole.arn
+  handler          = "main.handler"
+  runtime          = "nodejs12.x"
+  publish          = true
+  provider         = aws.us_east_1
 }
 
 resource "aws_cloudfront_distribution" "Default" {
   origin {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
-    origin_id = "CloudfrontMiddleware"
+    origin_id   = "CloudfrontMiddleware"
     custom_origin_config {
       origin_protocol_policy = "https-only"
-      origin_ssl_protocols = ["TLSv1.2"]
-      http_port = 80
-      https_port = 443
+      origin_ssl_protocols   = ["TLSv1.2"]
+      http_port              = 80
+      https_port             = 443
     }
   }
   ordered_cache_behavior {
@@ -74,32 +74,40 @@ resource "aws_cloudfront_distribution" "Default" {
       event_type = "viewer-request"
       lambda_arn = aws_lambda_function.CloudfrontMiddleware.qualified_arn
     }
-    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods = ["GET", "HEAD"]
-    path_pattern = "*"
-    target_origin_id = "CloudfrontMiddleware"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    path_pattern           = "*"
+    target_origin_id       = "CloudfrontMiddleware"
     viewer_protocol_policy = "https-only"
     forwarded_values {
       query_string = true
-      headers = ["X-API-Key"]
+      headers      = ["X-API-Key"]
       cookies {
         forward = "none"
       }
     }
+    // Intentionally set these values to not cache
+    default_ttl = 0
+    min_ttl     = 0
+    max_ttl     = 0
   }
   enabled = true
   default_cache_behavior {
     viewer_protocol_policy = "https-only"
-    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods = ["GET", "HEAD"]
-    target_origin_id = "CloudfrontMiddleware"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "CloudfrontMiddleware"
     forwarded_values {
       query_string = true
-      headers = ["X-API-Key"]
+      headers      = ["X-API-Key"]
       cookies {
         forward = "none"
       }
     }
+    // Intentionally set these values to not cache
+    default_ttl = 0
+    min_ttl     = 0
+    max_ttl     = 0
   }
   restrictions {
     geo_restriction {
