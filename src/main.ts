@@ -28,29 +28,6 @@ import {createAccessToken, getAppleClientSecret, getAppleConfig, validateAuthCod
 import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
 import { v4 as uuidv4 } from 'uuid'
 
-function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {
-  let requestBody: Webhook | DeviceRegistration | UserRegistration
-  if ('source' in event && event.source === 'aws.events') {
-    return {statusCode: 200, message: {status: 'OK'}}
-  } else if ('body' in event) {
-    try {
-      requestBody = JSON.parse(event.body)
-      logDebug('processEventAndValidate.event.body <=', requestBody)
-    } catch (error) {
-      logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
-      return {statusCode: 400, message: 'Request body must be valid JSON'}
-    }
-  }
-  if (constraints) {
-    const invalidAttributes = validate(requestBody, constraints)
-    if (invalidAttributes) {
-      logError('processEventAndValidate =>', invalidAttributes)
-      return {statusCode: 400, message: invalidAttributes}
-    }
-  }
-  return {requestBody}
-}
-
 export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent, context: Context) {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
