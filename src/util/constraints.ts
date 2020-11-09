@@ -6,7 +6,7 @@ validate.validators.isYouTubeURL = (value) => {
     if (value && !validateURL(value)) {
         return '^is not a valid YouTube URL'
     }
-    return
+    return undefined
 }
 
 export const feedlyEventConstraints = {

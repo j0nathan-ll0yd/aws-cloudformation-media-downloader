@@ -28,29 +28,6 @@ import {createAccessToken, getAppleClientSecret, getAppleConfig, validateAuthCod
 import {objectKeysToLowerCase, transformVideoInfoToMetadata, transformVideoIntoS3File} from './util/transformers'
 import { v4 as uuidv4 } from 'uuid'
 
-export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent, context: Context) {
-  logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
-  }
-  try {
-    const body = (requestBody as Webhook)
-    const fileId = await getVideoID(body.articleURL)
-    const updateItemParams = newFileParams(process.env.DynamoDBTable, fileId)
-    logDebug('updateItem <=', updateItemParams)
-    const updateItemResponse = await updateItem(updateItemParams)
-    logDebug('updateItem =>', updateItemResponse)
-    if (updateItemResponse.Attributes && updateItemResponse.Attributes.hasOwnProperty('fileName')) {
-      return response(context, 204)
-    } else {
-      return response(context, 202, {status: 'Accepted'})
-    }
-  } catch (error) {
-    return response(context, 500, error.message)
-  }
-}
-
 export async function handleDeviceRegistration(event: APIGatewayEvent, context: Context) {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, registerDeviceConstraints)
@@ -86,28 +63,6 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
   logDebug('subscribe =>', subscribeResponse)
 
   return response(context, 201, {endpointArn: createPlatformEndpointResponse.EndpointArn})
-}
-
-export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context: Context) {
-  logInfo('event <=', event)
-  const {statusCode, message} = processEventAndValidate(event)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
-  }
-  try {
-    const params = {Bucket: process.env.Bucket, MaxKeys: 1000}
-    logDebug('listObjects <=', params)
-    const files = await listObjects({Bucket: process.env.Bucket, MaxKeys: 1000})
-    logDebug('listObjects =>', files)
-    files.Contents.forEach((file: ExtendedS3Object) => {
-      // https://lifegames-app-s3bucket-pq2lluyi2i12.s3.amazonaws.com/20191209-[sxephil].mp4
-      file.FileUrl = `https://${files.Name}.s3.amazonaws.com/${encodeURIComponent(file.Key)}`
-      return file
-    })
-    return response(context, 200, objectKeysToLowerCase(files))
-  } catch (error) {
-    throw new Error(error)
-  }
 }
 
 export async function startFileUpload(event): Promise<UploadPartEvent> {

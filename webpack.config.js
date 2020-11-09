@@ -1,9 +1,15 @@
+const glob = require('glob')
 const path = require("path")
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
 
 module.exports = {
   mode: "production",
-  entry: "./src/index.ts",
+  entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, path) => {
+    console.log("PATH: "+path);
+    const entry = path.replace('/index.ts', '')
+    acc[entry] = path
+    return acc
+  }, {}),
   externals: [
     'aws-sdk'
   ],
@@ -13,7 +19,7 @@ module.exports = {
   output: {
     libraryTarget: "commonjs",
     path: path.join(__dirname, "dist"),
-    filename: "bundle.js",
+    filename: "./[name]/bundle.js",
   },
   target: "node",
   module: {
