@@ -4,10 +4,10 @@ const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
 
 module.exports = {
   mode: "production",
-  entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, path) => {
-    console.log("PATH: "+path);
-    const entry = path.replace('/index.ts', '')
-    acc[entry] = path
+  entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, filePath) => {
+    // parse the filepath to the directory of the lambda
+    const functionName = filePath.split(/\//)[3]
+    acc[functionName] = filePath
     return acc
   }, {}),
   externals: [
@@ -17,9 +17,9 @@ module.exports = {
     extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
   },
   output: {
-    libraryTarget: "commonjs",
-    path: path.join(__dirname, "dist"),
-    filename: "./[name]/bundle.js",
+    libraryTarget: "umd",
+    path: path.resolve(__dirname, "build/lambdas"),
+    filename: '[name].js'
   },
   target: "node",
   module: {
@@ -42,4 +42,5 @@ module.exports = {
     ],
   },
   plugins: [new ForkTsCheckerWebpackPlugin()],
+  watch: false
 }

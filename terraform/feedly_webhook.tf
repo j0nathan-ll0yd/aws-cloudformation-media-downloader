@@ -29,16 +29,22 @@ resource "aws_cloudwatch_log_group" "WebhookFeedly" {
   retention_in_days = 14
 }
 
+data "archive_file" "WebhookFeedly" {
+  type = "zip"
+  source_file = "./../build/lambdas/WebhookFeedly.js"
+  output_path = "./../build/lambdas/WebhookFeedly.zip"
+}
+
 resource "aws_lambda_function" "WebhookFeedly" {
   description      = "A webhook from Feedly via IFTTT"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "WebhookFeedly"
   role             = aws_iam_role.WebhookFeedlyRole.arn
-  handler          = "dist/main.handleFeedlyEvent"
+  handler          = "WebhookFeedly.handleFeedlyEvent"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.WebhookFeedly.output_path
+  source_code_hash = base64sha256(data.archive_file.WebhookFeedly.output_path)
 
   environment {
     variables = {
