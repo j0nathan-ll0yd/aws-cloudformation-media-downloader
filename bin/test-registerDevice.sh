@@ -7,7 +7,7 @@ cd "${bin_dir}/../terraform"
 domain=`terraform output cloudfront_distribution_domain`
 api_key=`terraform output api_gateway_api_key`
 
-data_file_path="${bin_dir}/../test/fixtures/handleRegisterDevice/APIGatewayEvent.json"
+data_file_path="${bin_dir}/../src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json"
 REQUEST_DATA=`cat ${data_file_path} | jq -r '.body'`
 REQUEST_URL="https://${domain}/registerDevice?ApiKey=${api_key}"
 echo "Calling ${REQUEST_URL}"

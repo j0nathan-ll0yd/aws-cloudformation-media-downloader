@@ -53,16 +53,22 @@ resource "aws_cloudwatch_log_group" "FileCoordinator" {
   retention_in_days = 14
 }
 
+data "archive_file" "FileCoordinator" {
+  type = "zip"
+  source_file = "./../build/lambdas/FileCoordinator.js"
+  output_path = "./../build/lambdas/FileCoordinator.zip"
+}
+
 resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "FileCoordinator"
   role             = aws_iam_role.FileCoordinatorRole.arn
-  handler          = "dist/main.schedulerFileCoordinator"
+  handler          = "FileCoordinator.schedulerFileCoordinator"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.FileCoordinator.output_path
+  source_code_hash = base64sha256(data.archive_file.FileCoordinator.output_path)
 
   environment {
     variables = {

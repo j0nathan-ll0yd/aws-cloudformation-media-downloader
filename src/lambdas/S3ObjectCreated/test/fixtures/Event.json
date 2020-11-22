@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-west-2",
+      "eventTime": "2020-03-01T03:35:22.200Z",
+      "eventName": "ObjectCreated:CompleteMultipartUpload",
+      "userIdentity": {
+        "principalId": "AWS:AROAS6X3VWOX6M76F3PJQ:lifegames-sandbox-CompleteFileUpload-2I526X342VV6"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "34.222.77.25"
+      },
+      "responseElements": {
+        "x-amz-request-id": "64C89232F5268E5C",
+        "x-amz-id-2": "A2ht1vQm7SXyyXn9t+o1x1FN+Ours0H1euDKF5LNV65EQUKvcsTJA4zNxsYvLp1KQKXnoJrsnrYCruS+TrUg8lZGnQhrCUSQ"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "15514cbe-2136-4daa-8bae-ab80691c3423",
+        "bucket": {
+          "name": "lifegames-sandbox-testbucket",
+          "ownerIdentity": {
+            "principalId": "ATWJ7G6W5DR7R"
+          },
+          "arn": "arn:aws:s3:::lifegames-sandbox-testbucket"
+        },
+        "object": {
+          "key": "20191209-%5Bsxephil%5D.mp4",
+          "size": 51839177,
+          "eTag": "5823b712dadb80810cc4c688af112b52-10",
+          "sequencer": "005E5B2D684D3A77BB"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "resource": "/feedly",
+  "path": "/feedly",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept": "application/json",
+    "CloudFront-Forwarded-Proto": "https",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "CloudFront-Viewer-Country": "US",
+    "content-type": "application/json",
+    "Host": "zc21p8daqc.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "curl/7.64.1",
+    "Via": "2.0 85b7effac42880c27a876de745128703.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "xw7MKlgXTpJfeW0lU8_r-d2XxwHIIZC-OdT1jt_UhtaGxfGriktbLA==",
+    "X-Amzn-Trace-Id": "Root=1-5de05b2e-2b28fff02609cd801c8894a0",
+    "X-Forwarded-For": "69.181.106.93, 70.132.61.146",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https"
+  },
+  "multiValueHeaders": {
+    "Accept": [
+      "application/json"
+    ],
+    "CloudFront-Forwarded-Proto": [
+      "https"
+    ],
+    "CloudFront-Is-Desktop-Viewer": [
+      "true"
+    ],
+    "CloudFront-Is-Mobile-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-SmartTV-Viewer": [
+      "false"
+    ],
+    "CloudFront-Is-Tablet-Viewer": [
+      "false"
+    ],
+    "CloudFront-Viewer-Country": [
+      "US"
+    ],
+    "content-type": [
+      "application/json"
+    ],
+    "Host": [
+      "zc21p8daqc.execute-api.us-west-2.amazonaws.com"
+    ],
+    "User-Agent": [
+      "curl/7.64.1"
+    ],
+    "Via": [
+      "2.0 85b7effac42880c27a876de745128703.cloudfront.net (CloudFront)"
+    ],
+    "X-Amz-Cf-Id": [
+      "xw7MKlgXTpJfeW0lU8_r-d2XxwHIIZC-OdT1jt_UhtaGxfGriktbLA=="
+    ],
+    "X-Amzn-Trace-Id": [
+      "Root=1-5de05b2e-2b28fff02609cd801c8894a0"
+    ],
+    "X-Forwarded-For": [
+      "69.181.106.93, 70.132.61.146"
+    ],
+    "X-Forwarded-Port": [
+      "443"
+    ],
+    "X-Forwarded-Proto": [
+      "https"
+    ]
+  },
+  "queryStringParameters": {
+    "ApiKey": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+  },
+  "multiValueQueryStringParameters": {
+    "ApiKey": [
+      "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+    ]
+  },
+  "pathParameters": null,
+  "stageVariables": {
+    "Stack": "Prod"
+  },
+  "requestContext": {
+    "resourceId": "pdy3fy",
+    "authorizer": {
+      "principalId": "me",
+      "integrationLatency": 1018
+    },
+    "resourcePath": "/feedly",
+    "operationName": "PostFeedlyWebhook",
+    "httpMethod": "POST",
+    "extendedRequestId": "D5MvSH8JPHcFw_w=",
+    "requestTime": "28/Nov/2019:23:41:34 +0000",
+    "path": "/Prod/feedly",
+    "accountId": "203465012143",
+    "protocol": "HTTP/1.1",
+    "stage": "Prod",
+    "domainPrefix": "zc21p8daqc",
+    "requestTimeEpoch": 1574984494559,
+    "requestId": "66bd615c-31fb-42e7-aeb8-88f2babaf7b4",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "principalOrgId": null,
+      "apiKey": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc",
+      "cognitoAuthenticationType": null,
+      "userArn": null,
+      "apiKeyId": "yzr34xwmb0",
+      "userAgent": "curl/7.64.1",
+      "accountId": null,
+      "caller": null,
+      "sourceIp": "69.181.106.93",
+      "accessKey": null,
+      "cognitoAuthenticationProvider": null,
+      "user": null
+    },
+    "domainName": "zc21p8daqc.execute-api.us-west-2.amazonaws.com",
+    "apiId": "zc21p8daqc"
+  },
+  "body": "{  \"articleFirstImageURL\": \"https://i.ytimg.com/vi/ZfVMalJEHRw/maxresdefault.jpg\", \"articlePublishedAt\": \"July 4, 2018 at 03:27PM\",  \"articleTitle\": \"Why People Are Freaking Out At Scarlett Johansson, Poland Purge Controversy, & American Pride Dips\",  \"articleURL\": \"https://www.youtube.com/watch?v=8A9mkS-1PDo\"}",
+  "isBase64Encoded": false
+}

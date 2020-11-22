@@ -1,0 +1,24 @@
+{
+  "errorType": "AuthorizationError",
+  "errorMessage": "User: arn:aws:sts::203465012143:assumed-role/lifegames-sandbox-DispatchNotificationRole-1W1WKNJ8XZFHS/lifegames-sandbox-DispatchNotification-726PT2AMD79G is not authorized to perform: SNS:Publish on resource: arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox",
+  "code": "AuthorizationError",
+  "message": "User: arn:aws:sts::203465012143:assumed-role/lifegames-sandbox-DispatchNotificationRole-1W1WKNJ8XZFHS/lifegames-sandbox-DispatchNotification-726PT2AMD79G is not authorized to perform: SNS:Publish on resource: arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox",
+  "time": "2020-02-19T03:20:10.714Z",
+  "requestId": "5f49ff8c-95f6-55e5-a25e-a94a3e5cdb8c",
+  "statusCode": 403,
+  "retryable": false,
+  "retryDelay": 70.3331798382673,
+  "stack": [
+    "AuthorizationError: User: arn:aws:sts::203465012143:assumed-role/lifegames-sandbox-DispatchNotificationRole-1W1WKNJ8XZFHS/lifegames-sandbox-DispatchNotification-726PT2AMD79G is not authorized to perform: SNS:Publish on resource: arn:aws:sns:us-west-2:203465012143:app/APNS_SANDBOX/Sandbox",
+    "    at Request.extractError (/opt/nodejs/node_modules/aws-sdk/lib/protocol/query.js:50:29)",
+    "    at Request.callListeners (/opt/nodejs/node_modules/aws-sdk/lib/sequential_executor.js:106:20)",
+    "    at Request.emit (/opt/nodejs/node_modules/aws-sdk/lib/sequential_executor.js:78:10)",
+    "    at Request.emit (/opt/nodejs/node_modules/aws-sdk/lib/request.js:683:14)",
+    "    at Request.transition (/opt/nodejs/node_modules/aws-sdk/lib/request.js:22:10)",
+    "    at AcceptorStateMachine.runTo (/opt/nodejs/node_modules/aws-sdk/lib/state_machine.js:14:12)",
+    "    at /opt/nodejs/node_modules/aws-sdk/lib/state_machine.js:26:10",
+    "    at Request.<anonymous> (/opt/nodejs/node_modules/aws-sdk/lib/request.js:38:9)",
+    "    at Request.<anonymous> (/opt/nodejs/node_modules/aws-sdk/lib/request.js:685:12)",
+    "    at Request.callListeners (/opt/nodejs/node_modules/aws-sdk/lib/sequential_executor.js:116:18)"
+  ]
+}

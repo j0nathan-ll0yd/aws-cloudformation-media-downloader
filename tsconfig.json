@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "module": "es2015",
+    "module": "commonjs",
     "target": "esnext",
     "outDir": "./dist",
     "strict": false,
-    "types": ["node"],
+    "types": ["node", "mocha"],
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,

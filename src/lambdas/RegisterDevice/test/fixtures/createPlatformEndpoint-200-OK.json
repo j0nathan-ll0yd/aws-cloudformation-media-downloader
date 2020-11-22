@@ -1,0 +1,6 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "230b4145-4048-5133-a75e-171b3d21256b"
+  },
+  "EndpointArn": "arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/Sandbox/7f925e2d-a3d0-3b52-850f-6ca746760662"
+}

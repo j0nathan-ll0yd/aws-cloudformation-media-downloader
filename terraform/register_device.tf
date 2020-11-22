@@ -42,16 +42,22 @@ resource "aws_cloudwatch_log_group" "RegisterDevice" {
   retention_in_days = 14
 }
 
+data "archive_file" "RegisterDevice" {
+  type = "zip"
+  source_file = "./../build/lambdas/RegisterDevice.js"
+  output_path = "./../build/lambdas/RegisterDevice.zip"
+}
+
 resource "aws_lambda_function" "RegisterDevice" {
   description      = "Registers an iOS device"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
-  handler          = "dist/main.handleDeviceRegistration"
+  handler          = "RegisterDevice.handleDeviceRegistration"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.RegisterDevice.output_path
+  source_code_hash = base64sha256(data.archive_file.RegisterDevice.output_path)
 
   environment {
     variables = {

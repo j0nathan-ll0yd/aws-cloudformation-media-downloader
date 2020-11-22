@@ -8,15 +8,13 @@
   "scripts": {
     "check-types": "tsc",
     "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js npm run test",
-    "build-code": "./bin/build-lambda-functions.sh",
-    "build-node-modules": "./bin/build-node-modules.sh",
+    "build": "./node_modules/webpack-cli/bin/cli.js",
     "install-prod": "npm install --only=production",
     "test": "AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
-    "deploy-code": "./bin/update-lambda-functions.sh",
-    "deploy-node-modules": "./bin/update-node-modules.sh"
+    "deploy": "cd terraform && terraform apply"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
@@ -47,7 +45,7 @@
     "@types/node": "^14.0.27",
     "@types/sinon": "^9.0.4",
     "aws-sdk-mock": "^5.1.0",
-    "axios-mock-adapter": "^1.18.2",
+    "axios-mock-adapter": "^1.19.0",
     "benny": "^3.6.14",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",

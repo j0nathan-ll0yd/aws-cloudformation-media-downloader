@@ -23,16 +23,22 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
   retention_in_days = 14
 }
 
+data "archive_file" "S3ObjectCreated" {
+  type = "zip"
+  source_file = "./../build/lambdas/S3ObjectCreated.js"
+  output_path = "./../build/lambdas/S3ObjectCreated.zip"
+}
+
 resource "aws_lambda_function" "S3ObjectCreated" {
   description      = "Dispatches a notification after a file is uploaded to an S3 bucket"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "S3ObjectCreated"
   role             = aws_iam_role.S3ObjectCreatedRole.arn
-  handler          = "dist/main.fileUploadWebhook"
+  handler          = "S3ObjectCreated.fileUploadWebhook"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.S3ObjectCreated.output_path
+  source_code_hash = base64sha256(data.archive_file.S3ObjectCreated.output_path)
 
   environment {
     variables = {

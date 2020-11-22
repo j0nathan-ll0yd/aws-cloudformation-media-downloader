@@ -133,17 +133,23 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+data "archive_file" "StartFileUpload" {
+  type = "zip"
+  source_file = "./../build/lambdas/StartFileUpload.js"
+  output_path = "./../build/lambdas/StartFileUpload.zip"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
   description      = "Starts the multipart upload"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "StartFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "dist/main.startFileUpload"
+  handler          = "StartFileUpload.startFileUpload"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
   timeout          = 900
+  filename = data.archive_file.StartFileUpload.output_path
+  source_code_hash = base64sha256(data.archive_file.StartFileUpload.output_path)
 
   environment {
     variables = {
@@ -164,16 +170,22 @@ resource "aws_cloudwatch_log_group" "StartFileUpload" {
   retention_in_days = 14
 }
 
+data "archive_file" "UploadPart" {
+  type = "zip"
+  source_file = "./../build/lambdas/UploadPart.js"
+  output_path = "./../build/lambdas/UploadPart.zip"
+}
+
 resource "aws_lambda_function" "UploadPart" {
   description      = "Uploads a part of a multipart upload"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "UploadPart"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "dist/main.uploadFilePart"
+  handler          = "UploadPart.uploadFilePart"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.UploadPart.output_path
+  source_code_hash = base64sha256(data.archive_file.UploadPart.output_path)
 
   environment {
     variables = {
@@ -188,16 +200,22 @@ resource "aws_cloudwatch_log_group" "UploadPart" {
   retention_in_days = 14
 }
 
+data "archive_file" "CompleteFileUpload" {
+  type = "zip"
+  source_file = "./../build/lambdas/UploadPart.js"
+  output_path = "./../build/lambdas/UploadPart.zip"
+}
+
 resource "aws_lambda_function" "CompleteFileUpload" {
   description      = "Completes the multipart upload"
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "CompleteFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "dist/main.completeFileUpload"
+  handler          = "CompleteFileUpload.completeFileUpload"
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename = data.archive_file.CompleteFileUpload.output_path
+  source_code_hash = base64sha256(data.archive_file.CompleteFileUpload.output_path)
 
   environment {
     variables = {
