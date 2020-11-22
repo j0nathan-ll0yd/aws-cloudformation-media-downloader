@@ -55,7 +55,6 @@ resource "aws_lambda_function" "RegisterUser" {
   role             = aws_iam_role.RegisterUserRole.arn
   handler          = "RegisterUser.handleRegisterUser"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = base64sha256(data.archive_file.RegisterUser.output_path)

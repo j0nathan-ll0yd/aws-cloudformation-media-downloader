@@ -49,7 +49,6 @@ resource "aws_lambda_function" "ListFiles" {
   role             = aws_iam_role.ListFilesRole.arn
   handler          = "ListFiles.listFiles"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = base64sha256(data.archive_file.ListFiles.output_path)

@@ -6,13 +6,6 @@ provider "aws" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-resource "aws_lambda_layer_version" "NodeModules" {
-  filename            = "./../build/artifacts/layer-node-modules.zip"
-  layer_name          = "NodeModules"
-  compatible_runtimes = ["nodejs12.x"]
-  source_code_hash    = filebase64sha256("./../build/artifacts/layer-node-modules.zip")
-}
-
 data "aws_iam_policy_document" "CommonLambdaLogging" {
   statement {
     actions = [

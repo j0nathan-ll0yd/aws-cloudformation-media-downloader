@@ -54,7 +54,6 @@ resource "aws_lambda_function" "RegisterDevice" {
   role             = aws_iam_role.RegisterDeviceRole.arn
   handler          = "RegisterDevice.handleDeviceRegistration"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = base64sha256(data.archive_file.RegisterDevice.output_path)

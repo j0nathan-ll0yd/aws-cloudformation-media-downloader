@@ -41,7 +41,6 @@ resource "aws_lambda_function" "WebhookFeedly" {
   role             = aws_iam_role.WebhookFeedlyRole.arn
   handler          = "WebhookFeedly.handleFeedlyEvent"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = base64sha256(data.archive_file.WebhookFeedly.output_path)
@@ -145,7 +144,6 @@ resource "aws_lambda_function" "StartFileUpload" {
   role             = aws_iam_role.MultipartUploadRole.arn
   handler          = "StartFileUpload.startFileUpload"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
   filename         = data.archive_file.StartFileUpload.output_path
@@ -182,7 +180,6 @@ resource "aws_lambda_function" "UploadPart" {
   role             = aws_iam_role.MultipartUploadRole.arn
   handler          = "UploadPart.uploadFilePart"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.UploadPart.output_path
   source_code_hash = base64sha256(data.archive_file.UploadPart.output_path)
@@ -212,7 +209,6 @@ resource "aws_lambda_function" "CompleteFileUpload" {
   role             = aws_iam_role.MultipartUploadRole.arn
   handler          = "CompleteFileUpload.completeFileUpload"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.CompleteFileUpload.output_path
   source_code_hash = base64sha256(data.archive_file.CompleteFileUpload.output_path)

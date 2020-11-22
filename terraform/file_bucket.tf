@@ -35,7 +35,6 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   role             = aws_iam_role.S3ObjectCreatedRole.arn
   handler          = "S3ObjectCreated.fileUploadWebhook"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = base64sha256(data.archive_file.S3ObjectCreated.output_path)
