@@ -12,5 +12,5 @@ echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
 --data @./../src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json \
-$REQUEST_URL | jsonpp
+$REQUEST_URL | python -m json.tool
 

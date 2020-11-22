@@ -14,7 +14,7 @@
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
-    "deploy": "cd terraform && terraform apply"
+    "deploy": "cd terraform && terraform apply -auto-approve"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {

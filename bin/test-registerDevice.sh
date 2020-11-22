@@ -14,5 +14,5 @@ echo "Calling ${REQUEST_URL}"
 curl -X POST -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
 --data "${REQUEST_DATA}" \
-$REQUEST_URL | jsonpp
+$REQUEST_URL | python -m json.tool
 
