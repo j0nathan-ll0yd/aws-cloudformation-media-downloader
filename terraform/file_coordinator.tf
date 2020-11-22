@@ -54,7 +54,7 @@ resource "aws_cloudwatch_log_group" "FileCoordinator" {
 }
 
 data "archive_file" "FileCoordinator" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/FileCoordinator.js"
   output_path = "./../build/lambdas/FileCoordinator.zip"
 }
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
-  filename = data.archive_file.FileCoordinator.output_path
+  filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = base64sha256(data.archive_file.FileCoordinator.output_path)
 
   environment {

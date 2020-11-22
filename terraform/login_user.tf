@@ -37,7 +37,7 @@ resource "aws_cloudwatch_log_group" "LoginUser" {
 }
 
 data "archive_file" "LoginUser" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/LoginUser.js"
   output_path = "./../build/lambdas/LoginUser.zip"
 }
@@ -50,7 +50,7 @@ resource "aws_lambda_function" "LoginUser" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
-  filename = data.archive_file.LoginUser.output_path
+  filename         = data.archive_file.LoginUser.output_path
   source_code_hash = base64sha256(data.archive_file.LoginUser.output_path)
 
   environment {

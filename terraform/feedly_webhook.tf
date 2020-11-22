@@ -30,7 +30,7 @@ resource "aws_cloudwatch_log_group" "WebhookFeedly" {
 }
 
 data "archive_file" "WebhookFeedly" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/WebhookFeedly.js"
   output_path = "./../build/lambdas/WebhookFeedly.zip"
 }
@@ -43,7 +43,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
-  filename = data.archive_file.WebhookFeedly.output_path
+  filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = base64sha256(data.archive_file.WebhookFeedly.output_path)
 
   environment {
@@ -134,7 +134,7 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
 }
 
 data "archive_file" "StartFileUpload" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/StartFileUpload.js"
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
@@ -148,7 +148,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
-  filename = data.archive_file.StartFileUpload.output_path
+  filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = base64sha256(data.archive_file.StartFileUpload.output_path)
 
   environment {
@@ -171,7 +171,7 @@ resource "aws_cloudwatch_log_group" "StartFileUpload" {
 }
 
 data "archive_file" "UploadPart" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/UploadPart.js"
   output_path = "./../build/lambdas/UploadPart.zip"
 }
@@ -184,7 +184,7 @@ resource "aws_lambda_function" "UploadPart" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  filename = data.archive_file.UploadPart.output_path
+  filename         = data.archive_file.UploadPart.output_path
   source_code_hash = base64sha256(data.archive_file.UploadPart.output_path)
 
   environment {
@@ -201,7 +201,7 @@ resource "aws_cloudwatch_log_group" "UploadPart" {
 }
 
 data "archive_file" "CompleteFileUpload" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/UploadPart.js"
   output_path = "./../build/lambdas/UploadPart.zip"
 }
@@ -214,7 +214,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  filename = data.archive_file.CompleteFileUpload.output_path
+  filename         = data.archive_file.CompleteFileUpload.output_path
   source_code_hash = base64sha256(data.archive_file.CompleteFileUpload.output_path)
 
   environment {

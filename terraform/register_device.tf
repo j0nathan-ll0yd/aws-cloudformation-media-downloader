@@ -43,7 +43,7 @@ resource "aws_cloudwatch_log_group" "RegisterDevice" {
 }
 
 data "archive_file" "RegisterDevice" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/RegisterDevice.js"
   output_path = "./../build/lambdas/RegisterDevice.zip"
 }
@@ -56,7 +56,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
-  filename = data.archive_file.RegisterDevice.output_path
+  filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = base64sha256(data.archive_file.RegisterDevice.output_path)
 
   environment {

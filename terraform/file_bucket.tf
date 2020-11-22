@@ -24,7 +24,7 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
 }
 
 data "archive_file" "S3ObjectCreated" {
-  type = "zip"
+  type        = "zip"
   source_file = "./../build/lambdas/S3ObjectCreated.js"
   output_path = "./../build/lambdas/S3ObjectCreated.zip"
 }
@@ -37,7 +37,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   runtime          = "nodejs12.x"
   layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
-  filename = data.archive_file.S3ObjectCreated.output_path
+  filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = base64sha256(data.archive_file.S3ObjectCreated.output_path)
 
   environment {
