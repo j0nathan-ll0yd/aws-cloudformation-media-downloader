@@ -34,11 +34,8 @@ nvm use lts/erbium
 # Install dependencies
 npm install
 
-# Build the AWS Lambda functions
-npm run build-code
-
-# Build the AWS Lambda node modules dependencies layer
-npm run build-node-modules
+# Build the AWS Lambda functions (using webpack)
+npm run build
 
 # Run the tests to ensure everything is working
 npm run test
@@ -48,9 +45,9 @@ cd terraform
 terraform init
 terraform apply
 
-# Verify the application works locally
-npm run test-local-list
-npm run test-local-hook
+# Once complete, verify the application works remotely
+npm run test-remote-list
+npm run test-remote-hook
 ```
 
 ## Installation
@@ -70,11 +67,6 @@ brew install awscli
 aws configure
 ```
 
-* Install [jq](https://stedolan.github.io/jq/) (used for deployment scripts)
-
-```bash
-brew install jq
-```
 * Install [terraform](https://www.terraform.io/) (used for deployment scripts)
 
 ```bash
@@ -105,16 +97,11 @@ Once complete, run `terraform apply` and a new platform application will be crea
 
 ## Deployment
 
-* Deploy Code - To deploy code changes only, this command will package the distribution files and trigger a terraform apply.
+* Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
 
 ```bash
-npm run deploy-code
-```
-
-* Deploy `node_modules` - If you changed your package dependencies, run this command to update the Lambda layer.
-
-```bash
-npm run deploy-node-modules
+npm run build
+npm run deploy
 ```
 
 ### Production Testing

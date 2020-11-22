@@ -11,6 +11,6 @@ REQUEST_URL="https://${domain}/feedly?ApiKey=${api_key}"
 echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
---data @./../test/fixtures/handleFeedlyEvent/handleFeedlyEvent-200-OK.json \
-$REQUEST_URL | jsonpp
+--data @./../src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json \
+$REQUEST_URL | grep . | python -m json.tool
 

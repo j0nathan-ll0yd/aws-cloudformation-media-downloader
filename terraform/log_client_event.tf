@@ -19,16 +19,21 @@ resource "aws_cloudwatch_log_group" "LogClientEvent" {
   retention_in_days = 14
 }
 
+data "archive_file" "LogClientEvent" {
+  type        = "zip"
+  source_file = "./../build/lambdas/LogClientEvent.js"
+  output_path = "./../build/lambdas/LogClientEvent.zip"
+}
+
 resource "aws_lambda_function" "LogClientEvent" {
   description      = "Records an event from a client environment (e.g. App or Web)."
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "LogClientEvent"
   role             = aws_iam_role.LogClientEventRole.arn
-  handler          = "dist/main.handleClientEvent"
+  handler          = "LogClientEvent.handleClientEvent"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename         = data.archive_file.LogClientEvent.output_path
+  source_code_hash = base64sha256(data.archive_file.LogClientEvent.output_path)
 }
 
 resource "aws_api_gateway_resource" "LogEvent" {

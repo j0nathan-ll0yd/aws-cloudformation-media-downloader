@@ -1,8 +1,6 @@
 import * as AWS from 'aws-sdk'
 import {CompleteMultipartUploadOutput, CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
 import * as S3 from 'aws-sdk/clients/s3'
-import * as AWSXRay from 'aws-xray-sdk'
-//const s3 = AWSXRay.captureAWSClient(new AWS.S3({apiVersion: '2006-03-01'}))
 const s3 = new AWS.S3({apiVersion: '2006-03-01'})
 
 export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {

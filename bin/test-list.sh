@@ -11,4 +11,4 @@ REQUEST_URL="https://${domain}/files?ApiKey=${api_key}"
 echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
-$REQUEST_URL | jsonpp
+$REQUEST_URL | python -m json.tool

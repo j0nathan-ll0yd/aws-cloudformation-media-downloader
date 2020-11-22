@@ -126,6 +126,7 @@ export async function verifyAccessToken(token: string) {
   const secret = await getServerPrivateKey()
   try {
     const decoded = jwt.verify(token, secret)
+    return decoded
   } catch(err) {
     // err
   }

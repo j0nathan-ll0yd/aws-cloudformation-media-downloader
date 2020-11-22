@@ -1,14 +1,18 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
-    "sourceMap": true,
-    "moduleResolution": "node",
-    "allowJs": false,
-    "noEmit": true,
+    "target": "esnext",
+    "outDir": "./dist",
     "strict": false,
-    "isolatedModules": false,
-    "esModuleInterop": true
+    "types": ["node", "mocha"],
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "lib": ["ES2020.Promise"]
   },
   "include": [
     "src/**/*",

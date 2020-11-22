@@ -1,1 +1,13 @@
-{  "presets": [    "@babel/env",    "@babel/typescript"  ],  "plugins": [    "@babel/plugin-transform-runtime",    "@babel/proposal-class-properties",    "@babel/proposal-object-rest-spread"  ]}
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "node": "12"
+        }
+      }
+    ],
+    ["@babel/preset-typescript"]
+  ]
+}

@@ -36,16 +36,22 @@ resource "aws_cloudwatch_log_group" "ListFiles" {
   retention_in_days = 14
 }
 
+# Create a payload zip file from the function source code bundle
+data "archive_file" "ListFiles" {
+  type        = "zip"
+  source_file = "./../build/lambdas/ListFiles.js"
+  output_path = "./../build/lambdas/ListFiles.zip"
+}
+
 resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
-  handler          = "dist/main.listFiles"
+  handler          = "ListFiles.listFiles"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename         = data.archive_file.ListFiles.output_path
+  source_code_hash = base64sha256(data.archive_file.ListFiles.output_path)
 
   environment {
     variables = {

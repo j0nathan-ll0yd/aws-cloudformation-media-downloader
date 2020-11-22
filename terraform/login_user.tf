@@ -36,16 +36,21 @@ resource "aws_cloudwatch_log_group" "LoginUser" {
   retention_in_days = 14
 }
 
+data "archive_file" "LoginUser" {
+  type        = "zip"
+  source_file = "./../build/lambdas/LoginUser.js"
+  output_path = "./../build/lambdas/LoginUser.zip"
+}
+
 resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
-  filename         = "./../build/artifacts/dist.zip"
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
-  handler          = "dist/main.handleLoginUser"
+  handler          = "LoginUser.handleLoginUser"
   runtime          = "nodejs12.x"
-  layers           = [aws_lambda_layer_version.NodeModules.arn]
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
-  source_code_hash = filebase64sha256("./../build/artifacts/dist.zip")
+  filename         = data.archive_file.LoginUser.output_path
+  source_code_hash = base64sha256(data.archive_file.LoginUser.output_path)
 
   environment {
     variables = {
