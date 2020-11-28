@@ -6,6 +6,8 @@ coverage
 dist
 docs
 secure
+local
+temp
 node_modules
 cloudformation.json
 terraform/terraform.tfstate*
