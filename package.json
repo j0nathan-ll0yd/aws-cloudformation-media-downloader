@@ -13,6 +13,7 @@
     "test": "AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
+    "test-remote-loginUser": "./bin/test-loginUser.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "deploy": "cd terraform && terraform apply -auto-approve"
   },
