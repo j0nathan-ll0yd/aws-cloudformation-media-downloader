@@ -43,7 +43,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
-  source_code_hash = base64sha256(data.archive_file.WebhookFeedly.output_path)
+  source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
 
   environment {
     variables = {
@@ -147,7 +147,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
   filename         = data.archive_file.StartFileUpload.output_path
-  source_code_hash = base64sha256(data.archive_file.StartFileUpload.output_path)
+  source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
 
   environment {
     variables = {
@@ -182,7 +182,7 @@ resource "aws_lambda_function" "UploadPart" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.UploadPart.output_path
-  source_code_hash = base64sha256(data.archive_file.UploadPart.output_path)
+  source_code_hash = data.archive_file.UploadPart.output_base64sha256
 
   environment {
     variables = {
@@ -211,7 +211,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.CompleteFileUpload.output_path
-  source_code_hash = base64sha256(data.archive_file.CompleteFileUpload.output_path)
+  source_code_hash = data.archive_file.CompleteFileUpload.output_base64sha256
 
   environment {
     variables = {

@@ -51,7 +51,7 @@ resource "aws_lambda_function" "ListFiles" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
-  source_code_hash = base64sha256(data.archive_file.ListFiles.output_path)
+  source_code_hash = data.archive_file.ListFiles.output_base64sha256
 
   environment {
     variables = {

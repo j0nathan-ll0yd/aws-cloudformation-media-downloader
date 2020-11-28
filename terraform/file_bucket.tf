@@ -37,7 +37,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
-  source_code_hash = base64sha256(data.archive_file.S3ObjectCreated.output_path)
+  source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
 
   environment {
     variables = {

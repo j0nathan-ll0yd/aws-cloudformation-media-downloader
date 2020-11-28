@@ -33,7 +33,7 @@ resource "aws_lambda_function" "LogClientEvent" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path
-  source_code_hash = base64sha256(data.archive_file.LogClientEvent.output_path)
+  source_code_hash = data.archive_file.LogClientEvent.output_base64sha256
 }
 
 resource "aws_api_gateway_resource" "LogEvent" {

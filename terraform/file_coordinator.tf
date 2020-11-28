@@ -67,7 +67,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
-  source_code_hash = base64sha256(data.archive_file.FileCoordinator.output_path)
+  source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
 
   environment {
     variables = {

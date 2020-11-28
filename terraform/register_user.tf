@@ -57,7 +57,7 @@ resource "aws_lambda_function" "RegisterUser" {
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
-  source_code_hash = base64sha256(data.archive_file.RegisterUser.output_path)
+  source_code_hash = data.archive_file.RegisterUser.output_base64sha256
 
   environment {
     variables = {
