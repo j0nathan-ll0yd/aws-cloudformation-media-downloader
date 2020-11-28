@@ -18,43 +18,22 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "archive_file" "lambda_edge_zip" {
+data "archive_file" "CloudfrontMiddleware" {
   type        = "zip"
-  output_path = "/tmp/lambda_edge.zip"
-  source {
-    content  = <<EOF
-module.exports.handler = (event, context, callback) => {
-    console.log(JSON.stringify(event));
-	const request = event.Records[0].cf.request;
-    console.log(JSON.stringify(request));
-    if (request.querystring && request.querystring.match(/ApiKey/)) {
-      const querystringpart = request.querystring.split("=");
-      const headers = request.headers;
-      headers['x-api-key'] = [{"key": "X-API-Key", "value": querystringpart[1]}];
-      console.log(JSON.stringify(headers));
-      request.headers = headers;
-      console.log('FINAL REQUEST:'+JSON.stringify(request));
-	  callback(null, request);
-    }
-    else {
-      callback(null, request);
-    }
-};
-EOF
-    filename = "main.js"
-  }
+  source_file = "./../build/lambdas/CloudfrontMiddleware.js"
+  output_path = "./../build/lambdas/CloudfrontMiddleware.zip"
 }
 
 resource "aws_lambda_function" "CloudfrontMiddleware" {
   description      = "A lambda that acts as middleware before hitting the API."
-  filename         = data.archive_file.lambda_edge_zip.output_path
-  source_code_hash = data.archive_file.lambda_edge_zip.output_base64sha256
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
-  handler          = "main.handler"
+  handler          = "CloudfrontMiddleware.handler"
   runtime          = "nodejs12.x"
   publish          = true
   provider         = aws.us_east_1
+  filename         = data.archive_file.CloudfrontMiddleware.output_path
+  source_code_hash = data.archive_file.CloudfrontMiddleware.output_base64sha256
 }
 
 resource "aws_cloudfront_distribution" "Default" {
