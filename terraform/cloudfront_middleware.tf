@@ -3,6 +3,23 @@ resource "aws_iam_role" "CloudfrontMiddlewareRole" {
   assume_role_policy = data.aws_iam_policy_document.lamdba-edge-assume-role-policy.json
 }
 
+data "aws_iam_policy_document" "CloudfrontMiddleware" {
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
+  }
+}
+
+resource "aws_iam_policy" "CloudfrontMiddlewarePolicy" {
+  name   = "CloudfrontMiddlewarePolicy"
+  policy = data.aws_iam_policy_document.CloudfrontMiddleware.json
+}
+
+resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicy" {
+  role       = aws_iam_role.CloudfrontMiddlewareRole.name
+  policy_arn = aws_iam_policy.CloudfrontMiddlewarePolicy.arn
+}
+
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   role       = aws_iam_role.CloudfrontMiddlewareRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -41,6 +58,10 @@ resource "aws_cloudfront_distribution" "Default" {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
+    custom_header {
+      name = "X-Encryption-Key-Secret-Id"
+      value = aws_secretsmanager_secret.PrivateEncryptionKey.name
+    }
     custom_origin_config {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
@@ -50,7 +71,7 @@ resource "aws_cloudfront_distribution" "Default" {
   }
   ordered_cache_behavior {
     lambda_function_association {
-      event_type = "viewer-request"
+      event_type = "origin-request"
       lambda_arn = aws_lambda_function.CloudfrontMiddleware.qualified_arn
     }
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
