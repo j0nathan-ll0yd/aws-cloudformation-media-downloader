@@ -14,6 +14,18 @@ export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): 
   })
 }
 
+export function createBucket(params: S3.CreateBucketRequest): Promise<S3.CreateBucketOutput> {
+  return new Promise((resolve, reject) => {
+    s3.createBucket(params, (err, data) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(data)
+      }
+    })
+  })
+}
+
 export function completeMultipartUpload(params: S3.CompleteMultipartUploadRequest): Promise<CompleteMultipartUploadOutput> {
   return new Promise((resolve, reject) => {
     s3.completeMultipartUpload(params, (err, data) => {
