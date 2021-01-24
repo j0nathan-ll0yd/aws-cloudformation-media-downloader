@@ -82,3 +82,16 @@ resource "aws_api_gateway_integration" "ListFilesGet" {
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.ListFiles.invoke_arn
 }
+
+resource "aws_dynamodb_table" "UserFiles" {
+  name           = "UserFiles"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "userId"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+}

@@ -13,6 +13,9 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
     return response(context, statusCode, message)
   }
   try {
+    // query to get all files for the user
+    // query to get file details
+    // then can update iOS responses (to be consistent)!
     const params = {Bucket: process.env.Bucket, MaxKeys: 1000}
     logDebug('listObjects <=', params)
     const files = await listObjects({Bucket: process.env.Bucket, MaxKeys: 1000})

@@ -1,12 +1,13 @@
+
 {
   "Records": [
     {
       "cf": {
         "config": {
-          "distributionDomainName": "d3hq4puepv738x.cloudfront.net",
-          "distributionId": "E2DNG3QOKZMEHN",
-          "eventType": "viewer-request",
-          "requestId": "cQO-uHYQ-xQ0IEIaePL0jD7tEni64nSuACNHvYEIg9CxrJRQ0FyvXA=="
+          "distributionDomainName": "d1w0jv99u3f69v.cloudfront.net",
+          "distributionId": "E2BTRC9HQU9O02",
+          "eventType": "origin-request",
+          "requestId": "kog2rMsyQml3ayktDi2-5GponD3U7O94FC08WWu5IW7_Ga9UZvdUcw=="
         },
         "request": {
           "clientIp": "69.181.106.93",
@@ -14,13 +15,31 @@
             "host": [
               {
                 "key": "Host",
-                "value": "d3hq4puepv738x.cloudfront.net"
+                "value": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com"
+              }
+            ],
+            "x-forwarded-for": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "69.181.106.93"
               }
             ],
             "user-agent": [
               {
                 "key": "User-Agent",
-                "value": "curl/7.64.1"
+                "value": "Amazon CloudFront"
+              }
+            ],
+            "via": [
+              {
+                "key": "Via",
+                "value": "1.1 768759a7f9dec59242c036cf08687597.cloudfront.net (CloudFront)"
+              }
+            ],
+            "content-length": [
+              {
+                "key": "Content-Length",
+                "value": "605"
               }
             ],
             "content-type": [
@@ -28,21 +47,9 @@
                 "key": "content-type",
                 "value": "application/json"
               }
-            ],
-            "accept": [
-              {
-                "key": "accept",
-                "value": "application/json"
-              }
-            ],
-            "authorization": [
-              {
-                "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M"
-              }
             ]
           },
-          "method": "GET",
+          "method": "POST",
           "origin": {
             "custom": {
               "customHeaders": {
@@ -50,6 +57,12 @@
                   {
                     "key": "X-Encryption-Key-Secret-Id",
                     "value": "PrivateEncryptionKey"
+                  }
+                ],
+                "x-reserved-client-ip": [
+                  {
+                    "key": "X-Reserved-Client-IP",
+                    "value": "69.181.106.93"
                   }
                 ]
               },
@@ -65,7 +78,7 @@
             }
           },
           "querystring": "ApiKey=pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
-          "uri": "/files"
+          "uri": "/feedly"
         }
       }
     }

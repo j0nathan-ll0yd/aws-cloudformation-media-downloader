@@ -1,6 +1,7 @@
 var AWS = require('aws-sdk');
 var ytdl = require('ytdl-core');
 var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+var docClient = new AWS.DynamoDB.DocumentClient()
 
 var fileUrl = "https://www.youtube.com/watch?v=IJMl6lz8nDg";
 var fileId = ytdl.getURLVideoID(fileUrl);
@@ -25,6 +26,19 @@ var updateItem = {
   UpdateExpression: "SET #FN = :fn"
 };
 dynamodb.updateItem(updateItem, function(err, data) {
+  if (err) console.log(err, err.stack);
+  else     console.log(data);
+});
+
+var updateItem = {
+  ExpressionAttributeNames: { '#FID': 'fileId' },
+  ExpressionAttributeValues: { ':fid': docClient.createSet([fileId]) },
+  Key: { 'userId': '1' },
+  ReturnValues: 'NONE',
+  UpdateExpression: 'ADD #FID :fid',
+  TableName: 'UserFiles'
+};
+docClient.update(updateItem, function(err, data) {
   if (err) console.log(err, err.stack);
   else     console.log(data);
 });

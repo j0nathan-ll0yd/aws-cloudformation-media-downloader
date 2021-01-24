@@ -12,5 +12,6 @@ node_modules
 cloudformation.json
 terraform/terraform.tfstate*
 terraform/.terraform.tfstate.lock.info
+terraform/.terraform.lock.hcl
 terraform/.terraform
 .webpackCache

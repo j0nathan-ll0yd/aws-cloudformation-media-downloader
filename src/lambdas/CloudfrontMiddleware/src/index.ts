@@ -20,6 +20,16 @@ export async function handler(event: CloudFrontRequestEvent) {
 
 async function handleAuthorizationHeader(request: CloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
+  // if the request is coming from my IP, mock the Authorization header to map to userId 1
+  if (request.clientIp === request.origin.custom.customHeaders['x-reserved-client-ip'][0].value) {
+    headers['x-user-Id'] = [
+      {
+        'key': 'X-User-Id',
+        'value': 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456'
+      }
+    ]
+    return
+  }
   const authorizationHeader = headers.authorization[0].value
   const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
   const matches = authorizationHeader.match(jwtRegex)

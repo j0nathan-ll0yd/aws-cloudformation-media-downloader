@@ -47,7 +47,8 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
+      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
     }
   }
 }
@@ -199,8 +200,8 @@ resource "aws_cloudwatch_log_group" "UploadPart" {
 
 data "archive_file" "CompleteFileUpload" {
   type        = "zip"
-  source_file = "./../build/lambdas/UploadPart.js"
-  output_path = "./../build/lambdas/UploadPart.zip"
+  source_file = "./../build/lambdas/CompleteFileUpload.js"
+  output_path = "./../build/lambdas/CompleteFileUpload.zip"
 }
 
 resource "aws_lambda_function" "CompleteFileUpload" {
