@@ -1,10 +1,12 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {videoInfo} from 'ytdl-core'
+import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
 import {Metadata, UploadPartEvent} from '../../../types/main'
+import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {transformVideoInfoToMetadata, transformVideoIntoS3File} from '../../../util/transformers'
+import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
 
 export async function startFileUpload(event): Promise<UploadPartEvent> {
   logInfo('event <=', event)
@@ -13,9 +15,8 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
   try {
     logDebug('fetchVideoInfo <=', fileId)
     const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
-    logDebug('fetchVideoInfo =>', myVideoInfo)
     const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
-    const myS3File = transformVideoIntoS3File(myVideoInfo, process.env.Bucket)
+    const myDynamoItem = transformVideoIntoDynamoItem(myMetadata)
 
     const videoUrl = myMetadata.formats[0].url
     const options: AxiosRequestConfig = {
@@ -32,15 +33,23 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
     // TODO: Ensure these headers exist in the response
     const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
     const contentType = fileInfo.headers['content-type']
-    const key = myS3File.Key
+
+    myDynamoItem.size = bytesTotal
+    myDynamoItem.publishDate = new Date(myMetadata.published).toISOString()
+    myDynamoItem.contentType = contentType
+    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTable, myDynamoItem)
+    logDebug('updateItem <=', updateItemParams)
+    const updateResponse = await updateItem(updateItemParams)
+    logDebug('updateItem =>', updateResponse)
+
+    const key = myMetadata.fileName
     const bucket = process.env.Bucket // sourced via template.yaml
     const partSize = 1024 * 1024 * 5
     const params = {
       ACL: 'public-read',
       Bucket: process.env.Bucket,
       ContentType: contentType,
-      Key: key,
-      Metadata: myS3File.Metadata
+      Key: key
     }
     logInfo('createMultipartUpload <=', params)
     const output = await createMultipartUpload(params)

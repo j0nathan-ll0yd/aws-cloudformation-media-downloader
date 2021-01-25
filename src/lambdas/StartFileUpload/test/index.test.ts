@@ -1,6 +1,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import * as sinon from 'sinon'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as YouTube from '../../../lib/vendor/YouTube'
 import * as S3 from '../../../lib/vendor/AWS/S3'
 import {getFixture, partSize} from '../../../util/mocha-setup'
@@ -20,15 +21,18 @@ describe('#startFileUpload', () => {
   let mock
   let fetchVideoInfoStub
   let createMultipartUploadStub
+  let updateItemStub
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createMultipartUploadStub = sinon.stub(S3, 'createMultipartUpload')
     fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(localFixture('fetchVideoInfo-200-OK.json'))
+    updateItemStub = sinon.stub(DynamoDB, 'updateItem')
   })
   afterEach(() => {
     mock.reset()
     createMultipartUploadStub.restore()
     fetchVideoInfoStub.restore()
+    updateItemStub.restore()
   })
   it('should successfully handle a multipart upload', async () => {
     createMultipartUploadStub.returns(createMultipartUploadResponse)

@@ -40,6 +40,12 @@ describe('#handleFeedlyEvent', () => {
     expect(body.error.message).to.have.property('articleURL')
     expect(body.error.message.articleURL[0]).to.have.string('is required')
   })
+  it('should handle a missing user ID', async () => {
+    delete event.headers['X-User-Id']
+    event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))
+    const output = await handleFeedlyEvent(event, context)
+    expect(output.statusCode).to.equal(500)
+  })
   it('should handle an invalid event body', async () => {
     event.body = 'hello'
     const output = await handleFeedlyEvent(event, context)

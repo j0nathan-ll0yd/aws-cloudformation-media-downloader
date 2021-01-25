@@ -5,8 +5,24 @@ import {ScheduledEvent} from '../../../types/vendor/Amazon/CloudWatch/ScheduledE
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
-import {newFileParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {newFileParams, userFileParams} from '../../../util/dynamodb-helpers'
+import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+
+async function addFile(fileId) {
+  const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
+  logDebug('updateItem <=', params)
+  const updateResponse = await updateItem(params)
+  logDebug('updateItem =>', updateResponse)
+  return updateResponse
+}
+
+async function associateFileToUser(fileId, userId) {
+  const params = userFileParams(process.env.DynamoDBTableUserFiles, userId, fileId)
+  logDebug('updateItem <=', params)
+  const updateResponse = await updateItem(params)
+  logDebug('updateItem =>', updateResponse)
+  return updateResponse
+}
 
 export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent, context: Context) {
   logInfo('event <=', event)
@@ -17,11 +33,12 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
   try {
     const body = (requestBody as Webhook)
     const fileId = await getVideoID(body.articleURL)
-    const updateItemParams = newFileParams(process.env.DynamoDBTable, fileId)
-    logDebug('updateItem <=', updateItemParams)
-    const updateItemResponse = await updateItem(updateItemParams)
-    logDebug('updateItem =>', updateItemResponse)
-    if (updateItemResponse.Attributes && updateItemResponse.Attributes.hasOwnProperty('fileName')) {
+    const userId = getUserIdFromEvent(event as APIGatewayEvent)
+    const addFilePromise = addFile(fileId)
+    const associateFilePromise = associateFileToUser(fileId, userId)
+    const results = await Promise.all([addFilePromise, associateFilePromise])
+    const addFileResponse = results[0]
+    if (addFileResponse.Attributes && addFileResponse.Attributes.hasOwnProperty('fileName')) {
       return response(context, 204)
     } else {
       return response(context, 202, {status: 'Accepted'})

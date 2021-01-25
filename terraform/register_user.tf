@@ -5,7 +5,7 @@ resource "aws_iam_role" "RegisterUserRole" {
 
 data "aws_iam_policy_document" "RegisterUser" {
   statement {
-    actions   = ["dynamodb:UpdateItem"]
+    actions   = ["dynamodb:PutItem"]
     resources = [aws_dynamodb_table.Users.arn]
   }
   statement {
@@ -61,7 +61,7 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTable         = aws_dynamodb_table.Users.arn
+      DynamoDBTable         = aws_dynamodb_table.Users.name
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
