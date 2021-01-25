@@ -27,7 +27,7 @@
             "user-agent": [
               {
                 "key": "User-Agent",
-                "value": "Amazon CloudFront"
+                "value": "localhost@lifegames"
               }
             ],
             "via": [
