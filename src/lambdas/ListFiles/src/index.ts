@@ -12,9 +12,6 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
     return response(context, statusCode, message)
   }
   try {
-    // query to get all files for the user
-    // query to get file details
-    // then can update iOS responses (to be consistent)!
     const myResponse = { contents: [], keyCount: 0 }
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
     const userFileParams = getUserFilesParams(process.env.DynamoTableUserFiles, userId)

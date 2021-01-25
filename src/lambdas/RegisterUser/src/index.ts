@@ -32,11 +32,6 @@ export async function handleRegisterUser(event: APIGatewayEvent, context: Contex
     lastName: body.lastName
   }
 
-  // logDebug('createBucket <=')
-  // const createBucketResponse = await createBucket({Bucket: user.userId})
-  // logDebug('createBucket =>', createBucketResponse)
-  // Need a way to link registerDevice details with registerUser details
-
   const identityProviderApple = {
     accessToken: appleToken.access_token,
     refreshToken: appleToken.refresh_token,

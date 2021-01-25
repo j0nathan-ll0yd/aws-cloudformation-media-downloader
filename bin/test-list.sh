@@ -8,7 +8,7 @@ domain=`terraform output cloudfront_distribution_domain | tr -d '"'`
 api_key=`terraform output api_gateway_api_key | tr -d '"'`
 
 REQUEST_URL="https://${domain}/files?ApiKey=${api_key}"
-echo "Calling $REQUEST_URL"
+echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "User-Agent: localhost@lifegames" \
 -H "Accept: application/json" \
