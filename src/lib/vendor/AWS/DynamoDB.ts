@@ -34,3 +34,25 @@ export function scan(params: DocumentClient.ScanInput): Promise<DocumentClient.S
     })
   })
 }
+
+export function batchGet(params: DocumentClient.BatchGetItemInput): Promise<DocumentClient.BatchGetItemOutput> {
+  return new Promise((resolve, reject) => {
+    docClient.batchGet(params, (error, multipart) => {
+      if (error) {
+        return reject(error)
+      }
+      return resolve(multipart)
+    })
+  })
+}
+
+export function query(params: DocumentClient.QueryInput): Promise<DocumentClient.QueryOutput> {
+  return new Promise((resolve, reject) => {
+    docClient.query(params, (error, multipart) => {
+      if (error) {
+        return reject(error)
+      }
+      return resolve(multipart)
+    })
+  })
+}

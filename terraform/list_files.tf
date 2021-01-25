@@ -5,8 +5,8 @@ resource "aws_iam_role" "ListFilesRole" {
 
 data "aws_iam_policy_document" "ListFiles" {
   statement {
-    actions   = ["s3:ListBucket"]
-    resources = ["arn:aws:s3:::${aws_s3_bucket.Files.bucket}/*"]
+    actions   = ["dynamodb:Query", "dynamodb:BatchGetItem"]
+    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
   }
 }
 
@@ -55,7 +55,8 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = {
-      Bucket = aws_s3_bucket.Files.id
+      DynamoTableFiles     = aws_dynamodb_table.Files.name
+      DynamoTableUserFiles = aws_dynamodb_table.UserFiles.name
     }
   }
 }

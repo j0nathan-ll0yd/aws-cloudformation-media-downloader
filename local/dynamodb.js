@@ -12,6 +12,42 @@ console.log( now );
 
 var oldTime = now - 100000;
 
+var userFilesQuery = {
+  ExpressionAttributeValues: {
+    ':uid': 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456'
+  },
+  ExpressionAttributeNames:{
+    '#uid': 'userId'
+  },
+  KeyConditionExpression: "#uid = :uid",
+  TableName: "UserFiles"
+};
+docClient.query(userFilesQuery, function(err, data) {
+  if (err) console.log(err, err.stack);
+  else     console.log(JSON.stringify(data, null, 2));
+
+  const Keys = []
+  const mySet = docClient.createSet(data.Items[0].fileId.values)
+  console.log(typeof mySet);
+  console.log(mySet);
+  console.log(typeof mySet.values);
+  console.log(mySet.values);
+  for (const fileId of mySet.values) {
+    console.log(`fileId = ${fileId}`)
+    Keys.push({fileId})
+  }
+
+  var filesQuery = {
+    RequestItems: {
+      "Files": { Keys }
+    }
+  };
+  console.log('filesQuery = '+JSON.stringify(filesQuery, null, 2));
+  docClient.batchGet(filesQuery, function(err, data) {
+    if (err) console.log(err, err.stack);
+    else     console.log(JSON.stringify(data, null, 2));
+  });
+});
 
 var updateItem = {
   ExpressionAttributeNames: {
@@ -76,4 +112,3 @@ dynamodb.updateItem(initalItem, function(err, data) {
   else     console.log(data);
   // If there are return values, its done, send another error
 });
-

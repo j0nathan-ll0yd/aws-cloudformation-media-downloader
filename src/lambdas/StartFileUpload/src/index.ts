@@ -18,11 +18,6 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
     const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
     const myDynamoItem = transformVideoIntoDynamoItem(myMetadata)
 
-    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTable, myDynamoItem)
-    logDebug('updateItem <=', updateItemParams)
-    const updateResponse = await updateItem(updateItemParams)
-    logDebug('updateItem =>', updateResponse)
-
     const videoUrl = myMetadata.formats[0].url
     const options: AxiosRequestConfig = {
       method: 'head',
@@ -38,6 +33,15 @@ export async function startFileUpload(event): Promise<UploadPartEvent> {
     // TODO: Ensure these headers exist in the response
     const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
     const contentType = fileInfo.headers['content-type']
+
+    myDynamoItem.size = bytesTotal
+    myDynamoItem.publishDate = new Date(myMetadata.published).toISOString()
+    myDynamoItem.contentType = contentType
+    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTable, myDynamoItem)
+    logDebug('updateItem <=', updateItemParams)
+    const updateResponse = await updateItem(updateItemParams)
+    logDebug('updateItem =>', updateResponse)
+
     const key = myMetadata.fileName
     const bucket = process.env.Bucket // sourced via template.yaml
     const partSize = 1024 * 1024 * 5

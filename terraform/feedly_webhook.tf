@@ -187,8 +187,9 @@ resource "aws_lambda_function" "UploadPart" {
 
   environment {
     variables = {
-      Bucket        = aws_s3_bucket.Files.id
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      Bucket                 = aws_s3_bucket.Files.id
+      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
+      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
     }
   }
 }

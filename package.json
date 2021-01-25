@@ -27,7 +27,7 @@
     "jwks-rsa": "^1.12.2",
     "uuid": "^8.3.0",
     "validate.js": "^0.13.1",
-    "ytdl-core": "^4.4.4"
+    "ytdl-core": "^4.4.5"
   },
   "bundleDependencies": [],
   "devDependencies": {

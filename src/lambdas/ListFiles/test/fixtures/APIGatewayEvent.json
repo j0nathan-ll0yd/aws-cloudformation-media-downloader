@@ -3,27 +3,27 @@
   "path": "/files",
   "httpMethod": "GET",
   "headers": {
-    "Accept": "application/json",
     "CloudFront-Forwarded-Proto": "https",
     "CloudFront-Is-Desktop-Viewer": "true",
     "CloudFront-Is-Mobile-Viewer": "false",
     "CloudFront-Is-SmartTV-Viewer": "false",
     "CloudFront-Is-Tablet-Viewer": "false",
     "CloudFront-Viewer-Country": "US",
-    "content-type": "application/json",
-    "Host": "zc21p8daqc.execute-api.us-west-2.amazonaws.com",
-    "User-Agent": "curl/7.64.1",
-    "Via": "2.0 89d40f9555bb19bc571952b32ca87399.cloudfront.net (CloudFront)",
-    "X-Amz-Cf-Id": "2riMUco-cLu_E2VKQ3t1JTD7zkvXSjQ80EJS-EDauyCaV6pdXG27uA==",
-    "X-Amzn-Trace-Id": "Root=1-5de2c6aa-9b23e71474c978cc6c4dc844",
-    "X-Forwarded-For": "69.181.106.93, 70.132.18.158",
+    "Content-Type": "application/json",
+    "Host": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "Amazon CloudFront",
+    "Via": "2.0 20f34d70b403debb451d5f6d84b45afb.cloudfront.net (CloudFront), 1.1 c9ce112dce78418fe2a7bbe639a34f78.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "coF2MSvmBR3pEelFWkAzrwhfeMU2QseWStY7EDRPFMtBujPJPMxR6Q==",
+    "X-Amzn-Trace-Id": "Root=1-600e0b25-4c6012a677402aa61cf0f72a",
+    "X-API-Key": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
+    "X-Encryption-Key-Secret-Id": "PrivateEncryptionKey",
+    "X-Forwarded-For": "69.181.106.93, 64.252.73.248, 130.176.100.101",
     "X-Forwarded-Port": "443",
-    "X-Forwarded-Proto": "https"
+    "X-Forwarded-Proto": "https",
+    "X-Reserved-Client-IP": "69.181.106.93",
+    "X-User-Id": "abcdefgh-ijkl-mnop-qrst-uvwxyz123456"
   },
   "multiValueHeaders": {
-    "Accept": [
-      "application/json"
-    ],
     "CloudFront-Forwarded-Proto": [
       "https"
     ],
@@ -42,82 +42,87 @@
     "CloudFront-Viewer-Country": [
       "US"
     ],
-    "content-type": [
+    "Content-Type": [
       "application/json"
     ],
     "Host": [
-      "zc21p8daqc.execute-api.us-west-2.amazonaws.com"
+      "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com"
     ],
     "User-Agent": [
-      "curl/7.64.1"
+      "Amazon CloudFront"
     ],
     "Via": [
-      "2.0 89d40f9555bb19bc571952b32ca87399.cloudfront.net (CloudFront)"
+      "2.0 20f34d70b403debb451d5f6d84b45afb.cloudfront.net (CloudFront), 1.1 c9ce112dce78418fe2a7bbe639a34f78.cloudfront.net (CloudFront)"
     ],
     "X-Amz-Cf-Id": [
-      "2riMUco-cLu_E2VKQ3t1JTD7zkvXSjQ80EJS-EDauyCaV6pdXG27uA=="
+      "coF2MSvmBR3pEelFWkAzrwhfeMU2QseWStY7EDRPFMtBujPJPMxR6Q=="
     ],
     "X-Amzn-Trace-Id": [
-      "Root=1-5de2c6aa-9b23e71474c978cc6c4dc844"
+      "Root=1-600e0b25-4c6012a677402aa61cf0f72a"
+    ],
+    "X-API-Key": [
+      "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
+    ],
+    "X-Encryption-Key-Secret-Id": [
+      "PrivateEncryptionKey"
     ],
     "X-Forwarded-For": [
-      "69.181.106.93, 70.132.18.158"
+      "69.181.106.93, 64.252.73.248, 130.176.100.101"
     ],
     "X-Forwarded-Port": [
       "443"
     ],
     "X-Forwarded-Proto": [
       "https"
+    ],
+    "X-Reserved-Client-IP": [
+      "69.181.106.93"
+    ],
+    "X-User-Id": [
+      "abcdefgh-ijkl-mnop-qrst-uvwxyz123456"
     ]
   },
   "queryStringParameters": {
-    "ApiKey": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+    "ApiKey": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
   },
   "multiValueQueryStringParameters": {
     "ApiKey": [
-      "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc"
+      "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
     ]
   },
   "pathParameters": null,
-  "stageVariables": {
-    "Stack": "Prod"
-  },
+  "stageVariables": null,
   "requestContext": {
-    "resourceId": "o44ofo",
-    "authorizer": {
-      "principalId": "me",
-      "integrationLatency": 2895
-    },
+    "resourceId": "8xubtd",
     "resourcePath": "/files",
-    "operationName": "listFiles",
     "httpMethod": "GET",
-    "extendedRequestId": "D_P6pFuSvHcF_kA=",
-    "requestTime": "30/Nov/2019:19:44:42 +0000",
-    "path": "/Prod/files",
+    "extendedRequestId": "Zrat4EbivHcFc-A=",
+    "requestTime": "25/Jan/2021:00:04:53 +0000",
+    "path": "/prod/files",
     "accountId": "203465012143",
     "protocol": "HTTP/1.1",
-    "stage": "Prod",
-    "domainPrefix": "zc21p8daqc",
-    "requestTimeEpoch": 1575143082400,
-    "requestId": "5799592d-0333-48bb-8c57-f48c5fecd797",
+    "stage": "prod",
+    "domainPrefix": "lhpq0s2uk8",
+    "requestTimeEpoch": 1611533093579,
+    "requestId": "5a4a725b-4c12-4362-b513-8c9e1534cadc",
     "identity": {
       "cognitoIdentityPoolId": null,
       "cognitoIdentityId": null,
+      "apiKey": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
       "principalOrgId": null,
-      "apiKey": "pRauC0NteI2XM5zSLgDzDaROosvnk1kF1H0ID2zc",
       "cognitoAuthenticationType": null,
       "userArn": null,
-      "apiKeyId": "yzr34xwmb0",
-      "userAgent": "curl/7.64.1",
+      "apiKeyId": "8w2rf0cnyc",
+      "userAgent": "Amazon CloudFront",
       "accountId": null,
       "caller": null,
-      "sourceIp": "69.181.106.93",
+      "sourceIp": "64.252.73.248",
       "accessKey": null,
       "cognitoAuthenticationProvider": null,
       "user": null
     },
-    "domainName": "zc21p8daqc.execute-api.us-west-2.amazonaws.com",
-    "apiId": "zc21p8daqc"
+    "domainName": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
+    "apiId": "lhpq0s2uk8"
   },
   "body": null,
   "isBase64Encoded": false

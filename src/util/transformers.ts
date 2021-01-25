@@ -57,11 +57,14 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
 export function transformVideoIntoDynamoItem(metadata: Metadata) {
     return {
       fileId: metadata.videoId,
-      fileKey: metadata.fileName,
+      key: metadata.fileName,
+      size: 0,
+      contentType: undefined,
       availableAt: Date.now().toString(),
       authorName: metadata.author.name,
       authorUser: metadata.author.user,
       title: metadata.title,
+      publishDate: undefined,
       description: metadata.description
     }
 }

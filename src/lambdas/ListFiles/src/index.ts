@@ -1,10 +1,9 @@
 import {APIGatewayEvent, Context} from 'aws-lambda'
-import {listObjects} from '../../../lib/vendor/AWS/S3'
-import {ExtendedS3Object} from '../../../types/main'
+import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {ScheduledEvent} from '../../../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {objectKeysToLowerCase} from '../../../util/transformers'
+import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
+import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
 export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context: Context) {
   logInfo('event <=', event)
@@ -16,16 +15,21 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
     // query to get all files for the user
     // query to get file details
     // then can update iOS responses (to be consistent)!
-    const params = {Bucket: process.env.Bucket, MaxKeys: 1000}
-    logDebug('listObjects <=', params)
-    const files = await listObjects({Bucket: process.env.Bucket, MaxKeys: 1000})
-    logDebug('listObjects =>', files)
-    files.Contents.forEach((file: ExtendedS3Object) => {
-      // https://lifegames-app-s3bucket-pq2lluyi2i12.s3.amazonaws.com/20191209-[sxephil].mp4
-      file.FileUrl = `https://${files.Name}.s3.amazonaws.com/${encodeURIComponent(file.Key)}`
-      return file
-    })
-    return response(context, 200, objectKeysToLowerCase(files))
+    const myResponse = { contents: [], keyCount: 0 }
+    const userId = getUserIdFromEvent(event as APIGatewayEvent)
+    const userFileParams = getUserFilesParams(process.env.DynamoTableUserFiles, userId)
+    logDebug('query <=', userFileParams)
+    const userFilesResponse = await query(userFileParams)
+    logDebug('query =>', userFilesResponse)
+    if (userFilesResponse.Count > 0) {
+      const fileParams = getBatchFilesParams(process.env.DynamoTableFiles, userFilesResponse.Items[0].fileId.values)
+      logDebug('query <=', fileParams)
+      const fileResponse = await batchGet(fileParams)
+      logDebug('query =>', fileResponse)
+      myResponse.contents = fileResponse.Responses[process.env.DynamoTableFiles].filter(file => file.url)
+      myResponse.keyCount = myResponse.contents.length
+    }
+    return response(context, 200, myResponse)
   } catch (error) {
     throw new Error(error)
   }

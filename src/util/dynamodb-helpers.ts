@@ -2,9 +2,25 @@ import * as AWS from 'aws-sdk'
 import {IdentityProviderApple, User} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
+function transformObjectToDynamoUpdateQuery(item: object) {
+  let UpdateExpression = 'SET'
+  const ExpressionAttributeNames = {}
+  const ExpressionAttributeValues = {}
+  for (const property in item) {
+    if (property === 'fileId') { continue }
+    if (item.hasOwnProperty(property)) {
+      UpdateExpression += ` #${property} = :${property} ,`
+      ExpressionAttributeNames['#' + property] = property
+      ExpressionAttributeValues[':' + property] = item[property]
+    }
+  }
+  UpdateExpression = UpdateExpression.slice(0, -1)
+  return {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues}
+}
+
 export function updateCompletedFileParams(tableName, fileId, fileUrl) {
   return {
-    ExpressionAttributeNames: { '#FN': 'fileUrl' },
+    ExpressionAttributeNames: { '#FN': 'url' },
     ExpressionAttributeValues: { ':fn': fileUrl },
     Key: { 'fileId': fileId },
     ReturnValues: 'ALL_NEW',
@@ -18,7 +34,7 @@ export function scanForFileParams(tableName) {
     ExpressionAttributeNames: {
       '#AA': 'availableAt',
       '#FID': 'fileId',
-      '#FN': 'fileUrl'
+      '#FN': 'url'
     },
     ExpressionAttributeValues: {
       ':aa': Date.now().toString()
@@ -62,23 +78,39 @@ export function newUserParams(tableName, user: User, identityProviderApple: Iden
 }
 
 export function updateFileMetadataParams(tableName, item) {
-  let UpdateExpression = 'SET'
-  const ExpressionAttributeNames = {}
-  const ExpressionAttributeValues = {}
-  for (const property in item) {
-    if (property === 'fileId') { continue }
-    if (item.hasOwnProperty(property)) {
-      UpdateExpression += ` #${property} = :${property} ,`
-      ExpressionAttributeNames['#' + property] = property
-      ExpressionAttributeValues[':' + property] = item[property]
-    }
-  }
-  UpdateExpression = UpdateExpression.slice(0, -1)
+  const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(item)
   return {
     Key: { 'fileId': item.fileId },
     TableName: tableName,
     UpdateExpression,
     ExpressionAttributeNames,
     ExpressionAttributeValues
+  }
+}
+
+export function getUserFilesParams(tableName, userId) {
+  return {
+    ExpressionAttributeValues: {
+      ':uid': userId
+    },
+    ExpressionAttributeNames:{
+      '#uid': 'userId'
+    },
+    KeyConditionExpression: '#uid = :uid',
+    TableName: tableName
+  }
+}
+
+export function getBatchFilesParams(tableName:string, files) {
+  const Keys = []
+  const mySet = docClient.createSet(files)
+  for (const fileId of mySet.values) {
+    Keys.push({fileId})
+  }
+
+  return {
+    RequestItems: {
+      [tableName]: { Keys }
+    }
   }
 }
