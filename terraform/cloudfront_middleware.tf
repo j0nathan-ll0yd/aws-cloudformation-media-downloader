@@ -85,7 +85,7 @@ resource "aws_cloudfront_distribution" "Production" {
     viewer_protocol_policy = "https-only"
     forwarded_values {
       query_string = true
-      headers      = ["X-API-Key", "Authorization"]
+      headers      = ["X-API-Key", "Authorization", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -103,7 +103,7 @@ resource "aws_cloudfront_distribution" "Production" {
     target_origin_id       = "CloudfrontMiddleware"
     forwarded_values {
       query_string = true
-      headers      = ["X-API-Key", "Authorization"]
+      headers      = ["X-API-Key", "Authorization", "User-Agent"]
       cookies {
         forward = "none"
       }

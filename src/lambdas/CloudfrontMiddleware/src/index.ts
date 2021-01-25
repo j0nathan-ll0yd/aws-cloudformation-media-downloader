@@ -21,7 +21,9 @@ export async function handler(event: CloudFrontRequestEvent) {
 async function handleAuthorizationHeader(request: CloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
   // if the request is coming from my IP, mock the Authorization header to map to userId 1
-  if (request.clientIp === request.origin.custom.customHeaders['x-reserved-client-ip'][0].value) {
+  const reservedIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value
+  const userAgent = headers['user-agent'][0].value
+  if (request.clientIp === reservedIp && userAgent === 'localhost@lifegames') {
     headers['x-user-Id'] = [
       {
         'key': 'X-User-Id',
