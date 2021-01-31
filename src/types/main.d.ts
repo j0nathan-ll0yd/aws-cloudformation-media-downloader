@@ -1,5 +1,5 @@
 import {S3} from 'aws-sdk'
-import {videoFormat} from 'ytdl-core'
+import {Author, videoFormat} from 'ytdl-core'
 import {Part} from '../../node_modules/aws-sdk/clients/s3'
 import {AmazonSNSEvent, Record, Sns} from './vendor/Amazon/SNS/Event'
 
@@ -16,6 +16,9 @@ interface UploadFileEvent extends AmazonSNSEvent {
 }
 
 interface Metadata {
+  videoId: string,
+  fileName: string,
+  escapedTitle: string,
   description: string,
   formats: videoFormat[]
   mimeType: string,
@@ -24,14 +27,7 @@ interface Metadata {
   viewCount?: number,
   timestamp?: number,
   keywords?: string[]
-  author: {
-      id: string;
-      name: string;
-      avatar: string;
-      user: string;
-      channel_url: string;
-      user_url: string;
-  },
+  author: Author,
   title: string,
   published: number // time in milliseconds
 }

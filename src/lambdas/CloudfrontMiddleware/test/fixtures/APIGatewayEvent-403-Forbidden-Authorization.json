@@ -1,13 +1,12 @@
-
 {
   "Records": [
     {
       "cf": {
         "config": {
-          "distributionDomainName": "d1w0jv99u3f69v.cloudfront.net",
-          "distributionId": "E2BTRC9HQU9O02",
+          "distributionDomainName": "d3hq4puepv738x.cloudfront.net",
+          "distributionId": "E2DNG3QOKZMEHN",
           "eventType": "origin-request",
-          "requestId": "kog2rMsyQml3ayktDi2-5GponD3U7O94FC08WWu5IW7_Ga9UZvdUcw=="
+          "requestId": "PpRpkaIbG1f0k6NnBGz7Pw3OLxbPoK66koJimWUEyRhp06ej9cCiIA=="
         },
         "request": {
           "clientIp": "69.181.106.93",
@@ -16,6 +15,12 @@
               {
                 "key": "Host",
                 "value": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com"
+              }
+            ],
+            "authorization": [
+              {
+                "key": "Authorization",
+                "value": "Blah"
               }
             ],
             "x-forwarded-for": [
@@ -27,25 +32,31 @@
             "user-agent": [
               {
                 "key": "User-Agent",
-                "value": "localhost@lifegames"
+                "value": "Amazon CloudFront"
               }
             ],
             "via": [
               {
                 "key": "Via",
-                "value": "1.1 768759a7f9dec59242c036cf08687597.cloudfront.net (CloudFront)"
+                "value": "1.1 7df5529d76406ef9b72e50e65c547e0a.cloudfront.net (CloudFront)"
               }
             ],
             "content-length": [
               {
                 "key": "Content-Length",
-                "value": "605"
+                "value": "87"
               }
             ],
             "content-type": [
               {
                 "key": "content-type",
                 "value": "application/json"
+              }
+            ],
+            "accept-encoding": [
+              {
+                "key": "accept-encoding",
+                "value": "gzip, deflate, br"
               }
             ]
           },
@@ -57,12 +68,6 @@
                   {
                     "key": "X-Encryption-Key-Secret-Id",
                     "value": "PrivateEncryptionKey"
-                  }
-                ],
-                "x-reserved-client-ip": [
-                  {
-                    "key": "X-Reserved-Client-IP",
-                    "value": "69.181.106.93"
                   }
                 ]
               },
@@ -78,7 +83,7 @@
             }
           },
           "querystring": "ApiKey=pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
-          "uri": "/feedly"
+          "uri": "/login"
         }
       }
     }

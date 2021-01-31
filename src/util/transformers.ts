@@ -22,45 +22,50 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
 
 export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    for (const key of ['author', 'description', 'published', 'title']) {
-        if (!myVideoInfo[key]) {
+    logDebug('videoDetails', myVideoInfo.videoDetails)
+    // @ts-ignore
+    const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
+    logDebug('thumbnails', thumbnails)
+    for (const key of ['author', 'description', 'publishDate', 'title']) {
+        if (!myVideoInfo.videoDetails[key]) {
             throw new Error(`myVideoInfo missing property ${key}`)
         }
     }
-    //noinspection SpellCheckingInspection
-    const {author, description, iurlmaxres, published, thumbnail_url, title} = myVideoInfo
+
+    const date = new Date(Date.parse(publishDate))
+    const ext = myVideoFormat.container
+    const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
+    const fileName = `${uploadDate}-[${author.name}].${ext}`
+    const escapedTitle = title.replace(/[°()@,;:"\/\[\]\\?={}’]/g, '')
+
     return {
+        videoId,
+        fileName,
+        escapedTitle,
         author,
         description,
         ext: myVideoFormat.container,
         formats: [myVideoFormat],
-        imageUri: iurlmaxres || thumbnail_url,
+        // @ts-ignore
+        imageUri: thumbnails[thumbnails.length-1].url,
         mimeType: myVideoFormat.mimeType,
-        published,
+        published: Date.parse(publishDate),
         title
     }
 }
 
-export function sourceFilenameFromVideoInfo(myVideoInfo: videoInfo): string {
-    const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    const {author: {name}, published} = myVideoInfo
-    const date = new Date(published)
-    const ext = myVideoFormat.container
-    const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
-    return `${uploadDate}-[${name}].${ext}`
-}
-
-export function transformVideoIntoS3File(myVideoInfo: videoInfo, myBucket: string) {
-    // const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-    const {video_url, title} = myVideoInfo
-    // NetworkingError: Invalid character in header content ["x-amz-meta-title"]
-    // Must adhere to https://tools.ietf.org/html/rfc2616#section-4.2
-    const escapedTitle = title.replace(/[°()@,;:"\/\[\]\\?={}’]/g, '')
+export function transformVideoIntoDynamoItem(metadata: Metadata) {
     return {
-        Body: video_url,
-        Bucket: myBucket,
-        Key: sourceFilenameFromVideoInfo(myVideoInfo),
-        Metadata: {title: escapedTitle}
+      fileId: metadata.videoId,
+      key: metadata.fileName,
+      size: 0,
+      contentType: undefined,
+      availableAt: Date.now().toString(),
+      authorName: metadata.author.name,
+      authorUser: metadata.author.user,
+      title: metadata.title,
+      publishDate: undefined,
+      description: metadata.description
     }
 }
 

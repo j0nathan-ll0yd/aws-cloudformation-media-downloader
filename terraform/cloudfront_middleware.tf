@@ -53,14 +53,18 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   source_code_hash = data.archive_file.CloudfrontMiddleware.output_base64sha256
 }
 
-resource "aws_cloudfront_distribution" "Default" {
+resource "aws_cloudfront_distribution" "Production" {
   origin {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
     custom_header {
-      name = "X-Encryption-Key-Secret-Id"
+      name  = "X-Encryption-Key-Secret-Id"
       value = aws_secretsmanager_secret.PrivateEncryptionKey.name
+    }
+    custom_header {
+      name  = "X-Reserved-Client-IP"
+      value = chomp(data.http.icanhazip.body)
     }
     custom_origin_config {
       origin_protocol_policy = "https-only"
@@ -81,7 +85,7 @@ resource "aws_cloudfront_distribution" "Default" {
     viewer_protocol_policy = "https-only"
     forwarded_values {
       query_string = true
-      headers      = ["X-API-Key"]
+      headers      = ["X-API-Key", "Authorization", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -99,7 +103,7 @@ resource "aws_cloudfront_distribution" "Default" {
     target_origin_id       = "CloudfrontMiddleware"
     forwarded_values {
       query_string = true
-      headers      = ["X-API-Key"]
+      headers      = ["X-API-Key", "Authorization", "User-Agent"]
       cookies {
         forward = "none"
       }

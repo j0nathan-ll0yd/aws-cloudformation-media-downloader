@@ -125,9 +125,9 @@ export async function createAccessToken(userId: string) {
 export async function verifyAccessToken(token: string) {
   const secret = await getServerPrivateKey()
   try {
-    const decoded = jwt.verify(token, secret)
-    return decoded
+    return jwt.verify(token, secret)
   } catch(err) {
-    // err
+    logError(`verifyAccessToken <= ${err}`)
+    throw new Error(err)
   }
 }

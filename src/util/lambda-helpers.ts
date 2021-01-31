@@ -1,3 +1,5 @@
+import {APIGatewayEvent} from 'aws-lambda'
+
 export function response(context, statusCode, body?, headers?) {
     let code = 'custom-5XX-generic'
     let error = false
@@ -51,4 +53,12 @@ export function logDebug(message, stringOrObject?) {
 
 export function logError(message, stringOrObject?) {
     console.error(message, stringOrObject ? stringify(stringOrObject) : '')
+}
+
+export function getUserIdFromEvent(event: APIGatewayEvent) {
+    const userId = event.headers['X-User-Id']
+    if (!userId) {
+        throw new Error('No X-User-Id in Header')
+    }
+    return userId
 }
