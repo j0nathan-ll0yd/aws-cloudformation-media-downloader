@@ -1,8 +1,0 @@
-import {ExtendedS3Object} from '../types/main'
-
-class ExtendedS3Object implements ExtendedS3Object {
-  greeting: string;
-  greet() {
-    return "Hello, " + this.greeting;
-  }
-}
