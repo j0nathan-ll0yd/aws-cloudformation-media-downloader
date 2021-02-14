@@ -10,24 +10,29 @@ export function response(context, statusCode, body?, headers?) {
         error = true
     }
     if (error) {
+        const rawBody = {
+            error: { code, message:  body },
+            requestId: context.awsRequestId
+        }
+        logDebug('response ==', rawBody)
         return {
-            body: JSON.stringify({
-                error: { code, message:  body },
-                requestId: context.awsRequestId
-            }),
+            body: JSON.stringify(rawBody),
             headers,
             statusCode
         }
     } else if (body) {
+        const rawBody = {
+            body,
+            requestId: context.awsRequestId
+        }
+        logDebug('response ==', rawBody)
         return {
-            body: JSON.stringify({
-                body,
-                requestId: context.awsRequestId
-            }),
+            body: JSON.stringify(rawBody),
             headers,
             statusCode
         }
     } else {
+        logDebug('response ==', '')
         return {
             body: '',
             headers,
