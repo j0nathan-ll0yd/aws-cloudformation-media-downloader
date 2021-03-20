@@ -61,4 +61,13 @@ describe('#listFiles', () => {
     queryStub.rejects('Error')
     expect(listFiles(event, context)).to.be.rejectedWith(Error)
   })
+  it('should return a default file if unauthenticated', async () => {
+    delete event.headers['X-User-Id']
+    const output = await listFiles(event, context)
+    expect(output.statusCode).to.equal(200)
+    const body = JSON.parse(output.body)
+    expect(body.body).to.have.all.keys('keyCount', 'contents')
+    expect(body.body.keyCount).to.equal(1)
+    expect(body.body.contents[0].fileId).to.equal('default')
+  })
 })

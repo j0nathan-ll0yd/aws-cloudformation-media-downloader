@@ -84,7 +84,7 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
     ]
   } catch(err) {
     logError('invalid JWT token <=', err)
-    throw new Error('Invalid Token')
+    throw err
   }
 }
 

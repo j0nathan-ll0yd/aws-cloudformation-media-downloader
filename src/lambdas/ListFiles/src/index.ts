@@ -2,6 +2,7 @@ import {APIGatewayEvent, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {ScheduledEvent} from '../../../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {defaultFile} from '../../../util/constants'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
@@ -11,9 +12,18 @@ export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
+  const myResponse = { contents: [], keyCount: 0 }
+  let userId
   try {
-    const myResponse = { contents: [], keyCount: 0 }
-    const userId = getUserIdFromEvent(event as APIGatewayEvent)
+    userId = getUserIdFromEvent(event as APIGatewayEvent)
+  } catch (error) {
+    logInfo('error <=', error)
+    // Unauthenticated request; return default (demo) file
+    myResponse.contents = [defaultFile]
+    myResponse.keyCount = myResponse.contents.length
+    return response(context, 200, myResponse)
+  }
+  try {
     const userFileParams = getUserFilesParams(process.env.DynamoTableUserFiles, userId)
     logDebug('query <=', userFileParams)
     const userFilesResponse = await query(userFileParams)

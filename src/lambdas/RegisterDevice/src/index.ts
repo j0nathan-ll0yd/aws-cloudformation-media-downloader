@@ -28,7 +28,7 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
   }
   logDebug('createPlatformEndpoint <=', createPlatformEndpointParams)
   const createPlatformEndpointResponse = await createPlatformEndpoint(createPlatformEndpointParams)
-  logDebug('createPlatformEndpoint =>', createPlatformEndpointParams)
+  logDebug('createPlatformEndpoint =>', createPlatformEndpointResponse)
 
   const subscribeParams = {
     Endpoint: createPlatformEndpointResponse.EndpointArn,
