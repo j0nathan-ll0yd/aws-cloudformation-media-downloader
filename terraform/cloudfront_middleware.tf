@@ -66,6 +66,19 @@ resource "aws_cloudfront_distribution" "Production" {
       name  = "X-Reserved-Client-IP"
       value = chomp(data.http.icanhazip.body)
     }
+    custom_header {
+      name  = "X-WWW-Authenticate-Realm"
+      value = aws_api_gateway_stage.Production.stage_name
+    }
+    custom_header {
+      name  = "X-Unprotected-Paths"
+      value = join(",", [
+        aws_api_gateway_resource.RegisterUser.path_part,
+        aws_api_gateway_resource.RegisterDevice.path_part,
+        aws_api_gateway_resource.Login.path_part,
+        aws_api_gateway_resource.Files.path_part
+      ])
+    }
     custom_origin_config {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]

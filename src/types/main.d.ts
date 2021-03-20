@@ -86,6 +86,10 @@ interface UserRegistration {
   lastName?: string
 }
 
+interface UserSubscribe {
+  endpoint: string
+}
+
 interface User {
   userId: string,
   email: string,

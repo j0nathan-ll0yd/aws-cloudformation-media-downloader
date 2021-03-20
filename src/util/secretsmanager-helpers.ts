@@ -128,6 +128,6 @@ export async function verifyAccessToken(token: string) {
     return jwt.verify(token, secret)
   } catch(err) {
     logError(`verifyAccessToken <= ${err}`)
-    throw new Error(err)
+    throw err
   }
 }

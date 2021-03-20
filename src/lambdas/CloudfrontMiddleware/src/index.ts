@@ -1,10 +1,11 @@
-import {CloudFrontRequestEvent} from 'aws-lambda'
+import {CloudFrontRequestEvent, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 
-export async function handler(event: CloudFrontRequestEvent) {
+export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest|CloudFrontResultResponse> {
   logInfo('event <=', event)
+  logInfo('context <=', context)
   const request = event.Records[0].cf.request
   try {
     await Promise.all([
@@ -13,6 +14,21 @@ export async function handler(event: CloudFrontRequestEvent) {
     ])
   } catch (err) {
     logError('Error handling request', err)
+    const realm = request.origin.custom.customHeaders['x-www-authenticate-realm'][0].value
+    const response = {
+      status: '401',
+      statusDescription: 'Unauthorized',
+      headers: {
+        'content-type': [{ key: 'Content-Type', value: 'application/json' }],
+        'www-authenticate': [{ key: 'WWW-Authenticate', value: `Bearer realm="${realm}", charset="UTF-8"` }]
+      },
+      body: JSON.stringify({
+        error: { code: 401, message: 'Token expired' },
+        requestId: context.awsRequestId
+      })
+    }
+    logError('response => ', response)
+    return response
   }
   logDebug('request <=', request)
   return request
@@ -31,6 +47,17 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
       }
     ]
     return
+  }
+  const unprotectedPaths = request.origin.custom.customHeaders['x-unprotected-paths'][0].value.split(',')
+  const pathPart = request.uri.substring(1) // remove "/" prefix
+  logDebug(`pathPart = ${pathPart}`)
+  // If its an unprotected path (doesn't require auth), and there is no Authorization header present, that's fine
+  if (unprotectedPaths.find(path => path === pathPart) && !headers.authorization) {
+    // TODO: This should be a check that only applys to the login or registration methods
+    return
+  }
+  else {
+    throw new Error('headers.Authorization is required')
   }
   const authorizationHeader = headers.authorization[0].value
   const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
@@ -57,7 +84,7 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
     ]
   } catch(err) {
     logError('invalid JWT token <=', err)
-    throw new Error(err)
+    throw new Error('Invalid Token')
   }
 }
 

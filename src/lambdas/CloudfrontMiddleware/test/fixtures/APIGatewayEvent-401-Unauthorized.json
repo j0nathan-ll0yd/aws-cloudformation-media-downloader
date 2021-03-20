@@ -94,7 +94,7 @@
               ]
             }
           },
-          "querystring": "",
+          "querystring": "ApiKey=pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
           "uri": "/files"
         }
       }

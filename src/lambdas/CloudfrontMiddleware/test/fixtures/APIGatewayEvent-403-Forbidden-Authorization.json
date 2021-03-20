@@ -69,6 +69,18 @@
                     "key": "X-Encryption-Key-Secret-Id",
                     "value": "PrivateEncryptionKey"
                   }
+                ],
+                "x-unprotected-paths": [
+                  {
+                    "key": "X-Unprotected-Paths",
+                    "value": "registerUser,registerDevice,login,files"
+                  }
+                ],
+                "x-www-authenticate-realm": [
+                  {
+                    "key": "X-WWW-Authenticate-Realm",
+                    "value": "prod"
+                  }
                 ]
               },
               "domainName": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
