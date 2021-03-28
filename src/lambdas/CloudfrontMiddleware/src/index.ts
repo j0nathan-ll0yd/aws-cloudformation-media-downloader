@@ -36,7 +36,7 @@ export async function handler(event: CloudFrontRequestEvent, context: Context): 
 
 async function handleAuthorizationHeader(request: CloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
-  // if the request is coming from my IP, mock the Authorization header to map to userId 1
+  // if the request is coming from my IP, mock the Authorization header to map to a default userId
   const reservedIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value
   const userAgent = headers['user-agent'][0].value
   if (request.clientIp === reservedIp && userAgent === 'localhost@lifegames') {
@@ -48,16 +48,16 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
     ]
     return
   }
-  const unprotectedPaths = request.origin.custom.customHeaders['x-unprotected-paths'][0].value.split(',')
+  const unauthenticatedPaths = request.origin.custom.customHeaders['x-unauthenticated-paths'][0].value.split(',')
+  const multiAuthenticationPaths = request.origin.custom.customHeaders['x-multiauthentication-paths'][0].value.split(',')
   const pathPart = request.uri.substring(1) // remove "/" prefix
-  logDebug(`pathPart = ${pathPart}`)
-  // If its an unprotected path (doesn't require auth), and there is no Authorization header present, that's fine
-  if (unprotectedPaths.find(path => path === pathPart) && !headers.authorization) {
-    // TODO: This should be a check that only applys to the login or registration methods
+  // If its an unauthenticated path (doesn't require auth), we ignore the Authorization header
+  if (unauthenticatedPaths.find(path => path === pathPart)) {
     return
   }
-  else {
-    throw new Error('headers.Authorization is required')
+  // If the path supports either authenticated or unauthenticated requests; ensure the header is present
+  if (!multiAuthenticationPaths.find(path => path === pathPart) && !headers.authorization) {
+    throw 'headers.Authorization is required'
   }
   const authorizationHeader = headers.authorization[0].value
   const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
@@ -65,7 +65,7 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   logDebug('headers.authorization <=', matches)
   if (!authorizationHeader.match(jwtRegex)) {
     // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-    throw new Error('headers.Authorization is invalid')
+    throw 'headers.Authorization is invalid'
   }
 
   const keypair = authorizationHeader.split(' ')
@@ -96,7 +96,7 @@ async function handleQueryString(request: CloudFrontRequest) {
   logDebug('request.querystring <=', matches)
   if (!queryString.match(apiKeyRegex)) {
     // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-    throw new Error('request.querystring is invalid')
+    throw 'request.querystring is invalid'
   }
   const keypair = request.querystring.split('=')
   headers['x-api-key'] = [

@@ -39,3 +39,9 @@ export const registerUserConstraints = {
         presence: true
     }
 }
+
+export const loginUserConstraints = {
+    authorizationCode: {
+        presence: true
+    }
+}

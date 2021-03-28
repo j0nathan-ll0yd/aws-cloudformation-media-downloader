@@ -6,7 +6,12 @@ export function response(context, statusCode, body?, headers?) {
     if (/^4/.test(statusCode)) {
         code = 'custom-4XX-generic'
         error = true
-    } else if (/^5/.test(statusCode)) {
+    }
+    if (/^3/.test(statusCode)) {
+        code = 'custom-3XX-generic'
+        error = true
+    }
+    else if (/^5/.test(statusCode)) {
         error = true
     }
     if (error) {

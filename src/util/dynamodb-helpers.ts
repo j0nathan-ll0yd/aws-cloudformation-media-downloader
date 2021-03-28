@@ -56,6 +56,17 @@ export function userFileParams(tableName, userId, fileId) {
   }
 }
 
+export function updateUserDevice(tableName, fileId, fileUrl) {
+  return {
+    ExpressionAttributeNames: { '#FN': 'url' },
+    ExpressionAttributeValues: { ':fn': fileUrl },
+    Key: { 'fileId': fileId },
+    ReturnValues: 'ALL_NEW',
+    TableName: tableName,
+    UpdateExpression: 'SET #FN = :fn'
+  }
+}
+
 export function newFileParams(tableName, fileId) {
   return {
     ExpressionAttributeNames: { '#AA': 'availableAt' },
@@ -112,5 +123,15 @@ export function getBatchFilesParams(tableName:string, files) {
     RequestItems: {
       [tableName]: { Keys }
     }
+  }
+}
+
+export function getUserByAppleDeviceIdentifier(tableName:string, userId:string) {
+  return {
+    ExpressionAttributeValues: {
+      ':userId': { S: userId }
+    },
+    FilterExpression: 'identityProviders.userId = :userId',
+    TableName: tableName
   }
 }
