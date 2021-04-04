@@ -1,5 +1,22 @@
 import {APIGatewayEvent} from 'aws-lambda'
 
+export function cloudFrontErrorResponse(context, statusCode, message, realm?) {
+    let codeText
+    if (/^4/.test(statusCode)) { codeText = 'custom-4XX-generic' }
+    return {
+        status: statusCode,
+        statusDescription: message,
+        headers: {
+            'content-type': [{ key: 'Content-Type', value: 'application/json' }],
+            'www-authenticate': [{ key: 'WWW-Authenticate', value: `Bearer realm="${realm}", charset="UTF-8"` }]
+        },
+        body: JSON.stringify({
+            error: { code: codeText, message },
+            requestId: context.awsRequestId
+        })
+    }
+}
+
 export function response(context, statusCode, body?, headers?) {
     let code = 'custom-5XX-generic'
     let error = false

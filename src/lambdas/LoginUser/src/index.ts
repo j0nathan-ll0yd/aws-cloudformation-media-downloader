@@ -24,7 +24,7 @@ export async function handleLoginUser(event: APIGatewayEvent, context: Context) 
   logDebug('verifyAppleToken =>', verifiedToken)
 
   const userDeviceId = verifiedToken.sub
-  const scanParams = getUserByAppleDeviceIdentifier(process.env.DynamoTableUsers, userDeviceId)
+  const scanParams = getUserByAppleDeviceIdentifier(process.env.DynamoDBTableUsers, userDeviceId)
   logDebug('scan <=', scanParams)
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)

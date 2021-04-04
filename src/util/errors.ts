@@ -1,12 +1,8 @@
-export class ValidationError extends Error {
-  get code(): number {
-    return this._code
-  }
-  private readonly _code: number
-  constructor(code: number, message: string) {
-    super(message)
-    Object.setPrototypeOf(this, new.target.prototype)
-    this.name = 'ValidationError'
-    this._code = code
-  }
+export function ValidationError(message, statusCode = 400, errors?) {
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.message = message
+  this.statusCode = statusCode
+  this.errors = errors
+  if (errors) { this.message = errors }
 }

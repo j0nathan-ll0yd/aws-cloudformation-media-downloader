@@ -38,7 +38,7 @@ export function validateRequest(requestBody: Webhook | DeviceRegistration | User
     const invalidAttributes = validate(requestBody, constraints)
     if (invalidAttributes) {
         logError('processEventAndValidate =>', invalidAttributes)
-        throw new ValidationError(400, invalidAttributes)
+        throw new ValidationError('Bad Request', 400, invalidAttributes)
     }
 }
 
@@ -50,10 +50,10 @@ export function getPayloadFromEvent(event: APIGatewayEvent) {
             return requestBody
         } catch (error) {
             logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
-            throw new ValidationError(400, 'Request body must be valid JSON')
+            throw new ValidationError('Request body must be valid JSON')
         }
     }
-    throw new ValidationError(400, 'Missing request payload')
+    throw new ValidationError('Missing request payload')
 }
 
 export function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {

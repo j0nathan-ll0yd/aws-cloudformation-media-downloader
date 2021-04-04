@@ -14,11 +14,12 @@ export async function index(event: APIGatewayEvent, context: Context) {
     const platformApplicationArn = process.env.PlatformApplicationArn
     logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
     if (!platformApplicationArn) {
-      throw new ValidationError(200, 'requires configuration')
+      throw new ValidationError('requires configuration', 500)
     }
     validateRequest(requestBody, userSubscribeConstraints)
   } catch (error) {
-    return response(context, error.code, error.message)
+    logDebug('error', JSON.stringify(error))
+    return response(context, error.statusCode, error.message)
   }
   const subscribeParams = {
     Endpoint: requestBody.endpoint,

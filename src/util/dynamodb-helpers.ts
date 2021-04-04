@@ -128,9 +128,7 @@ export function getBatchFilesParams(tableName:string, files) {
 
 export function getUserByAppleDeviceIdentifier(tableName:string, userId:string) {
   return {
-    ExpressionAttributeValues: {
-      ':userId': { S: userId }
-    },
+    ExpressionAttributeValues: { ':userId': userId },
     FilterExpression: 'identityProviders.userId = :userId',
     TableName: tableName
   }

@@ -114,14 +114,12 @@ dynamodb.updateItem(initalItem, function(err, data) {
 });
 
 var nestedScanParams = {
-  ExpressionAttributeValues: {
-    ":userId": { S: '000185.7720315570fc49d99a265f9af4b46879.2034' },
-  },
+  ExpressionAttributeValues: { ":userId": '000185.7720315570fc49d99a265f9af4b46879.2034' },
   FilterExpression: "identityProviders.userId = :userId",
   TableName: "Users"
 };
 
-dynamodb.scan(nestedScanParams, function(err, data) {
+docClient.scan(nestedScanParams, function(err, data) {
   console.log('Scan complete')
   if (err) console.log(err, err.stack);
   else     console.log(data, 2, null);

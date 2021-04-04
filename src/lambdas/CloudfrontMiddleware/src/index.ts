@@ -1,9 +1,9 @@
-import {CloudFrontRequestEvent, CloudFrontResultResponse, Context} from 'aws-lambda'
+import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 
-export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest|CloudFrontResultResponse> {
+export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest|CloudFrontResultResponse|CloudFrontResponse> {
   logInfo('event <=', event)
   logInfo('context <=', context)
   const request = event.Records[0].cf.request
@@ -15,18 +15,7 @@ export async function handler(event: CloudFrontRequestEvent, context: Context): 
   } catch (err) {
     logError('Error handling request', err)
     const realm = request.origin.custom.customHeaders['x-www-authenticate-realm'][0].value
-    const response = {
-      status: '401',
-      statusDescription: 'Unauthorized',
-      headers: {
-        'content-type': [{ key: 'Content-Type', value: 'application/json' }],
-        'www-authenticate': [{ key: 'WWW-Authenticate', value: `Bearer realm="${realm}", charset="UTF-8"` }]
-      },
-      body: JSON.stringify({
-        error: { code: 401, message: 'Token expired' },
-        requestId: context.awsRequestId
-      })
-    }
+    const response = cloudFrontErrorResponse(context, 401, err, realm)
     logError('response => ', response)
     return response
   }
@@ -39,6 +28,9 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   // if the request is coming from my IP, mock the Authorization header to map to a default userId
   const reservedIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value
   const userAgent = headers['user-agent'][0].value
+  logDebug('reservedIp <=', reservedIp)
+  logDebug('headers.userAgent <=', userAgent)
+  logDebug('request.clientIp <=', request.clientIp)
   if (request.clientIp === reservedIp && userAgent === 'localhost@lifegames') {
     headers['x-user-Id'] = [
       {
