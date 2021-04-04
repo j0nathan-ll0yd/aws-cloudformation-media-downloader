@@ -112,3 +112,15 @@ dynamodb.updateItem(initalItem, function(err, data) {
   else     console.log(data);
   // If there are return values, its done, send another error
 });
+
+var nestedScanParams = {
+  ExpressionAttributeValues: { ":userId": '000185.7720315570fc49d99a265f9af4b46879.2034' },
+  FilterExpression: "identityProviders.userId = :userId",
+  TableName: "Users"
+};
+
+docClient.scan(nestedScanParams, function(err, data) {
+  console.log('Scan complete')
+  if (err) console.log(err, err.stack);
+  else     console.log(data, 2, null);
+});

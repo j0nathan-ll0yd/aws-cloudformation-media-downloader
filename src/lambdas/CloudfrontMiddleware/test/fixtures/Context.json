@@ -1,0 +1,10 @@
+{
+  "callbackWaitsForEmptyEventLoop": true,
+  "functionVersion": "36",
+  "functionName": "us-east-1.CloudfrontMiddleware",
+  "memoryLimitInMB": "128",
+  "logGroupName": "/aws/lambda/us-east-1.CloudfrontMiddleware",
+  "logStreamName": "2021/03/17/[36]de60d5a1d43a46949d52cb7879c39fd1",
+  "invokedFunctionArn": "arn:aws:lambda:us-west-2:203465012143:function:us-east-1.CloudfrontMiddleware:36",
+  "awsRequestId": "0311a4d4-58f6-45e9-8537-a84bcaa5ad0c"
+}

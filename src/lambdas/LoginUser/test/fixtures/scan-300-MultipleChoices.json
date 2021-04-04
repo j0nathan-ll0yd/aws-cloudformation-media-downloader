@@ -1,0 +1,44 @@
+{
+  "Items": [
+    {
+      "identityProviders": {
+        "iss": "https://appleid.apple.com",
+        "aud": "lifegames.OfflineMediaDownloader",
+        "exp": 1590096639,
+        "iat": 1590096039,
+        "sub": "000185.7720315570fc49d99a265f9af4b46879.2034",
+        "at_hash": "ztF31A59ZQ66PpC1D57ydg",
+        "email": "28ncci33a3@privaterelay.appleid.com",
+        "email_verified": "true",
+        "is_private_email": "true",
+        "auth_time": 1590096034,
+        "nonce_supported": true
+      },
+      "email": "28ncci33a3@privaterelay.appleid.com",
+      "firstName": "Jonathan",
+      "lastName": "Lloyd",
+      "userId": "abcdefgh-ijkl-mnop-qrst-uvwxyz123456"
+    },
+    {
+      "identityProviders": {
+        "iss": "https://appleid.apple.com",
+        "aud": "lifegames.OfflineMediaDownloader",
+        "exp": 1590096639,
+        "iat": 1590096039,
+        "sub": "000185.7720315570fc49d99a265f9af4b46879.2034",
+        "at_hash": "ztF31A59ZQ66PpC1D57ydg",
+        "email": "28ncci33a3@privaterelay.appleid.com",
+        "email_verified": "true",
+        "is_private_email": "true",
+        "auth_time": 1590096034,
+        "nonce_supported": true
+      },
+      "email": "28ncci33a3@privaterelay.appleid.com",
+      "firstName": "Jonathan",
+      "lastName": "Lloyd",
+      "userId": "abcdefgh-ijkl-mnop-qrst-uvwxyz123456"
+    }
+  ],
+  "Count": 2,
+  "ScannedCount": 2
+}

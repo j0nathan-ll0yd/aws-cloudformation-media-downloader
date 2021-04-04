@@ -22,7 +22,25 @@ export const registerDeviceConstraints = {
     }
 }
 
+export const userSubscribeConstraints = {
+    endpoint: {
+        presence: true
+    }
+}
+
 export const registerUserConstraints = {
+    authorizationCode: {
+        presence: true
+    },
+    firstName: {
+        presence: true
+    },
+    lastName: {
+        presence: true
+    }
+}
+
+export const loginUserConstraints = {
     authorizationCode: {
         presence: true
     }

@@ -2,9 +2,10 @@
 // https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-output.html
 import {APIGatewayEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {validate} from 'validate.js'
-import {DeviceRegistration, UserRegistration} from '../types/main'
+import {DeviceRegistration, UserRegistration, UserSubscribe} from '../types/main'
 import {ScheduledEvent} from '../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
+import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
 
 const generatePolicy = (principalId, effect, resource, usageIdentifierKey) => {
@@ -31,6 +32,28 @@ export function generateAllow(principalId, resource, usageIdentifierKey?): Custo
 
 export function generateDeny(principalId, resource, usageIdentifierKey?): CustomAuthorizerResult {
     return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
+}
+
+export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints) {
+    const invalidAttributes = validate(requestBody, constraints)
+    if (invalidAttributes) {
+        logError('processEventAndValidate =>', invalidAttributes)
+        throw new ValidationError('Bad Request', 400, invalidAttributes)
+    }
+}
+
+export function getPayloadFromEvent(event: APIGatewayEvent) {
+    if ('body' in event) {
+        try {
+            const requestBody = JSON.parse(event.body)
+            logDebug('processEventAndValidate.event.body <=', event.body)
+            return requestBody
+        } catch (error) {
+            logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
+            throw new ValidationError('Request body must be valid JSON')
+        }
+    }
+    throw new ValidationError('Missing request payload')
 }
 
 export function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {

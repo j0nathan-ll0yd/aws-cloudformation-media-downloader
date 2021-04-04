@@ -5,8 +5,15 @@ resource "aws_iam_role" "LoginUserRole" {
 
 data "aws_iam_policy_document" "LoginUser" {
   statement {
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
+    actions = ["secretsmanager:GetSecretValue"]
+    resources = [
+      "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:prod/SignInWithApple/*",
+      aws_secretsmanager_secret.PrivateEncryptionKey.arn
+    ]
+  }
+  statement {
+    actions   = ["dynamodb:Scan"]
+    resources = [aws_dynamodb_table.Users.arn]
   }
 }
 
@@ -55,6 +62,7 @@ resource "aws_lambda_function" "LoginUser" {
   environment {
     variables = {
       Bucket                = aws_s3_bucket.Files.id
+      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }
