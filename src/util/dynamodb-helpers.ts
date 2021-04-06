@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk'
-import {IdentityProviderApple, User} from '../types/main'
+import {IdentityProviderApple, User, UserDevice} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 function transformObjectToDynamoUpdateQuery(item: object) {
@@ -56,14 +56,25 @@ export function userFileParams(tableName, userId, fileId) {
   }
 }
 
-export function updateUserDevice(tableName, fileId, fileUrl) {
+export function updateUserDeviceParams(tableName, userId, userDevice: UserDevice) {
   return {
-    ExpressionAttributeNames: { '#FN': 'url' },
-    ExpressionAttributeValues: { ':fn': fileUrl },
-    Key: { 'fileId': fileId },
-    ReturnValues: 'ALL_NEW',
     TableName: tableName,
-    UpdateExpression: 'SET #FN = :fn'
+    Key: { userId },
+    UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
+    ExpressionAttributeNames: { '#userDevice' : 'userDevice' },
+    ExpressionAttributeValues: { ':userDevice': [userDevice], ':empty_list': [] }
+  }
+}
+
+export function queryUserDeviceParams(tableName, userId, userDevice: UserDevice) {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'userId = :userId',
+    FilterExpression: 'contains(userDevice, :userDevice)',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+      ':userDevice': userDevice
+    }
   }
 }
 

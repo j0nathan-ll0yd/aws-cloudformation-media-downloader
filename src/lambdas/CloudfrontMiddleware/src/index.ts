@@ -51,32 +51,35 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   if (!multiAuthenticationPaths.find(path => path === pathPart) && !headers.authorization) {
     throw 'headers.Authorization is required'
   }
-  const authorizationHeader = headers.authorization[0].value
-  const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
-  const matches = authorizationHeader.match(jwtRegex)
-  logDebug('headers.authorization <=', matches)
-  if (!authorizationHeader.match(jwtRegex)) {
-    // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-    throw 'headers.Authorization is invalid'
-  }
 
-  const keypair = authorizationHeader.split(' ')
-  const token = keypair[1]
-  try {
-    logDebug('verifyAccessToken <=', token)
-    // this is required because Lambda@Edge does not support environment variables
-    process.env.EncryptionKeySecretId = request.origin.custom.customHeaders['x-encryption-key-secret-id'][0].value
-    const payload = await verifyAccessToken(token)
-    logDebug('verifyAccessToken =>', payload)
-    headers['x-user-Id'] = [
-      {
-        'key': 'X-User-Id',
-        'value': payload.userId
-      }
-    ]
-  } catch(err) {
-    logError('invalid JWT token <=', err)
-    throw err
+  if (headers.authorization) {
+    const authorizationHeader = headers.authorization[0].value
+    const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
+    const matches = authorizationHeader.match(jwtRegex)
+    logDebug('headers.authorization <=', matches)
+    if (!authorizationHeader.match(jwtRegex)) {
+      // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
+      throw 'headers.Authorization is invalid'
+    }
+
+    const keypair = authorizationHeader.split(' ')
+    const token = keypair[1]
+    try {
+      logDebug('verifyAccessToken <=', token)
+      // this is required because Lambda@Edge does not support environment variables
+      process.env.EncryptionKeySecretId = request.origin.custom.customHeaders['x-encryption-key-secret-id'][0].value
+      const payload = await verifyAccessToken(token)
+      logDebug('verifyAccessToken =>', payload)
+      headers['x-user-Id'] = [
+        {
+          'key': 'X-User-Id',
+          'value': payload.userId
+        }
+      ]
+    } catch (err) {
+      logError('invalid JWT token <=', err)
+      throw err
+    }
   }
 }
 

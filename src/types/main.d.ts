@@ -79,6 +79,10 @@ interface DeviceRegistration {
   systemName: string
 }
 
+interface UserDevice extends DeviceRegistration {
+  endpointArn: string
+}
+
 interface UserRegistration {
   authorizationCode: string,
   email: string,

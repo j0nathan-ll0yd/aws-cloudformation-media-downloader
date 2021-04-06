@@ -6,13 +6,22 @@ resource "aws_iam_role" "RegisterDeviceRole" {
 data "aws_iam_policy_document" "RegisterDevice" {
   statement {
     actions = [
+      "sns:ListSubscriptionsByTopic",
       "sns:CreatePlatformEndpoint",
-      "sns:Subscribe"
+      "sns:Subscribe",
+      "sns:Unsubscribe"
     ]
     resources = compact([
       aws_sns_topic.PushNotifications.arn,
       length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
     ])
+  }
+  statement {
+    actions   = [
+      "dynamodb:Query",
+      "dynamodb:UpdateItem"
+    ]
+    resources = [aws_dynamodb_table.UserDevices.arn]
   }
 }
 
@@ -62,6 +71,7 @@ resource "aws_lambda_function" "RegisterDevice" {
     variables = {
       PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
+      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
     }
   }
 }
@@ -121,4 +131,17 @@ resource "aws_iam_role" "SNSLoggingRole" {
 resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {
   role       = aws_iam_role.SNSLoggingRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+}
+
+resource "aws_dynamodb_table" "UserDevices" {
+  name           = "UserDevices"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "userId"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
 }
