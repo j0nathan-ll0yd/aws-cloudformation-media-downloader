@@ -25,7 +25,7 @@ resource "aws_iam_policy" "CommonLambdaLogging" {
 
 data "aws_iam_policy_document" "CommonUpdateFilesTable" {
   statement {
-    actions   = ["dynamodb:UpdateItem"]
+    actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
     resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
   }
 }

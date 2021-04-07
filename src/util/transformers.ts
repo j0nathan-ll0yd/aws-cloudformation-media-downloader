@@ -1,6 +1,7 @@
+import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
-import {Metadata} from '../types/main'
+import {DynamoDBFile, Metadata} from '../types/main'
 import {logDebug} from './lambda-helpers'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
@@ -17,6 +18,27 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
         }
     } catch (error) {
         throw new Error('Unable to find format')
+    }
+}
+
+export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile): MessageBodyAttributeMap {
+    return {
+        key: {
+            DataType: 'String',
+            StringValue: file.key
+        },
+        publishDate: {
+            DataType: 'String',
+            StringValue: file.publishDate
+        },
+        size: {
+            DataType: 'Number',
+            StringValue: file.size.toString()
+        },
+        url: {
+            DataType: 'String',
+            StringValue: file.url
+        }
     }
 }
 

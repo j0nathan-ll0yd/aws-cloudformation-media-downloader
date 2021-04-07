@@ -17,7 +17,7 @@ data "aws_iam_policy_document" "RegisterDevice" {
     ])
   }
   statement {
-    actions   = [
+    actions = [
       "dynamodb:Query",
       "dynamodb:UpdateItem"
     ]

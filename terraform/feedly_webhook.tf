@@ -49,6 +49,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
     variables = {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
+      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
     }
   }
 }

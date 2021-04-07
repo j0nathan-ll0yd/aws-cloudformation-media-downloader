@@ -83,6 +83,35 @@ interface UserDevice extends DeviceRegistration {
   endpointArn: string
 }
 
+interface DynamoDBFile {
+  availableAt: number,
+  size: number,
+  authorName: string,
+  fileId: string,
+  publishDate: string,
+  description: string,
+  key: string,
+  url: string,
+  contentType: string,
+  authorUser: string,
+  title: string
+}
+
+// The shape of a file when send via push notification
+interface ClientFile {
+  key: string,
+  publishDate: string,
+  size: number,
+  url: string
+}
+
+// TODO: Make type an enum
+interface PushNotification {
+  userId: string,
+  type: string,
+  data: object
+}
+
 interface UserRegistration {
   authorizationCode: string,
   email: string,

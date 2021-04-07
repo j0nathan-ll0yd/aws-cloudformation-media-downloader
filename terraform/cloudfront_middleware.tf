@@ -71,14 +71,14 @@ resource "aws_cloudfront_distribution" "Production" {
       value = aws_api_gateway_stage.Production.stage_name
     }
     custom_header {
-      name  = "X-Unauthenticated-Paths" // Authorization header is ignored
+      name = "X-Unauthenticated-Paths" // Authorization header is ignored
       value = join(",", [
         aws_api_gateway_resource.RegisterUser.path_part,
         aws_api_gateway_resource.Login.path_part,
       ])
     }
     custom_header {
-      name  = "X-Multiauthentication-Paths" // Authorization header is processed
+      name = "X-Multiauthentication-Paths" // Authorization header is processed
       value = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part
