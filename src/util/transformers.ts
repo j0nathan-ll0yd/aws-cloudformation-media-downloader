@@ -1,7 +1,8 @@
+import {PublishInput} from 'aws-sdk/clients/sns'
 import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
-import {DynamoDBFile, Metadata} from '../types/main'
+import {ClientFile, DynamoDBFile, FileNotification, Metadata} from '../types/main'
 import {logDebug} from './lambda-helpers'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
@@ -21,7 +22,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
     }
 }
 
-export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile): MessageBodyAttributeMap {
+export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string): MessageBodyAttributeMap {
     return {
         key: {
             DataType: 'String',
@@ -38,7 +39,32 @@ export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDB
         url: {
             DataType: 'String',
             StringValue: file.url
+        },
+        userId: {
+            DataType: 'String',
+            StringValue: userId
         }
+    }
+}
+
+export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
+    const clientFile: ClientFile = {
+        key: file.key.stringValue,
+        publishDate: file.key.stringValue,
+        size: parseInt(file.key.stringValue, 0),
+        url: file.key.stringValue
+    }
+    return {
+        Message: JSON.stringify({
+            APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: objectKeysToLowerCase(clientFile)}),
+            default: 'Default message'
+        }),
+        MessageAttributes: {
+            'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
+            'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
+        },
+        MessageStructure: 'json',
+        TargetArn: targetArn
     }
 }
 

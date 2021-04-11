@@ -86,6 +86,14 @@ export function queryFileParams(tableName, fileId) {
   }
 }
 
+export function getUserDeviceByUserIdParams(tableName, userId) {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'userId = :userId',
+    ExpressionAttributeValues: { ':userId': userId }
+  }
+}
+
 export function newFileParams(tableName, fileId) {
   return {
     ExpressionAttributeNames: { '#AA': 'availableAt' },

@@ -1,3 +1,4 @@
+import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {S3} from 'aws-sdk'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from '../../node_modules/aws-sdk/clients/s3'
@@ -95,6 +96,15 @@ interface DynamoDBFile {
   contentType: string,
   authorUser: string,
   title: string
+}
+
+export class FileNotification implements SQSMessageAttributes {
+  [name: string]: SQSMessageAttribute
+  size: SQSMessageAttribute
+  publishDate: SQSMessageAttribute
+  key: SQSMessageAttribute
+  url: SQSMessageAttribute
+  userId: SQSMessageAttribute
 }
 
 // The shape of a file when send via push notification

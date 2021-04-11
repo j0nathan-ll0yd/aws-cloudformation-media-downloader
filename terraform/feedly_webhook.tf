@@ -3,9 +3,24 @@ resource "aws_iam_role" "WebhookFeedlyRole" {
   assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
 }
 
+data "aws_iam_policy_document" "WebhookFeedlyRole" {
+  statement {
+    actions = [
+      "sqs:SendMessage"
+    ]
+    resources = [
+      aws_sqs_queue.SendPushNotification.arn
+    ]
+  }
+  statement {
+    actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
+    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
+  }
+}
+
 resource "aws_iam_policy" "WebhookFeedlyRolePolicy" {
   name   = "WebhookFeedlyRolePolicy"
-  policy = data.aws_iam_policy_document.CommonUpdateFilesTable.json
+  policy = data.aws_iam_policy_document.WebhookFeedlyRole.json
 }
 
 resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicy" {

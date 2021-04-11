@@ -13,25 +13,25 @@ import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/t
 
 async function addFile(fileId) {
   const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
-  logDebug('updateItem <=', params)
+  logDebug('addFile.updateItem <=', params)
   const updateResponse = await updateItem(params)
-  logDebug('updateItem =>', updateResponse)
+  logDebug('addFile.updateItem =>', updateResponse)
   return updateResponse
 }
 
 async function associateFileToUser(fileId, userId) {
   const params = userFileParams(process.env.DynamoDBTableUserFiles, userId, fileId)
-  logDebug('updateItem <=', params)
+  logDebug('associateFileToUser.updateItem <=', params)
   const updateResponse = await updateItem(params)
-  logDebug('updateItem =>', updateResponse)
+  logDebug('associateFileToUser.updateItem =>', updateResponse)
   return updateResponse
 }
 
 async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   const fileParams = queryFileParams(process.env.DynamoDBTableFiles, fileId)
-  logDebug('query <=', fileParams)
+  logDebug('getFile.query <=', fileParams)
   const fileResponse = await query(fileParams)
-  logDebug('query =>', fileResponse)
+  logDebug('getFile.query =>', fileResponse)
   if (fileResponse.Count === 1) {
     return fileResponse.Items[0] as DynamoDBFile
   }
@@ -48,10 +48,9 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
     const body = (requestBody as Webhook)
     const fileId = await getVideoID(body.articleURL)
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
-    // TODO: Check if file exists before adding; then either add it or just notify the client it can be downloaded
     const file = await getFile(fileId)
     if (file) {
-      const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file)
+      const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
       const sendMessageParams = {
         MessageBody: 'FileNotification',
         MessageAttributes: messageAttributes,
@@ -62,15 +61,11 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
       logDebug('sendMessage =>', sendMessageResponse)
       return response(context, 204)
     }
-    const addFilePromise = addFile(fileId)
-    const associateFilePromise = associateFileToUser(fileId, userId)
-    const results = await Promise.all([addFilePromise, associateFilePromise])
-    const addFileResponse = results[0]
-    if (addFileResponse.Attributes && addFileResponse.Attributes.hasOwnProperty('fileName')) {
-      return response(context, 204)
-    } else {
-      return response(context, 202, {status: 'Accepted'})
-    }
+    await Promise.all([
+      addFile(fileId),
+      associateFileToUser(fileId, userId)
+    ])
+    return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return response(context, 500, error.message)
   }

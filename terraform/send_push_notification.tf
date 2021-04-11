@@ -19,6 +19,14 @@ data "aws_iam_policy_document" "SendPushNotification" {
       aws_sqs_queue.SendPushNotification.arn
     ]
   }
+  statement {
+    actions   = ["dynamodb:Query"]
+    resources = [aws_dynamodb_table.UserDevices.arn]
+  }
+  statement {
+    actions   = ["sns:Publish"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "SendPushNotificationRolePolicy" {
@@ -57,6 +65,11 @@ resource "aws_lambda_function" "SendPushNotification" {
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
+  environment {
+    variables = {
+      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+    }
+  }
 }
 
 resource "aws_sqs_queue" "SendPushNotification" {
