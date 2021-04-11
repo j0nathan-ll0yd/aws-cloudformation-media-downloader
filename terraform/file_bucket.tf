@@ -41,7 +41,9 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = {
-      PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
+      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
+      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
+      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
     }
   }
 }
@@ -53,8 +55,15 @@ resource "aws_iam_role" "S3ObjectCreatedRole" {
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
   statement {
-    actions   = ["sns:Publish"]
-    resources = [aws_sns_topic.PushNotifications.arn]
+    actions = ["dynamodb:Scan"]
+    resources = [
+      aws_dynamodb_table.Files.arn,
+      aws_dynamodb_table.UserFiles.arn
+    ]
+  }
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
 }
 

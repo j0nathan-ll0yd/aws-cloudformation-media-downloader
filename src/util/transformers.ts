@@ -50,9 +50,9 @@ export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDB
 export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
     const clientFile: ClientFile = {
         key: file.key.stringValue,
-        publishDate: file.key.stringValue,
-        size: parseInt(file.key.stringValue, 0),
-        url: file.key.stringValue
+        publishDate: file.publishDate.stringValue,
+        size: parseInt(file.size.stringValue, 0),
+        url: file.url.stringValue
     }
     return {
         Message: JSON.stringify({

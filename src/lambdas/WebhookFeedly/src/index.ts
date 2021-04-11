@@ -49,7 +49,7 @@ export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent,
     const fileId = await getVideoID(body.articleURL)
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
     const file = await getFile(fileId)
-    if (file) {
+    if (file && file.url) { // There needs to be a file AND a file url (to indicate it was downloaded)
       const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
       const sendMessageParams = {
         MessageBody: 'FileNotification',

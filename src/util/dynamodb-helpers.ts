@@ -45,6 +45,23 @@ export function scanForFileParams(tableName) {
   }
 }
 
+export function getFileByKey(tableName, fileName) {
+  return {
+    ExpressionAttributeNames: { '#key': 'key' },
+    ExpressionAttributeValues: { ':key': fileName },
+    FilterExpression: '#key = :key',
+    TableName: tableName
+  }
+}
+
+export function getUsersByFileId(tableName, fileId) {
+  return {
+    ExpressionAttributeValues: { ':fileId': fileId },
+    FilterExpression: 'contains (fileId, :fileId)',
+    TableName: tableName
+  }
+}
+
 export function userFileParams(tableName, userId, fileId) {
   return {
     ExpressionAttributeNames: { '#FID': 'fileId' },
