@@ -1,8 +1,7 @@
 import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
-import axios from 'axios'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import chai from 'chai'
-import MockAdapter from 'axios-mock-adapter'
 import {getFixture} from '../../../util/mocha-setup'
 import {handleDeviceRegistration} from '../src'
 const expect = chai.expect
@@ -11,28 +10,53 @@ const localFixture = getFixture.bind(null, __dirname)
 describe('#handleRegisterDevice', () => {
   const context = localFixture('Context.json')
   let createPlatformEndpointStub
-  let subscribeStub
   let event
-  let mock
+  let listSubscriptionsByTopicStub
+  let subscribeStub
+  let queryStub
+  let unsubscribeStub
+  let updateStub
   beforeEach(() => {
-    mock = new MockAdapter(axios)
     createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
-    subscribeStub = sinon.stub(SNS, 'subscribe')
+      .returns(localFixture('createPlatformEndpoint-200-OK.json'))
     event = localFixture('APIGatewayEvent.json')
+    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic')
+      .returns(localFixture('listSubscriptionsByTopic-200-OK.json'))
+    subscribeStub = sinon.stub(SNS, 'subscribe')
+      .returns(localFixture('subscribe-200-OK.json'))
+    queryStub = sinon.stub(DynamoDB, 'query')
+      .returns(localFixture('query-200-OK.json'))
+    unsubscribeStub = sinon.stub(SNS, 'unsubscribe')
+    updateStub = sinon.stub(DynamoDB, 'updateItem')
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
+    process.env.PushNotificationTopicArn = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
   })
   afterEach(() => {
     createPlatformEndpointStub.restore()
+    listSubscriptionsByTopicStub.restore()
     subscribeStub.restore()
-    event = localFixture('APIGatewayEvent.json')
-    mock.reset()
+    queryStub.restore()
+    unsubscribeStub.restore()
+    updateStub.restore()
   })
-  it('should create a new remote endpoint (for the mobile phone)', async () => {
-    createPlatformEndpointStub.returns(localFixture('createPlatformEndpoint-200-OK.json'))
-    subscribeStub.returns(localFixture('subscribe-200-OK.json'))
+  it('should create an endpoint and subscribe to the unregistered topic (unregistered user)', async () => {
+    delete event.headers['X-User-Id']
+    const output = await handleDeviceRegistration(event, context)
+    const body = JSON.parse(output.body)
+    expect(output.statusCode).to.equal(200)
+    expect(body.body).to.have.property('endpointArn')
+  })
+  it('should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
+    queryStub.returns(localFixture('query-201-Created.json'))
     const output = await handleDeviceRegistration(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(201)
+    expect(body.body).to.have.property('endpointArn')
+  })
+  it('should create an endpoint, check the device details, and return (registered device, subsequent)', async () => {
+    const output = await handleDeviceRegistration(event, context)
+    const body = JSON.parse(output.body)
+    expect(output.statusCode).to.equal(200)
     expect(body.body).to.have.property('endpointArn')
   })
   it('should return a valid response if APNS is not configured', async () => {

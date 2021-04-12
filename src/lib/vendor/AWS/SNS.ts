@@ -1,9 +1,9 @@
 import * as AWS from 'aws-sdk'
 import {
   CreateEndpointResponse,
-  CreatePlatformEndpointInput,
+  CreatePlatformEndpointInput, ListSubscriptionsByTopicInput, ListSubscriptionsByTopicResponse,
   PublishInput,
-  PublishResponse, SubscribeInput, SubscribeResponse
+  PublishResponse, SubscribeInput, SubscribeResponse, UnsubscribeInput
 } from 'aws-sdk/clients/sns'
 import * as AWSXRay from 'aws-xray-sdk'
 const sns = AWSXRay.captureAWSClient(new AWS.SNS({apiVersion: '2010-03-31'}))
@@ -32,9 +32,33 @@ export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
   })
 }
 
+export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput): Promise<ListSubscriptionsByTopicResponse> {
+  return new Promise((resolve, reject) => {
+    sns.listSubscriptionsByTopic(params, (error, data) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve(data)
+      }
+    })
+  })
+}
+
 export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Promise<CreateEndpointResponse> {
   return new Promise((resolve, reject) => {
     sns.createPlatformEndpoint(params, (error, data) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve(data)
+      }
+    })
+  })
+}
+
+export function unsubscribe(params: UnsubscribeInput): Promise<object> {
+  return new Promise((resolve, reject) => {
+    sns.unsubscribe(params, (error, data) => {
       if (error) {
         reject(error)
       } else {

@@ -1,43 +1,51 @@
-// TODO: Clean up the templates to support hardcoded bucket names
-// Why do I have hard-coded S3 bucket names? The below links explain the challenge.
-// https://www.itonaut.com/2018/10/03/implement-s3-bucket-lambda-triggers-in-aws-cloudformation/
-// https://aws.amazon.com/premiumsupport/knowledge-center/unable-validate-circular-dependency-cloudformation/
-// https://aws.amazon.com/blogs/mt/resolving-circular-dependency-in-provisioning-of-amazon-s3-buckets-with-aws-lambda-event-notifications/
 import {S3Event} from 'aws-lambda'
-import {PublishInput} from 'aws-sdk/clients/sns'
-import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
+import {scan} from '../../../lib/vendor/AWS/DynamoDB'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+import {DynamoDBFile} from '../../../types/main'
+import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
 import {logDebug} from '../../../util/lambda-helpers'
-import {objectKeysToLowerCase} from '../../../util/transformers'
+import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+
+async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
+  const getFileByKeyParams = getFileByKey(process.env.DynamoDBTableFiles, fileName)
+  logDebug('scan <=', getFileByKeyParams)
+  const getFileByKeyResponse = await scan(getFileByKeyParams)
+  logDebug('scan =>', getFileByKeyResponse)
+  if (getFileByKeyResponse.Count === 0) {
+    throw 'Unable to locate file'
+  }
+  return getFileByKeyResponse.Items[0] as DynamoDBFile
+}
+
+async function getUsersOfFile(file: DynamoDBFile): Promise<[string]> {
+  const getUsersByFileIdParams = getUsersByFileId(process.env.DynamoDBTableUserFiles, file.fileId)
+  logDebug('scan <=', getUsersByFileIdParams)
+  const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
+  logDebug('scan =>', getUsersByFileIdResponse)
+  // @ts-ignore
+  return getUsersByFileIdResponse.Items.map((userDevice) => userDevice.userId)
+}
+
+function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
+  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const sendMessageParams = {
+    MessageBody: 'FileNotification',
+    MessageAttributes: messageAttributes,
+    QueueUrl: process.env.SNSQueueUrl
+  }
+  logDebug('sendMessage <=', sendMessageParams)
+  return sendMessage(sendMessageParams)
+}
 
 export async function fileUploadWebhook(event: S3Event) {
   logDebug('event', event)
-  const record = event.Records[0]
-  const escapedKey = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
-  const file = {
-    ETag: record.s3.object.eTag,
-    FileUrl: `https://${record.s3.bucket.name}.s3.amazonaws.com/${encodeURIComponent(escapedKey)}`,
-    Key: escapedKey,
-    LastModified: record.eventTime,
-    Size: record.s3.object.size,
-    StorageClass: 'STANDARD'
-  }
-  const publishParams: PublishInput = {
-    Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: objectKeysToLowerCase(file)}),
-      default: 'Default message'
-    }),
-    MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
-    },
-    MessageStructure: 'json',
-    TopicArn: process.env.PushNotificationTopicArn
-  }
   try {
-    logDebug('publishSnsEvent <=', publishParams)
-    const publishResponse = await publishSnsEvent(publishParams)
-    logDebug('publishSnsEvent <=', publishResponse)
-    return {messageId: publishResponse.MessageId}
+    const record = event.Records[0]
+    const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
+    const file = await getFileByFilename(fileName)
+    const userIds = await getUsersOfFile(file)
+    const notifications = userIds.map((userId) => dispatchFileNotificationToUser(file, userId))
+    await Promise.all(notifications)
   } catch (error) {
     throw new Error(error)
   }

@@ -1,0 +1,53 @@
+{
+  "Records": [
+    {
+      "messageId": "878f918d-4e48-44c8-9419-062f1d872a8b",
+      "receiptHandle": "AQEB6qbrUTR3e2cPqNAiQTHtgz5BPFqPw4xNCw0gcxm3HcDa3dPJ5/9a8H0fCa0OAYW9EVWUrMQGMmV1rVoDFN671USI+r3qNbcC2ZA+B2VNdDjmt+YeKvLvGGYqL4papRd+joFNc1Af+iWeqw3AfN90K3W2553jRInuFcLP2GcH2hR5/pmd576K6s/jjOL/jnS6xSiWucQljdUHekrkrcQPvybmqQ22K43BtWP6haknfyIagwx/cPPmBxIr0r9sINvYsPWj2pI0kBXE9kU21ZTKLMVd/XZyJG3cYdm6pG8J7IsizyFl+edw0QBCDCGLMDsJgcUcZn3lBbpxATgaqLveyCb+/nmlevSqH6bNexun9GRG9WYYGw8vBmHfBD71ZR2hsh/bMDM79WjWgc4YHUHt+w==",
+      "body": "FileNotification",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "AWSTraceHeader": "Root=1-606fb25c-6d8604bd75055d952cde2dc3;Parent=52eed326cdc40a73;Sampled=0",
+        "SentTimestamp": "1617932894582",
+        "SenderId": "AROAS6X3VWOXU2NFIOUOX:WebhookFeedly",
+        "ApproximateFirstReceiveTimestamp": "1617932894587"
+      },
+      "messageAttributes": {
+        "size": {
+          "stringValue": "61548900",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "Number"
+        },
+        "publishDate": {
+          "stringValue": "2021-01-22T00:00:00.000Z",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "key": {
+          "stringValue": "20210122-[Philip DeFranco].mp4",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "url": {
+          "stringValue": "https://lifegames-media-downloader-files.s3.amazonaws.com/20210122-%5BPhilip%20DeFranco%5D.mp4",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
+        "userId": {
+          "stringValue": "https://lifegames-media-downloader-files.s3.amazonaws.com/20210122-%5BPhilip%20DeFranco%5D.mp4",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        }
+      },
+      "md5OfMessageAttributes": "073e3a4252b410b7d09878706b3b8ef8",
+      "md5OfBody": "44dd2fc26e4186dc12b8e67ccb9a9435",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-west-2:203465012143:SendPushNotification",
+      "awsRegion": "us-west-2"
+    }
+  ]
+}

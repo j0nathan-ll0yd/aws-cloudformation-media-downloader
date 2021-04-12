@@ -1,3 +1,4 @@
+import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {S3} from 'aws-sdk'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from '../../node_modules/aws-sdk/clients/s3'
@@ -77,6 +78,48 @@ interface DeviceRegistration {
   systemVersion: string,
   UUID: string,
   systemName: string
+}
+
+interface UserDevice extends DeviceRegistration {
+  endpointArn: string
+}
+
+interface DynamoDBFile {
+  availableAt: number,
+  size: number,
+  authorName: string,
+  fileId: string,
+  publishDate: string,
+  description: string,
+  key: string,
+  url: string,
+  contentType: string,
+  authorUser: string,
+  title: string
+}
+
+export class FileNotification implements SQSMessageAttributes {
+  [name: string]: SQSMessageAttribute
+  size: SQSMessageAttribute
+  publishDate: SQSMessageAttribute
+  key: SQSMessageAttribute
+  url: SQSMessageAttribute
+  userId: SQSMessageAttribute
+}
+
+// The shape of a file when send via push notification
+interface ClientFile {
+  key: string,
+  publishDate: string,
+  size: number,
+  url: string
+}
+
+// TODO: Make type an enum
+interface PushNotification {
+  userId: string,
+  type: string,
+  data: object
 }
 
 interface UserRegistration {

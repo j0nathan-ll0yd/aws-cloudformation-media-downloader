@@ -1,6 +1,8 @@
+import {PublishInput} from 'aws-sdk/clients/sns'
+import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
-import {Metadata} from '../types/main'
+import {ClientFile, DynamoDBFile, FileNotification, Metadata} from '../types/main'
 import {logDebug} from './lambda-helpers'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
@@ -17,6 +19,52 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
         }
     } catch (error) {
         throw new Error('Unable to find format')
+    }
+}
+
+export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string): MessageBodyAttributeMap {
+    return {
+        key: {
+            DataType: 'String',
+            StringValue: file.key
+        },
+        publishDate: {
+            DataType: 'String',
+            StringValue: file.publishDate
+        },
+        size: {
+            DataType: 'Number',
+            StringValue: file.size.toString()
+        },
+        url: {
+            DataType: 'String',
+            StringValue: file.url
+        },
+        userId: {
+            DataType: 'String',
+            StringValue: userId
+        }
+    }
+}
+
+export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
+    const clientFile: ClientFile = {
+        key: file.key.stringValue,
+        publishDate: file.publishDate.stringValue,
+        size: parseInt(file.size.stringValue, 0),
+        url: file.url.stringValue
+    }
+    return {
+        Message: JSON.stringify({
+            APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: objectKeysToLowerCase(clientFile)}),
+            default: 'Default message'
+        }),
+        MessageAttributes: {
+            'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
+            'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
+        },
+        MessageStructure: 'json',
+        TargetArn: targetArn
     }
 }
 

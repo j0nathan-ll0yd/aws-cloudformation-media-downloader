@@ -1,5 +1,6 @@
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
+import * as SQS from '../../../lib/vendor/AWS/SQS'
 import {getFixture} from '../../../util/mocha-setup'
 import chai from 'chai'
 import {handleFeedlyEvent} from '../src'
@@ -9,22 +10,34 @@ const localFixture = getFixture.bind(null, __dirname)
 describe('#handleFeedlyEvent', () => {
   const context = localFixture('Context.json')
   let event
+  let queryStub
+  let sendMessageStub
   let updateItemStub
   beforeEach(() => {
     event = localFixture('APIGatewayEvent.json')
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-204-NoContent.json'))
+    sendMessageStub = sinon.stub(SQS, 'sendMessage')
     updateItemStub = sinon.stub(DynamoDB, 'updateItem')
   })
   afterEach(() => {
     event = localFixture('APIGatewayEvent.json')
+    queryStub.restore()
+    sendMessageStub.restore()
     updateItemStub.restore()
   })
-  it('should handle a feedly event', async () => {
+  it('should trigger the download of a new file (if not present)', async () => {
     event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))
     updateItemStub.returns(localFixture('updateItem-202-Accepted.json'))
     const output = await handleFeedlyEvent(event, context)
     expect(output.statusCode).to.equal(202)
     const body = JSON.parse(output.body)
     expect(body.body.status).to.equal('Accepted')
+  })
+  it('should dispatch a message to clients (if the file already exists)', async () => {
+    event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))
+    queryStub.returns(localFixture('query-200-OK.json'))
+    const output = await handleFeedlyEvent(event, context)
+    expect(output.statusCode).to.equal(204)
   })
   it('should fail gracefully if the startExecution fails', async () => {
     event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))

@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk'
-import {IdentityProviderApple, User} from '../types/main'
+import {IdentityProviderApple, User, UserDevice} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 function transformObjectToDynamoUpdateQuery(item: object) {
@@ -45,6 +45,23 @@ export function scanForFileParams(tableName) {
   }
 }
 
+export function getFileByKey(tableName, fileName) {
+  return {
+    ExpressionAttributeNames: { '#key': 'key' },
+    ExpressionAttributeValues: { ':key': fileName },
+    FilterExpression: '#key = :key',
+    TableName: tableName
+  }
+}
+
+export function getUsersByFileId(tableName, fileId) {
+  return {
+    ExpressionAttributeValues: { ':fileId': fileId },
+    FilterExpression: 'contains (fileId, :fileId)',
+    TableName: tableName
+  }
+}
+
 export function userFileParams(tableName, userId, fileId) {
   return {
     ExpressionAttributeNames: { '#FID': 'fileId' },
@@ -56,14 +73,41 @@ export function userFileParams(tableName, userId, fileId) {
   }
 }
 
-export function updateUserDevice(tableName, fileId, fileUrl) {
+export function updateUserDeviceParams(tableName, userId, userDevice: UserDevice) {
   return {
-    ExpressionAttributeNames: { '#FN': 'url' },
-    ExpressionAttributeValues: { ':fn': fileUrl },
-    Key: { 'fileId': fileId },
-    ReturnValues: 'ALL_NEW',
     TableName: tableName,
-    UpdateExpression: 'SET #FN = :fn'
+    Key: { userId },
+    UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
+    ExpressionAttributeNames: { '#userDevice' : 'userDevice' },
+    ExpressionAttributeValues: { ':userDevice': [userDevice], ':empty_list': [] }
+  }
+}
+
+export function queryUserDeviceParams(tableName, userId, userDevice: UserDevice) {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'userId = :userId',
+    FilterExpression: 'contains(userDevice, :userDevice)',
+    ExpressionAttributeValues: {
+      ':userId': userId,
+      ':userDevice': userDevice
+    }
+  }
+}
+
+export function queryFileParams(tableName, fileId) {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'fileId = :fileId',
+    ExpressionAttributeValues: { ':fileId': fileId }
+  }
+}
+
+export function getUserDeviceByUserIdParams(tableName, userId) {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'userId = :userId',
+    ExpressionAttributeValues: { ':userId': userId }
   }
 }
 

@@ -106,10 +106,10 @@ data "local_file" "DefaultFile" {
 }
 
 resource "aws_s3_bucket_object" "DefaultFile" {
-  bucket = aws_s3_bucket.Files.bucket
+  bucket       = aws_s3_bucket.Files.bucket
   content_type = "video/mp4"
-  key    = "default-file.mp4"
-  source = data.local_file.DefaultFile.filename
-  etag   = filemd5(data.local_file.DefaultFile.filename)
-  acl = "public-read"
+  key          = "default-file.mp4"
+  source       = data.local_file.DefaultFile.filename
+  etag         = filemd5(data.local_file.DefaultFile.filename)
+  acl          = "public-read"
 }
