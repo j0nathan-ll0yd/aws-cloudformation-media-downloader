@@ -1,6 +1,5 @@
 import * as AWS from 'aws-sdk'
 import {
-  ConfirmSubscriptionInput, ConfirmSubscriptionResponse,
   CreateEndpointResponse,
   CreatePlatformEndpointInput, ListSubscriptionsByTopicInput, ListSubscriptionsByTopicResponse,
   PublishInput,
