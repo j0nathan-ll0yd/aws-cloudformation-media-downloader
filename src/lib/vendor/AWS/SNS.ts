@@ -33,18 +33,6 @@ export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
   })
 }
 
-export function confirmSubscription(params: ConfirmSubscriptionInput): Promise<ConfirmSubscriptionResponse> {
-  return new Promise((resolve, reject) => {
-    sns.confirmSubscription(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
-}
-
 export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput): Promise<ListSubscriptionsByTopicResponse> {
   return new Promise((resolve, reject) => {
     sns.listSubscriptionsByTopic(params, (error, data) => {
