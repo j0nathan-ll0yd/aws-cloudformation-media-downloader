@@ -1,38 +1,9 @@
-// Helper function to generate an IAM policy
-// https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-output.html
-import {APIGatewayEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {APIGatewayEvent} from 'aws-lambda'
 import {validate} from 'validate.js'
 import {DeviceRegistration, UserRegistration, UserSubscribe} from '../types/main'
-import {ScheduledEvent} from '../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
-
-const generatePolicy = (principalId, effect, resource, usageIdentifierKey) => {
-    return {
-        context: {},
-        policyDocument: {
-            Statement: [
-                {
-                    Action: 'execute-api:Invoke',
-                    Effect: effect,
-                    Resource: resource
-                }
-            ],
-            Version: '2012-10-17'
-        },
-        principalId,
-        usageIdentifierKey
-    }
-}
-
-export function generateAllow(principalId, resource, usageIdentifierKey?): CustomAuthorizerResult {
-    return generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
-}
-
-export function generateDeny(principalId, resource, usageIdentifierKey?): CustomAuthorizerResult {
-    return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
-}
 
 export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints) {
     const invalidAttributes = validate(requestBody, constraints)
@@ -56,11 +27,9 @@ export function getPayloadFromEvent(event: APIGatewayEvent) {
     throw new ValidationError('Missing request payload')
 }
 
-export function processEventAndValidate(event: APIGatewayEvent | ScheduledEvent, constraints?) {
+export function processEventAndValidate(event: APIGatewayEvent, constraints?) {
     let requestBody: Webhook | DeviceRegistration | UserRegistration
-    if ('source' in event && event.source === 'aws.events') {
-        return {statusCode: 200, message: {status: 'OK'}}
-    } else if ('body' in event) {
+    if ('body' in event) {
         try {
             requestBody = JSON.parse(event.body)
             logDebug('processEventAndValidate.event.body <=', requestBody)

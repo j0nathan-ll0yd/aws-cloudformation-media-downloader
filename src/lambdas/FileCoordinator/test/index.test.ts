@@ -8,9 +8,9 @@ const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#schedulerFileCoordinator', () => {
-  process.env.DynamoDBTable = 'Files' // set in the cloudformation file
+  process.env.DynamoDBTable = 'Files'
   const context = localFixture('Context.json')
-  const event = localFixture('APIGatewayEvent.json')
+  const event = localFixture('ScheduledEvent.json')
   let scanStub
   let startExecutionStub
   beforeEach(() => {

@@ -4,26 +4,11 @@ import * as S3 from 'aws-sdk/clients/s3'
 const s3 = new AWS.S3({apiVersion: '2006-03-01'})
 
 export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {
-  return new Promise((resolve, reject) => {
-    s3.createMultipartUpload(params, (error, multipart) => {
-      if (error) {
-        return reject(error)
-      }
-      return resolve(multipart)
-    })
-  })
+  return s3.createMultipartUpload(params).promise()
 }
 
 export function completeMultipartUpload(params: S3.CompleteMultipartUploadRequest): Promise<CompleteMultipartUploadOutput> {
-  return new Promise((resolve, reject) => {
-    s3.completeMultipartUpload(params, (err, data) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(data)
-      }
-    })
-  })
+  return s3.completeMultipartUpload(params).promise()
 }
 
 export function uploadPart(partParams: S3.UploadPartRequest, tryNum?): Promise<S3.UploadPartOutput> {
