@@ -1,9 +1,7 @@
 import {
   ApiKey,
-  ApiKeys,
   GetApiKeyRequest,
-  GetApiKeysRequest, GetUsagePlansRequest,
-  GetUsageRequest, Usage, UsagePlans
+  GetUsageRequest, Usage
 } from '../../../../node_modules/aws-sdk/clients/apigateway'
 
 import * as AWS from 'aws-sdk'
@@ -26,38 +24,6 @@ export function getApiKey(apiKey): Promise<ApiKey> {
   })
 }
 
-export function getApiKeys(params?: GetApiKeysRequest): Promise<ApiKeys> {
-  return new Promise((resolve, reject) => {
-    apigateway.getApiKeys(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
-}
-
 export function getUsage(params?: GetUsageRequest): Promise<Usage> {
-  return new Promise((resolve, reject) => {
-    apigateway.getUsage(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
-}
-
-export function getUsagePlans(params?: GetUsagePlansRequest): Promise<UsagePlans> {
-  return new Promise((resolve, reject) => {
-    apigateway.getUsagePlans(params, (error, data) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(data)
-      }
-    })
-  })
+  return apigateway.getUsage(params).promise()
 }
