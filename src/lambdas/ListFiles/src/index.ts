@@ -1,12 +1,11 @@
 import {APIGatewayEvent, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
-import {ScheduledEvent} from '../../../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
 import {defaultFile} from '../../../util/constants'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function listFiles(event: APIGatewayEvent | ScheduledEvent, context: Context) {
+export async function listFiles(event: APIGatewayEvent, context: Context) {
   logInfo('event <=', event)
   const {statusCode, message} = processEventAndValidate(event)
   if (statusCode && message) {

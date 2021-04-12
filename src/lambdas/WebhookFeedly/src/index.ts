@@ -3,7 +3,6 @@ import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {DynamoDBFile} from '../../../types/main'
-import {ScheduledEvent} from '../../../types/vendor/Amazon/CloudWatch/ScheduledEvent'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
@@ -38,7 +37,7 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   return undefined
 }
 
-export async function handleFeedlyEvent(event: APIGatewayEvent | ScheduledEvent, context: Context) {
+export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context) {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
   if (statusCode && message) {
