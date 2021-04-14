@@ -2,7 +2,7 @@
     "env": {
         "es6": true
     },
-    "extends": "tslint:recommended",
+    "extends": "eslint:recommended",
     "rules": {
         "quotemark": [true, "single"],
         "max-line-length": {

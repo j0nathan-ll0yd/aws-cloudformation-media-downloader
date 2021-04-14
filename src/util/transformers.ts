@@ -71,7 +71,6 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
 export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
     logDebug('videoDetails', myVideoInfo.videoDetails)
-    // @ts-ignore
     const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
     logDebug('thumbnails', thumbnails)
     for (const key of ['author', 'description', 'publishDate', 'title']) {
@@ -84,7 +83,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     const ext = myVideoFormat.container
     const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
     const fileName = `${uploadDate}-[${author.name}].${ext}`
-    const escapedTitle = title.replace(/[°()@,;:"\/\[\]\\?={}’]/g, '')
+    const escapedTitle = title.replace(/[°()@,;:"/[\]\\?={}’]/g, '')
 
     return {
         videoId,
@@ -94,7 +93,6 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
         description,
         ext: myVideoFormat.container,
         formats: [myVideoFormat],
-        // @ts-ignore
         imageUri: thumbnails[thumbnails.length-1].url,
         mimeType: myVideoFormat.mimeType,
         published: Date.parse(publishDate),
