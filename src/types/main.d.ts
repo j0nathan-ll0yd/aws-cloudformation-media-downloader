@@ -1,20 +1,6 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
-import {S3} from 'aws-sdk'
 import {Author, videoFormat} from 'ytdl-core'
-import {Part} from '../../node_modules/aws-sdk/clients/s3'
-import {AmazonSNSEvent, Record, Sns} from './vendor/Amazon/SNS/Event'
-
-interface SomeSns extends Sns {
-  Message: string
-}
-
-interface SomeRecord extends Record {
-  Sns: SomeSns
-}
-
-interface UploadFileEvent extends AmazonSNSEvent {
-  Records: [SomeRecord]
-}
+import {Part} from 'aws-sdk/clients/s3'
 
 interface Metadata {
   videoId: string,
@@ -58,18 +44,9 @@ interface CompleteFileUploadEvent {
   uploadId: string
 }
 
-interface StartFileUploadEvent {
-  bucket: string,
-  bytesTotal: number,
-  contentType: string,
-  fileId: string,
-  key: string,
-  metadata?: object,
-  url: string
-}
-
-interface ExtendedS3Object extends S3.Object {
-  FileUrl: string
+interface UserFile {
+  fileId: [string],
+  userId: string
 }
 
 interface DeviceRegistration {
@@ -113,13 +90,6 @@ interface ClientFile {
   publishDate: string,
   size: number,
   url: string
-}
-
-// TODO: Make type an enum
-interface PushNotification {
-  userId: string,
-  type: string,
-  data: object
 }
 
 interface UserRegistration {
