@@ -37,8 +37,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
   return sendMessage(sendMessageParams)
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export async function fileUploadWebhook(event: S3Event) {
+export async function fileUploadWebhook(event: S3Event): Promise<void> {
   logDebug('event', event)
   try {
     const record = event.Records[0]

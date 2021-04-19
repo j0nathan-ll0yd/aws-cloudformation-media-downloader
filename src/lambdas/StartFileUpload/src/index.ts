@@ -3,12 +3,12 @@ import {videoInfo} from 'ytdl-core'
 import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
-import {Metadata, UploadPartEvent} from '../../../types/main'
+import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
 import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
 
-export async function startFileUpload(event): Promise<UploadPartEvent> {
+export async function startFileUpload(event: StartFileUploadParams): Promise<UploadPartEvent> {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`

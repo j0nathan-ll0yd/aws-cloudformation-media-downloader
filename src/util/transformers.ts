@@ -100,13 +100,13 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     }
 }
 
-export function transformVideoIntoDynamoItem(metadata: Metadata) {
+export function transformVideoIntoDynamoItem(metadata: Metadata): DynamoDBFile {
     return {
       fileId: metadata.videoId,
       key: metadata.fileName,
       size: 0,
       contentType: undefined,
-      availableAt: Date.now().toString(),
+      availableAt: (new Date()).getTime() / 1000,
       authorName: metadata.author.name,
       authorUser: metadata.author.user,
       title: metadata.title,
@@ -115,7 +115,8 @@ export function transformVideoIntoDynamoItem(metadata: Metadata) {
     }
 }
 
-export function objectKeysToLowerCase(input) {
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function objectKeysToLowerCase(input: object): object {
     if (typeof input !== 'object') {
         return input
     }

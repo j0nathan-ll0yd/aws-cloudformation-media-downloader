@@ -4,22 +4,22 @@ import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
-import {AppleTokenResponse} from '../types/main'
+import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError} from './lambda-helpers'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
 
-export async function getAppleConfig() {
+export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
   }
   const configSecretResponse = await getSecretValue({SecretId: 'prod/SignInWithApple/Config'})
-  APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString)
+  APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString) as SignInWithAppleConfig
   return APPLE_CONFIG
 }
 
-export async function getApplePrivateKey() {
+export async function getApplePrivateKey(): Promise<string> {
   if (APPLE_PRIVATEKEY) {
     return APPLE_PRIVATEKEY
   }
@@ -28,7 +28,7 @@ export async function getApplePrivateKey() {
   return APPLE_PRIVATEKEY
 }
 
-export async function getServerPrivateKey() {
+export async function getServerPrivateKey(): Promise<string> {
   if (PRIVATEKEY) {
     return PRIVATEKEY
   }
@@ -40,7 +40,7 @@ export async function getServerPrivateKey() {
   return PRIVATEKEY
 }
 
-export async function getAppleClientSecret() {
+export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
   const headers = {
@@ -52,12 +52,11 @@ export async function getAppleClientSecret() {
     aud: 'https://appleid.apple.com',
     sub: config.client_id
   }
-  const token = jwt.sign(claims, privateKey, {
+  return jwt.sign(claims, privateKey, {
     algorithm: 'ES256',
     header: headers,
     expiresIn: '24h'
   })
-  return token
 }
 
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
@@ -87,7 +86,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   return data
 }
 
-export async function verifyAppleToken(token: string) {
+export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   // decode the token (insecurely), to determine the appropriate public key
   const decodedPayload = jwt.decode(token, {complete: true})
   const kid = decodedPayload.header.kid
@@ -115,14 +114,14 @@ export async function verifyAppleToken(token: string) {
   }
 }
 
-export async function createAccessToken(userId: string) {
+export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
   return jwt.sign({ userId }, secret, {
     expiresIn: 86400 // expires in 24 hours
   })
 }
 
-export async function verifyAccessToken(token: string) {
+export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {
     return jwt.verify(token, secret)

@@ -1,3 +1,4 @@
+import {Response} from 'aws-sdk'
 import * as AWS from 'aws-sdk'
 import {
   CreateEndpointResponse,
@@ -24,6 +25,6 @@ export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Pro
   return sns.createPlatformEndpoint(params).promise()
 }
 
-export function unsubscribe(params: UnsubscribeInput): Promise<object> {
+export function unsubscribe(params: UnsubscribeInput): Promise<{$response: Response<Record<string, never>, AWS.AWSError>}> {
   return sns.unsubscribe(params).promise()
 }

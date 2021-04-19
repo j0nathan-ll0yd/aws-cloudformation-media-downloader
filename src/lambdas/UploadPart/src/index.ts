@@ -28,6 +28,8 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
       PartNumber: partNumber,
       UploadId: uploadId
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { Body, ...escapedParams } = params
     logInfo('uploadPart <=', escapedParams)
     const partData = await uploadPart(params)

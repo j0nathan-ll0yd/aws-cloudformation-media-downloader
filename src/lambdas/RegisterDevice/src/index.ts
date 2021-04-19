@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {createPlatformEndpoint, listSubscriptionsByTopic, subscribe, unsubscribe} from '../../../lib/vendor/AWS/SNS'
 import {DeviceRegistration, UserDevice} from '../../../types/main'
@@ -7,7 +7,7 @@ import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function handleDeviceRegistration(event: APIGatewayEvent, context: Context) {
+export async function handleDeviceRegistration(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, registerDeviceConstraints)
   if (statusCode && message) {

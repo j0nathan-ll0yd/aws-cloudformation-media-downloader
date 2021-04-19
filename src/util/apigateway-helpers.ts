@@ -1,11 +1,11 @@
 import {APIGatewayEvent} from 'aws-lambda'
 import {validate} from 'validate.js'
-import {DeviceRegistration, UserRegistration, UserSubscribe} from '../types/main'
+import {DeviceRegistration, UserRegistration, UserSubscribe, ValidationResponse} from '../types/main'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
 
-export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints) {
+export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints: unknown): void {
     const invalidAttributes = validate(requestBody, constraints)
     if (invalidAttributes) {
         logError('processEventAndValidate =>', invalidAttributes)
@@ -13,7 +13,7 @@ export function validateRequest(requestBody: Webhook | DeviceRegistration | User
     }
 }
 
-export function getPayloadFromEvent(event: APIGatewayEvent) {
+export function getPayloadFromEvent(event: APIGatewayEvent): Webhook | DeviceRegistration | UserRegistration | UserSubscribe {
     if ('body' in event) {
         try {
             const requestBody = JSON.parse(event.body)
@@ -27,7 +27,7 @@ export function getPayloadFromEvent(event: APIGatewayEvent) {
     throw new ValidationError('Missing request payload')
 }
 
-export function processEventAndValidate(event: APIGatewayEvent, constraints?) {
+export function processEventAndValidate(event: APIGatewayEvent, constraints?: unknown): ValidationResponse {
     let requestBody: Webhook | DeviceRegistration | UserRegistration
     if ('body' in event) {
         try {

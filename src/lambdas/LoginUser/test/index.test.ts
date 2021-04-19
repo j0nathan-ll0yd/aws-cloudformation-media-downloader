@@ -1,6 +1,7 @@
 import * as sinon from 'sinon'
 import chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
+import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture} from '../../../util/mocha-setup'
 import {handleLoginUser} from '../src'
 const expect = chai.expect
@@ -8,19 +9,18 @@ const localFixture = getFixture.bind(null, __dirname)
 
 describe('#handleLoginUser', () => {
   const context = localFixture('Context.json')
-  const dependencyModule = require('../../../util/secretsmanager-helpers')
   let createAccessTokenStub
   let event
   let scanStub
   let validateAuthCodeForTokenStub
   let verifyAppleTokenStub
   beforeEach(() => {
-    createAccessTokenStub = sinon.stub(dependencyModule, 'createAccessToken').returns(fakeJWT)
+    createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
     event = localFixture('APIGatewayEvent.json')
     scanStub = sinon.stub(DynamoDB, 'scan')
-    validateAuthCodeForTokenStub = sinon.stub(dependencyModule, 'validateAuthCodeForToken')
+    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken')
       .returns(localFixture('validateAuthCodeForToken-200-OK.json'))
-    verifyAppleTokenStub = sinon.stub(dependencyModule, 'verifyAppleToken')
+    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken')
       .returns(localFixture('verifyAppleToken-200-OK.json'))
   })
   afterEach(() => {

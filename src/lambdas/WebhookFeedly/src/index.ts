@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
@@ -37,7 +37,7 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   return undefined
 }
 
-export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context) {
+export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
   if (statusCode && message) {

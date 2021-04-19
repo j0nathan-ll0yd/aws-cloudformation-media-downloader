@@ -1,6 +1,7 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
+import {Webhook} from './vendor/IFTTT/Feedly/Webhook'
 
 interface Metadata {
   videoId: string,
@@ -19,6 +20,15 @@ interface Metadata {
   published: number // time in milliseconds
 }
 
+interface StartFileUploadParams {
+  fileId: string
+}
+
+interface ValidationResponse {
+  requestBody?: Webhook | DeviceRegistration | UserRegistration,
+  statusCode?: number
+  message?: string
+}
 
 interface UploadPartEvent {
   bucket: string
@@ -69,10 +79,18 @@ interface DynamoDBFile {
   publishDate: string,
   description: string,
   key: string,
-  url: string,
+  url?: string, // Won't exist on create
   contentType: string,
   authorUser: string,
   title: string
+}
+
+interface SignInWithAppleConfig {
+  client_id: string,
+  team_id: string,
+  redirect_uri: string,
+  key_id: string,
+  scope: string
 }
 
 export class FileNotification implements SQSMessageAttributes {
@@ -136,4 +154,22 @@ interface AppleTokenResponse {
   id_token: string, // A JSON Web Token that contains the user’s identity information.
   refresh_token: string, // The refresh token used to regenerate new access tokens.
   token_type: string // The type of access token. It will always be bearer.
+}
+
+interface ServerVerifiedToken {
+  userId: string
+}
+
+interface SignInWithAppleVerifiedToken {
+  iss: string, // https://appleid.apple.com
+  aud: string, // lifegames.OfflineMediaDownloader
+  exp: number, // 1590096639
+  iat: number, // 1590096039
+  sub: string, // 000185.7720315570fc49d99a265f9af4b46879.2034
+  at_hash: string, // ztF31A59ZQ66PpC1D57ydg
+  email: string, // 28ncci33a3@privaterelay.appleid.com
+  email_verified: boolean,
+  is_private_email: boolean,
+  auth_time: number,
+  nonce_supported: boolean
 }

@@ -3,13 +3,13 @@ import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {DynamoDBFile, IdentityProviderApple, User, UserDevice} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
-function transformObjectToDynamoUpdateQuery(item: object) {
+function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames = {}
   const ExpressionAttributeValues = {}
   for (const property in item) {
     if (property === 'fileId') { continue }
-    if (item.hasOwnProperty(property)) {
+    if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
       ExpressionAttributeValues[':' + property] = item[property]

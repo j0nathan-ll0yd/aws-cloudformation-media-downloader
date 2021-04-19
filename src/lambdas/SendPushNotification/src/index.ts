@@ -6,7 +6,7 @@ import {getUserDeviceByUserIdParams} from '../../../util/dynamodb-helpers'
 import {logDebug} from '../../../util/lambda-helpers'
 import * as transformers from '../../../util/transformers'
 
-export async function index(event: SQSEvent) {
+export async function index(event: SQSEvent): Promise<void> {
   logDebug('event', event)
   for (const record of event.Records) {
     try {

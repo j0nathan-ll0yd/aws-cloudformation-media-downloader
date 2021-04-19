@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {UserLogin} from '../../../types/main'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
@@ -7,7 +7,7 @@ import {getUserByAppleDeviceIdentifier} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 
-export async function handleLoginUser(event: APIGatewayEvent, context: Context) {
+export async function handleLoginUser(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, loginUserConstraints)
   if (statusCode && message) {

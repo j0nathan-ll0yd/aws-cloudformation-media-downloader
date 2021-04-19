@@ -11,7 +11,7 @@ export function completeMultipartUpload(params: S3.CompleteMultipartUploadReques
   return s3.completeMultipartUpload(params).promise()
 }
 
-export function uploadPart(partParams: S3.UploadPartRequest, tryNum?): Promise<S3.UploadPartOutput> {
+export function uploadPart(partParams: S3.UploadPartRequest, tryNum?: number): Promise<S3.UploadPartOutput> {
   return new Promise((resolve, reject) => {
     if (!tryNum) {
       tryNum = 1
