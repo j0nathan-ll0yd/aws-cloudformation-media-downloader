@@ -1,6 +1,6 @@
 import * as AWS from 'aws-sdk'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {DynamoDBFile, IdentityProviderApple, User, UserDevice} from '../types/main'
+import { DocumentClient } from 'aws-sdk/lib/dynamodb/document_client'
+import { DynamoDBFile, IdentityProviderApple, User, UserDevice } from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
@@ -8,7 +8,9 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
   const ExpressionAttributeNames = {}
   const ExpressionAttributeValues = {}
   for (const property in item) {
-    if (property === 'fileId') { continue }
+    if (property === 'fileId') {
+      continue
+    }
     if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
@@ -16,14 +18,18 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
     }
   }
   UpdateExpression = UpdateExpression.slice(0, -1)
-  return {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues}
+  return {
+    UpdateExpression,
+    ExpressionAttributeNames,
+    ExpressionAttributeValues
+  }
 }
 
 export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string): DocumentClient.UpdateItemInput {
   return {
     ExpressionAttributeNames: { '#FN': 'url' },
     ExpressionAttributeValues: { ':fn': fileUrl },
-    Key: { 'fileId': fileId },
+    Key: { fileId: fileId },
     ReturnValues: 'ALL_NEW',
     TableName: tableName,
     UpdateExpression: 'SET #FN = :fn'
@@ -67,7 +73,7 @@ export function userFileParams(tableName: string, userId: string, fileId: string
   return {
     ExpressionAttributeNames: { '#FID': 'fileId' },
     ExpressionAttributeValues: { ':fid': docClient.createSet([fileId]) },
-    Key: { 'userId': userId },
+    Key: { userId: userId },
     ReturnValues: 'NONE',
     UpdateExpression: 'ADD #FID :fid',
     TableName: tableName
@@ -79,8 +85,11 @@ export function updateUserDeviceParams(tableName: string, userId: string, userDe
     TableName: tableName,
     Key: { userId },
     UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
-    ExpressionAttributeNames: { '#userDevice' : 'userDevice' },
-    ExpressionAttributeValues: { ':userDevice': [userDevice], ':empty_list': [] }
+    ExpressionAttributeNames: { '#userDevice': 'userDevice' },
+    ExpressionAttributeValues: {
+      ':userDevice': [userDevice],
+      ':empty_list': []
+    }
   }
 }
 
@@ -116,7 +125,7 @@ export function newFileParams(tableName: string, fileId: string): DocumentClient
   return {
     ExpressionAttributeNames: { '#AA': 'availableAt' },
     ExpressionAttributeValues: { ':aa': Date.now().toString() },
-    Key: { 'fileId': fileId },
+    Key: { fileId: fileId },
     ReturnValues: 'ALL_OLD',
     UpdateExpression: 'SET #AA = if_not_exists(#AA, :aa)',
     TableName: tableName
@@ -134,9 +143,9 @@ export function newUserParams(tableName: string, user: User, identityProviderApp
 }
 
 export function updateFileMetadataParams(tableName: string, item: DynamoDBFile): DocumentClient.UpdateItemInput {
-  const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(item)
+  const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } = transformObjectToDynamoUpdateQuery(item)
   return {
-    Key: { 'fileId': item.fileId },
+    Key: { fileId: item.fileId },
     TableName: tableName,
     UpdateExpression,
     ExpressionAttributeNames,
@@ -149,7 +158,7 @@ export function getUserFilesParams(tableName: string, userId: string): DocumentC
     ExpressionAttributeValues: {
       ':uid': userId
     },
-    ExpressionAttributeNames:{
+    ExpressionAttributeNames: {
       '#uid': 'userId'
     },
     KeyConditionExpression: '#uid = :uid',
@@ -157,11 +166,11 @@ export function getUserFilesParams(tableName: string, userId: string): DocumentC
   }
 }
 
-export function getBatchFilesParams(tableName:string, files:string[]): DocumentClient.BatchGetItemInput {
+export function getBatchFilesParams(tableName: string, files: string[]): DocumentClient.BatchGetItemInput {
   const Keys = []
   const mySet = docClient.createSet(files)
   for (const fileId of mySet.values) {
-    Keys.push({fileId})
+    Keys.push({ fileId })
   }
 
   return {

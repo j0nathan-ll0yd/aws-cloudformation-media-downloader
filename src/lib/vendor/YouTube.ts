@@ -1,5 +1,5 @@
-import {getInfo, videoInfo, chooseFormat, getURLVideoID, videoFormat, chooseFormatOptions} from 'ytdl-core'
-import {logDebug, logError} from '../../util/lambda-helpers'
+import { getInfo, videoInfo, chooseFormat, getURLVideoID, videoFormat, chooseFormatOptions } from 'ytdl-core'
+import { logDebug, logError } from '../../util/lambda-helpers'
 
 export async function fetchVideoInfo(uri: string): Promise<videoInfo> {
   logDebug('fetchVideoInfo =>')

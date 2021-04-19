@@ -1,15 +1,15 @@
-import {UploadPartRequest} from 'aws-sdk/clients/s3'
-import axios, {AxiosRequestConfig} from 'axios'
-import {uploadPart} from '../../../lib/vendor/AWS/S3'
-import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {logDebug, logInfo} from '../../../util/lambda-helpers'
+import { UploadPartRequest } from 'aws-sdk/clients/s3'
+import axios, { AxiosRequestConfig } from 'axios'
+import { uploadPart } from '../../../lib/vendor/AWS/S3'
+import { CompleteFileUploadEvent, UploadPartEvent } from '../../../types/main'
+import { logDebug, logInfo } from '../../../util/lambda-helpers'
 
 export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFileUploadEvent | UploadPartEvent> {
   logInfo('event <=', event)
   try {
-    const {bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url} = event
+    const { bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url } = event
     const options: AxiosRequestConfig = {
-      headers: {Range: `bytes=${partBeg}-${partEnd}`},
+      headers: { Range: `bytes=${partBeg}-${partEnd}` },
       method: 'get',
       responseType: 'stream',
       url
@@ -35,7 +35,7 @@ export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFi
     const partData = await uploadPart(params)
     logInfo('uploadPart =>', partData)
 
-    partTags.push({ETag: partData.ETag, PartNumber: partNumber})
+    partTags.push({ ETag: partData.ETag, PartNumber: partNumber })
     const newPartEnd = Math.min(partEnd + partSize, bytesTotal)
     const newBytesRemaining = bytesRemaining - partSize
     const nextPart: UploadPartEvent = {

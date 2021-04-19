@@ -4,9 +4,9 @@ import crypto from 'crypto'
 import chai from 'chai'
 import * as sinon from 'sinon'
 import * as S3 from '../../../lib/vendor/AWS/S3'
-import {UploadPartEvent} from '../../../types/main'
-import {partSize} from '../../../util/mocha-setup'
-import {uploadFilePart} from '../src'
+import { UploadPartEvent } from '../../../types/main'
+import { partSize } from '../../../util/mocha-setup'
+import { uploadFilePart } from '../src'
 const expect = chai.expect
 
 describe('#uploadPart', () => {
@@ -53,12 +53,16 @@ describe('#uploadPart', () => {
 function mockResponseUploadPart(config, bytesTotal, partSize) {
   return new Promise((resolve) => {
     const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(config.headers.Range)
-    return resolve([206, 'hello', {
-      'accept-ranges': 'bytes',
-      'content-length': partSize,
-      'content-range': `bytes ${beg}-${end}/${bytesTotal}`,
-      'content-type': 'video/mp4'
-    }])
+    return resolve([
+      206,
+      'hello',
+      {
+        'accept-ranges': 'bytes',
+        'content-length': partSize,
+        'content-range': `bytes ${beg}-${end}/${bytesTotal}`,
+        'content-type': 'video/mp4'
+      }
+    ])
   })
 }
 
@@ -75,11 +79,24 @@ async function mockIterationsOfUploadPart(bytesTotal, partSize) {
   let partBeg = 0
   const fileId = 'yqm2cswg5ozl'
   while (bytesRemaining > 0) {
-    const event = {bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url}
+    const event = {
+      bucket,
+      bytesRemaining,
+      bytesTotal,
+      fileId,
+      key,
+      partBeg,
+      partEnd,
+      partNumber,
+      partSize,
+      partTags,
+      uploadId,
+      url
+    }
     const output = await uploadFilePart(event)
     responses.push(output)
     if (output.bytesRemaining > 0) {
-      ({partBeg, partEnd, partNumber} = output as UploadPartEvent)
+      ;({ partBeg, partEnd, partNumber } = output as UploadPartEvent)
     }
     bytesRemaining = bytesRemaining - partSize
   }

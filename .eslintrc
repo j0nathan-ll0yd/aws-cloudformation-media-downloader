@@ -7,11 +7,12 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
   ],
   "rules": {
     "quotes": [2, "single", { "avoidEscape": true }],
-    "max-len": [2, { "code": 250 }],
+    "max-len": ["error", {"code": 250, "ignoreUrls": true}],
     "new-parens": 2,
     "no-caller": 2,
     "no-bitwise": 2,
@@ -21,6 +22,6 @@
     "no-console": [0, "log", "error", "warn", "info"],
     "semi": [2, "never"],
     "eofline": 0,
-    "comma-dangle": [2, "never"]
+    "comma-dangle": ["error", "never"]
   }
 }

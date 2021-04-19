@@ -1,11 +1,11 @@
-import axios, {AxiosRequestConfig} from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import querystring from 'querystring'
-import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
+import { getSecretValue } from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
-import {promisify} from 'util'
-import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
-import {logDebug, logError} from './lambda-helpers'
+import { promisify } from 'util'
+import { AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken } from '../types/main'
+import { logDebug, logError } from './lambda-helpers'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
@@ -14,7 +14,9 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
   }
-  const configSecretResponse = await getSecretValue({SecretId: 'prod/SignInWithApple/Config'})
+  const configSecretResponse = await getSecretValue({
+    SecretId: 'prod/SignInWithApple/Config'
+  })
   APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString) as SignInWithAppleConfig
   return APPLE_CONFIG
 }
@@ -23,7 +25,9 @@ export async function getApplePrivateKey(): Promise<string> {
   if (APPLE_PRIVATEKEY) {
     return APPLE_PRIVATEKEY
   }
-  const authKeySecretResponse = await getSecretValue({SecretId: 'prod/SignInWithApple/AuthKey'})
+  const authKeySecretResponse = await getSecretValue({
+    SecretId: 'prod/SignInWithApple/AuthKey'
+  })
   APPLE_PRIVATEKEY = authKeySecretResponse.SecretString
   return APPLE_PRIVATEKEY
 }
@@ -33,8 +37,10 @@ export async function getServerPrivateKey(): Promise<string> {
     return PRIVATEKEY
   }
   // This SecretId has to map to the CloudFormation file (LoginUser)
-  logDebug('getSecretValue', {SecretId: process.env.EncryptionKeySecretId})
-  const privateKeySecretResponse = await getSecretValue({SecretId: process.env.EncryptionKeySecretId})
+  logDebug('getSecretValue', { SecretId: process.env.EncryptionKeySecretId })
+  const privateKeySecretResponse = await getSecretValue({
+    SecretId: process.env.EncryptionKeySecretId
+  })
   logDebug('getSecretValue', privateKeySecretResponse)
   PRIVATEKEY = privateKeySecretResponse.SecretString
   return PRIVATEKEY
@@ -80,7 +86,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   }
   logDebug('axios <=', options)
   const response = await axios(options)
-  const {status, data} = response
+  const { status, data } = response
   logDebug('axios =>', status)
   logDebug('axios =>', data)
   return data
@@ -88,7 +94,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
 
 export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   // decode the token (insecurely), to determine the appropriate public key
-  const decodedPayload = jwt.decode(token, {complete: true})
+  const decodedPayload = jwt.decode(token, { complete: true })
   const kid = decodedPayload.header.kid
 
   // Verify the nonce for the authentication
@@ -103,7 +109,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   if ('rsaPublicKey' in key) {
     try {
       return jwt.verify(token, key.rsaPublicKey)
-    } catch(error) {
+    } catch (error) {
       logError(`jwt.verify <= ${error.message}`)
       throw new Error(error)
     }
@@ -125,7 +131,7 @@ export async function verifyAccessToken(token: string): Promise<ServerVerifiedTo
   const secret = await getServerPrivateKey()
   try {
     return jwt.verify(token, secret)
-  } catch(err) {
+  } catch (err) {
     logError(`verifyAccessToken <= ${err}`)
     throw err
   }

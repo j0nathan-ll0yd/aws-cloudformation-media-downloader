@@ -4,9 +4,9 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as YouTube from '../../../lib/vendor/YouTube'
 import * as S3 from '../../../lib/vendor/AWS/S3'
-import {getFixture, partSize} from '../../../util/mocha-setup'
+import { getFixture, partSize } from '../../../util/mocha-setup'
 import chai from 'chai'
-import {startFileUpload} from '../src'
+import { startFileUpload } from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

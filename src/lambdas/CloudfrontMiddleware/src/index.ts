@@ -1,17 +1,14 @@
-import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
-import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import { CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context } from 'aws-lambda'
+import { CloudFrontHeaders, CloudFrontRequest } from 'aws-lambda/common/cloudfront'
+import { cloudFrontErrorResponse, logDebug, logError, logInfo } from '../../../util/lambda-helpers'
+import { verifyAccessToken } from '../../../util/secretsmanager-helpers'
 
-export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest|CloudFrontResultResponse|CloudFrontResponse> {
+export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> {
   logInfo('event <=', event)
   logInfo('context <=', context)
   const request = event.Records[0].cf.request
   try {
-    await Promise.all([
-      handleAuthorizationHeader(request),
-      handleQueryString(request)
-    ])
+    await Promise.all([handleAuthorizationHeader(request), handleQueryString(request)])
   } catch (err) {
     logError('Error handling request', err)
     const realm = request.origin.custom.customHeaders['x-www-authenticate-realm'][0].value
@@ -34,8 +31,8 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   if (request.clientIp === reservedIp && userAgent === 'localhost@lifegames') {
     headers['x-user-Id'] = [
       {
-        'key': 'X-User-Id',
-        'value': 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456'
+        key: 'X-User-Id',
+        value: 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456'
       }
     ]
     return
@@ -44,11 +41,11 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   const multiAuthenticationPaths = request.origin.custom.customHeaders['x-multiauthentication-paths'][0].value.split(',')
   const pathPart = request.uri.substring(1) // remove "/" prefix
   // If its an unauthenticated path (doesn't require auth), we ignore the Authorization header
-  if (unauthenticatedPaths.find(path => path === pathPart)) {
+  if (unauthenticatedPaths.find((path) => path === pathPart)) {
     return
   }
   // If the path supports either authenticated or unauthenticated requests; ensure the header is present
-  if (!multiAuthenticationPaths.find(path => path === pathPart) && !headers.authorization) {
+  if (!multiAuthenticationPaths.find((path) => path === pathPart) && !headers.authorization) {
     throw 'headers.Authorization is required'
   }
 
@@ -72,8 +69,8 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
       logDebug('verifyAccessToken =>', payload)
       headers['x-user-Id'] = [
         {
-          'key': 'X-User-Id',
-          'value': payload.userId
+          key: 'X-User-Id',
+          value: payload.userId
         }
       ]
     } catch (err) {
@@ -96,8 +93,8 @@ async function handleQueryString(request: CloudFrontRequest) {
   const keypair = request.querystring.split('=')
   headers['x-api-key'] = [
     {
-      'key': 'X-API-Key',
-      'value': keypair[1]
+      key: 'X-API-Key',
+      value: keypair[1]
     }
   ]
 }

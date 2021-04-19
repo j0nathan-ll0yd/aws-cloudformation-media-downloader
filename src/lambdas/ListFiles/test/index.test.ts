@@ -1,8 +1,8 @@
 import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {getFixture} from '../../../util/mocha-setup'
-import {listFiles} from '../src'
+import { getFixture } from '../../../util/mocha-setup'
+import { listFiles } from '../src'
 import chai from 'chai'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)

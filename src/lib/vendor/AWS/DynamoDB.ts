@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import { DocumentClient } from 'aws-sdk/lib/dynamodb/document_client'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 export function updateItem(params: DocumentClient.UpdateItemInput): Promise<DocumentClient.UpdateItemOutput> {

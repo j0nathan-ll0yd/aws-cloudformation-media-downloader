@@ -2,8 +2,8 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import chai from 'chai'
 import * as SQS from '../../../lib/vendor/AWS/SQS'
-import {getFixture} from '../../../util/mocha-setup'
-import {fileUploadWebhook} from '../src'
+import { getFixture } from '../../../util/mocha-setup'
+import { fileUploadWebhook } from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

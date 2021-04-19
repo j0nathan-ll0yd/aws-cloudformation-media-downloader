@@ -1,9 +1,9 @@
-import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse} from 'aws-lambda'
+import { CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse } from 'aws-lambda'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import * as sinon from 'sinon'
-import {getFixture} from '../../../util/mocha-setup'
+import { getFixture } from '../../../util/mocha-setup'
 import chai from 'chai'
-import {handler} from '../src'
+import { handler } from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -13,8 +13,7 @@ describe('#CloudfrontMiddleware', () => {
   let verifyAccessTokenStub
   beforeEach(() => {
     event = localFixture('APIGatewayEvent-200-OK.json') as CloudFrontRequestEvent
-    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken')
-      .returns(localFixture('verifyAccessToken-200-OK.json'))
+    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json'))
   })
   afterEach(() => {
     verifyAccessTokenStub.restore()
@@ -35,7 +34,7 @@ describe('#CloudfrontMiddleware', () => {
   })
   it('should handle an expired Authorization header', async () => {
     verifyAccessTokenStub.throws('TokenExpiredError: jwt expired')
-    const output = await handler(event, context) as CloudFrontResultResponse
+    const output = (await handler(event, context)) as CloudFrontResultResponse
     expect(output).to.have.property('status')
     expect(output.status).to.equal('401')
   })
@@ -57,7 +56,7 @@ describe('#CloudfrontMiddleware', () => {
     // if the path supports requires authentication, enforce it
     event.Records[0].cf.request.uri = '/feedly'
     delete event.Records[0].cf.request.headers.authorization
-    const output = await handler(event, context) as CloudFrontResponse
+    const output = (await handler(event, context)) as CloudFrontResponse
     expect(output).to.have.property('status')
     expect(output.status).to.equal('401')
   })

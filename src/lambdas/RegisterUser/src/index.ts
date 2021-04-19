@@ -1,20 +1,20 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {UserRegistration} from '../../../types/main'
-import {processEventAndValidate} from '../../../util/apigateway-helpers'
-import {registerUserConstraints} from '../../../util/constraints'
-import {newUserParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
+import { APIGatewayEvent, APIGatewayProxyResult, Context } from 'aws-lambda'
+import { putItem } from '../../../lib/vendor/AWS/DynamoDB'
+import { UserRegistration } from '../../../types/main'
+import { processEventAndValidate } from '../../../util/apigateway-helpers'
+import { registerUserConstraints } from '../../../util/constraints'
+import { newUserParams } from '../../../util/dynamodb-helpers'
+import { logDebug, logInfo, response } from '../../../util/lambda-helpers'
+import { createAccessToken, validateAuthCodeForToken, verifyAppleToken } from '../../../util/secretsmanager-helpers'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function handleRegisterUser(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, registerUserConstraints)
+  const { requestBody, statusCode, message } = processEventAndValidate(event, registerUserConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
-  const body = (requestBody as UserRegistration)
+  const body = requestBody as UserRegistration
 
   logDebug('validateAuthCodeForToken <=')
   const appleToken = await validateAuthCodeForToken(body.authorizationCode)
@@ -47,5 +47,5 @@ export async function handleRegisterUser(event: APIGatewayEvent, context: Contex
   const putItemResponse = await putItem(putItemParams)
   logDebug('putItem =>', putItemResponse)
   const token = await createAccessToken(user.userId)
-  return response(context, 200, {token})
+  return response(context, 200, { token })
 }

@@ -2,8 +2,8 @@ import * as sinon from 'sinon'
 import chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import {fakeJWT, getFixture} from '../../../util/mocha-setup'
-import {handleLoginUser} from '../src'
+import { fakeJWT, getFixture } from '../../../util/mocha-setup'
+import { handleLoginUser } from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -18,10 +18,8 @@ describe('#handleLoginUser', () => {
     createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
     event = localFixture('APIGatewayEvent.json')
     scanStub = sinon.stub(DynamoDB, 'scan')
-    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken')
-      .returns(localFixture('validateAuthCodeForToken-200-OK.json'))
-    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken')
-      .returns(localFixture('verifyAppleToken-200-OK.json'))
+    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json'))
+    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json'))
   })
   afterEach(() => {
     createAccessTokenStub.restore()
@@ -42,7 +40,7 @@ describe('#handleLoginUser', () => {
     expect(output.statusCode).to.equal(404)
     const body = JSON.parse(output.body)
     expect(body.error.code).to.equal('custom-4XX-generic')
-    expect(body.error.message).to.equal('User doesn\'t exist')
+    expect(body.error.message).to.equal("User doesn't exist")
   })
   it('should throw an error if duplicates are found', async () => {
     scanStub.returns(localFixture('scan-300-MultipleChoices.json'))

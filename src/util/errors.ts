@@ -5,5 +5,7 @@ export function ValidationError(message: string, statusCode = 400, errors?: obje
   this.message = message
   this.statusCode = statusCode
   this.errors = errors
-  if (errors) { this.message = errors }
+  if (errors) {
+    this.message = errors
+  }
 }

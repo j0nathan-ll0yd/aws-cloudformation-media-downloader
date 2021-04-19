@@ -2,8 +2,8 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
 import chai from 'chai'
-import {getFixture} from '../../../util/mocha-setup'
-import {schedulerFileCoordinator} from '../src'
+import { getFixture } from '../../../util/mocha-setup'
+import { schedulerFileCoordinator } from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

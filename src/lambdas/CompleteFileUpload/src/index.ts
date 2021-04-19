@@ -1,18 +1,18 @@
-import {CompleteMultipartUploadOutput, CompleteMultipartUploadRequest} from 'aws-sdk/clients/s3'
-import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {completeMultipartUpload} from '../../../lib/vendor/AWS/S3'
-import {CompleteFileUploadEvent} from '../../../types/main'
-import {updateCompletedFileParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo} from '../../../util/lambda-helpers'
+import { CompleteMultipartUploadOutput, CompleteMultipartUploadRequest } from 'aws-sdk/clients/s3'
+import { updateItem } from '../../../lib/vendor/AWS/DynamoDB'
+import { completeMultipartUpload } from '../../../lib/vendor/AWS/S3'
+import { CompleteFileUploadEvent } from '../../../types/main'
+import { updateCompletedFileParams } from '../../../util/dynamodb-helpers'
+import { logDebug, logInfo } from '../../../util/lambda-helpers'
 
 export async function completeFileUpload(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
   logDebug('event', event)
   try {
-    const {bucket, fileId, key, partTags, uploadId} = event
+    const { bucket, fileId, key, partTags, uploadId } = event
     const params: CompleteMultipartUploadRequest = {
       Bucket: bucket,
       Key: key,
-      MultipartUpload: {Parts: partTags},
+      MultipartUpload: { Parts: partTags },
       UploadId: uploadId
     }
     logInfo('completeMultipartUpload <=', params)
