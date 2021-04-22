@@ -1,15 +1,15 @@
-import { APIGatewayEvent, APIGatewayProxyResult, Context } from 'aws-lambda'
-import { updateItem, query } from '../../../lib/vendor/AWS/DynamoDB'
-import { createPlatformEndpoint, listSubscriptionsByTopic, subscribe, unsubscribe } from '../../../lib/vendor/AWS/SNS'
-import { DeviceRegistration, UserDevice } from '../../../types/main'
-import { processEventAndValidate } from '../../../util/apigateway-helpers'
-import { registerDeviceConstraints } from '../../../util/constraints'
-import { queryUserDeviceParams, updateUserDeviceParams } from '../../../util/dynamodb-helpers'
-import { getUserIdFromEvent, logDebug, logError, logInfo, response } from '../../../util/lambda-helpers'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {createPlatformEndpoint, listSubscriptionsByTopic, subscribe, unsubscribe} from '../../../lib/vendor/AWS/SNS'
+import {DeviceRegistration, UserDevice} from '../../../types/main'
+import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {registerDeviceConstraints} from '../../../util/constraints'
+import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
+import {getUserIdFromEvent, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 
 export async function handleDeviceRegistration(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const { requestBody, statusCode, message } = processEventAndValidate(event, registerDeviceConstraints)
+  const {requestBody, statusCode, message} = processEventAndValidate(event, registerDeviceConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
@@ -43,7 +43,7 @@ export async function handleDeviceRegistration(event: APIGatewayEvent, context: 
     const userDeviceResponse = await query(userDeviceParams)
     logDebug('query =>', userDeviceResponse)
     if (userDeviceResponse.Count === 1) {
-      return response(context, 200, { endpointArn: userDevice.endpointArn })
+      return response(context, 200, {endpointArn: userDevice.endpointArn})
     } else {
       // Store the device details associated with the user
       const updateUserDevice = updateUserDeviceParams(table, userId, userDevice)

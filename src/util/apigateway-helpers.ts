@@ -1,9 +1,9 @@
-import { APIGatewayEvent } from 'aws-lambda'
-import { validate } from 'validate.js'
-import { DeviceRegistration, UserRegistration, UserSubscribe, ValidationResponse } from '../types/main'
-import { Webhook } from '../types/vendor/IFTTT/Feedly/Webhook'
-import { ValidationError } from './errors'
-import { logDebug, logError } from './lambda-helpers'
+import {APIGatewayEvent} from 'aws-lambda'
+import {validate} from 'validate.js'
+import {DeviceRegistration, UserRegistration, UserSubscribe, ValidationResponse} from '../types/main'
+import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
+import {ValidationError} from './errors'
+import {logDebug, logError} from './lambda-helpers'
 
 export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints: unknown): void {
   const invalidAttributes = validate(requestBody, constraints)
@@ -35,15 +35,15 @@ export function processEventAndValidate(event: APIGatewayEvent, constraints?: un
       logDebug('processEventAndValidate.event.body <=', requestBody)
     } catch (error) {
       logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
-      return { statusCode: 400, message: 'Request body must be valid JSON' }
+      return {statusCode: 400, message: 'Request body must be valid JSON'}
     }
   }
   if (constraints) {
     const invalidAttributes = validate(requestBody, constraints)
     if (invalidAttributes) {
       logError('processEventAndValidate =>', invalidAttributes)
-      return { statusCode: 400, message: invalidAttributes }
+      return {statusCode: 400, message: invalidAttributes}
     }
   }
-  return { requestBody }
+  return {requestBody}
 }

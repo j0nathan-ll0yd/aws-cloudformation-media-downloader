@@ -1,9 +1,9 @@
-import { PublishInput } from 'aws-sdk/clients/sns'
-import { MessageBodyAttributeMap } from 'aws-sdk/clients/sqs'
-import { videoFormat, videoInfo } from 'ytdl-core'
-import { chooseVideoFormat } from '../lib/vendor/YouTube'
-import { ClientFile, DynamoDBFile, FileNotification, Metadata } from '../types/main'
-import { logDebug } from './lambda-helpers'
+import {PublishInput} from 'aws-sdk/clients/sns'
+import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
+import {videoFormat, videoInfo} from 'ytdl-core'
+import {chooseVideoFormat} from '../lib/vendor/YouTube'
+import {ClientFile, DynamoDBFile, FileNotification, Metadata} from '../types/main'
+import {logDebug} from './lambda-helpers'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -57,13 +57,13 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
   return {
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({
-        aps: { 'content-available': 1 },
+        aps: {'content-available': 1},
         file: objectKeysToLowerCase(clientFile)
       }),
       default: 'Default message'
     }),
     MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': { DataType: 'String', StringValue: '5' },
+      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
       'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {
         DataType: 'String',
         StringValue: 'background'
@@ -77,7 +77,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
 export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
   const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
   logDebug('videoDetails', myVideoInfo.videoDetails)
-  const { title, description, publishDate, author, thumbnails, videoId } = myVideoInfo.videoDetails
+  const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
   logDebug('thumbnails', thumbnails)
   for (const key of ['author', 'description', 'publishDate', 'title']) {
     if (!myVideoInfo.videoDetails[key]) {

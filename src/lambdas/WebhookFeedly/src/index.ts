@@ -1,14 +1,14 @@
-import { APIGatewayEvent, APIGatewayProxyResult, Context } from 'aws-lambda'
-import { query, updateItem } from '../../../lib/vendor/AWS/DynamoDB'
-import { sendMessage } from '../../../lib/vendor/AWS/SQS'
-import { getVideoID } from '../../../lib/vendor/YouTube'
-import { DynamoDBFile } from '../../../types/main'
-import { Webhook } from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import { processEventAndValidate } from '../../../util/apigateway-helpers'
-import { feedlyEventConstraints } from '../../../util/constraints'
-import { newFileParams, queryFileParams, userFileParams } from '../../../util/dynamodb-helpers'
-import { getUserIdFromEvent, logDebug, logInfo, response } from '../../../util/lambda-helpers'
-import { transformDynamoDBFileToSQSMessageBodyAttributeMap } from '../../../util/transformers'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+import {getVideoID} from '../../../lib/vendor/YouTube'
+import {DynamoDBFile} from '../../../types/main'
+import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
+import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {feedlyEventConstraints} from '../../../util/constraints'
+import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
+import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 
 async function addFile(fileId) {
   const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
@@ -39,7 +39,7 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
 
 export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const { requestBody, statusCode, message } = processEventAndValidate(event, feedlyEventConstraints)
+  const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
@@ -62,7 +62,7 @@ export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context
       return response(context, 204)
     }
     await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
-    return response(context, 202, { status: 'Accepted' })
+    return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return response(context, 500, error.message)
   }

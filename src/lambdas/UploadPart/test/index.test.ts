@@ -4,9 +4,9 @@ import crypto from 'crypto'
 import chai from 'chai'
 import * as sinon from 'sinon'
 import * as S3 from '../../../lib/vendor/AWS/S3'
-import { UploadPartEvent } from '../../../types/main'
-import { partSize } from '../../../util/mocha-setup'
-import { uploadFilePart } from '../src'
+import {UploadPartEvent} from '../../../types/main'
+import {partSize} from '../../../util/mocha-setup'
+import {uploadFilePart} from '../src'
 const expect = chai.expect
 
 describe('#uploadPart', () => {
@@ -96,7 +96,7 @@ async function mockIterationsOfUploadPart(bytesTotal, partSize) {
     const output = await uploadFilePart(event)
     responses.push(output)
     if (output.bytesRemaining > 0) {
-      ;({ partBeg, partEnd, partNumber } = output as UploadPartEvent)
+      ;({partBeg, partEnd, partNumber} = output as UploadPartEvent)
     }
     bytesRemaining = bytesRemaining - partSize
   }

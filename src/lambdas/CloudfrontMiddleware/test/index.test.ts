@@ -1,9 +1,9 @@
-import { CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse } from 'aws-lambda'
+import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse} from 'aws-lambda'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import * as sinon from 'sinon'
-import { getFixture } from '../../../util/mocha-setup'
+import {getFixture} from '../../../util/mocha-setup'
 import chai from 'chai'
-import { handler } from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

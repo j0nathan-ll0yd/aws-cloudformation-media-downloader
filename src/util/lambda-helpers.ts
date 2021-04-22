@@ -1,4 +1,4 @@
-import { APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context } from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -10,7 +10,7 @@ export function cloudFrontErrorResponse(context: Context, statusCode: number, me
     status: statusCodeString,
     statusDescription: message,
     headers: {
-      'content-type': [{ key: 'Content-Type', value: 'application/json' }],
+      'content-type': [{key: 'Content-Type', value: 'application/json'}],
       'www-authenticate': [
         {
           key: 'WWW-Authenticate',
@@ -19,7 +19,7 @@ export function cloudFrontErrorResponse(context: Context, statusCode: number, me
       ]
     },
     body: JSON.stringify({
-      error: { code: codeText, message },
+      error: {code: codeText, message},
       requestId: context.awsRequestId
     })
   }
@@ -42,7 +42,7 @@ export function response(context: Context, statusCode: number, body?: string | o
   }
   if (error) {
     const rawBody = {
-      error: { code, message: body },
+      error: {code, message: body},
       requestId: context.awsRequestId
     }
     logDebug('response ==', rawBody)

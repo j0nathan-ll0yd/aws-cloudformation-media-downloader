@@ -1,9 +1,9 @@
-import { SQSEvent } from 'aws-lambda'
-import { query } from '../../../lib/vendor/AWS/DynamoDB'
-import { publishSnsEvent } from '../../../lib/vendor/AWS/SNS'
-import { FileNotification } from '../../../types/main'
-import { getUserDeviceByUserIdParams } from '../../../util/dynamodb-helpers'
-import { logDebug } from '../../../util/lambda-helpers'
+import {SQSEvent} from 'aws-lambda'
+import {query} from '../../../lib/vendor/AWS/DynamoDB'
+import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
+import {FileNotification} from '../../../types/main'
+import {getUserDeviceByUserIdParams} from '../../../util/dynamodb-helpers'
+import {logDebug} from '../../../util/lambda-helpers'
 import * as transformers from '../../../util/transformers'
 
 export async function index(event: SQSEvent): Promise<void> {

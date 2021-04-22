@@ -1,7 +1,7 @@
-import { CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context } from 'aws-lambda'
-import { CloudFrontHeaders, CloudFrontRequest } from 'aws-lambda/common/cloudfront'
-import { cloudFrontErrorResponse, logDebug, logError, logInfo } from '../../../util/lambda-helpers'
-import { verifyAccessToken } from '../../../util/secretsmanager-helpers'
+import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
+import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 
 export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> {
   logInfo('event <=', event)

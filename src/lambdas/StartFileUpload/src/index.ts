@@ -1,12 +1,12 @@
-import axios, { AxiosRequestConfig } from 'axios'
-import { videoInfo } from 'ytdl-core'
-import { updateItem } from '../../../lib/vendor/AWS/DynamoDB'
-import { createMultipartUpload } from '../../../lib/vendor/AWS/S3'
-import { fetchVideoInfo } from '../../../lib/vendor/YouTube'
-import { Metadata, StartFileUploadParams, UploadPartEvent } from '../../../types/main'
-import { updateFileMetadataParams } from '../../../util/dynamodb-helpers'
-import { logDebug, logError, logInfo } from '../../../util/lambda-helpers'
-import { transformVideoInfoToMetadata, transformVideoIntoDynamoItem } from '../../../util/transformers'
+import axios, {AxiosRequestConfig} from 'axios'
+import {videoInfo} from 'ytdl-core'
+import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
+import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
+import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
+import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
 
 export async function startFileUpload(event: StartFileUploadParams): Promise<UploadPartEvent> {
   logInfo('event <=', event)
@@ -27,8 +27,8 @@ export async function startFileUpload(event: StartFileUploadParams): Promise<Upl
 
     logDebug('axios <= ', options)
     const fileInfo = await axios(options)
-    const { status, statusText, headers, config } = fileInfo
-    logDebug('axios =>', { status, statusText, headers, config })
+    const {status, statusText, headers, config} = fileInfo
+    logDebug('axios =>', {status, statusText, headers, config})
 
     // TODO: Ensure these headers exist in the response
     const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)

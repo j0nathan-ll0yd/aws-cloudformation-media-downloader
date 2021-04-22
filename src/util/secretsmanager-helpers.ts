@@ -1,11 +1,11 @@
-import axios, { AxiosRequestConfig } from 'axios'
+import axios, {AxiosRequestConfig} from 'axios'
 import querystring from 'querystring'
-import { getSecretValue } from '../lib/vendor/AWS/SecretsManager'
+import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
-import { promisify } from 'util'
-import { AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken } from '../types/main'
-import { logDebug, logError } from './lambda-helpers'
+import {promisify} from 'util'
+import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
+import {logDebug, logError} from './lambda-helpers'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
@@ -37,7 +37,7 @@ export async function getServerPrivateKey(): Promise<string> {
     return PRIVATEKEY
   }
   // This SecretId has to map to the CloudFormation file (LoginUser)
-  logDebug('getSecretValue', { SecretId: process.env.EncryptionKeySecretId })
+  logDebug('getSecretValue', {SecretId: process.env.EncryptionKeySecretId})
   const privateKeySecretResponse = await getSecretValue({
     SecretId: process.env.EncryptionKeySecretId
   })
@@ -82,11 +82,11 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
     method: 'POST',
     url: 'https://appleid.apple.com/auth/token',
     data: querystring.stringify(requestData),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
   }
   logDebug('axios <=', options)
   const response = await axios(options)
-  const { status, data } = response
+  const {status, data} = response
   logDebug('axios =>', status)
   logDebug('axios =>', data)
   return data
@@ -94,7 +94,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
 
 export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   // decode the token (insecurely), to determine the appropriate public key
-  const decodedPayload = jwt.decode(token, { complete: true })
+  const decodedPayload = jwt.decode(token, {complete: true})
   const kid = decodedPayload.header.kid
 
   // Verify the nonce for the authentication
@@ -103,7 +103,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   // Verify that the time is earlier than the exp value of the token
 
   // lookup Apple's public keys (via JSON) and convert to a proper key file
-  const client = jwksClient({ jwksUri: 'https://appleid.apple.com/auth/keys' })
+  const client = jwksClient({jwksUri: 'https://appleid.apple.com/auth/keys'})
   const getSigningKey = promisify(client.getSigningKey)
   const key = await getSigningKey(kid)
   if ('rsaPublicKey' in key) {
@@ -122,7 +122,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
 
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
-  return jwt.sign({ userId }, secret, {
+  return jwt.sign({userId}, secret, {
     expiresIn: 86400 // expires in 24 hours
   })
 }

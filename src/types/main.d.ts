@@ -1,7 +1,7 @@
-import { SQSMessageAttribute, SQSMessageAttributes } from 'aws-lambda'
-import { Author, videoFormat } from 'ytdl-core'
-import { Part } from 'aws-sdk/clients/s3'
-import { Webhook } from './vendor/IFTTT/Feedly/Webhook'
+import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
+import {Author, videoFormat} from 'ytdl-core'
+import {Part} from 'aws-sdk/clients/s3'
+import {Webhook} from './vendor/IFTTT/Feedly/Webhook'
 
 interface Metadata {
   videoId: string

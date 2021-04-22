@@ -1,5 +1,5 @@
 import * as validate from 'validate.js'
-import { validateURL } from 'ytdl-core'
+import {validateURL} from 'ytdl-core'
 
 validate.validators.presence.message = '^is required'
 validate.validators.isYouTubeURL = (value) => {
