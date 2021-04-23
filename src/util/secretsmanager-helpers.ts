@@ -4,43 +4,49 @@ import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
-import {AppleTokenResponse} from '../types/main'
+import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError} from './lambda-helpers'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
 
-export async function getAppleConfig() {
+export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
   }
-  const configSecretResponse = await getSecretValue({SecretId: 'prod/SignInWithApple/Config'})
-  APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString)
+  const configSecretResponse = await getSecretValue({
+    SecretId: 'prod/SignInWithApple/Config'
+  })
+  APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString) as SignInWithAppleConfig
   return APPLE_CONFIG
 }
 
-export async function getApplePrivateKey() {
+export async function getApplePrivateKey(): Promise<string> {
   if (APPLE_PRIVATEKEY) {
     return APPLE_PRIVATEKEY
   }
-  const authKeySecretResponse = await getSecretValue({SecretId: 'prod/SignInWithApple/AuthKey'})
+  const authKeySecretResponse = await getSecretValue({
+    SecretId: 'prod/SignInWithApple/AuthKey'
+  })
   APPLE_PRIVATEKEY = authKeySecretResponse.SecretString
   return APPLE_PRIVATEKEY
 }
 
-export async function getServerPrivateKey() {
+export async function getServerPrivateKey(): Promise<string> {
   if (PRIVATEKEY) {
     return PRIVATEKEY
   }
   // This SecretId has to map to the CloudFormation file (LoginUser)
   logDebug('getSecretValue', {SecretId: process.env.EncryptionKeySecretId})
-  const privateKeySecretResponse = await getSecretValue({SecretId: process.env.EncryptionKeySecretId})
+  const privateKeySecretResponse = await getSecretValue({
+    SecretId: process.env.EncryptionKeySecretId
+  })
   logDebug('getSecretValue', privateKeySecretResponse)
   PRIVATEKEY = privateKeySecretResponse.SecretString
   return PRIVATEKEY
 }
 
-export async function getAppleClientSecret() {
+export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
   const headers = {
@@ -52,12 +58,11 @@ export async function getAppleClientSecret() {
     aud: 'https://appleid.apple.com',
     sub: config.client_id
   }
-  const token = jwt.sign(claims, privateKey, {
+  return jwt.sign(claims, privateKey, {
     algorithm: 'ES256',
     header: headers,
     expiresIn: '24h'
   })
-  return token
 }
 
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
@@ -77,7 +82,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
     method: 'POST',
     url: 'https://appleid.apple.com/auth/token',
     data: querystring.stringify(requestData),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
   }
   logDebug('axios <=', options)
   const response = await axios(options)
@@ -87,7 +92,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   return data
 }
 
-export async function verifyAppleToken(token: string) {
+export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   // decode the token (insecurely), to determine the appropriate public key
   const decodedPayload = jwt.decode(token, {complete: true})
   const kid = decodedPayload.header.kid
@@ -98,13 +103,13 @@ export async function verifyAppleToken(token: string) {
   // Verify that the time is earlier than the exp value of the token
 
   // lookup Apple's public keys (via JSON) and convert to a proper key file
-  const client = jwksClient({ jwksUri: 'https://appleid.apple.com/auth/keys' })
+  const client = jwksClient({jwksUri: 'https://appleid.apple.com/auth/keys'})
   const getSigningKey = promisify(client.getSigningKey)
   const key = await getSigningKey(kid)
   if ('rsaPublicKey' in key) {
     try {
       return jwt.verify(token, key.rsaPublicKey)
-    } catch(error) {
+    } catch (error) {
       logError(`jwt.verify <= ${error.message}`)
       throw new Error(error)
     }
@@ -115,18 +120,18 @@ export async function verifyAppleToken(token: string) {
   }
 }
 
-export async function createAccessToken(userId: string) {
+export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
-  return jwt.sign({ userId }, secret, {
+  return jwt.sign({userId}, secret, {
     expiresIn: 86400 // expires in 24 hours
   })
 }
 
-export async function verifyAccessToken(token: string) {
+export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {
     return jwt.verify(token, secret)
-  } catch(err) {
+  } catch (err) {
     logError(`verifyAccessToken <= ${err}`)
     throw err
   }

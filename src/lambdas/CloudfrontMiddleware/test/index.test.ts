@@ -1,4 +1,5 @@
 import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse} from 'aws-lambda'
+import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import * as sinon from 'sinon'
 import {getFixture} from '../../../util/mocha-setup'
 import chai from 'chai'
@@ -8,13 +9,11 @@ const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CloudfrontMiddleware', () => {
   const context = localFixture('Context.json')
-  const dependencyModule = require('../../../util/secretsmanager-helpers')
   let event
   let verifyAccessTokenStub
   beforeEach(() => {
     event = localFixture('APIGatewayEvent-200-OK.json') as CloudFrontRequestEvent
-    verifyAccessTokenStub = sinon.stub(dependencyModule, 'verifyAccessToken')
-      .returns(localFixture('verifyAccessToken-200-OK.json'))
+    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json'))
   })
   afterEach(() => {
     verifyAccessTokenStub.restore()
@@ -35,9 +34,9 @@ describe('#CloudfrontMiddleware', () => {
   })
   it('should handle an expired Authorization header', async () => {
     verifyAccessTokenStub.throws('TokenExpiredError: jwt expired')
-    const output = await handler(event, context) as CloudFrontResultResponse
+    const output = (await handler(event, context)) as CloudFrontResultResponse
     expect(output).to.have.property('status')
-    expect(output.status).to.equal(401)
+    expect(output.status).to.equal('401')
   })
   it('should handle a valid request (with API key)', async () => {
     const output = await handler(event, context)
@@ -57,9 +56,9 @@ describe('#CloudfrontMiddleware', () => {
     // if the path supports requires authentication, enforce it
     event.Records[0].cf.request.uri = '/feedly'
     delete event.Records[0].cf.request.headers.authorization
-    const output = await handler(event, context) as CloudFrontResponse
+    const output = (await handler(event, context)) as CloudFrontResponse
     expect(output).to.have.property('status')
-    expect(output.status).to.equal(401)
+    expect(output.status).to.equal('401')
   })
   it('should handle a test request if structured correctly', async () => {
     const reservedIp = '127.0.0.1'

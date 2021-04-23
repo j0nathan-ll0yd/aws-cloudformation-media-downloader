@@ -1,0 +1,16 @@
+node_modules
+dist
+docs
+local
+secure
+spec
+static
+temp
+terraform
+coverage
+build
+bin
+.github
+.idea
+.nyc_output
+.webpackCache

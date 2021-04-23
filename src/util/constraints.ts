@@ -3,45 +3,45 @@ import {validateURL} from 'ytdl-core'
 
 validate.validators.presence.message = '^is required'
 validate.validators.isYouTubeURL = (value) => {
-    if (value && !validateURL(value)) {
-        return '^is not a valid YouTube URL'
-    }
-    return undefined
+  if (value && !validateURL(value)) {
+    return '^is not a valid YouTube URL'
+  }
+  return undefined
 }
 
 export const feedlyEventConstraints = {
-    articleURL: {
-        isYouTubeURL: true,
-        presence: true
-    }
+  articleURL: {
+    isYouTubeURL: true,
+    presence: true
+  }
 }
 
 export const registerDeviceConstraints = {
-    token: {
-        presence: true
-    }
+  token: {
+    presence: true
+  }
 }
 
 export const userSubscribeConstraints = {
-    endpoint: {
-        presence: true
-    }
+  endpoint: {
+    presence: true
+  }
 }
 
 export const registerUserConstraints = {
-    authorizationCode: {
-        presence: true
-    },
-    firstName: {
-        presence: true
-    },
-    lastName: {
-        presence: true
-    }
+  authorizationCode: {
+    presence: true
+  },
+  firstName: {
+    presence: true
+  },
+  lastName: {
+    presence: true
+  }
 }
 
 export const loginUserConstraints = {
-    authorizationCode: {
-        presence: true
-    }
+  authorizationCode: {
+    presence: true
+  }
 }

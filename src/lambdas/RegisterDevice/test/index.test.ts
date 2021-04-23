@@ -17,15 +17,11 @@ describe('#handleRegisterDevice', () => {
   let unsubscribeStub
   let updateStub
   beforeEach(() => {
-    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint')
-      .returns(localFixture('createPlatformEndpoint-200-OK.json'))
+    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json'))
     event = localFixture('APIGatewayEvent.json')
-    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic')
-      .returns(localFixture('listSubscriptionsByTopic-200-OK.json'))
-    subscribeStub = sinon.stub(SNS, 'subscribe')
-      .returns(localFixture('subscribe-200-OK.json'))
-    queryStub = sinon.stub(DynamoDB, 'query')
-      .returns(localFixture('query-200-OK.json'))
+    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic').returns(localFixture('listSubscriptionsByTopic-200-OK.json'))
+    subscribeStub = sinon.stub(SNS, 'subscribe').returns(localFixture('subscribe-200-OK.json'))
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json'))
     unsubscribeStub = sinon.stub(SNS, 'unsubscribe')
     updateStub = sinon.stub(DynamoDB, 'updateItem')
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'

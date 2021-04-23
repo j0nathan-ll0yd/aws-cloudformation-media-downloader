@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {putItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {UserRegistration} from '../../../types/main'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
@@ -6,15 +6,15 @@ import {registerUserConstraints} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import { v4 as uuidv4 } from 'uuid'
+import {v4 as uuidv4} from 'uuid'
 
-export async function handleRegisterUser(event: APIGatewayEvent, context: Context) {
+export async function handleRegisterUser(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, registerUserConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
-  const body = (requestBody as UserRegistration)
+  const body = requestBody as UserRegistration
 
   logDebug('validateAuthCodeForToken <=')
   const appleToken = await validateAuthCodeForToken(body.authorizationCode)
@@ -27,7 +27,7 @@ export async function handleRegisterUser(event: APIGatewayEvent, context: Contex
   const user = {
     userId: uuidv4(),
     email: verifiedToken.email,
-    emailVerified: verifiedToken.emailVerified,
+    emailVerified: verifiedToken.email_verified,
     firstName: body.firstName,
     lastName: body.lastName
   }

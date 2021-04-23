@@ -27,7 +27,7 @@ describe('#fileUploadWebhook', () => {
     expect(output).to.be.undefined
   })
   it('should throw an error if the file does not exist', async () => {
-    scanStub.onCall(0).returns({ Count: 0 })
+    scanStub.onCall(0).returns({Count: 0})
     expect(fileUploadWebhook(event)).to.be.rejectedWith(Error)
   })
 })

@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {UserLogin} from '../../../types/main'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
@@ -7,13 +7,13 @@ import {getUserByAppleDeviceIdentifier} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 
-export async function handleLoginUser(event: APIGatewayEvent, context: Context) {
+export async function handleLoginUser(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, loginUserConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
-  const body = (requestBody as UserLogin)
+  const body = requestBody as UserLogin
 
   logDebug('validateAuthCodeForToken <=')
   const appleToken = await validateAuthCodeForToken(body.authorizationCode)
@@ -29,9 +29,8 @@ export async function handleLoginUser(event: APIGatewayEvent, context: Context) 
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)
   if (scanResponse.Count === 0) {
-    return response(context, 404, 'User doesn\'t exist')
-  }
-  else if (scanResponse.Count > 1) {
+    return response(context, 404, "User doesn't exist")
+  } else if (scanResponse.Count > 1) {
     return response(context, 300, 'Duplicate user detected')
   }
 

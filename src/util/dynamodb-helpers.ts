@@ -1,35 +1,42 @@
 import * as AWS from 'aws-sdk'
-import {IdentityProviderApple, User, UserDevice} from '../types/main'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import {DynamoDBFile, IdentityProviderApple, User, UserDevice} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
-function transformObjectToDynamoUpdateQuery(item: object) {
+function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames = {}
   const ExpressionAttributeValues = {}
   for (const property in item) {
-    if (property === 'fileId') { continue }
-    if (item.hasOwnProperty(property)) {
+    if (property === 'fileId') {
+      continue
+    }
+    if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
       ExpressionAttributeValues[':' + property] = item[property]
     }
   }
   UpdateExpression = UpdateExpression.slice(0, -1)
-  return {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues}
+  return {
+    UpdateExpression,
+    ExpressionAttributeNames,
+    ExpressionAttributeValues
+  }
 }
 
-export function updateCompletedFileParams(tableName, fileId, fileUrl) {
+export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: { '#FN': 'url' },
-    ExpressionAttributeValues: { ':fn': fileUrl },
-    Key: { 'fileId': fileId },
+    ExpressionAttributeNames: {'#FN': 'url'},
+    ExpressionAttributeValues: {':fn': fileUrl},
+    Key: {fileId: fileId},
     ReturnValues: 'ALL_NEW',
     TableName: tableName,
     UpdateExpression: 'SET #FN = :fn'
   }
 }
 
-export function scanForFileParams(tableName) {
+export function scanForFileParams(tableName: string): DocumentClient.ScanInput {
   return {
     ExpressionAttributeNames: {
       '#AA': 'availableAt',
@@ -45,45 +52,48 @@ export function scanForFileParams(tableName) {
   }
 }
 
-export function getFileByKey(tableName, fileName) {
+export function getFileByKey(tableName: string, fileName: string): DocumentClient.ScanInput {
   return {
-    ExpressionAttributeNames: { '#key': 'key' },
-    ExpressionAttributeValues: { ':key': fileName },
+    ExpressionAttributeNames: {'#key': 'key'},
+    ExpressionAttributeValues: {':key': fileName},
     FilterExpression: '#key = :key',
     TableName: tableName
   }
 }
 
-export function getUsersByFileId(tableName, fileId) {
+export function getUsersByFileId(tableName: string, fileId: string): DocumentClient.ScanInput {
   return {
-    ExpressionAttributeValues: { ':fileId': fileId },
+    ExpressionAttributeValues: {':fileId': fileId},
     FilterExpression: 'contains (fileId, :fileId)',
     TableName: tableName
   }
 }
 
-export function userFileParams(tableName, userId, fileId) {
+export function userFileParams(tableName: string, userId: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: { '#FID': 'fileId' },
-    ExpressionAttributeValues: { ':fid': docClient.createSet([fileId]) },
-    Key: { 'userId': userId },
+    ExpressionAttributeNames: {'#FID': 'fileId'},
+    ExpressionAttributeValues: {':fid': docClient.createSet([fileId])},
+    Key: {userId: userId},
     ReturnValues: 'NONE',
     UpdateExpression: 'ADD #FID :fid',
     TableName: tableName
   }
 }
 
-export function updateUserDeviceParams(tableName, userId, userDevice: UserDevice) {
+export function updateUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.UpdateItemInput {
   return {
     TableName: tableName,
-    Key: { userId },
+    Key: {userId},
     UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
-    ExpressionAttributeNames: { '#userDevice' : 'userDevice' },
-    ExpressionAttributeValues: { ':userDevice': [userDevice], ':empty_list': [] }
+    ExpressionAttributeNames: {'#userDevice': 'userDevice'},
+    ExpressionAttributeValues: {
+      ':userDevice': [userDevice],
+      ':empty_list': []
+    }
   }
 }
 
-export function queryUserDeviceParams(tableName, userId, userDevice: UserDevice) {
+export function queryUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.QueryInput {
   return {
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
@@ -95,47 +105,47 @@ export function queryUserDeviceParams(tableName, userId, userDevice: UserDevice)
   }
 }
 
-export function queryFileParams(tableName, fileId) {
+export function queryFileParams(tableName: string, fileId: string): DocumentClient.QueryInput {
   return {
     TableName: tableName,
     KeyConditionExpression: 'fileId = :fileId',
-    ExpressionAttributeValues: { ':fileId': fileId }
+    ExpressionAttributeValues: {':fileId': fileId}
   }
 }
 
-export function getUserDeviceByUserIdParams(tableName, userId) {
+export function getUserDeviceByUserIdParams(tableName: string, userId: string): DocumentClient.QueryInput {
   return {
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
-    ExpressionAttributeValues: { ':userId': userId }
+    ExpressionAttributeValues: {':userId': userId}
   }
 }
 
-export function newFileParams(tableName, fileId) {
+export function newFileParams(tableName: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: { '#AA': 'availableAt' },
-    ExpressionAttributeValues: { ':aa': Date.now().toString() },
-    Key: { 'fileId': fileId },
+    ExpressionAttributeNames: {'#AA': 'availableAt'},
+    ExpressionAttributeValues: {':aa': Date.now().toString()},
+    Key: {fileId: fileId},
     ReturnValues: 'ALL_OLD',
     UpdateExpression: 'SET #AA = if_not_exists(#AA, :aa)',
     TableName: tableName
   }
 }
 
-export function newUserParams(tableName, user: User, identityProviderApple: IdentityProviderApple) {
+export function newUserParams(tableName: string, user: User, identityProviderApple: IdentityProviderApple): DocumentClient.PutItemInput {
   return {
     Item: {
       ...user,
-      identityProviders: { ...identityProviderApple }
+      identityProviders: {...identityProviderApple}
     },
     TableName: tableName
   }
 }
 
-export function updateFileMetadataParams(tableName, item) {
+export function updateFileMetadataParams(tableName: string, item: DynamoDBFile): DocumentClient.UpdateItemInput {
   const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(item)
   return {
-    Key: { 'fileId': item.fileId },
+    Key: {fileId: item.fileId},
     TableName: tableName,
     UpdateExpression,
     ExpressionAttributeNames,
@@ -143,12 +153,12 @@ export function updateFileMetadataParams(tableName, item) {
   }
 }
 
-export function getUserFilesParams(tableName, userId) {
+export function getUserFilesParams(tableName: string, userId: string): DocumentClient.QueryInput {
   return {
     ExpressionAttributeValues: {
       ':uid': userId
     },
-    ExpressionAttributeNames:{
+    ExpressionAttributeNames: {
       '#uid': 'userId'
     },
     KeyConditionExpression: '#uid = :uid',
@@ -156,7 +166,7 @@ export function getUserFilesParams(tableName, userId) {
   }
 }
 
-export function getBatchFilesParams(tableName:string, files) {
+export function getBatchFilesParams(tableName: string, files: string[]): DocumentClient.BatchGetItemInput {
   const Keys = []
   const mySet = docClient.createSet(files)
   for (const fileId of mySet.values) {
@@ -165,14 +175,14 @@ export function getBatchFilesParams(tableName:string, files) {
 
   return {
     RequestItems: {
-      [tableName]: { Keys }
+      [tableName]: {Keys}
     }
   }
 }
 
-export function getUserByAppleDeviceIdentifier(tableName:string, userId:string) {
+export function getUserByAppleDeviceIdentifier(tableName: string, userId: string): DocumentClient.ScanInput {
   return {
-    ExpressionAttributeValues: { ':userId': userId },
+    ExpressionAttributeValues: {':userId': userId},
     FilterExpression: 'identityProviders.userId = :userId',
     TableName: tableName
   }

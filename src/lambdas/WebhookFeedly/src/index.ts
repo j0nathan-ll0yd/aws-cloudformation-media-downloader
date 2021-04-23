@@ -1,4 +1,4 @@
-import {APIGatewayEvent, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
@@ -37,18 +37,19 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   return undefined
 }
 
-export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context) {
+export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
   if (statusCode && message) {
     return response(context, statusCode, message)
   }
   try {
-    const body = (requestBody as Webhook)
+    const body = requestBody as Webhook
     const fileId = await getVideoID(body.articleURL)
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
     const file = await getFile(fileId)
-    if (file && file.url) { // There needs to be a file AND a file url (to indicate it was downloaded)
+    if (file && file.url) {
+      // There needs to be a file AND a file url (to indicate it was downloaded)
       const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
       const sendMessageParams = {
         MessageBody: 'FileNotification',
@@ -60,10 +61,7 @@ export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context
       logDebug('sendMessage =>', sendMessageResponse)
       return response(context, 204)
     }
-    await Promise.all([
-      addFile(fileId),
-      associateFileToUser(fileId, userId)
-    ])
+    await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
     return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return response(context, 500, error.message)
