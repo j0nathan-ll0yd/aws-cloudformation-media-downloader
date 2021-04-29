@@ -200,14 +200,6 @@ resource "aws_lambda_function" "UploadPart" {
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.UploadPart.output_path
   source_code_hash = data.archive_file.UploadPart.output_base64sha256
-
-  environment {
-    variables = {
-      Bucket                 = aws_s3_bucket.Files.id
-      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
-    }
-  }
 }
 
 resource "aws_cloudwatch_log_group" "UploadPart" {
@@ -233,7 +225,6 @@ resource "aws_lambda_function" "CompleteFileUpload" {
 
   environment {
     variables = {
-      Bucket        = aws_s3_bucket.Files.id
       DynamoDBTable = aws_dynamodb_table.Files.name
     }
   }
