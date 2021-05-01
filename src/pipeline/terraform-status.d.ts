@@ -602,6 +602,7 @@ export namespace TerraformPlan {
   }
 
   export interface Resource {
+    comment: string
     address: string
     mode: string
     type: string

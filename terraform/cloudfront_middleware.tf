@@ -54,6 +54,8 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
 }
 
 resource "aws_cloudfront_distribution" "Production" {
+  // This comment needs to match the associated lambda function
+  comment = aws_lambda_function.CloudfrontMiddleware.function_name
   origin {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
