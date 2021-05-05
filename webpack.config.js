@@ -7,7 +7,6 @@ module.exports = {
   entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, filePath) => {
     // parse the filepath to the directory of the lambda
     const functionName = filePath.split(/\//)[3]
-    console.log(`webpack functionName = ${functionName}`)
     acc[functionName] = filePath
     return acc
   }, {}),
