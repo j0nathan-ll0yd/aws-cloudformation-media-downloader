@@ -87,6 +87,9 @@ data "http" "icanhazip" {
 output "api_gateway_subdomain" { value = aws_api_gateway_rest_api.Main.id }
 output "api_gateway_region" { value = data.aws_region.current.name }
 output "api_gateway_stage" { value = aws_api_gateway_stage.Production.stage_name }
-output "api_gateway_api_key" { value = aws_api_gateway_api_key.iOSApp.value }
+output "api_gateway_api_key" {
+  value     = aws_api_gateway_api_key.iOSApp.value
+  sensitive = true
+}
 output "public_ip" { value = chomp(data.http.icanhazip.body) }
 output "cloudfront_distribution_domain" { value = aws_cloudfront_distribution.Production.domain_name }
