@@ -1,0 +1,10 @@
+bail: true
+full-trace: true
+require:
+  - 'ts-node/register'
+  - 'source-map-support/register'
+  - 'src/util/mocha-setup.ts'
+spec: 'src/**/**/*.test.ts'
+extension:
+  - ts
+package: ./package.json

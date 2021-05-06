@@ -4,7 +4,7 @@ require:
   - 'ts-node/register'
   - 'source-map-support/register'
   - 'src/util/mocha-setup.ts'
-spec: 'src/**/**/*.environment.test.ts'
+spec: 'src/lambdas/**/*.test.ts'
 extension:
   - ts
 package: ./package.json

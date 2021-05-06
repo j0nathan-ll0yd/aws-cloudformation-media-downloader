@@ -55,6 +55,6 @@ jobs:
       run: npm run build-terraform-types
 
     - name: Run Tests
-      run: npm test
+      run: npm run test-production
       env:
         CI: true
