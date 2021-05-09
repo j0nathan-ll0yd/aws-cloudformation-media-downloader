@@ -19,7 +19,7 @@ jobs:
     - uses: hashicorp/setup-terraform@v1
       with:
         terraform_wrapper: false
-        terraform_version: 0.15.1
+        terraform_version: 0.15.3
 
     - name: Build artifacts
       uses: actions/setup-node@v2
