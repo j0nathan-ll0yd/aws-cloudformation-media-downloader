@@ -69,6 +69,7 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
 const jsonFilePath = `${__dirname}/../../build/terraform.json`
 log.info('Retrieving Terraform plan configuration')
 const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
+log.debug('JSON file', jsonFile)
 const terraformPlan = JSON.parse(jsonFile) as TerraformD
 const {cloudFrontDistributionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
 

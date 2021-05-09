@@ -16,7 +16,7 @@
     "lint-fix": "./node_modules/eslint/bin/eslint.js --ext .ts . --fix",
     "test": "AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha --config .mocharc-local.yml",
     "test-production": "DEBUG_LEVEL=DEBUG AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha --config .mocharc-production.yml",
-    "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)",
+    "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s MY_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-loginUser": "./bin/test-loginUser.sh",

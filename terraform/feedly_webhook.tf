@@ -65,6 +65,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
+      WebhookFeedlyEnvVar = "WebhookFeedly"
     }
   }
 }
@@ -170,6 +171,7 @@ resource "aws_lambda_function" "StartFileUpload" {
     variables = {
       Bucket        = aws_s3_bucket.Files.id
       DynamoDBTable = aws_dynamodb_table.Files.name
+      Static = "String"
     }
   }
 }
