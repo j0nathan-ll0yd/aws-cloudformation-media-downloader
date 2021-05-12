@@ -2,7 +2,6 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "esnext",
-    "outDir": "./dist",
     "strict": false,
     "types": ["node", "mocha"],
     "resolveJsonModule": true,

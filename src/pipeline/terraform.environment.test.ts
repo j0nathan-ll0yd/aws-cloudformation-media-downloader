@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import chai from 'chai'
-import {TerraformD} from '../types/terraform'
+import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
 import Log from 'debug-level'
 const log = new Log(__filename.slice(__dirname.length + 1, -3))
@@ -28,34 +28,26 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const cloudFrontDistributionNames = {}
   const environmentVariablesForFunction = {}
-  const lambdaFunctionNames = {}
-  for (const resource of terraformPlan.planned_values.root_module.resources) {
-    if (!resource.values) {
-      continue
-    }
-    if (resource.type !== 'aws_cloudfront_distribution' && resource.type !== 'aws_lambda_function') {
-      continue
-    }
-    log.debug('preprocessTerraformPlan.resource', resource)
-    const functionName = resource.name
-    // determine which lambda functions are aws_cloudfront_distributions and exclude them
-    if (resource.type === 'aws_cloudfront_distribution') {
-      const functionName = resource.values.comment
+  for (const distributionName of Object.keys(terraformPlan.resource.aws_cloudfront_distribution)) {
+    log.debug('aws_cloudfront_distribution.name', distributionName)
+    const resource = terraformPlan.resource.aws_cloudfront_distribution[distributionName] as AwsCloudfrontDistributionProduction
+    log.trace('aws_cloudfront_distribution.resource', resource)
+    if (resource.origin && resource.origin.custom_header) {
+      const matches = resource.comment.match(/aws_lambda_function\.(\w+)\.function_name/)
+      log.trace('resource.comment.match', matches)
+      const functionName = matches[1]
       cloudFrontDistributionNames[functionName] = 1
-    } else if (resource.type === 'aws_lambda_function') {
-      lambdaFunctionNames[functionName] = 1
+      environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
+      log.debug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
-    if (resource.values.environment && resource.values.environment.length > 0) {
-      if (resource.values.environment.length > 1) {
-        throw new Error('Invalid environment structure in Terraform output')
-      }
-      if (resource.values.environment[0].variables) {
-        environmentVariablesForFunction[functionName] = Object.keys(resource.values.environment[0].variables)
-        log.debug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
-      }
-    }
-    if (resource.values.origin && resource.values.origin.length > 0) {
-      environmentVariablesForFunction[functionName] = resource.values.origin[0].custom_header.map((header) => header.name.toLowerCase())
+  }
+  const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
+  for (const functionName of lambdaFunctionNames) {
+    log.debug('aws_lambda_function.name', functionName)
+    const resource = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction
+    log.trace('aws_lambda_function.resource', resource)
+    if (resource.environment && resource.environment.variables) {
+      environmentVariablesForFunction[functionName] = Object.keys(resource.environment.variables)
       log.debug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }
@@ -71,21 +63,10 @@ log.info('Retrieving Terraform plan configuration')
 const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
 log.debug('JSON file', jsonFile)
 const terraformPlan = JSON.parse(jsonFile) as TerraformD
-const {cloudFrontDistributionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
+const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
 
 describe('#Terraform', () => {
-  for (const resource of terraformPlan.planned_values.root_module.resources) {
-    if (resource.type !== 'aws_lambda_function') {
-      continue
-    }
-    const functionName = resource.name
-    let sourceCodeRegex: RegExp
-    if (cloudFrontDistributionNames[functionName]) {
-      // It should be customHeaders\["(.+)"]\.value; but that changes at compile time
-      sourceCodeRegex = /\.\w+\["(.+)"]\.value/g
-    } else {
-      sourceCodeRegex = /process.env\.(\w+)/g
-    }
+  for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform = []
     let environmentVariablesTerraformCount = 0
     if (environmentVariablesForFunction[functionName]) {
@@ -95,15 +76,27 @@ describe('#Terraform', () => {
     // You need to use the build version here to see dependent environment variables
     const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
     const functionSource = fs.readFileSync(functionPath, 'utf8')
-    const matches = functionSource.match(sourceCodeRegex)
     let environmentVariablesSource = []
     let environmentVariablesSourceCount = 0
-    if (matches && matches.length > 0) {
-      console.log(`sourceCodeRegex[${functionName}] = ${sourceCodeRegex}`)
-      environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(12)))])
-      console.log(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
-      environmentVariablesSourceCount = environmentVariablesSource.length
+    if (cloudFrontDistributionNames[functionName]) {
+      // It should be customHeaders\["(.+)"]\.value; but that changes at compile time
+      const sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
+      const matches = functionSource.match(sourceCodeRegex)
+      log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
+      if (matches && matches.length > 0) {
+        environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(15).slice(0, -2)))])
+        log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+      }
+    } else {
+      const sourceCodeRegex = /process.env\.(\w+)/g
+      const matches = functionSource.match(sourceCodeRegex)
+      log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
+      if (matches && matches.length > 0) {
+        environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(12)))])
+        log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+      }
     }
+    environmentVariablesSourceCount = environmentVariablesSource.length
     it(`should match environment variables for lambda ${functionName}`, async () => {
       expect(environmentVariablesTerraform.sort()).to.eql(environmentVariablesSource.sort())
       expect(environmentVariablesTerraformCount).to.equal(environmentVariablesSourceCount)

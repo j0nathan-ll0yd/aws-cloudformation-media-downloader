@@ -44,7 +44,6 @@ resource "aws_lambda_function" "S3ObjectCreated" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      S3ObjectCreatedEnvVar = "S3ObjectCreated"
     }
   }
 }

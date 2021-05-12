@@ -73,7 +73,6 @@ resource "aws_lambda_function" "FileCoordinator" {
     variables = {
       StateMachineArn = aws_sfn_state_machine.MultipartUpload.id
       DynamoDBTable   = aws_dynamodb_table.Files.name
-      FileCoordinatorEnvVar = "FileCoordinator"
     }
   }
 }
