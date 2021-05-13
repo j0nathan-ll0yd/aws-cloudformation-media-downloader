@@ -53,7 +53,7 @@ resource "aws_lambda_function" "RegisterUser" {
   description      = "Registers a new user"
   function_name    = "RegisterUser"
   role             = aws_iam_role.RegisterUserRole.arn
-  handler          = "RegisterUser.handleRegisterUser"
+  handler          = "RegisterUser.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path

@@ -3,11 +3,11 @@ import chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture} from '../../../util/mocha-setup'
-import {handleLoginUser} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
-describe('#handleLoginUser', () => {
+describe('#LoginUser', () => {
   const context = localFixture('Context.json')
   let createAccessTokenStub
   let event
@@ -29,14 +29,14 @@ describe('#handleLoginUser', () => {
   })
   it('should successfully login a user', async () => {
     scanStub.returns(localFixture('scan-200-OK.json'))
-    const output = await handleLoginUser(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body.token).to.be.a('string')
   })
   it('should throw an error if a user is not found', async () => {
     scanStub.returns(localFixture('scan-404-NotFound.json'))
-    const output = await handleLoginUser(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(404)
     const body = JSON.parse(output.body)
     expect(body.error.code).to.equal('custom-4XX-generic')
@@ -44,7 +44,7 @@ describe('#handleLoginUser', () => {
   })
   it('should throw an error if duplicates are found', async () => {
     scanStub.returns(localFixture('scan-300-MultipleChoices.json'))
-    const output = await handleLoginUser(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(300)
     const body = JSON.parse(output.body)
     expect(body.error.code).to.equal('custom-3XX-generic')
@@ -52,7 +52,7 @@ describe('#handleLoginUser', () => {
   })
   it('should reject an invalid request', async () => {
     event.body = {}
-    const output = await handleLoginUser(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
   })
 })

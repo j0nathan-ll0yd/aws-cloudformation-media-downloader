@@ -2,11 +2,11 @@ import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import chai from 'chai'
 import {getFixture} from '../../../util/mocha-setup'
-import {index} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
-describe('#handleUserSubscribe', () => {
+describe('#UserSubscribe', () => {
   const context = localFixture('Context.json')
   let subscribeStub
   let event
@@ -20,14 +20,14 @@ describe('#handleUserSubscribe', () => {
   })
   it('should create a new remote endpoint (for the mobile phone)', async () => {
     subscribeStub.returns(localFixture('subscribe-200-OK.json'))
-    const output = await index(event, context)
+    const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(201)
     expect(body.body).to.have.property('subscriptionArn')
   })
   it('should return an error if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
-    const output = await index(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(500)
     const body = JSON.parse(output.body)
     expect(body.error.code).to.have.string('custom-5XX-generic')
@@ -35,7 +35,7 @@ describe('#handleUserSubscribe', () => {
   })
   it('should handle an invalid request (no token)', async () => {
     event.body = null
-    const output = await index(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
     expect(body.error.message).to.have.property('endpoint')

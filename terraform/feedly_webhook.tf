@@ -54,7 +54,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   description      = "A webhook from Feedly via IFTTT"
   function_name    = "WebhookFeedly"
   role             = aws_iam_role.WebhookFeedlyRole.arn
-  handler          = "WebhookFeedly.handleFeedlyEvent"
+  handler          = "WebhookFeedly.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
@@ -159,7 +159,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   description      = "Starts the multipart upload"
   function_name    = "StartFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "StartFileUpload.startFileUpload"
+  handler          = "StartFileUpload.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
@@ -195,7 +195,7 @@ resource "aws_lambda_function" "UploadPart" {
   description      = "Uploads a part of a multipart upload"
   function_name    = "UploadPart"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "UploadPart.uploadFilePart"
+  handler          = "UploadPart.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.UploadPart.output_path
@@ -217,7 +217,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
   description      = "Completes the multipart upload"
   function_name    = "CompleteFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "CompleteFileUpload.completeFileUpload"
+  handler          = "CompleteFileUpload.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.CompleteFileUpload.output_path

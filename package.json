@@ -1,5 +1,6 @@
 {
   "name": "aws-cloudformation-media-downloader",
+  "main": "./node_modules/webpack-cli/bin/cli.js",
   "version": "1.0.0",
   "engines": {
     "node": "v12.16.1",
@@ -32,6 +33,7 @@
     "debug-level": "^2.0.2",
     "jsonwebtoken": "^8.5.1",
     "jwks-rsa": "^2.0.2",
+    "optionator": "^0.9.1",
     "uuid": "^8.3.2",
     "validate.js": "^0.13.1",
     "ytdl-core": "^4.5.0"
@@ -58,7 +60,7 @@
     "cache-loader": "^4.1.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.24.0",
+    "eslint": "^7.26.0",
     "eslint-config-prettier": "^8.2.0",
     "eslint-plugin-prettier": "^3.4.0",
     "fork-ts-checker-webpack-plugin": "^6.2.0",

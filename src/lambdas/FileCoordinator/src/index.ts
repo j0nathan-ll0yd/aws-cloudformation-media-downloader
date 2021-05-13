@@ -4,7 +4,7 @@ import {startExecution} from '../../../lib/vendor/AWS/StepFunctions'
 import {scanForFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function schedulerFileCoordinator(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   logInfo('context', context)
   const scanParams = scanForFileParams(process.env.DynamoDBTable)

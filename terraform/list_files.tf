@@ -47,7 +47,7 @@ resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
-  handler          = "ListFiles.listFiles"
+  handler          = "ListFiles.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path

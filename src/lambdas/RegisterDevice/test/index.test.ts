@@ -3,11 +3,11 @@ import * as SNS from '../../../lib/vendor/AWS/SNS'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import chai from 'chai'
 import {getFixture} from '../../../util/mocha-setup'
-import {handleDeviceRegistration} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
-describe('#handleRegisterDevice', () => {
+describe('#RegisterDevice', () => {
   const context = localFixture('Context.json')
   let createPlatformEndpointStub
   let event
@@ -37,27 +37,27 @@ describe('#handleRegisterDevice', () => {
   })
   it('should create an endpoint and subscribe to the unregistered topic (unregistered user)', async () => {
     delete event.headers['X-User-Id']
-    const output = await handleDeviceRegistration(event, context)
+    const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(200)
     expect(body.body).to.have.property('endpointArn')
   })
   it('should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
     queryStub.returns(localFixture('query-201-Created.json'))
-    const output = await handleDeviceRegistration(event, context)
+    const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(201)
     expect(body.body).to.have.property('endpointArn')
   })
   it('should create an endpoint, check the device details, and return (registered device, subsequent)', async () => {
-    const output = await handleDeviceRegistration(event, context)
+    const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(200)
     expect(body.body).to.have.property('endpointArn')
   })
   it('should return a valid response if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
-    const output = await handleDeviceRegistration(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.property('endpointArn')
@@ -65,7 +65,7 @@ describe('#handleRegisterDevice', () => {
   })
   it('should handle an invalid request (no token)', async () => {
     event.body = null
-    const output = await handleDeviceRegistration(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
     expect(body.error.message).to.have.property('token')
@@ -73,6 +73,6 @@ describe('#handleRegisterDevice', () => {
   })
   it('should fail gracefully if createPlatformEndpoint fails', async () => {
     createPlatformEndpointStub.rejects('Error')
-    expect(handleDeviceRegistration(event, context)).to.be.rejectedWith(Error)
+    expect(handler(event, context)).to.be.rejectedWith(Error)
   })
 })

@@ -37,7 +37,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
   return sendMessage(sendMessageParams)
 }
 
-export async function fileUploadWebhook(event: S3Event): Promise<void> {
+export async function handler(event: S3Event): Promise<void> {
   logDebug('event', event)
   try {
     const record = event.Records[0]

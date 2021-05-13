@@ -37,7 +37,7 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   return undefined
 }
 
-export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
   if (statusCode && message) {

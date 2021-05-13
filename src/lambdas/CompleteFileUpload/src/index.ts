@@ -5,7 +5,7 @@ import {CompleteFileUploadEvent} from '../../../types/main'
 import {updateCompletedFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 
-export async function completeFileUpload(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
+export async function handler(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
   logDebug('event', event)
   try {
     const {bucket, fileId, key, partTags, uploadId} = event

@@ -6,10 +6,10 @@ import * as sinon from 'sinon'
 import * as S3 from '../../../lib/vendor/AWS/S3'
 import {UploadPartEvent} from '../../../types/main'
 import {partSize} from '../../../util/mocha-setup'
-import {uploadFilePart} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 
-describe('#uploadPart', () => {
+describe('#UploadPart', () => {
   let mock
   let uploadPartStub
   beforeEach(() => {
@@ -93,7 +93,7 @@ async function mockIterationsOfUploadPart(bytesTotal, partSize) {
       uploadId,
       url
     }
-    const output = await uploadFilePart(event)
+    const output = await handler(event)
     responses.push(output)
     if (output.bytesRemaining > 0) {
       ;({partBeg, partEnd, partNumber} = output as UploadPartEvent)

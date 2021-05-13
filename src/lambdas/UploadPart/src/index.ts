@@ -4,7 +4,7 @@ import {uploadPart} from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 
-export async function uploadFilePart(event: UploadPartEvent): Promise<CompleteFileUploadEvent | UploadPartEvent> {
+export async function handler(event: UploadPartEvent): Promise<CompleteFileUploadEvent | UploadPartEvent> {
   logInfo('event <=', event)
   try {
     const {bucket, bytesRemaining, bytesTotal, fileId, key, partBeg, partEnd, partNumber, partSize, partTags, uploadId, url} = event

@@ -29,7 +29,7 @@ resource "aws_lambda_function" "LogClientEvent" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = "LogClientEvent"
   role             = aws_iam_role.LogClientEventRole.arn
-  handler          = "LogClientEvent.handleClientEvent"
+  handler          = "LogClientEvent.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path

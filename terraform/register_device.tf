@@ -61,7 +61,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   description      = "Registers an iOS device"
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
-  handler          = "RegisterDevice.handleDeviceRegistration"
+  handler          = "RegisterDevice.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path

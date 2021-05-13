@@ -2,13 +2,13 @@ import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import {getFixture} from '../../../util/mocha-setup'
-import {listFiles} from '../src'
+import {handler} from '../src'
 import chai from 'chai'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
 
-describe('#listFiles', () => {
+describe('#ListFiles', () => {
   const context = localFixture('Context.json')
   let event
   let batchGetStub
@@ -32,7 +32,7 @@ describe('#listFiles', () => {
   it('should list files, if url is present', async () => {
     batchGetStub.returns(localFixture('batchGet-200-OK.json'))
     queryStub.returns(queryStubReturnObject)
-    const output = await listFiles(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')
@@ -42,7 +42,7 @@ describe('#listFiles', () => {
   it('should NOT list files, if url is not present (not yet downloaded)', async () => {
     batchGetStub.returns(localFixture('batchGet-200-Filtered.json'))
     queryStub.returns(queryStubReturnObject)
-    const output = await listFiles(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')
@@ -51,7 +51,7 @@ describe('#listFiles', () => {
   it('should gracefully handle an empty list', async () => {
     batchGetStub.returns(localFixture('batchGet-200-Empty.json'))
     queryStub.returns(localFixture('query-200-Empty.json'))
-    const output = await listFiles(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')
@@ -59,11 +59,11 @@ describe('#listFiles', () => {
   })
   it('should fail gracefully if query fails', async () => {
     queryStub.rejects('Error')
-    expect(listFiles(event, context)).to.be.rejectedWith(Error)
+    expect(handler(event, context)).to.be.rejectedWith(Error)
   })
   it('should return a default file if unauthenticated', async () => {
     delete event.headers['X-User-Id']
-    const output = await listFiles(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')

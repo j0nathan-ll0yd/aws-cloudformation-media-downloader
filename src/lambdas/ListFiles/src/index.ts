@@ -5,7 +5,7 @@ import {defaultFile} from '../../../util/constants'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function listFiles(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {statusCode, message} = processEventAndValidate(event)
   if (statusCode && message) {

@@ -72,6 +72,17 @@ describe('#Terraform', () => {
     if (environmentVariablesForFunction[functionName]) {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]
       environmentVariablesTerraformCount = environmentVariablesTerraform.length
+      for (const environmentVariable of environmentVariablesTerraform) {
+        it(`should respect environment variable naming ${environmentVariable}`, async () => {
+          expect(environmentVariable.toUpperCase()).to.not.eql(environmentVariable)
+          if (cloudFrontDistributionNames[functionName]) {
+            expect(environmentVariable).to.be.a('string').and.match(/^x-[a-z\-]+$/)
+          }
+          else {
+            expect(environmentVariable).to.be.a('string').and.match(/^[A-Z][A-Za-z]*$/)
+          }
+        })
+      }
     }
     // You need to use the build version here to see dependent environment variables
     const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`

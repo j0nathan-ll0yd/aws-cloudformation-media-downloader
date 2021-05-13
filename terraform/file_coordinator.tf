@@ -63,7 +63,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
   function_name    = "FileCoordinator"
   role             = aws_iam_role.FileCoordinatorRole.arn
-  handler          = "FileCoordinator.schedulerFileCoordinator"
+  handler          = "FileCoordinator.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path

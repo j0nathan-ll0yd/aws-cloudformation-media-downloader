@@ -53,7 +53,7 @@ resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
-  handler          = "LoginUser.handleLoginUser"
+  handler          = "LoginUser.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path

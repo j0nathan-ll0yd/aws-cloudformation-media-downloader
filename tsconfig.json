@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "esnext",
+    "outDir": "./dist",
     "strict": false,
     "types": ["node", "mocha"],
     "resolveJsonModule": true,
@@ -21,6 +22,6 @@
     "node_modules",
     "**/*.spec.ts",
     "test/**/*",
-    "src/pipeline/*"
+    "src/types/terraform.d.ts"
   ]
 }

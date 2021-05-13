@@ -6,11 +6,11 @@ import * as YouTube from '../../../lib/vendor/YouTube'
 import * as S3 from '../../../lib/vendor/AWS/S3'
 import {getFixture, partSize} from '../../../util/mocha-setup'
 import chai from 'chai'
-import {startFileUpload} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
-describe('#startFileUpload', () => {
+describe('#StartFileUpload', () => {
   const event = localFixture('startFileUpload-200-OK.json')
   const mockSuccessHeaders = {
     'accept-ranges': 'bytes',
@@ -38,7 +38,7 @@ describe('#startFileUpload', () => {
     createMultipartUploadStub.returns(createMultipartUploadResponse)
     event.bytesTotal = mockSuccessHeaders['content-length'] = 82784319
     mock.onAny().reply(200, '', mockSuccessHeaders)
-    const output = await startFileUpload(event)
+    const output = await handler(event)
     expect(output.bytesTotal).to.equal(event.bytesTotal)
     expect(output.partEnd).to.equal(partSize - 1)
     expect(output.uploadId).to.equal(createMultipartUploadResponse.UploadId)
@@ -47,13 +47,13 @@ describe('#startFileUpload', () => {
     createMultipartUploadStub.returns(createMultipartUploadResponse)
     event.bytesTotal = mockSuccessHeaders['content-length'] = 5242880 - 1000
     mock.onAny().reply(200, '', mockSuccessHeaders)
-    const output = await startFileUpload(event)
+    const output = await handler(event)
     expect(output.bytesTotal).to.equal(event.bytesTotal)
     expect(output.partEnd).to.equal(event.bytesTotal - 1)
     expect(output.uploadId).to.equal(createMultipartUploadResponse.UploadId)
   })
   it('should gracefully handle a failure', async () => {
     createMultipartUploadStub.rejects('Error')
-    expect(startFileUpload(event)).to.be.rejectedWith(Error)
+    expect(handler(event)).to.be.rejectedWith(Error)
   })
 })

@@ -33,7 +33,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   description      = "Dispatches a notification after a file is uploaded to an S3 bucket"
   function_name    = "S3ObjectCreated"
   role             = aws_iam_role.S3ObjectCreatedRole.arn
-  handler          = "S3ObjectCreated.fileUploadWebhook"
+  handler          = "S3ObjectCreated.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
