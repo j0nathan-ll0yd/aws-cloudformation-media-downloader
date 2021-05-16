@@ -1,6 +1,6 @@
 resource "aws_iam_role" "SendPushNotificationRole" {
   name               = "SendPushNotificationRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyLogging" {

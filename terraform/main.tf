@@ -23,14 +23,7 @@ resource "aws_iam_policy" "CommonLambdaLogging" {
   policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
 }
 
-data "aws_iam_policy_document" "CommonUpdateFilesTable" {
-  statement {
-    actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
-    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
-  }
-}
-
-data "aws_iam_policy_document" "gateway-assume-role-policy" {
+data "aws_iam_policy_document" "LambdaGatewayAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -40,7 +33,7 @@ data "aws_iam_policy_document" "gateway-assume-role-policy" {
   }
 }
 
-data "aws_iam_policy_document" "lamdba-edge-assume-role-policy" {
+data "aws_iam_policy_document" "LamdbaEdgeAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -50,17 +43,17 @@ data "aws_iam_policy_document" "lamdba-edge-assume-role-policy" {
   }
 }
 
-data "aws_iam_policy_document" "lambda-assume-role-policy" {
+data "aws_iam_policy_document" "LambdaAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
-      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }
 
-data "aws_iam_policy_document" "states-assume-role-policy" {
+data "aws_iam_policy_document" "StatesAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -70,7 +63,7 @@ data "aws_iam_policy_document" "states-assume-role-policy" {
   }
 }
 
-data "aws_iam_policy_document" "sns-assume-role-policy" {
+data "aws_iam_policy_document" "SNSAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {

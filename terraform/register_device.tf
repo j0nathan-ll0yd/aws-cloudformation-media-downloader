@@ -1,6 +1,6 @@
 resource "aws_iam_role" "RegisterDeviceRole" {
   name               = "RegisterDeviceRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "RegisterDevice" {
@@ -125,7 +125,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
 
 resource "aws_iam_role" "SNSLoggingRole" {
   name               = "SNSLoggingRole"
-  assume_role_policy = data.aws_iam_policy_document.sns-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.SNSAssumeRole.json
 }
 
 resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {

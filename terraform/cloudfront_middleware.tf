@@ -1,6 +1,6 @@
 resource "aws_iam_role" "CloudfrontMiddlewareRole" {
   name               = "CloudfrontMiddlewareRole"
-  assume_role_policy = data.aws_iam_policy_document.lamdba-edge-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
 }
 
 data "aws_iam_policy_document" "CloudfrontMiddleware" {

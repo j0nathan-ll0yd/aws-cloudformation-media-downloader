@@ -1,6 +1,6 @@
 resource "aws_iam_role" "LogClientEventRole" {
   name               = "LogClientEventRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 resource "aws_iam_role_policy_attachment" "LogClientEventPolicyLogging" {

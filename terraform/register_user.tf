@@ -1,6 +1,6 @@
 resource "aws_iam_role" "RegisterUserRole" {
   name               = "RegisterUserRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "RegisterUser" {

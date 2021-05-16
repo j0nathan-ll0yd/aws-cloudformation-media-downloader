@@ -1,6 +1,6 @@
 resource "aws_iam_role" "WebhookFeedlyRole" {
   name               = "WebhookFeedlyRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "WebhookFeedlyRole" {
@@ -131,7 +131,7 @@ data "aws_iam_policy_document" "MultipartUpload" {
 
 resource "aws_iam_role" "MultipartUploadRole" {
   name               = "MultipartUploadRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 resource "aws_iam_policy" "MultipartUploadRolePolicy" {
@@ -237,7 +237,7 @@ resource "aws_cloudwatch_log_group" "CompleteFileUpload" {
 
 resource "aws_iam_role" "MultipartUploadStateMachine" {
   name               = "MultipartUploadStateMachine"
-  assume_role_policy = data.aws_iam_policy_document.states-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.StatesAssumeRole.json
 }
 
 data "aws_iam_policy_document" "MultipartUploadStateMachine" {

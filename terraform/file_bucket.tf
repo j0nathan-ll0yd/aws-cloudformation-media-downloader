@@ -50,7 +50,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
 resource "aws_iam_role" "S3ObjectCreatedRole" {
   name               = "S3ObjectCreatedRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
