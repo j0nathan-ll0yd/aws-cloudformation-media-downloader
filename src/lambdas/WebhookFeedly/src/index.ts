@@ -10,6 +10,11 @@ import {newFileParams, queryFileParams, userFileParams} from '../../../util/dyna
 import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 
+/**
+ * Adds a base File (just fileId) to DynamoDB
+ * @param fileId - The unique file identifier
+ * @notExported
+ */
 async function addFile(fileId) {
   const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
   logDebug('addFile.updateItem <=', params)
@@ -18,6 +23,12 @@ async function addFile(fileId) {
   return updateResponse
 }
 
+/**
+ * Associates a File to a User in DynamoDB
+ * @param fileId - The unique file identifier
+ * @param userId - The UUID of the user
+ * @notExported
+ */
 async function associateFileToUser(fileId, userId) {
   const params = userFileParams(process.env.DynamoDBTableUserFiles, userId, fileId)
   logDebug('associateFileToUser.updateItem <=', params)
@@ -26,6 +37,11 @@ async function associateFileToUser(fileId, userId) {
   return updateResponse
 }
 
+/**
+ * Retrieves a File from DynamoDB (if it exists)
+ * @param fileId - The unique file identifier
+ * @notExported
+ */
 async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   const fileParams = queryFileParams(process.env.DynamoDBTableFiles, fileId)
   logDebug('getFile.query <=', fileParams)
@@ -37,6 +53,14 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
   return undefined
 }
 
+/**
+ * Receives a webhook to download a file from Feedly.
+ *
+ * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
+ * - If the file doesn't exist: it is associated with the requesting user and queued for download.
+ *
+ * @notExported
+ */
 export async function handleFeedlyEvent(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
