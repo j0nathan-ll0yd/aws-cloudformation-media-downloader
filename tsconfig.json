@@ -19,7 +19,7 @@
     "exclude": "**/*+(.spec|.test).ts",
     "excludePrivate": false,
     "excludeInternal": false,
-    "out": "docs"
+    "out": "docs/source"
   },
   "include": [
     "src/**/*",
