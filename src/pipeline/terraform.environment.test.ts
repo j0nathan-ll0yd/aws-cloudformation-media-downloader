@@ -5,7 +5,7 @@ const expect = chai.expect
 import Log from 'debug-level'
 const log = new Log(__filename.slice(__dirname.length + 1, -3))
 
-// IF YOU ADD NEW DEPENDENCIES YOU MAY NEED TO ADD MORE EXCLUSIONS HERE
+// IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE
 const excludedSourceVariables = {
   hasOwnProperty: 1,
   let: 1,
@@ -13,12 +13,6 @@ const excludedSourceVariables = {
   t: 1
 }
 
-// TODO: These parsing rules will need to be represented somewhere
-// A lambda associated with a cloudfront distribution must share the same name
-// Environment variables should never be all caps or with an npm_ prefix
-// Underlying dependencies include their own environment variables
-
-// They need to be excluded from the filtering
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
     return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
@@ -57,7 +51,6 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
-// TODO: Improve this include both process.env.VARIABLE and process.env['VARIABLE'] syntax
 const jsonFilePath = `${__dirname}/../../build/terraform.json`
 log.info('Retrieving Terraform plan configuration')
 const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
@@ -90,7 +83,6 @@ describe('#Terraform', () => {
     let environmentVariablesSource = []
     let environmentVariablesSourceCount = 0
     if (cloudFrontDistributionNames[functionName]) {
-      // It should be customHeaders\["(.+)"]\.value; but that changes at compile time
       const sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
       const matches = functionSource.match(sourceCodeRegex)
       log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
@@ -99,6 +91,7 @@ describe('#Terraform', () => {
         log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
       }
     } else {
+      // TODO: Improve this include both process.env.VARIABLE and process.env['VARIABLE'] syntax
       const sourceCodeRegex = /process.env\.(\w+)/g
       const matches = functionSource.match(sourceCodeRegex)
       log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
