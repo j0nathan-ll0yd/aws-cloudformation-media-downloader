@@ -133,3 +133,17 @@ Remotely test the register device method for registering for push notifications 
 ```bash
 npm run test-remote-registerDevice
 ```
+
+## Documentation
+
+This project uses [TSDoc](https://tsdoc.org) for documenting the source code. To generate this documentation:
+
+```bash
+npm run document-source
+```
+
+The resulting output is located in `docs/source` and can open viewed by running:
+
+```bash
+open docs/source/index.html
+```
