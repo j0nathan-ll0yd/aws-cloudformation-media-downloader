@@ -5,7 +5,7 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture} from '../../../util/mocha-setup'
-import {handleRegisterUser} from '../src'
+import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -34,7 +34,7 @@ describe('#handleRegisterUser', () => {
   it('should successfully handle a multipart upload', async () => {
     const mockResponse = localFixture('axios-200-OK.json')
     mock.onAny().reply(200, mockResponse)
-    const output = await handleRegisterUser(event, context)
+    const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body.token).to.be.a('string')

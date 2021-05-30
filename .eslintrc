@@ -2,7 +2,8 @@
   "root": true,
   "parser": "@typescript-eslint/parser",
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "eslint-plugin-tsdoc"
   ],
   "extends": [
     "eslint:recommended",
@@ -22,6 +23,7 @@
     "no-console": [0, "log", "error", "warn", "info"],
     "semi": [2, "never"],
     "eofline": 0,
-    "comma-dangle": ["error", "never"]
+    "comma-dangle": ["error", "never"],
+    "tsdoc/syntax": "warn"
   }
 }

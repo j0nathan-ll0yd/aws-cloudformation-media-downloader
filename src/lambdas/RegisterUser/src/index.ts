@@ -8,7 +8,7 @@ import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {v4 as uuidv4} from 'uuid'
 
-export async function handleRegisterUser(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, registerUserConstraints)
   if (statusCode && message) {

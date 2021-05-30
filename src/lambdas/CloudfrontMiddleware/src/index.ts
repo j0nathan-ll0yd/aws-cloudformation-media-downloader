@@ -3,6 +3,11 @@ import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront
 import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 
+/**
+ * For **every request** to the system:
+ * - Validate the `Authentication` header (if applicable)
+ * - Validate the querystring: extracting the API Key
+ */
 export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> {
   logInfo('event <=', event)
   logInfo('context <=', context)
@@ -20,6 +25,13 @@ export async function handler(event: CloudFrontRequestEvent, context: Context): 
   return request
 }
 
+/**
+ * Makes various checks for the `Authorization` header:
+ * - Checks if the request is for development purposes
+ * - Checks if the request ...
+ * @param request - A **reference** to the CloudFrontRequest (modified in place)
+ * @notExported
+ */
 async function handleAuthorizationHeader(request: CloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
   // if the request is coming from my IP, mock the Authorization header to map to a default userId
@@ -80,6 +92,13 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   }
 }
 
+/**
+ * Makes various checks for the querystring:
+ * - Checks if the request is for development purposes
+ * - Checks if the request ...
+ * @param request - A **reference** to the CloudFrontRequest (modified in place)
+ * @notExported
+ */
 async function handleQueryString(request: CloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
   const queryString = request.querystring
