@@ -73,6 +73,12 @@ aws configure
 brew install terraform
 ```
 
+* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for Terraform documentation)
+
+```bash
+brew install terraform-docs
+```
+
 * Install [act](https://github.com/nektos/act) (used for running Github Actions locally)
 
 ```bash

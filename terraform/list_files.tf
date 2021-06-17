@@ -5,8 +5,14 @@ resource "aws_iam_role" "ListFilesRole" {
 
 data "aws_iam_policy_document" "ListFiles" {
   statement {
-    actions   = ["dynamodb:Query", "dynamodb:BatchGetItem"]
-    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:BatchGetItem"
+    ]
+    resources = [
+      aws_dynamodb_table.Files.arn,
+      aws_dynamodb_table.UserFiles.arn
+    ]
   }
 }
 

@@ -7,7 +7,7 @@ import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   logInfo('context', context)
-  const scanParams = scanForFileParams(process.env.DynamoDBTable)
+  const scanParams = scanForFileParams(process.env.DynamoDBTableFiles)
   logDebug('scan <=', scanParams)
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)

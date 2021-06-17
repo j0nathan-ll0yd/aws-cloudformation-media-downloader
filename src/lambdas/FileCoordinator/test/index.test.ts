@@ -8,7 +8,7 @@ const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#FileCoordinator', () => {
-  process.env.DynamoDBTable = 'Files'
+  process.env.DynamoDBTableFiles = 'Files'
   const context = localFixture('Context.json')
   const event = localFixture('ScheduledEvent.json')
   let scanStub

@@ -37,7 +37,7 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
     myDynamoItem.size = bytesTotal
     myDynamoItem.publishDate = new Date(myMetadata.published).toISOString()
     myDynamoItem.contentType = contentType
-    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTable, myDynamoItem)
+    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles, myDynamoItem)
     logDebug('updateItem <=', updateItemParams)
     const updateResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateResponse)

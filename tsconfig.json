@@ -16,7 +16,7 @@
   },
   "typedocOptions": {
     "entryPoints": ["src"],
-    "exclude": "**/*+(.spec|.test).ts",
+    "exclude": "**/*+(.spec|.test|.d).ts",
     "excludePrivate": false,
     "excludeInternal": false,
     "out": "docs/source"

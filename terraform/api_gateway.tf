@@ -84,24 +84,9 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
   }
 }
 
-data "aws_iam_policy_document" "GatewayAssumeRole" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["apigateway.amazonaws.com", "lambda.amazonaws.com"]
-    }
-  }
-}
-
 resource "aws_iam_role" "GatewayLogRole" {
   name               = "GatewayLogRole"
-  assume_role_policy = data.aws_iam_policy_document.GatewayAssumeRole.json
-}
-
-resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
-  role       = aws_iam_role.GatewayLogRole.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 resource "aws_api_gateway_account" "Main" {

@@ -42,7 +42,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     emailVerified: verifiedToken.email_verified,
     isPrivateEmail: verifiedToken.is_private_email
   }
-  const putItemParams = newUserParams(process.env.DynamoDBTable, user, identityProviderApple)
+  const putItemParams = newUserParams(process.env.DynamoDBTableUsers, user, identityProviderApple)
   logDebug('putItem <=', putItemParams)
   const putItemResponse = await putItem(putItemParams)
   logDebug('putItem =>', putItemResponse)

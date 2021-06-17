@@ -5,12 +5,8 @@ resource "aws_iam_role" "WebhookFeedlyRole" {
 
 data "aws_iam_policy_document" "WebhookFeedlyRole" {
   statement {
-    actions = [
-      "sqs:SendMessage"
-    ]
-    resources = [
-      aws_sqs_queue.SendPushNotification.arn
-    ]
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
@@ -168,8 +164,8 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket        = aws_s3_bucket.Files.id
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      Bucket             = aws_s3_bucket.Files.id
+      DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }
 }
@@ -225,7 +221,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
 
   environment {
     variables = {
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }
 }
