@@ -51,6 +51,20 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
+function getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice = [0]) {
+  // You need to use the build version here to see dependent environment variables
+  const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
+  const functionSource = fs.readFileSync(functionPath, 'utf8')
+  let environmentVariablesSource = []
+  const matches = functionSource.match(sourceCodeRegex)
+  log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
+  if (matches && matches.length > 0) {
+    environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
+    log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+  }
+  return environmentVariablesSource
+}
+
 const jsonFilePath = `${__dirname}/../../build/terraform.json`
 log.info('Retrieving Terraform plan configuration')
 const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
@@ -69,38 +83,32 @@ describe('#Terraform', () => {
         it(`should respect environment variable naming ${environmentVariable}`, async () => {
           expect(environmentVariable.toUpperCase()).to.not.eql(environmentVariable)
           if (cloudFrontDistributionNames[functionName]) {
-            expect(environmentVariable).to.be.a('string').and.match(/^x-[a-z\-]+$/)
-          }
-          else {
-            expect(environmentVariable).to.be.a('string').and.match(/^[A-Z][A-Za-z]*$/)
+            expect(environmentVariable)
+              .to.be.a('string')
+              .and.match(/^x-[a-z\-]+$/)
+          } else {
+            expect(environmentVariable)
+              .to.be.a('string')
+              .and.match(/^[A-Z][A-Za-z]*$/)
           }
         })
       }
     }
-    // You need to use the build version here to see dependent environment variables
-    const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
-    const functionSource = fs.readFileSync(functionPath, 'utf8')
-    let environmentVariablesSource = []
-    let environmentVariablesSourceCount = 0
+
+    let matchSlice = [ 0 ]
+    let matchSubstring = 0
+    let sourceCodeRegex
     if (cloudFrontDistributionNames[functionName]) {
-      const sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
-      const matches = functionSource.match(sourceCodeRegex)
-      log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
-      if (matches && matches.length > 0) {
-        environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(15).slice(0, -2)))])
-        log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
-      }
+      matchSlice = [ 0, -2 ]
+      matchSubstring = 15
+      sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
     } else {
       // TODO: Improve this include both process.env.VARIABLE and process.env['VARIABLE'] syntax
-      const sourceCodeRegex = /process.env\.(\w+)/g
-      const matches = functionSource.match(sourceCodeRegex)
-      log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
-      if (matches && matches.length > 0) {
-        environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(12)))])
-        log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
-      }
+      matchSubstring = 12
+      sourceCodeRegex = /process.env\.(\w+)/g
     }
-    environmentVariablesSourceCount = environmentVariablesSource.length
+    const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
+    const environmentVariablesSourceCount = environmentVariablesSource.length
     it(`should match environment variables for lambda ${functionName}`, async () => {
       expect(environmentVariablesTerraform.sort()).to.eql(environmentVariablesSource.sort())
       expect(environmentVariablesTerraformCount).to.equal(environmentVariablesSourceCount)
