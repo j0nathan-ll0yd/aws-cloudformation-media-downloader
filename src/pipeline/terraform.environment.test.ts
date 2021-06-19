@@ -65,14 +65,13 @@ function getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchS
   return environmentVariablesSource
 }
 
-const jsonFilePath = `${__dirname}/../../build/terraform.json`
-log.info('Retrieving Terraform plan configuration')
-const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
-log.debug('JSON file', jsonFile)
-const terraformPlan = JSON.parse(jsonFile) as TerraformD
-const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
-
 describe('#Terraform', () => {
+  const jsonFilePath = `${__dirname}/../../build/terraform.json`
+  log.info('Retrieving Terraform plan configuration')
+  const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
+  log.debug('JSON file', jsonFile)
+  const terraformPlan = JSON.parse(jsonFile) as TerraformD
+  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform = []
     let environmentVariablesTerraformCount = 0
@@ -85,7 +84,7 @@ describe('#Terraform', () => {
           if (cloudFrontDistributionNames[functionName]) {
             expect(environmentVariable)
               .to.be.a('string')
-              .and.match(/^x-[a-z\-]+$/)
+              .and.match(/^x-[a-z-]+$/)
           } else {
             expect(environmentVariable)
               .to.be.a('string')
@@ -95,11 +94,11 @@ describe('#Terraform', () => {
       }
     }
 
-    let matchSlice = [ 0 ]
+    let matchSlice = [0]
     let matchSubstring = 0
     let sourceCodeRegex
     if (cloudFrontDistributionNames[functionName]) {
-      matchSlice = [ 0, -2 ]
+      matchSlice = [0, -2]
       matchSubstring = 15
       sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
     } else {
