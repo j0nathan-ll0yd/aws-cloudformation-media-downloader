@@ -10,6 +10,7 @@ local
 temp
 node_modules
 cloudformation.json
+src/types/terraform.d.ts
 terraform/terraform.tfstate*
 terraform/.terraform.tfstate.lock.info
 terraform/.terraform.lock.hcl

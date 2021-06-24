@@ -14,3 +14,4 @@ bin
 .idea
 .nyc_output
 .webpackCache
+src/types/terraform.d.ts

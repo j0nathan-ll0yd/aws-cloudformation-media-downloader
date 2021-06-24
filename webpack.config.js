@@ -1,27 +1,25 @@
 const glob = require('glob')
-const path = require("path")
-const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin")
+const path = require('path')
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
 
 module.exports = {
-  mode: "production",
+  mode: 'production',
   entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, filePath) => {
     // parse the filepath to the directory of the lambda
     const functionName = filePath.split(/\//)[3]
     acc[functionName] = filePath
     return acc
   }, {}),
-  externals: [
-    'aws-sdk'
-  ],
+  externals: ['aws-sdk'],
   resolve: {
-    extensions: [".js", ".jsx", ".json", ".ts", ".tsx"],
+    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
   },
   output: {
-    libraryTarget: "umd",
-    path: path.resolve(__dirname, "build/lambdas"),
+    libraryTarget: 'umd',
+    path: path.resolve(__dirname, 'build/lambdas'),
     filename: '[name].js'
   },
-  target: "node",
+  target: 'node',
   module: {
     rules: [
       {
@@ -30,16 +28,16 @@ module.exports = {
         exclude: /node_modules/,
         use: [
           {
-            loader: "cache-loader",
+            loader: 'cache-loader',
             options: {
-              cacheDirectory: path.resolve(".webpackCache"),
-            },
+              cacheDirectory: path.resolve('.webpackCache')
+            }
           },
-          "babel-loader",
-          "ts-loader",
-        ],
-      },
-    ],
+          'babel-loader',
+          'ts-loader'
+        ]
+      }
+    ]
   },
   plugins: [new ForkTsCheckerWebpackPlugin()],
   watch: false

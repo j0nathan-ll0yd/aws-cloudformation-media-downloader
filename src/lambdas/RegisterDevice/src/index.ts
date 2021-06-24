@@ -7,7 +7,7 @@ import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function handleDeviceRegistration(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const {requestBody, statusCode, message} = processEventAndValidate(event, registerDeviceConstraints)
   if (statusCode && message) {

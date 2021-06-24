@@ -1,6 +1,6 @@
 resource "aws_iam_role" "RegisterUserRole" {
   name               = "RegisterUserRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "RegisterUser" {
@@ -53,7 +53,7 @@ resource "aws_lambda_function" "RegisterUser" {
   description      = "Registers a new user"
   function_name    = "RegisterUser"
   role             = aws_iam_role.RegisterUserRole.arn
-  handler          = "RegisterUser.handleRegisterUser"
+  handler          = "RegisterUser.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
@@ -61,7 +61,7 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTable         = aws_dynamodb_table.Users.name
+      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }
   }

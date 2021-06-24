@@ -1,6 +1,6 @@
 resource "aws_iam_role" "LoginUserRole" {
   name               = "LoginUserRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "LoginUser" {
@@ -53,7 +53,7 @@ resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
-  handler          = "LoginUser.handleLoginUser"
+  handler          = "LoginUser.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path
@@ -61,7 +61,6 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      Bucket                = aws_s3_bucket.Files.id
       DynamoDBTableUsers    = aws_dynamodb_table.Users.name
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
     }

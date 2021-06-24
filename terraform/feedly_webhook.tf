@@ -1,16 +1,12 @@
 resource "aws_iam_role" "WebhookFeedlyRole" {
   name               = "WebhookFeedlyRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "WebhookFeedlyRole" {
   statement {
-    actions = [
-      "sqs:SendMessage"
-    ]
-    resources = [
-      aws_sqs_queue.SendPushNotification.arn
-    ]
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
@@ -54,7 +50,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   description      = "A webhook from Feedly via IFTTT"
   function_name    = "WebhookFeedly"
   role             = aws_iam_role.WebhookFeedlyRole.arn
-  handler          = "WebhookFeedly.handleFeedlyEvent"
+  handler          = "WebhookFeedly.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
@@ -131,7 +127,7 @@ data "aws_iam_policy_document" "MultipartUpload" {
 
 resource "aws_iam_role" "MultipartUploadRole" {
   name               = "MultipartUploadRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 resource "aws_iam_policy" "MultipartUploadRolePolicy" {
@@ -159,7 +155,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   description      = "Starts the multipart upload"
   function_name    = "StartFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "StartFileUpload.startFileUpload"
+  handler          = "StartFileUpload.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
@@ -168,8 +164,8 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket        = aws_s3_bucket.Files.id
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      Bucket             = aws_s3_bucket.Files.id
+      DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }
 }
@@ -195,19 +191,11 @@ resource "aws_lambda_function" "UploadPart" {
   description      = "Uploads a part of a multipart upload"
   function_name    = "UploadPart"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "UploadPart.uploadFilePart"
+  handler          = "UploadPart.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.UploadPart.output_path
   source_code_hash = data.archive_file.UploadPart.output_base64sha256
-
-  environment {
-    variables = {
-      Bucket                 = aws_s3_bucket.Files.id
-      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
-    }
-  }
 }
 
 resource "aws_cloudwatch_log_group" "UploadPart" {
@@ -225,7 +213,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
   description      = "Completes the multipart upload"
   function_name    = "CompleteFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "CompleteFileUpload.completeFileUpload"
+  handler          = "CompleteFileUpload.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   filename         = data.archive_file.CompleteFileUpload.output_path
@@ -233,8 +221,7 @@ resource "aws_lambda_function" "CompleteFileUpload" {
 
   environment {
     variables = {
-      Bucket        = aws_s3_bucket.Files.id
-      DynamoDBTable = aws_dynamodb_table.Files.name
+      DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }
 }
@@ -246,7 +233,7 @@ resource "aws_cloudwatch_log_group" "CompleteFileUpload" {
 
 resource "aws_iam_role" "MultipartUploadStateMachine" {
   name               = "MultipartUploadStateMachine"
-  assume_role_policy = data.aws_iam_policy_document.states-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.StatesAssumeRole.json
 }
 
 data "aws_iam_policy_document" "MultipartUploadStateMachine" {

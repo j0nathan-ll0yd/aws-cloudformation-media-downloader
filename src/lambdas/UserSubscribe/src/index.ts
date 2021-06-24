@@ -6,7 +6,7 @@ import {userSubscribeConstraints} from '../../../util/constraints'
 import {ValidationError} from '../../../util/errors'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 
-export async function index(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {

@@ -1,12 +1,18 @@
 resource "aws_iam_role" "ListFilesRole" {
   name               = "ListFilesRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 data "aws_iam_policy_document" "ListFiles" {
   statement {
-    actions   = ["dynamodb:Query", "dynamodb:BatchGetItem"]
-    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:BatchGetItem"
+    ]
+    resources = [
+      aws_dynamodb_table.Files.arn,
+      aws_dynamodb_table.UserFiles.arn
+    ]
   }
 }
 
@@ -47,7 +53,7 @@ resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
-  handler          = "ListFiles.listFiles"
+  handler          = "ListFiles.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path

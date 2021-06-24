@@ -5,7 +5,7 @@ import {CompleteFileUploadEvent} from '../../../types/main'
 import {updateCompletedFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 
-export async function completeFileUpload(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
+export async function handler(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
   logDebug('event', event)
   try {
     const {bucket, fileId, key, partTags, uploadId} = event
@@ -19,7 +19,7 @@ export async function completeFileUpload(event: CompleteFileUploadEvent): Promis
     const data = await completeMultipartUpload(params)
     logInfo('completeMultipartUpload =>', data)
     const fileUrl = `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`
-    const updateItemParams = updateCompletedFileParams(process.env.DynamoDBTable, fileId, fileUrl)
+    const updateItemParams = updateCompletedFileParams(process.env.DynamoDBTableFiles, fileId, fileUrl)
     logDebug('updateItem <=', updateItemParams)
     const updateItemResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateItemResponse)

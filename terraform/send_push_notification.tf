@@ -1,6 +1,6 @@
 resource "aws_iam_role" "SendPushNotificationRole" {
   name               = "SendPushNotificationRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyLogging" {
@@ -60,7 +60,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = "SendPushNotification"
   role             = aws_iam_role.SendPushNotificationRole.arn
-  handler          = "SendPushNotification.index"
+  handler          = "SendPushNotification.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path

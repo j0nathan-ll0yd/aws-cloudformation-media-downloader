@@ -10,7 +10,7 @@ resource "aws_api_gateway_deployment" "Main" {
   ]
   rest_api_id = aws_api_gateway_rest_api.Main.id
   triggers = {
-    redeployment = sha1(join(",", list(
+    redeployment = sha1(join(",", tolist([
       jsonencode(aws_api_gateway_integration.ListFilesGet),
       jsonencode(aws_api_gateway_integration.LogClientEventPost),
       jsonencode(aws_api_gateway_integration.LoginUserPost),
@@ -23,7 +23,7 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_method.RegisterDevicePost),
       jsonencode(aws_api_gateway_method.RegisterUserPost),
       jsonencode(aws_api_gateway_method.WebhookFeedlyPost)
-    )))
+    ])))
   }
   lifecycle {
     create_before_destroy = true
@@ -86,12 +86,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 
 resource "aws_iam_role" "GatewayLogRole" {
   name               = "GatewayLogRole"
-  assume_role_policy = data.aws_iam_policy_document.gateway-assume-role-policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "aws-managed-policy-attachment" {
-  role       = aws_iam_role.GatewayLogRole.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
 resource "aws_api_gateway_account" "Main" {

@@ -9,7 +9,7 @@ import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
-describe('#handleRegisterUser', () => {
+describe('#RegisterUser', () => {
   const event = localFixture('APIGatewayEvent.json')
   const context = localFixture('Context.json')
   let createAccessTokenStub

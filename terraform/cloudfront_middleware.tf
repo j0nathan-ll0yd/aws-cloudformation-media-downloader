@@ -1,6 +1,6 @@
 resource "aws_iam_role" "CloudfrontMiddlewareRole" {
   name               = "CloudfrontMiddlewareRole"
-  assume_role_policy = data.aws_iam_policy_document.lamdba-edge-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
 }
 
 data "aws_iam_policy_document" "CloudfrontMiddleware" {
@@ -54,6 +54,8 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
 }
 
 resource "aws_cloudfront_distribution" "Production" {
+  // This comment needs to match the associated lambda function
+  comment = aws_lambda_function.CloudfrontMiddleware.function_name
   origin {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"

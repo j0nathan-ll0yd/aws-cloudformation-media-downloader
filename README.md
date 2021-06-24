@@ -73,6 +73,20 @@ aws configure
 brew install terraform
 ```
 
+* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for Terraform documentation)
+
+```bash
+brew install terraform-docs
+```
+
+* Install [act](https://github.com/nektos/act) (used for running Github Actions locally)
+
+```bash
+brew install act
+```
+
+You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
+
 ## Configuring Push Notifications
 
 In order for this project to work out-of-the-box, you will need to do some additional configuration in order to support push notifications. This includes generating a certificate to use the Apple Push Notification Service (APNS) and a subsequent p12 file. Instructions can be found [here](https://calvium.com/how-to-make-a-p12-file/).

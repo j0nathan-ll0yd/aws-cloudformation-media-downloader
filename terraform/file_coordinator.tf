@@ -1,6 +1,6 @@
 resource "aws_iam_role" "FileCoordinatorRole" {
   name               = "FileCoordinatorRole"
-  assume_role_policy = data.aws_iam_policy_document.lambda-assume-role-policy.json
+  assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
 data "aws_iam_policy_document" "FileCoordinator" {
@@ -63,7 +63,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
   function_name    = "FileCoordinator"
   role             = aws_iam_role.FileCoordinatorRole.arn
-  handler          = "FileCoordinator.schedulerFileCoordinator"
+  handler          = "FileCoordinator.handler"
   runtime          = "nodejs12.x"
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
@@ -71,8 +71,8 @@ resource "aws_lambda_function" "FileCoordinator" {
 
   environment {
     variables = {
-      StateMachineArn = aws_sfn_state_machine.MultipartUpload.id
-      DynamoDBTable   = aws_dynamodb_table.Files.name
+      StateMachineArn    = aws_sfn_state_machine.MultipartUpload.id
+      DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }
 }

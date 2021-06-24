@@ -8,7 +8,7 @@ import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
 
-export async function startFileUpload(event: StartFileUploadParams): Promise<UploadPartEvent> {
+export async function handler(event: StartFileUploadParams): Promise<UploadPartEvent> {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
@@ -37,7 +37,7 @@ export async function startFileUpload(event: StartFileUploadParams): Promise<Upl
     myDynamoItem.size = bytesTotal
     myDynamoItem.publishDate = new Date(myMetadata.published).toISOString()
     myDynamoItem.contentType = contentType
-    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTable, myDynamoItem)
+    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles, myDynamoItem)
     logDebug('updateItem <=', updateItemParams)
     const updateResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateResponse)
