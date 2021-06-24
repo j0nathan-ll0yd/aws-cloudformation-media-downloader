@@ -14,17 +14,23 @@
     "esModuleInterop": true,
     "lib": ["ES2020.Promise"]
   },
+  // The problem: https://github.com/TypeStrong/typedoc/issues/319#issuecomment-435104571
+  // Any exclude directive here doesn't work; based on the problem above
+  // As a workaround, you can delete several files to manually, but it's awful
+  // TODO: Submit an issue to the Typedoc project, or look in to it myself
   "typedocOptions": {
     "entryPoints": ["src"],
-    "exclude": "**/*+(.spec|.test|.d).ts",
+    "exclude": [
+      "node_modules",
+      "**/*+(.spec|.test|.d).ts",
+      "src/types/terraform.d.ts",
+      "src/pipeline/terraform.environment.test.ts"
+    ],
     "excludePrivate": false,
     "excludeInternal": false,
     "out": "docs/source"
   },
-  "include": [
-    "src/**/*",
-    "typings/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "**/*.spec.ts",
