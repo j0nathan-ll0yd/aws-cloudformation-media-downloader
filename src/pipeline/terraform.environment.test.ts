@@ -84,9 +84,7 @@ describe('#Terraform', () => {
           if (cloudFrontDistributionNames[functionName]) {
             expect(environmentVariable)
               .to.be.a('string')
-              .and.match(/^x-[a-z-]+$/)
-          } else {
-            expect(environmentVariable)
+              .and.matchonmentVariable)
               .to.be.a('string')
               .and.match(/^[A-Z][A-Za-z]*$/)
           }
