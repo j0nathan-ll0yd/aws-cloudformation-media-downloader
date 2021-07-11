@@ -1,0 +1,21 @@
+{
+  "entryPoints": ["src"],
+  "exclude": [
+    "**/*+(index|.spec|.e2e|.test).ts",
+    "src/pipeline/terraform.environment.test.ts"
+  ],
+  "banish": [
+    "**/*+(index|.spec|.e2e|.test).ts",
+    "src/pipeline/terraform.environment.test.ts"
+  ],
+  "externalPattern": [
+    "**/*+(index|.spec|.e2e|.test).ts",
+    "src/pipeline/terraform.environment.test.ts"
+  ],
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "tsconfig": "./tsconfig.json",
+  "categorizeByGroup": true,
+  "out": "docs/source"
+}
