@@ -9,7 +9,7 @@
   "scripts": {
     "check-types": "tsc",
     "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js npm run test",
-    "document-source": "./node_modules/typedoc/bin/typedoc",
+    "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "build": "./node_modules/webpack-cli/bin/cli.js",
     "install-prod": "npm install --only=production",
@@ -35,6 +35,7 @@
     "axios": "^0.21.1",
     "jsonwebtoken": "^8.5.1",
     "jwks-rsa": "^2.0.3",
+    "typedoc-plugin-banish": "^1.0.1",
     "uuid": "^8.3.2",
     "validate.js": "^0.13.1",
     "ytdl-core": "^4.8.2"
