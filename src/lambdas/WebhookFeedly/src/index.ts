@@ -54,6 +54,25 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
 }
 
 /**
+ * Retrieves a File from DynamoDB (if it exists)
+ * @param file - A DynamoDB File object
+ * @param userId - The UUID of the user
+ * @notExported
+ */
+async function sendFileNotification(file: DynamoDBFile, userId: string) {
+  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const sendMessageParams = {
+    MessageBody: 'FileNotification',
+    MessageAttributes: messageAttributes,
+    QueueUrl: process.env.SNSQueueUrl
+  }
+  logDebug('sendMessage <=', sendMessageParams)
+  const sendMessageResponse = await sendMessage(sendMessageParams)
+  logDebug('sendMessage =>', sendMessageResponse)
+  return sendMessageResponse
+}
+
+/**
  * Receives a webhook to download a file from Feedly.
  *
  * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
@@ -74,15 +93,8 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     const file = await getFile(fileId)
     if (file && file.url) {
       // There needs to be a file AND a file url (to indicate it was downloaded)
-      const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
-      const sendMessageParams = {
-        MessageBody: 'FileNotification',
-        MessageAttributes: messageAttributes,
-        QueueUrl: process.env.SNSQueueUrl
-      }
-      logDebug('sendMessage <=', sendMessageParams)
-      const sendMessageResponse = await sendMessage(sendMessageParams)
-      logDebug('sendMessage =>', sendMessageResponse)
+      // If so, notify the client the file can be downloaded
+      await sendFileNotification(file, userId)
       return response(context, 204)
     }
     await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
