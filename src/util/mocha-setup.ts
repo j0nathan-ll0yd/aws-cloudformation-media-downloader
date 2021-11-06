@@ -2,7 +2,6 @@ import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
 import path from 'path'
-import * as sinon from 'sinon'
 chai.use(chaiAsPromised)
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -16,17 +15,7 @@ export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDA
 
 export const mochaHooks = {
   beforeEach(): void {
-    this.consoleLogStub = sinon.stub(console, 'log')
-    this.consoleInfoStub = sinon.stub(console, 'info')
-    this.consoleDebugStub = sinon.stub(console, 'debug')
-    this.consoleWarnStub = sinon.stub(console, 'warn')
-    this.consoleErrorStub = sinon.stub(console, 'error')
   },
   afterEach(): void {
-    this.consoleLogStub.restore()
-    this.consoleInfoStub.restore()
-    this.consoleDebugStub.restore()
-    this.consoleWarnStub.restore()
-    this.consoleErrorStub.restore()
   }
 }

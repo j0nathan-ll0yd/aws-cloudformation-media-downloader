@@ -23,7 +23,10 @@ export const registerDeviceConstraints = {
 }
 
 export const userSubscribeConstraints = {
-  endpoint: {
+  endpointArn: {
+    presence: true
+  },
+  topicArn: {
     presence: true
   }
 }

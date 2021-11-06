@@ -61,7 +61,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   function_name    = "SendPushNotification"
   role             = aws_iam_role.SendPushNotificationRole.arn
   handler          = "SendPushNotification.handler"
-  runtime          = "nodejs12.x"
+  runtime          = "nodejs14.x"
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256

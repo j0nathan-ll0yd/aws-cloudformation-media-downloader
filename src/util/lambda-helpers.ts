@@ -1,4 +1,5 @@
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
+import { ValidationError } from './errors'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -70,6 +71,19 @@ export function response(context: Context, statusCode: number, body?: string | o
       statusCode
     }
   }
+}
+
+export function verifyPlatformConfiguration(): void {
+  const platformApplicationArn = process.env.PlatformApplicationArn
+  logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
+  if (!platformApplicationArn) {
+    throw new ValidationError('requires configuration', 500)
+  }
+}
+
+export function internalServerErrorResponse(context: Context, error: any): APIGatewayProxyResult {
+  logError('error', JSON.stringify(error))
+  return response(context, error.statusCode ? error.statusCode : 500, error.message)
 }
 
 function stringify(stringOrObject) {

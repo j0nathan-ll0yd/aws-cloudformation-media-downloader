@@ -38,7 +38,15 @@ describe('#UserSubscribe', () => {
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).to.have.property('endpoint')
-    expect(body.error.message.endpoint[0]).to.have.string('is required')
+    expect(body.error.message).to.have.property('endpointArn')
+    expect(body.error.message.endpointArn[0]).to.have.string('is required')
+  })
+  it('should handle an invalid request (no topicArn)', async () => {
+    event.body = null
+    const output = await handler(event, context)
+    expect(output.statusCode).to.equal(400)
+    const body = JSON.parse(output.body)
+    expect(body.error.message).to.have.property('topicArn')
+    expect(body.error.message.topicArn[0]).to.have.string('is required')
   })
 })

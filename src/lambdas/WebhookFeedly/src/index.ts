@@ -4,10 +4,10 @@ import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, internalServerErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 
 /**
@@ -82,13 +82,11 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
-  }
+  let requestBody
   try {
-    const body = requestBody as Webhook
-    const fileId = await getVideoID(body.articleURL)
+    requestBody = getPayloadFromEvent(event) as Webhook
+    validateRequest(requestBody, feedlyEventConstraints)
+    const fileId = await getVideoID(requestBody.articleURL)
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
     const file = await getFile(fileId)
     if (file && file.url) {
@@ -100,6 +98,6 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
     return response(context, 202, {status: 'Accepted'})
   } catch (error) {
-    return response(context, 500, error.message)
+    return internalServerErrorResponse(context, error)
   }
 }
