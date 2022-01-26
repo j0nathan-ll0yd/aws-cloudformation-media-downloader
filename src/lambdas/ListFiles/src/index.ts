@@ -1,9 +1,9 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {processEventAndValidate} from '../../../util/apigateway-helpers'
-import {defaultFile} from '../../../util/constants'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {defaultFile} from '../../../util/constants'
 
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)

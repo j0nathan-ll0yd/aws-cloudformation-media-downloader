@@ -73,6 +73,12 @@ aws configure
 brew install terraform
 ```
 
+* Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
+
+```bash
+brew install quicktype
+```
+
 * Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for Terraform documentation)
 
 ```bash

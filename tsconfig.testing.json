@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "es6",
+    "module": "commonjs",
     "target": "es6",
     "outDir": "./dist",
     "strict": false, // TODO: Make this true and correct the failures

@@ -73,6 +73,7 @@ export function response(context: Context, statusCode: number, body?: string | o
   }
 }
 
+/*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = process.env.PlatformApplicationArn
   logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)

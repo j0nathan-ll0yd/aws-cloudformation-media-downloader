@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
-import {logDebug, logError} from './lambda-helpers'
+import {logDebug, logError, logInfo} from './lambda-helpers'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
@@ -66,6 +66,7 @@ export async function getAppleClientSecret(): Promise<string> {
 }
 
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
+  logInfo('validateAuthCodeForToken')
   logDebug('getAppleClientSecret')
   const clientSecret = await getAppleClientSecret()
   logDebug('getAppleConfig')
@@ -93,6 +94,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
 }
 
 export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
+  logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
   const decodedPayload = jwt.decode(token, {complete: true})
   const kid = decodedPayload.header.kid

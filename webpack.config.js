@@ -19,6 +19,12 @@ module.exports = {
     path: path.resolve(__dirname, 'build/lambdas'),
     filename: '[name].js'
   },
+  optimization: {
+    usedExports: true,
+  },
+  stats: {
+    usedExports: true,
+  },
   target: 'node',
   module: {
     rules: [
