@@ -17,7 +17,7 @@
     "build-terraform-types": "quicktype ./build/terraform.json -o ./src/types/terraform.d.ts",
     "lint": "./node_modules/eslint/bin/eslint.js --ext .ts .",
     "lint-fix": "./node_modules/eslint/bin/eslint.js --ext .ts . --fix",
-    "test": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
+    "test": "npm run test-setup-config && npm run test-setup-mocha",
     "test-full": "npm run build && npm run build-terraform-json && npm run build-terraform-types && npm run test",
     "test-debug": "DEBUG_LEVEL=TRACE AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
@@ -26,6 +26,8 @@
     "test-remote-loginUser": "./bin/test-loginUser.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "test-remote-userSubscribe": "./bin/test-userSubscribe.sh",
+    "test-setup-config": "cat tsconfig.json | sed 's/\"module\": \"es6\"/\"module\": \"commonjs\"/g' tsconfig.json > tsconfig.testing.json",
+    "test-setup-mocha": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha",
     "deploy": "cd terraform && terraform apply -auto-approve"
   },
   "author": "Jonathan Lloyd",
