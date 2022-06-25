@@ -23,7 +23,7 @@ export async function handler(event: UploadPartEvent): Promise<CompleteFileUploa
     const params: UploadPartRequest = {
       Body: fileInfo.data,
       Bucket: bucket,
-      ContentLength: fileInfo.headers['content-length'],
+      ContentLength: parseInt(fileInfo.headers['content-length']),
       Key: key,
       PartNumber: partNumber,
       UploadId: uploadId

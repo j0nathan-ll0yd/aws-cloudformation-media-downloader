@@ -4,12 +4,13 @@ import {DeviceRegistration, UserRegistration, UserSubscribe, ValidationResponse}
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
+import {validateOptions} from './constraints'
 
 export function validateRequest(requestBody: Webhook | DeviceRegistration | UserRegistration | UserSubscribe, constraints: unknown): void {
-  const invalidAttributes = validate(requestBody, constraints)
+  const invalidAttributes = validate(requestBody, constraints, validateOptions)
   if (invalidAttributes) {
-    logError('processEventAndValidate =>', invalidAttributes)
-    throw new ValidationError('Bad Request', 400, invalidAttributes)
+    logError('validateRequest =>', invalidAttributes)
+    throw new ValidationError('Bad Request', invalidAttributes)
   }
 }
 

@@ -1,87 +1,132 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
-import {createPlatformEndpoint, listSubscriptionsByTopic, subscribe, unsubscribe} from '../../../lib/vendor/AWS/SNS'
+import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
 import {DeviceRegistration, UserDevice} from '../../../types/main'
-import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, internalServerErrorResponse, logDebug, logError, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+
+/**
+ * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
+ * @param token - The client device token
+ * @notExported
+ */
+async function createPlatformEndpointFromToken(token: string) {
+  // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
+  const params = {
+    PlatformApplicationArn: process.env.PlatformApplicationArn,
+    Token: token
+  }
+  logDebug('createPlatformEndpoint <=', params)
+  const createPlatformEndpointResponse = await createPlatformEndpoint(params)
+  logDebug('createPlatformEndpoint =>', params)
+  return createPlatformEndpointResponse
+}
+
+/**
+ * Queries a user's device parameters from DynamoDB
+ * @param table - The DynamoDB table to perform the operation on
+ * @param userId - The userId
+ * @param userDevice - The UserDevice details (e.g. endpointArn)
+ * @notExported
+ */
+async function getUserDevice(table: string, userId: string, userDevice: UserDevice) {
+  const params = queryUserDeviceParams(table, userId, userDevice)
+  logDebug('query <=', params)
+  const response = await query(params)
+  logDebug('query =>', response)
+  return response
+}
+
+/**
+ * Unsubscribes an endpoint (a client device) to an SNS topic
+ * @param subscriptionArn - The SubscriptionArn of a endpoint+topic
+ * @notExported
+ */
+export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
+  logDebug('unsubscribe <=')
+  const response = await unsubscribe({SubscriptionArn: subscriptionArn})
+  logDebug('unsubscribe =>', response)
+  return response
+}
+
+/**
+ * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB
+ * @param table - The DynamoDB table to perform the operation on
+ * @param userId - The userId
+ * @param userDevice - The UserDevice details (e.g. endpointArn)
+ * @notExported
+ */
+async function upsertUserDevice(table: string, userId: string, userDevice: UserDevice) {
+  const params = updateUserDeviceParams(table, userId, userDevice)
+  logDebug('updateItem <=', params)
+  const response = await updateItem(params)
+  logDebug('updateItem =>', params)
+  return response
+}
+
+/**
+ * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB
+ * @param endpointArn - The userId
+ * @param topicArn - The UserDevice details (e.g. endpointArn)
+ * @notExported
+ */
+async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topicArn: string): Promise<string> {
+  const listSubscriptionsByTopicParams = {TopicArn: topicArn}
+  logDebug('listSubscriptionsByTopic <=', listSubscriptionsByTopicParams)
+  const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
+  logDebug('listSubscriptionsByTopic =>', listSubscriptionsByTopicResponse)
+  const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
+    return subscription.Endpoint === endpointArn
+  })
+  return result[0].SubscriptionArn
+}
 
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, registerDeviceConstraints)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
+  try {
+    verifyPlatformConfiguration()
+  } catch (error) {
+    return internalServerErrorResponse(context, error)
   }
-  const body = requestBody as DeviceRegistration
-  logInfo('process.env.PlatformApplicationArn <=', process.env.PlatformApplicationArn)
-  if (process.env.PlatformApplicationArn.length === 0) {
-    return response(context, 200, {
-      endpointArn: 'requires configuration'
-    })
+  let requestBody
+  try {
+    requestBody = getPayloadFromEvent(event) as DeviceRegistration
+    validateRequest(requestBody, registerDeviceConstraints)
+  } catch (error) {
+    return internalServerErrorResponse(context, error)
   }
 
-  // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
-  const createPlatformEndpointParams = {
-    PlatformApplicationArn: process.env.PlatformApplicationArn,
-    Token: body.token
-  }
-  logDebug('createPlatformEndpoint <=', createPlatformEndpointParams)
-  const createPlatformEndpointResponse = await createPlatformEndpoint(createPlatformEndpointParams)
-  logDebug('createPlatformEndpoint =>', createPlatformEndpointResponse)
+  const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
 
   let userId
   const userDevice = {
-    ...body,
-    endpointArn: createPlatformEndpointResponse.EndpointArn
+    ...requestBody,
+    endpointArn: platformEndpoint.EndpointArn
   } as UserDevice
   try {
-    const table = process.env.DynamoDBTableUserDevices
     userId = getUserIdFromEvent(event as APIGatewayEvent)
-    const userDeviceParams = queryUserDeviceParams(table, userId, userDevice)
-    logDebug('query <=', userDeviceParams)
-    const userDeviceResponse = await query(userDeviceParams)
-    logDebug('query =>', userDeviceResponse)
+    const table = process.env.DynamoDBTableUserDevices
+    const userDeviceResponse = await getUserDevice(table, userId, userDevice)
     if (userDeviceResponse.Count === 1) {
       return response(context, 200, {endpointArn: userDevice.endpointArn})
     } else {
       // Store the device details associated with the user
-      const updateUserDevice = updateUserDeviceParams(table, userId, userDevice)
-      logDebug('updateItem <=', updateUserDevice)
-      const updateUserDeviceResponse = await updateItem(updateUserDevice)
-      logDebug('updateItem =>', updateUserDeviceResponse)
+      await upsertUserDevice(table, userId, userDevice)
       // Confirm the subscription, and unsubscribe
-      const listSubscriptionsByTopicParams = {
-        TopicArn: process.env.PushNotificationTopicArn
-      }
-      logDebug('listSubscriptionsByTopic <=', listSubscriptionsByTopicParams)
-      const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
-      logDebug('listSubscriptionsByTopic =>', listSubscriptionsByTopicResponse)
-      const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
-        return subscription.Endpoint === createPlatformEndpointResponse.EndpointArn
-      })
-      logDebug('unsubscribe <=')
-      const unsubscribeResponse = await unsubscribe({
-        SubscriptionArn: result[0].SubscriptionArn
-      })
-      logDebug('unsubscribe =>', unsubscribeResponse)
+      const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(platformEndpoint.EndpointArn, process.env.PushNotificationTopicArn)
+      await unsubscribeEndpointToTopic(subscriptionArn)
       return response(context, 201, {
-        endpointArn: createPlatformEndpointResponse.EndpointArn
+        endpointArn: platformEndpoint.EndpointArn
       })
     }
   } catch (error) {
     logError('error =', error)
     // If the user hasn't registered; add them to the unregistered topic
-    const subscribeParams = {
-      Endpoint: createPlatformEndpointResponse.EndpointArn,
-      Protocol: 'application',
-      TopicArn: process.env.PushNotificationTopicArn
-    }
-    logDebug('subscribe <=', subscribeParams)
-    const subscribeResponse = await subscribe(subscribeParams)
-    logDebug('subscribe =>', subscribeResponse)
+    await subscribeEndpointToTopic(platformEndpoint.EndpointArn, process.env.PushNotificationTopicArn)
   }
   return response(context, 200, {
-    endpointArn: createPlatformEndpointResponse.EndpointArn
+    endpointArn: platformEndpoint.EndpointArn
   })
 }

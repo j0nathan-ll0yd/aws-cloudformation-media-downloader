@@ -33,12 +33,6 @@ module.exports = {
         test: /\.(ts|js)x?$/,
         exclude: /node_modules/,
         use: [
-          {
-            loader: 'cache-loader',
-            options: {
-              cacheDirectory: path.resolve('.webpackCache')
-            }
-          },
           'babel-loader',
           'ts-loader'
         ]

@@ -1,11 +1,20 @@
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function ValidationError(message: string, statusCode = 400, errors?: object): void {
-  Error.captureStackTrace(this, this.constructor)
-  this.name = this.constructor.name
-  this.message = message
-  this.statusCode = statusCode
-  this.errors = errors
-  if (errors) {
-    this.message = errors
+export class ValidationError extends Error {
+  statusCode: number
+  errors: object
+  constructor(message: string, errors?, statusCode = 400) {
+    super(message)
+    this.name = 'ValidationError'
+    this.errors = errors
+    this.statusCode = statusCode
+  }
+}
+
+export class ServiceUnavailableError extends Error {
+  statusCode: number
+  errors: object
+  constructor(message: string, statusCode = 503) {
+    super(message)
+    this.name = 'ServiceUnavailableError'
+    this.statusCode = statusCode
   }
 }

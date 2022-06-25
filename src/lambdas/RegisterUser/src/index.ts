@@ -6,7 +6,7 @@ import {registerUserConstraints} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
 import {internalServerErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import { createIdentityProviderAppleFromTokens, createUserFromToken } from '../../../util/transformers'
+import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 
 /**
  * Creates a new user record in DynamoDB

@@ -58,18 +58,16 @@ describe('#RegisterDevice', () => {
   it('should return a valid response if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
-    const body = JSON.parse(output.body)
-    expect(body.body).to.have.property('endpointArn')
-    expect(body.body.endpointArn).to.have.string('requires configuration')
+    expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
     event.body = null
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).to.have.property('token')
-    expect(body.error.message.token[0]).to.have.string('is required')
+    expect(body.error.message).to.be.an('object')
+    expect(body.error.message.token).to.be.an('array').to.have.lengthOf(1)
+    expect(body.error.message.token[0]).to.have.string('token is required')
   })
   it('should fail gracefully if createPlatformEndpoint fails', async () => {
     createPlatformEndpointStub.rejects('Error')

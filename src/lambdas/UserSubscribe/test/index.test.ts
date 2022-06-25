@@ -28,10 +28,7 @@ describe('#UserSubscribe', () => {
   it('should return an error if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(500)
-    const body = JSON.parse(output.body)
-    expect(body.error.code).to.have.string('custom-5XX-generic')
-    expect(body.error.message).to.have.string('requires configuration')
+    expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
     event.body = null

@@ -1,5 +1,6 @@
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
-import { ValidationError } from './errors'
+import {subscribe} from '../lib/vendor/AWS/SNS'
+import {ServiceUnavailableError, ValidationError} from './errors'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -24,6 +25,24 @@ export function cloudFrontErrorResponse(context: Context, statusCode: number, me
       requestId: context.awsRequestId
     })
   }
+}
+
+/**
+ * Subscribes an endpoint (a client device) to an SNS topic
+ * @param endpointArn - The EndpointArn of a mobile app and device
+ * @param topicArn - The ARN of the topic you want to subscribe to
+ * @notExported
+ */
+export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
+  const subscribeParams = {
+    Endpoint: endpointArn,
+    Protocol: 'application',
+    TopicArn: topicArn
+  }
+  logDebug('subscribe <=', subscribeParams)
+  const subscribeResponse = await subscribe(subscribeParams)
+  logDebug('subscribe =>', subscribeResponse)
+  return subscribeResponse
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -78,13 +97,20 @@ export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = process.env.PlatformApplicationArn
   logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
   if (!platformApplicationArn) {
-    throw new ValidationError('requires configuration', 500)
+    throw new ServiceUnavailableError('requires configuration')
   }
 }
 
-export function internalServerErrorResponse(context: Context, error: any): APIGatewayProxyResult {
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function internalServerErrorResponse(context: Context, error: Error): APIGatewayProxyResult {
   logError('error', JSON.stringify(error))
-  return response(context, error.statusCode ? error.statusCode : 500, error.message)
+  if (error instanceof ValidationError || error instanceof ServiceUnavailableError) {
+    logError('known error type')
+    logError(error.statusCode.toString())
+    return response(context, error.statusCode, error.errors || error.message)
+  } else {
+    return response(context, 500, error.message)
+  }
 }
 
 function stringify(stringOrObject) {
