@@ -4,7 +4,7 @@ import {IdentityProviderApple, User, UserRegistration} from '../../../types/main
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserConstraints} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
-import {internalServerErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 
@@ -36,6 +36,6 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     const token = await createAccessToken(user.userId)
     return response(context, 200, {token})
   } catch (error) {
-    return internalServerErrorResponse(context, error)
+    return lambdaErrorResponse(context, error)
   }
 }

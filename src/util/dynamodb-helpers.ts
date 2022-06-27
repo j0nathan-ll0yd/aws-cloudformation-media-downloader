@@ -180,7 +180,7 @@ export function getBatchFilesParams(tableName: string, files: string[]): Documen
   }
 }
 
-export function getUserByAppleDeviceIdentifier(tableName: string, userId: string): DocumentClient.ScanInput {
+export function getUserByAppleDeviceIdentifierParams(tableName: string, userId: string): DocumentClient.ScanInput {
   return {
     ExpressionAttributeValues: {':userId': userId},
     FilterExpression: 'identityProviders.userId = :userId',

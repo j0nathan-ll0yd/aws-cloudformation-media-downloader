@@ -1,6 +1,6 @@
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
-import {ServiceUnavailableError, ValidationError} from './errors'
+import {CustomLambdaError, ServiceUnavailableError} from './errors'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -101,12 +101,9 @@ export function verifyPlatformConfiguration(): void {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function internalServerErrorResponse(context: Context, error: Error): APIGatewayProxyResult {
-  logError('error', JSON.stringify(error))
-  if (error instanceof ValidationError || error instanceof ServiceUnavailableError) {
-    logError('known error type')
-    logError(error.statusCode.toString())
+export function lambdaErrorResponse(context: Context, error: Error): APIGatewayProxyResult {
+  logError('lambdaErrorResponse', JSON.stringify(error))
+  if (error instanceof CustomLambdaError) {
     return response(context, error.statusCode, error.errors || error.message)
   } else {
     return response(context, 500, error.message)

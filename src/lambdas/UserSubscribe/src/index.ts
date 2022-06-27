@@ -2,7 +2,7 @@ import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {UserSubscribe} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {userSubscribeConstraints} from '../../../util/constraints'
-import {internalServerErrorResponse, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic
@@ -20,7 +20,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     requestBody = getPayloadFromEvent(event) as UserSubscribe
     validateRequest(requestBody, userSubscribeConstraints)
   } catch (error) {
-    return internalServerErrorResponse(context, error)
+    return lambdaErrorResponse(context, error)
   }
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)

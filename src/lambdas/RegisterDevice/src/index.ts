@@ -5,7 +5,7 @@ import {DeviceRegistration, UserDevice} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, internalServerErrorResponse, logDebug, logError, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -85,17 +85,13 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
 
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  try {
-    verifyPlatformConfiguration()
-  } catch (error) {
-    return internalServerErrorResponse(context, error)
-  }
   let requestBody
   try {
+    verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as DeviceRegistration
     validateRequest(requestBody, registerDeviceConstraints)
   } catch (error) {
-    return internalServerErrorResponse(context, error)
+    return lambdaErrorResponse(context, error)
   }
 
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
