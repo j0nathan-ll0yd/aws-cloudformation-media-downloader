@@ -19,6 +19,10 @@ async function getUserDeviceByUserId(userId: string) {
   return userResponse
 }
 
+/**
+ * After a File is downloaded, dispatch a notification to all UserDevices
+ * @notExported
+ */
 export async function handler(event: SQSEvent): Promise<void> {
   logDebug('event', event)
   for (const record of event.Records) {

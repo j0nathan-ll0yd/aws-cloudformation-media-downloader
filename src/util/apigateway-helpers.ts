@@ -1,6 +1,6 @@
 import {APIGatewayEvent} from 'aws-lambda'
 import {validate} from 'validate.js'
-import {DeviceRegistration, UserRegistration, UserSubscribe, ValidationResponse} from '../types/main'
+import {DeviceRegistration, UserRegistration, UserSubscribe} from '../types/main'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
@@ -26,25 +26,4 @@ export function getPayloadFromEvent(event: APIGatewayEvent): Webhook | DeviceReg
     }
   }
   throw new ValidationError('Missing request payload')
-}
-
-export function processEventAndValidate(event: APIGatewayEvent, constraints?: unknown): ValidationResponse {
-  let requestBody: Webhook | DeviceRegistration | UserRegistration
-  if ('body' in event) {
-    try {
-      requestBody = JSON.parse(event.body)
-      logDebug('processEventAndValidate.event.body <=', requestBody)
-    } catch (error) {
-      logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
-      return {statusCode: 400, message: 'Request body must be valid JSON'}
-    }
-  }
-  if (constraints) {
-    const invalidAttributes = validate(requestBody, constraints)
-    if (invalidAttributes) {
-      logError('processEventAndValidate =>', invalidAttributes)
-      return {statusCode: 400, message: invalidAttributes}
-    }
-  }
-  return {requestBody}
 }

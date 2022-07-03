@@ -24,12 +24,6 @@ interface StartFileUploadParams {
   fileId: string
 }
 
-interface ValidationResponse {
-  requestBody?: Webhook | DeviceRegistration | UserRegistration
-  statusCode?: number
-  message?: string
-}
-
 interface UploadPartEvent {
   bucket: string
   bytesRemaining: number

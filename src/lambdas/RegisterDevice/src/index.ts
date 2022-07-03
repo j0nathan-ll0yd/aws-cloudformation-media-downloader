@@ -83,6 +83,10 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
   return result[0].SubscriptionArn
 }
 
+/**
+ * Registers a UserDevice (e.g. iPhone) to receive push notifications via AWS SNS
+ * @notExported
+ */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody

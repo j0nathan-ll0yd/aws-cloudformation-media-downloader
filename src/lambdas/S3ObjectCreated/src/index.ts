@@ -53,6 +53,10 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
   return sendMessage(sendMessageParams)
 }
 
+/**
+ * After a File is downloaded, dispatch a notification to all UserDevices
+ * @notExported
+ */
 export async function handler(event: S3Event): Promise<void> {
   logDebug('event', event)
   try {

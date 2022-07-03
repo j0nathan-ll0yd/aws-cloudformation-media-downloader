@@ -1,7 +1,7 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 import {defaultFile} from '../../../util/constants'
 
 /**
@@ -29,7 +29,14 @@ async function getFileIdsByUser(userId: string) {
   logDebug('query =>', userFilesResponse)
   return userFilesResponse
 }
-
+/**
+ * Returns a list of files available to the user.
+ *
+ * - In an authenticated state, returns the files the user has available
+ * - In an unauthenticated state, returns a single demo file (for training purposes)
+ *
+ * @notExported
+ */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const myResponse = {contents: [], keyCount: 0}
@@ -52,6 +59,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     }
     return response(context, 200, myResponse)
   } catch (error) {
-    throw new Error(error)
+    logError('error =', error)
+    return lambdaErrorResponse(context, error)
   }
 }

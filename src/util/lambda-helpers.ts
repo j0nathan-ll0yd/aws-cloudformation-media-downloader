@@ -1,3 +1,4 @@
+import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
 import {CustomLambdaError, ServiceUnavailableError} from './errors'
@@ -43,6 +44,19 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
   const subscribeResponse = await subscribe(subscribeParams)
   logDebug('subscribe =>', subscribeResponse)
   return subscribeResponse
+}
+
+/**
+ * Makes an HTTP request via Axios
+ * @param options - The [request configuration](https://github.com/axios/axios#request-config)
+ * @notExported
+ */
+export async function makeHttpRequest(options: AxiosRequestConfig) {
+  logDebug('axios <= ', options)
+  const axiosResponse = await axios(options)
+  logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
+  logDebug('axios.headers =>', axiosResponse.headers)
+  return axiosResponse
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types

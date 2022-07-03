@@ -19,7 +19,10 @@ async function getUserByAppleDeviceIdentifier(userDeviceId: string) {
   logDebug('scan =>', scanResponse)
   return scanResponse
 }
-
+/**
+ * Logs in a User via Sign in with Apple
+ * @notExported
+ */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody

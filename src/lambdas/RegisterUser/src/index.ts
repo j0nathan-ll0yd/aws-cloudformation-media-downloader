@@ -22,6 +22,11 @@ async function createUser(user: User, identityProviderApple: IdentityProviderApp
   return putItemResponse
 }
 
+/**
+ * Registers a User via Sign in with Apple
+ * - NOTE: All User details are sourced from the identity token
+ * @notExported
+ */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
