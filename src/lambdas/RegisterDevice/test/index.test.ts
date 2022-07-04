@@ -4,11 +4,12 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import chai from 'chai'
 import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {testContext} from '../../../util/constants'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#RegisterDevice', () => {
-  const context = localFixture('Context.json')
+  const context = testContext
   let createPlatformEndpointStub
   let event
   let listSubscriptionsByTopicStub

@@ -4,12 +4,13 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import chai from 'chai'
+import {testContext} from '../../../util/constants'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 describe('#ListFiles', () => {
-  const context = localFixture('Context.json')
+  const context = testContext
   let event
   let batchGetStub
   let queryStub

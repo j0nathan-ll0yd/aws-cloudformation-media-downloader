@@ -20,5 +20,17 @@ export const testContext = {
   functionVersion: 'The version of the function. (e.g. $LATEST)',
   invokeid: '55cb4a4e-f810-48f5-b4ad-e2039b4e686e',
   awsRequestId: '55cb4a4e-f810-48f5-b4ad-e2039b4e686e',
-  invokedFunctionArn: "The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias."
+  invokedFunctionArn: "The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.",
+  getRemainingTimeInMillis: () => {
+    return 300
+  },
+  done: () => {
+    return
+  },
+  fail: () => {
+    return
+  },
+  succeed: () => {
+    return
+  }
 }
