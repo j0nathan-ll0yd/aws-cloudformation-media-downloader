@@ -1,7 +1,7 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
-import {CustomLambdaError, ServiceUnavailableError} from './errors'
+import { CustomLambdaError, ServiceUnavailableError, UnauthorizedError } from "./errors"
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -149,7 +149,7 @@ export function logError(message: string, stringOrObject?: string | object | num
 export function getUserIdFromEvent(event: APIGatewayEvent): string {
   const userId = event.headers['X-User-Id']
   if (!userId) {
-    throw new Error('No X-User-Id in Header')
+    throw new UnauthorizedError('No X-User-Id in Header')
   }
   return userId
 }

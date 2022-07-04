@@ -57,7 +57,7 @@ describe('#WebhookFeedly', () => {
     delete event.headers['X-User-Id']
     event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(500)
+    expect(output.statusCode).to.equal(401)
   })
   it('should handle an invalid event body', async () => {
     event.body = 'hello'

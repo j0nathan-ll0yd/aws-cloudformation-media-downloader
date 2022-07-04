@@ -7,6 +7,7 @@ import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/m
 import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo, makeHttpRequest} from '../../../util/lambda-helpers'
 import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
+import { UnexpectedError } from "../../../util/errors"
 
 /**
  * Starts a multi-part upload of a file to an S3 bucket
@@ -70,7 +71,7 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
       url: videoUrl
     } as UploadPartEvent
   } catch (error) {
-    logError(`startFileUpload <= ${error.message}`)
-    throw new Error(error)
+    logError('error', error)
+    throw new UnexpectedError(error.message)
   }
 }

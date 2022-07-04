@@ -6,6 +6,7 @@ import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
+import { UnauthorizedError } from "./errors"
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
@@ -112,13 +113,14 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
     try {
       return jwt.verify(token, key.rsaPublicKey)
     } catch (error) {
-      logError(`jwt.verify <= ${error.message}`)
-      throw new Error(error)
+      const message = `Token verification error: ${error.message}`
+      logError(`jwt.verify <= ${message}`)
+      throw new UnauthorizedError(message)
     }
   } else {
     const message = 'rsaPublicKey not present in payload'
     logError(`jwt.verify <= ${message}`)
-    throw new Error(message)
+    throw new UnauthorizedError(message)
   }
 }
 

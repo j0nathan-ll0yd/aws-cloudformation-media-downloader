@@ -2,7 +2,8 @@ import {UploadPartRequest} from 'aws-sdk/clients/s3'
 import {AxiosRequestConfig} from 'axios'
 import {uploadPart} from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {logDebug, logInfo, makeHttpRequest} from '../../../util/lambda-helpers'
+import { logDebug, logError, logInfo, makeHttpRequest } from "../../../util/lambda-helpers"
+import { UnexpectedError } from "../../../util/errors"
 
 /**
  * Uploads a part (by byte range) of a file to an S3 bucket
@@ -63,6 +64,7 @@ export async function handler(event: UploadPartEvent): Promise<CompleteFileUploa
       return nextPart
     }
   } catch (error) {
-    throw new Error(error)
+    logError('error', error)
+    throw new UnexpectedError(error.message)
   }
 }

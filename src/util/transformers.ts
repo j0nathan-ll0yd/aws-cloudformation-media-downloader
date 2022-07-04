@@ -5,6 +5,7 @@ import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logDebug} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
+import { NotFoundError } from "./errors"
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -19,7 +20,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
       return highestVideoFormat
     }
   } catch (error) {
-    throw new Error('Unable to find format')
+    throw new NotFoundError('Unable to find acceptable video format')
   }
 }
 
@@ -105,7 +106,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
   logDebug('thumbnails', thumbnails)
   for (const key of ['author', 'description', 'publishDate', 'title']) {
     if (!myVideoInfo.videoDetails[key]) {
-      throw new Error(`myVideoInfo missing property ${key}`)
+      throw new NotFoundError(`myVideoInfo missing property ${key}`)
     }
   }
 
