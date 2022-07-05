@@ -1,10 +1,9 @@
 import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import chai from 'chai'
-import {testContext} from '../../../util/constants'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()

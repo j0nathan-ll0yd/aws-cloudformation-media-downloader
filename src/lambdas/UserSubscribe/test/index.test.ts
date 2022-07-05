@@ -1,9 +1,8 @@
 import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import chai from 'chai'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
-import {testContext} from '../../../util/constants'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

@@ -2,6 +2,7 @@ import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import fs from 'fs'
 import path from 'path'
+import * as sinon from 'sinon'
 chai.use(chaiAsPromised)
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -12,6 +13,43 @@ export function getFixture(dir: string, file: string): object {
 
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
+export const testContext = {
+  callbackWaitsForEmptyEventLoop: true,
+  logGroupName: 'The log group for the function.',
+  logStreamName: 'The log stream for the function instance.',
+  functionName: 'The name of the Lambda function.',
+  memoryLimitInMB: "The amount of memory that's allocated for the function. (e.g. 128)",
+  functionVersion: 'The version of the function. (e.g. $LATEST)',
+  invokeid: '55cb4a4e-f810-48f5-b4ad-e2039b4e686e',
+  awsRequestId: '55cb4a4e-f810-48f5-b4ad-e2039b4e686e',
+  invokedFunctionArn: "The Amazon Resource Name (ARN) that's used to invoke the function. Indicates if the invoker specified a version number or alias.",
+  getRemainingTimeInMillis: () => {
+    return 300
+  },
+  done: () => {
+    return
+  },
+  fail: () => {
+    return
+  },
+  succeed: () => {
+    return
+  }
+}
 
 export const mochaHooks = {
+  beforeEach(): void {
+    this.consoleLogStub = sinon.stub(console, 'log')
+    this.consoleInfoStub = sinon.stub(console, 'info')
+    this.consoleDebugStub = sinon.stub(console, 'debug')
+    this.consoleWarnStub = sinon.stub(console, 'warn')
+    this.consoleErrorStub = sinon.stub(console, 'error')
+  },
+  afterEach(): void {
+    this.consoleLogStub.restore()
+    this.consoleInfoStub.restore()
+    this.consoleDebugStub.restore()
+    this.consoleWarnStub.restore()
+    this.consoleErrorStub.restore()
+  }
 }

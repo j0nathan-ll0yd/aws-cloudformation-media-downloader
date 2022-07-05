@@ -2,9 +2,8 @@ import * as sinon from 'sinon'
 import chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import {fakeJWT, getFixture} from '../../../util/mocha-setup'
+import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
-import {testContext} from '../../../util/constants'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

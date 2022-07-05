@@ -3,9 +3,9 @@ import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile, UserFile} from '../../../types/main'
 import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
-import { logDebug, logError } from "../../../util/lambda-helpers"
+import {logDebug, logError} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
-import { UnexpectedError } from "../../../util/errors"
+import {UnexpectedError} from '../../../util/errors'
 
 /**
  * Returns the DynamoDBFile by file name
