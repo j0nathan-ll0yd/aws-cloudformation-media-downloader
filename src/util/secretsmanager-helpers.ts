@@ -6,7 +6,7 @@ import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
-import { UnauthorizedError } from "./errors"
+import {UnauthorizedError} from './errors'
 let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY

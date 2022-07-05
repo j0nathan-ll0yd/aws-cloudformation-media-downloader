@@ -5,7 +5,7 @@ import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logDebug} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
-import { NotFoundError } from "./errors"
+import {NotFoundError} from './errors'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {

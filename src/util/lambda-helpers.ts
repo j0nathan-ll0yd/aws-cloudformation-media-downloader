@@ -1,7 +1,7 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
-import { CustomLambdaError, ServiceUnavailableError, UnauthorizedError } from "./errors"
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
