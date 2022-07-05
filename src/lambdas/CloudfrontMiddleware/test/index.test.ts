@@ -13,7 +13,7 @@ describe('#CloudfrontMiddleware', () => {
   let event
   let verifyAccessTokenStub
   beforeEach(() => {
-    event = localFixture('APIGatewayEvent-200-OK.json') as CloudFrontRequestEvent
+    event = localFixture('CloudFrontRequestEvent.json') as CloudFrontRequestEvent
     verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json'))
   })
   afterEach(() => {
