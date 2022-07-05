@@ -1,35 +1,29 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {subscribe} from '../../../lib/vendor/AWS/SNS'
 import {UserSubscribe} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {userSubscribeConstraints} from '../../../util/constraints'
-import {ValidationError} from '../../../util/errors'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 
+/**
+ * Subscribes an endpoint (a client device) to an SNS topic
+ *
+ * - Requires that the platformApplicationArn environment variable is set
+ * - Requires the endpointArn and topicArn are in the payload
+ *
+ * @notExported
+ */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {
+    verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as UserSubscribe
-    const platformApplicationArn = process.env.PlatformApplicationArn
-    logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
-    if (!platformApplicationArn) {
-      throw new ValidationError('requires configuration', 500)
-    }
     validateRequest(requestBody, userSubscribeConstraints)
   } catch (error) {
-    logDebug('error', JSON.stringify(error))
-    return response(context, error.statusCode, error.message)
+    return lambdaErrorResponse(context, error)
   }
-  const subscribeParams = {
-    Endpoint: requestBody.endpoint,
-    Protocol: 'application',
-    TopicArn: process.env.PushNotificationTopicArn
-  }
-  logDebug('subscribe <=', subscribeParams)
-  const subscribeResponse = await subscribe(subscribeParams)
-  logDebug('subscribe =>', subscribeResponse)
 
+  const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
   return response(context, 201, {
     subscriptionArn: subscribeResponse.SubscriptionArn
   })

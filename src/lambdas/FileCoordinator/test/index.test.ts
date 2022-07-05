@@ -2,14 +2,14 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
 import chai from 'chai'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#FileCoordinator', () => {
   process.env.DynamoDBTableFiles = 'Files'
-  const context = localFixture('Context.json')
+  const context = testContext
   const event = localFixture('ScheduledEvent.json')
   let scanStub
   let startExecutionStub

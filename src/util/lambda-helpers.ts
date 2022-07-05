@@ -1,4 +1,7 @@
+import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
+import {subscribe} from '../lib/vendor/AWS/SNS'
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -23,6 +26,37 @@ export function cloudFrontErrorResponse(context: Context, statusCode: number, me
       requestId: context.awsRequestId
     })
   }
+}
+
+/**
+ * Subscribes an endpoint (a client device) to an SNS topic
+ * @param endpointArn - The EndpointArn of a mobile app and device
+ * @param topicArn - The ARN of the topic you want to subscribe to
+ * @notExported
+ */
+export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
+  const subscribeParams = {
+    Endpoint: endpointArn,
+    Protocol: 'application',
+    TopicArn: topicArn
+  }
+  logDebug('subscribe <=', subscribeParams)
+  const subscribeResponse = await subscribe(subscribeParams)
+  logDebug('subscribe =>', subscribeResponse)
+  return subscribeResponse
+}
+
+/**
+ * Makes an HTTP request via Axios
+ * @param options - The [request configuration](https://github.com/axios/axios#request-config)
+ * @notExported
+ */
+export async function makeHttpRequest(options: AxiosRequestConfig) {
+  logDebug('axios <= ', options)
+  const axiosResponse = await axios(options)
+  logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
+  logDebug('axios.headers =>', axiosResponse.headers)
+  return axiosResponse
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -72,6 +106,24 @@ export function response(context: Context, statusCode: number, body?: string | o
   }
 }
 
+/*#__PURE__*/
+export function verifyPlatformConfiguration(): void {
+  const platformApplicationArn = process.env.PlatformApplicationArn
+  logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
+  if (!platformApplicationArn) {
+    throw new ServiceUnavailableError('requires configuration')
+  }
+}
+
+export function lambdaErrorResponse(context: Context, error: Error): APIGatewayProxyResult {
+  logError('lambdaErrorResponse', JSON.stringify(error))
+  if (error instanceof CustomLambdaError) {
+    return response(context, error.statusCode, error.errors || error.message)
+  } else {
+    return response(context, 500, error.message)
+  }
+}
+
 function stringify(stringOrObject) {
   if (typeof stringOrObject === 'object') {
     stringOrObject = JSON.stringify(stringOrObject, null, 2)
@@ -97,7 +149,7 @@ export function logError(message: string, stringOrObject?: string | object | num
 export function getUserIdFromEvent(event: APIGatewayEvent): string {
   const userId = event.headers['X-User-Id']
   if (!userId) {
-    throw new Error('No X-User-Id in Header')
+    throw new UnauthorizedError('No X-User-Id in Header')
   }
   return userId
 }

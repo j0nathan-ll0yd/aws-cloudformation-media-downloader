@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk'
 import {CompleteMultipartUploadOutput, CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
 import * as S3 from 'aws-sdk/clients/s3'
+import {logError, logInfo} from '../../../util/lambda-helpers'
 const s3 = new AWS.S3({apiVersion: '2006-03-01'})
 
 export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {
@@ -17,14 +18,19 @@ export function uploadPart(partParams: S3.UploadPartRequest, tryNum?: number): P
       tryNum = 1
     }
     s3.uploadPart(partParams, (multiErr, mData) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {Body, ...escapedParams} = partParams
+      logInfo('uploadPart <=', escapedParams)
       if (multiErr) {
         if (tryNum < 3) {
           uploadPart(partParams, tryNum + 1)
         } else {
+          logError('uploadPart.error =>', mData)
           return reject(multiErr)
         }
         return
       }
+      logInfo('uploadPart =>', mData)
       return resolve(mData)
     })
   })

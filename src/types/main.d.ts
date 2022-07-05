@@ -1,7 +1,6 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
-import {Webhook} from './vendor/IFTTT/Feedly/Webhook'
 
 interface Metadata {
   videoId: string
@@ -22,12 +21,6 @@ interface Metadata {
 
 interface StartFileUploadParams {
   fileId: string
-}
-
-interface ValidationResponse {
-  requestBody?: Webhook | DeviceRegistration | UserRegistration
-  statusCode?: number
-  message?: string
 }
 
 interface UploadPartEvent {

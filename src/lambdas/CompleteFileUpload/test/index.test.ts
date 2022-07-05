@@ -4,6 +4,7 @@ import * as S3 from '../../../lib/vendor/AWS/S3'
 import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import chai from 'chai'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -28,10 +29,9 @@ describe('#CompleteFileUpload', () => {
     expect(output).to.have.all.keys('Location', 'Bucket', 'Key', 'ETag')
   })
   it('should gracefully handle a failure', async () => {
-    const error = new Error()
-    error.name = 'EntityTooSmall'
-    error.message = 'Your proposed upload is smaller than the minimum allowed size'
+    const message = 'An unexpected error occured.'
+    const error = new UnexpectedError(message)
     completeMultipartUploadStub.rejects(error)
-    expect(handler(event)).to.be.rejectedWith(`${error.name}: ${error.message}`)
+    expect(handler(event)).to.be.rejectedWith(`${error.name}: ${message}`)
   })
 })

@@ -1,14 +1,14 @@
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SQS from '../../../lib/vendor/AWS/SQS'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import chai from 'chai'
 import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#WebhookFeedly', () => {
-  const context = localFixture('Context.json')
+  const context = testContext
   let event
   let queryStub
   let sendMessageStub
@@ -57,7 +57,7 @@ describe('#WebhookFeedly', () => {
     delete event.headers['X-User-Id']
     event.body = JSON.stringify(localFixture('handleFeedlyEvent-200-OK.json'))
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(500)
+    expect(output.statusCode).to.equal(401)
   })
   it('should handle an invalid event body', async () => {
     event.body = 'hello'

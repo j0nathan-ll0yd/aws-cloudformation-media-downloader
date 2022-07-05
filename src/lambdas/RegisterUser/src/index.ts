@@ -1,51 +1,46 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {putItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {UserRegistration} from '../../../types/main'
-import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {IdentityProviderApple, User, UserRegistration} from '../../../types/main'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserConstraints} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import {v4 as uuidv4} from 'uuid'
+import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
-  logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, registerUserConstraints)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
-  }
-  const body = requestBody as UserRegistration
-
-  logDebug('validateAuthCodeForToken <=')
-  const appleToken = await validateAuthCodeForToken(body.authorizationCode)
-  logDebug('validateAuthCodeForToken =>', appleToken)
-
-  logDebug('verifyAppleToken <=')
-  const verifiedToken = await verifyAppleToken(appleToken.id_token)
-  logDebug('verifyAppleToken =>', verifiedToken)
-
-  const user = {
-    userId: uuidv4(),
-    email: verifiedToken.email,
-    emailVerified: verifiedToken.email_verified,
-    firstName: body.firstName,
-    lastName: body.lastName
-  }
-
-  const identityProviderApple = {
-    accessToken: appleToken.access_token,
-    refreshToken: appleToken.refresh_token,
-    tokenType: appleToken.token_type,
-    expiresAt: new Date(Date.now() + appleToken.expires_in).getTime(),
-    userId: verifiedToken.sub,
-    email: verifiedToken.email,
-    emailVerified: verifiedToken.email_verified,
-    isPrivateEmail: verifiedToken.is_private_email
-  }
+/**
+ * Creates a new user record in DynamoDB
+ * @param user - The User object you want to create
+ * @param identityProviderApple - The identity provider details for Apple
+ * @notExported
+ */
+async function createUser(user: User, identityProviderApple: IdentityProviderApple) {
   const putItemParams = newUserParams(process.env.DynamoDBTableUsers, user, identityProviderApple)
   logDebug('putItem <=', putItemParams)
   const putItemResponse = await putItem(putItemParams)
   logDebug('putItem =>', putItemResponse)
-  const token = await createAccessToken(user.userId)
-  return response(context, 200, {token})
+  return putItemResponse
+}
+
+/**
+ * Registers a User via Sign in with Apple
+ * - NOTE: All User details are sourced from the identity token
+ * @notExported
+ */
+export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+  logInfo('event <=', event)
+  let requestBody
+  try {
+    requestBody = getPayloadFromEvent(event) as UserRegistration
+    validateRequest(requestBody, registerUserConstraints)
+    const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
+    const verifiedToken = await verifyAppleToken(appleToken.id_token)
+    const user = createUserFromToken(verifiedToken, requestBody.firstName, requestBody.lastName)
+    const identityProviderApple = createIdentityProviderAppleFromTokens(appleToken, verifiedToken)
+    await createUser(user, identityProviderApple)
+    const token = await createAccessToken(user.userId)
+    return response(context, 200, {token})
+  } catch (error) {
+    return lambdaErrorResponse(context, error)
+  }
 }

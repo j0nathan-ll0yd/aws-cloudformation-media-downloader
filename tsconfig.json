@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "esnext",
+    "module": "es6",
+    "target": "es6",
     "outDir": "./dist",
-    "strict": false,
+    "strict": false, // TODO: Make this true and correct the failures
     "types": ["node", "mocha"],
-    "resolveJsonModule": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    // "noImplicitAny": true, // TODO: Make this true and correct the failures
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
-    "lib": ["ES2020.Promise"]
+    "esModuleInterop": true // TODO: Remove this and correct the failures
   },
   "include": ["src/**/*"],
   "exclude": [

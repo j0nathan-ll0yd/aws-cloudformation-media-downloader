@@ -119,6 +119,6 @@
     "domainName": "zc21p8daqc.execute-api.us-west-2.amazonaws.com",
     "apiId": "zc21p8daqc"
   },
-  "body": "{  \"endpoint\": \"arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/OfflineMediaDownloader/c7acf99c-3a39-3417-91de-4d8aca6d0f4f\"}",
+  "body": "{  \"endpointArn\": \"arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/OfflineMediaDownloader/c7acf99c-3a39-3417-91de-4d8aca6d0f4f\", \"topicArn\": \"arn:aws:sns:us-west-2:203465012143:arn\"}",
   "isBase64Encoded": false
 }

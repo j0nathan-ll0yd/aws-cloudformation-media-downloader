@@ -4,10 +4,10 @@ import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import {processEventAndValidate} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 
 /**
@@ -54,6 +54,25 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
 }
 
 /**
+ * Retrieves a File from DynamoDB (if it exists)
+ * @param file - A DynamoDB File object
+ * @param userId - The UUID of the user
+ * @notExported
+ */
+async function sendFileNotification(file: DynamoDBFile, userId: string) {
+  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const sendMessageParams = {
+    MessageBody: 'FileNotification',
+    MessageAttributes: messageAttributes,
+    QueueUrl: process.env.SNSQueueUrl
+  }
+  logDebug('sendMessage <=', sendMessageParams)
+  const sendMessageResponse = await sendMessage(sendMessageParams)
+  logDebug('sendMessage =>', sendMessageResponse)
+  return sendMessageResponse
+}
+
+/**
  * Receives a webhook to download a file from Feedly.
  *
  * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
@@ -63,31 +82,22 @@ async function getFile(fileId): Promise<DynamoDBFile | undefined> {
  */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const {requestBody, statusCode, message} = processEventAndValidate(event, feedlyEventConstraints)
-  if (statusCode && message) {
-    return response(context, statusCode, message)
-  }
+  let requestBody
   try {
-    const body = requestBody as Webhook
-    const fileId = await getVideoID(body.articleURL)
+    requestBody = getPayloadFromEvent(event) as Webhook
+    validateRequest(requestBody, feedlyEventConstraints)
+    const fileId = getVideoID(requestBody.articleURL)
     const userId = getUserIdFromEvent(event as APIGatewayEvent)
     const file = await getFile(fileId)
     if (file && file.url) {
       // There needs to be a file AND a file url (to indicate it was downloaded)
-      const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
-      const sendMessageParams = {
-        MessageBody: 'FileNotification',
-        MessageAttributes: messageAttributes,
-        QueueUrl: process.env.SNSQueueUrl
-      }
-      logDebug('sendMessage <=', sendMessageParams)
-      const sendMessageResponse = await sendMessage(sendMessageParams)
-      logDebug('sendMessage =>', sendMessageResponse)
+      // If so, notify the client the file can be downloaded
+      await sendFileNotification(file, userId)
       return response(context, 204)
     }
     await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
     return response(context, 202, {status: 'Accepted'})
   } catch (error) {
-    return response(context, 500, error.message)
+    return lambdaErrorResponse(context, error)
   }
 }

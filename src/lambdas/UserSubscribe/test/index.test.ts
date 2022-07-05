@@ -1,13 +1,13 @@
 import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import chai from 'chai'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#UserSubscribe', () => {
-  const context = localFixture('Context.json')
+  const context = testContext
   let subscribeStub
   let event
   beforeEach(() => {
@@ -28,17 +28,22 @@ describe('#UserSubscribe', () => {
   it('should return an error if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(500)
-    const body = JSON.parse(output.body)
-    expect(body.error.code).to.have.string('custom-5XX-generic')
-    expect(body.error.message).to.have.string('requires configuration')
+    expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
     event.body = null
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).to.have.property('endpoint')
-    expect(body.error.message.endpoint[0]).to.have.string('is required')
+    expect(body.error.message).to.have.property('endpointArn')
+    expect(body.error.message.endpointArn[0]).to.have.string('is required')
+  })
+  it('should handle an invalid request (no topicArn)', async () => {
+    event.body = null
+    const output = await handler(event, context)
+    expect(output.statusCode).to.equal(400)
+    const body = JSON.parse(output.body)
+    expect(body.error.message).to.have.property('topicArn')
+    expect(body.error.message.topicArn[0]).to.have.string('is required')
   })
 })

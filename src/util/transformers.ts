@@ -2,8 +2,10 @@ import {PublishInput} from 'aws-sdk/clients/sns'
 import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
-import {ClientFile, DynamoDBFile, FileNotification, Metadata} from '../types/main'
+import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logDebug} from './lambda-helpers'
+import {v4 as uuidv4} from 'uuid'
+import {NotFoundError} from './errors'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -18,7 +20,30 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
       return highestVideoFormat
     }
   } catch (error) {
-    throw new Error('Unable to find format')
+    throw new NotFoundError('Unable to find acceptable video format')
+  }
+}
+
+export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
+  return {
+    userId: uuidv4(),
+    email: verifiedToken.email,
+    emailVerified: verifiedToken.email_verified,
+    firstName,
+    lastName
+  }
+}
+
+export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResponse, verifiedToken: SignInWithAppleVerifiedToken): IdentityProviderApple {
+  return {
+    accessToken: appleToken.access_token,
+    refreshToken: appleToken.refresh_token,
+    tokenType: appleToken.token_type,
+    expiresAt: new Date(Date.now() + appleToken.expires_in).getTime(),
+    userId: verifiedToken.sub,
+    email: verifiedToken.email,
+    emailVerified: verifiedToken.email_verified,
+    isPrivateEmail: verifiedToken.is_private_email
   }
 }
 
@@ -81,7 +106,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
   logDebug('thumbnails', thumbnails)
   for (const key of ['author', 'description', 'publishDate', 'title']) {
     if (!myVideoInfo.videoDetails[key]) {
-      throw new Error(`myVideoInfo missing property ${key}`)
+      throw new NotFoundError(`myVideoInfo missing property ${key}`)
     }
   }
 
