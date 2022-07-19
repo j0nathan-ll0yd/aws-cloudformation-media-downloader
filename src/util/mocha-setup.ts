@@ -11,6 +11,8 @@ export function getFixture(dir: string, file: string): object {
   return JSON.parse(fs.readFileSync(`${fixturePath}/${file}`, 'utf8'))
 }
 
+console.log("I'm running!")
+
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
 export const testContext = {
@@ -53,3 +55,5 @@ export const mochaHooks = {
     this.consoleErrorStub.restore()
   }
 }
+
+console.log("I'm done!")

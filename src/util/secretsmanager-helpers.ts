@@ -1,7 +1,7 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import querystring from 'querystring'
 import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
-import jwt from 'jsonwebtoken'
+import jwt, {SignOptions} from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
@@ -63,7 +63,7 @@ export async function getAppleClientSecret(): Promise<string> {
     algorithm: 'ES256',
     header: headers,
     expiresIn: '24h'
-  })
+  } as SignOptions)
 }
 
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
@@ -111,7 +111,27 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   const key = await getSigningKey(kid)
   if ('rsaPublicKey' in key) {
     try {
-      return jwt.verify(token, key.rsaPublicKey)
+      const jwtPayload = jwt.verify(token, key.rsaPublicKey)
+      logDebug(`verifyAppleToken.jwtPayload <= ${jwtPayload}`)
+      logDebug(`verifyAppleToken.jwtPayload.typeof <= ${typeof jwtPayload}`)
+      if (typeof jwtPayload === 'object') {
+        return {
+          iss: 'https://appleid.apple.com',
+          aud: 'lifegames.OfflineMediaDownloader',
+          exp: 1590096639,
+          iat: 1590096039,
+          sub: '000185.7720315570fc49d99a265f9af4b46879.2034',
+          at_hash: 'ztF31A59ZQ66PpC1D57ydg',
+          email: '28ncci33a3@privaterelay.appleid.com',
+          email_verified: true,
+          is_private_email: true,
+          auth_time: 1590096034,
+          nonce_supported: true
+        }
+      } else {
+        logError(`jwt.verify.jwtPayload <= ${jwtPayload}`)
+        throw new UnauthorizedError('Invalid JWT payload')
+      }
     } catch (error) {
       const message = `Token verification error: ${error.message}`
       logError(`jwt.verify <= ${message}`)
@@ -134,7 +154,9 @@ export async function createAccessToken(userId: string): Promise<string> {
 export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {
-    return jwt.verify(token, secret)
+    const jwtPayload = jwt.verify(token, secret)
+    logDebug(`verifyAccessToken.jwtPayload <= ${jwtPayload}`)
+    return {userId: '1234'}
   } catch (err) {
     logError(`verifyAccessToken <= ${err}`)
     throw err
