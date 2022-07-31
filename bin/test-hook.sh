@@ -13,5 +13,5 @@ curl -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
 -H "User-Agent: localhost@lifegames" \
 --data @./../src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json \
-$REQUEST_URL | grep . | python -m json.tool
+$REQUEST_URL | jq
 

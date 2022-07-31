@@ -15,5 +15,5 @@ curl -X POST -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
 -H "User-Agent: localhost@lifegames" \
 --data "${REQUEST_DATA}" \
-$REQUEST_URL | python -m json.tool
+$REQUEST_URL | jq
 
