@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "SNSAssumeRole" {
 }
 
 data "http" "icanhazip" {
-  url = "http://icanhazip.com"
+  url = "https://ipv4.icanhazip.com/"
 }
 
 output "api_gateway_subdomain" {

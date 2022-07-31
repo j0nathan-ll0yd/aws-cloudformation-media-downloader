@@ -53,7 +53,22 @@ npm run test-remote-hook
 ## Quick Start
 
 ```bash
+# Install system dependencies and configure
 brew install act awscli jq nvm quicktype terraform terraform-docs
+nvm install lts/gallium
+nvm use lts/gallium
+aws configure
+
+# Install Node dependencies and deploy project
+npm install
+npm run build-terraform-json
+npm run build-terraform-types
+npm run test
+npm run build
+npm run deploy
+
+# Confirm everything is working as expected
+npm run test-remote-list
 ```
 
 
