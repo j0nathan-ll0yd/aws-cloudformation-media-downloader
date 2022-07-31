@@ -29,7 +29,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 # Ensure the correct version of NodeJS (via NVM)
-nvm use lts/erbium
+nvm use lts/gallium
 
 # Install dependencies
 npm install
@@ -50,14 +50,36 @@ npm run test-remote-list
 npm run test-remote-hook
 ```
 
+## Quick Start
+
+```bash
+# Install system dependencies and configure
+brew install act awscli jq nvm quicktype terraform terraform-docs
+nvm install lts/gallium
+nvm use lts/gallium
+aws configure
+
+# Install Node dependencies and deploy project
+npm install
+npm run build-terraform-json
+npm run build-terraform-types
+npm run test
+npm run build
+npm run deploy
+
+# Confirm everything is working as expected
+npm run test-remote-list
+```
+
+
 ## Installation
 
 * Install the [Node Version Manager](https://github.com/creationix/nvm). This will allow you to download the specific version of NodeJS supported by AWS Lambda (8.10).
 
 ```bash
 brew install nvm
-nvm install lts/erbium
-nvm use lts/erbium
+nvm install lts/gallium
+nvm use lts/gallium
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
@@ -83,6 +105,12 @@ brew install quicktype
 
 ```bash
 brew install terraform-docs
+```
+
+* Install [jq](https://stedolan.github.io/jq/) (used for JSON parsing)
+
+```bash
+brew install jq
 ```
 
 * Install [act](https://github.com/nektos/act) (used for running Github Actions locally)

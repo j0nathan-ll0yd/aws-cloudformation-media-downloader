@@ -12,4 +12,4 @@ echo "Calling ${REQUEST_URL}"
 curl -v -H "Content-Type: application/json" \
 -H "User-Agent: localhost@lifegames" \
 -H "Accept: application/json" \
-$REQUEST_URL | python -m json.tool
+$REQUEST_URL | jq
