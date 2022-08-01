@@ -44,7 +44,7 @@ export function scanForFileParams(tableName: string): DocumentClient.ScanInput {
       '#FN': 'url'
     },
     ExpressionAttributeValues: {
-      ':aa': Date.now().toString()
+      ':aa': parseInt(Date.now().toString(), 10)
     },
     FilterExpression: '#AA <= :aa AND attribute_not_exists(#FN)',
     ProjectionExpression: '#AA, #FID',
@@ -124,7 +124,7 @@ export function getUserDeviceByUserIdParams(tableName: string, userId: string): 
 export function newFileParams(tableName: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
     ExpressionAttributeNames: {'#AA': 'availableAt'},
-    ExpressionAttributeValues: {':aa': Date.now().toString()},
+    ExpressionAttributeValues: {':aa': parseInt(Date.now().toString(), 10)},
     Key: {fileId: fileId},
     ReturnValues: 'ALL_OLD',
     UpdateExpression: 'SET #AA = if_not_exists(#AA, :aa)',

@@ -31,6 +31,9 @@ export async function handler(event: SQSEvent): Promise<void> {
       const notificationType = record.body
       const userId = record.messageAttributes.userId.stringValue
       const userResponse = await getUserDeviceByUserId(userId)
+      if (userResponse.Count == 0) {
+        return
+      }
       // There will always be 1 result; but with the possibility of multiple devices
       for (const userDevice of userResponse.Items[0].userDevice) {
         const targetArn = userDevice.endpointArn
