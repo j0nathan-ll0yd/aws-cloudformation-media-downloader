@@ -94,7 +94,7 @@ resource "aws_iam_role" "ApiGatewayCloudwatchRole" {
 data "aws_iam_policy_document" "ApiGatewayCloudwatchRole" {
   statement {
     actions = ["sts:AssumeRole"]
-    effect = "Allow"
+    effect  = "Allow"
     principals {
       type        = "Service"
       identifiers = ["apigateway.amazonaws.com"]

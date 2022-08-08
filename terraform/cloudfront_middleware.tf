@@ -25,11 +25,6 @@ resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_cloudwatch_log_group" "CloudfrontMiddleware" {
-  name              = "/aws/lambda/${aws_lambda_function.CloudfrontMiddleware.function_name}"
-  retention_in_days = 14
-}
-
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
@@ -51,19 +46,6 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path
   source_code_hash = data.archive_file.CloudfrontMiddleware.output_base64sha256
-}
-
-resource "aws_s3_bucket" "CloudfrontMiddlewareProduction" {
-  bucket = "lifegames-cloudfront-middleware-production"
-
-  tags = {
-    Name = "CloudfrontMiddlewareProduction"
-  }
-}
-
-resource "aws_s3_bucket_acl" "CloudfrontMiddlewareProductionAcl" {
-  bucket = aws_s3_bucket.CloudfrontMiddlewareProduction.id
-  acl    = "private"
 }
 
 resource "aws_cloudfront_distribution" "Production" {
@@ -105,10 +87,6 @@ resource "aws_cloudfront_distribution" "Production" {
       http_port              = 80
       https_port             = 443
     }
-  }
-  logging_config {
-    include_cookies = true
-    bucket          = aws_s3_bucket.CloudfrontMiddlewareProduction.bucket_domain_name
   }
   ordered_cache_behavior {
     lambda_function_association {
@@ -158,15 +136,5 @@ resource "aws_cloudfront_distribution" "Production" {
   }
   viewer_certificate {
     cloudfront_default_certificate = true
-  }
-}
-
-resource "aws_cloudfront_monitoring_subscription" "CloudfrontMiddleware" {
-  distribution_id = aws_cloudfront_distribution.Production.id
-
-  monitoring_subscription {
-    realtime_metrics_subscription_config {
-      realtime_metrics_subscription_status = "Enabled"
-    }
   }
 }
