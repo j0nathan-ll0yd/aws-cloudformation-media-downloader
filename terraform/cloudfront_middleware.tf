@@ -53,6 +53,19 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   source_code_hash = data.archive_file.CloudfrontMiddleware.output_base64sha256
 }
 
+resource "aws_s3_bucket" "CloudfrontMiddlewareProduction" {
+  bucket = "lifegames-cloudfront-middleware-production"
+
+  tags = {
+    Name = "CloudfrontMiddlewareProduction"
+  }
+}
+
+resource "aws_s3_bucket_acl" "CloudfrontMiddlewareProductionAcl" {
+  bucket = aws_s3_bucket.CloudfrontMiddlewareProduction.id
+  acl    = "private"
+}
+
 resource "aws_cloudfront_distribution" "Production" {
   // This comment needs to match the associated lambda function
   comment = aws_lambda_function.CloudfrontMiddleware.function_name
@@ -92,6 +105,10 @@ resource "aws_cloudfront_distribution" "Production" {
       http_port              = 80
       https_port             = 443
     }
+  }
+  logging_config {
+    include_cookies = true
+    bucket          = aws_s3_bucket.CloudfrontMiddlewareProduction.bucket_domain_name
   }
   ordered_cache_behavior {
     lambda_function_association {
@@ -141,5 +158,15 @@ resource "aws_cloudfront_distribution" "Production" {
   }
   viewer_certificate {
     cloudfront_default_certificate = true
+  }
+}
+
+resource "aws_cloudfront_monitoring_subscription" "CloudfrontMiddleware" {
+  distribution_id = aws_cloudfront_distribution.Production.id
+
+  monitoring_subscription {
+    realtime_metrics_subscription_config {
+      realtime_metrics_subscription_status = "Enabled"
+    }
   }
 }

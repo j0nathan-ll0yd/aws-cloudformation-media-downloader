@@ -64,9 +64,9 @@ resource "aws_lambda_function" "ListFiles" {
       DynamoTableFiles       = aws_dynamodb_table.Files.name
       DynamoTableUserFiles   = aws_dynamodb_table.UserFiles.name
       DefaultFileSize        = 436743
-      DefaultFileName        = aws_s3_bucket_object.DefaultFile.key
-      DefaultFileUrl         = "https://${aws_s3_bucket_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_bucket_object.DefaultFile.key}"
-      DefaultFileContentType = aws_s3_bucket_object.DefaultFile.content_type
+      DefaultFileName        = aws_s3_object.DefaultFile.key
+      DefaultFileUrl         = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
+      DefaultFileContentType = aws_s3_object.DefaultFile.content_type
     }
   }
 }
@@ -111,8 +111,8 @@ data "local_file" "DefaultFile" {
   filename = "${path.module}/../static/videos/default-file.mp4"
 }
 
-resource "aws_s3_bucket_object" "DefaultFile" {
-  bucket       = aws_s3_bucket.Files.bucket
+resource "aws_s3_object" "DefaultFile" {
+  bucket       = aws_s3_bucket.Files.id
   content_type = "video/mp4"
   key          = "default-file.mp4"
   source       = data.local_file.DefaultFile.filename

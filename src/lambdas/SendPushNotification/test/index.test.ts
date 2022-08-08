@@ -29,4 +29,14 @@ describe('#SendPushNotification', () => {
     queryStub.rejects('Error')
     expect(handler(event)).to.be.rejectedWith(Error)
   })
+  it('should exit gracefully if no devices exist', async () => {
+    queryStub.returns({
+      Items: [],
+      Count: 0,
+      ScannedCount: 0
+    })
+    const notificationsSent = await handler(event)
+    expect(notificationsSent).to.be.undefined
+    expect(publishSnsEventStub.notCalled)
+  })
 })
