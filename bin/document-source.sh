@@ -23,7 +23,7 @@ fi
 rm "${test_file_path}"
 
 # generate the documentation
-typedoc_command="${bin_dir}/../node_modules/typedoc/bin/typedoc"
+typedoc_command="${bin_dir}/../node_modules/typedoc/bin/typedoc --entryPointStrategy expand"
 eval $typedoc_command
 
 # retrieve or rebuild the files

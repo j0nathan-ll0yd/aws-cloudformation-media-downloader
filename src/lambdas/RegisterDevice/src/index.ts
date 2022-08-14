@@ -42,7 +42,6 @@ async function getUserDevice(table: string, userId: string, userDevice: UserDevi
 /**
  * Unsubscribes an endpoint (a client device) to an SNS topic
  * @param subscriptionArn - The SubscriptionArn of a endpoint+topic
- * @notExported
  */
 export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
   logDebug('unsubscribe <=')

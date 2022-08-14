@@ -29,6 +29,7 @@ async function getFileIdsByUser(userId: string) {
   logDebug('query =>', userFilesResponse)
   return userFilesResponse
 }
+
 /**
  * Returns a list of files available to the user.
  *

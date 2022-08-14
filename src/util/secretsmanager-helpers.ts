@@ -10,6 +10,11 @@ let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
 
+/**
+ * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
+ * @returns SignInWithAppleConfig - The configuration object
+ * @notExported
+ */
 export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
@@ -21,6 +26,11 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   return APPLE_CONFIG
 }
 
+/**
+ * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
 export async function getApplePrivateKey(): Promise<string> {
   if (APPLE_PRIVATEKEY) {
     return APPLE_PRIVATEKEY
@@ -32,6 +42,11 @@ export async function getApplePrivateKey(): Promise<string> {
   return APPLE_PRIVATEKEY
 }
 
+/**
+ * Retrieves the private key for user-based login via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
 export async function getServerPrivateKey(): Promise<string> {
   if (PRIVATEKEY !== undefined) {
     return PRIVATEKEY
@@ -46,6 +61,11 @@ export async function getServerPrivateKey(): Promise<string> {
   return PRIVATEKEY
 }
 
+/**
+ * Creates [a client secret](https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens) for Sign In With Apple
+ * @returns string - A JSON Web Token (JWT)
+ * @notExported
+ */
 export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
@@ -65,6 +85,12 @@ export async function getAppleClientSecret(): Promise<string> {
   } as SignOptions)
 }
 
+/**
+ * Validates an authorization grant code for Sign In With Apple
+ * @param authCode - An authorization grant code.
+ * @returns AppleTokenResponse - An Apple [TokenResponse](https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse)
+ * @notExported
+ */
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
   logInfo('validateAuthCodeForToken')
   logDebug('getAppleClientSecret')
@@ -93,11 +119,18 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   return data
 }
 
+/**
+ * Fetches Apple's public key for verifying token signature, then verifies.
+ * Used during first-time registration or login.
+ * @param token - A JSON Web Token (JWT)
+ * @returns SignInWithAppleVerifiedToken - A verified token for Sign In With Apple.
+ * @notExported
+ */
 export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
   try {
-    const decodedPayload = jwt.decode(token, { complete: true })
+    const decodedPayload = jwt.decode(token, {complete: true})
     logDebug('verifyAppleToken.decodedPayload', decodedPayload)
     const kid = decodedPayload.header.kid
 
@@ -138,6 +171,11 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   }
 }
 
+/**
+ * Creates an access token using server encryption key for user-login.
+ * @param userId - The userId to tokenize.
+ * @returns string - A JSON Web Token (JWT)
+ */
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
   return jwt.sign({userId}, secret, {
@@ -145,6 +183,12 @@ export async function createAccessToken(userId: string): Promise<string> {
   })
 }
 
+/**
+ * Verifies an access token using server encryption key (user-login).
+ * @param token - A JSON Web Token (JWT)
+ * @returns ServerVerifiedToken - A verified token for user login.
+ * @notExported
+ */
 export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {
