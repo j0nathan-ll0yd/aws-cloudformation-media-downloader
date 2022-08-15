@@ -7,19 +7,25 @@ import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
-import JwksRsa from "jwks-rsa"
+import JwksRsa from 'jwks-rsa'
 const expect = chai.expect
+
 // Randomly generated key; not actually used anywhere (safe)
 // openssl ecparam -name prime256v1 -genkey -noout -out private.ec.key
-const fakePrivateKey = [
-  '-----BEGIN EC PRIVATE KEY-----',
-  'MHcCAQEEIF8qMhsznLgSjN49y4F1cmJZapGowo+PA33LR03WqIhroAoGCCqGSM49',
-  'AwEHoUQDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaFjHVKbDT+efytL6HYw+IWsMV/',
-  'X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==',
-  '-----END EC PRIVATE KEY-----'
-].join('\n')
 // openssl ec -in private.ec.key -pubout -out public.ec.key
-const fakePublicKey = ['-----BEGIN PUBLIC KEY-----', 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF', 'jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==', '-----END PUBLIC KEY-----'].join('\n')
+const fakePrivateKey = `
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIF8qMhsznLgSjN49y4F1cmJZapGowo+PA33LR03WqIhroAoGCCqGSM49
+AwEHoUQDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaFjHVKbDT+efytL6HYw+IWsMV/
+X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
+-----END EC PRIVATE KEY-----
+`
+const fakePublicKey = `
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF
+jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
+-----END PUBLIC KEY-----
+`
 
 const fakeTokenResponse = {
   access_token: 'accessToken',
@@ -46,13 +52,35 @@ const fakeTokenPayload: SignInWithAppleVerifiedToken = {
   nonce_supported: true
 }
 
+const fakeApplePublicKey = `
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH
+c3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY
+KwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q
+PkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC
+8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829
+eO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx
+MwIDAQAB
+-----END PUBLIC KEY-----
+`
+
+const fakeAppleRsaPublicKey = `
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH
+c3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY
+KwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q
+PkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC
+8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829
+eO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx
+MwIDAQAB
+-----END PUBLIC KEY-----
+`
+
 const fakeKeyPayload = {
   kid: 'W6WcOKB',
   alg: 'RS256',
-  publicKey:
-    '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH\nc3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY\nKwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q\nPkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC\n8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829\neO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx\nMwIDAQAB\n-----END PUBLIC KEY-----\n',
-  rsaPublicKey:
-    '-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH\nc3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY\nKwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q\nPkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC\n8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829\neO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx\nMwIDAQAB\n-----END PUBLIC KEY-----\n'
+  publicKey: fakeApplePublicKey,
+  rsaPublicKey: fakeAppleRsaPublicKey
 }
 
 describe('#Util:SecretsManager', () => {

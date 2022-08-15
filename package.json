@@ -8,7 +8,7 @@
   },
   "scripts": {
     "check-types": "tsc",
-    "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js --config config/.nycrc.json npm run test",
+    "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js npm run test",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "build": "./node_modules/webpack-cli/bin/cli.js",
