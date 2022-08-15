@@ -18,10 +18,10 @@ export function getPayloadFromEvent(event: APIGatewayEvent): Webhook | DeviceReg
   if ('body' in event) {
     try {
       const requestBody = JSON.parse(event.body)
-      logDebug('processEventAndValidate.event.body <=', event.body)
+      logDebug('getPayloadFromEvent.event.body <=', event.body)
       return requestBody
     } catch (error) {
-      logError('processEventAndValidate =>', `Invalid JSON: ${error}`)
+      logError('getPayloadFromEvent =>', `Invalid JSON: ${error}`)
       throw new ValidationError('Request body must be valid JSON')
     }
   }

@@ -1,5 +1,4 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import querystring from 'querystring'
 import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt, {SignOptions} from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
@@ -11,6 +10,11 @@ let APPLE_CONFIG
 let APPLE_PRIVATEKEY
 let PRIVATEKEY
 
+/**
+ * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
+ * @returns SignInWithAppleConfig - The configuration object
+ * @notExported
+ */
 export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
@@ -22,6 +26,11 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   return APPLE_CONFIG
 }
 
+/**
+ * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
 export async function getApplePrivateKey(): Promise<string> {
   if (APPLE_PRIVATEKEY) {
     return APPLE_PRIVATEKEY
@@ -33,8 +42,13 @@ export async function getApplePrivateKey(): Promise<string> {
   return APPLE_PRIVATEKEY
 }
 
+/**
+ * Retrieves the private key for user-based login via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
 export async function getServerPrivateKey(): Promise<string> {
-  if (PRIVATEKEY) {
+  if (PRIVATEKEY !== undefined) {
     return PRIVATEKEY
   }
   // This SecretId has to map to the CloudFormation file (LoginUser)
@@ -47,6 +61,11 @@ export async function getServerPrivateKey(): Promise<string> {
   return PRIVATEKEY
 }
 
+/**
+ * Creates [a client secret](https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens) for Sign In With Apple
+ * @returns string - A JSON Web Token (JWT)
+ * @notExported
+ */
 export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
@@ -66,6 +85,12 @@ export async function getAppleClientSecret(): Promise<string> {
   } as SignOptions)
 }
 
+/**
+ * Validates an authorization grant code for Sign In With Apple
+ * @param authCode - An authorization grant code.
+ * @returns AppleTokenResponse - An Apple [TokenResponse](https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse)
+ * @notExported
+ */
 export async function validateAuthCodeForToken(authCode: string): Promise<AppleTokenResponse> {
   logInfo('validateAuthCodeForToken')
   logDebug('getAppleClientSecret')
@@ -83,7 +108,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   const options: AxiosRequestConfig = {
     method: 'POST',
     url: 'https://appleid.apple.com/auth/token',
-    data: querystring.stringify(requestData),
+    data: new URLSearchParams(requestData).toString(),
     headers: {'Content-Type': 'application/x-www-form-urlencoded'}
   }
   logDebug('axios <=', options)
@@ -94,42 +119,63 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   return data
 }
 
+/**
+ * Fetches Apple's public key for verifying token signature, then verifies.
+ * Used during first-time registration or login.
+ * @param token - A JSON Web Token (JWT)
+ * @returns SignInWithAppleVerifiedToken - A verified token for Sign In With Apple.
+ * @notExported
+ */
 export async function verifyAppleToken(token: string): Promise<SignInWithAppleVerifiedToken> {
   logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
-  const decodedPayload = jwt.decode(token, {complete: true})
-  const kid = decodedPayload.header.kid
+  try {
+    const decodedPayload = jwt.decode(token, {complete: true})
+    logDebug('verifyAppleToken.decodedPayload', decodedPayload)
+    const kid = decodedPayload.header.kid
 
-  // Verify the nonce for the authentication
-  // Verify that the iss field contains https://appleid.apple.com
-  // Verify that the aud field is the developer’s client_id
-  // Verify that the time is earlier than the exp value of the token
+    // Verify the nonce for the authentication
+    // Verify that the iss field contains https://appleid.apple.com
+    // Verify that the aud field is the developer’s client_id
+    // Verify that the time is earlier than the exp value of the token
 
-  // lookup Apple's public keys (via JSON) and convert to a proper key file
-  const client = jwksClient({jwksUri: 'https://appleid.apple.com/auth/keys'})
-  const getSigningKey = promisify(client.getSigningKey)
-  const key = await getSigningKey(kid)
-  if ('rsaPublicKey' in key) {
-    try {
-      const jwtPayload = jwt.verify(token, key.rsaPublicKey) as SignInWithAppleVerifiedToken
-      logDebug('verifyAppleToken.jwtPayload <=', jwtPayload)
-      logDebug(`verifyAppleToken.jwtPayload.typeof <= ${typeof jwtPayload}`)
-      if (typeof jwtPayload === 'string') {
-        throw new UnauthorizedError('Invalid JWT payload')
+    // lookup Apple's public keys (via JSON) and convert to a proper key file
+    logInfo('verifyAppleToken.jwksClient')
+    const client = jwksClient({jwksUri: 'https://appleid.apple.com/auth/keys'})
+    const getSigningKey = promisify(client.getSigningKey)
+    const key = await getSigningKey(kid)
+    logDebug('verifyAppleToken.key', key)
+    if ('rsaPublicKey' in key) {
+      try {
+        const jwtPayload = jwt.verify(token, key.rsaPublicKey) as SignInWithAppleVerifiedToken
+        logDebug('verifyAppleToken.jwtPayload <=', jwtPayload)
+        logDebug(`verifyAppleToken.jwtPayload.typeof <= ${typeof jwtPayload}`)
+        if (typeof jwtPayload === 'string') {
+          throw new UnauthorizedError('Invalid JWT payload')
+        }
+        return jwtPayload
+      } catch (error) {
+        const message = `Token verification error: ${error.message}`
+        logError(`jwt.verify <= ${message}`)
+        throw new UnauthorizedError(message)
       }
-      return jwtPayload
-    } catch (error) {
-      const message = `Token verification error: ${error.message}`
+    } else {
+      const message = 'rsaPublicKey not present in payload'
       logError(`jwt.verify <= ${message}`)
       throw new UnauthorizedError(message)
     }
-  } else {
-    const message = 'rsaPublicKey not present in payload'
+  } catch (err) {
+    const message = 'Invalid token'
     logError(`jwt.verify <= ${message}`)
     throw new UnauthorizedError(message)
   }
 }
 
+/**
+ * Creates an access token using server encryption key for user-login.
+ * @param userId - The userId to tokenize.
+ * @returns string - A JSON Web Token (JWT)
+ */
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
   return jwt.sign({userId}, secret, {
@@ -137,6 +183,12 @@ export async function createAccessToken(userId: string): Promise<string> {
   })
 }
 
+/**
+ * Verifies an access token using server encryption key (user-login).
+ * @param token - A JSON Web Token (JWT)
+ * @returns ServerVerifiedToken - A verified token for user login.
+ * @notExported
+ */
 export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {

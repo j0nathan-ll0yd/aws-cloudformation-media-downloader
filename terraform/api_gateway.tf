@@ -86,11 +86,28 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
   }
 }
 
-resource "aws_iam_role" "GatewayLogRole" {
-  name               = "GatewayLogRole"
-  assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+resource "aws_iam_role" "ApiGatewayCloudwatchRole" {
+  name               = "ApiGatewayCloudwatchRole"
+  assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatchRole.json
+}
+
+data "aws_iam_policy_document" "ApiGatewayCloudwatchRole" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "ApiGatewayCloudwatchRolePolicy" {
+  name   = "ApiGatewayCloudwatchRolePolicy"
+  role   = aws_iam_role.ApiGatewayCloudwatchRole.id
+  policy = data.aws_iam_policy_document.CommonLambdaLogging.json
 }
 
 resource "aws_api_gateway_account" "Main" {
-  cloudwatch_role_arn = aws_iam_role.GatewayLogRole.arn
+  cloudwatch_role_arn = aws_iam_role.ApiGatewayCloudwatchRole.arn
 }

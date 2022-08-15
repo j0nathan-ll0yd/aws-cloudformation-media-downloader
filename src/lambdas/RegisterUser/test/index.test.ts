@@ -39,4 +39,9 @@ describe('#RegisterUser', () => {
     const body = JSON.parse(output.body)
     expect(body.body.token).to.be.a('string')
   })
+  it('should handle an invalid payload', async () => {
+    event.body = ''
+    const output = await handler(event, context)
+    expect(output.statusCode).to.equal(400)
+  })
 })

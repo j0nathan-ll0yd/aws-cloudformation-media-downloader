@@ -27,7 +27,7 @@
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "test-remote-userSubscribe": "./bin/test-userSubscribe.sh",
     "test-setup-config": "cat tsconfig.json | sed 's/\"module\": \"es6\"/\"module\": \"commonjs\"/g' tsconfig.json > tsconfig.testing.json",
-    "test-setup-mocha": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha.js",
+    "test-setup-mocha": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha.js --config config/.mocharc.yml",
     "deploy": "cd terraform && terraform apply -auto-approve"
   },
   "author": "Jonathan Lloyd",

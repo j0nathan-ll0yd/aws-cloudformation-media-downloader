@@ -1,5 +1,9 @@
 resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
+}
+
+resource "aws_s3_bucket_acl" "Files" {
+  bucket = aws_s3_bucket.Files.id
   acl    = "public-read"
 }
 

@@ -25,11 +25,6 @@ resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_cloudwatch_log_group" "CloudfrontMiddleware" {
-  name              = "/aws/lambda/${aws_lambda_function.CloudfrontMiddleware.function_name}"
-  retention_in_days = 14
-}
-
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
