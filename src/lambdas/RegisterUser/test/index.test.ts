@@ -1,6 +1,6 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import chai from 'chai'
+import * as chai from 'chai'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'

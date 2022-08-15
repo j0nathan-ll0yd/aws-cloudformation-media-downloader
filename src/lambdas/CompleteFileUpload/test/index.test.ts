@@ -3,7 +3,7 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as S3 from '../../../lib/vendor/AWS/S3'
 import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
-import chai from 'chai'
+import * as chai from 'chai'
 import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)

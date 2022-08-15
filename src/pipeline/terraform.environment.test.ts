@@ -1,8 +1,8 @@
 import * as fs from 'fs'
-import chai from 'chai'
+import * as chai from 'chai'
 import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
-import Log from 'debug-level'
+import * as Log from 'debug-level'
 const log = new Log(__filename.slice(__dirname.length + 1, -3))
 
 // IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE

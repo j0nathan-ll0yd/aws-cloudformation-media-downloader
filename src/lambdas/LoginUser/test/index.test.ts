@@ -1,5 +1,5 @@
 import * as sinon from 'sinon'
-import chai from 'chai'
+import * as chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'

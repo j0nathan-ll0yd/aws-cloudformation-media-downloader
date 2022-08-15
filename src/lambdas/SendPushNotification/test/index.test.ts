@@ -2,7 +2,7 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import {getFixture} from '../../../util/mocha-setup'
-import chai from 'chai'
+import * as chai from 'chai'
 import {handler} from '../src'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)

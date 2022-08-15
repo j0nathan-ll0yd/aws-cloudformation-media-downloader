@@ -1,13 +1,14 @@
-import chai from 'chai'
+import * as chai from 'chai'
 import {createAccessToken, getAppleClientSecret, getAppleConfig, getApplePrivateKey, getServerPrivateKey, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} from './secretsmanager-helpers'
-import jwt, {JsonWebTokenError} from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
+import {JsonWebTokenError} from 'jsonwebtoken'
 import * as sinon from 'sinon'
 import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
-import JwksRsa from 'jwks-rsa'
+import * as JwksRsa from 'jwks-rsa'
 const expect = chai.expect
 
 // Randomly generated key; not actually used anywhere (safe)

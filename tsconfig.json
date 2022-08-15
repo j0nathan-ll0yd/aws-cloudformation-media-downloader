@@ -10,8 +10,7 @@
     "noUnusedParameters": true,
     // "noImplicitAny": true, // TODO: Make this true and correct the failures
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true // TODO: Remove this and correct the failures
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
   "exclude": [

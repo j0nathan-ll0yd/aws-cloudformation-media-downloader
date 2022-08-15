@@ -3,7 +3,7 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
-import chai from 'chai'
+import * as chai from 'chai'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()

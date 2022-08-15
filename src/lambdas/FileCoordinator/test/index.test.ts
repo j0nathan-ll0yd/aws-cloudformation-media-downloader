@@ -1,7 +1,7 @@
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
-import chai from 'chai'
+import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 const expect = chai.expect

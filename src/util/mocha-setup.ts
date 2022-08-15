@@ -1,7 +1,7 @@
-import chai from 'chai'
-import chaiAsPromised from 'chai-as-promised'
-import fs from 'fs'
-import path from 'path'
+import * as chai from 'chai'
+import * as chaiAsPromised from 'chai-as-promised'
+import * as fs from 'fs'
+import * as path from 'path'
 import * as sinon from 'sinon'
 chai.use(chaiAsPromised)
 
