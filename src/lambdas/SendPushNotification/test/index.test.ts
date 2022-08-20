@@ -4,13 +4,14 @@ import * as SNS from '../../../lib/vendor/AWS/SNS'
 import {getFixture} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
+import {SQSEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#SendPushNotification', () => {
-  let event
-  let publishSnsEventStub
-  let queryStub
+  let event: SQSEvent
+  let publishSnsEventStub: sinon.SinonStub
+  let queryStub: sinon.SinonStub
   beforeEach(() => {
     event = localFixture('SQSEvent.json')
     publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent').returns(localFixture('publishSnsEvent-200-OK.json'))

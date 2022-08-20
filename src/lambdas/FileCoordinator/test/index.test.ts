@@ -11,8 +11,8 @@ describe('#FileCoordinator', () => {
   process.env.DynamoDBTableFiles = 'Files'
   const context = testContext
   const event = localFixture('ScheduledEvent.json')
-  let scanStub
-  let startExecutionStub
+  let scanStub: sinon.SinonStub
+  let startExecutionStub: sinon.SinonStub
   beforeEach(() => {
     scanStub = sinon.stub(DynamoDB, 'scan')
     startExecutionStub = sinon.stub(StepFunctions, 'startExecution')

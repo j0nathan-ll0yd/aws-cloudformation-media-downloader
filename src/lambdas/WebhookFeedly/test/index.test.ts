@@ -4,15 +4,16 @@ import * as SQS from '../../../lib/vendor/AWS/SQS'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#WebhookFeedly', () => {
   const context = testContext
-  let event
-  let queryStub
-  let sendMessageStub
-  let updateItemStub
+  let event: APIGatewayEvent
+  let queryStub: sinon.SinonStub
+  let sendMessageStub: sinon.SinonStub
+  let updateItemStub: sinon.SinonStub
   beforeEach(() => {
     event = localFixture('APIGatewayEvent.json')
     queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-204-NoContent.json'))

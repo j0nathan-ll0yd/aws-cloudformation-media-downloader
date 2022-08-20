@@ -12,8 +12,8 @@ describe('#CompleteFileUpload', () => {
   const event = localFixture('completeFileUpload-200-OK.json')
   const completeMultipartUploadResponse = localFixture('completeMultipartUpload-200-OK.json')
   const updateItemResponse = localFixture('updateItem-200-OK.json')
-  let completeMultipartUploadStub
-  let updateItemStub
+  let completeMultipartUploadStub: sinon.SinonStub
+  let updateItemStub: sinon.SinonStub
   beforeEach(() => {
     completeMultipartUploadStub = sinon.stub(S3, 'completeMultipartUpload')
     updateItemStub = sinon.stub(DynamoDB, 'updateItem')

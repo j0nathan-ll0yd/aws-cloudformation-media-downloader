@@ -18,10 +18,10 @@ describe('#StartFileUpload', () => {
     'content-type': 'video/mp4'
   }
   const createMultipartUploadResponse = localFixture('createMultipartUpload-200-OK.json')
-  let mock
-  let fetchVideoInfoStub
-  let createMultipartUploadStub
-  let updateItemStub
+  let mock: MockAdapter
+  let fetchVideoInfoStub: sinon.SinonStub
+  let createMultipartUploadStub: sinon.SinonStub
+  let updateItemStub: sinon.SinonStub
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createMultipartUploadStub = sinon.stub(S3, 'createMultipartUpload')

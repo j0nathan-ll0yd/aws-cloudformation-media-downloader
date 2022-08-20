@@ -3,6 +3,7 @@ import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 import {defaultFile} from '../../../util/constants'
+import {DynamoDBFile} from '../../../types/main'
 
 /**
  * Returns an array of Files, based on a list of File IDs
@@ -40,7 +41,7 @@ async function getFileIdsByUser(userId: string) {
  */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const myResponse = {contents: [], keyCount: 0}
+  const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   let userId
   try {
     userId = getUserIdFromEvent(event as APIGatewayEvent)
@@ -55,7 +56,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     const userFilesResponse = await getFileIdsByUser(userId)
     if (userFilesResponse.Count > 0) {
       const fileResponse = await getFilesById(userFilesResponse.Items[0].fileId.values)
-      myResponse.contents = fileResponse.Responses[process.env.DynamoTableFiles].filter((file) => file.url)
+      myResponse.contents = fileResponse.Responses[process.env.DynamoTableFiles].filter((file: DynamoDBFile) => file.url) as DynamoDBFile[]
       myResponse.keyCount = myResponse.contents.length
     }
     return response(context, 200, myResponse)

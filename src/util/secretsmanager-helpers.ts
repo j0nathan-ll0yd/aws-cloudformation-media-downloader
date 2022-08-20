@@ -7,9 +7,9 @@ import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
-let APPLE_CONFIG
-let APPLE_PRIVATEKEY
-let PRIVATEKEY
+let APPLE_CONFIG: SignInWithAppleConfig
+let APPLE_PRIVATEKEY: string
+let PRIVATEKEY: string
 
 /**
  * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
@@ -71,8 +71,7 @@ export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
   const headers = {
-    kid: config.key_id,
-    typ: undefined
+    kid: config.key_id
   }
   const claims = {
     iss: config.team_id,
@@ -115,7 +114,7 @@ export async function validateAuthCodeForToken(authCode: string): Promise<AppleT
   logDebug('axios <=', options)
   const response = await axios(options)
   const {status, data} = response
-  logDebug('axios =>', status)
+  logDebug('axios =>', status.toString())
   logDebug('axios =>', data)
   return data
 }

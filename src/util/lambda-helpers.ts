@@ -124,7 +124,7 @@ export function lambdaErrorResponse(context: Context, error: Error): APIGatewayP
   }
 }
 
-function stringify(stringOrObject) {
+function stringify(stringOrObject: object | string) {
   if (typeof stringOrObject === 'object') {
     stringOrObject = JSON.stringify(stringOrObject, null, 2)
   }
@@ -132,17 +132,17 @@ function stringify(stringOrObject) {
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export function logInfo(message: string, stringOrObject?: string | object | number): void {
+export function logInfo(message: string, stringOrObject?: string | object): void {
   console.info(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export function logDebug(message: string, stringOrObject?: string | object | number): void {
+export function logDebug(message: string, stringOrObject?: string | object): void {
   console.log(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export function logError(message: string, stringOrObject?: string | object | number): void {
+export function logError(message: string, stringOrObject?: string | object): void {
   console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 

@@ -13,7 +13,11 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
     }
     if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       ExpressionAttributeNames['#' + property] = property
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       ExpressionAttributeValues[':' + property] = item[property]
     }
   }

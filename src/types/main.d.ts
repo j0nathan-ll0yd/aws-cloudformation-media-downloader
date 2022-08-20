@@ -39,6 +39,7 @@ interface UploadPartEvent {
 }
 
 interface CompleteFileUploadEvent {
+  partNumber?: number
   bucket: string
   bytesRemaining: number
   fileId: string
@@ -115,7 +116,8 @@ interface UserLogin {
 }
 
 interface UserSubscribe {
-  endpoint: string
+  endpointArn: string
+  topicArn: string
 }
 
 interface User {

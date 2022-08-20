@@ -12,11 +12,11 @@ const localFixture = getFixture.bind(null, __dirname)
 describe('#RegisterUser', () => {
   const event = localFixture('APIGatewayEvent.json')
   const context = testContext
-  let createAccessTokenStub
-  let mock
-  let putItemStub
-  let validateAuthCodeForTokenStub
-  let verifyAppleTokenStub
+  let createAccessTokenStub: sinon.SinonStub
+  let mock: MockAdapter
+  let putItemStub: sinon.SinonStub
+  let validateAuthCodeForTokenStub: sinon.SinonStub
+  let verifyAppleTokenStub: sinon.SinonStub
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))

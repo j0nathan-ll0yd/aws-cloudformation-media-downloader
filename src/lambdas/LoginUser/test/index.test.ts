@@ -4,16 +4,17 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#LoginUser', () => {
   const context = testContext
-  let createAccessTokenStub
-  let event
-  let scanStub
-  let validateAuthCodeForTokenStub
-  let verifyAppleTokenStub
+  let createAccessTokenStub: sinon.SinonStub
+  let event: APIGatewayEvent
+  let scanStub: sinon.SinonStub
+  let validateAuthCodeForTokenStub: sinon.SinonStub
+  let verifyAppleTokenStub: sinon.SinonStub
   beforeEach(() => {
     createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
     event = localFixture('APIGatewayEvent.json')
@@ -51,7 +52,7 @@ describe('#LoginUser', () => {
     expect(body.error.message).to.equal('Duplicate user detected')
   })
   it('should reject an invalid request', async () => {
-    event.body = {}
+    event.body = 'not-JSON'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
   })

@@ -2,6 +2,7 @@ export const defaultFile = {
   availableAt: Date.now(),
   size: parseInt(process.env.DefaultFileSize, 10),
   authorName: 'Lifegames',
+  description: 'Description',
   fileId: 'default',
   publishDate: new Date().toISOString(),
   key: process.env.DefaultFileName,

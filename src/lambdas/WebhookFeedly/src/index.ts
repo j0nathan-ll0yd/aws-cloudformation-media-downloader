@@ -15,7 +15,7 @@ import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/t
  * @param fileId - The unique file identifier
  * @notExported
  */
-async function addFile(fileId) {
+async function addFile(fileId: string) {
   const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
   logDebug('addFile.updateItem <=', params)
   const updateResponse = await updateItem(params)
@@ -29,7 +29,7 @@ async function addFile(fileId) {
  * @param userId - The UUID of the user
  * @notExported
  */
-async function associateFileToUser(fileId, userId) {
+async function associateFileToUser(fileId: string, userId: string) {
   const params = userFileParams(process.env.DynamoDBTableUserFiles, userId, fileId)
   logDebug('associateFileToUser.updateItem <=', params)
   const updateResponse = await updateItem(params)
@@ -42,7 +42,7 @@ async function associateFileToUser(fileId, userId) {
  * @param fileId - The unique file identifier
  * @notExported
  */
-async function getFile(fileId): Promise<DynamoDBFile | undefined> {
+async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
   const fileParams = queryFileParams(process.env.DynamoDBTableFiles, fileId)
   logDebug('getFile.query <=', fileParams)
   const fileResponse = await query(fileParams)

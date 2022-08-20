@@ -2,6 +2,8 @@ import * as fs from 'fs'
 import * as chai from 'chai'
 import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import * as Log from 'debug-level'
 const log = new Log(__filename.slice(__dirname.length + 1, -3))
 
@@ -20,10 +22,12 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 }
 
 function preprocessTerraformPlan(terraformPlan: TerraformD) {
-  const cloudFrontDistributionNames = {}
-  const environmentVariablesForFunction = {}
+  const cloudFrontDistributionNames: Record<string, number> = {}
+  const environmentVariablesForFunction: Record<string, string[]> = {}
   for (const distributionName of Object.keys(terraformPlan.resource.aws_cloudfront_distribution)) {
     log.debug('aws_cloudfront_distribution.name', distributionName)
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const resource = terraformPlan.resource.aws_cloudfront_distribution[distributionName] as AwsCloudfrontDistributionProduction
     log.trace('aws_cloudfront_distribution.resource', resource)
     if (resource.origin && resource.origin.custom_header) {
@@ -51,11 +55,11 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
-function getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice = [0]) {
+function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
   const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
-  let environmentVariablesSource = []
+  let environmentVariablesSource: string[]
   const matches = functionSource.match(sourceCodeRegex)
   log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
   if (matches && matches.length > 0) {
@@ -73,7 +77,7 @@ describe('#Terraform', () => {
   const terraformPlan = JSON.parse(jsonFile) as TerraformD
   const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
-    let environmentVariablesTerraform = []
+    let environmentVariablesTerraform: string[] = []
     let environmentVariablesTerraformCount = 0
     if (environmentVariablesForFunction[functionName]) {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]

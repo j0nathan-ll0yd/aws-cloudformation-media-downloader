@@ -9,8 +9,8 @@ const localFixture = getFixture.bind(null, __dirname)
 
 describe('#S3ObjectCreated', () => {
   const event = localFixture('Event.json')
-  let scanStub
-  let sendMessageStub
+  let scanStub: sinon.SinonStub
+  let sendMessageStub: sinon.SinonStub
   beforeEach(() => {
     scanStub = sinon.stub(DynamoDB, 'scan')
     scanStub.onCall(0).returns(localFixture('getFileByKey-200-OK.json'))

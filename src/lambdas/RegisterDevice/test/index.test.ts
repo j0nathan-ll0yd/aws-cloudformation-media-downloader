@@ -4,18 +4,19 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#RegisterDevice', () => {
   const context = testContext
-  let createPlatformEndpointStub
-  let event
-  let listSubscriptionsByTopicStub
-  let subscribeStub
-  let queryStub
-  let unsubscribeStub
-  let updateStub
+  let createPlatformEndpointStub: sinon.SinonStub
+  let event: APIGatewayEvent
+  let listSubscriptionsByTopicStub: sinon.SinonStub
+  let subscribeStub: sinon.SinonStub
+  let queryStub: sinon.SinonStub
+  let unsubscribeStub: sinon.SinonStub
+  let updateStub: sinon.SinonStub
   beforeEach(() => {
     createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json'))
     event = localFixture('APIGatewayEvent.json')

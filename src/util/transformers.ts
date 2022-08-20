@@ -105,7 +105,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
   const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
   logDebug('thumbnails', thumbnails)
   for (const key of ['author', 'description', 'publishDate', 'title']) {
-    if (!myVideoInfo.videoDetails[key]) {
+    if (!(key in myVideoInfo.videoDetails)) {
       throw new NotFoundError(`myVideoInfo missing property ${key}`)
     }
   }
@@ -158,8 +158,12 @@ export function objectKeysToLowerCase(input: object): object {
     return input
   }
   return Object.keys(input).reduce((newObj, key) => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const val = input[key]
     const newKey = (key.charAt(0).toLowerCase() + key.slice(1) || key).toString()
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     newObj[newKey] = typeof val === 'object' ? objectKeysToLowerCase(val) : val
     return newObj
   }, {})

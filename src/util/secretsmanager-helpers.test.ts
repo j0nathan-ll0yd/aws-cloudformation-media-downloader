@@ -1,7 +1,7 @@
 import * as chai from 'chai'
 import {createAccessToken, getAppleClientSecret, getAppleConfig, getApplePrivateKey, getServerPrivateKey, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} from './secretsmanager-helpers'
 import * as jwt from 'jsonwebtoken'
-import {JsonWebTokenError} from 'jsonwebtoken'
+import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
 import * as sinon from 'sinon'
 import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
 import MockAdapter from 'axios-mock-adapter'
@@ -85,9 +85,9 @@ const fakeKeyPayload = {
 }
 
 describe('#Util:SecretsManager', () => {
-  let getSecretValueStub
-  let jwksClientSigningKeyStub
-  let mock
+  let getSecretValueStub: sinon.SinonStub
+  let jwksClientSigningKeyStub: sinon.SinonStub
+  let mock: MockAdapter
   beforeEach(() => {
     getSecretValueStub = sinon.stub(SecretsManager, 'getSecretValue')
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -146,9 +146,9 @@ describe('#Util:SecretsManager', () => {
     getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString)
+    const jwtPayload = jwt.verify(token, secretString) as JwtPayload
     expect(jwtPayload).to.have.all.keys('userId', 'iat', 'exp')
-    expect(jwtPayload['userId']).to.eql(userId)
+    expect(jwtPayload.userId).to.eql(userId)
   })
   it('should verifyAccessToken successfully', async () => {
     const secretString = 'randomly-generated-secret-id'

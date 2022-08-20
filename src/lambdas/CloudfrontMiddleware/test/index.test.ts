@@ -4,16 +4,17 @@ import * as sinon from 'sinon'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
+import {ServerVerifiedToken} from '../../../types/main'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CloudfrontMiddleware', () => {
   const context = testContext
-  let event
-  let verifyAccessTokenStub
+  let event: CloudFrontRequestEvent
+  let verifyAccessTokenStub: sinon.SinonStub
   beforeEach(() => {
     event = localFixture('CloudFrontRequestEvent.json') as CloudFrontRequestEvent
-    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json'))
+    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json') as Promise<ServerVerifiedToken>)
   })
   afterEach(() => {
     verifyAccessTokenStub.restore()
@@ -63,6 +64,8 @@ describe('#CloudfrontMiddleware', () => {
   it('should handle a test request if structured correctly', async () => {
     const reservedIp = '127.0.0.1'
     const request = event.Records[0].cf.request
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     request.clientIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value = reservedIp
     request.headers['user-agent'][0].value = 'localhost@lifegames'
     const output = await handler(event, context)

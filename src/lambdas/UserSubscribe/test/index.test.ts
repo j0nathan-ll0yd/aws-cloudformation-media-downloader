@@ -3,13 +3,14 @@ import * as SNS from '../../../lib/vendor/AWS/SNS'
 import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#UserSubscribe', () => {
   const context = testContext
-  let subscribeStub
-  let event
+  let subscribeStub: sinon.SinonStub
+  let event: APIGatewayEvent
   beforeEach(() => {
     subscribeStub = sinon.stub(SNS, 'subscribe')
     event = localFixture('APIGatewayEvent.json')

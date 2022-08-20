@@ -37,6 +37,8 @@ export async function handler(event: SQSEvent): Promise<void> {
       // There will always be 1 result; but with the possibility of multiple devices
       for (const userDevice of userResponse.Items[0].userDevice) {
         const targetArn = userDevice.endpointArn
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         const publishParams = transformers[`transform${notificationType}ToPushNotification`](record.messageAttributes as FileNotification, targetArn)
         logDebug('publishSnsEvent <=', publishParams)
         const publishResponse = await publishSnsEvent(publishParams)

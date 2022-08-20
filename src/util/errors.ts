@@ -5,7 +5,7 @@ export class CustomLambdaError extends Error {
 
 // Called when the client request is invalid (usually via validate.js)
 export class ValidationError extends CustomLambdaError {
-  constructor(message: string, errors?, statusCode = 400) {
+  constructor(message: string, errors?: object, statusCode = 400) {
     super(message)
     if (errors) {
       this.errors = errors

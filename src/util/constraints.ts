@@ -4,8 +4,8 @@ import {logDebug} from './lambda-helpers'
 
 // A custom function is needed; because default logic mangles attribute names
 // https://validatejs.org/#utilities-prettify
-const prettify = (str) => {
-  if (validate.isNumber(str)) {
+const prettify = (str: unknown) => {
+  if (typeof str === 'number') {
     logDebug('str is Number')
     // If there are more than 2 decimals round it to two
     if ((str * 100) % 1 === 0) {
@@ -15,7 +15,7 @@ const prettify = (str) => {
     }
   }
 
-  if (validate.isArray(str)) {
+  if (Array.isArray(str)) {
     logDebug('str is Array')
     return str
       .map(function (s) {
@@ -50,12 +50,12 @@ export const validateOptions = {
 // https://validatejs.org/docs/validate.html#section-47
 const defaultPresenceConstraint = {
   allowEmpty: false,
-  message: (_value, attribute) => {
+  message: (_value: string | object | number, attribute: string) => {
     return `^${attribute} is required`
   }
 }
 
-validate.validators.isYouTubeURL = (value) => {
+validate.validators.isYouTubeURL = (value: string) => {
   if (value && !validateURL(value)) {
     return '^is not a valid YouTube URL'
   }

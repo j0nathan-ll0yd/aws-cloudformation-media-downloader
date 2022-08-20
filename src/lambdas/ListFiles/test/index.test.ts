@@ -4,15 +4,16 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import * as chai from 'chai'
+import {APIGatewayProxyEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 describe('#ListFiles', () => {
   const context = testContext
-  let event
-  let batchGetStub
-  let queryStub
+  let event: APIGatewayProxyEvent
+  let batchGetStub: sinon.SinonStub
+  let queryStub: sinon.SinonStub
   const queryStubReturnObject = localFixture('query-200-OK.json')
   queryStubReturnObject.Items[0].fileId = docClient.createSet(queryStubReturnObject.Items[0].fileId)
   beforeEach(() => {
