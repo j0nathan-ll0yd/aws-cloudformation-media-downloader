@@ -3,9 +3,9 @@ import {query} from '../../../lib/vendor/AWS/DynamoDB'
 import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
 import {FileNotification} from '../../../types/main'
 import {getUserDeviceByUserIdParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logError} from '../../../util/lambda-helpers'
-import * as transformers from '../../../util/transformers'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {UnexpectedError} from '../../../util/errors'
+import {transformFileNotificationToPushNotification} from '../../../util/transformers'
 
 /**
  * Returns a UserDevice by userId
@@ -37,9 +37,11 @@ export async function handler(event: SQSEvent): Promise<void> {
       // There will always be 1 result; but with the possibility of multiple devices
       for (const userDevice of userResponse.Items[0].userDevice) {
         const targetArn = userDevice.endpointArn
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        const publishParams = transformers[`transform${notificationType}ToPushNotification`](record.messageAttributes as FileNotification, targetArn)
+        logInfo(`Sending ${notificationType} to targetArn`, targetArn)
+        if (notificationType !== 'FileNotification') {
+          continue
+        }
+        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn)
         logDebug('publishSnsEvent <=', publishParams)
         const publishResponse = await publishSnsEvent(publishParams)
         logDebug('publishSnsEvent <=', publishResponse)

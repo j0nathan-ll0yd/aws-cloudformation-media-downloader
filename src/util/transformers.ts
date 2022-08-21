@@ -83,7 +83,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({
         aps: {'content-available': 1},
-        file: objectKeysToLowerCase(clientFile)
+        file: clientFile
       }),
       default: 'Default message'
     }),
@@ -144,27 +144,4 @@ export function transformVideoIntoDynamoItem(metadata: Metadata): DynamoDBFile {
     publishDate: undefined,
     description: metadata.description
   }
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function objectKeysToLowerCase(input: object): object {
-  if (typeof input !== 'object') {
-    return input
-  }
-  if (Array.isArray(input)) {
-    return input.map(objectKeysToLowerCase)
-  }
-  if (Object.prototype.toString.call(input) === '[object Date]') {
-    return input
-  }
-  return Object.keys(input).reduce((newObj, key) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const val = input[key]
-    const newKey = (key.charAt(0).toLowerCase() + key.slice(1) || key).toString()
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    newObj[newKey] = typeof val === 'object' ? objectKeysToLowerCase(val) : val
-    return newObj
-  }, {})
 }

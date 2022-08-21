@@ -1,6 +1,7 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
+import { index } from "typedoc/dist/lib/output/themes/default/partials"
 
 interface Metadata {
   videoId: string
@@ -66,6 +67,7 @@ interface UserDevice extends DeviceRegistration {
 }
 
 interface DynamoDBFile {
+  [key: string]: string | number
   availableAt: number
   size: number
   authorName: string

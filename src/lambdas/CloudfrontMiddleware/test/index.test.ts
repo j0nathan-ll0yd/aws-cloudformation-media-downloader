@@ -5,6 +5,7 @@ import {getFixture, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
 import {ServerVerifiedToken} from '../../../types/main'
+import {CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -63,9 +64,11 @@ describe('#CloudfrontMiddleware', () => {
   })
   it('should handle a test request if structured correctly', async () => {
     const reservedIp = '127.0.0.1'
-    const request = event.Records[0].cf.request
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
+    // Needed to make clientIp assignable, otherwise TS error
+    interface CustomCloudFrontRequest extends CloudFrontRequest {
+      clientIp: string
+    }
+    const request = event.Records[0].cf.request as CustomCloudFrontRequest
     request.clientIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value = reservedIp
     request.headers['user-agent'][0].value = 'localhost@lifegames'
     const output = await handler(event, context)

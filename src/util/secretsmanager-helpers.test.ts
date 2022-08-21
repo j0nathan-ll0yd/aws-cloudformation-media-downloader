@@ -90,9 +90,7 @@ describe('#Util:SecretsManager', () => {
   let mock: MockAdapter
   beforeEach(() => {
     getSecretValueStub = sinon.stub(SecretsManager, 'getSecretValue')
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    jwksClientSigningKeyStub = sinon.stub(JwksRsa.JwksClient.prototype, 'getSigningKey').returns(Promise.resolve(fakeKeyPayload))
+    jwksClientSigningKeyStub = sinon.stub(JwksRsa.JwksClient.prototype, 'getSigningKey').resolves(fakeKeyPayload)
     mock = new MockAdapter(axios)
   })
   afterEach(() => {
@@ -165,18 +163,14 @@ describe('#Util:SecretsManager', () => {
     await expect(verifyAccessToken(token)).to.be.rejectedWith(JsonWebTokenError)
   })
   it('should verifyAppleToken successfully', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').returns(fakeTokenPayload)
+    const jwtVerifyStub = sinon.stub(jwt, 'verify').resolves(fakeTokenPayload)
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
     const newToken = await verifyAppleToken(token)
     jwtVerifyStub.restore()
     expect(newToken).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported')
   })
   it('should verifyAppleToken handle an unexpected string payload', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').returns('a string'.toString())
+    const jwtVerifyStub = sinon.stub(jwt, 'verify').throws('a string')
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
     jwtVerifyStub.restore()

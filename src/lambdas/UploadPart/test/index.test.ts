@@ -25,9 +25,9 @@ describe('#UploadPart', () => {
   })
   it('should handle a multipart file', async () => {
     const bytesTotal = 82784319
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal, partSize))
+    mock.onAny().reply((config) => {
+      return mockResponseUploadPart(config, bytesTotal, partSize)
+    })
     const totalParts = Math.round(bytesTotal / partSize)
     const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
     const finalPart = responses.pop()
@@ -40,9 +40,9 @@ describe('#UploadPart', () => {
   })
   it('should handle a single part file', async () => {
     const bytesTotal = 5242880 - 1000
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    mock.onAny().reply((config) => mockResponseUploadPart(config, bytesTotal, partSize))
+    mock.onAny().reply((config) => {
+      return mockResponseUploadPart(config, bytesTotal, partSize)
+    })
     const totalParts = Math.round(bytesTotal / partSize)
     const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
     expect(responses.length).to.equal(totalParts)
@@ -58,19 +58,17 @@ describe('#UploadPart', () => {
 })
 
 function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number, partSize: number) {
-  return new Promise((resolve) => {
-    const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(config.headers.Range.toString())
-    return resolve([
-      206,
-      'hello',
-      {
-        'accept-ranges': 'bytes',
-        'content-length': partSize,
-        'content-range': `bytes ${beg}-${end}/${bytesTotal}`,
-        'content-type': 'video/mp4'
-      }
-    ])
-  })
+  const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(config.headers.Range.toString())
+  return [
+    206,
+    'hello',
+    {
+      'accept-ranges': 'bytes',
+      'content-length': partSize,
+      'content-range': `bytes ${beg}-${end}/${bytesTotal}`,
+      'content-type': 'video/mp4'
+    }
+  ]
 }
 
 async function mockIterationsOfUploadPart(bytesTotal: number, partSize: number) {
