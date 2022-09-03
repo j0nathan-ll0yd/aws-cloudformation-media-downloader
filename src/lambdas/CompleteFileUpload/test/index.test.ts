@@ -5,11 +5,12 @@ import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import * as chai from 'chai'
 import {UnexpectedError} from '../../../util/errors'
+import {CompleteFileUploadEvent} from '../../../types/main'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CompleteFileUpload', () => {
-  const event = localFixture('completeFileUpload-200-OK.json')
+  const event = localFixture('completeFileUpload-200-OK.json') as CompleteFileUploadEvent
   const completeMultipartUploadResponse = localFixture('completeMultipartUpload-200-OK.json')
   const updateItemResponse = localFixture('updateItem-200-OK.json')
   let completeMultipartUploadStub: sinon.SinonStub

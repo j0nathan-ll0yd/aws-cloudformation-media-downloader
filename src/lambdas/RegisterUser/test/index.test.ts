@@ -6,11 +6,14 @@ import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import {AppleTokenResponse, SignInWithAppleVerifiedToken} from '../../../types/main'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#RegisterUser', () => {
-  const event = localFixture('APIGatewayEvent.json')
+  const event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
   const context = testContext
   let createAccessTokenStub: sinon.SinonStub
   let mock: MockAdapter
@@ -20,9 +23,9 @@ describe('#RegisterUser', () => {
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
-    putItemStub = sinon.stub(DynamoDB, 'putItem').returns(localFixture('putItem-200-OK.json'))
-    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json'))
-    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json'))
+    putItemStub = sinon.stub(DynamoDB, 'putItem').returns(localFixture('putItem-200-OK.json') as Promise<DocumentClient.PutItemOutput>)
+    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json') as Promise<AppleTokenResponse>)
+    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json') as Promise<SignInWithAppleVerifiedToken>)
   })
   afterEach(() => {
     createAccessTokenStub.restore()

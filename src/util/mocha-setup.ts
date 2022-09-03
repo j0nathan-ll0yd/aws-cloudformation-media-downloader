@@ -37,19 +37,24 @@ export const testContext = {
   }
 }
 
+let consoleLogStub: sinon.SinonStub
+let consoleInfoStub: sinon.SinonStub
+let consoleDebugStub: sinon.SinonStub
+let consoleWarnStub: sinon.SinonStub
+let consoleErrorStub: sinon.SinonStub
 export const mochaHooks = {
   beforeEach(): void {
-    this.consoleLogStub = sinon.stub(console, 'log')
-    this.consoleInfoStub = sinon.stub(console, 'info')
-    this.consoleDebugStub = sinon.stub(console, 'debug')
-    this.consoleWarnStub = sinon.stub(console, 'warn')
-    this.consoleErrorStub = sinon.stub(console, 'error')
+    consoleLogStub = sinon.stub(console, 'log')
+    consoleInfoStub = sinon.stub(console, 'info')
+    consoleDebugStub = sinon.stub(console, 'debug')
+    consoleWarnStub = sinon.stub(console, 'warn')
+    consoleErrorStub = sinon.stub(console, 'error')
   },
   afterEach(): void {
-    this.consoleLogStub.restore()
-    this.consoleInfoStub.restore()
-    this.consoleDebugStub.restore()
-    this.consoleWarnStub.restore()
-    this.consoleErrorStub.restore()
+    consoleLogStub.restore()
+    consoleInfoStub.restore()
+    consoleDebugStub.restore()
+    consoleWarnStub.restore()
+    consoleErrorStub.restore()
   }
 }

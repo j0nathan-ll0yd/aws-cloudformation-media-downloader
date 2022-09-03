@@ -1,7 +1,7 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
-import { index } from "typedoc/dist/lib/output/themes/default/partials"
+import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 
 interface Metadata {
   videoId: string
@@ -169,4 +169,11 @@ interface SignInWithAppleVerifiedToken {
   is_private_email: boolean
   auth_time: number
   nonce_supported: boolean
+}
+
+// Types specifically for Cloudfront
+type CustomCloudFrontOrigin = {custom: CloudFrontCustomOrigin}
+interface CustomCloudFrontRequest extends CloudFrontRequest {
+  clientIp: string
+  origin: CustomCloudFrontOrigin
 }

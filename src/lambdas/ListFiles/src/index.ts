@@ -1,9 +1,9 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {defaultFile} from '../../../util/constants'
+import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {DynamoDBFile} from '../../../types/main'
+import {defaultFile} from '../../../util/constants'
 
 /**
  * Returns an array of Files, based on a list of File IDs
@@ -11,10 +11,10 @@ import {DynamoDBFile} from '../../../types/main'
  * @notExported
  */
 async function getFilesById(fileIds: [string]) {
-  const fileParams = getBatchFilesParams(process.env.DynamoTableFiles, fileIds)
-  logDebug('query <=', fileParams)
+  const fileParams = getBatchFilesParams(process.env.DynamoDBTableFiles as string, fileIds)
+  logDebug('getFilesById <=', fileParams)
   const fileResponse = await batchGet(fileParams)
-  logDebug('query =>', fileResponse)
+  logDebug('getFilesById =>', fileResponse)
   return fileResponse
 }
 
@@ -24,10 +24,10 @@ async function getFilesById(fileIds: [string]) {
  * @notExported
  */
 async function getFileIdsByUser(userId: string) {
-  const userFileParams = getUserFilesParams(process.env.DynamoTableUserFiles, userId)
-  logDebug('query <=', userFileParams)
+  const userFileParams = getUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
+  logDebug('getFileIdsByUser <=', userFileParams)
   const userFilesResponse = await query(userFileParams)
-  logDebug('query =>', userFilesResponse)
+  logDebug('getFileIdsByUser =>', userFilesResponse)
   return userFilesResponse
 }
 
@@ -46,7 +46,6 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   try {
     userId = getUserIdFromEvent(event as APIGatewayEvent)
   } catch (error) {
-    logInfo('error <=', error)
     // Unauthenticated request; return default (demo) file
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
@@ -54,14 +53,20 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   }
   try {
     const userFilesResponse = await getFileIdsByUser(userId)
-    if (userFilesResponse.Count > 0) {
-      const fileResponse = await getFilesById(userFilesResponse.Items[0].fileId.values)
-      myResponse.contents = fileResponse.Responses[process.env.DynamoTableFiles].filter((file: DynamoDBFile) => file.url) as DynamoDBFile[]
-      myResponse.keyCount = myResponse.contents.length
+    if (Array.isArray(userFilesResponse.Items)) {
+      const count = userFilesResponse.Items.length
+      if (count > 0) {
+        const fileResponse = await getFilesById(userFilesResponse.Items[0].fileId.values)
+        if (fileResponse.Responses) {
+          const table = process.env.DynamoDBTableFiles as string
+          const files = fileResponse.Responses[table] as DynamoDBFile[]
+          myResponse.contents = files.filter((file) => file.url !== undefined)
+        }
+        myResponse.keyCount = myResponse.contents.length
+      }
     }
     return response(context, 200, myResponse)
   } catch (error) {
-    logError('error =', error)
     return lambdaErrorResponse(context, error)
   }
 }

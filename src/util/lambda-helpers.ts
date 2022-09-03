@@ -2,6 +2,7 @@ import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
+import {unknownErrorToString} from './transformers'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -84,7 +85,7 @@ export function response(context: Context, statusCode: number, body?: string | o
       body: JSON.stringify(rawBody),
       headers,
       statusCode
-    }
+    } as APIGatewayProxyResult
   } else if (body) {
     const rawBody = {
       body,
@@ -95,14 +96,14 @@ export function response(context: Context, statusCode: number, body?: string | o
       body: JSON.stringify(rawBody),
       headers,
       statusCode
-    }
+    } as APIGatewayProxyResult
   } else {
     logDebug('response ==', '')
     return {
       body: '',
       headers,
       statusCode
-    }
+    } as APIGatewayProxyResult
   }
 }
 
@@ -115,34 +116,34 @@ export function verifyPlatformConfiguration(): void {
   }
 }
 
-export function lambdaErrorResponse(context: Context, error: Error): APIGatewayProxyResult {
+export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
+  const defaultStatusCode = 500
   logError('lambdaErrorResponse', JSON.stringify(error))
   if (error instanceof CustomLambdaError) {
-    return response(context, error.statusCode, error.errors || error.message)
+    return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
+  } else if (error instanceof Error) {
+    return response(context, defaultStatusCode, error.message)
   } else {
-    return response(context, 500, error.message)
+    return response(context, defaultStatusCode, unknownErrorToString(error))
   }
 }
 
-function stringify(stringOrObject: object | string) {
+function stringify(stringOrObject: object | string | unknown) {
   if (typeof stringOrObject === 'object') {
     stringOrObject = JSON.stringify(stringOrObject, null, 2)
   }
   return stringOrObject
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function logInfo(message: string, stringOrObject?: string | object): void {
   console.info(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function logDebug(message: string, stringOrObject?: string | object): void {
   console.log(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function logError(message: string, stringOrObject?: string | object): void {
+export function logError(message: string, stringOrObject?: string | object | unknown): void {
   console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 

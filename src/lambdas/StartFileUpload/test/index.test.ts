@@ -7,17 +7,20 @@ import * as S3 from '../../../lib/vendor/AWS/S3'
 import {getFixture, partSize} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
+import {videoInfo} from 'ytdl-core'
+import {UploadPartEvent} from '../../../types/main'
+import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#StartFileUpload', () => {
-  const event = localFixture('startFileUpload-200-OK.json')
+  const event = localFixture('startFileUpload-200-OK.json') as UploadPartEvent
   const mockSuccessHeaders = {
     'accept-ranges': 'bytes',
     'content-length': 82784319,
     'content-type': 'video/mp4'
   }
-  const createMultipartUploadResponse = localFixture('createMultipartUpload-200-OK.json')
+  const createMultipartUploadResponse = localFixture('createMultipartUpload-200-OK.json') as CreateMultipartUploadOutput
   let mock: MockAdapter
   let fetchVideoInfoStub: sinon.SinonStub
   let createMultipartUploadStub: sinon.SinonStub
@@ -25,7 +28,7 @@ describe('#StartFileUpload', () => {
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createMultipartUploadStub = sinon.stub(S3, 'createMultipartUpload')
-    fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(localFixture('fetchVideoInfo-200-OK.json'))
+    fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(localFixture('fetchVideoInfo-200-OK.json') as Promise<videoInfo>)
     updateItemStub = sinon.stub(DynamoDB, 'updateItem')
   })
   afterEach(() => {

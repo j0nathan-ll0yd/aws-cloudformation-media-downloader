@@ -1,6 +1,7 @@
 import {getInfo, videoInfo, chooseFormat, getURLVideoID, videoFormat, chooseFormatOptions} from 'ytdl-core'
-import {logDebug, logError} from '../../util/lambda-helpers'
+import {logDebug} from '../../util/lambda-helpers'
 import {UnexpectedError} from '../../util/errors'
+import {assertIsError} from '../../util/transformers'
 
 export async function fetchVideoInfo(uri: string): Promise<videoInfo> {
   logDebug('fetchVideoInfo =>')
@@ -9,7 +10,7 @@ export async function fetchVideoInfo(uri: string): Promise<videoInfo> {
     logDebug('fetchVideoInfo <=')
     return info
   } catch (error) {
-    logError(`fetchVideoInfo <= ${error.message}`)
+    assertIsError(error)
     throw new UnexpectedError(error.message)
   }
 }

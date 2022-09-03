@@ -1,10 +1,10 @@
-import axios, {AxiosRequestConfig} from 'axios'
+import axios, {AxiosRequestConfig, AxiosResponseHeaders} from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import * as crypto from 'crypto'
 import * as chai from 'chai'
 import * as sinon from 'sinon'
 import * as S3 from '../../../lib/vendor/AWS/S3'
-import {UploadPartEvent} from '../../../types/main'
+import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
 import {partSize} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import {Part} from 'aws-sdk/clients/s3'
@@ -30,8 +30,8 @@ describe('#UploadPart', () => {
     })
     const totalParts = Math.round(bytesTotal / partSize)
     const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
-    const finalPart = responses.pop()
-    const uploadPart = responses.pop()
+    const finalPart = responses.pop() as CompleteFileUploadEvent
+    const uploadPart = responses.pop() as UploadPartEvent
     if ('partNumber' in uploadPart) {
       expect(uploadPart.partNumber).to.equal(totalParts)
     }
@@ -46,7 +46,7 @@ describe('#UploadPart', () => {
     const totalParts = Math.round(bytesTotal / partSize)
     const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
     expect(responses.length).to.equal(totalParts)
-    const finalPart = responses.pop()
+    const finalPart = responses.pop() as CompleteFileUploadEvent
     expect(finalPart.partTags.length).to.equal(totalParts)
     expect(finalPart.bytesRemaining).to.equal(0)
   })
@@ -58,7 +58,8 @@ describe('#UploadPart', () => {
 })
 
 function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number, partSize: number) {
-  const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(config.headers.Range.toString())
+  const headers = config.headers as AxiosResponseHeaders
+  const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(headers.Range.toString()) || ['', '', '']
   return [
     206,
     'hello',

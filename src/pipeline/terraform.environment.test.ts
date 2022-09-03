@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as chai from 'chai'
-import {AwsCloudfrontDistribution, AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
+import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
 import Debug from 'debug'
 const log = Debug(__filename.slice(__dirname.length + 1, -3))
@@ -22,18 +22,25 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
-  const distributions: string[] = Object.keys(terraformPlan.resource.aws_cloudfront_distribution)
-  distributions.map((key: keyof AwsCloudfrontDistribution) => {
+  interface CustomAwsCloudfrontDistribution {
+    [key: string]: AwsCloudfrontDistributionProduction
+    Production: AwsCloudfrontDistributionProduction
+  }
+  const distribution = terraformPlan.resource.aws_cloudfront_distribution as CustomAwsCloudfrontDistribution
+  const distributions: string[] = Object.keys(distribution)
+  distributions.map((key) => {
     log('aws_cloudfront_distribution.name', key)
-    const resource = terraformPlan.resource.aws_cloudfront_distribution[key] as AwsCloudfrontDistributionProduction
+    const resource = distribution[key] as AwsCloudfrontDistributionProduction
     log('aws_cloudfront_distribution.resource', resource)
     if (resource.origin && resource.origin.custom_header) {
       const matches = resource.comment.match(/aws_lambda_function\.(\w+)\.function_name/)
-      log('resource.comment.match', matches)
-      const functionName = matches[1]
-      cloudFrontDistributionNames[functionName] = 1
-      environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
-      log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      if (Array.isArray(matches) && matches.length > 0) {
+        log('resource.comment.match', matches)
+        const functionName = matches[1]
+        cloudFrontDistributionNames[functionName] = 1
+        environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
+        log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      }
     }
   })
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
@@ -62,8 +69,10 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   if (matches && matches.length > 0) {
     environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
     log(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+    return environmentVariablesSource
+  } else {
+    return []
   }
-  return environmentVariablesSource
 }
 
 describe('#Terraform', () => {

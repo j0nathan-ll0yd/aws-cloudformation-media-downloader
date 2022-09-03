@@ -4,13 +4,14 @@ import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
 import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {ScheduledEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#FileCoordinator', () => {
   process.env.DynamoDBTableFiles = 'Files'
   const context = testContext
-  const event = localFixture('ScheduledEvent.json')
+  const event = localFixture('ScheduledEvent.json') as ScheduledEvent
   let scanStub: sinon.SinonStub
   let startExecutionStub: sinon.SinonStub
   beforeEach(() => {

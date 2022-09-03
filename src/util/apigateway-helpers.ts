@@ -16,13 +16,17 @@ export function validateRequest(requestBody: Webhook | DeviceRegistration | User
 
 export function getPayloadFromEvent(event: APIGatewayEvent): Webhook | DeviceRegistration | UserRegistration | UserSubscribe | UserLogin {
   if ('body' in event) {
-    try {
-      const requestBody = JSON.parse(event.body)
+    if (typeof event.body === 'string') {
       logDebug('getPayloadFromEvent.event.body <=', event.body)
-      return requestBody
-    } catch (error) {
-      logError('getPayloadFromEvent =>', `Invalid JSON: ${error}`)
-      throw new ValidationError('Request body must be valid JSON')
+      try {
+        const requestBody = JSON.parse(event.body)
+        return requestBody
+      } catch (error) {
+        logError('getPayloadFromEvent =>', `Invalid JSON: ${error}`)
+        throw new ValidationError('Request body must be valid JSON')
+      }
+    } else {
+      throw new ValidationError('Request body must be valid JSON string')
     }
   }
   throw new ValidationError('Missing request payload')

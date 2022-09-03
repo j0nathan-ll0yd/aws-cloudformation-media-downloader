@@ -19,7 +19,8 @@ export async function handler(event: CompleteFileUploadEvent): Promise<CompleteM
     const data = await completeMultipartUpload(params)
     logInfo('completeMultipartUpload =>', data)
     const fileUrl = `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`
-    const updateItemParams = updateCompletedFileParams(process.env.DynamoDBTableFiles, fileId, fileUrl)
+    const table = process.env.DynamoDBTableFiles as string
+    const updateItemParams = updateCompletedFileParams(table, fileId, fileUrl)
     logDebug('updateItem <=', updateItemParams)
     const updateItemResponse = await updateItem(updateItemParams)
     logDebug('updateItem =>', updateItemResponse)

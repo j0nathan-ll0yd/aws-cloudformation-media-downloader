@@ -5,6 +5,8 @@ import {getFixture} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
 import {SQSEvent} from 'aws-lambda'
+import {PublishResponse} from 'aws-sdk/clients/sns'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -13,9 +15,9 @@ describe('#SendPushNotification', () => {
   let publishSnsEventStub: sinon.SinonStub
   let queryStub: sinon.SinonStub
   beforeEach(() => {
-    event = localFixture('SQSEvent.json')
-    publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent').returns(localFixture('publishSnsEvent-200-OK.json'))
-    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json'))
+    event = localFixture('SQSEvent.json') as SQSEvent
+    publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent').returns(localFixture('publishSnsEvent-200-OK.json') as Promise<PublishResponse>)
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json') as Promise<DocumentClient.QueryOutput>)
   })
   afterEach(() => {
     publishSnsEventStub.restore()

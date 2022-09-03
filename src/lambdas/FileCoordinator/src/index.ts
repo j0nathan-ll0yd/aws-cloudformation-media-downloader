@@ -3,23 +3,26 @@ import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {startExecution} from '../../../lib/vendor/AWS/StepFunctions'
 import {scanForFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {Types} from 'aws-sdk/clients/stepfunctions'
 
 export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   logInfo('context', context)
-  const scanParams = scanForFileParams(process.env.DynamoDBTableFiles)
+  const scanParams = scanForFileParams(process.env.DynamoDBTableFiles as string)
   logDebug('scan <=', scanParams)
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)
-  for (const item of scanResponse.Items) {
-    const params = {
-      input: JSON.stringify({fileId: item.fileId}),
-      name: new Date().getTime().toString(),
-      stateMachineArn: process.env.StateMachineArn
+  if (Array.isArray(scanResponse.Items)) {
+    for (const item of scanResponse.Items) {
+      const params = {
+        input: JSON.stringify({fileId: item.fileId}),
+        name: new Date().getTime().toString(),
+        stateMachineArn: process.env.StateMachineArn
+      } as Types.StartExecutionInput
+      logDebug('startExecution <=', params)
+      const output = await startExecution(params)
+      logDebug('startExecution =>', output)
     }
-    logDebug('startExecution <=', params)
-    const output = await startExecution(params)
-    logDebug('startExecution =>', output)
   }
   return response(context, 200)
 }

@@ -180,8 +180,8 @@ describe('#Util:SecretsManager', () => {
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token header', async () => {
-    const fakeKeyPayloadWithoutHeader = fakeKeyPayload
-    delete fakeKeyPayloadWithoutHeader.rsaPublicKey
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {rsaPublicKey, ...fakeKeyPayloadWithoutHeader} = fakeKeyPayload
     jwksClientSigningKeyStub.returns(Promise.resolve(fakeKeyPayloadWithoutHeader))
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey)
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)

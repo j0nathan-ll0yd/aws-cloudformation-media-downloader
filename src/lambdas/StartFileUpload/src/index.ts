@@ -3,14 +3,66 @@ import {videoInfo} from 'ytdl-core'
 import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
-import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
+import {DynamoDBFile, Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
 import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logError, logInfo, makeHttpRequest} from '../../../util/lambda-helpers'
-import {transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
+import {logDebug, logInfo, makeHttpRequest} from '../../../util/lambda-helpers'
+import {assertIsError, transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
+import {CreateMultipartUploadRequest} from 'aws-sdk/clients/s3'
 
 /**
- * Starts a multi-part upload of a file to an S3 bucket
+ * Upsert a File object in DynamoDB
+ * @param item - The DynamoDB item to be added
+ * @notExported
+ */
+async function upsertFile(item: DynamoDBFile) {
+  const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
+  logDebug('updateItem <=', updateItemParams)
+  const updateResponse = await updateItem(updateItemParams)
+  logDebug('updateItem =>', updateResponse)
+  return updateResponse
+}
+
+/**
+ * Create a start for a multi-part upload
+ * @param params - The CreateMultipartUploadRequest object
+ * @notExported
+ */
+async function createMultipartUploadFromParams(params: CreateMultipartUploadRequest) {
+  logInfo('createMultipartUpload <=', params)
+  const output = await createMultipartUpload(params)
+  logInfo('createMultipartUpload =>', output)
+  return output
+}
+
+/**
+ * Create a DynamoDBFile object from a video's metadata
+ * @param metadata - The Metadata for a video; generated through youtube-dl
+ * @returns DynamoDBFile
+ * @notExported
+ */
+async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
+  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
+  const videoUrl = metadata.formats[0].url
+  const options: AxiosRequestConfig = {
+    method: 'head',
+    timeout: 900000,
+    url: videoUrl
+  }
+
+  const fileInfo = await makeHttpRequest(options)
+  // TODO: Ensure these headers exist in the response
+  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
+  const contentType = fileInfo.headers['content-type']
+
+  myDynamoItem.size = bytesTotal
+  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
+  myDynamoItem.contentType = contentType
+  return myDynamoItem
+}
+
+/**
+ * Starts a multipart upload of a file to an S3 bucket
  * @notExported
  */
 export async function handler(event: StartFileUploadParams): Promise<UploadPartEvent> {
@@ -21,40 +73,20 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
     logDebug('fetchVideoInfo <=', fileId)
     const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
     const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
-    const myDynamoItem = transformVideoIntoDynamoItem(myMetadata)
-
-    const videoUrl = myMetadata.formats[0].url
-    const options: AxiosRequestConfig = {
-      method: 'head',
-      timeout: 900000,
-      url: videoUrl
-    }
-
-    const fileInfo = await makeHttpRequest(options)
-    // TODO: Ensure these headers exist in the response
-    const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-    const contentType = fileInfo.headers['content-type']
-
-    myDynamoItem.size = bytesTotal
-    myDynamoItem.publishDate = new Date(myMetadata.published).toISOString()
-    myDynamoItem.contentType = contentType
-    const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles, myDynamoItem)
-    logDebug('updateItem <=', updateItemParams)
-    const updateResponse = await updateItem(updateItemParams)
-    logDebug('updateItem =>', updateResponse)
+    const myDynamoItem = await getFileFromMetadata(myMetadata)
+    await upsertFile(myDynamoItem)
 
     const key = myMetadata.fileName
-    const bucket = process.env.Bucket // sourced via template.yaml
+    const bytesTotal = myDynamoItem.size
+    const bucket = process.env.Bucket
     const partSize = 1024 * 1024 * 5
     const params = {
       ACL: 'public-read',
-      Bucket: process.env.Bucket,
-      ContentType: contentType,
+      Bucket: bucket,
+      ContentType: myDynamoItem.contentType,
       Key: key
-    }
-    logInfo('createMultipartUpload <=', params)
-    const output = await createMultipartUpload(params)
-    logInfo('createMultipartUpload =>', output)
+    } as CreateMultipartUploadRequest
+    const output = await createMultipartUploadFromParams(params)
     const newPartEnd = Math.min(partSize, bytesTotal)
     return {
       bucket,
@@ -68,10 +100,10 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
       partSize,
       partTags: [],
       uploadId: output.UploadId,
-      url: videoUrl
+      url: myMetadata.formats[0].url
     } as UploadPartEvent
   } catch (error) {
-    logError('error', error)
+    assertIsError(error)
     throw new UnexpectedError(error.message)
   }
 }

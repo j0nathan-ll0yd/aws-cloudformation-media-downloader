@@ -3,7 +3,7 @@
     "module": "es6",
     "target": "es6",
     "outDir": "./dist",
-    "strict": false, // TODO: Make this true and correct the failures
+    "strict": true,
     "types": ["node", "mocha"],
     "moduleResolution": "node",
     "noUnusedLocals": true,
@@ -20,3 +20,5 @@
     "src/types/terraform.d.ts"
   ]
 }
+
+// https://www.carlrippon.com/controlling-type-checking-strictness-in-typescript/

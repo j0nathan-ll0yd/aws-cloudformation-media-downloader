@@ -13,7 +13,7 @@ import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../
  * @notExported
  */
 async function getUserByAppleDeviceIdentifier(userDeviceId: string) {
-  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers, userDeviceId)
+  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
   logDebug('scan <=', scanParams)
   const scanResponse = await scan(scanParams)
   logDebug('scan =>', scanResponse)
@@ -37,13 +37,18 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   const verifiedToken = await verifyAppleToken(appleToken.id_token)
   const userDeviceId = verifiedToken.sub
   const userDetails = await getUserByAppleDeviceIdentifier(userDeviceId)
-  if (userDetails.Count === 0) {
-    return response(context, 404, "User doesn't exist")
-  } else if (userDetails.Count > 1) {
-    return response(context, 300, 'Duplicate user detected')
-  }
+  if (Array.isArray(userDetails.Items)) {
+    const count = userDetails.Items.length
+    if (count === 0) {
+      return response(context, 404, "User doesn't exist")
+    } else if (count > 1) {
+      return response(context, 300, 'Duplicate user detected')
+    }
 
-  const userId = userDetails.Items[0].userId
-  const token = await createAccessToken(userId)
-  return response(context, 200, {token})
+    const userId = userDetails.Items[0].userId
+    const token = await createAccessToken(userId)
+    return response(context, 200, {token})
+  } else {
+    return lambdaErrorResponse(context, 'Unable to search for users')
+  }
 }

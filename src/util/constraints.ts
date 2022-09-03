@@ -24,12 +24,8 @@ const prettify = (str: unknown) => {
       .join(', ')
   }
 
-  if (validate.isObject(str)) {
-    logDebug('str is Object')
-    if (!validate.isDefined(str.toString)) {
-      return JSON.stringify(str)
-    }
-    return str.toString()
+  if (typeof str === 'object') {
+    return JSON.stringify(str)
   }
 
   // Ensure the string is actually a string

@@ -1,6 +1,6 @@
 export class CustomLambdaError extends Error {
-  errors: object
-  statusCode: number
+  errors: object | undefined
+  statusCode: number | undefined
 }
 
 // Called when the client request is invalid (usually via validate.js)

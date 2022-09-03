@@ -15,7 +15,7 @@ import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../
  * @notExported
  */
 async function createUser(user: User, identityProviderApple: IdentityProviderApple) {
-  const putItemParams = newUserParams(process.env.DynamoDBTableUsers, user, identityProviderApple)
+  const putItemParams = newUserParams(process.env.DynamoDBTableUsers as string, user, identityProviderApple)
   logDebug('putItem <=', putItemParams)
   const putItemResponse = await putItem(putItemParams)
   logDebug('putItem =>', putItemResponse)
@@ -35,7 +35,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     validateRequest(requestBody, registerUserConstraints)
     const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
     const verifiedToken = await verifyAppleToken(appleToken.id_token)
-    const user = createUserFromToken(verifiedToken, requestBody.firstName, requestBody.lastName)
+    const user = createUserFromToken(verifiedToken, requestBody.firstName as string, requestBody.lastName as string)
     const identityProviderApple = createIdentityProviderAppleFromTokens(appleToken, verifiedToken)
     await createUser(user, identityProviderApple)
     const token = await createAccessToken(user.userId)

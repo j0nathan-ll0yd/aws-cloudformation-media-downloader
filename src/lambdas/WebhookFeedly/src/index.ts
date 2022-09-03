@@ -9,6 +9,7 @@ import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+import {SendMessageRequest} from 'aws-sdk/clients/sqs'
 
 /**
  * Adds a base File (just fileId) to DynamoDB
@@ -16,7 +17,7 @@ import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/t
  * @notExported
  */
 async function addFile(fileId: string) {
-  const params = newFileParams(process.env.DynamoDBTableFiles, fileId)
+  const params = newFileParams(process.env.DynamoDBTableFiles as string, fileId)
   logDebug('addFile.updateItem <=', params)
   const updateResponse = await updateItem(params)
   logDebug('addFile.updateItem =>', updateResponse)
@@ -30,7 +31,7 @@ async function addFile(fileId: string) {
  * @notExported
  */
 async function associateFileToUser(fileId: string, userId: string) {
-  const params = userFileParams(process.env.DynamoDBTableUserFiles, userId, fileId)
+  const params = userFileParams(process.env.DynamoDBTableUserFiles as string, userId, fileId)
   logDebug('associateFileToUser.updateItem <=', params)
   const updateResponse = await updateItem(params)
   logDebug('associateFileToUser.updateItem =>', updateResponse)
@@ -43,11 +44,11 @@ async function associateFileToUser(fileId: string, userId: string) {
  * @notExported
  */
 async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
-  const fileParams = queryFileParams(process.env.DynamoDBTableFiles, fileId)
+  const fileParams = queryFileParams(process.env.DynamoDBTableFiles as string, fileId)
   logDebug('getFile.query <=', fileParams)
   const fileResponse = await query(fileParams)
   logDebug('getFile.query =>', fileResponse)
-  if (fileResponse.Count === 1) {
+  if (fileResponse.Items && fileResponse.Items.length > 0) {
     return fileResponse.Items[0] as DynamoDBFile
   }
   return undefined
@@ -65,7 +66,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  }
+  } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)

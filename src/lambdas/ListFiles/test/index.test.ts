@@ -5,6 +5,7 @@ import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import * as chai from 'chai'
 import {APIGatewayProxyEvent} from 'aws-lambda'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
@@ -14,21 +15,21 @@ describe('#ListFiles', () => {
   let event: APIGatewayProxyEvent
   let batchGetStub: sinon.SinonStub
   let queryStub: sinon.SinonStub
-  const queryStubReturnObject = localFixture('query-200-OK.json')
-  queryStubReturnObject.Items[0].fileId = docClient.createSet(queryStubReturnObject.Items[0].fileId)
+  const queryStubReturnObject = localFixture('query-200-OK.json') as DocumentClient.QueryOutput
+  if (Array.isArray(queryStubReturnObject.Items)) {
+    queryStubReturnObject.Items[0].fileId = docClient.createSet(queryStubReturnObject.Items[0].fileId)
+  }
   beforeEach(() => {
-    event = localFixture('APIGatewayEvent.json')
+    event = localFixture('APIGatewayEvent.json') as APIGatewayProxyEvent
     batchGetStub = sinon.stub(DynamoDB, 'batchGet')
     queryStub = sinon.stub(DynamoDB, 'query')
-    process.env.DynamoTableFiles = 'Files'
-    process.env.DynamoTableUserFiles = 'UserFiles'
+    process.env.DynamoDBTableFiles = 'Files'
+    process.env.DynamoDBTableUserFiles = 'UserFiles'
   })
   afterEach(() => {
-    event = localFixture('APIGatewayEvent.json')
+    event = localFixture('APIGatewayEvent.json') as APIGatewayProxyEvent
     batchGetStub.restore()
     queryStub.restore()
-    delete process.env.DynamoTableFiles
-    delete process.env.DynamoTableUserFiles
   })
   it('should list files, if url is present', async () => {
     batchGetStub.returns(localFixture('batchGet-200-OK.json'))

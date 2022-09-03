@@ -4,11 +4,12 @@ import * as chai from 'chai'
 import * as SQS from '../../../lib/vendor/AWS/SQS'
 import {getFixture} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {S3Event} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#S3ObjectCreated', () => {
-  const event = localFixture('Event.json')
+  const event = localFixture('Event.json') as S3Event
   let scanStub: sinon.SinonStub
   let sendMessageStub: sinon.SinonStub
   beforeEach(() => {

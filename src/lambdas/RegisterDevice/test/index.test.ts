@@ -5,6 +5,8 @@ import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import {APIGatewayEvent} from 'aws-lambda'
+import {CreateEndpointResponse, ListSubscriptionsByTopicResponse, SubscribeResponse} from 'aws-sdk/clients/sns'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -18,11 +20,11 @@ describe('#RegisterDevice', () => {
   let unsubscribeStub: sinon.SinonStub
   let updateStub: sinon.SinonStub
   beforeEach(() => {
-    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json'))
-    event = localFixture('APIGatewayEvent.json')
-    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic').returns(localFixture('listSubscriptionsByTopic-200-OK.json'))
-    subscribeStub = sinon.stub(SNS, 'subscribe').returns(localFixture('subscribe-200-OK.json'))
-    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json'))
+    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json') as Promise<CreateEndpointResponse>)
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic').returns(localFixture('listSubscriptionsByTopic-200-OK.json') as Promise<ListSubscriptionsByTopicResponse>)
+    subscribeStub = sinon.stub(SNS, 'subscribe').returns(localFixture('subscribe-200-OK.json') as Promise<SubscribeResponse>)
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json') as Promise<DocumentClient.QueryOutput>)
     unsubscribeStub = sinon.stub(SNS, 'unsubscribe')
     updateStub = sinon.stub(DynamoDB, 'updateItem')
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
@@ -62,7 +64,7 @@ describe('#RegisterDevice', () => {
     expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
-    event.body = null
+    event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
