@@ -4,18 +4,23 @@ import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-he
 import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {DynamoDBFile} from '../../../types/main'
 import {defaultFile} from '../../../util/constants'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
 /**
  * Returns an array of Files, based on a list of File IDs
  * @param fileIds - An array of File IDs
  * @notExported
  */
-async function getFilesById(fileIds: [string]) {
+async function getFilesById(fileIds: string[]): Promise<DynamoDBFile[]> {
   const fileParams = getBatchFilesParams(process.env.DynamoDBTableFiles as string, fileIds)
   logDebug('getFilesById <=', fileParams)
   const fileResponse = await batchGet(fileParams)
   logDebug('getFilesById =>', fileResponse)
-  return fileResponse
+  if (!fileResponse || !fileResponse.Responses) {
+    throw new UnexpectedError(providerFailureErrorMessage)
+  }
+  const table = process.env.DynamoDBTableFiles as string
+  return fileResponse.Responses[table] as DynamoDBFile[]
 }
 
 /**
@@ -23,12 +28,18 @@ async function getFilesById(fileIds: [string]) {
  * @param userId - The User ID
  * @notExported
  */
-async function getFileIdsByUser(userId: string) {
+async function getFileIdsByUser(userId: string): Promise<string[]> {
   const userFileParams = getUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
   logDebug('getFileIdsByUser <=', userFileParams)
   const userFilesResponse = await query(userFileParams)
   logDebug('getFileIdsByUser =>', userFilesResponse)
-  return userFilesResponse
+  if (!userFilesResponse || !userFilesResponse.Items) {
+    throw new UnexpectedError(providerFailureErrorMessage)
+  }
+  if (userFilesResponse.Items.length === 0) {
+    return []
+  }
+  return userFilesResponse.Items[0].fileId.values
 }
 
 /**
@@ -52,19 +63,12 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     return response(context, 200, myResponse)
   }
   try {
-    const userFilesResponse = await getFileIdsByUser(userId)
-    if (Array.isArray(userFilesResponse.Items)) {
-      const count = userFilesResponse.Items.length
-      if (count > 0) {
-        const fileResponse = await getFilesById(userFilesResponse.Items[0].fileId.values)
-        if (fileResponse.Responses) {
-          const table = process.env.DynamoDBTableFiles as string
-          const files = fileResponse.Responses[table] as DynamoDBFile[]
-          myResponse.contents = files.filter((file) => file.url !== undefined)
-        }
-        myResponse.keyCount = myResponse.contents.length
-      }
+    const fileIds = await getFileIdsByUser(userId)
+    if (fileIds.length > 0) {
+      const files = await getFilesById(fileIds)
+      myResponse.contents = files.filter((file) => file.url !== undefined)
     }
+    myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)
   } catch (error) {
     return lambdaErrorResponse(context, error)

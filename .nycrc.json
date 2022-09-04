@@ -1,7 +1,7 @@
 {
     "extends": "@istanbuljs/nyc-config-typescript",
     "reporter": [ "html", "text" ],
-    "exclude": [ "src/util/mocha-setup.ts", "src/types" ],
+    "exclude": [ "src/util/mocha-setup.ts", "src/types", "**/*.test.ts" ],
     "include": [ "src" ],
     "all": true
 }

@@ -7,6 +7,7 @@ import {handler} from '../src'
 import {APIGatewayEvent} from 'aws-lambda'
 import {CreateEndpointResponse, ListSubscriptionsByTopicResponse, SubscribeResponse} from 'aws-sdk/clients/sns'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -75,5 +76,12 @@ describe('#RegisterDevice', () => {
   it('should fail gracefully if createPlatformEndpoint fails', async () => {
     createPlatformEndpointStub.rejects('Error')
     expect(handler(event, context)).to.be.rejectedWith(Error)
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+      queryStub.returns(localFixture('query-201-Created.json'))
+      listSubscriptionsByTopicStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

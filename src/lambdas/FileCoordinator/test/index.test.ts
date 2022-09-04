@@ -5,6 +5,7 @@ import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import {ScheduledEvent} from 'aws-lambda'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -35,5 +36,11 @@ describe('#FileCoordinator', () => {
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     expect(startExecutionStub.callCount).to.equal(1)
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.DynamoDB.DocumentClient.scan', async () => {
+      scanStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

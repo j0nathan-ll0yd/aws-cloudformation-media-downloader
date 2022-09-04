@@ -6,6 +6,7 @@ import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import {APIGatewayEvent} from 'aws-lambda'
 import {AppleTokenResponse, SignInWithAppleVerifiedToken} from '../../../types/main'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -58,5 +59,11 @@ describe('#LoginUser', () => {
     event.body = 'not-JSON'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.DynamoDB.DocumentClient.scan', async () => {
+      scanStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

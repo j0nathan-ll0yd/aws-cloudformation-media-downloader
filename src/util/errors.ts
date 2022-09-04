@@ -50,3 +50,5 @@ export class UnexpectedError extends CustomLambdaError {
     this.statusCode = statusCode
   }
 }
+
+export const providerFailureErrorMessage = 'AWS request failed'

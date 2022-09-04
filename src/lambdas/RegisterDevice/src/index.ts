@@ -7,7 +7,7 @@ import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
 import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {SubscriptionsList} from 'aws-sdk/clients/sns'
-import {UnexpectedError} from '../../../util/errors'
+import { providerFailureErrorMessage, UnexpectedError } from "../../../util/errors"
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -78,18 +78,16 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
   logDebug('getSubscriptionArnFromEndpointAndTopic <=', listSubscriptionsByTopicParams)
   const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
   logDebug('getSubscriptionArnFromEndpointAndTopic =>', listSubscriptionsByTopicResponse)
-  if (listSubscriptionsByTopicResponse.Subscriptions) {
-    const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
-      return subscription.Endpoint === endpointArn
-    }) as SubscriptionsList
-    if (result[0].SubscriptionArn) {
-      return result[0].SubscriptionArn
-    } else {
-      throw new UnexpectedError('Invalid subscription response')
-    }
-  } else {
+  if (!listSubscriptionsByTopicResponse.Subscriptions) {
+    throw new UnexpectedError(providerFailureErrorMessage)
+  }
+  const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
+    return subscription.Endpoint === endpointArn
+  }) as SubscriptionsList
+  if (!result[0].SubscriptionArn) {
     throw new UnexpectedError('Invalid subscription response')
   }
+  return result[0].SubscriptionArn
 }
 
 /**

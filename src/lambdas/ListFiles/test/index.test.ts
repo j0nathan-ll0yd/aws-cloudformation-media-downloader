@@ -6,6 +6,7 @@ import {handler} from '../src'
 import * as chai from 'chai'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
@@ -71,5 +72,16 @@ describe('#ListFiles', () => {
     expect(body.body).to.have.all.keys('keyCount', 'contents')
     expect(body.body.keyCount).to.equal(1)
     expect(body.body.contents[0].fileId).to.equal('default')
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.DynamoDB.DocumentClient.query', async () => {
+      queryStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
+    it('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+      queryStub.returns(queryStubReturnObject)
+      batchGetStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })
