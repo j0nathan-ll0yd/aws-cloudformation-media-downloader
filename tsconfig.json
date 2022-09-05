@@ -21,5 +21,3 @@
     "src/types/terraform.d.ts"
   ]
 }
-
-// https://www.carlrippon.com/controlling-type-checking-strictness-in-typescript/

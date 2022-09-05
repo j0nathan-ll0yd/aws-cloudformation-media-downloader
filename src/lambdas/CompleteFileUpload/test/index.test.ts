@@ -29,10 +29,12 @@ describe('#CompleteFileUpload', () => {
     const output = await handler(event)
     expect(output).to.have.all.keys('Location', 'Bucket', 'Key', 'ETag')
   })
-  it('should gracefully handle a failure', async () => {
-    const message = 'An unexpected error occured.'
-    const error = new UnexpectedError(message)
-    completeMultipartUploadStub.rejects(error)
-    expect(handler(event)).to.be.rejectedWith(`${error.name}: ${message}`)
+  describe('#AWSFailure', () => {
+    it('AWS.S3.completeMultipartUpload', async () => {
+      const message = 'An unexpected error occured.'
+      const error = new UnexpectedError(message)
+      completeMultipartUploadStub.rejects(error)
+      expect(handler(event)).to.be.rejectedWith(`${error.name}: ${message}`)
+    })
   })
 })

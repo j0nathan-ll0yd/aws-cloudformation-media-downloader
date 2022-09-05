@@ -50,10 +50,12 @@ describe('#UploadPart', () => {
     expect(finalPart.partTags.length).to.equal(totalParts)
     expect(finalPart.bytesRemaining).to.equal(0)
   })
-  it('should gracefully handle a failure', async () => {
-    const bytesTotal = 5242880 - 1000
-    mock.onAny().networkError()
-    expect(mockIterationsOfUploadPart(bytesTotal, partSize)).to.be.rejectedWith('Network Error')
+  describe('#NetworkFailure', () => {
+    it('should gracefully handle a failure', async () => {
+      const bytesTotal = 5242880 - 1000
+      mock.onAny().networkError()
+      expect(mockIterationsOfUploadPart(bytesTotal, partSize)).to.be.rejectedWith('Network Error')
+    })
   })
 })
 
