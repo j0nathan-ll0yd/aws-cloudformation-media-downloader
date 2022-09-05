@@ -5,9 +5,9 @@ import {DeviceRegistration, UserDevice} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceConstraints} from '../../../util/constraints'
 import {queryUserDeviceParams, updateUserDeviceParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {SubscriptionsList} from 'aws-sdk/clients/sns'
-import { providerFailureErrorMessage, UnexpectedError } from "../../../util/errors"
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -78,13 +78,16 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
   logDebug('getSubscriptionArnFromEndpointAndTopic <=', listSubscriptionsByTopicParams)
   const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
   logDebug('getSubscriptionArnFromEndpointAndTopic =>', listSubscriptionsByTopicResponse)
-  if (!listSubscriptionsByTopicResponse.Subscriptions) {
+  if (!listSubscriptionsByTopicResponse || !listSubscriptionsByTopicResponse.Subscriptions) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
+  logDebug('test')
   const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
     return subscription.Endpoint === endpointArn
   }) as SubscriptionsList
-  if (!result[0].SubscriptionArn) {
+  logDebug('result', result)
+  if (!result || result.length === 0 || !result[0].SubscriptionArn) {
+    logDebug('throwing ewrror')
     throw new UnexpectedError('Invalid subscription response')
   }
   return result[0].SubscriptionArn
@@ -109,32 +112,26 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
 
   let userId
-  const userDevice = {
-    ...requestBody,
-    endpointArn: platformEndpoint.EndpointArn
-  } as UserDevice
+  const userDevice = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as UserDevice
   try {
     userId = getUserIdFromEvent(event as APIGatewayEvent)
-    const table = process.env.DynamoDBTableUserDevices as string
-    const userDeviceResponse = await getUserDevice(table, userId, userDevice)
-    if (userDeviceResponse.Count === 1) {
-      return response(context, 200, {endpointArn: userDevice.endpointArn})
-    } else {
-      // Store the device details associated with the user
-      await upsertUserDevice(table, userId, userDevice)
-      // Confirm the subscription, and unsubscribe
-      const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(userDevice.endpointArn, pushNotificationTopicArn)
-      await unsubscribeEndpointToTopic(subscriptionArn)
-      return response(context, 201, {
-        endpointArn: platformEndpoint.EndpointArn
-      })
-    }
   } catch (error) {
-    logError('error =', error)
     // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(userDevice.endpointArn, pushNotificationTopicArn)
   }
-  return response(context, 200, {
-    endpointArn: platformEndpoint.EndpointArn
-  })
+
+  const table = process.env.DynamoDBTableUserDevices as string
+  const userDeviceResponse = await getUserDevice(table, userId as string, userDevice)
+  if (userDeviceResponse.Count === 1) {
+    return response(context, 200, {endpointArn: userDevice.endpointArn})
+  } else {
+    // Store the device details associated with the user
+    await upsertUserDevice(table, userId as string, userDevice)
+    // Confirm the subscription, and unsubscribe
+    const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(userDevice.endpointArn, pushNotificationTopicArn)
+    await unsubscribeEndpointToTopic(subscriptionArn)
+    return response(context, 201, {
+      endpointArn: platformEndpoint.EndpointArn
+    })
+  }
 }

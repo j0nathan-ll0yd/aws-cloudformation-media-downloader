@@ -1,10 +1,10 @@
 import {SQSEvent} from 'aws-lambda'
 import {query} from '../../../lib/vendor/AWS/DynamoDB'
 import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
-import {FileNotification} from '../../../types/main'
+import {DynamoDBUserDevice, FileNotification} from '../../../types/main'
 import {getUserDeviceByUserIdParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
-import {UnexpectedError} from '../../../util/errors'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 
 /**
@@ -12,12 +12,15 @@ import {assertIsError, transformFileNotificationToPushNotification} from '../../
  * @param userId - The UUID of the user
  * @notExported
  */
-async function getUserDeviceByUserId(userId: string) {
+async function getUserDeviceByUserId(userId: string): Promise<DynamoDBUserDevice[]> {
   const userParams = getUserDeviceByUserIdParams(process.env.DynamoDBTableUserDevices as string, userId)
   logDebug('query <=', userParams)
   const userResponse = await query(userParams)
   logDebug('query =>', userResponse)
-  return userResponse
+  if (!userResponse || !Array.isArray(userResponse.Items)) {
+    throw new UnexpectedError(providerFailureErrorMessage)
+  }
+  return userResponse.Items as DynamoDBUserDevice[]
 }
 
 /**
@@ -29,24 +32,22 @@ export async function handler(event: SQSEvent): Promise<void> {
   for (const record of event.Records) {
     try {
       const notificationType = record.body
+      if (notificationType !== 'FileNotification') {
+        return
+      }
       const userId = record.messageAttributes.userId.stringValue as string
-      const userResponse = await getUserDeviceByUserId(userId)
-      if (Array.isArray(userResponse.Items)) {
-        if (userResponse.Items.length == 0) {
-          return
-        }
-        // There will always be 1 result; but with the possibility of multiple devices
-        for (const userDevice of userResponse.Items[0].userDevice) {
-          const targetArn = userDevice.endpointArn
-          logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-          if (notificationType !== 'FileNotification') {
-            continue
-          }
-          const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn)
-          logDebug('publishSnsEvent <=', publishParams)
-          const publishResponse = await publishSnsEvent(publishParams)
-          logDebug('publishSnsEvent <=', publishResponse)
-        }
+      const userDeviceItems = await getUserDeviceByUserId(userId)
+      if (userDeviceItems.length == 0) {
+        return
+      }
+      // There will always be 1 result; but with the possibility of multiple devices
+      for (const userDevice of userDeviceItems) {
+        const targetArn = userDevice.userDevice.endpointArn
+        logInfo(`Sending ${notificationType} to targetArn`, targetArn)
+        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn)
+        logDebug('publishSnsEvent <=', publishParams)
+        const publishResponse = await publishSnsEvent(publishParams)
+        logDebug('publishSnsEvent <=', publishResponse)
       }
     } catch (error) {
       assertIsError(error)

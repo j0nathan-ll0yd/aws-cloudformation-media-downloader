@@ -73,14 +73,19 @@ describe('#RegisterDevice', () => {
     expect(body.error.message.token).to.be.an('array').to.have.lengthOf(1)
     expect(body.error.message.token[0]).to.have.string('token is required')
   })
-  it('should fail gracefully if createPlatformEndpoint fails', async () => {
-    createPlatformEndpointStub.rejects('Error')
-    expect(handler(event, context)).to.be.rejectedWith(Error)
-  })
   describe('#AWSFailure', () => {
+    it('AWS.SNS.createPlatformEndpoint', async () => {
+      createPlatformEndpointStub.rejects(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
     it('AWS.SNS.listSubscriptionsByTopic', async () => {
       queryStub.returns(localFixture('query-201-Created.json'))
       listSubscriptionsByTopicStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
+    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+      queryStub.returns(localFixture('query-201-Created.json'))
+      listSubscriptionsByTopicStub.returns({Subscriptions: []})
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
   })

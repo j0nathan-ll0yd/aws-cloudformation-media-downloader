@@ -66,6 +66,11 @@ interface UserDevice extends DeviceRegistration {
   endpointArn: string
 }
 
+interface DynamoDBUserDevice {
+  userId: string
+  userDevice: UserDevice
+}
+
 interface DynamoDBFile {
   [key: string]: string | number
   availableAt: number
