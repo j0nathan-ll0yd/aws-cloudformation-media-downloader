@@ -10,6 +10,7 @@ import {handler} from '../src'
 import {videoInfo} from 'ytdl-core'
 import {UploadPartEvent} from '../../../types/main'
 import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
+import { NotFoundError, UnexpectedError } from "../../../util/errors"
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
@@ -21,6 +22,7 @@ describe('#StartFileUpload', () => {
     'content-type': 'video/mp4'
   }
   const createMultipartUploadResponse = localFixture('createMultipartUpload-200-OK.json') as CreateMultipartUploadOutput
+  const fetchVideoInfoResponse = localFixture('fetchVideoInfo-200-OK.json') as Promise<videoInfo>
   let mock: MockAdapter
   let fetchVideoInfoStub: sinon.SinonStub
   let createMultipartUploadStub: sinon.SinonStub
@@ -28,7 +30,7 @@ describe('#StartFileUpload', () => {
   beforeEach(() => {
     mock = new MockAdapter(axios)
     createMultipartUploadStub = sinon.stub(S3, 'createMultipartUpload')
-    fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(localFixture('fetchVideoInfo-200-OK.json') as Promise<videoInfo>)
+    fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(fetchVideoInfoResponse)
     updateItemStub = sinon.stub(DynamoDB, 'updateItem')
   })
   afterEach(() => {
@@ -55,8 +57,14 @@ describe('#StartFileUpload', () => {
     expect(output.partEnd).to.equal(event.bytesTotal - 1)
     expect(output.uploadId).to.equal(createMultipartUploadResponse.UploadId)
   })
-  it('should gracefully handle a failure', async () => {
-    createMultipartUploadStub.rejects('Error')
-    expect(handler(event)).to.be.rejectedWith(Error)
+  it('should gracefully handle if a video cant be found', async () => {
+    fetchVideoInfoStub.returns({})
+    expect(handler(event)).to.be.rejectedWith(NotFoundError)
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.S3.createMultipartUpload', async () => {
+      createMultipartUploadStub.returns(undefined)
+      expect(handler(event)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

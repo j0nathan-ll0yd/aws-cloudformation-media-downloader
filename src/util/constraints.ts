@@ -1,12 +1,10 @@
 import * as validate from 'validate.js'
 import {validateURL} from 'ytdl-core'
-import {logDebug} from './lambda-helpers'
 
 // A custom function is needed; because default logic mangles attribute names
 // https://validatejs.org/#utilities-prettify
 const prettify = (str: unknown) => {
   if (typeof str === 'number') {
-    logDebug('str is Number')
     // If there are more than 2 decimals round it to two
     if ((str * 100) % 1 === 0) {
       return '' + str
@@ -16,7 +14,6 @@ const prettify = (str: unknown) => {
   }
 
   if (Array.isArray(str)) {
-    logDebug('str is Array')
     return str
       .map(function (s) {
         return validate.prettify(s)
@@ -30,8 +27,6 @@ const prettify = (str: unknown) => {
 
   // Ensure the string is actually a string
   str = '' + str
-  logDebug('str is ' + str)
-  logDebug('str is Good')
   return str
 }
 

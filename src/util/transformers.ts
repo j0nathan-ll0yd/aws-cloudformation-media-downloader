@@ -86,7 +86,7 @@ export function unknownErrorToString(unknownVariable: unknown): string {
 export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
   const keys: (keyof typeof file)[] = ['key', 'publishDate', 'size', 'url']
   keys.forEach((key) => {
-    if (typeof file[key].stringValue !== 'string') {
+    if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {
       throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
     }
   })
