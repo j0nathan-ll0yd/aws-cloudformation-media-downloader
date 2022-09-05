@@ -1,18 +1,19 @@
 import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
-import chai from 'chai'
+import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#UserSubscribe', () => {
   const context = testContext
-  let subscribeStub
-  let event
+  let subscribeStub: sinon.SinonStub
+  let event: APIGatewayEvent
   beforeEach(() => {
     subscribeStub = sinon.stub(SNS, 'subscribe')
-    event = localFixture('APIGatewayEvent.json')
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
   })
   afterEach(() => {
@@ -31,7 +32,7 @@ describe('#UserSubscribe', () => {
     expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
-    event.body = null
+    event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
@@ -39,7 +40,7 @@ describe('#UserSubscribe', () => {
     expect(body.error.message.endpointArn[0]).to.have.string('is required')
   })
   it('should handle an invalid request (no topicArn)', async () => {
-    event.body = null
+    event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)

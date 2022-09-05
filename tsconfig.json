@@ -3,15 +3,15 @@
     "module": "es6",
     "target": "es6",
     "outDir": "./dist",
-    "strict": false, // TODO: Make this true and correct the failures
+    "strict": true,
     "types": ["node", "mocha"],
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // "noImplicitAny": true, // TODO: Make this true and correct the failures
+    "noImplicitAny": true,
+    "noImplicitThis": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true // TODO: Remove this and correct the failures
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
   "exclude": [

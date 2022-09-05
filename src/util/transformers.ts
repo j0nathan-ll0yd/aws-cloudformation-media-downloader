@@ -3,22 +3,17 @@ import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
-import {logDebug} from './lambda-helpers'
+import {logDebug, logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
-import {NotFoundError} from './errors'
+import {NotFoundError, UnexpectedError} from './errors'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
-    // quality 22 = highest quality MP4 format
     const highestVideoFormat = chooseVideoFormat(myVideoInfo, {
       filter: (format) => format.container === 'mp4'
     })
     logDebug('getHighestVideoFormatFromVideoInfo', highestVideoFormat)
-    if (highestVideoFormat instanceof Error) {
-      throw highestVideoFormat
-    } else {
-      return highestVideoFormat
-    }
+    return highestVideoFormat
   } catch (error) {
     throw new NotFoundError('Unable to find acceptable video format')
   }
@@ -72,18 +67,42 @@ export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDB
   }
 }
 
-export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
-  const clientFile: ClientFile = {
-    key: file.key.stringValue,
-    publishDate: file.publishDate.stringValue,
-    size: parseInt(file.size.stringValue, 0),
-    url: file.url.stringValue
+export function unknownErrorToString(unknownVariable: unknown): string {
+  if (typeof unknownVariable === 'string') {
+    return unknownVariable
+  } else if (Array.isArray(unknownVariable)) {
+    return unknownVariable
+      .map(function (s) {
+        return unknownErrorToString(s)
+      })
+      .join(', ')
+  } else if (typeof unknownVariable === 'object') {
+    return JSON.stringify(unknownVariable)
+  } else {
+    return 'Unknown error'
   }
+}
+
+export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
+  const keys: (keyof typeof file)[] = ['key', 'publishDate', 'size', 'url']
+  keys.forEach((key) => {
+    if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {
+      throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
+    }
+  })
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+  const clientFile: ClientFile = {
+    key: file.key.stringValue!,
+    publishDate: file.publishDate.stringValue!,
+    size: parseInt(file.size.stringValue!, 0),
+    url: file.url.stringValue!
+  }
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
   return {
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({
         aps: {'content-available': 1},
-        file: objectKeysToLowerCase(clientFile)
+        file: clientFile
       }),
       default: 'Default message'
     }),
@@ -104,15 +123,16 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
   logDebug('videoDetails', myVideoInfo.videoDetails)
   const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
   logDebug('thumbnails', thumbnails)
-  for (const key of ['author', 'description', 'publishDate', 'title']) {
+  const keys: (keyof typeof myVideoInfo.videoDetails)[] = ['author', 'description', 'publishDate', 'title']
+  keys.forEach((key) => {
     if (!myVideoInfo.videoDetails[key]) {
-      throw new NotFoundError(`myVideoInfo missing property ${key}`)
+      throw new UnexpectedError(`Missing required value in videoDetails: ${key}`)
     }
-  }
+  })
 
   const date = new Date(Date.parse(publishDate))
   const ext = myVideoFormat.container
-  const uploadDate = date.toISOString().substr(0, 10).replace(/-/g, '')
+  const uploadDate = date.toISOString().substring(0, 10).replace(/-/g, '')
   const fileName = `${uploadDate}-[${author.name}].${ext}`
   const escapedTitle = title.replace(/[°()@,;:"/[\]\\?={}’]/g, '')
 
@@ -128,7 +148,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     mimeType: myVideoFormat.mimeType,
     published: Date.parse(publishDate),
     title
-  }
+  } as Metadata
 }
 
 export function transformVideoIntoDynamoItem(metadata: Metadata): DynamoDBFile {
@@ -136,31 +156,17 @@ export function transformVideoIntoDynamoItem(metadata: Metadata): DynamoDBFile {
     fileId: metadata.videoId,
     key: metadata.fileName,
     size: 0,
-    contentType: undefined,
     availableAt: new Date().getTime() / 1000,
     authorName: metadata.author.name,
-    authorUser: metadata.author.user,
+    authorUser: metadata.author.user || metadata.author.name.toLowerCase(),
     title: metadata.title,
-    publishDate: undefined,
     description: metadata.description
-  }
+  } as DynamoDBFile
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function objectKeysToLowerCase(input: object): object {
-  if (typeof input !== 'object') {
-    return input
+export function assertIsError(error: unknown): asserts error is Error {
+  logError('error', error)
+  if (!(error instanceof Error)) {
+    throw error
   }
-  if (Array.isArray(input)) {
-    return input.map(objectKeysToLowerCase)
-  }
-  if (Object.prototype.toString.call(input) === '[object Date]') {
-    return input
-  }
-  return Object.keys(input).reduce((newObj, key) => {
-    const val = input[key]
-    const newKey = (key.charAt(0).toLowerCase() + key.slice(1) || key).toString()
-    newObj[newKey] = typeof val === 'object' ? objectKeysToLowerCase(val) : val
-    return newObj
-  }, {})
 }

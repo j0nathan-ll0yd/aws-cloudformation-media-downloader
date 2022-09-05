@@ -1,6 +1,7 @@
 import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
+import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 
 interface Metadata {
   videoId: string
@@ -39,6 +40,7 @@ interface UploadPartEvent {
 }
 
 interface CompleteFileUploadEvent {
+  partNumber?: number
   bucket: string
   bytesRemaining: number
   fileId: string
@@ -64,7 +66,13 @@ interface UserDevice extends DeviceRegistration {
   endpointArn: string
 }
 
+interface DynamoDBUserDevice {
+  userId: string
+  userDevice: UserDevice
+}
+
 interface DynamoDBFile {
+  [key: string]: string | number
   availableAt: number
   size: number
   authorName: string
@@ -115,7 +123,8 @@ interface UserLogin {
 }
 
 interface UserSubscribe {
-  endpoint: string
+  endpointArn: string
+  topicArn: string
 }
 
 interface User {
@@ -165,4 +174,11 @@ interface SignInWithAppleVerifiedToken {
   is_private_email: boolean
   auth_time: number
   nonce_supported: boolean
+}
+
+// Types specifically for Cloudfront
+type CustomCloudFrontOrigin = {custom: CloudFrontCustomOrigin}
+interface CustomCloudFrontRequest extends CloudFrontRequest {
+  clientIp: string
+  origin: CustomCloudFrontOrigin
 }

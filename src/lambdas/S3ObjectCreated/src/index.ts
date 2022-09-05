@@ -3,9 +3,10 @@ import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile, UserFile} from '../../../types/main'
 import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
-import {logDebug, logError} from '../../../util/lambda-helpers'
-import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+import {logDebug} from '../../../util/lambda-helpers'
+import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
+import {SendMessageRequest} from 'aws-sdk/clients/sqs'
 
 /**
  * Returns the DynamoDBFile by file name
@@ -13,14 +14,15 @@ import {UnexpectedError} from '../../../util/errors'
  * @notExported
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
-  const getFileByKeyParams = getFileByKey(process.env.DynamoDBTableFiles, fileName)
+  const getFileByKeyParams = getFileByKey(process.env.DynamoDBTableFiles as string, fileName)
   logDebug('scan <=', getFileByKeyParams)
   const getFileByKeyResponse = await scan(getFileByKeyParams)
   logDebug('scan =>', getFileByKeyResponse)
-  if (getFileByKeyResponse.Count === 0) {
-    throw 'Unable to locate file'
+  if (Array.isArray(getFileByKeyResponse.Items) && getFileByKeyResponse.Items.length > 0) {
+    return getFileByKeyResponse.Items[0] as DynamoDBFile
+  } else {
+    throw new UnexpectedError('Unable to locate file')
   }
-  return getFileByKeyResponse.Items[0] as DynamoDBFile
 }
 
 /**
@@ -29,7 +31,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
  * @notExported
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
-  const getUsersByFileIdParams = getUsersByFileId(process.env.DynamoDBTableUserFiles, file.fileId)
+  const getUsersByFileIdParams = getUsersByFileId(process.env.DynamoDBTableUserFiles as string, file.fileId)
   logDebug('scan <=', getUsersByFileIdParams)
   const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
   logDebug('scan =>', getUsersByFileIdResponse)
@@ -49,7 +51,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  }
+  } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }
@@ -68,7 +70,7 @@ export async function handler(event: S3Event): Promise<void> {
     const notifications = userIds.map((userId) => dispatchFileNotificationToUser(file, userId))
     await Promise.all(notifications)
   } catch (error) {
-    logError('error', error)
+    assertIsError(error)
     throw new UnexpectedError(error.message)
   }
 }

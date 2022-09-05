@@ -1,13 +1,14 @@
-import chai from 'chai'
+import * as chai from 'chai'
 import {createAccessToken, getAppleClientSecret, getAppleConfig, getApplePrivateKey, getServerPrivateKey, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} from './secretsmanager-helpers'
-import jwt, {JsonWebTokenError} from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
+import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
 import * as sinon from 'sinon'
 import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
-import JwksRsa from 'jwks-rsa'
+import * as JwksRsa from 'jwks-rsa'
 const expect = chai.expect
 
 // Randomly generated key; not actually used anywhere (safe)
@@ -84,14 +85,12 @@ const fakeKeyPayload = {
 }
 
 describe('#Util:SecretsManager', () => {
-  let getSecretValueStub
-  let jwksClientSigningKeyStub
-  let mock
+  let getSecretValueStub: sinon.SinonStub
+  let jwksClientSigningKeyStub: sinon.SinonStub
+  let mock: MockAdapter
   beforeEach(() => {
     getSecretValueStub = sinon.stub(SecretsManager, 'getSecretValue')
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    jwksClientSigningKeyStub = sinon.stub(JwksRsa.JwksClient.prototype, 'getSigningKey').returns(Promise.resolve(fakeKeyPayload))
+    jwksClientSigningKeyStub = sinon.stub(JwksRsa.JwksClient.prototype, 'getSigningKey').resolves(fakeKeyPayload)
     mock = new MockAdapter(axios)
   })
   afterEach(() => {
@@ -145,9 +144,9 @@ describe('#Util:SecretsManager', () => {
     getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString)
+    const jwtPayload = jwt.verify(token, secretString) as JwtPayload
     expect(jwtPayload).to.have.all.keys('userId', 'iat', 'exp')
-    expect(jwtPayload['userId']).to.eql(userId)
+    expect(jwtPayload.userId).to.eql(userId)
   })
   it('should verifyAccessToken successfully', async () => {
     const secretString = 'randomly-generated-secret-id'
@@ -164,18 +163,14 @@ describe('#Util:SecretsManager', () => {
     await expect(verifyAccessToken(token)).to.be.rejectedWith(JsonWebTokenError)
   })
   it('should verifyAppleToken successfully', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').returns(fakeTokenPayload)
+    const jwtVerifyStub = sinon.stub(jwt, 'verify').resolves(fakeTokenPayload)
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
     const newToken = await verifyAppleToken(token)
     jwtVerifyStub.restore()
     expect(newToken).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported')
   })
   it('should verifyAppleToken handle an unexpected string payload', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').returns('a string'.toString())
+    const jwtVerifyStub = sinon.stub(jwt, 'verify').throws('a string')
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
     jwtVerifyStub.restore()
@@ -185,8 +180,8 @@ describe('#Util:SecretsManager', () => {
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token header', async () => {
-    const fakeKeyPayloadWithoutHeader = fakeKeyPayload
-    delete fakeKeyPayloadWithoutHeader.rsaPublicKey
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {rsaPublicKey, ...fakeKeyPayloadWithoutHeader} = fakeKeyPayload
     jwksClientSigningKeyStub.returns(Promise.resolve(fakeKeyPayloadWithoutHeader))
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey)
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)

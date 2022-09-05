@@ -1,9 +1,9 @@
 import * as fs from 'fs'
-import chai from 'chai'
+import * as chai from 'chai'
 import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
-import Log from 'debug-level'
-const log = new Log(__filename.slice(__dirname.length + 1, -3))
+import Debug from 'debug'
+const log = Debug(__filename.slice(__dirname.length + 1, -3))
 
 // IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE
 const excludedSourceVariables = {
@@ -20,60 +20,70 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 }
 
 function preprocessTerraformPlan(terraformPlan: TerraformD) {
-  const cloudFrontDistributionNames = {}
-  const environmentVariablesForFunction = {}
-  for (const distributionName of Object.keys(terraformPlan.resource.aws_cloudfront_distribution)) {
-    log.debug('aws_cloudfront_distribution.name', distributionName)
-    const resource = terraformPlan.resource.aws_cloudfront_distribution[distributionName] as AwsCloudfrontDistributionProduction
-    log.trace('aws_cloudfront_distribution.resource', resource)
+  const cloudFrontDistributionNames: Record<string, number> = {}
+  const environmentVariablesForFunction: Record<string, string[]> = {}
+  interface CustomAwsCloudfrontDistribution {
+    [key: string]: AwsCloudfrontDistributionProduction
+    Production: AwsCloudfrontDistributionProduction
+  }
+  const distribution = terraformPlan.resource.aws_cloudfront_distribution as CustomAwsCloudfrontDistribution
+  const distributions: string[] = Object.keys(distribution)
+  distributions.map((key) => {
+    log('aws_cloudfront_distribution.name', key)
+    const resource = distribution[key] as AwsCloudfrontDistributionProduction
+    log('aws_cloudfront_distribution.resource', resource)
     if (resource.origin && resource.origin.custom_header) {
       const matches = resource.comment.match(/aws_lambda_function\.(\w+)\.function_name/)
-      log.trace('resource.comment.match', matches)
-      const functionName = matches[1]
-      cloudFrontDistributionNames[functionName] = 1
-      environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
-      log.debug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      if (Array.isArray(matches) && matches.length > 0) {
+        log('resource.comment.match', matches)
+        const functionName = matches[1]
+        cloudFrontDistributionNames[functionName] = 1
+        environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
+        log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      }
     }
-  }
+  })
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
-    log.debug('aws_lambda_function.name', functionName)
+    log('aws_lambda_function.name', functionName)
     const resource = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction
-    log.trace('aws_lambda_function.resource', resource)
+    log('aws_lambda_function.resource', resource)
     if (resource.environment && resource.environment.variables) {
       environmentVariablesForFunction[functionName] = Object.keys(resource.environment.variables)
-      log.debug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }
-  log.debug('CloudFront distribution name', cloudFrontDistributionNames)
-  log.debug('Environment variables by function', environmentVariablesForFunction)
-  log.debug('Lambda function names', lambdaFunctionNames)
+  log('CloudFront distribution name', cloudFrontDistributionNames)
+  log('Environment variables by function', environmentVariablesForFunction)
+  log('Lambda function names', lambdaFunctionNames)
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
-function getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice = [0]) {
+function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
   const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
-  let environmentVariablesSource = []
+  let environmentVariablesSource: string[]
   const matches = functionSource.match(sourceCodeRegex)
-  log.trace(`functionSource.match(${sourceCodeRegex})`, matches)
+  log(`functionSource.match(${sourceCodeRegex})`, matches)
   if (matches && matches.length > 0) {
     environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
-    log.debug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+    log(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+    return environmentVariablesSource
+  } else {
+    return []
   }
-  return environmentVariablesSource
 }
 
 describe('#Terraform', () => {
   const jsonFilePath = `${__dirname}/../../build/terraform.json`
-  log.info('Retrieving Terraform plan configuration')
+  log('Retrieving Terraform plan configuration')
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
-  log.debug('JSON file', jsonFile)
+  log('JSON file', jsonFile)
   const terraformPlan = JSON.parse(jsonFile) as TerraformD
   const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
-    let environmentVariablesTerraform = []
+    let environmentVariablesTerraform: string[] = []
     let environmentVariablesTerraformCount = 0
     if (environmentVariablesForFunction[functionName]) {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]

@@ -2,6 +2,9 @@ import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Co
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import {assertIsError} from '../../../util/transformers'
+import {CustomCloudFrontRequest} from '../../../types/main'
+import {ValidationError} from '../../../util/errors'
 
 /**
  * For **every request** to the system:
@@ -11,13 +14,13 @@ import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> {
   logInfo('event <=', event)
   logInfo('context <=', context)
-  const request = event.Records[0].cf.request
+  const request = event.Records[0].cf.request as CustomCloudFrontRequest
   try {
     await Promise.all([handleAuthorizationHeader(request), handleQueryString(request)])
-  } catch (err) {
-    logError('Error handling request', err)
+  } catch (error) {
+    assertIsError(error)
     const realm = request.origin.custom.customHeaders['x-www-authenticate-realm'][0].value
-    const response = cloudFrontErrorResponse(context, 401, err, realm)
+    const response = cloudFrontErrorResponse(context, 401, error.message, realm)
     logError('response => ', response)
     return response
   }
@@ -32,7 +35,7 @@ export async function handler(event: CloudFrontRequestEvent, context: Context): 
  * @param request - A **reference** to the CloudFrontRequest (modified in place)
  * @notExported
  */
-async function handleAuthorizationHeader(request: CloudFrontRequest) {
+async function handleAuthorizationHeader(request: CustomCloudFrontRequest) {
   const headers: CloudFrontHeaders = request.headers
   // if the request is coming from my IP, mock the Authorization header to map to a default userId
   const reservedIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value
@@ -58,17 +61,17 @@ async function handleAuthorizationHeader(request: CloudFrontRequest) {
   }
   // If the path supports either authenticated or unauthenticated requests; ensure the header is present
   if (!multiAuthenticationPaths.find((path) => path === pathPart) && !headers.authorization) {
-    throw 'headers.Authorization is required'
+    throw new ValidationError('headers.Authorization is required')
   }
 
   if (headers.authorization) {
     const authorizationHeader = headers.authorization[0].value
     const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
     const matches = authorizationHeader.match(jwtRegex)
-    logDebug('headers.authorization <=', matches)
+    logDebug('headers.authorization <=', JSON.stringify(matches))
     if (!authorizationHeader.match(jwtRegex)) {
       // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-      throw 'headers.Authorization is invalid'
+      throw new ValidationError('headers.Authorization is invalid')
     }
 
     const keypair = authorizationHeader.split(' ')
@@ -104,10 +107,10 @@ async function handleQueryString(request: CloudFrontRequest) {
   const queryString = request.querystring
   const apiKeyRegex = /ApiKey/
   const matches = queryString.match(apiKeyRegex)
-  logDebug('request.querystring <=', matches)
+  logDebug('request.querystring <=', JSON.stringify(matches))
   if (!queryString.match(apiKeyRegex)) {
     // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-    throw 'request.querystring is invalid'
+    throw new ValidationError('request.querystring is invalid')
   }
   const keypair = request.querystring.split('=')
   headers['x-api-key'] = [

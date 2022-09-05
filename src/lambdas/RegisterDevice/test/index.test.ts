@@ -1,27 +1,31 @@
 import * as sinon from 'sinon'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import chai from 'chai'
+import * as chai from 'chai'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
+import {CreateEndpointResponse, ListSubscriptionsByTopicResponse, SubscribeResponse} from 'aws-sdk/clients/sns'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#RegisterDevice', () => {
   const context = testContext
-  let createPlatformEndpointStub
-  let event
-  let listSubscriptionsByTopicStub
-  let subscribeStub
-  let queryStub
-  let unsubscribeStub
-  let updateStub
+  let createPlatformEndpointStub: sinon.SinonStub
+  let event: APIGatewayEvent
+  let listSubscriptionsByTopicStub: sinon.SinonStub
+  let subscribeStub: sinon.SinonStub
+  let queryStub: sinon.SinonStub
+  let unsubscribeStub: sinon.SinonStub
+  let updateStub: sinon.SinonStub
   beforeEach(() => {
-    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json'))
-    event = localFixture('APIGatewayEvent.json')
-    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic').returns(localFixture('listSubscriptionsByTopic-200-OK.json'))
-    subscribeStub = sinon.stub(SNS, 'subscribe').returns(localFixture('subscribe-200-OK.json'))
-    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json'))
+    createPlatformEndpointStub = sinon.stub(SNS, 'createPlatformEndpoint').returns(localFixture('createPlatformEndpoint-200-OK.json') as Promise<CreateEndpointResponse>)
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+    listSubscriptionsByTopicStub = sinon.stub(SNS, 'listSubscriptionsByTopic').returns(localFixture('listSubscriptionsByTopic-200-OK.json') as Promise<ListSubscriptionsByTopicResponse>)
+    subscribeStub = sinon.stub(SNS, 'subscribe').returns(localFixture('subscribe-200-OK.json') as Promise<SubscribeResponse>)
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json') as Promise<DocumentClient.QueryOutput>)
     unsubscribeStub = sinon.stub(SNS, 'unsubscribe')
     updateStub = sinon.stub(DynamoDB, 'updateItem')
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
@@ -61,7 +65,7 @@ describe('#RegisterDevice', () => {
     expect(output.statusCode).to.equal(503)
   })
   it('should handle an invalid request (no token)', async () => {
-    event.body = null
+    event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
     const body = JSON.parse(output.body)
@@ -69,8 +73,20 @@ describe('#RegisterDevice', () => {
     expect(body.error.message.token).to.be.an('array').to.have.lengthOf(1)
     expect(body.error.message.token[0]).to.have.string('token is required')
   })
-  it('should fail gracefully if createPlatformEndpoint fails', async () => {
-    createPlatformEndpointStub.rejects('Error')
-    expect(handler(event, context)).to.be.rejectedWith(Error)
+  describe('#AWSFailure', () => {
+    it('AWS.SNS.createPlatformEndpoint', async () => {
+      createPlatformEndpointStub.rejects(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
+    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+      queryStub.returns(localFixture('query-201-Created.json'))
+      listSubscriptionsByTopicStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
+    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+      queryStub.returns(localFixture('query-201-Created.json'))
+      listSubscriptionsByTopicStub.returns({Subscriptions: []})
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

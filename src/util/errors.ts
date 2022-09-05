@@ -1,11 +1,11 @@
 export class CustomLambdaError extends Error {
-  errors: object
-  statusCode: number
+  errors: object | undefined
+  statusCode: number | undefined
 }
 
 // Called when the client request is invalid (usually via validate.js)
 export class ValidationError extends CustomLambdaError {
-  constructor(message: string, errors?, statusCode = 400) {
+  constructor(message: string, errors?: object, statusCode = 400) {
     super(message)
     if (errors) {
       this.errors = errors
@@ -50,3 +50,5 @@ export class UnexpectedError extends CustomLambdaError {
     this.statusCode = statusCode
   }
 }
+
+export const providerFailureErrorMessage = 'AWS request failed'

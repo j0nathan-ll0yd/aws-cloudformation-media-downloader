@@ -1,12 +1,10 @@
 import * as validate from 'validate.js'
 import {validateURL} from 'ytdl-core'
-import {logDebug} from './lambda-helpers'
 
 // A custom function is needed; because default logic mangles attribute names
 // https://validatejs.org/#utilities-prettify
-const prettify = (str) => {
-  if (validate.isNumber(str)) {
-    logDebug('str is Number')
+const prettify = (str: unknown) => {
+  if (typeof str === 'number') {
     // If there are more than 2 decimals round it to two
     if ((str * 100) % 1 === 0) {
       return '' + str
@@ -15,8 +13,7 @@ const prettify = (str) => {
     }
   }
 
-  if (validate.isArray(str)) {
-    logDebug('str is Array')
+  if (Array.isArray(str)) {
     return str
       .map(function (s) {
         return validate.prettify(s)
@@ -24,18 +21,12 @@ const prettify = (str) => {
       .join(', ')
   }
 
-  if (validate.isObject(str)) {
-    logDebug('str is Object')
-    if (!validate.isDefined(str.toString)) {
-      return JSON.stringify(str)
-    }
-    return str.toString()
+  if (typeof str === 'object') {
+    return JSON.stringify(str)
   }
 
   // Ensure the string is actually a string
   str = '' + str
-  logDebug('str is ' + str)
-  logDebug('str is Good')
   return str
 }
 
@@ -50,12 +41,12 @@ export const validateOptions = {
 // https://validatejs.org/docs/validate.html#section-47
 const defaultPresenceConstraint = {
   allowEmpty: false,
-  message: (_value, attribute) => {
+  message: (_value: string | object | number, attribute: string) => {
     return `^${attribute} is required`
   }
 }
 
-validate.validators.isYouTubeURL = (value) => {
+validate.validators.isYouTubeURL = (value: string) => {
   if (value && !validateURL(value)) {
     return '^is not a valid YouTube URL'
   }

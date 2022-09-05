@@ -5,8 +5,8 @@ const docClient = new AWS.DynamoDB.DocumentClient()
 
 function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
   let UpdateExpression = 'SET'
-  const ExpressionAttributeNames = {}
-  const ExpressionAttributeValues = {}
+  const ExpressionAttributeNames: Record<string, string> = {}
+  const ExpressionAttributeValues: Record<string, number | string> = {}
   for (const property in item) {
     if (property === 'fileId') {
       continue

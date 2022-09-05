@@ -1,25 +1,30 @@
 import * as sinon from 'sinon'
-import chai from 'chai'
+import * as chai from 'chai'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
+import {AppleTokenResponse, SignInWithAppleVerifiedToken} from '../../../types/main'
+import {UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#LoginUser', () => {
   const context = testContext
-  let createAccessTokenStub
-  let event
-  let scanStub
-  let validateAuthCodeForTokenStub
-  let verifyAppleTokenStub
+  let createAccessTokenStub: sinon.SinonStub
+  let event: APIGatewayEvent
+  let scanStub: sinon.SinonStub
+  let validateAuthCodeForTokenStub: sinon.SinonStub
+  let verifyAppleTokenStub: sinon.SinonStub
   beforeEach(() => {
     createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
-    event = localFixture('APIGatewayEvent.json')
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
     scanStub = sinon.stub(DynamoDB, 'scan')
-    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json'))
-    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json'))
+    const validateAuthResponse = localFixture('validateAuthCodeForToken-200-OK.json') as Promise<AppleTokenResponse>
+    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(validateAuthResponse)
+    const verifyAppleResponse = localFixture('validateAuthCodeForToken-200-OK.json') as Promise<SignInWithAppleVerifiedToken>
+    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(verifyAppleResponse)
   })
   afterEach(() => {
     createAccessTokenStub.restore()
@@ -51,8 +56,14 @@ describe('#LoginUser', () => {
     expect(body.error.message).to.equal('Duplicate user detected')
   })
   it('should reject an invalid request', async () => {
-    event.body = {}
+    event.body = 'not-JSON'
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(400)
+  })
+  describe('#AWSFailure', () => {
+    it('AWS.DynamoDB.DocumentClient.scan', async () => {
+      scanStub.returns(undefined)
+      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    })
   })
 })

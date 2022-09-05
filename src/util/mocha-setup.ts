@@ -1,7 +1,7 @@
-import chai from 'chai'
-import chaiAsPromised from 'chai-as-promised'
-import fs from 'fs'
-import path from 'path'
+import * as chai from 'chai'
+import * as chaiAsPromised from 'chai-as-promised'
+import * as fs from 'fs'
+import * as path from 'path'
 import * as sinon from 'sinon'
 chai.use(chaiAsPromised)
 
@@ -37,19 +37,24 @@ export const testContext = {
   }
 }
 
+let consoleLogStub: sinon.SinonStub
+let consoleInfoStub: sinon.SinonStub
+let consoleDebugStub: sinon.SinonStub
+let consoleWarnStub: sinon.SinonStub
+let consoleErrorStub: sinon.SinonStub
 export const mochaHooks = {
   beforeEach(): void {
-    this.consoleLogStub = sinon.stub(console, 'log')
-    this.consoleInfoStub = sinon.stub(console, 'info')
-    this.consoleDebugStub = sinon.stub(console, 'debug')
-    this.consoleWarnStub = sinon.stub(console, 'warn')
-    this.consoleErrorStub = sinon.stub(console, 'error')
+    consoleLogStub = sinon.stub(console, 'log')
+    consoleInfoStub = sinon.stub(console, 'info')
+    consoleDebugStub = sinon.stub(console, 'debug')
+    consoleWarnStub = sinon.stub(console, 'warn')
+    consoleErrorStub = sinon.stub(console, 'error')
   },
   afterEach(): void {
-    this.consoleLogStub.restore()
-    this.consoleInfoStub.restore()
-    this.consoleDebugStub.restore()
-    this.consoleWarnStub.restore()
-    this.consoleErrorStub.restore()
+    consoleLogStub.restore()
+    consoleInfoStub.restore()
+    consoleDebugStub.restore()
+    consoleWarnStub.restore()
+    consoleErrorStub.restore()
   }
 }

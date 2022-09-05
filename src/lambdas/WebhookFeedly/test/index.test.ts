@@ -2,25 +2,27 @@ import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SQS from '../../../lib/vendor/AWS/SQS'
 import {getFixture, testContext} from '../../../util/mocha-setup'
-import chai from 'chai'
+import * as chai from 'chai'
 import {handler} from '../src'
+import {APIGatewayEvent} from 'aws-lambda'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#WebhookFeedly', () => {
   const context = testContext
-  let event
-  let queryStub
-  let sendMessageStub
-  let updateItemStub
+  let event: APIGatewayEvent
+  let queryStub: sinon.SinonStub
+  let sendMessageStub: sinon.SinonStub
+  let updateItemStub: sinon.SinonStub
   beforeEach(() => {
-    event = localFixture('APIGatewayEvent.json')
-    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-204-NoContent.json'))
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-204-NoContent.json') as Promise<DocumentClient.QueryOutput>)
     sendMessageStub = sinon.stub(SQS, 'sendMessage')
     updateItemStub = sinon.stub(DynamoDB, 'updateItem')
   })
   afterEach(() => {
-    event = localFixture('APIGatewayEvent.json')
+    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
     queryStub.restore()
     sendMessageStub.restore()
     updateItemStub.restore()
