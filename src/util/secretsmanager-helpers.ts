@@ -184,7 +184,8 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
   return jwt.sign({userId}, secret, {
-    expiresIn: 86400 // expires in 24 hours
+    // expiresIn: 86400 // expires in 24 hours
+    expiresIn: 60 * 5
   })
 }
 

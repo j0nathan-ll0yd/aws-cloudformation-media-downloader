@@ -1,0 +1,19 @@
+[
+  {
+    "emailVerified":"true",
+    "lastName":"Lloyd",
+    "userId":"e5b3a1b7-06a8-48a0-8f12-8131d9fe782b",
+    "identityProviders":{
+      "emailVerified":"true",
+      "isPrivateEmail":"true",
+      "accessToken":"a951f9888940c471880c4a199e672475a.0.sryv.Gw5Wwly16R3t_iCUZSyFeQ",
+      "tokenType":"Bearer",
+      "userId":"000185.7720315570fc49d99a265f9af4b46879.2034",
+      "expiresAt":1662585324269,
+      "email":"28ncci33a3@privaterelay.appleid.com",
+      "refreshToken":"rad9893d63d2d496b8f57e7166db2633c.0.sryv.Ekyu5xzT5xGqCeFSy8Hcdw"
+    },
+    "email":"28ncci33a3@privaterelay.appleid.com",
+    "firstName":"Jonathan"
+  }
+]

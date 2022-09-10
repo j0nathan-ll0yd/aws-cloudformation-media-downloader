@@ -2,7 +2,6 @@ import * as chai from 'chai'
 import * as chaiAsPromised from 'chai-as-promised'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as sinon from 'sinon'
 chai.use(chaiAsPromised)
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -34,27 +33,5 @@ export const testContext = {
   },
   succeed: () => {
     return
-  }
-}
-
-let consoleLogStub: sinon.SinonStub
-let consoleInfoStub: sinon.SinonStub
-let consoleDebugStub: sinon.SinonStub
-let consoleWarnStub: sinon.SinonStub
-let consoleErrorStub: sinon.SinonStub
-export const mochaHooks = {
-  beforeEach(): void {
-    consoleLogStub = sinon.stub(console, 'log')
-    consoleInfoStub = sinon.stub(console, 'info')
-    consoleDebugStub = sinon.stub(console, 'debug')
-    consoleWarnStub = sinon.stub(console, 'warn')
-    consoleErrorStub = sinon.stub(console, 'error')
-  },
-  afterEach(): void {
-    consoleLogStub.restore()
-    consoleInfoStub.restore()
-    consoleDebugStub.restore()
-    consoleWarnStub.restore()
-    consoleErrorStub.restore()
   }
 }

@@ -110,28 +110,27 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
 
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
   const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
-
-  let userId
   const userDevice = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as UserDevice
+
   try {
-    userId = getUserIdFromEvent(event as APIGatewayEvent)
+    const userId = getUserIdFromEvent(event as APIGatewayEvent)
+    const table = process.env.DynamoDBTableUserDevices as string
+    const userDeviceResponse = await getUserDevice(table, userId, userDevice)
+    if (userDeviceResponse.Count === 1) {
+      return response(context, 200, {endpointArn: userDevice.endpointArn})
+    } else {
+      // Store the device details associated with the user
+      await upsertUserDevice(table, userId as string, userDevice)
+      // Confirm the subscription, and unsubscribe
+      const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(userDevice.endpointArn, pushNotificationTopicArn)
+      await unsubscribeEndpointToTopic(subscriptionArn)
+      return response(context, 201, {
+        endpointArn: platformEndpoint.EndpointArn
+      })
+    }
   } catch (error) {
     // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(userDevice.endpointArn, pushNotificationTopicArn)
-  }
-
-  const table = process.env.DynamoDBTableUserDevices as string
-  const userDeviceResponse = await getUserDevice(table, userId as string, userDevice)
-  if (userDeviceResponse.Count === 1) {
     return response(context, 200, {endpointArn: userDevice.endpointArn})
-  } else {
-    // Store the device details associated with the user
-    await upsertUserDevice(table, userId as string, userDevice)
-    // Confirm the subscription, and unsubscribe
-    const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(userDevice.endpointArn, pushNotificationTopicArn)
-    await unsubscribeEndpointToTopic(subscriptionArn)
-    return response(context, 201, {
-      endpointArn: platformEndpoint.EndpointArn
-    })
   }
 }

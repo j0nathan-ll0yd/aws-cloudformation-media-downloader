@@ -1,8 +1,11 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
-import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
+import { CustomLambdaError, providerFailureErrorMessage, ServiceUnavailableError, UnauthorizedError, UnexpectedError } from "./errors"
 import {unknownErrorToString} from './transformers'
+import { User } from "../types/main"
+import { getUserByAppleDeviceIdentifierParams } from "./dynamodb-helpers"
+import { scan } from "../lib/vendor/AWS/DynamoDB"
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -33,7 +36,6 @@ export function cloudFrontErrorResponse(context: Context, statusCode: number, me
  * Subscribes an endpoint (a client device) to an SNS topic
  * @param endpointArn - The EndpointArn of a mobile app and device
  * @param topicArn - The ARN of the topic you want to subscribe to
- * @notExported
  */
 export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
   const subscribeParams = {
@@ -45,6 +47,21 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
   const subscribeResponse = await subscribe(subscribeParams)
   logDebug('subscribe =>', subscribeResponse)
   return subscribeResponse
+}
+
+/**
+ * Searches for a User record via their Apple Device ID
+ * @param userDeviceId - The subject registered claim that identifies the principal user.
+ */
+export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
+  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
+  logDebug('getUsersByAppleDeviceIdentifier <=', scanParams)
+  const scanResponse = await scan(scanParams)
+  logDebug('getUsersByAppleDeviceIdentifier =>', scanResponse)
+  if (!scanResponse || !scanResponse.Items) {
+    throw new UnexpectedError(providerFailureErrorMessage)
+  }
+  return scanResponse.Items as User[]
 }
 
 /**

@@ -4,7 +4,7 @@ import {IdentityProviderApple, User, UserRegistration} from '../../../types/main
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserConstraints} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUsersByAppleDeviceIdentifier, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 
@@ -23,7 +23,7 @@ async function createUser(user: User, identityProviderApple: IdentityProviderApp
 }
 
 /**
- * Registers a User via Sign in with Apple
+ * Registers a User, or retrieves existing User via Sign in with Apple
  * - NOTE: All User details are sourced from the identity token
  * @notExported
  */
@@ -35,10 +35,18 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     validateRequest(requestBody, registerUserConstraints)
     const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
     const verifiedToken = await verifyAppleToken(appleToken.id_token)
-    const user = createUserFromToken(verifiedToken, requestBody.firstName as string, requestBody.lastName as string)
-    const identityProviderApple = createIdentityProviderAppleFromTokens(appleToken, verifiedToken)
-    await createUser(user, identityProviderApple)
-    const token = await createAccessToken(user.userId)
+    const appleUserId = verifiedToken.sub
+    const users = await getUsersByAppleDeviceIdentifier(appleUserId)
+    let token: string
+    if (users.length === 1) {
+      const userId = users[0].userId
+      token = await createAccessToken(userId)
+    } else {
+      const user = createUserFromToken(verifiedToken, requestBody.firstName as string, requestBody.lastName as string)
+      const identityProviderApple = createIdentityProviderAppleFromTokens(appleToken, verifiedToken)
+      await createUser(user, identityProviderApple)
+      token = await createAccessToken(user.userId)
+    }
     return response(context, 200, {token})
   } catch (error) {
     return lambdaErrorResponse(context, error)

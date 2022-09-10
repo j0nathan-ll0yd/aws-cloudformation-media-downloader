@@ -5,7 +5,7 @@ resource "aws_iam_role" "RegisterUserRole" {
 
 data "aws_iam_policy_document" "RegisterUser" {
   statement {
-    actions   = ["dynamodb:PutItem"]
+    actions   = ["dynamodb:PutItem", "dynamodb:Scan"]
     resources = [aws_dynamodb_table.Users.arn]
   }
   statement {
