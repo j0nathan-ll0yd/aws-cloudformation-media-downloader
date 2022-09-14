@@ -1,9 +1,9 @@
 import * as AWS from 'aws-sdk'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {DynamoDBFile, IdentityProviderApple, User, UserDevice} from '../types/main'
+import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
-function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
+function transformObjectToDynamoUpdateQuery(item: object) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames: Record<string, string> = {}
   const ExpressionAttributeValues: Record<string, number | string> = {}
@@ -14,6 +14,8 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
     if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       ExpressionAttributeValues[':' + property] = item[property]
     }
   }
@@ -80,28 +82,47 @@ export function userFileParams(tableName: string, userId: string, fileId: string
   }
 }
 
-export function updateUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.UpdateItemInput {
+export function userDevicesParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
+  return {
+    ExpressionAttributeNames: {'#DID': 'devices'},
+    ExpressionAttributeValues: {':did': docClient.createSet([deviceId])},
+    Key: {userId: userId},
+    ReturnValues: 'NONE',
+    UpdateExpression: 'ADD #DID :did',
+    TableName: tableName
+  }
+}
+
+export function updateUserDeviceParams(tableName: string, userId: string, userDevice: Device): DocumentClient.UpdateItemInput {
   return {
     TableName: tableName,
     Key: {userId},
-    UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
-    ExpressionAttributeNames: {'#userDevice': 'userDevice'},
+    UpdateExpression: 'SET #devices = list_append(if_not_exists(#devices, :empty_list), :devices)',
+    ExpressionAttributeNames: {'#devices': 'devices'},
     ExpressionAttributeValues: {
-      ':userDevice': [userDevice],
+      ':devices': [userDevice],
       ':empty_list': []
     }
   }
 }
 
-export function queryUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.QueryInput {
+export function upsertDeviceParams(tableName: string, device: Device): DocumentClient.UpdateItemInput {
+  const {deviceId, ...deviceSubset} = device
+  const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(deviceSubset)
+  return {
+    Key: {deviceId},
+    TableName: tableName,
+    UpdateExpression,
+    ExpressionAttributeNames,
+    ExpressionAttributeValues
+  }
+}
+
+export function queryUserDeviceParams(tableName: string, userId: string): DocumentClient.QueryInput {
   return {
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
-    FilterExpression: 'contains(userDevice, :userDevice)',
-    ExpressionAttributeValues: {
-      ':userId': userId,
-      ':userDevice': userDevice
-    }
+    ExpressionAttributeValues: {':userId': userId}
   }
 }
 
@@ -110,6 +131,14 @@ export function queryFileParams(tableName: string, fileId: string): DocumentClie
     TableName: tableName,
     KeyConditionExpression: 'fileId = :fileId',
     ExpressionAttributeValues: {':fileId': fileId}
+  }
+}
+
+export function queryDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'deviceId = :deviceId',
+    ExpressionAttributeValues: {':deviceId': deviceId}
   }
 }
 

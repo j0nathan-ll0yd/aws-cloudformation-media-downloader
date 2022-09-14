@@ -6,6 +6,7 @@ declare global {
       DefaultFileName: string
       DefaultFileUrl: string
       DefaultFileContentType: string
+      DynamoDBTableDevices: string
       DynamoDBTableUsers: string
       DynamoDBTableFiles: string
       DynamoDBTableUserFiles: string

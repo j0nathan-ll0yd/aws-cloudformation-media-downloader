@@ -24,7 +24,7 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
 export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   const files = await getFileIdsToBeDownloaded()
-  for (const fileId in files) {
+  for (const fileId of files) {
     const params = {
       input: JSON.stringify({fileId}),
       name: new Date().getTime().toString(),

@@ -78,7 +78,8 @@ resource "aws_cloudfront_distribution" "Production" {
       name = "X-Multiauthentication-Paths" // Authorization header is processed
       value = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
-        aws_api_gateway_resource.Files.path_part
+        aws_api_gateway_resource.Files.path_part,
+        aws_api_gateway_resource.LogEvent.path_part
       ])
     }
     custom_origin_config {

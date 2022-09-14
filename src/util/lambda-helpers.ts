@@ -1,11 +1,12 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
-import { CustomLambdaError, providerFailureErrorMessage, ServiceUnavailableError, UnauthorizedError, UnexpectedError } from "./errors"
+import {CustomLambdaError, providerFailureErrorMessage, ServiceUnavailableError, UnauthorizedError, UnexpectedError} from './errors'
 import {unknownErrorToString} from './transformers'
-import { User } from "../types/main"
-import { getUserByAppleDeviceIdentifierParams } from "./dynamodb-helpers"
-import { scan } from "../lib/vendor/AWS/DynamoDB"
+import {User, UserEventDetails} from '../types/main'
+import {UserStatus} from '../types/enums'
+import {getUserByAppleDeviceIdentifierParams} from './dynamodb-helpers'
+import {scan} from '../lib/vendor/AWS/DynamoDB'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -164,10 +165,20 @@ export function logError(message: string, stringOrObject?: string | object | unk
   console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-export function getUserIdFromEvent(event: APIGatewayEvent): string {
+export function generateUnauthorizedError() {
+  return new UnauthorizedError('Invalid Authentication token; login')
+}
+
+export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetails {
   const userId = event.headers['X-User-Id']
-  if (!userId) {
-    throw new UnauthorizedError('No X-User-Id in Header')
+  const authHeader = event.headers['Authorization']
+  let userStatus: UserStatus
+  if (authHeader && userId) {
+    userStatus = UserStatus.Authenticated
+  } else if (authHeader) {
+    userStatus = UserStatus.Unauthenticated
+  } else {
+    userStatus = UserStatus.Anonymous
   }
-  return userId
+  return {userId, userStatus} as UserEventDetails
 }

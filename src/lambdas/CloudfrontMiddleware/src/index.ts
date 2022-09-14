@@ -89,6 +89,12 @@ async function handleAuthorizationHeader(request: CustomCloudFrontRequest) {
         }
       ]
     } catch (err) {
+      // If it's a multi-authentication path, it shouldn't throw an error
+      logDebug('pathPart', pathPart)
+      logDebug('multiAuthenticationPaths', multiAuthenticationPaths)
+      if (multiAuthenticationPaths.find((path) => path === pathPart)) {
+        return
+      }
       logError('invalid JWT token <=', err)
       throw err
     }

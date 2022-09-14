@@ -7,7 +7,7 @@ export async function fetchVideoInfo(uri: string): Promise<videoInfo> {
   logDebug('fetchVideoInfo =>')
   try {
     const info = await getInfo(uri)
-    logDebug('fetchVideoInfo <=')
+    logDebug('fetchVideoInfo <=', info)
     return info
   } catch (error) {
     assertIsError(error)

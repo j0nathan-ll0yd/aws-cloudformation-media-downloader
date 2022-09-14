@@ -10,7 +10,7 @@ import {handler} from '../src'
 import {videoInfo} from 'ytdl-core'
 import {UploadPartEvent} from '../../../types/main'
 import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
-import { NotFoundError, UnexpectedError } from "../../../util/errors"
+import {NotFoundError, UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

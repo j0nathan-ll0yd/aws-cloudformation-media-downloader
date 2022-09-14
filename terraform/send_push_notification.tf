@@ -21,7 +21,10 @@ data "aws_iam_policy_document" "SendPushNotification" {
   }
   statement {
     actions   = ["dynamodb:Query"]
-    resources = [aws_dynamodb_table.UserDevices.arn]
+    resources = [
+      aws_dynamodb_table.UserDevices.arn,
+      aws_dynamodb_table.Devices.arn
+    ]
   }
   statement {
     actions   = ["sns:Publish"]
@@ -68,6 +71,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   environment {
     variables = {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+      DynamoDBTableDevices = aws_dynamodb_table.Devices.name
     }
   }
 }

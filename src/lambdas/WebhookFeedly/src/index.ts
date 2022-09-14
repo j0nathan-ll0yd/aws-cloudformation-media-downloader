@@ -7,7 +7,7 @@ import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {SendMessageRequest} from 'aws-sdk/clients/sqs'
 
@@ -88,15 +88,16 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     requestBody = getPayloadFromEvent(event) as Webhook
     validateRequest(requestBody, feedlyEventConstraints)
     const fileId = getVideoID(requestBody.articleURL)
-    const userId = getUserIdFromEvent(event as APIGatewayEvent)
+    const {userId} = getUserDetailsFromEvent(event as APIGatewayEvent)
     const file = await getFile(fileId)
     if (file && file.url) {
       // There needs to be a file AND a file url (to indicate it was downloaded)
       // If so, notify the client the file can be downloaded
-      await sendFileNotification(file, userId)
+      await associateFileToUser(fileId, userId as string)
+      await sendFileNotification(file, userId as string)
       return response(context, 204)
     }
-    await Promise.all([addFile(fileId), associateFileToUser(fileId, userId)])
+    await Promise.all([addFile(fileId), associateFileToUser(fileId, userId as string)])
     return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return lambdaErrorResponse(context, error)
