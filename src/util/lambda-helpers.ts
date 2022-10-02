@@ -2,11 +2,13 @@ import axios, {AxiosRequestConfig} from 'axios'
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {subscribe} from '../lib/vendor/AWS/SNS'
 import {CustomLambdaError, providerFailureErrorMessage, ServiceUnavailableError, UnauthorizedError, UnexpectedError} from './errors'
-import {unknownErrorToString} from './transformers'
-import {User, UserEventDetails} from '../types/main'
-import {UserStatus} from '../types/enums'
-import {getUserByAppleDeviceIdentifierParams} from './dynamodb-helpers'
-import {scan} from '../lib/vendor/AWS/DynamoDB'
+import {transformVideoIntoDynamoItem, unknownErrorToString} from './transformers'
+import {DynamoDBFile, Metadata, User, UserEventDetails} from '../types/main'
+import {FileStatus, UserStatus} from '../types/enums'
+import {getUserByAppleDeviceIdentifierParams, updateFileMetadataParams} from './dynamodb-helpers'
+import {scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
+import {Types} from 'aws-sdk/clients/stepfunctions'
+import {startExecution} from '../lib/vendor/AWS/StepFunctions'
 
 export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
   let codeText
@@ -51,6 +53,18 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
 }
 
 /**
+ * Upsert a File object in DynamoDB
+ * @param item - The DynamoDB item to be added
+ */
+export async function upsertFile(item: DynamoDBFile) {
+  const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
+  logDebug('updateItem <=', updateItemParams)
+  const updateResponse = await updateItem(updateItemParams)
+  logDebug('updateItem =>', updateResponse)
+  return updateResponse
+}
+
+/**
  * Searches for a User record via their Apple Device ID
  * @param userDeviceId - The subject registered claim that identifies the principal user.
  */
@@ -63,6 +77,47 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
     throw new UnexpectedError(providerFailureErrorMessage)
   }
   return scanResponse.Items as User[]
+}
+
+/**
+ * Triggers the process for downloading a file and storing it in S3
+ * @param fileId - The YouTube fileId to be downlaoded
+ */
+export async function initiateFileDownload(fileId: string) {
+  const params = {
+    input: JSON.stringify({fileId}),
+    name: new Date().getTime().toString(),
+    stateMachineArn: process.env.StateMachineArn
+  } as Types.StartExecutionInput
+  logDebug('startExecution <=', params)
+  const output = await startExecution(params)
+  logDebug('startExecution =>', output)
+}
+
+/**
+ * Create a DynamoDBFile object from a video's metadata
+ * @param metadata - The Metadata for a video; generated through youtube-dl
+ * @returns DynamoDBFile
+ */
+export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
+  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
+  const videoUrl = metadata.formats[0].url
+  const options: AxiosRequestConfig = {
+    method: 'head',
+    timeout: 900000,
+    url: videoUrl
+  }
+
+  const fileInfo = await makeHttpRequest(options)
+  // TODO: Ensure these headers exist in the response
+  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
+  const contentType = fileInfo.headers['content-type']
+
+  myDynamoItem.size = bytesTotal
+  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
+  myDynamoItem.contentType = contentType
+  myDynamoItem.status = FileStatus.PendingDownload
+  return myDynamoItem
 }
 
 /**
@@ -170,7 +225,8 @@ export function generateUnauthorizedError() {
 }
 
 export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetails {
-  const userId = event.headers['X-User-Id']
+  const principalId = event.requestContext.authorizer!.principalId
+  const userId = principalId === 'unknown' ? undefined : principalId
   const authHeader = event.headers['Authorization']
   let userStatus: UserStatus
   if (authHeader && userId) {
@@ -180,5 +236,8 @@ export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetail
   } else {
     userStatus = UserStatus.Anonymous
   }
+  logDebug('getUserDetailsFromEvent.userId', userId)
+  logDebug('getUserDetailsFromEvent.authHeader', authHeader)
+  logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
   return {userId, userStatus} as UserEventDetails
 }

@@ -1,0 +1,7 @@
+import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
+import {logInfo, response} from '../../../util/lambda-helpers'
+
+export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
+  logInfo('event', event)
+  return response(context, 200)
+}

@@ -9,6 +9,10 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
+    actions   = ["states:StartExecution"]
+    resources = [aws_sfn_state_machine.MultipartUpload.id]
+  }
+  statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
     resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
   }
@@ -61,6 +65,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
+      StateMachineArn    = aws_sfn_state_machine.MultipartUpload.id
     }
   }
 }
@@ -75,7 +80,8 @@ resource "aws_api_gateway_method" "WebhookFeedlyPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Feedly.id
   http_method      = "POST"
-  authorization    = "NONE"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
   api_key_required = true
 }
 

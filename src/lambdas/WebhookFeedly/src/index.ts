@@ -7,9 +7,23 @@ import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, initiateFileDownload, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {SendMessageRequest} from 'aws-sdk/clients/sqs'
+import {FileStatus} from '../../../types/enums'
+
+/**
+ * Associates a File to a User in DynamoDB
+ * @param fileId - The unique file identifier
+ * @param userId - The UUID of the user
+ */
+export async function associateFileToUser(fileId: string, userId: string) {
+  const params = userFileParams(process.env.DynamoDBTableUserFiles as string, userId, fileId)
+  logDebug('associateFileToUser.updateItem <=', params)
+  const updateResponse = await updateItem(params)
+  logDebug('associateFileToUser.updateItem =>', updateResponse)
+  return updateResponse
+}
 
 /**
  * Adds a base File (just fileId) to DynamoDB
@@ -21,20 +35,6 @@ async function addFile(fileId: string) {
   logDebug('addFile.updateItem <=', params)
   const updateResponse = await updateItem(params)
   logDebug('addFile.updateItem =>', updateResponse)
-  return updateResponse
-}
-
-/**
- * Associates a File to a User in DynamoDB
- * @param fileId - The unique file identifier
- * @param userId - The UUID of the user
- * @notExported
- */
-async function associateFileToUser(fileId: string, userId: string) {
-  const params = userFileParams(process.env.DynamoDBTableUserFiles as string, userId, fileId)
-  logDebug('associateFileToUser.updateItem <=', params)
-  const updateResponse = await updateItem(params)
-  logDebug('associateFileToUser.updateItem =>', updateResponse)
   return updateResponse
 }
 
@@ -89,15 +89,22 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     validateRequest(requestBody, feedlyEventConstraints)
     const fileId = getVideoID(requestBody.articleURL)
     const {userId} = getUserDetailsFromEvent(event as APIGatewayEvent)
+    // Associate the user with the file; regardless of FileStatus
+    await associateFileToUser(fileId, userId as string)
+    // Check to see if the file already exists
     const file = await getFile(fileId)
-    if (file && file.url) {
-      // There needs to be a file AND a file url (to indicate it was downloaded)
-      // If so, notify the client the file can be downloaded
-      await associateFileToUser(fileId, userId as string)
-      await sendFileNotification(file, userId as string)
-      return response(context, 204)
+    if (file) {
+      if (file.status == FileStatus.Downloaded) {
+        // If the file already exists; trigger the download on the device
+        await sendFileNotification(file, userId as string)
+        return response(context, 204)
+      }
+    } else {
+      await addFile(fileId)
     }
-    await Promise.all([addFile(fileId), associateFileToUser(fileId, userId as string)])
+    if (!requestBody.backgroundMode) {
+      await initiateFileDownload(fileId)
+    }
     return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return lambdaErrorResponse(context, error)

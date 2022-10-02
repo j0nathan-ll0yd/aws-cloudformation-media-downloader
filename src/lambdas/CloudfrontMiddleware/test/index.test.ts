@@ -34,9 +34,19 @@ describe('#CloudfrontMiddleware', () => {
     const output = await handler(event, context)
     expect(output.headers).to.not.have.property('x-user-Id')
   })
-  it('should handle an expired Authorization header', async () => {
+  it('should handle an expired Authorization header (as multi-auth path)', async () => {
+    // If it's a multi-auth path, token verification is pushed down to the lambda
+    // No error handling in the middleware
     verifyAccessTokenStub.throws('TokenExpiredError: jwt expired')
+    event.Records[0].cf.request.uri = '/files'
     const output = (await handler(event, context)) as CloudFrontResultResponse
+    expect(output.headers).to.not.have.property('x-user-Id')
+  })
+  it('should handle an expired Authorization header (as non-multi-auth path)', async () => {
+    verifyAccessTokenStub.throws('TokenExpiredError: jwt expired')
+    event.Records[0].cf.request.uri = '/any-path-not-multi-auth'
+    const output = (await handler(event, context)) as CloudFrontResultResponse
+    console.log(output)
     expect(output).to.have.property('status')
     expect(output.status).to.equal('401')
   })

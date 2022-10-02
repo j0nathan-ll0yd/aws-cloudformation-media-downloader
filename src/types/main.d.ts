@@ -2,7 +2,7 @@ import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
 import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {UserStatus} from './enums'
+import { FileStatus, UserStatus } from "./enums"
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 
 interface Metadata {
@@ -88,6 +88,7 @@ interface DynamoDBFile {
   contentType: string
   authorUser: string
   title: string
+  status: FileStatus
 }
 
 interface SignInWithAppleConfig {
@@ -114,6 +115,7 @@ export class FileNotification implements SQSMessageAttributes {
 
 // The shape of a file when send via push notification
 interface ClientFile {
+  fileId: string
   key: string
   publishDate: string
   size: number

@@ -2,6 +2,10 @@ resource "aws_api_gateway_rest_api" "Main" {
   name           = "OfflineMediaDownloader"
   description    = "The API that supports the App"
   api_key_source = "HEADER"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_deployment" "Main" {

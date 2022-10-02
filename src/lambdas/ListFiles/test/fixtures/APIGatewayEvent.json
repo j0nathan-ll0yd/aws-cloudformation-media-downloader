@@ -3,6 +3,7 @@
   "path": "/files",
   "httpMethod": "GET",
   "headers": {
+    "Authorization": "Token",
     "CloudFront-Forwarded-Proto": "https",
     "CloudFront-Is-Desktop-Viewer": "true",
     "CloudFront-Is-Mobile-Viewer": "false",

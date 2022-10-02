@@ -3,3 +3,9 @@ export enum UserStatus {
   Unauthenticated,
   Anonymous
 }
+
+export enum FileStatus {
+  PendingMetadata = 'PendingMetadata',
+  PendingDownload = 'PendingDownload',
+  Downloaded = 'Downloaded'
+}

@@ -1,7 +1,6 @@
 import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {cloudFrontErrorResponse, logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
 import {assertIsError} from '../../../util/transformers'
 import {CustomCloudFrontRequest} from '../../../types/main'
 import {ValidationError} from '../../../util/errors'
@@ -51,53 +50,6 @@ async function handleAuthorizationHeader(request: CustomCloudFrontRequest) {
       }
     ]
     return
-  }
-  const unauthenticatedPaths = request.origin.custom.customHeaders['x-unauthenticated-paths'][0].value.split(',')
-  const multiAuthenticationPaths = request.origin.custom.customHeaders['x-multiauthentication-paths'][0].value.split(',')
-  const pathPart = request.uri.substring(1) // remove "/" prefix
-  // If its an unauthenticated path (doesn't require auth), we ignore the Authorization header
-  if (unauthenticatedPaths.find((path) => path === pathPart)) {
-    return
-  }
-  // If the path supports either authenticated or unauthenticated requests; ensure the header is present
-  if (!multiAuthenticationPaths.find((path) => path === pathPart) && !headers.authorization) {
-    throw new ValidationError('headers.Authorization is required')
-  }
-
-  if (headers.authorization) {
-    const authorizationHeader = headers.authorization[0].value
-    const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
-    const matches = authorizationHeader.match(jwtRegex)
-    logDebug('headers.authorization <=', JSON.stringify(matches))
-    if (!authorizationHeader.match(jwtRegex)) {
-      // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
-      throw new ValidationError('headers.Authorization is invalid')
-    }
-
-    const keypair = authorizationHeader.split(' ')
-    const token = keypair[1]
-    try {
-      logDebug('verifyAccessToken <=', token)
-      // this is required because Lambda@Edge does not support environment variables
-      process.env.EncryptionKeySecretId = request.origin.custom.customHeaders['x-encryption-key-secret-id'][0].value
-      const payload = await verifyAccessToken(token)
-      logDebug('verifyAccessToken =>', payload)
-      headers['x-user-Id'] = [
-        {
-          key: 'X-User-Id',
-          value: payload.userId
-        }
-      ]
-    } catch (err) {
-      // If it's a multi-authentication path, it shouldn't throw an error
-      logDebug('pathPart', pathPart)
-      logDebug('multiAuthenticationPaths', multiAuthenticationPaths)
-      if (multiAuthenticationPaths.find((path) => path === pathPart)) {
-        return
-      }
-      logError('invalid JWT token <=', err)
-      throw err
-    }
   }
 }
 

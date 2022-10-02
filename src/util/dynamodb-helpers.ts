@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
+import {FileStatus} from '../types/enums'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
 function transformObjectToDynamoUpdateQuery(item: object) {
@@ -29,12 +30,12 @@ function transformObjectToDynamoUpdateQuery(item: object) {
 
 export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: {'#FN': 'url'},
-    ExpressionAttributeValues: {':fn': fileUrl},
+    ExpressionAttributeNames: {'#FN': 'url', '#S': 'status'},
+    ExpressionAttributeValues: {':fn': fileUrl, ':s': FileStatus.Downloaded},
     Key: {fileId: fileId},
     ReturnValues: 'ALL_NEW',
     TableName: tableName,
-    UpdateExpression: 'SET #FN = :fn'
+    UpdateExpression: 'SET #FN = :fn, #S = :s'
   }
 }
 
@@ -152,11 +153,17 @@ export function getUserDeviceByUserIdParams(tableName: string, userId: string): 
 
 export function newFileParams(tableName: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: {'#AA': 'availableAt'},
-    ExpressionAttributeValues: {':aa': parseInt(Date.now().toString(), 10)},
+    ExpressionAttributeNames: {
+      '#AA': 'availableAt',
+      '#S': 'status'
+    },
+    ExpressionAttributeValues: {
+      ':aa': parseInt(Date.now().toString(), 10),
+      ':s': FileStatus.PendingMetadata
+    },
     Key: {fileId: fileId},
     ReturnValues: 'ALL_OLD',
-    UpdateExpression: 'SET #AA = if_not_exists(#AA, :aa)',
+    UpdateExpression: 'SET #AA = :aa, #S = :s',
     TableName: tableName
   }
 }

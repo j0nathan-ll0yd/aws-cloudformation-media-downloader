@@ -3,7 +3,7 @@ import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {DynamoDBFile} from '../../../types/main'
-import {UserStatus} from '../../../types/enums'
+import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
@@ -68,7 +68,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     const fileIds = await getFileIdsByUser(userId as string)
     if (fileIds.length > 0) {
       const files = await getFilesById(fileIds)
-      myResponse.contents = files.filter((file) => file.url !== undefined)
+      myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     }
     myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)

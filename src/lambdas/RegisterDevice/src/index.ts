@@ -130,12 +130,13 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     if (userStatus == UserStatus.Authenticated) {
       // Extract the userId and associate them
       const table = process.env.DynamoDBTableUserDevices as string
+      // Store the device details associated with the user
+      await upsertUserDevices(table, userId as string, requestBody.deviceId)
+      // Determine if the user already exists
       const userDeviceResponse = await getUserDevices(table, userId as string)
       if (userDeviceResponse.Count === 1) {
         return response(context, 200, {endpointArn: device.endpointArn})
       } else {
-        // Store the device details associated with the user
-        await upsertUserDevices(table, userId as string, requestBody.deviceId)
         // Confirm the subscription, and unsubscribe
         const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
         await unsubscribeEndpointToTopic(subscriptionArn)

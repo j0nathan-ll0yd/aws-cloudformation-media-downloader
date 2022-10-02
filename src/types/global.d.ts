@@ -12,6 +12,7 @@ declare global {
       DynamoDBTableUserFiles: string
       DynamoDBTableUserDevices: string
       EncryptionKeySecretId: string
+      MultiAuthenticationPathParts: string
       SNSQueueUrl: string
       StateMachineArn: string
       PlatformApplicationArn: string

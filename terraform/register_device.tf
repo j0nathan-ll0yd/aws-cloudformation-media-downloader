@@ -90,7 +90,8 @@ resource "aws_api_gateway_method" "RegisterDevicePost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.RegisterDevice.id
   http_method      = "POST"
-  authorization    = "NONE"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
   api_key_required = true
 }
 
