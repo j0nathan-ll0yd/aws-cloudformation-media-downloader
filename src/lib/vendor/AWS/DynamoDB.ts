@@ -21,3 +21,7 @@ export function batchGet(params: DocumentClient.BatchGetItemInput): Promise<Docu
 export function query(params: DocumentClient.QueryInput): Promise<DocumentClient.QueryOutput> {
   return docClient.query(params).promise()
 }
+
+export function deleteItem(params: DocumentClient.DeleteItemInput): Promise<DocumentClient.DeleteItemOutput> {
+  return docClient.delete(params).promise()
+}

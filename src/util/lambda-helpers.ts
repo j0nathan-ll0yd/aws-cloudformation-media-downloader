@@ -1,139 +1,9 @@
-import axios, {AxiosRequestConfig} from 'axios'
-import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
-import {subscribe} from '../lib/vendor/AWS/SNS'
-import {CustomLambdaError, providerFailureErrorMessage, ServiceUnavailableError, UnauthorizedError, UnexpectedError} from './errors'
-import {transformVideoIntoDynamoItem, unknownErrorToString} from './transformers'
-import {DynamoDBFile, Metadata, User, UserEventDetails} from '../types/main'
-import {FileStatus, UserStatus} from '../types/enums'
-import {getUserByAppleDeviceIdentifierParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
-import {Types} from 'aws-sdk/clients/stepfunctions'
-import {startExecution} from '../lib/vendor/AWS/StepFunctions'
+import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
+import {unknownErrorToString} from './transformers'
+import {UserEventDetails} from '../types/main'
+import {UserStatus} from '../types/enums'
 
-export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
-  let codeText
-  const statusCodeString = statusCode.toString()
-  if (/^4/.test(statusCodeString)) {
-    codeText = 'custom-4XX-generic'
-  }
-  return {
-    status: statusCodeString,
-    statusDescription: message,
-    headers: {
-      'content-type': [{key: 'Content-Type', value: 'application/json'}],
-      'www-authenticate': [
-        {
-          key: 'WWW-Authenticate',
-          value: `Bearer realm="${realm}", charset="UTF-8"`
-        }
-      ]
-    },
-    body: JSON.stringify({
-      error: {code: codeText, message},
-      requestId: context.awsRequestId
-    })
-  }
-}
-
-/**
- * Subscribes an endpoint (a client device) to an SNS topic
- * @param endpointArn - The EndpointArn of a mobile app and device
- * @param topicArn - The ARN of the topic you want to subscribe to
- */
-export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  const subscribeParams = {
-    Endpoint: endpointArn,
-    Protocol: 'application',
-    TopicArn: topicArn
-  }
-  logDebug('subscribe <=', subscribeParams)
-  const subscribeResponse = await subscribe(subscribeParams)
-  logDebug('subscribe =>', subscribeResponse)
-  return subscribeResponse
-}
-
-/**
- * Upsert a File object in DynamoDB
- * @param item - The DynamoDB item to be added
- */
-export async function upsertFile(item: DynamoDBFile) {
-  const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
-  logDebug('updateItem <=', updateItemParams)
-  const updateResponse = await updateItem(updateItemParams)
-  logDebug('updateItem =>', updateResponse)
-  return updateResponse
-}
-
-/**
- * Searches for a User record via their Apple Device ID
- * @param userDeviceId - The subject registered claim that identifies the principal user.
- */
-export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
-  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
-  logDebug('getUsersByAppleDeviceIdentifier <=', scanParams)
-  const scanResponse = await scan(scanParams)
-  logDebug('getUsersByAppleDeviceIdentifier =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  return scanResponse.Items as User[]
-}
-
-/**
- * Triggers the process for downloading a file and storing it in S3
- * @param fileId - The YouTube fileId to be downlaoded
- */
-export async function initiateFileDownload(fileId: string) {
-  const params = {
-    input: JSON.stringify({fileId}),
-    name: new Date().getTime().toString(),
-    stateMachineArn: process.env.StateMachineArn
-  } as Types.StartExecutionInput
-  logDebug('startExecution <=', params)
-  const output = await startExecution(params)
-  logDebug('startExecution =>', output)
-}
-
-/**
- * Create a DynamoDBFile object from a video's metadata
- * @param metadata - The Metadata for a video; generated through youtube-dl
- * @returns DynamoDBFile
- */
-export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
-  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-  const videoUrl = metadata.formats[0].url
-  const options: AxiosRequestConfig = {
-    method: 'head',
-    timeout: 900000,
-    url: videoUrl
-  }
-
-  const fileInfo = await makeHttpRequest(options)
-  // TODO: Ensure these headers exist in the response
-  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-  const contentType = fileInfo.headers['content-type']
-
-  myDynamoItem.size = bytesTotal
-  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
-  myDynamoItem.contentType = contentType
-  myDynamoItem.status = FileStatus.PendingDownload
-  return myDynamoItem
-}
-
-/**
- * Makes an HTTP request via Axios
- * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @notExported
- */
-export async function makeHttpRequest(options: AxiosRequestConfig) {
-  logDebug('axios <= ', options)
-  const axiosResponse = await axios(options)
-  logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
-  logDebug('axios.headers =>', axiosResponse.headers)
-  return axiosResponse
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
   let error = false
@@ -192,6 +62,7 @@ export function verifyPlatformConfiguration(): void {
 export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
   const defaultStatusCode = 500
   logError('lambdaErrorResponse', JSON.stringify(error))
+  /* istanbul ignore else */
   if (error instanceof CustomLambdaError) {
     return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
   } else if (error instanceof Error) {
@@ -225,7 +96,12 @@ export function generateUnauthorizedError() {
 }
 
 export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetails {
-  const principalId = event.requestContext.authorizer!.principalId
+  let principalId = 'unknown'
+  // This should always be present, via the API Gateway
+  /* istanbul ignore else */
+  if (event.requestContext.authorizer && event.requestContext.authorizer.principalId) {
+    principalId = event.requestContext.authorizer.principalId
+  }
   const userId = principalId === 'unknown' ? undefined : principalId
   const authHeader = event.headers['Authorization']
   let userStatus: UserStatus
@@ -237,6 +113,7 @@ export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetail
     userStatus = UserStatus.Anonymous
   }
   logDebug('getUserDetailsFromEvent.userId', userId)
+  logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
   logDebug('getUserDetailsFromEvent.authHeader', authHeader)
   logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
   return {userId, userStatus} as UserEventDetails

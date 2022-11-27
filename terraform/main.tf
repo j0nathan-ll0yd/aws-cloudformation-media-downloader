@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.0"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = "3.1.0"
+    }
   }
 }
 
@@ -105,7 +109,7 @@ output "api_gateway_api_key" {
 }
 output "public_ip" {
   description = "Your public IP address (used for local development/testing)"
-  value       = chomp(data.http.icanhazip.body)
+  value       = chomp(data.http.icanhazip.response_body)
 }
 output "cloudfront_distribution_domain" {
   description = "The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net)"

@@ -6,11 +6,14 @@ import {handler} from '../src'
 import * as chai from 'chai'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import { UnauthorizedError, UnexpectedError } from "../../../util/errors"
+import {UnauthorizedError, UnexpectedError} from '../../../util/errors'
+import {v4 as uuidv4} from 'uuid'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
+const fakeUserId = uuidv4()
 
+/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#ListFiles', () => {
   const context = testContext
   let event: APIGatewayProxyEvent
@@ -46,6 +49,7 @@ describe('#ListFiles', () => {
     expect(body.body.contents[0].authorName).to.equal('Lifegames')
   })
   it('(authenticated) should return users files', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     batchGetStub.returns(localFixture('batchGet-200-Filtered.json'))
     queryStub.returns(queryStubReturnObject)
     const output = await handler(event, context)
@@ -55,6 +59,7 @@ describe('#ListFiles', () => {
     expect(body.body.keyCount).to.equal(1)
   })
   it('(authenticated) should gracefully handle an empty list', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     batchGetStub.returns(localFixture('batchGet-200-Empty.json'))
     queryStub.returns(localFixture('query-200-Empty.json'))
     const output = await handler(event, context)
@@ -73,10 +78,12 @@ describe('#ListFiles', () => {
   })
   describe('#AWSFailure', () => {
     it('AWS.DynamoDB.DocumentClient.query', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
     it('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(queryStubReturnObject)
       batchGetStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)

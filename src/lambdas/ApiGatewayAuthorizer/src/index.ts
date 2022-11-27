@@ -24,15 +24,19 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
 }
 
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
-  return generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
+  const policy = generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
+  logDebug('response ==', policy)
+  return policy
 }
 
 export function generateDeny(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
-  return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
+  const policy = generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
+  logDebug('response ==', policy)
+  return policy
 }
 
 /**
- * Returns a array of ApiKeys for API Gateway
+ * Returns an array of ApiKeys for API Gateway
  * @notExported
  */
 async function fetchApiKeys(): Promise<ApiKey[]> {
@@ -47,7 +51,7 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
 }
 
 /**
- * Returns a array of UsagePlans for a given APIKey
+ * Returns an array of UsagePlans for a given APIKey
  * @notExported
  */
 async function fetchUsagePlans(keyId: string): Promise<ListOfUsagePlan> {
@@ -83,7 +87,7 @@ async function fetchUsageData(keyId: string, usagePlanId: string): Promise<ListO
 }
 
 async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
-  const jwtRegex = /^Bearer [A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]+$/
+  const jwtRegex = /^Bearer [A-Za-z\d-_=]+\.[A-Za-z\d-_=]+\.?[A-Za-z\d-_.+/=]+$/
   const matches = authorizationHeader.match(jwtRegex)
   logDebug('getPayloadFromAuthenticationHeader.matches <=', JSON.stringify(matches))
   if (!authorizationHeader.match(jwtRegex)) {
@@ -102,6 +106,24 @@ async function getUserIdFromAuthenticationHeader(authorizationHeader: string): P
     logError('invalid JWT token <=', err)
     return
   }
+}
+
+/**
+ * If the request is coming from my IP, use a test userId
+ * @param event - A APIGatewayRequestAuthorizerEvent
+ * @notExported
+ */
+function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
+  if (!event.headers) {
+    return false
+  }
+  const reservedIp = process.env.ReservedClientIp as string
+  const userAgent = event.headers['User-Agent']
+  const clientIp = event.requestContext.identity.sourceIp
+  logDebug('reservedIp <=', reservedIp)
+  logDebug('headers.userAgent <=', userAgent)
+  logDebug('request.clientIp <=', clientIp)
+  return clientIp === reservedIp && userAgent === 'localhost@lifegames'
 }
 
 /**
@@ -132,6 +154,12 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
     logInfo('API key is disabled')
     throw new Error('Unauthorized')
   }
+
+  if (isRemoteTestRequest(event)) {
+    const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
+    return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
+  }
+
   const apiKeyId = apiKey.id as string
   const usagePlans = await fetchUsagePlans(apiKeyId)
   const usagePlanId = usagePlans[0].id as string
@@ -140,7 +168,8 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
 
   let principalId = 'unknown'
   const pathPart = event.path.substring(1)
-  const multiAuthenticationPaths = process.env.MultiAuthenticationPathParts.split(',')
+  const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
+  const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
   if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
     const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
     if (maybeUserId) {
@@ -152,6 +181,11 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
         logInfo('Token is invalid')
         return generateDeny('unknown', event.methodArn)
       }
+    }
+  } else {
+    // If it's not a multi-authentication path, it needs the Authorization header
+    if (!multiAuthenticationPaths.includes(pathPart)) {
+      return generateDeny('unknown', event.methodArn)
     }
   }
   return generateAllow(principalId, event.methodArn, apiKeyValue)

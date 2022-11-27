@@ -55,14 +55,6 @@ resource "aws_cloudfront_distribution" "Production" {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
-    custom_header {
-      name  = "X-Reserved-Client-IP"
-      value = chomp(data.http.icanhazip.body)
-    }
-    custom_header {
-      name  = "X-WWW-Authenticate-Realm"
-      value = aws_api_gateway_stage.Production.stage_name
-    }
     custom_origin_config {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]

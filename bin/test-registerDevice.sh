@@ -9,10 +9,12 @@ api_key=`terraform output api_gateway_api_key | tr -d '"'`
 
 data_file_path="${bin_dir}/../src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json"
 REQUEST_DATA=`cat ${data_file_path} | jq -r '.body'`
-REQUEST_URL="https://${domain}/registerDevice?ApiKey=${api_key}"
+#REQUEST_URL="https://${domain}/registerDevice?ApiKey=${api_key}"
+REQUEST_URL="https://${domain}/registerDevice"
 echo "Calling ${REQUEST_URL}"
 curl -X POST -v -H "Content-Type: application/json" \
 -H "Accept: application/json" \
+-H "X-API-Key: ${api_key}" \
 --data "${REQUEST_DATA}" \
 $REQUEST_URL | jq
 

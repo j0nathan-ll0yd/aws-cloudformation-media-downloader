@@ -1,6 +1,6 @@
 # Media Downloader
 
-A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [AWS CloudFormation](https://aws.amazon.com/cloudformation/), and built with [TypeScript](https://www.typescriptlang.org/).
+A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Background
 
@@ -8,14 +8,14 @@ When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was releas
 
 So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportunity to build my own media downloader service, experiment with the latest AWS features, along with a [companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader) using SwiftUI and Combine.
 
-The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, CloudFormation templates, deployment scripts, documentation and tests that power the App's backend. This includes:
+The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, Terraform templates, deployment scripts, documentation and tests that power the App's backend. This includes:
 
 * The ability to download videos and have them stored to an S3 bucket.
 * The ability to view downloaded videos (via API).
 * The ability to register for and dispatch push notifications to the mobile App.
 * It also has a custom authorizer Lambda function that supports query-based API tokens. This was needed for integration with Feedly.
 
-I share this for any engineer to be able to build a basic backend and iOS App for a future pet project or idea.
+I share this for any engineer to be able to build a basic backend and iOS App for a future pet project.
 
 ## Project Tenants
 

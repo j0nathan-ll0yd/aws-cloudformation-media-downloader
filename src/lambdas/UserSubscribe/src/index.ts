@@ -2,7 +2,8 @@ import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {UserSubscribe} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {userSubscribeConstraints} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {subscribeEndpointToTopic} from '../../../util/shared'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

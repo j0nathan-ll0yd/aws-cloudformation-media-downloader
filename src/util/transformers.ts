@@ -87,30 +87,6 @@ export function unknownErrorToString(unknownVariable: unknown): string {
   }
 }
 
-export function generateHealthCheckNotification(targetArn: string): PublishInput {
-  return {
-    Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({
-        aps: {'content-available': 1},
-        health: 'active'
-      }),
-      default: 'Default message'
-    }),
-    MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': {
-        DataType: 'String',
-        StringValue: '5'
-      },
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {
-        DataType: 'String',
-        StringValue: 'background'
-      }
-    },
-    MessageStructure: 'json',
-    TargetArn: targetArn
-  }
-}
-
 export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
   const keys: (keyof typeof file)[] = ['fileId', 'key', 'publishDate', 'size', 'url']
   keys.forEach((key) => {

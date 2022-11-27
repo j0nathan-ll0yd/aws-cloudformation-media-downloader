@@ -2,10 +2,11 @@ import {videoInfo} from 'ytdl-core'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
 import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
-import {getFileFromMetadata, logDebug, logInfo, upsertFile} from '../../../util/lambda-helpers'
+import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {assertIsError, transformVideoInfoToMetadata} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {CreateMultipartUploadRequest} from 'aws-sdk/clients/s3'
+import {getFileFromMetadata, upsertFile} from '../../../util/shared'
 
 /**
  * Create a start for a multi-part upload

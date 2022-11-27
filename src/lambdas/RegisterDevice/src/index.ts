@@ -1,14 +1,15 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
-import {DeviceRegistrationRequest, Device} from '../../../types/main'
+import {Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceConstraints} from '../../../util/constraints'
-import {queryUserDeviceParams, upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, subscribeEndpointToTopic, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {SubscriptionsList} from 'aws-sdk/clients/sns'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -28,22 +29,8 @@ async function createPlatformEndpointFromToken(token: string) {
 }
 
 /**
- * Queries a user's device parameters from DynamoDB
- * @param table - The DynamoDB table to perform the operation on
- * @param userId - The userId
- * @notExported
- */
-async function getUserDevices(table: string, userId: string) {
-  const params = queryUserDeviceParams(table, userId)
-  logDebug('getUserDevices <=', params)
-  const response = await query(params)
-  logDebug('getUserDevices =>', response)
-  return response
-}
-
-/**
  * Unsubscribes an endpoint (a client device) to an SNS topic
- * @param subscriptionArn - The SubscriptionArn of a endpoint+topic
+ * @param subscriptionArn - The SubscriptionArn of an endpoint+topic
  */
 export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
   logDebug('unsubscribeEndpointToTopic <=')
@@ -122,19 +109,19 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
   const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
   const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-
-  const {userId, userStatus} = getUserDetailsFromEvent(event as APIGatewayEvent)
+  const {userId, userStatus} = getUserDetailsFromEvent(event)
   try {
     // Store the device details, regardless of user status
     await upsertDevice(process.env.DynamoDBTableDevices as string, device)
-    if (userStatus == UserStatus.Authenticated) {
+    /* istanbul ignore else */
+    if (userStatus === UserStatus.Authenticated && userId) {
       // Extract the userId and associate them
       const table = process.env.DynamoDBTableUserDevices as string
       // Store the device details associated with the user
-      await upsertUserDevices(table, userId as string, requestBody.deviceId)
+      await upsertUserDevices(table, userId, requestBody.deviceId)
       // Determine if the user already exists
-      const userDeviceResponse = await getUserDevices(table, userId as string)
-      if (userDeviceResponse.Count === 1) {
+      const userDevices = await getUserDevices(table, userId)
+      if (userDevices.length === 1) {
         return response(context, 200, {endpointArn: device.endpointArn})
       } else {
         // Confirm the subscription, and unsubscribe
@@ -144,7 +131,7 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
           endpointArn: platformEndpoint.EndpointArn
         })
       }
-    } else if (userStatus == UserStatus.Anonymous) {
+    } else if (userStatus === UserStatus.Anonymous) {
       // If the user hasn't registered; add them to the unregistered topic
       await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
     }

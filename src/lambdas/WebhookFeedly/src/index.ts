@@ -7,10 +7,12 @@ import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserDetailsFromEvent, initiateFileDownload, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {SendMessageRequest} from 'aws-sdk/clients/sqs'
 import {FileStatus} from '../../../types/enums'
+import {initiateFileDownload} from '../../../util/shared'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
 /**
  * Associates a File to a User in DynamoDB
@@ -89,23 +91,27 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     validateRequest(requestBody, feedlyEventConstraints)
     const fileId = getVideoID(requestBody.articleURL)
     const {userId} = getUserDetailsFromEvent(event as APIGatewayEvent)
+    if (!userId) {
+      // This should never happen; handled by API Gateway
+      throw new UnexpectedError(providerFailureErrorMessage)
+    }
     // Associate the user with the file; regardless of FileStatus
-    await associateFileToUser(fileId, userId as string)
+    await associateFileToUser(fileId, userId)
     // Check to see if the file already exists
     const file = await getFile(fileId)
-    if (file) {
-      if (file.status == FileStatus.Downloaded) {
-        // If the file already exists; trigger the download on the device
-        await sendFileNotification(file, userId as string)
-        return response(context, 204)
-      }
+    if (file && file.status == FileStatus.Downloaded) {
+      // If the file already exists, trigger the download on the user's device
+      await sendFileNotification(file, userId)
+      return response(context, 200, {status: 'Dispatched'})
     } else {
       await addFile(fileId)
+      if (!requestBody.backgroundMode) {
+        await initiateFileDownload(fileId)
+        return response(context, 202, {status: 'Initiated'})
+      } else {
+        return response(context, 202, {status: 'Accepted'})
+      }
     }
-    if (!requestBody.backgroundMode) {
-      await initiateFileDownload(fileId)
-    }
-    return response(context, 202, {status: 'Accepted'})
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }

@@ -4,7 +4,7 @@ import * as chai from 'chai'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import * as LambdaHelper from '../../../util/lambda-helpers'
+import * as Shared from '../../../util/shared'
 import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
 import {handler} from '../src'
 import {APIGatewayEvent} from 'aws-lambda'
@@ -29,7 +29,7 @@ describe('#RegisterUser', () => {
     putItemStub = sinon.stub(DynamoDB, 'putItem').returns(localFixture('putItem-200-OK.json') as Promise<DocumentClient.PutItemOutput>)
     validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json') as Promise<AppleTokenResponse>)
     verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json') as Promise<SignInWithAppleVerifiedToken>)
-    getUsersByAppleDeviceIdentifierStub = sinon.stub(LambdaHelper, 'getUsersByAppleDeviceIdentifier').returns(localFixture('getUsersByAppleDeviceIdentifier-200-OK.json') as Promise<User[]>)
+    getUsersByAppleDeviceIdentifierStub = sinon.stub(Shared, 'getUsersByAppleDeviceIdentifier').returns(localFixture('getUsersByAppleDeviceIdentifier-200-OK.json') as Promise<User[]>)
   })
   afterEach(() => {
     createAccessTokenStub.restore()

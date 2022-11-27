@@ -67,13 +67,13 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = {
-      ApiKeyID = aws_api_gateway_api_key.iOSApp.arn
       EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
       MultiAuthenticationPathParts = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part,
         aws_api_gateway_resource.LogEvent.path_part
-      ])
+      ]),
+      ReservedClientIp = chomp(data.http.icanhazip.response_body)
     }
   }
 }

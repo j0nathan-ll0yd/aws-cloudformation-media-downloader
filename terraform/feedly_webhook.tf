@@ -65,7 +65,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      StateMachineArn    = aws_sfn_state_machine.MultipartUpload.id
+      StateMachineArn        = aws_sfn_state_machine.MultipartUpload.id
     }
   }
 }

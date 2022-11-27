@@ -1,11 +1,6 @@
-import {ApiKey, ApiKeys, GetApiKeyRequest, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlans} from '../../../../node_modules/aws-sdk/clients/apigateway'
+import {ApiKeys, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlans} from '../../../../node_modules/aws-sdk/clients/apigateway'
 import * as AWS from 'aws-sdk'
 const apigateway = new AWS.APIGateway({apiVersion: '2016-11-23'})
-
-export function getApiKey(apiKey: string): Promise<ApiKey> {
-  const params: GetApiKeyRequest = {apiKey, includeValue: true}
-  return apigateway.getApiKey(params).promise()
-}
 
 export function getApiKeys(params: GetApiKeysRequest): Promise<ApiKeys> {
   return apigateway.getApiKeys(params).promise()

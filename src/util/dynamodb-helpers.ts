@@ -12,6 +12,7 @@ function transformObjectToDynamoUpdateQuery(item: object) {
     if (property === 'fileId') {
       continue
     }
+    /* istanbul ignore else */
     if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
@@ -72,6 +73,14 @@ export function getUsersByFileId(tableName: string, fileId: string): DocumentCli
   }
 }
 
+export function getUsersByDeviceId(tableName: string, deviceId: string): DocumentClient.ScanInput {
+  return {
+    ExpressionAttributeValues: {':deviceId': deviceId},
+    FilterExpression: 'contains (devices, :deviceId)',
+    TableName: tableName
+  }
+}
+
 export function userFileParams(tableName: string, userId: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
     ExpressionAttributeNames: {'#FID': 'fileId'},
@@ -94,16 +103,12 @@ export function userDevicesParams(tableName: string, userId: string, deviceId: s
   }
 }
 
-export function updateUserDeviceParams(tableName: string, userId: string, userDevice: Device): DocumentClient.UpdateItemInput {
+export function deleteSingleUserDeviceParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
   return {
     TableName: tableName,
     Key: {userId},
-    UpdateExpression: 'SET #devices = list_append(if_not_exists(#devices, :empty_list), :devices)',
-    ExpressionAttributeNames: {'#devices': 'devices'},
-    ExpressionAttributeValues: {
-      ':devices': [userDevice],
-      ':empty_list': []
-    }
+    UpdateExpression: 'DELETE devices :deviceId',
+    ExpressionAttributeValues: {':deviceId': docClient.createSet([deviceId])}
   }
 }
 
@@ -148,6 +153,42 @@ export function getUserDeviceByUserIdParams(tableName: string, userId: string): 
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
     ExpressionAttributeValues: {':userId': userId}
+  }
+}
+
+export function getDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'deviceId = :deviceId',
+    ExpressionAttributeValues: {':deviceId': deviceId}
+  }
+}
+
+export function deleteDeviceParams(tableName: string, deviceId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {deviceId}
+  }
+}
+
+export function deleteUserParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
+  }
+}
+
+export function deleteUserFilesParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
+  }
+}
+
+export function deleteAllUserDeviceParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
   }
 }
 

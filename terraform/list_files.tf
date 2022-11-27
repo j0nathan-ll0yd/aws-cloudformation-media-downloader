@@ -61,8 +61,8 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = {
-      DynamoDBTableFiles       = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
+      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
+      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       DefaultFileSize        = 436743
       DefaultFileName        = aws_s3_object.DefaultFile.key
       DefaultFileUrl         = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"

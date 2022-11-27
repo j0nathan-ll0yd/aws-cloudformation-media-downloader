@@ -74,7 +74,7 @@ resource "aws_lambda_function" "RegisterDevice" {
     variables = {
       PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
-      DynamoDBTableDevices = aws_dynamodb_table.Devices.name
+      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
     }
   }

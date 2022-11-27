@@ -1,5 +1,16 @@
 import * as chai from 'chai'
-import {createAccessToken, getAppleClientSecret, getAppleConfig, getApplePrivateKey, getServerPrivateKey, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} from './secretsmanager-helpers'
+import {
+  createAccessToken,
+  getAppleClientSecret,
+  getAppleConfig,
+  getApplePrivateKey,
+  getApplePushNotificationServiceCert,
+  getApplePushNotificationServiceKey,
+  getServerPrivateKey,
+  validateAuthCodeForToken,
+  verifyAccessToken,
+  verifyAppleToken
+} from './secretsmanager-helpers'
 import * as jwt from 'jsonwebtoken'
 import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
 import * as sinon from 'sinon'
@@ -9,24 +20,8 @@ import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
 import * as JwksRsa from 'jwks-rsa'
+import {fakePrivateKey, fakePublicKey} from './mocha-setup'
 const expect = chai.expect
-
-// Randomly generated key; not actually used anywhere (safe)
-// openssl ecparam -name prime256v1 -genkey -noout -out private.ec.key
-// openssl ec -in private.ec.key -pubout -out public.ec.key
-const fakePrivateKey = `
------BEGIN EC PRIVATE KEY-----
-MHcCAQEEIF8qMhsznLgSjN49y4F1cmJZapGowo+PA33LR03WqIhroAoGCCqGSM49
-AwEHoUQDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaFjHVKbDT+efytL6HYw+IWsMV/
-X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
------END EC PRIVATE KEY-----
-`
-const fakePublicKey = `
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF
-jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
------END PUBLIC KEY-----
-`
 
 const fakeTokenResponse = {
   access_token: 'accessToken',
@@ -124,6 +119,24 @@ describe('#Util:SecretsManager', () => {
     const responseOne = await getServerPrivateKey()
     expect(responseOne).to.have.length.greaterThan(0)
     const responseTwo = await getServerPrivateKey()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
+  it('should getApplePushNotificationServiceKey', async () => {
+    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+    const responseOne = await getApplePushNotificationServiceKey()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getApplePushNotificationServiceKey()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
+  it('should getApplePushNotificationServiceCert', async () => {
+    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+    const responseOne = await getApplePushNotificationServiceCert()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getApplePushNotificationServiceCert()
     expect(responseTwo).to.have.length.greaterThan(0)
     expect(responseOne).to.eql(responseTwo)
     expect(getSecretValueStub.calledOnce)

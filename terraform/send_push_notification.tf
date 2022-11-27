@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "SendPushNotification" {
     ]
   }
   statement {
-    actions   = ["dynamodb:Query"]
+    actions = ["dynamodb:Query"]
     resources = [
       aws_dynamodb_table.UserDevices.arn,
       aws_dynamodb_table.Devices.arn
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "SendPushNotification" {
   }
   statement {
     actions   = ["sns:Publish"]
-    resources = ["*"]
+    resources = [length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""]
   }
 }
 
@@ -71,7 +71,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   environment {
     variables = {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      DynamoDBTableDevices = aws_dynamodb_table.Devices.name
+      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
     }
   }
 }

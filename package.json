@@ -7,7 +7,7 @@
     "npm": "8.11.0"
   },
   "scripts": {
-    "check-types": "tsc",
+    "check-types": "./node_modules/typescript/bin/tsc",
     "coverage": "AWS_REGION=us-west-2 ./node_modules/nyc/bin/nyc.js npm run test",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
@@ -34,6 +34,8 @@
   "author": "Jonathan Lloyd",
   "dependencies": {
     "@babel/runtime": "^7.18.9",
+    "@octokit/rest": "^19.0.5",
+    "apn": "^3.0.0-alpha1",
     "aws-sdk": "^2.1055.0",
     "aws-xray-sdk": "^3.3.6",
     "axios": "^0.27.2",
@@ -74,7 +76,6 @@
     "eslint-plugin-tsdoc": "^0.2.16",
     "fork-ts-checker-webpack-plugin": "^7.2.13",
     "mocha": "^10.0.0",
-    "nock": "^13.2.9",
     "nyc": "^15.1.0",
     "optionator": "^0.9.1",
     "plop": "^3.1.1",

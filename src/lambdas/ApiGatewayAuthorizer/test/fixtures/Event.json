@@ -1,0 +1,81 @@
+{
+  "type": "REQUEST",
+  "methodArn": "arn:aws:execute-api:us-west-2:203465012143:naf24gu6t6/prod/POST/registerDevice",
+  "resource": "/registerDevice",
+  "path": "/registerDevice",
+  "httpMethod": "POST",
+  "headers": {
+    "accept-encoding": "gzip, deflate, br",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjUwOTUzNDAsImV4cCI6MTY2NTA5NTY0MH0.e5iuKWBkf21IUZ214SilfO0PVHyTjmyy3XgPUhYuFRw",
+    "Content-Length": "186",
+    "content-type": "application/json",
+    "Host": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
+    "Via": "1.1 bb9cac2fbb4bc4bd911845fa508e2dae.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "SGAxD8fKXAoNd3kIy6aFUUomqKHuN0jCHVkNN2ZGSmdKRy5_39W8OA==",
+    "X-Amzn-Trace-Id": "Root=1-6340dde0-267e3ac97f92c56a1eaeaa8c",
+    "X-API-Key": "<secret>",
+    "X-Forwarded-For": "104.1.88.244, 64.252.71.111",
+    "X-Forwarded-Port": "443",
+    "X-Forwarded-Proto": "https",
+    "X-Reserved-Client-IP": "104.1.88.244",
+    "X-WWW-Authenticate-Realm": "prod"
+  },
+  "multiValueHeaders": {
+    "accept-encoding": ["gzip, deflate, br"],
+    "Authorization": ["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjUwOTUzNDAsImV4cCI6MTY2NTA5NTY0MH0.e5iuKWBkf21IUZ214SilfO0PVHyTjmyy3XgPUhYuFRw"],
+    "Content-Length": ["186"],
+    "content-type": ["application/json"],
+    "Host": ["naf24gu6t6.execute-api.us-west-2.amazonaws.com"],
+    "User-Agent": ["OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0"],
+    "Via": ["1.1 bb9cac2fbb4bc4bd911845fa508e2dae.cloudfront.net (CloudFront)"],
+    "X-Amz-Cf-Id": ["SGAxD8fKXAoNd3kIy6aFUUomqKHuN0jCHVkNN2ZGSmdKRy5_39W8OA=="],
+    "X-Amzn-Trace-Id": ["Root=1-6340dde0-267e3ac97f92c56a1eaeaa8c"],
+    "X-API-Key": ["<secret>"],
+    "X-Forwarded-For": ["104.1.88.244, 64.252.71.111"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"],
+    "X-Reserved-Client-IP": ["104.1.88.244"],
+    "X-WWW-Authenticate-Realm": ["prod"]
+  },
+  "queryStringParameters": {
+    "ApiKey": "<secret>"
+  },
+  "multiValueQueryStringParameters": {
+    "ApiKey": ["<secret>"]
+  },
+  "pathParameters": {},
+  "stageVariables": {},
+  "requestContext": {
+    "resourceId": "zagwyp",
+    "resourcePath": "/registerDevice",
+    "httpMethod": "POST",
+    "extendedRequestId": "ZqebJGc5PHcFStQ=",
+    "requestTime": "08/Oct/2022:02:18:08 +0000",
+    "path": "/prod/registerDevice",
+    "accountId": "203465012143",
+    "protocol": "HTTP/1.1",
+    "stage": "prod",
+    "domainPrefix": "naf24gu6t6",
+    "requestTimeEpoch": 1665195488704,
+    "requestId": "c357cc8b-470a-41c1-bb37-b35e5ca80133",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "apiKey": "<secret>",
+      "principalOrgId": null,
+      "cognitoAuthenticationType": null,
+      "userArn": null,
+      "apiKeyId": "meptp2mf8d",
+      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
+      "accountId": null,
+      "caller": null,
+      "sourceIp": "104.1.88.244",
+      "accessKey": null,
+      "cognitoAuthenticationProvider": null,
+      "user": null
+    },
+    "domainName": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "apiId": "naf24gu6t6"
+  }
+}

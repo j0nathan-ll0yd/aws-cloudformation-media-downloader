@@ -4,146 +4,102 @@
   "httpMethod": "POST",
   "headers": {
     "accept-encoding": "gzip, deflate, br",
-    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlNjhkMjE4MS1jNjUyLTQzZjEtYmJmNy0zMGM3NWQzYmVmYjYiLCJpYXQiOjE2MTc1NTgwOTQsImV4cCI6MTYxNzY0NDQ5NH0.fQWDDOsinWe5us0IB7tAQVoqzfmr9DTOpjn6AXFfJ6c",
-    "CloudFront-Forwarded-Proto": "https",
-    "CloudFront-Is-Desktop-Viewer": "true",
-    "CloudFront-Is-Mobile-Viewer": "false",
-    "CloudFront-Is-SmartTV-Viewer": "false",
-    "CloudFront-Is-Tablet-Viewer": "false",
-    "CloudFront-Viewer-Country": "US",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjU0NTMwNjYsImV4cCI6MTY2NTQ1MzM2Nn0.qShvlkkudKZUr9KuKP9eUHIkuszV2I9IxTQxshgRd4o",
     "content-type": "application/json",
-    "Host": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
-    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1220.1 Darwin/20.3.0",
-    "Via": "1.1 1fabf25362c344f20433bd0b581405e7.cloudfront.net (CloudFront), 1.1 964cf114e0992390e6487315faea90ac.cloudfront.net (CloudFront)",
-    "X-Amz-Cf-Id": "TGX1iXFG9f10g9EcT-aXuu4HRJ1TEvsJiwBL1FXw77cHdAWKlReTcA==",
-    "X-Amzn-Trace-Id": "Root=1-6069fb0e-09ef476d305450a10c0b6ece",
-    "X-API-Key": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
-    "X-Encryption-Key-Secret-Id": "PrivateEncryptionKey",
-    "X-Forwarded-For": "69.181.106.93, 35.162.63.196, 130.176.100.159",
+    "Host": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
+    "Via": "1.1 018b55e9d2eac400ec0245d5692c3546.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "S-Ynjbg5fyh68ducNEwD3esjSPsMvO0asrE8CybhUdpkHHYcgJdaJQ==",
+    "X-Amzn-Trace-Id": "Root=1-634e106d-1a6f5aaf05b855ba266ba150",
+    "X-API-Key": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk",
+    "X-Forwarded-For": "104.1.88.244, 64.252.72.124",
     "X-Forwarded-Port": "443",
-    "X-Forwarded-Proto": "https",
-    "X-Multiauthentication-Paths": "registerDevice,files",
-    "X-Reserved-Client-IP": "69.181.106.93",
-    "X-Unauthenticated-Paths": "registerUser,login",
-    "X-User-Id": "e68d2181-c652-43f1-bbf7-30c75d3befb6",
-    "X-WWW-Authenticate-Realm": "prod"
+    "X-Forwarded-Proto": "https"
   },
   "multiValueHeaders": {
     "accept-encoding": [
       "gzip, deflate, br"
     ],
     "Authorization": [
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlNjhkMjE4MS1jNjUyLTQzZjEtYmJmNy0zMGM3NWQzYmVmYjYiLCJpYXQiOjE2MTc1NTgwOTQsImV4cCI6MTYxNzY0NDQ5NH0.fQWDDOsinWe5us0IB7tAQVoqzfmr9DTOpjn6AXFfJ6c"
-    ],
-    "CloudFront-Forwarded-Proto": [
-      "https"
-    ],
-    "CloudFront-Is-Desktop-Viewer": [
-      "true"
-    ],
-    "CloudFront-Is-Mobile-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-SmartTV-Viewer": [
-      "false"
-    ],
-    "CloudFront-Is-Tablet-Viewer": [
-      "false"
-    ],
-    "CloudFront-Viewer-Country": [
-      "US"
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjU0NTMwNjYsImV4cCI6MTY2NTQ1MzM2Nn0.qShvlkkudKZUr9KuKP9eUHIkuszV2I9IxTQxshgRd4o"
     ],
     "content-type": [
       "application/json"
     ],
     "Host": [
-      "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com"
+      "naf24gu6t6.execute-api.us-west-2.amazonaws.com"
     ],
     "User-Agent": [
-      "OfflineMediaDownloader/1 CFNetwork/1220.1 Darwin/20.3.0"
+      "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0"
     ],
     "Via": [
-      "1.1 1fabf25362c344f20433bd0b581405e7.cloudfront.net (CloudFront), 1.1 964cf114e0992390e6487315faea90ac.cloudfront.net (CloudFront)"
+      "1.1 018b55e9d2eac400ec0245d5692c3546.cloudfront.net (CloudFront)"
     ],
     "X-Amz-Cf-Id": [
-      "TGX1iXFG9f10g9EcT-aXuu4HRJ1TEvsJiwBL1FXw77cHdAWKlReTcA=="
+      "S-Ynjbg5fyh68ducNEwD3esjSPsMvO0asrE8CybhUdpkHHYcgJdaJQ=="
     ],
     "X-Amzn-Trace-Id": [
-      "Root=1-6069fb0e-09ef476d305450a10c0b6ece"
+      "Root=1-634e106d-1a6f5aaf05b855ba266ba150"
     ],
     "X-API-Key": [
-      "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
-    ],
-    "X-Encryption-Key-Secret-Id": [
-      "PrivateEncryptionKey"
+      "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
     ],
     "X-Forwarded-For": [
-      "69.181.106.93, 35.162.63.196, 130.176.100.159"
+      "104.1.88.244, 64.252.72.124"
     ],
     "X-Forwarded-Port": [
       "443"
     ],
     "X-Forwarded-Proto": [
       "https"
-    ],
-    "X-Multiauthentication-Paths": [
-      "registerDevice,files"
-    ],
-    "X-Reserved-Client-IP": [
-      "69.181.106.93"
-    ],
-    "X-Unauthenticated-Paths": [
-      "registerUser,login"
-    ],
-    "X-User-Id": [
-      "e68d2181-c652-43f1-bbf7-30c75d3befb6"
-    ],
-    "X-WWW-Authenticate-Realm": [
-      "prod"
     ]
   },
   "queryStringParameters": {
-    "ApiKey": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
+    "ApiKey": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
   },
   "multiValueQueryStringParameters": {
     "ApiKey": [
-      "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"
+      "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
     ]
   },
   "pathParameters": null,
   "stageVariables": null,
   "requestContext": {
-    "resourceId": "sg7u3g",
+    "resourceId": "zagwyp",
+    "authorizer": {
+      "principalId": "unknown",
+      "integrationLatency": 1959
+    },
     "resourcePath": "/registerDevice",
     "httpMethod": "POST",
-    "extendedRequestId": "dRQqQFkyPHcFxKg=",
-    "requestTime": "04/Apr/2021:17:44:46 +0000",
+    "extendedRequestId": "aLeBKGmnPHcF-AA=",
+    "requestTime": "18/Oct/2022:02:33:17 +0000",
     "path": "/prod/registerDevice",
     "accountId": "203465012143",
     "protocol": "HTTP/1.1",
     "stage": "prod",
-    "domainPrefix": "lhpq0s2uk8",
-    "requestTimeEpoch": 1617558286385,
-    "requestId": "788ce020-1094-4d8f-b5c4-4a810d173d0b",
+    "domainPrefix": "naf24gu6t6",
+    "requestTimeEpoch": 1666060397674,
+    "requestId": "3ac8c3b0-d924-4541-babe-c4f8e7fa9eb3",
     "identity": {
       "cognitoIdentityPoolId": null,
       "cognitoIdentityId": null,
-      "apiKey": "pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",
+      "apiKey": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk",
       "principalOrgId": null,
       "cognitoAuthenticationType": null,
       "userArn": null,
-      "apiKeyId": "8w2rf0cnyc",
-      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1220.1 Darwin/20.3.0",
+      "apiKeyId": "meptp2mf8d",
+      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
       "accountId": null,
       "caller": null,
-      "sourceIp": "35.162.63.196",
+      "sourceIp": "104.1.88.244",
       "accessKey": null,
       "cognitoAuthenticationProvider": null,
       "user": null
     },
-    "domainName": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
-    "apiId": "lhpq0s2uk8"
+    "domainName": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "apiId": "naf24gu6t6"
   },
-  "body": "{\"systemVersion\":\"14.4\",\"systemName\":\"iOS\",\"name\":\"Programmer's iPhone\",\"token\":\"bf78d60839330e33a555b17be6628a16accb3027073a1d901536694f895561be\",\"UUID\":\"C49BA68B-E21A-4AEE-8D22-D99A2689B56A\"}",
+  "body": "{\"systemVersion\":\"16.0.2\",\"deviceId\":\"67C431DE-37D2-4BBA-9055-E9D2766517E1\",\"name\":\"iPhone\",\"systemName\":\"iOS\",\"token\":\"1270ac093113154918d1ae96e90247d068b98766842654b3cc2400c7342dc4ba\"}",
   "isBase64Encoded": false
 }

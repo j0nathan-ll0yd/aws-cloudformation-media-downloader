@@ -11,6 +11,8 @@ import {GetSecretValueRequest} from 'aws-sdk/clients/secretsmanager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string
 let PRIVATEKEY: string
+let APPLE_PUSH_NOTIFICATION_SERVICE_KEY: string
+let APPLE_PUSH_NOTIFICATION_SERVICE_CERT: string
 
 /**
  * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
@@ -49,6 +51,48 @@ export async function getApplePrivateKey(): Promise<string> {
   if (typeof authKeySecretResponse.SecretString === 'string') {
     APPLE_PRIVATEKEY = authKeySecretResponse.SecretString
     return APPLE_PRIVATEKEY
+  } else {
+    throw new UnexpectedError('Error fetching Apple private key')
+  }
+}
+
+/**
+ * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
+export async function getApplePushNotificationServiceKey(): Promise<string> {
+  if (APPLE_PUSH_NOTIFICATION_SERVICE_KEY) {
+    return APPLE_PUSH_NOTIFICATION_SERVICE_KEY
+  }
+  const params = {SecretId: 'ApplePushNotificationServiceKey'}
+  logDebug('getApplePushNotificationServiceKey =>', params)
+  const authKeySecretResponse = await getSecretValue(params)
+  logDebug('getApplePushNotificationServiceKey <=', params)
+  if (typeof authKeySecretResponse.SecretString === 'string') {
+    APPLE_PUSH_NOTIFICATION_SERVICE_KEY = authKeySecretResponse.SecretString
+    return APPLE_PUSH_NOTIFICATION_SERVICE_KEY
+  } else {
+    throw new UnexpectedError('Error fetching Apple private key')
+  }
+}
+
+/**
+ * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * @returns string - The private key file
+ * @notExported
+ */
+export async function getApplePushNotificationServiceCert(): Promise<string> {
+  if (APPLE_PUSH_NOTIFICATION_SERVICE_CERT) {
+    return APPLE_PUSH_NOTIFICATION_SERVICE_CERT
+  }
+  const params = {SecretId: 'ApplePushNotificationServiceCert'}
+  logDebug('getApplePushNotificationServiceCert =>', params)
+  const authKeySecretResponse = await getSecretValue(params)
+  logDebug('getApplePushNotificationServiceCert <=', params)
+  if (typeof authKeySecretResponse.SecretString === 'string') {
+    APPLE_PUSH_NOTIFICATION_SERVICE_CERT = authKeySecretResponse.SecretString
+    return APPLE_PUSH_NOTIFICATION_SERVICE_CERT
   } else {
     throw new UnexpectedError('Error fetching Apple private key')
   }
