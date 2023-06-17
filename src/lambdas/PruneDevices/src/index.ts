@@ -78,6 +78,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * Activity is determined by directly querying the APNS.
  * - If the device is disabled, remove the platform endpoint and device data
  * - If the device is associated with a user, remove it from UserDevices
+ * {@label PRUNE_DEVICES_HANDLER}
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  * @notExported

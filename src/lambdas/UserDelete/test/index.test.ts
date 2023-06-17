@@ -2,6 +2,7 @@ import {APIGatewayEvent} from 'aws-lambda'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as SNS from '../../../lib/vendor/AWS/SNS'
+import * as GithubHelper from '../../../util/github-helpers'
 import {handler} from '../src'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import {v4 as uuidv4} from 'uuid'
@@ -46,6 +47,17 @@ const fakeDeviceResponse2 = {
   ]
 }
 
+const fakeGithubIssueResponse = {
+  status: '201',
+  url: 'https://api.github.com/repos/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues',
+  headers: {},
+  data: {
+    id: 1679634750,
+    number: 57,
+    title: 'UserDelete Failed for UserId: 0f2e90e6-3c52-4d48-a6f2-5119446765f1'
+  }
+}
+
 /* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#UserDelete', () => {
   let event: APIGatewayEvent
@@ -74,6 +86,10 @@ describe('#UserDelete', () => {
   })
   it('should create an issue if deletion fails', async () => {
     sinon.stub(DynamoDB, 'deleteItem').throws(new Error('Delete failed'))
+    sinon.stub(DynamoDB, 'updateItem').resolves({})
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    sinon.stub(GithubHelper, 'createFailedUserDeletionIssue').resolves(fakeGithubIssueResponse)
     const queryStub = sinon.stub(DynamoDB, 'query')
     queryStub.onCall(0).resolves(fakeUserDevicesResponse)
     queryStub.onCall(1).resolves(fakeDeviceResponse1)

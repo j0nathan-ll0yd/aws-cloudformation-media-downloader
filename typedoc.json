@@ -1,17 +1,15 @@
 {
-  "entryPoints": ["src"],
+  "entryPoints": ["src/**/*"],
   "exclude": [
     "**/*+(.spec|.e2e|.test).ts",
-    "src/pipeline/terraform.environment.test.ts"
-  ],
-  "banish": [
-    "**/*+(.spec|.e2e|.test).ts",
-    "src/pipeline/terraform.environment.test.ts"
+    "src/pipeline/terraform.environment.test.ts",
+    "src/types/terraform.d.ts"
   ],
   "externalPattern": [
     "**/*+(.spec|.e2e|.test).ts",
     "src/pipeline/terraform.environment.test.ts"
   ],
+  "entryPointStrategy": "expand",
   "excludeExternals": true,
   "excludePrivate": true,
   "excludeInternal": true,

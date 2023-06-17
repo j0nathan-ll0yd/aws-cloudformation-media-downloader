@@ -15,8 +15,12 @@ import {FileStatus} from '../types/enums'
  * Disassociates a deviceId from a User
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
- * @see {@link PruneDevices.handler}
- * @see {@link UserDelete.handler}
+ * @see {@link @aws-cloudformation-media-downloader/src/lambdas/PruneDevices/src/index#handler}
+ * @see {@link ../src/lambdas/PruneDevices/src/index#handler}
+ * @see {@link ../src/lambdas/PruneDevices/src#handler}
+ * @see {@link lambdas/PruneDevices/src#handler}
+ * @see {@link (label:PRUNE_DEVICES_HANDLER)}
+ * @see PruneHandler.handler
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   const params = deleteSingleUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId, deviceId)
@@ -30,7 +34,7 @@ export async function deleteUserDevice(userId: string, deviceId: string): Promis
  * This includes deleting the associated endpoint from SNS.
  * @param device - The Device object from DynamoDB
  * @see {@link PruneDevices.handler}
- * @see {@link UserDelete.handler}
+ * @see {@link PruneDevices#handler}
  */
 export async function deleteDevice(device: Device): Promise<void> {
   const removeEndpointParams = {EndpointArn: device.endpointArn}

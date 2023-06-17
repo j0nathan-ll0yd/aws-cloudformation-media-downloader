@@ -3,7 +3,7 @@ import {logDebug, logError, logInfo} from './lambda-helpers'
 import {Device} from '../types/main'
 
 // Constrainted to only reading/writing issues
-const personalAccessToken = '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'
+const personalAccessToken = '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'
 const owner = 'j0nathan-ll0yd'
 const repo = 'aws-cloudformation-media-downloader'
 const octokit = new Octokit({
@@ -21,6 +21,7 @@ const octokit = new Octokit({
       logDebug(message)
     },
     error: (message) => {
+      /* istanbul ignore next */
       logError(message)
     }
   }
@@ -28,7 +29,7 @@ const octokit = new Octokit({
 
 export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
   // TODO: Add expiration time (2 weeks) and markdown formatting
-  const title = ''
+  const title = `UserDelete Failed for UserId: ${userId}`
   const body = `userId: ${userId}, devices: ${devices.join(', ')}, error: ${error.message}, requestId: ${requestId}`
   const params = {
     owner,
@@ -39,4 +40,5 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
   logDebug('createFailedUserDeletionIssue =>', params)
   const response = await octokit.rest.issues.create(params)
   logDebug('createFailedUserDeletionIssue <=', response)
+  return response
 }
