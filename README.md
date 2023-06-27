@@ -143,6 +143,12 @@ mv privateKey.txt certificate.txt secure/APNS_SANDBOX
 
 Once complete, run `terraform apply` and a new platform application will be created so you can register your device to receive push notifications.
 
+## Configuring Github Issue Creation
+
+As an engineer, I appreciate actionable alerting. If something went wrong, I'd like to be able to know about it, have the relevant data to address the situation, and then mark it as completed. To do this, errors that are correctable will be automatically submitted as Github issues to the repository. To support this functionality, you need to generate a [Github Personal Token](https://github.com/settings/tokens?type=beta) that has access to creating issues.
+
+Once generated, store it as `githubPersonalToken.txt` in the `secure` directory so that it isn't tracked by version control.
+
 ## Deployment
 
 * Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
@@ -187,3 +193,11 @@ The resulting output is located in `docs/source` and can open viewed by running:
 ```bash
 open docs/source/index.html
 ```
+
+### TODOS
+
+* Update Terraform
+  * Better handle conditional variables (like Github Personal Token)
+
+* Update Unit Tests
+  * Write a test case for the absence of a Github Personal Token

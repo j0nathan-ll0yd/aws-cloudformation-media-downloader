@@ -90,6 +90,22 @@ data "http" "icanhazip" {
   url = "https://ipv4.icanhazip.com/"
 }
 
+variable "GithubPersonalToken" {
+  type    = string
+  default = "./../secure/githubPersonalToken.txt"
+}
+
+resource "aws_secretsmanager_secret" "GithubPersonalToken" {
+  name                    = "GithubPersonalToken"
+  description             = "The private certificate for APNS"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "GithubPersonalToken" {
+  secret_id     = aws_secretsmanager_secret.GithubPersonalToken.id
+  secret_string = file(var.GithubPersonalToken)
+}
+
 output "api_gateway_subdomain" {
   description = "The subdomain of the API Gateway (e.g. ow9mzeewuf)"
   value       = aws_api_gateway_rest_api.Main.id

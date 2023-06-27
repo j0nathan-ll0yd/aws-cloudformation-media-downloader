@@ -13,6 +13,7 @@ let APPLE_PRIVATEKEY: string
 let PRIVATEKEY: string
 let APPLE_PUSH_NOTIFICATION_SERVICE_KEY: string
 let APPLE_PUSH_NOTIFICATION_SERVICE_CERT: string
+let GITHUBPERSONALTOKEN: string
 
 /**
  * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
@@ -248,5 +249,27 @@ export async function verifyAccessToken(token: string): Promise<ServerVerifiedTo
   } catch (err) {
     logError(`verifyAccessToken <= ${err}`)
     throw err
+  }
+}
+
+/**
+ * Retrieves the Github access token via Secrets Manager or cache.
+ * @returns string - The Github personal access token
+ * @notExported
+ */
+export async function getGithubPersonalToken(): Promise<string> {
+  if (GITHUBPERSONALTOKEN !== undefined) {
+    return GITHUBPERSONALTOKEN
+  }
+  // This SecretId has to map to the CloudFormation file (LoginUser)
+  const params = {SecretId: process.env.GithubPersonalToken} as GetSecretValueRequest
+  logDebug('getGithubPersonalToken =>', params)
+  const privateKeySecretResponse = await getSecretValue(params)
+  logDebug('getGithubPersonalToken <=', privateKeySecretResponse)
+  if (typeof privateKeySecretResponse.SecretString === 'string') {
+    GITHUBPERSONALTOKEN = privateKeySecretResponse.SecretString
+    return GITHUBPERSONALTOKEN
+  } else {
+    throw new UnexpectedError('Error fetching Github personal token')
   }
 }

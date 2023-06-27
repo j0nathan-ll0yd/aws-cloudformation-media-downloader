@@ -6,6 +6,7 @@ import {
   getApplePrivateKey,
   getApplePushNotificationServiceCert,
   getApplePushNotificationServiceKey,
+  getGithubPersonalToken,
   getServerPrivateKey,
   validateAuthCodeForToken,
   verifyAccessToken,
@@ -119,6 +120,16 @@ describe('#Util:SecretsManager', () => {
     const responseOne = await getServerPrivateKey()
     expect(responseOne).to.have.length.greaterThan(0)
     const responseTwo = await getServerPrivateKey()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
+  it('should getGithubPersonalToken', async () => {
+    const secretString = 'GithubPersonalToken'
+    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    const responseOne = await getGithubPersonalToken()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getGithubPersonalToken()
     expect(responseTwo).to.have.length.greaterThan(0)
     expect(responseOne).to.eql(responseTwo)
     expect(getSecretValueStub.calledOnce)

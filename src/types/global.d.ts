@@ -12,6 +12,7 @@ declare global {
       DynamoDBTableUserFiles: string
       DynamoDBTableUserDevices: string
       EncryptionKeySecretId: string
+      GithubPersonalToken: string
       MultiAuthenticationPathParts: string
       ReservedClientIp: string
       SNSQueueUrl: string
