@@ -25,10 +25,12 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     log('aws_lambda_function.name', functionName)
-    const resource = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction
+    const resources = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction[]
+    const resource = resources[0]
+    const environments = resource.environment
     log('aws_lambda_function.resource', resource)
-    if (resource.environment && resource.environment.variables) {
-      environmentVariablesForFunction[functionName] = Object.keys(resource.environment.variables)
+    if (environments && environments[0].variables) {
+      environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
       log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }

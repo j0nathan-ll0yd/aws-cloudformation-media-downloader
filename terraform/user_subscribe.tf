@@ -50,7 +50,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   function_name    = "UserSubscribe"
   role             = aws_iam_role.UserSubscribeRole.arn
   handler          = "UserSubscribe.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs16.x"
   depends_on       = [aws_iam_role_policy_attachment.UserSubscribePolicy]
   filename         = data.archive_file.UserSubscribe.output_path
   source_code_hash = data.archive_file.UserSubscribe.output_base64sha256

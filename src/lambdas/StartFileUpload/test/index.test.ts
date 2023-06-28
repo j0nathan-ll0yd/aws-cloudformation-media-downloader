@@ -1,5 +1,5 @@
 import axios from 'axios'
-import MockAdapter from 'axios-mock-adapter'
+import * as MockAdapter from 'axios-mock-adapter'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as YouTube from '../../../lib/vendor/YouTube'

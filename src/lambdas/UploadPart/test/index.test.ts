@@ -1,5 +1,5 @@
 import axios, {AxiosRequestConfig, AxiosResponseHeaders} from 'axios'
-import MockAdapter from 'axios-mock-adapter'
+import * as MockAdapter from 'axios-mock-adapter'
 import * as crypto from 'crypto'
 import * as chai from 'chai'
 import * as sinon from 'sinon'

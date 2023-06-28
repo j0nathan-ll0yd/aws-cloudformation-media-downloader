@@ -21,7 +21,7 @@ describe('#Util:GithubHelper', () => {
     const device: Device = {deviceId: '', name: '', systemName: '', systemVersion: '', token: '', endpointArn: 'fakeArn'}
     const error: Error = new Error('test error')
     const requestId = '1234'
-    const moctokit = new Moctokit()
+    const moctokit = new Moctokit('https://api.github.com')
     moctokit.rest.issues.create().reply({status: 201, data: {id: 1234}})
     const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
     expect(response.status).to.equal(201)

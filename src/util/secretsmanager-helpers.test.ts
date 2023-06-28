@@ -16,7 +16,7 @@ import * as jwt from 'jsonwebtoken'
 import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
 import * as sinon from 'sinon'
 import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
-import MockAdapter from 'axios-mock-adapter'
+import * as MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
@@ -33,7 +33,7 @@ const fakeTokenResponse = {
 }
 const fakeTokenHeader = {
   kid: 'W6WcOKB',
-  alg: 'RS256'
+  alg: 'ES256'
 }
 const fakeTokenPayload: SignInWithAppleVerifiedToken = {
   iss: 'https://appleid.apple.com',
@@ -188,26 +188,26 @@ describe('#Util:SecretsManager', () => {
   })
   it('should verifyAppleToken successfully', async () => {
     const jwtVerifyStub = sinon.stub(jwt, 'verify').resolves(fakeTokenPayload)
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     const newToken = await verifyAppleToken(token)
     jwtVerifyStub.restore()
     expect(newToken).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported')
   })
   it('should verifyAppleToken handle an unexpected string payload', async () => {
     const jwtVerifyStub = sinon.stub(jwt, 'verify').throws('a string')
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
     jwtVerifyStub.restore()
   })
   it('should verifyAppleToken handle token verification error', async () => {
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token header', async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {rsaPublicKey, ...fakeKeyPayloadWithoutHeader} = fakeKeyPayload
     jwksClientSigningKeyStub.returns(Promise.resolve(fakeKeyPayloadWithoutHeader))
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey)
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token', async () => {

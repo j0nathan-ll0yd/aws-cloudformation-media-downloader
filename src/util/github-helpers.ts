@@ -11,6 +11,7 @@ async function getOctokitInstance() {
   const personalAccessToken = await getGithubPersonalToken()
   return new Octokit({
     auth: personalAccessToken,
+    baseUrl: 'https://api.github.com',
     userAgent: `${repo}-production`,
     timeZone: 'America/Los_Angeles',
     log: {
