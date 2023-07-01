@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "engines": {
     "node": "v16.20.1",
-    "npm": "9.6.4"
+    "npm": "8.19.4"
   },
   "scripts": {
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
