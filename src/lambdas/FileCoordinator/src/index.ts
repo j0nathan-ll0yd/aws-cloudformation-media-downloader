@@ -7,7 +7,6 @@ import {initiateFileDownload} from '../../../util/shared'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
- * @notExported
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   const scanParams = scanForFileParams(process.env.DynamoDBTableFiles as string)
@@ -20,6 +19,11 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
   return scanResponse.Items.map((file) => file.fileId)
 }
 
+/**
+ * A scheduled event lambdas that checks for files to be downloaded
+ * @param event - An AWS ScheduledEvent; happening every X minutes
+ * @param context - An AWS Context object
+ */
 export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   const files = await getFileIdsToBeDownloaded()

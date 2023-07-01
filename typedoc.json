@@ -1,19 +1,31 @@
 {
-  "entryPoints": ["src/**/*"],
+  "entryPoints": [
+    "src/lambdas/*",
+    "src/lib/*",
+    "src/types/*",
+    "src/util/*"
+  ],
   "exclude": [
     "**/*+(.spec|.e2e|.test).ts",
-    "src/pipeline/terraform.environment.test.ts",
     "src/types/terraform.d.ts"
   ],
-  "externalPattern": [
-    "**/*+(.spec|.e2e|.test).ts",
-    "src/pipeline/terraform.environment.test.ts"
-  ],
   "entryPointStrategy": "expand",
-  "excludeExternals": true,
-  "excludePrivate": true,
-  "excludeInternal": true,
+  "excludeNotDocumented": true,
+  "excludeNotDocumentedKinds": [
+    "Module",
+    "Namespace",
+    "Variable",
+    "Function",
+    "Constructor",
+    "Method",
+    "CallSignature",
+    "IndexSignature",
+    "ConstructorSignature",
+    "Accessor",
+    "GetSignature",
+    "SetSignature",
+    "Reference"
+  ],
   "tsconfig": "./tsconfig.json",
-  "categorizeByGroup": true,
   "out": "docs/source"
 }

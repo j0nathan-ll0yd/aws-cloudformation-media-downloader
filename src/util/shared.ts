@@ -15,12 +15,7 @@ import {FileStatus} from '../types/enums'
  * Disassociates a deviceId from a User
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
- * @see {@link @aws-cloudformation-media-downloader/src/lambdas/PruneDevices/src/index#handler}
- * @see {@link ../src/lambdas/PruneDevices/src/index#handler}
- * @see {@link ../src/lambdas/PruneDevices/src#handler}
- * @see {@link lambdas/PruneDevices/src#handler}
- * @see {@link (label:PRUNE_DEVICES_HANDLER)}
- * @see PruneHandler.handler
+ * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   const params = deleteSingleUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId, deviceId)
@@ -33,8 +28,8 @@ export async function deleteUserDevice(userId: string, deviceId: string): Promis
  * Removes a Device from DynamoDB.
  * This includes deleting the associated endpoint from SNS.
  * @param device - The Device object from DynamoDB
- * @see {@link PruneDevices.handler}
- * @see {@link PruneDevices#handler}
+ * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
+ * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  */
 export async function deleteDevice(device: Device): Promise<void> {
   const removeEndpointParams = {EndpointArn: device.endpointArn}
@@ -51,7 +46,8 @@ export async function deleteDevice(device: Device): Promise<void> {
  * Queries a user's device parameters from DynamoDB
  * @param table - The DynamoDB table to perform the operation on
  * @param userId - The userId
- * @notExported
+ * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
+ * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
  */
 export async function getUserDevices(table: string, userId: string): Promise<DynamoDBUserDevice[]> {
   const params = queryUserDeviceParams(table, userId)
@@ -68,6 +64,8 @@ export async function getUserDevices(table: string, userId: string): Promise<Dyn
  * Subscribes an endpoint (a client device) to an SNS topic
  * @param endpointArn - The EndpointArn of a mobile app and device
  * @param topicArn - The ARN of the topic you want to subscribe to
+ * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
+ * @see {@link lambdas/UserSubscribe/src!#handler | UserSubscribe }
  */
 export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
   const subscribeParams = {
@@ -84,6 +82,7 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
 /**
  * Upsert a File object in DynamoDB
  * @param item - The DynamoDB item to be added
+ * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
 export async function upsertFile(item: DynamoDBFile) {
   const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
@@ -96,6 +95,8 @@ export async function upsertFile(item: DynamoDBFile) {
 /**
  * Searches for a User record via their Apple Device ID
  * @param userDeviceId - The subject registered claim that identifies the principal user.
+ * @see {@link lambdas/RegisterUser/src!#handler | RegisterUser }
+ * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
  */
 export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
   const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
@@ -111,6 +112,8 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 /**
  * Triggers the process for downloading a file and storing it in S3
  * @param fileId - The YouTube fileId to be downloaded
+ * @see {@link lambdas/FileCoordinator/src!#handler | FileCoordinator }
+ * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
  */
 export async function initiateFileDownload(fileId: string) {
   const params = {
@@ -127,6 +130,7 @@ export async function initiateFileDownload(fileId: string) {
  * Create a DynamoDBFile object from a video's metadata
  * @param metadata - The Metadata for a video; generated through youtube-dl
  * @returns DynamoDBFile
+ * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
 export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
@@ -152,7 +156,7 @@ export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBF
 /**
  * Makes an HTTP request via Axios
  * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @notExported
+ * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
   //logDebug('axios <= ', options)
