@@ -21,6 +21,10 @@ jobs:
       uses: Homebrew/actions/setup-homebrew@master
       run: brew install hcl2json
 
+    - name: Install hcl2json
+      id: brew-install-hcl2json
+      run: brew install hcl2json
+
     - name: Install dependencies
       run: npm ci --ignore-scripts
 
