@@ -3,7 +3,7 @@
   "main": "./node_modules/webpack-cli/bin/cli.js",
   "version": "1.0.0",
   "engines": {
-    "node": "v16.16.0",
+    "node": "v16.20.1",
     "npm": "9.6.4"
   },
   "scripts": {
