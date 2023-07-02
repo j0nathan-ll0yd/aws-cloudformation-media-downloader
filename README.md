@@ -1,6 +1,6 @@
 # Media Downloader
 
-A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [AWS CloudFormation](https://aws.amazon.com/cloudformation/), and built with [TypeScript](https://www.typescriptlang.org/).
+A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Background
 
@@ -8,14 +8,14 @@ When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was releas
 
 So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportunity to build my own media downloader service, experiment with the latest AWS features, along with a [companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader) using SwiftUI and Combine.
 
-The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, CloudFormation templates, deployment scripts, documentation and tests that power the App's backend. This includes:
+The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, Terraform templates, deployment scripts, documentation and tests that power the App's backend. This includes:
 
 * The ability to download videos and have them stored to an S3 bucket.
 * The ability to view downloaded videos (via API).
 * The ability to register for and dispatch push notifications to the mobile App.
 * It also has a custom authorizer Lambda function that supports query-based API tokens. This was needed for integration with Feedly.
 
-I share this for any engineer to be able to build a basic backend and iOS App for a future pet project or idea.
+I share this for any engineer to be able to build a basic backend and iOS App for a future pet project.
 
 ## Project Tenants
 
@@ -61,10 +61,9 @@ aws configure
 
 # Install Node dependencies and deploy project
 npm install
-npm run build-terraform-json
-npm run build-terraform-types
-npm run test
+npm run build-dependencies
 npm run build
+npm run test
 npm run deploy
 
 # Confirm everything is working as expected
@@ -143,6 +142,12 @@ mv privateKey.txt certificate.txt secure/APNS_SANDBOX
 
 Once complete, run `terraform apply` and a new platform application will be created so you can register your device to receive push notifications.
 
+## Configuring Github Issue Creation
+
+As an engineer, I appreciate actionable alerting. If something went wrong, I'd like to be able to know about it, have the relevant data to address the situation, and then mark it as completed. To do this, errors that are correctable will be automatically submitted as Github issues to the repository. To support this functionality, you need to generate a [Github Personal Token](https://github.com/settings/tokens?type=beta) that has access to creating issues.
+
+Once generated, store it as `githubPersonalToken.txt` in the `secure` directory so that it isn't tracked by version control.
+
 ## Deployment
 
 * Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
@@ -187,3 +192,11 @@ The resulting output is located in `docs/source` and can open viewed by running:
 ```bash
 open docs/source/index.html
 ```
+
+### TODOS
+
+* Update Terraform
+  * Better handle conditional variables (like Github Personal Token)
+
+* Update Unit Tests
+  * Write a test case for the absence of a Github Personal Token

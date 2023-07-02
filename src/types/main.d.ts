@@ -2,6 +2,8 @@ import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
 import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import {FileStatus, UserStatus} from './enums'
+import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 
 interface Metadata {
   videoId: string
@@ -39,6 +41,11 @@ interface UploadPartEvent {
   url: string
 }
 
+interface ApplePushNotificationResponse {
+  statusCode: number
+  reason?: string
+}
+
 interface CompleteFileUploadEvent {
   partNumber?: number
   bucket: string
@@ -54,21 +61,21 @@ interface UserFile {
   userId: string
 }
 
-interface DeviceRegistration {
+interface DeviceRegistrationRequest {
   name: string
   token: string
   systemVersion: string
-  UUID: string
+  deviceId: string
   systemName: string
 }
 
-interface UserDevice extends DeviceRegistration {
+interface Device extends DeviceRegistrationRequest {
   endpointArn: string
 }
 
 interface DynamoDBUserDevice {
   userId: string
-  userDevice: UserDevice
+  devices: DocumentClient.DynamoDbSet
 }
 
 interface DynamoDBFile {
@@ -80,10 +87,13 @@ interface DynamoDBFile {
   publishDate: string
   description: string
   key: string
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   url?: string // Won't exist on create
   contentType: string
   authorUser: string
   title: string
+  status: FileStatus
 }
 
 interface SignInWithAppleConfig {
@@ -92,6 +102,11 @@ interface SignInWithAppleConfig {
   redirect_uri: string
   key_id: string
   scope: string
+}
+
+interface UserEventDetails {
+  userId?: string
+  userStatus: UserStatus
 }
 
 export class FileNotification implements SQSMessageAttributes {
@@ -105,6 +120,7 @@ export class FileNotification implements SQSMessageAttributes {
 
 // The shape of a file when send via push notification
 interface ClientFile {
+  fileId: string
   key: string
   publishDate: string
   size: number

@@ -1,9 +1,10 @@
 import * as AWS from 'aws-sdk'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {DynamoDBFile, IdentityProviderApple, User, UserDevice} from '../types/main'
+import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
+import {FileStatus} from '../types/enums'
 const docClient = new AWS.DynamoDB.DocumentClient()
 
-function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
+function transformObjectToDynamoUpdateQuery(item: object) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames: Record<string, string> = {}
   const ExpressionAttributeValues: Record<string, number | string> = {}
@@ -11,9 +12,12 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
     if (property === 'fileId') {
       continue
     }
+    /* istanbul ignore else */
     if (Object.prototype.hasOwnProperty.call(item, property)) {
       UpdateExpression += ` #${property} = :${property} ,`
       ExpressionAttributeNames['#' + property] = property
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       ExpressionAttributeValues[':' + property] = item[property]
     }
   }
@@ -27,12 +31,12 @@ function transformObjectToDynamoUpdateQuery(item: DynamoDBFile) {
 
 export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: {'#FN': 'url'},
-    ExpressionAttributeValues: {':fn': fileUrl},
+    ExpressionAttributeNames: {'#FN': 'url', '#S': 'status'},
+    ExpressionAttributeValues: {':fn': fileUrl, ':s': FileStatus.Downloaded},
     Key: {fileId: fileId},
     ReturnValues: 'ALL_NEW',
     TableName: tableName,
-    UpdateExpression: 'SET #FN = :fn'
+    UpdateExpression: 'SET #FN = :fn, #S = :s'
   }
 }
 
@@ -69,6 +73,14 @@ export function getUsersByFileId(tableName: string, fileId: string): DocumentCli
   }
 }
 
+export function getUsersByDeviceId(tableName: string, deviceId: string): DocumentClient.ScanInput {
+  return {
+    ExpressionAttributeValues: {':deviceId': deviceId},
+    FilterExpression: 'contains (devices, :deviceId)',
+    TableName: tableName
+  }
+}
+
 export function userFileParams(tableName: string, userId: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
     ExpressionAttributeNames: {'#FID': 'fileId'},
@@ -80,28 +92,43 @@ export function userFileParams(tableName: string, userId: string, fileId: string
   }
 }
 
-export function updateUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.UpdateItemInput {
+export function userDevicesParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
   return {
-    TableName: tableName,
-    Key: {userId},
-    UpdateExpression: 'SET #userDevice = list_append(if_not_exists(#userDevice, :empty_list), :userDevice)',
-    ExpressionAttributeNames: {'#userDevice': 'userDevice'},
-    ExpressionAttributeValues: {
-      ':userDevice': [userDevice],
-      ':empty_list': []
-    }
+    ExpressionAttributeNames: {'#DID': 'devices'},
+    ExpressionAttributeValues: {':did': docClient.createSet([deviceId])},
+    Key: {userId: userId},
+    ReturnValues: 'NONE',
+    UpdateExpression: 'ADD #DID :did',
+    TableName: tableName
   }
 }
 
-export function queryUserDeviceParams(tableName: string, userId: string, userDevice: UserDevice): DocumentClient.QueryInput {
+export function deleteSingleUserDeviceParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId},
+    UpdateExpression: 'DELETE devices :deviceId',
+    ExpressionAttributeValues: {':deviceId': docClient.createSet([deviceId])}
+  }
+}
+
+export function upsertDeviceParams(tableName: string, device: Device): DocumentClient.UpdateItemInput {
+  const {deviceId, ...deviceSubset} = device
+  const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(deviceSubset)
+  return {
+    Key: {deviceId},
+    TableName: tableName,
+    UpdateExpression,
+    ExpressionAttributeNames,
+    ExpressionAttributeValues
+  }
+}
+
+export function queryUserDeviceParams(tableName: string, userId: string): DocumentClient.QueryInput {
   return {
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
-    FilterExpression: 'contains(userDevice, :userDevice)',
-    ExpressionAttributeValues: {
-      ':userId': userId,
-      ':userDevice': userDevice
-    }
+    ExpressionAttributeValues: {':userId': userId}
   }
 }
 
@@ -113,6 +140,14 @@ export function queryFileParams(tableName: string, fileId: string): DocumentClie
   }
 }
 
+export function queryDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'deviceId = :deviceId',
+    ExpressionAttributeValues: {':deviceId': deviceId}
+  }
+}
+
 export function getUserDeviceByUserIdParams(tableName: string, userId: string): DocumentClient.QueryInput {
   return {
     TableName: tableName,
@@ -121,13 +156,55 @@ export function getUserDeviceByUserIdParams(tableName: string, userId: string): 
   }
 }
 
+export function getDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
+  return {
+    TableName: tableName,
+    KeyConditionExpression: 'deviceId = :deviceId',
+    ExpressionAttributeValues: {':deviceId': deviceId}
+  }
+}
+
+export function deleteDeviceParams(tableName: string, deviceId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {deviceId}
+  }
+}
+
+export function deleteUserParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
+  }
+}
+
+export function deleteUserFilesParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
+  }
+}
+
+export function deleteAllUserDeviceParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
+  return {
+    TableName: tableName,
+    Key: {userId}
+  }
+}
+
 export function newFileParams(tableName: string, fileId: string): DocumentClient.UpdateItemInput {
   return {
-    ExpressionAttributeNames: {'#AA': 'availableAt'},
-    ExpressionAttributeValues: {':aa': parseInt(Date.now().toString(), 10)},
+    ExpressionAttributeNames: {
+      '#AA': 'availableAt',
+      '#S': 'status'
+    },
+    ExpressionAttributeValues: {
+      ':aa': parseInt(Date.now().toString(), 10),
+      ':s': FileStatus.PendingMetadata
+    },
     Key: {fileId: fileId},
     ReturnValues: 'ALL_OLD',
-    UpdateExpression: 'SET #AA = if_not_exists(#AA, :aa)',
+    UpdateExpression: 'SET #AA = :aa, #S = :s',
     TableName: tableName
   }
 }

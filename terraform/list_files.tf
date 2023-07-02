@@ -54,15 +54,15 @@ resource "aws_lambda_function" "ListFiles" {
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
   handler          = "ListFiles.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs16.x"
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
 
   environment {
     variables = {
-      DynamoDBTableFiles       = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
+      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
+      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       DefaultFileSize        = 436743
       DefaultFileName        = aws_s3_object.DefaultFile.key
       DefaultFileUrl         = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
@@ -81,7 +81,8 @@ resource "aws_api_gateway_method" "ListFilesGet" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.Files.id
   http_method      = "GET"
-  authorization    = "NONE"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
   api_key_required = true
 }
 

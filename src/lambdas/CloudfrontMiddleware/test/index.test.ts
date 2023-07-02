@@ -1,74 +1,62 @@
-import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse} from 'aws-lambda'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import * as sinon from 'sinon'
+import {CloudFrontRequestEvent} from 'aws-lambda'
 import {getFixture, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
-import {CustomCloudFrontRequest, ServerVerifiedToken} from '../../../types/main'
-import {CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import * as crypto from 'crypto'
+import * as sinon from 'sinon'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CloudfrontMiddleware', () => {
   const context = testContext
+  const apiKeyHeaderName = 'X-API-Key'
+  const apiKeyQueryStringName = 'ApiKey'
+  const apiKeyValue = crypto.randomBytes(24).toString('hex')
   let event: CloudFrontRequestEvent
-  let verifyAccessTokenStub: sinon.SinonStub
   beforeEach(() => {
     event = localFixture('CloudFrontRequestEvent.json') as CloudFrontRequestEvent
-    verifyAccessTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAccessToken').returns(localFixture('verifyAccessToken-200-OK.json') as Promise<ServerVerifiedToken>)
   })
   afterEach(() => {
-    verifyAccessTokenStub.restore()
+    sinon.restore()
   })
-  it('should handle a valid Authorization header', async () => {
-    const output = await handler(event, context)
-    expect(output.headers).to.have.property('x-user-Id')
-  })
-  it('should handle an empty Authorization header', async () => {
-    delete event.Records[0].cf.request.headers.authorization
-    const output = await handler(event, context)
-    expect(output.headers).to.not.have.property('x-user-Id')
-  })
-  it('should handle an invalid Authorization header', async () => {
-    event.Records[0].cf.request.headers.authorization[0].value = 'Invalid header'
-    const output = await handler(event, context)
-    expect(output.headers).to.not.have.property('x-user-Id')
-  })
-  it('should handle an expired Authorization header', async () => {
-    verifyAccessTokenStub.throws('TokenExpiredError: jwt expired')
-    const output = (await handler(event, context)) as CloudFrontResultResponse
-    expect(output).to.have.property('status')
-    expect(output.status).to.equal('401')
-  })
-  it('should handle a valid request (with API key)', async () => {
+  it('should handle a request with (header: present, querystring: blank)', async () => {
+    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+    event.Records[0].cf.request.querystring = ''
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
     expect(output.headers).to.have.property('x-api-key')
+    expect(spyURLParamsHas.callCount).to.eql(0)
+    expect(spyURLParamsGet.callCount).to.eql(0)
   })
-  it('should handle a request without an API key', async () => {
+  it('should handle a request with (header: blank, querystring: blank)', async () => {
+    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
+    delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
     expect(output.headers).to.not.have.property('x-api-key')
+    expect(spyURLParamsHas.callCount).to.eql(1)
+    expect(spyURLParamsGet.callCount).to.eql(0)
   })
-  it('should ignore the Authentication header for unauthenicated paths', async () => {
-    event.Records[0].cf.request.uri = '/login'
+  it('should handle a request with (header: blank, querystring: present)', async () => {
+    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+    event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
+    delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
-    expect(output.headers).to.not.have.property('x-user-Id')
+    expect(output.headers).to.have.property('x-api-key')
+    expect(spyURLParamsHas.callCount).to.eql(1)
+    expect(spyURLParamsGet.callCount).to.eql(1)
   })
-  it('should enforce the Authentication header for multiauthentication paths', async () => {
-    // if the path supports requires authentication, enforce it
-    event.Records[0].cf.request.uri = '/feedly'
-    delete event.Records[0].cf.request.headers.authorization
-    const output = (await handler(event, context)) as CloudFrontResponse
-    expect(output).to.have.property('status')
-    expect(output.status).to.equal('401')
-  })
-  it('should handle a test request if structured correctly', async () => {
-    const reservedIp = '127.0.0.1'
-    const request = event.Records[0].cf.request as CustomCloudFrontRequest
-    request.clientIp = request.origin.custom.customHeaders['x-reserved-client-ip'][0].value = reservedIp
-    request.headers['user-agent'][0].value = 'localhost@lifegames'
-    const output = (await handler(event, context)) as CloudFrontRequest
-    expect(output.headers).to.have.property('x-user-Id')
-    expect(output.headers['x-user-Id'][0].value).to.equal('abcdefgh-ijkl-mnop-qrst-uvwxyz123456')
+  it('should handle a request with (header: present, querystring: present)', async () => {
+    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+    event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
+    const output = await handler(event, context)
+    expect(output.headers).to.have.property('x-api-key')
+    expect(spyURLParamsHas.callCount).to.eql(0)
+    expect(spyURLParamsGet.callCount).to.eql(0)
   })
 })

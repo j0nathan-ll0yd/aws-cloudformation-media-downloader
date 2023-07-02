@@ -1,14 +1,12 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
 import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {startExecution} from '../../../lib/vendor/AWS/StepFunctions'
 import {scanForFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {Types} from 'aws-sdk/clients/stepfunctions'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {initiateFileDownload} from '../../../util/shared'
 
 /**
- * Returns a array of filesIds that are ready to be downloaded
- * @notExported
+ * Returns an array of filesIds that are ready to be downloaded
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   const scanParams = scanForFileParams(process.env.DynamoDBTableFiles as string)
@@ -21,18 +19,16 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
   return scanResponse.Items.map((file) => file.fileId)
 }
 
+/**
+ * A scheduled event lambdas that checks for files to be downloaded
+ * @param event - An AWS ScheduledEvent; happening every X minutes
+ * @param context - An AWS Context object
+ */
 export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event', event)
   const files = await getFileIdsToBeDownloaded()
-  for (const fileId in files) {
-    const params = {
-      input: JSON.stringify({fileId}),
-      name: new Date().getTime().toString(),
-      stateMachineArn: process.env.StateMachineArn
-    } as Types.StartExecutionInput
-    logDebug('startExecution <=', params)
-    const output = await startExecution(params)
-    logDebug('startExecution =>', output)
-  }
+  const downloads: Promise<void>[] = []
+  files.forEach((fileId) => downloads.push(initiateFileDownload(fileId)))
+  await Promise.all(downloads)
   return response(context, 200)
 }

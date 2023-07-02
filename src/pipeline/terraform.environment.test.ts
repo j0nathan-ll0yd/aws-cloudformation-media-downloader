@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as chai from 'chai'
-import {AwsCloudfrontDistributionProduction, AwsLambdaFunction, TerraformD} from '../types/terraform'
+import {AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
 import Debug from 'debug'
 const log = Debug(__filename.slice(__dirname.length + 1, -3))
@@ -22,34 +22,15 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
-  interface CustomAwsCloudfrontDistribution {
-    [key: string]: AwsCloudfrontDistributionProduction
-    Production: AwsCloudfrontDistributionProduction
-  }
-  const distribution = terraformPlan.resource.aws_cloudfront_distribution as CustomAwsCloudfrontDistribution
-  const distributions: string[] = Object.keys(distribution)
-  distributions.map((key) => {
-    log('aws_cloudfront_distribution.name', key)
-    const resource = distribution[key] as AwsCloudfrontDistributionProduction
-    log('aws_cloudfront_distribution.resource', resource)
-    if (resource.origin && resource.origin.custom_header) {
-      const matches = resource.comment.match(/aws_lambda_function\.(\w+)\.function_name/)
-      if (Array.isArray(matches) && matches.length > 0) {
-        log('resource.comment.match', matches)
-        const functionName = matches[1]
-        cloudFrontDistributionNames[functionName] = 1
-        environmentVariablesForFunction[functionName] = resource.origin.custom_header.map((header) => header.name.toLowerCase())
-        log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
-      }
-    }
-  })
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     log('aws_lambda_function.name', functionName)
-    const resource = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction
+    const resources = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction[]
+    const resource = resources[0]
+    const environments = resource.environment
     log('aws_lambda_function.resource', resource)
-    if (resource.environment && resource.environment.variables) {
-      environmentVariablesForFunction[functionName] = Object.keys(resource.environment.variables)
+    if (environments && environments[0].variables) {
+      environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
       log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }

@@ -41,7 +41,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
   handler          = "CloudfrontMiddleware.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs16.x"
   publish          = true
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path
@@ -55,32 +55,6 @@ resource "aws_cloudfront_distribution" "Production" {
     domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
-    custom_header {
-      name  = "X-Encryption-Key-Secret-Id"
-      value = aws_secretsmanager_secret.PrivateEncryptionKey.name
-    }
-    custom_header {
-      name  = "X-Reserved-Client-IP"
-      value = chomp(data.http.icanhazip.body)
-    }
-    custom_header {
-      name  = "X-WWW-Authenticate-Realm"
-      value = aws_api_gateway_stage.Production.stage_name
-    }
-    custom_header {
-      name = "X-Unauthenticated-Paths" // Authorization header is ignored
-      value = join(",", [
-        aws_api_gateway_resource.RegisterUser.path_part,
-        aws_api_gateway_resource.Login.path_part,
-      ])
-    }
-    custom_header {
-      name = "X-Multiauthentication-Paths" // Authorization header is processed
-      value = join(",", [
-        aws_api_gateway_resource.RegisterDevice.path_part,
-        aws_api_gateway_resource.Files.path_part
-      ])
-    }
     custom_origin_config {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
@@ -88,30 +62,12 @@ resource "aws_cloudfront_distribution" "Production" {
       https_port             = 443
     }
   }
-  ordered_cache_behavior {
+  enabled = true
+  default_cache_behavior {
     lambda_function_association {
       event_type = "origin-request"
       lambda_arn = aws_lambda_function.CloudfrontMiddleware.qualified_arn
     }
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    path_pattern           = "*"
-    target_origin_id       = "CloudfrontMiddleware"
-    viewer_protocol_policy = "https-only"
-    forwarded_values {
-      query_string = true
-      headers      = ["X-API-Key", "Authorization", "User-Agent"]
-      cookies {
-        forward = "none"
-      }
-    }
-    // Intentionally set these values to not cache
-    default_ttl = 0
-    min_ttl     = 0
-    max_ttl     = 0
-  }
-  enabled = true
-  default_cache_behavior {
     viewer_protocol_policy = "https-only"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]

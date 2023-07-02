@@ -1,27 +1,12 @@
-import {AxiosRequestConfig} from 'axios'
 import {videoInfo} from 'ytdl-core'
-import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
-import {DynamoDBFile, Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
-import {updateFileMetadataParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo, makeHttpRequest} from '../../../util/lambda-helpers'
-import {assertIsError, transformVideoInfoToMetadata, transformVideoIntoDynamoItem} from '../../../util/transformers'
+import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
+import {logDebug, logInfo} from '../../../util/lambda-helpers'
+import {assertIsError, transformVideoInfoToMetadata} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {CreateMultipartUploadRequest} from 'aws-sdk/clients/s3'
-
-/**
- * Upsert a File object in DynamoDB
- * @param item - The DynamoDB item to be added
- * @notExported
- */
-async function upsertFile(item: DynamoDBFile) {
-  const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
-  logDebug('updateItem <=', updateItemParams)
-  const updateResponse = await updateItem(updateItemParams)
-  logDebug('updateItem =>', updateResponse)
-  return updateResponse
-}
+import {getFileFromMetadata, upsertFile} from '../../../util/shared'
 
 /**
  * Create a start for a multi-part upload
@@ -33,32 +18,6 @@ async function createMultipartUploadFromParams(params: CreateMultipartUploadRequ
   const output = await createMultipartUpload(params)
   logInfo('createMultipartUpload =>', output)
   return output
-}
-
-/**
- * Create a DynamoDBFile object from a video's metadata
- * @param metadata - The Metadata for a video; generated through youtube-dl
- * @returns DynamoDBFile
- * @notExported
- */
-async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
-  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-  const videoUrl = metadata.formats[0].url
-  const options: AxiosRequestConfig = {
-    method: 'head',
-    timeout: 900000,
-    url: videoUrl
-  }
-
-  const fileInfo = await makeHttpRequest(options)
-  // TODO: Ensure these headers exist in the response
-  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-  const contentType = fileInfo.headers['content-type']
-
-  myDynamoItem.size = bytesTotal
-  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
-  myDynamoItem.contentType = contentType
-  return myDynamoItem
 }
 
 /**

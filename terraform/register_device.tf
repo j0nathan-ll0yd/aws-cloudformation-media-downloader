@@ -21,7 +21,10 @@ data "aws_iam_policy_document" "RegisterDevice" {
       "dynamodb:Query",
       "dynamodb:UpdateItem"
     ]
-    resources = [aws_dynamodb_table.UserDevices.arn]
+    resources = [
+      aws_dynamodb_table.UserDevices.arn,
+      aws_dynamodb_table.Devices.arn
+    ]
   }
 }
 
@@ -62,7 +65,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
   handler          = "RegisterDevice.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs16.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
@@ -71,6 +74,7 @@ resource "aws_lambda_function" "RegisterDevice" {
     variables = {
       PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
+      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
     }
   }
@@ -86,7 +90,8 @@ resource "aws_api_gateway_method" "RegisterDevicePost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
   resource_id      = aws_api_gateway_resource.RegisterDevice.id
   http_method      = "POST"
-  authorization    = "NONE"
+  authorization    = "CUSTOM"
+  authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
   api_key_required = true
 }
 
@@ -142,6 +147,19 @@ resource "aws_dynamodb_table" "UserDevices" {
 
   attribute {
     name = "userId"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "Devices" {
+  name           = "Devices"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "deviceId"
+
+  attribute {
+    name = "deviceId"
     type = "S"
   }
 }

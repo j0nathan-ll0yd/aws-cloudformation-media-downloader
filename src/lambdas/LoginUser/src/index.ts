@@ -1,28 +1,11 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import { User, UserLogin } from "../../../types/main"
+import {UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserConstraints} from '../../../util/constraints'
-import {getUserByAppleDeviceIdentifierParams} from '../../../util/dynamodb-helpers'
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import { providerFailureErrorMessage, UnexpectedError } from "../../../util/errors"
+import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 
-/**
- * Searches for a User record via their Apple Device ID
- * @param userDeviceId - The subject registered claim that identifies the principal user.
- * @notExported
- */
-async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
-  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
-  logDebug('getUsersByAppleDeviceIdentifier <=', scanParams)
-  const scanResponse = await scan(scanParams)
-  logDebug('getUsersByAppleDeviceIdentifier =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  return scanResponse.Items as User[]
-}
 /**
  * Logs in a User via Sign in with Apple
  * @notExported
@@ -39,8 +22,8 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
 
   const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
   const verifiedToken = await verifyAppleToken(appleToken.id_token)
-  const userDeviceId = verifiedToken.sub
-  const users = await getUsersByAppleDeviceIdentifier(userDeviceId)
+  const appleUserId = verifiedToken.sub
+  const users = await getUsersByAppleDeviceIdentifier(appleUserId)
   const count = users.length
   if (count === 0) {
     return response(context, 404, "User doesn't exist")

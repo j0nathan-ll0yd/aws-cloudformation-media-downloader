@@ -1,32 +1,28 @@
 import * as chai from 'chai'
-import {createAccessToken, getAppleClientSecret, getAppleConfig, getApplePrivateKey, getServerPrivateKey, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} from './secretsmanager-helpers'
+import {
+  createAccessToken,
+  getAppleClientSecret,
+  getAppleConfig,
+  getApplePrivateKey,
+  getApplePushNotificationServiceCert,
+  getApplePushNotificationServiceKey,
+  getGithubPersonalToken,
+  getServerPrivateKey,
+  validateAuthCodeForToken,
+  verifyAccessToken,
+  verifyAppleToken
+} from './secretsmanager-helpers'
 import * as jwt from 'jsonwebtoken'
 import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
 import * as sinon from 'sinon'
 import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
-import MockAdapter from 'axios-mock-adapter'
+import * as MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
 import * as JwksRsa from 'jwks-rsa'
+import {fakePrivateKey, fakePublicKey} from './mocha-setup'
 const expect = chai.expect
-
-// Randomly generated key; not actually used anywhere (safe)
-// openssl ecparam -name prime256v1 -genkey -noout -out private.ec.key
-// openssl ec -in private.ec.key -pubout -out public.ec.key
-const fakePrivateKey = `
------BEGIN EC PRIVATE KEY-----
-MHcCAQEEIF8qMhsznLgSjN49y4F1cmJZapGowo+PA33LR03WqIhroAoGCCqGSM49
-AwEHoUQDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaFjHVKbDT+efytL6HYw+IWsMV/
-X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
------END EC PRIVATE KEY-----
-`
-const fakePublicKey = `
------BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF
-jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
------END PUBLIC KEY-----
-`
 
 const fakeTokenResponse = {
   access_token: 'accessToken',
@@ -37,7 +33,7 @@ const fakeTokenResponse = {
 }
 const fakeTokenHeader = {
   kid: 'W6WcOKB',
-  alg: 'RS256'
+  alg: 'ES256'
 }
 const fakeTokenPayload: SignInWithAppleVerifiedToken = {
   iss: 'https://appleid.apple.com',
@@ -128,6 +124,34 @@ describe('#Util:SecretsManager', () => {
     expect(responseOne).to.eql(responseTwo)
     expect(getSecretValueStub.calledOnce)
   })
+  it('should getGithubPersonalToken', async () => {
+    const secretString = 'GithubPersonalToken'
+    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    const responseOne = await getGithubPersonalToken()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getGithubPersonalToken()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
+  it('should getApplePushNotificationServiceKey', async () => {
+    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+    const responseOne = await getApplePushNotificationServiceKey()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getApplePushNotificationServiceKey()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
+  it('should getApplePushNotificationServiceCert', async () => {
+    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+    const responseOne = await getApplePushNotificationServiceCert()
+    expect(responseOne).to.have.length.greaterThan(0)
+    const responseTwo = await getApplePushNotificationServiceCert()
+    expect(responseTwo).to.have.length.greaterThan(0)
+    expect(responseOne).to.eql(responseTwo)
+    expect(getSecretValueStub.calledOnce)
+  })
   it('should getAppleClientSecret', async () => {
     const token = await getAppleClientSecret()
     const jwtPayload = jwt.verify(token, fakePublicKey)
@@ -164,26 +188,26 @@ describe('#Util:SecretsManager', () => {
   })
   it('should verifyAppleToken successfully', async () => {
     const jwtVerifyStub = sinon.stub(jwt, 'verify').resolves(fakeTokenPayload)
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     const newToken = await verifyAppleToken(token)
     jwtVerifyStub.restore()
     expect(newToken).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported')
   })
   it('should verifyAppleToken handle an unexpected string payload', async () => {
     const jwtVerifyStub = sinon.stub(jwt, 'verify').throws('a string')
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
     jwtVerifyStub.restore()
   })
   it('should verifyAppleToken handle token verification error', async () => {
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader})
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token header', async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {rsaPublicKey, ...fakeKeyPayloadWithoutHeader} = fakeKeyPayload
     jwksClientSigningKeyStub.returns(Promise.resolve(fakeKeyPayloadWithoutHeader))
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey)
+    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
   })
   it('should verifyAppleToken handle invalid token', async () => {

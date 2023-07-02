@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "id": "ccibr9",
+      "name": "iOSApp",
+      "description": "Internal consumption",
+      "apiStages": [
+        {
+          "apiId": "naf24gu6t6",
+          "stage": "prod"
+        }
+      ]
+    }
+  ]
+}

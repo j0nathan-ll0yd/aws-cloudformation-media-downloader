@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.0"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = "3.1.0"
+    }
   }
 }
 
@@ -86,6 +90,22 @@ data "http" "icanhazip" {
   url = "https://ipv4.icanhazip.com/"
 }
 
+variable "GithubPersonalToken" {
+  type    = string
+  default = "./../secure/githubPersonalToken.txt"
+}
+
+resource "aws_secretsmanager_secret" "GithubPersonalToken" {
+  name                    = "GithubPersonalToken"
+  description             = "The private certificate for APNS"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "GithubPersonalToken" {
+  secret_id     = aws_secretsmanager_secret.GithubPersonalToken.id
+  secret_string = file(var.GithubPersonalToken)
+}
+
 output "api_gateway_subdomain" {
   description = "The subdomain of the API Gateway (e.g. ow9mzeewuf)"
   value       = aws_api_gateway_rest_api.Main.id
@@ -105,7 +125,7 @@ output "api_gateway_api_key" {
 }
 output "public_ip" {
   description = "Your public IP address (used for local development/testing)"
-  value       = chomp(data.http.icanhazip.body)
+  value       = chomp(data.http.icanhazip.response_body)
 }
 output "cloudfront_distribution_domain" {
   description = "The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net)"

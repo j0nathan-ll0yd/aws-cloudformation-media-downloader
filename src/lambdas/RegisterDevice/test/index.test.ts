@@ -8,9 +8,12 @@ import {APIGatewayEvent} from 'aws-lambda'
 import {CreateEndpointResponse, ListSubscriptionsByTopicResponse, SubscribeResponse} from 'aws-sdk/clients/sns'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {UnexpectedError} from '../../../util/errors'
+import {v4 as uuidv4} from 'uuid'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
+const fakeUserId = uuidv4()
 
+/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#RegisterDevice', () => {
   const context = testContext
   let createPlatformEndpointStub: sinon.SinonStub
@@ -39,21 +42,28 @@ describe('#RegisterDevice', () => {
     unsubscribeStub.restore()
     updateStub.restore()
   })
-  it('should create an endpoint and subscribe to the unregistered topic (unregistered user)', async () => {
-    delete event.headers['X-User-Id']
+  it('(anonymous) should create an endpoint and subscribe to the unregistered topic', async () => {
+    event.requestContext.authorizer!.principalId = 'unknown'
+    delete event.headers['Authorization']
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(200)
     expect(body.body).to.have.property('endpointArn')
   })
-  it('should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
+  it('(unauthenticated) throw an error; need to be either anonymous or authenticated', async () => {
+    event.requestContext.authorizer!.principalId = 'unknown'
+    expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+  })
+  it('(authenticated-first) should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     queryStub.returns(localFixture('query-201-Created.json'))
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(201)
     expect(body.body).to.have.property('endpointArn')
   })
-  it('should create an endpoint, check the device details, and return (registered device, subsequent)', async () => {
+  it('(authenticated-subsequent) should create an endpoint, check the device details, and return', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).to.equal(200)
@@ -78,12 +88,14 @@ describe('#RegisterDevice', () => {
       createPlatformEndpointStub.rejects(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
-    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+    it('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(localFixture('query-201-Created.json'))
       listSubscriptionsByTopicStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
-    it('AWS.SNS.listSubscriptionsByTopic', async () => {
+    it('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(localFixture('query-201-Created.json'))
       listSubscriptionsByTopicStub.returns({Subscriptions: []})
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)

@@ -1,66 +1,9 @@
-import axios, {AxiosRequestConfig} from 'axios'
-import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, CloudFrontResultResponse, Context} from 'aws-lambda'
-import {subscribe} from '../lib/vendor/AWS/SNS'
+import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {unknownErrorToString} from './transformers'
+import {UserEventDetails} from '../types/main'
+import {UserStatus} from '../types/enums'
 
-export function cloudFrontErrorResponse(context: Context, statusCode: number, message: string, realm?: string): CloudFrontResultResponse {
-  let codeText
-  const statusCodeString = statusCode.toString()
-  if (/^4/.test(statusCodeString)) {
-    codeText = 'custom-4XX-generic'
-  }
-  return {
-    status: statusCodeString,
-    statusDescription: message,
-    headers: {
-      'content-type': [{key: 'Content-Type', value: 'application/json'}],
-      'www-authenticate': [
-        {
-          key: 'WWW-Authenticate',
-          value: `Bearer realm="${realm}", charset="UTF-8"`
-        }
-      ]
-    },
-    body: JSON.stringify({
-      error: {code: codeText, message},
-      requestId: context.awsRequestId
-    })
-  }
-}
-
-/**
- * Subscribes an endpoint (a client device) to an SNS topic
- * @param endpointArn - The EndpointArn of a mobile app and device
- * @param topicArn - The ARN of the topic you want to subscribe to
- * @notExported
- */
-export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  const subscribeParams = {
-    Endpoint: endpointArn,
-    Protocol: 'application',
-    TopicArn: topicArn
-  }
-  logDebug('subscribe <=', subscribeParams)
-  const subscribeResponse = await subscribe(subscribeParams)
-  logDebug('subscribe =>', subscribeResponse)
-  return subscribeResponse
-}
-
-/**
- * Makes an HTTP request via Axios
- * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @notExported
- */
-export async function makeHttpRequest(options: AxiosRequestConfig) {
-  logDebug('axios <= ', options)
-  const axiosResponse = await axios(options)
-  logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
-  logDebug('axios.headers =>', axiosResponse.headers)
-  return axiosResponse
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
   let error = false
@@ -119,6 +62,7 @@ export function verifyPlatformConfiguration(): void {
 export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
   const defaultStatusCode = 500
   logError('lambdaErrorResponse', JSON.stringify(error))
+  /* istanbul ignore else */
   if (error instanceof CustomLambdaError) {
     return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
   } else if (error instanceof Error) {
@@ -147,10 +91,30 @@ export function logError(message: string, stringOrObject?: string | object | unk
   console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
-export function getUserIdFromEvent(event: APIGatewayEvent): string {
-  const userId = event.headers['X-User-Id']
-  if (!userId) {
-    throw new UnauthorizedError('No X-User-Id in Header')
+export function generateUnauthorizedError() {
+  return new UnauthorizedError('Invalid Authentication token; login')
+}
+
+export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetails {
+  let principalId = 'unknown'
+  // This should always be present, via the API Gateway
+  /* istanbul ignore else */
+  if (event.requestContext.authorizer && event.requestContext.authorizer.principalId) {
+    principalId = event.requestContext.authorizer.principalId
   }
-  return userId
+  const userId = principalId === 'unknown' ? undefined : principalId
+  const authHeader = event.headers['Authorization']
+  let userStatus: UserStatus
+  if (authHeader && userId) {
+    userStatus = UserStatus.Authenticated
+  } else if (authHeader) {
+    userStatus = UserStatus.Unauthenticated
+  } else {
+    userStatus = UserStatus.Anonymous
+  }
+  logDebug('getUserDetailsFromEvent.userId', userId)
+  logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
+  logDebug('getUserDetailsFromEvent.authHeader', authHeader)
+  logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
+  return {userId, userStatus} as UserEventDetails
 }

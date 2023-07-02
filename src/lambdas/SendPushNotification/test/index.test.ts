@@ -5,32 +5,61 @@ import {getFixture} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import {handler} from '../src'
 import {SQSEvent} from 'aws-lambda'
-import {PublishResponse} from 'aws-sdk/clients/sns'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {UnexpectedError} from '../../../util/errors'
+import {v4 as uuidv4} from 'uuid'
+import * as AWS from 'aws-sdk'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
+const fakeUserId = uuidv4()
+const fakeDeviceId = uuidv4()
+
+const docClient = new AWS.DynamoDB.DocumentClient()
+const getUserDevicesByUserIdResponse = {
+  Items: [
+    {
+      devices: docClient.createSet([fakeDeviceId]),
+      userId: fakeUserId
+    }
+  ],
+  Count: 1,
+  ScannedCount: 1
+}
+
+const getDeviceResponse = {
+  Items: [
+    {
+      deviceId: fakeDeviceId,
+      token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
+      systemName: 'iOS',
+      endpointArn: 'arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/OfflineMediaDownloader/3447299f-275f-329f-b71f-d1f6945033ba',
+      systemVersion: '15.6.1',
+      name: "Programmer's iPhone"
+    }
+  ],
+  Count: 1,
+  ScannedCount: 1
+}
 
 describe('#SendPushNotification', () => {
   let event: SQSEvent
-  let publishSnsEventStub: sinon.SinonStub
-  let queryStub: sinon.SinonStub
   beforeEach(() => {
     event = localFixture('SQSEvent.json') as SQSEvent
-    publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent').returns(localFixture('publishSnsEvent-200-OK.json') as Promise<PublishResponse>)
-    queryStub = sinon.stub(DynamoDB, 'query').returns(localFixture('query-200-OK.json') as Promise<DocumentClient.QueryOutput>)
   })
   afterEach(() => {
-    publishSnsEventStub.restore()
-    queryStub.restore()
+    sinon.restore()
   })
   it('should send a notification for each user device', async () => {
+    const queryStub = sinon.stub(DynamoDB, 'query')
+    queryStub.onCall(0).resolves(getUserDevicesByUserIdResponse)
+    queryStub.onCall(1).resolves(getDeviceResponse)
+    sinon.stub(SNS, 'publishSnsEvent').resolves(localFixture('publishSnsEvent-200-OK.json'))
     const notificationsSent = await handler(event)
     // tslint:disable-next-line:no-unused-expression
     expect(notificationsSent).to.be.undefined
   })
   it('should exit gracefully if no devices exist', async () => {
-    queryStub.returns({
+    const publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
+    sinon.stub(DynamoDB, 'query').resolves({
       Items: [],
       Count: 0,
       ScannedCount: 0
@@ -40,6 +69,7 @@ describe('#SendPushNotification', () => {
     expect(publishSnsEventStub.notCalled)
   })
   it('should exit if its a different notification type', async () => {
+    const publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
     const modifiedEvent = event
     modifiedEvent.Records[0].body = 'OtherNotification'
     const notificationsSent = await handler(modifiedEvent)
@@ -47,8 +77,14 @@ describe('#SendPushNotification', () => {
     expect(publishSnsEventStub.notCalled)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.DocumentClient.scan', async () => {
-      queryStub.returns(undefined)
+    it('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
+      sinon.stub(DynamoDB, 'query').resolves(undefined)
+      expect(handler(event)).to.be.rejectedWith(UnexpectedError)
+    })
+    it('AWS.DynamoDB.DocumentClient.query.getDevice = ', async () => {
+      const queryStub = sinon.stub(DynamoDB, 'query')
+      queryStub.onCall(0).resolves(getUserDevicesByUserIdResponse)
+      queryStub.onCall(1).resolves(undefined)
       expect(handler(event)).to.be.rejectedWith(UnexpectedError)
     })
   })

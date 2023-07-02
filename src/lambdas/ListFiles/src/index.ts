@@ -1,8 +1,9 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
-import {getUserIdFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {DynamoDBFile} from '../../../types/main'
+import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
@@ -53,20 +54,21 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
-  let userId
-  try {
-    userId = getUserIdFromEvent(event as APIGatewayEvent)
-  } catch (error) {
-    // Unauthenticated request; return default (demo) file
+  const {userId, userStatus} = getUserDetailsFromEvent(event as APIGatewayEvent)
+  // User has registered; but not logged in; will trigger login
+  if (userStatus == UserStatus.Unauthenticated) {
+    return lambdaErrorResponse(context, generateUnauthorizedError())
+  }
+  if (userStatus == UserStatus.Anonymous) {
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)
   }
   try {
-    const fileIds = await getFileIdsByUser(userId)
+    const fileIds = await getFileIdsByUser(userId as string)
     if (fileIds.length > 0) {
       const files = await getFilesById(fileIds)
-      myResponse.contents = files.filter((file) => file.url !== undefined)
+      myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     }
     myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)

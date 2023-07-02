@@ -6,11 +6,14 @@ import {handler} from '../src'
 import * as chai from 'chai'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {UnexpectedError} from '../../../util/errors'
+import {UnauthorizedError, UnexpectedError} from '../../../util/errors'
+import {v4 as uuidv4} from 'uuid'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 const docClient = new AWS.DynamoDB.DocumentClient()
+const fakeUserId = uuidv4()
 
+/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#ListFiles', () => {
   const context = testContext
   let event: APIGatewayProxyEvent
@@ -32,7 +35,9 @@ describe('#ListFiles', () => {
     batchGetStub.restore()
     queryStub.restore()
   })
-  it('should list files, if url is present', async () => {
+  it('(anonymous) should list only the default file', async () => {
+    delete event.headers['X-User-Id']
+    delete event.headers['Authorization']
     batchGetStub.returns(localFixture('batchGet-200-OK.json'))
     queryStub.returns(queryStubReturnObject)
     const output = await handler(event, context)
@@ -40,18 +45,21 @@ describe('#ListFiles', () => {
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')
     expect(body.body.keyCount).to.equal(1)
-    expect(body.body.contents[0]).to.have.property('url').that.is.a('string')
+    expect(body.body.contents[0]).to.have.property('authorName').that.is.a('string')
+    expect(body.body.contents[0].authorName).to.equal('Lifegames')
   })
-  it('should NOT list files, if url is not present (not yet downloaded)', async () => {
+  it('(authenticated) should return users files', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     batchGetStub.returns(localFixture('batchGet-200-Filtered.json'))
     queryStub.returns(queryStubReturnObject)
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     const body = JSON.parse(output.body)
     expect(body.body).to.have.all.keys('keyCount', 'contents')
-    expect(body.body.keyCount).to.equal(0)
+    expect(body.body.keyCount).to.equal(1)
   })
-  it('should gracefully handle an empty list', async () => {
+  it('(authenticated) should gracefully handle an empty list', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     batchGetStub.returns(localFixture('batchGet-200-Empty.json'))
     queryStub.returns(localFixture('query-200-Empty.json'))
     const output = await handler(event, context)
@@ -64,21 +72,18 @@ describe('#ListFiles', () => {
     queryStub.rejects('Error')
     expect(handler(event, context)).to.be.rejectedWith(Error)
   })
-  it('should return a default file if unauthenticated', async () => {
+  it('(unauthenticated) should throw an error as token is invalid', async () => {
     delete event.headers['X-User-Id']
-    const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
-    const body = JSON.parse(output.body)
-    expect(body.body).to.have.all.keys('keyCount', 'contents')
-    expect(body.body.keyCount).to.equal(1)
-    expect(body.body.contents[0].fileId).to.equal('default')
+    expect(handler(event, context)).to.be.rejectedWith(UnauthorizedError)
   })
   describe('#AWSFailure', () => {
     it('AWS.DynamoDB.DocumentClient.query', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
     it('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
       queryStub.returns(queryStubReturnObject)
       batchGetStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)

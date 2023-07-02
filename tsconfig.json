@@ -18,6 +18,6 @@
     "node_modules",
     "**/*.spec.ts",
     "test/**/*",
-    "src/types/terraform.d.ts"
+    "./src/types/terraform.d.ts"
   ]
 }

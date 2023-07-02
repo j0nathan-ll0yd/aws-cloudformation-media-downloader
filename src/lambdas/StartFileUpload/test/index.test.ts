@@ -1,5 +1,5 @@
 import axios from 'axios'
-import MockAdapter from 'axios-mock-adapter'
+import * as MockAdapter from 'axios-mock-adapter'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as YouTube from '../../../lib/vendor/YouTube'
@@ -10,7 +10,7 @@ import {handler} from '../src'
 import {videoInfo} from 'ytdl-core'
 import {UploadPartEvent} from '../../../types/main'
 import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
-import { NotFoundError, UnexpectedError } from "../../../util/errors"
+import {NotFoundError, UnexpectedError} from '../../../util/errors'
 const expect = chai.expect
 const localFixture = getFixture.bind(null, __dirname)
 

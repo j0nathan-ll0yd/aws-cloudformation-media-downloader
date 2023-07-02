@@ -3,4 +3,5 @@ export interface Webhook {
   readonly articlePublishedAt: string
   readonly articleTitle: string
   readonly articleURL: string
+  backgroundMode?: boolean
 }

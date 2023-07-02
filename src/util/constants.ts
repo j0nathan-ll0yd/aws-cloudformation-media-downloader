@@ -11,5 +11,6 @@ export const defaultFile = {
   url: process.env.DefaultFileUrl,
   contentType: process.env.DefaultFileContentType,
   authorUser: 'sxephil',
+  status: 'Downloaded',
   title: 'Welcome! Tap to download.'
 } as DynamoDBFile

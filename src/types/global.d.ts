@@ -6,11 +6,15 @@ declare global {
       DefaultFileName: string
       DefaultFileUrl: string
       DefaultFileContentType: string
+      DynamoDBTableDevices: string
       DynamoDBTableUsers: string
       DynamoDBTableFiles: string
       DynamoDBTableUserFiles: string
       DynamoDBTableUserDevices: string
       EncryptionKeySecretId: string
+      GithubPersonalToken: string
+      MultiAuthenticationPathParts: string
+      ReservedClientIp: string
       SNSQueueUrl: string
       StateMachineArn: string
       PlatformApplicationArn: string

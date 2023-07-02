@@ -20,12 +20,15 @@ data "aws_iam_policy_document" "SendPushNotification" {
     ]
   }
   statement {
-    actions   = ["dynamodb:Query"]
-    resources = [aws_dynamodb_table.UserDevices.arn]
+    actions = ["dynamodb:Query"]
+    resources = [
+      aws_dynamodb_table.UserDevices.arn,
+      aws_dynamodb_table.Devices.arn
+    ]
   }
   statement {
     actions   = ["sns:Publish"]
-    resources = ["*"]
+    resources = [length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""]
   }
 }
 
@@ -61,13 +64,14 @@ resource "aws_lambda_function" "SendPushNotification" {
   function_name    = "SendPushNotification"
   role             = aws_iam_role.SendPushNotificationRole.arn
   handler          = "SendPushNotification.handler"
-  runtime          = "nodejs14.x"
+  runtime          = "nodejs16.x"
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   environment {
     variables = {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
     }
   }
 }

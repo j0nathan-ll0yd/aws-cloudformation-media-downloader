@@ -44,6 +44,10 @@ export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResp
 
 export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string): MessageBodyAttributeMap {
   return {
+    fileId: {
+      DataType: 'String',
+      StringValue: file.fileId
+    },
     key: {
       DataType: 'String',
       StringValue: file.key
@@ -84,7 +88,7 @@ export function unknownErrorToString(unknownVariable: unknown): string {
 }
 
 export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
-  const keys: (keyof typeof file)[] = ['key', 'publishDate', 'size', 'url']
+  const keys: (keyof typeof file)[] = ['fileId', 'key', 'publishDate', 'size', 'url']
   keys.forEach((key) => {
     if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {
       throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
@@ -92,6 +96,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
   })
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   const clientFile: ClientFile = {
+    fileId: file.fileId.stringValue!,
     key: file.key.stringValue!,
     publishDate: file.publishDate.stringValue!,
     size: parseInt(file.size.stringValue!, 0),
