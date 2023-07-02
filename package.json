@@ -23,9 +23,6 @@
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
-    "test-remote-loginUser": "./bin/test-loginUser.sh",
-    "test-remote-registerDevice": "./bin/test-registerDevice.sh",
-    "test-remote-userSubscribe": "./bin/test-userSubscribe.sh",
     "test-setup-config": "cat tsconfig.json | sed 's/\"module\": \"es6\"/\"module\": \"commonjs\"/g' tsconfig.json > tsconfig.testing.json",
     "test-setup-mocha": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha.js --require ts-node/register --config config/.mocharc.yml",
     "deploy": "cd terraform && terraform apply -auto-approve"

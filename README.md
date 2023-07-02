@@ -62,8 +62,8 @@ aws configure
 # Install Node dependencies and deploy project
 npm install
 npm run build-dependencies
-npm run test
 npm run build
+npm run test
 npm run deploy
 
 # Confirm everything is working as expected
@@ -200,6 +200,3 @@ open docs/source/index.html
 
 * Update Unit Tests
   * Write a test case for the absence of a Github Personal Token
-
-* Fix dependency on hcl2json in Github Actions -- no longer available on Docker
-  * https://github.com/Homebrew/actions/tree/master/setup-homebrew
