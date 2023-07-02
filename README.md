@@ -61,8 +61,7 @@ aws configure
 
 # Install Node dependencies and deploy project
 npm install
-npm run build-terraform-json
-npm run build-terraform-types
+npm run build-dependencies
 npm run test
 npm run build
 npm run deploy
