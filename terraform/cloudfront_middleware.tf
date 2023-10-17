@@ -94,3 +94,8 @@ resource "aws_cloudfront_distribution" "Production" {
     cloudfront_default_certificate = true
   }
 }
+
+output "cloudfront_distribution_domain" {
+  description = "The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net)"
+  value       = aws_cloudfront_distribution.Production.domain_name
+}

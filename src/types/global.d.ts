@@ -1,6 +1,7 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      ApnsSigningKey: string
       Bucket: string
       DefaultFileSize: string
       DefaultFileName: string

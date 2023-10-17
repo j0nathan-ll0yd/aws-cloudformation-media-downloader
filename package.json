@@ -25,18 +25,19 @@
     "test-remote-hook": "./bin/test-hook.sh",
     "test-setup-config": "cat tsconfig.json | sed 's/\"module\": \"es6\"/\"module\": \"commonjs\"/g' tsconfig.json > tsconfig.testing.json",
     "test-setup-mocha": "TS_NODE_PROJECT=\"tsconfig.testing.json\" AWS_REGION=us-west-2 ./node_modules/mocha/bin/mocha.js --require ts-node/register --config config/.mocharc.yml",
-    "deploy": "cd terraform && terraform apply -auto-approve"
+    "plan": "eval export $(cat .env) && cd terraform && terraform apply",
+    "deploy": "eval export $(cat .env) && cd terraform && terraform apply -auto-approve"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
     "@babel/runtime": "^7.22.5",
     "@octokit/rest": "^19.0.13",
-    "apn": "^2.2.0",
+    "apns2": "^11.2.0",
     "aws-sdk": "^2.1406.0",
     "aws-xray-sdk": "^3.5.0",
     "axios": "^1.4.0",
     "debug": "^4.3.4",
-    "jsonwebtoken": "^9.0.0",
+    "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.0.1",
     "uuid": "^9.0.0",
     "validate.js": "^0.13.1",
@@ -89,6 +90,9 @@
   },
   "overrides": {
     "node-fetch@<2.6.7": "2.6.7",
+    "node-forge@<1.3.1": "1.3.1",
+    "semver@<7.5.3": "7.5.3",
+    "jsonwebtoken@<9.0.1": "9.0.1",
     "@typescript-eslint/typescript-estree": "^5.60.1",
     "yargs-parser@>=5 <13.1.2": "13.1.2",
     "yargs-parser@>=14 <15.0.1": "15.0.1",

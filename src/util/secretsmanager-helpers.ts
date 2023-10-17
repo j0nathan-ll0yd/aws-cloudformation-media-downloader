@@ -10,6 +10,7 @@ import {UnauthorizedError, UnexpectedError} from './errors'
 import {GetSecretValueRequest} from 'aws-sdk/clients/secretsmanager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string
+let APPLESIGNINGKEY: string
 let PRIVATEKEY: string
 let APPLE_PUSH_NOTIFICATION_SERVICE_KEY: string
 let APPLE_PUSH_NOTIFICATION_SERVICE_CERT: string
@@ -253,8 +254,8 @@ export async function verifyAccessToken(token: string): Promise<ServerVerifiedTo
 }
 
 /**
- * Retrieves the Github access token via Secrets Manager or cache.
- * @returns string - The Github personal access token
+ * Retrieves the GitHub access token via Secrets Manager or cache.
+ * @returns string - The GitHub personal access token
  * @notExported
  */
 export async function getGithubPersonalToken(): Promise<string> {
@@ -271,5 +272,27 @@ export async function getGithubPersonalToken(): Promise<string> {
     return GITHUBPERSONALTOKEN
   } else {
     throw new UnexpectedError('Error fetching Github personal token')
+  }
+}
+
+/**
+ * Retrieves the GitHub access token via Secrets Manager or cache.
+ * @returns string - The GitHub personal access token
+ * @notExported
+ */
+export async function getApnsSigningKey(): Promise<string> {
+  if (APPLESIGNINGKEY !== undefined) {
+    return APPLESIGNINGKEY
+  }
+  // This SecretId has to map to the CloudFormation file (LoginUser)
+  const params = {SecretId: process.env.ApnsSigningKey} as GetSecretValueRequest
+  logDebug('getApnsSigningKey =>', params)
+  const privateKeySecretResponse = await getSecretValue(params)
+  logDebug('getApnsSigningKey <=', privateKeySecretResponse)
+  if (typeof privateKeySecretResponse.SecretString === 'string') {
+    APPLESIGNINGKEY = privateKeySecretResponse.SecretString
+    return APPLESIGNINGKEY
+  } else {
+    throw new UnexpectedError('Error fetching Apple Signing Key')
   }
 }

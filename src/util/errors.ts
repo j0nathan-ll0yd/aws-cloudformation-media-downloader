@@ -1,3 +1,5 @@
+import {Notification} from 'apns2'
+
 export class CustomLambdaError extends Error {
   errors: object | undefined
   statusCode: number | undefined
@@ -47,6 +49,19 @@ export class UnexpectedError extends CustomLambdaError {
   constructor(message: string, statusCode = 500) {
     super(message)
     this.name = 'UnexpectedError'
+    this.statusCode = statusCode
+  }
+}
+
+// The errors thrown by node-apns2 (when sending push health checks)
+export class Apns2Error extends Error {
+  notification: Notification
+  reason: string
+  statusCode: number
+  constructor(reason: string, statusCode: number, notification: Notification) {
+    super()
+    this.reason = reason
+    this.notification = notification
     this.statusCode = statusCode
   }
 }
