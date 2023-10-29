@@ -24,11 +24,6 @@ locals {
   envs = { for tuple in regexall("(.*)=(.*)", file("./../.env")) : tuple[0] => sensitive(tuple[1]) }
 }
 
-output "api_gateway_region" {
-  description = "The region of the API Gateway (e.g. us-west-2)"
-  value       = data.aws_region.current.name
-}
-
 data "aws_iam_policy_document" "CommonLambdaLogging" {
   statement {
     actions = [
@@ -86,6 +81,20 @@ data "aws_iam_policy_document" "StatesAssumeRole" {
   }
 }
 
+data "aws_iam_policy_document" "SNSAssumeRole" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+  }
+}
+
+data "http" "icanhazip" {
+  url = "https://ipv4.icanhazip.com/"
+}
+
 variable "GithubPersonalToken" {
   type    = string
   default = "./../secure/githubPersonalToken.txt"
@@ -104,12 +113,5 @@ resource "aws_secretsmanager_secret_version" "GithubPersonalToken" {
 
 output "public_ip" {
   description = "Your public IP address (used for local development/testing)"
-  value       = "104.1.88.244"
-}
-
-module "apns" {
-  source = "./modules/apns"
-  APNS_SANDBOX_DEFAULT_TOPIC = ""
-  APNS_SANDBOX_KEY_ID = ""
-  APNS_SANDBOX_TEAM = ""
+  value       = chomp(data.http.icanhazip.response_body)
 }
