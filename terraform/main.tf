@@ -2,11 +2,11 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.0"
+      version = "~> 5.8.0"
     }
     http = {
       source  = "hashicorp/http"
-      version = "3.1.0"
+      version = "3.4.0"
     }
   }
 }
@@ -18,6 +18,11 @@ provider "aws" {
 
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
+
+# Pull environment variables from .env
+locals {
+  envs = { for tuple in regexall("(.*)=(.*)", file("./../.env")) : tuple[0] => sensitive(tuple[1]) }
+}
 
 data "aws_iam_policy_document" "CommonLambdaLogging" {
   statement {
@@ -106,28 +111,7 @@ resource "aws_secretsmanager_secret_version" "GithubPersonalToken" {
   secret_string = file(var.GithubPersonalToken)
 }
 
-output "api_gateway_subdomain" {
-  description = "The subdomain of the API Gateway (e.g. ow9mzeewuf)"
-  value       = aws_api_gateway_rest_api.Main.id
-}
-output "api_gateway_region" {
-  description = "The region of the API Gateway (e.g. us-west-2)"
-  value       = data.aws_region.current.name
-}
-output "api_gateway_stage" {
-  description = "The stage of the API Gateway (e.g. prod, staging)"
-  value       = aws_api_gateway_stage.Production.stage_name
-}
-output "api_gateway_api_key" {
-  description = "The API key for the API Gateway"
-  value       = aws_api_gateway_api_key.iOSApp.value
-  sensitive   = true
-}
 output "public_ip" {
   description = "Your public IP address (used for local development/testing)"
   value       = chomp(data.http.icanhazip.response_body)
-}
-output "cloudfront_distribution_domain" {
-  description = "The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net)"
-  value       = aws_cloudfront_distribution.Production.domain_name
 }

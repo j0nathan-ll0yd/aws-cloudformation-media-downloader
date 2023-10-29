@@ -16,7 +16,8 @@ data "aws_iam_policy_document" "PruneDevices" {
     actions = ["secretsmanager:GetSecretValue"]
     resources = [
       aws_secretsmanager_secret.ApplePushNotificationServiceCert.arn,
-      aws_secretsmanager_secret.ApplePushNotificationServiceKey.arn
+      aws_secretsmanager_secret.ApplePushNotificationServiceKey.arn,
+      aws_secretsmanager_secret.ApnsSigningKey.arn,
     ]
   }
   statement {
@@ -85,6 +86,10 @@ resource "aws_lambda_function" "PruneDevices" {
     variables = {
       DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+      ApnsSigningKey           = aws_secretsmanager_secret.ApnsSigningKey.name
+      ApnsTeam                 = var.APNS_SANDBOX_TEAM
+      ApnsKeyId                = var.APNS_SANDBOX_KEY_ID
+      ApnsDefaultTopic         = var.APNS_SANDBOX_DEFAULT_TOPIC
     }
   }
 }

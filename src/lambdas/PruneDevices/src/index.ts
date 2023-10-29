@@ -4,10 +4,11 @@ import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device, DynamoDBUserDevice} from '../../../types/main'
 import {getUsersByDeviceId} from '../../../util/dynamodb-helpers'
-import {getApplePushNotificationServiceCert, getApplePushNotificationServiceKey} from '../../../util/secretsmanager-helpers'
 import {deleteDevice, deleteUserDevice} from '../../../util/shared'
-import * as apn from 'apn'
 import {assertIsError} from '../../../util/transformers'
+import {ApnsClient, Notification, PushType, Priority} from 'apns2'
+import {Apns2Error} from '../../../util/errors'
+import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
@@ -28,36 +29,37 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
   return apnsResponse.statusCode === 410
 }
 
-// TODO: Replace with node-apn
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
-  const apnsKey = await getApplePushNotificationServiceKey()
-  const apnsCert = await getApplePushNotificationServiceCert()
-  const options = {
-    key: apnsKey,
-    cert: apnsCert,
-    production: false
-  }
-  const apnProvider = new apn.Provider(options)
-  const healthCheckNotification = new apn.Notification()
-  healthCheckNotification.priority = 5
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  healthCheckNotification.pushType = 'background'
-  healthCheckNotification.payload = {health: 'check'}
-  healthCheckNotification.topic = 'lifegames.OfflineMediaDownloader'
-  logDebug('apnProvider.send <=', healthCheckNotification)
-  const result = await apnProvider.send(healthCheckNotification, token)
-  logDebug('apnProvider.send =>', result)
-  if (result && result.sent && result.sent.length > 0) {
+  const signingKey = await getApnsSigningKey()
+  const client = new ApnsClient({
+    team: process.env.ApnsTeam as string,
+    keyId: process.env.ApnsKeyId as string,
+    signingKey,
+    defaultTopic: process.env.ApnsDefaultTopic as string,
+    host: 'api.sandbox.push.apple.com'
+  })
+  const healthCheckNotification = new Notification(token, {
+    contentAvailable: true,
+    type: PushType.background,
+    priority: Priority.throttled,
+    aps: {
+      health: 'check'
+    }
+  })
+  try {
+    logDebug('apnProvider.send <=', healthCheckNotification)
+    const result = await client.send(healthCheckNotification)
+    logDebug('apnProvider.send =>', result)
     return {statusCode: 200}
-  } else if (result && result.failed && result.failed.length > 0) {
-    const failedResult = result.failed[0]
-    /* eslint-disable-next-line  @typescript-eslint/no-non-null-assertion */
-    const reason = failedResult.response!.reason
-    return {statusCode: Number(failedResult.status), reason}
-  } else {
-    throw new UnexpectedError('Unexpected result from APNS')
+  } catch (err) {
+    logError('apnProvider.send =>', err as object)
+    if (err && typeof err === 'object' && 'reason' in err) {
+      const apnsError = err as Apns2Error
+      return {statusCode: Number(apnsError.statusCode), reason: apnsError.reason}
+    } else {
+      throw new UnexpectedError('Unexpected result from APNS')
+    }
   }
 }
 

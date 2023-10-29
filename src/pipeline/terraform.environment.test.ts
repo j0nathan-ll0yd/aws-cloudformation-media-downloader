@@ -93,9 +93,8 @@ describe('#Terraform', () => {
       matchSubstring = 15
       sourceCodeRegex = /customHeaders\["([\w-]+)"]/g
     } else {
-      // TODO: Improve this include both process.env.VARIABLE and process.env['VARIABLE'] syntax
       matchSubstring = 12
-      sourceCodeRegex = /process.env\.(\w+)/g
+      sourceCodeRegex = /process\.env(?:\[['"]([^'"\]]+)['"]\]|\.(\w+))/gi
     }
     const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
     const environmentVariablesSourceCount = environmentVariablesSource.length

@@ -2,15 +2,15 @@ import {ScheduledEvent} from 'aws-lambda'
 import * as sinon from 'sinon'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import {handler} from '../src'
-import {fakeCertificate, fakePrivateKey, testContext} from '../../../util/mocha-setup'
+import {fakePrivateKey, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
 import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
 const expect = chai.expect
 import * as SNS from '../../../lib/vendor/AWS/SNS'
 import {v4 as uuidv4} from 'uuid'
 import * as AWS from 'aws-sdk'
-import {Provider} from 'apn'
-import {UnexpectedError} from '../../../util/errors'
+import {Apns2Error, UnexpectedError} from '../../../util/errors'
+import {ApnsClient, Notification, ApnsPayload, PushType, Priority} from 'apns2'
 const docClient = new AWS.DynamoDB.DocumentClient()
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {
@@ -61,12 +61,51 @@ const fakeUserDevicesResponse = {
   ]
 }
 
-function getExpiredResponseForDevice(arrayIndex: number) {
-  return {
-    device: fakeGetDevicesResponse.Items[arrayIndex].token,
-    status: '410',
-    response: {reason: 'ExpiredToken', timestamp: Date.now().toString()}
+const fakeApnsNotificationOptions = {
+  contentAvailable: true,
+  type: PushType.background,
+  priority: Priority.throttled,
+  aps: {
+    health: 'check'
   }
+}
+
+function getExpiredResponseForDevice(arrayIndex: number): Apns2Error {
+  return {
+    name: 'Apns2Error',
+    message: 'BadExpirationDate',
+    statusCode: 410,
+    reason: 'BadExpirationDate',
+    notification: {
+      deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
+      options: fakeApnsNotificationOptions,
+      get pushType(): PushType {
+        return PushType.background
+      },
+      get priority(): Priority {
+        return Priority.throttled
+      },
+      buildApnsOptions(): ApnsPayload {
+        return fakeApnsNotificationOptions
+      }
+    }
+  } as Apns2Error
+}
+
+function getSuccessfulResponseForDevice(arrayIndex: number): Notification {
+  return {
+    deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
+    options: fakeApnsNotificationOptions,
+    get pushType(): PushType {
+      return PushType.background
+    },
+    get priority(): Priority {
+      return Priority.throttled
+    },
+    buildApnsOptions(): ApnsPayload {
+      return fakeApnsNotificationOptions
+    }
+  } as Notification
 }
 
 /* eslint-disable  @typescript-eslint/no-non-null-assertion */
@@ -84,8 +123,7 @@ describe('#PruneDevices', () => {
   }
   const context = testContext
   beforeEach(() => {
-    sinon.stub(SecretsManagerHelper, 'getApplePushNotificationServiceKey').resolves(fakePrivateKey)
-    sinon.stub(SecretsManagerHelper, 'getApplePushNotificationServiceCert').resolves(fakeCertificate)
+    sinon.stub(SecretsManagerHelper, 'getApnsSigningKey').resolves(fakePrivateKey)
   })
   afterEach(() => {
     sinon.restore()
@@ -96,14 +134,11 @@ describe('#PruneDevices', () => {
     scanStub.onCall(1).resolves(fakeUserDevicesResponse)
     sinon.stub(DynamoDB, 'deleteItem').resolves({})
     sinon.stub(DynamoDB, 'updateItem').resolves({})
-    const sendStub = sinon.stub(Provider.prototype, 'send')
-    sendStub.onCall(0).resolves({
-      sent: [],
-      failed: [getExpiredResponseForDevice(0)]
-    })
-    sendStub.onCall(1).resolves({sent: [{device: fakeGetDevicesResponse.Items[1].token}], failed: []})
-    sendStub.onCall(2).resolves({sent: [{device: fakeGetDevicesResponse.Items[2].token}], failed: []})
-    sendStub.onCall(3).resolves({sent: [{device: fakeGetDevicesResponse.Items[3].token}], failed: []})
+    const sendStub = sinon.stub(ApnsClient.prototype, 'send')
+    sendStub.onCall(0).throws(getExpiredResponseForDevice(0))
+    sendStub.onCall(1).resolves(getSuccessfulResponseForDevice(1))
+    sendStub.onCall(2).resolves(getSuccessfulResponseForDevice(2))
+    sendStub.onCall(3).resolves(getSuccessfulResponseForDevice(3))
     sinon.stub(SNS, 'deleteEndpoint').resolves({
       ResponseMetadata: {
         RequestId: uuidv4()
@@ -123,17 +158,14 @@ describe('#PruneDevices', () => {
       const scanStub = sinon.stub(DynamoDB, 'scan')
       scanStub.onCall(0).resolves(fakeGetDevicesResponse)
       scanStub.onCall(1).resolves(undefined)
-      sinon.stub(Provider.prototype, 'send').resolves({
-        sent: [],
-        failed: [getExpiredResponseForDevice(0)]
-      })
+      sinon.stub(ApnsClient.prototype, 'send').throws(getExpiredResponseForDevice(0))
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
   })
   describe('#APNSFailure', () => {
     it('APNS.Failure', async () => {
       sinon.stub(DynamoDB, 'scan').resolves(fakeGetDevicesResponse)
-      sinon.stub(Provider.prototype, 'send').resolves(undefined)
+      sinon.stub(ApnsClient.prototype, 'send').throws(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
   })

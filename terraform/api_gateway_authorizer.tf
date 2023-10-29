@@ -73,7 +73,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
         aws_api_gateway_resource.Files.path_part,
         aws_api_gateway_resource.LogEvent.path_part
       ]),
-      ReservedClientIp = chomp(data.http.icanhazip.response_body)
+      ReservedClientIp = "104.1.88.244"
     }
   }
 }
