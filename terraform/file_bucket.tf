@@ -38,7 +38,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   function_name    = "S3ObjectCreated"
   role             = aws_iam_role.S3ObjectCreatedRole.arn
   handler          = "S3ObjectCreated.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
