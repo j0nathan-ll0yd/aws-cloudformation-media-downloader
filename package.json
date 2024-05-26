@@ -73,6 +73,7 @@
     "eslint-plugin-tsdoc": "^0.2.17",
     "fork-ts-checker-webpack-plugin": "^8.0.0",
     "mocha": "^10.2.0",
+    "nock": "^14.0.0-beta.6",
     "nyc": "^15.1.0",
     "optionator": "^0.9.1",
     "plop": "^3.1.2",
