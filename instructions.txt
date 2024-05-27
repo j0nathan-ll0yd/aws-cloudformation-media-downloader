@@ -3,5 +3,31 @@ You are an expert programmer. You have been given this project and asked to own 
 Here are some requirements you need to follow:
 * Don't output commands that just list files (like 'ls -l')
 * Read my ~/.profile to get familiar with my local commands
+* Use the commitlint syntax when structuring commit messages
 
-The first thing you want to do is check the dependencies and make sure the project is up to date.
+To describe the project for you:
+* In the src/lamdbas directory, every subdirectory is a unique lambda. It contains the directories:
+** src - with a file called 'index.ts' that contains the lambdas source code. The functions are documented using TypeDoc.
+** test - with a file called 'index.test.ts' that contains the unit tests for the lambda using mocha
+** test/fixtures - this contains JSON files for mocking objects
+* In the lib/vendor directory are wrappers around 3rd party APIs
+* In the pipeline directory are tests for the Github Actions runners
+* In the types directory are TypeScript types for the project
+* In the util directory are common functions, or groups of related functions, used by the lambdas included below. Most have their own tests, which include the same file name, but with 'test.ts' instead of just '.ts'.
+** apigateway-helpers.ts are utility functions for lambdas behind an API Gateway
+** constants.ts are simple constant data structures
+** constraints.ts are constraint configurations for the 'validate.js' module, used for input validation for lambdas
+** dynamodb-helpers.ts are utility functions for using DynamoDB
+** errors.ts are shared error types for the project
+** github-helpers.ts are utility functions for using GitHub
+** lambdas-helpers.ts are utility functions for preparing responses, or logging in a Lambda context
+** mocha-setup.ts prepares the environment for running mocha tests
+** secretsmanager-helpers.ts are utility functions for using AWS SecretsManager
+** shared.ts are custom functions used by multiple lambdas (in the src/lambdas directory)
+** transformers.ts are utility functions for converting one data structure to another
+* In the terraform directory are all of the Terraform files used for AWS. Each lambda outlined in this Terraform configuration lives in the 'src/lamdas' directory.
+
+Take a moment to familiarize yourself with the structure of the project.
+
+YOUR TASK:
+Create a new Lambda function. It's purpose is to delete a file the user has saved. The lambda is called 'DeleteFile' and should reside in the src/lambdas directory with the same structure as the others.
