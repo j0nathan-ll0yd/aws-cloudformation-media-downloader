@@ -65,7 +65,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
   handler          = "RegisterDevice.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256

@@ -62,7 +62,7 @@ resource "aws_lambda_function" "UserDelete" {
   function_name    = "UserDelete"
   role             = aws_iam_role.UserDeleteRole.arn
   handler          = "UserDelete.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256

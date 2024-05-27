@@ -64,7 +64,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   function_name    = "FileCoordinator"
   role             = aws_iam_role.FileCoordinatorRole.arn
   handler          = "FileCoordinator.handler"
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
