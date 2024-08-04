@@ -1,18 +1,16 @@
-import * as AWS from 'aws-sdk'
-import {CompleteMultipartUploadOutput, CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
-import * as S3 from 'aws-sdk/clients/s3'
-import {logError, logInfo} from '../../../util/lambda-helpers'
-const s3 = new AWS.S3({apiVersion: '2006-03-01'})
+import {logError, logInfo} from '../../../util/lambda-helpers.js'
+import {S3, CreateMultipartUploadRequest, CreateMultipartUploadOutput, CompleteMultipartUploadOutput, CompleteMultipartUploadRequest, UploadPartRequest, UploadPartOutput} from '@aws-sdk/client-s3'
+const s3 = new S3()
 
-export function createMultipartUpload(params: S3.CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {
-  return s3.createMultipartUpload(params).promise()
+export function createMultipartUpload(params: CreateMultipartUploadRequest): Promise<CreateMultipartUploadOutput> {
+  return s3.createMultipartUpload(params)
 }
 
-export function completeMultipartUpload(params: S3.CompleteMultipartUploadRequest): Promise<CompleteMultipartUploadOutput> {
-  return s3.completeMultipartUpload(params).promise()
+export function completeMultipartUpload(params: CompleteMultipartUploadRequest): Promise<CompleteMultipartUploadOutput> {
+  return s3.completeMultipartUpload(params)
 }
 
-export function uploadPart(partParams: S3.UploadPartRequest, tryNum = 1): Promise<S3.UploadPartOutput> {
+export function uploadPart(partParams: UploadPartRequest, tryNum = 1): Promise<UploadPartOutput> {
   return new Promise((resolve, reject) => {
     s3.uploadPart(partParams, (multiErr, mData) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -28,7 +26,7 @@ export function uploadPart(partParams: S3.UploadPartRequest, tryNum = 1): Promis
         return
       }
       logInfo('uploadPart =>', mData)
-      return resolve(mData)
+      return resolve(mData as UploadPartOutput)
     })
   })
 }

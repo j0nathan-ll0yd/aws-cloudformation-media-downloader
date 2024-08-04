@@ -1,9 +1,9 @@
-import {CompleteMultipartUploadOutput, CompleteMultipartUploadRequest} from 'aws-sdk/clients/s3'
-import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {completeMultipartUpload} from '../../../lib/vendor/AWS/S3'
+import {CompleteMultipartUploadOutput, CompleteMultipartUploadRequest} from '@aws-sdk/client-s3'
+import {updateItem} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {completeMultipartUpload} from '../../../lib/vendor/AWS/S3.js'
 import {CompleteFileUploadEvent} from '../../../types/main'
-import {updateCompletedFileParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {updateCompletedFileParams} from '../../../util/dynamodb-helpers.js'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers.js'
 
 export async function handler(event: CompleteFileUploadEvent): Promise<CompleteMultipartUploadOutput> {
   logDebug('event', event)

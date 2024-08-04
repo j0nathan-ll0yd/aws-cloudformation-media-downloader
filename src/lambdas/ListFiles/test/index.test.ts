@@ -1,19 +1,20 @@
-import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import * as chai from 'chai'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {UnauthorizedError, UnexpectedError} from '../../../util/errors'
+import {UnauthorizedError, UnexpectedError} from '../../../util/errors.js'
 import {v4 as uuidv4} from 'uuid'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
-const docClient = new AWS.DynamoDB.DocumentClient()
 const fakeUserId = uuidv4()
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#ListFiles', () => {
   const context = testContext
   let event: APIGatewayProxyEvent
@@ -21,7 +22,7 @@ describe('#ListFiles', () => {
   let queryStub: sinon.SinonStub
   const queryStubReturnObject = localFixture('query-200-OK.json') as DocumentClient.QueryOutput
   if (Array.isArray(queryStubReturnObject.Items)) {
-    queryStubReturnObject.Items[0].fileId = docClient.createSet(queryStubReturnObject.Items[0].fileId)
+    queryStubReturnObject.Items[0].fileId = new Set(queryStubReturnObject.Items[0].fileId)
   }
   beforeEach(() => {
     event = localFixture('APIGatewayEvent.json') as APIGatewayProxyEvent

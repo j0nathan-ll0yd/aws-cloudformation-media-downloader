@@ -1,12 +1,16 @@
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions.js'
 import * as chai from 'chai'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {ScheduledEvent} from 'aws-lambda'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#FileCoordinator', () => {

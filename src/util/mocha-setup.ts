@@ -1,5 +1,5 @@
 import * as chai from 'chai'
-import * as chaiAsPromised from 'chai-as-promised'
+import chaiAsPromised from 'chai-as-promised'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as sinon from 'sinon'

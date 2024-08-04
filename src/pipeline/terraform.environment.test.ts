@@ -3,6 +3,10 @@ import * as chai from 'chai'
 import {AwsLambdaFunction, TerraformD} from '../types/terraform'
 const expect = chai.expect
 import Debug from 'debug'
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const log = Debug(__filename.slice(__dirname.length + 1, -3))
 
 // IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE

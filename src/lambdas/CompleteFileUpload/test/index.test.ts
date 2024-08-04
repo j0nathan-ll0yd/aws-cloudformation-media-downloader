@@ -1,12 +1,16 @@
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as S3 from '../../../lib/vendor/AWS/S3'
-import {getFixture} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as S3 from '../../../lib/vendor/AWS/S3.js'
+import {getFixture} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import * as chai from 'chai'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 import {CompleteFileUploadEvent} from '../../../types/main'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CompleteFileUpload', () => {

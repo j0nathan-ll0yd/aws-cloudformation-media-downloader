@@ -1,14 +1,14 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers.js'
+import {scan} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
 import {ApplePushNotificationResponse, Device, DynamoDBUserDevice} from '../../../types/main'
-import {getUsersByDeviceId} from '../../../util/dynamodb-helpers'
-import {deleteDevice, deleteUserDevice} from '../../../util/shared'
-import {assertIsError} from '../../../util/transformers'
+import {getUsersByDeviceId} from '../../../util/dynamodb-helpers.js'
+import {deleteDevice, deleteUserDevice} from '../../../util/shared.js'
+import {assertIsError} from '../../../util/transformers.js'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
-import {Apns2Error} from '../../../util/errors'
-import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
+import {Apns2Error} from '../../../util/errors.js'
+import {getApnsSigningKey} from '../../../util/secretsmanager-helpers.js'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
@@ -21,7 +21,7 @@ async function getDevices(): Promise<Device[]> {
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items as Device[]
+  return scanResponse.Items as unknown as Device[]
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -71,7 +71,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
   if (!response || !response.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  const userDevices = response.Items as DynamoDBUserDevice[]
+  const userDevices = response.Items as unknown as DynamoDBUserDevice[]
   return userDevices.map((userDevice) => userDevice.userId)
 }
 

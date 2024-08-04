@@ -1,13 +1,17 @@
 import * as sinon from 'sinon'
 import * as chai from 'chai'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers.js'
+import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {APIGatewayEvent} from 'aws-lambda'
 import {AppleTokenResponse, SignInWithAppleVerifiedToken} from '../../../types/main'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#LoginUser', () => {

@@ -1,4 +1,3 @@
-import * as AWS from 'aws-sdk'
 import {
   CreateEndpointResponse,
   CreatePlatformEndpointInput,
@@ -9,31 +8,43 @@ import {
   PublishResponse,
   SubscribeInput,
   SubscribeResponse,
-  UnsubscribeInput
-} from 'aws-sdk/clients/sns'
-import * as AWSXRay from 'aws-xray-sdk'
-const sns = AWSXRay.captureAWSClient(new AWS.SNS({apiVersion: '2010-03-31'}))
+  UnsubscribeInput,
+  SNSClient,
+  SubscribeCommand,
+  PublishCommand,
+  ListSubscriptionsByTopicCommand,
+  CreatePlatformEndpointCommand,
+  UnsubscribeCommand,
+  DeleteEndpointCommand
+} from '@aws-sdk/client-sns'
+const sns = new SNSClient()
 
 export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> {
-  return sns.publish(params).promise()
+  const command = new PublishCommand(params)
+  return sns.send(command)
 }
 
 export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
-  return sns.subscribe(params).promise()
+  const command = new SubscribeCommand(params)
+  return sns.send(command)
 }
 
 export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput): Promise<ListSubscriptionsByTopicResponse> {
-  return sns.listSubscriptionsByTopic(params).promise()
+  const command = new ListSubscriptionsByTopicCommand(params)
+  return sns.send(command)
 }
 
 export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Promise<CreateEndpointResponse> {
-  return sns.createPlatformEndpoint(params).promise()
+  const command = new CreatePlatformEndpointCommand(params)
+  return sns.send(command)
 }
 
 export function unsubscribe(params: UnsubscribeInput): Promise<object> {
-  return sns.unsubscribe(params).promise()
+  const command = new UnsubscribeCommand(params)
+  return sns.send(command)
 }
 
 export function deleteEndpoint(params: DeleteEndpointInput): Promise<object> {
-  return sns.deleteEndpoint(params).promise()
+  const command = new DeleteEndpointCommand(params)
+  return sns.send(command)
 }

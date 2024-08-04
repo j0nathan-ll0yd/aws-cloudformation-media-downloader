@@ -2,7 +2,7 @@ import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
 import {Part} from 'aws-sdk/clients/s3'
 import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {FileStatus, UserStatus} from './enums'
+import {FileStatus, UserStatus} from './enums.js'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 
 interface Metadata {

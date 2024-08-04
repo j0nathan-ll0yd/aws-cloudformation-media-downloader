@@ -11,17 +11,17 @@ import {
   validateAuthCodeForToken,
   verifyAccessToken,
   verifyAppleToken
-} from './secretsmanager-helpers'
-import * as jwt from 'jsonwebtoken'
-import {JsonWebTokenError, JwtPayload} from 'jsonwebtoken'
+} from './secretsmanager-helpers.js'
+import jwt from 'jsonwebtoken'
+const {JsonWebTokenError} = jwt
 import * as sinon from 'sinon'
-import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
+import * as SecretsManager from '../lib/vendor/AWS/SecretsManager.js'
 import * as MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
-import {UnauthorizedError} from './errors'
+import {UnauthorizedError} from './errors.js'
 import * as JwksRsa from 'jwks-rsa'
-import {fakePrivateKey, fakePublicKey} from './mocha-setup'
+import {fakePrivateKey, fakePublicKey} from './mocha-setup.js'
 const expect = chai.expect
 
 const fakeTokenResponse = {
@@ -168,7 +168,7 @@ describe('#Util:SecretsManager', () => {
     getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString) as JwtPayload
+    const jwtPayload = jwt.verify(token, secretString) as jwt.JwtPayload
     expect(jwtPayload).to.have.all.keys('userId', 'iat', 'exp')
     expect(jwtPayload.userId).to.eql(userId)
   })

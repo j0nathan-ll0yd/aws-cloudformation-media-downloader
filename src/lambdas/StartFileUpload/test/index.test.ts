@@ -1,17 +1,21 @@
 import axios from 'axios'
 import * as MockAdapter from 'axios-mock-adapter'
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as YouTube from '../../../lib/vendor/YouTube'
-import * as S3 from '../../../lib/vendor/AWS/S3'
-import {getFixture, partSize} from '../../../util/mocha-setup'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as YouTube from '../../../lib/vendor/YouTube.js'
+import * as S3 from '../../../lib/vendor/AWS/S3.js'
+import {getFixture, partSize} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
-import {handler} from '../src'
+import {handler} from '../src/index.js'
 import {videoInfo} from 'ytdl-core'
 import {UploadPartEvent} from '../../../types/main'
 import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
-import {NotFoundError, UnexpectedError} from '../../../util/errors'
+import {NotFoundError, UnexpectedError} from '../../../util/errors.js'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#StartFileUpload', () => {

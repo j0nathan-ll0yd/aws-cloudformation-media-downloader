@@ -1,13 +1,13 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {putItem} from '../../../lib/vendor/AWS/DynamoDB.js'
 import {IdentityProviderApple, User, UserRegistration} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {registerUserConstraints} from '../../../util/constraints'
-import {newUserParams} from '../../../util/dynamodb-helpers'
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
-import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers.js'
+import {registerUserConstraints} from '../../../util/constraints.js'
+import {newUserParams} from '../../../util/dynamodb-helpers.js'
+import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers.js'
+import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers.js'
+import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers.js'
+import {getUsersByAppleDeviceIdentifier} from '../../../util/shared.js'
 
 /**
  * Creates a new user record in DynamoDB

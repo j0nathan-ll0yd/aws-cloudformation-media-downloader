@@ -1,10 +1,14 @@
 import * as sinon from 'sinon'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
+import * as SNS from '../../../lib/vendor/AWS/SNS.js'
 import * as chai from 'chai'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#UserSubscribe', () => {

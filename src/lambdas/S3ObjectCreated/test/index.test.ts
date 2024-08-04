@@ -1,11 +1,15 @@
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
 import * as chai from 'chai'
-import * as SQS from '../../../lib/vendor/AWS/SQS'
-import {getFixture} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import * as SQS from '../../../lib/vendor/AWS/SQS.js'
+import {getFixture} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {S3Event} from 'aws-lambda'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#S3ObjectCreated', () => {

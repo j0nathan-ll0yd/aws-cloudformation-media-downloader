@@ -1,11 +1,11 @@
 import {PublishInput} from 'aws-sdk/clients/sns'
 import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
-import {chooseVideoFormat} from '../lib/vendor/YouTube'
+import {chooseVideoFormat} from '../lib/vendor/YouTube.js'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
-import {logDebug, logError} from './lambda-helpers'
+import {logDebug, logError} from './lambda-helpers.js'
 import {v4 as uuidv4} from 'uuid'
-import {NotFoundError, UnexpectedError} from './errors'
+import {NotFoundError, UnexpectedError} from './errors.js'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -94,7 +94,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
       throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
     }
   })
-  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+
   const clientFile: ClientFile = {
     fileId: file.fileId.stringValue!,
     key: file.key.stringValue!,
@@ -102,7 +102,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
     size: parseInt(file.size.stringValue!, 0),
     url: file.url.stringValue!
   }
-  /* eslint-enable @typescript-eslint/no-non-null-assertion */
+
   return {
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({

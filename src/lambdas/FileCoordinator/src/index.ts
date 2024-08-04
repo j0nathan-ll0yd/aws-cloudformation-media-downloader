@@ -1,9 +1,9 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {scanForFileParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {initiateFileDownload} from '../../../util/shared'
+import {scan} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {scanForFileParams} from '../../../util/dynamodb-helpers.js'
+import {logDebug, logInfo, response} from '../../../util/lambda-helpers.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
+import {initiateFileDownload} from '../../../util/shared.js'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
@@ -16,7 +16,7 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items.map((file) => file.fileId)
+  return scanResponse.Items.map((file) => file.fileId.toString())
 }
 
 /**

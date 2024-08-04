@@ -2,9 +2,9 @@ import {APIGatewayEvent} from 'aws-lambda'
 import {validate} from 'validate.js'
 import {DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '../types/main'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
-import {ValidationError} from './errors'
-import {logDebug, logError} from './lambda-helpers'
-import {validateOptions} from './constraints'
+import {ValidationError} from './errors.js'
+import {logDebug, logError} from './lambda-helpers.js'
+import {validateOptions} from './constraints.js'
 
 export function validateRequest(requestBody: Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin, constraints: unknown): void {
   const invalidAttributes = validate(requestBody, constraints, validateOptions)

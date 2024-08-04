@@ -1,7 +1,7 @@
 import {Octokit} from '@octokit/rest'
-import {logDebug, logError, logInfo} from './lambda-helpers'
+import {logDebug, logError, logInfo} from './lambda-helpers.js'
 import {Device} from '../types/main'
-import {getGithubPersonalToken} from './secretsmanager-helpers'
+import {getGithubPersonalToken} from './secretsmanager-helpers.js'
 
 const owner = 'j0nathan-ll0yd'
 const repo = 'aws-cloudformation-media-downloader'

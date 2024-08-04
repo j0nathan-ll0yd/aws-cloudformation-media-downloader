@@ -1,13 +1,15 @@
-const glob = require('glob')
-const path = require('path')
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
+import * as path from 'path'
+import * as glob from 'glob'
+import webpack from 'webpack'
+import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin'
 
-module.exports = {
+const config: webpack.Configuration = {
   mode: 'production',
-  entry: glob.sync('./src/lambdas/**/src/index.ts').reduce((acc, filePath) => {
+  entry: glob.sync('./src/lambdas/**/src/index.ts').reduce<Record<string, string>>((acc, filePath) => {
     // parse the filepath to the directory of the lambda
+    filePath = './' + filePath
     const functionName = filePath.split(/\//)[3]
-    acc[functionName] = filePath
+    acc[functionName] = './' + filePath
     return acc
   }, {}),
   externals: ['aws-sdk'],
@@ -20,10 +22,10 @@ module.exports = {
     filename: '[name].js'
   },
   optimization: {
-    usedExports: true,
+    usedExports: true
   },
   stats: {
-    usedExports: true,
+    usedExports: true
   },
   target: 'node',
   module: {
@@ -32,13 +34,12 @@ module.exports = {
         // Include ts, tsx, js, and jsx files.
         test: /\.(ts|js)x?$/,
         exclude: /node_modules/,
-        use: [
-          'babel-loader',
-          'ts-loader'
-        ]
+        use: ['babel-loader', 'ts-loader']
       }
     ]
   },
   plugins: [new ForkTsCheckerWebpackPlugin()],
   watch: false
 }
+
+export default config

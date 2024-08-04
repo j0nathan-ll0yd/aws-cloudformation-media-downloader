@@ -1,11 +1,11 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
-import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
-import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers.js'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers.js'
 import {DynamoDBFile} from '../../../types/main'
-import {FileStatus, UserStatus} from '../../../types/enums'
-import {defaultFile} from '../../../util/constants'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {FileStatus, UserStatus} from '../../../types/enums.js'
+import {defaultFile} from '../../../util/constants.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
 
 /**
  * Returns an array of Files, based on a list of File IDs
@@ -21,7 +21,7 @@ async function getFilesById(fileIds: string[]): Promise<DynamoDBFile[]> {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
   const table = process.env.DynamoDBTableFiles as string
-  return fileResponse.Responses[table] as DynamoDBFile[]
+  return fileResponse.Responses[table] as unknown as DynamoDBFile[]
 }
 
 /**
@@ -40,7 +40,8 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
   if (userFilesResponse.Items.length === 0) {
     return []
   }
-  return userFilesResponse.Items[0].fileId.values
+  const userFiles = userFilesResponse.Items as unknown as DynamoDBFile[]
+  return userFiles.map((file) => file.fileId)
 }
 
 /**

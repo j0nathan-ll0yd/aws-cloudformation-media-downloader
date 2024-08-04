@@ -1,13 +1,12 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
-import * as jwt from 'jsonwebtoken'
-import {Jwt, SignOptions} from 'jsonwebtoken'
+import {getSecretValue} from '../lib/vendor/AWS/SecretsManager.js'
+import jwt from 'jsonwebtoken'
 import * as jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
-import {logDebug, logError, logInfo} from './lambda-helpers'
-import {UnauthorizedError, UnexpectedError} from './errors'
-import {GetSecretValueRequest} from 'aws-sdk/clients/secretsmanager'
+import {logDebug, logError, logInfo} from './lambda-helpers.js'
+import {UnauthorizedError, UnexpectedError} from './errors.js'
+import {GetSecretValueRequest} from '@aws-sdk/client-secrets-manager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string
 let APPLESIGNINGKEY: string
@@ -142,7 +141,7 @@ export async function getAppleClientSecret(): Promise<string> {
     algorithm: 'ES256',
     header: headers,
     expiresIn: '24h'
-  } as SignOptions)
+  } as jwt.SignOptions)
 }
 
 /**
@@ -190,7 +189,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
   try {
-    const decodedPayload = jwt.decode(token, {complete: true}) as Jwt
+    const decodedPayload = jwt.decode(token, {complete: true}) as jwt.Jwt
     logDebug('verifyAppleToken.decodedPayload', decodedPayload)
     const kid = decodedPayload.header.kid
 

@@ -1,17 +1,16 @@
 import {ScheduledEvent} from 'aws-lambda'
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {handler} from '../src'
-import {fakePrivateKey, testContext} from '../../../util/mocha-setup'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import {handler} from '../src/index.js'
+import {fakePrivateKey, testContext} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
+import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers.js'
 const expect = chai.expect
-import * as SNS from '../../../lib/vendor/AWS/SNS'
+import * as SNS from '../../../lib/vendor/AWS/SNS.js'
 import {v4 as uuidv4} from 'uuid'
-import * as AWS from 'aws-sdk'
-import {Apns2Error, UnexpectedError} from '../../../util/errors'
+import {Apns2Error, UnexpectedError} from '../../../util/errors.js'
 import {ApnsClient, Notification, ApnsPayload, PushType, Priority} from 'apns2'
-const docClient = new AWS.DynamoDB.DocumentClient()
+import {ScanOutput} from '@aws-sdk/client-dynamodb'
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {
   Items: [
@@ -50,16 +49,16 @@ const fakeGetDevicesResponse = {
   ],
   Count: 4,
   ScannedCount: 4
-}
+} as unknown as ScanOutput
 
 const fakeUserDevicesResponse = {
   Items: [
     {
-      devices: docClient.createSet(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
+      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
       userId: fakeUserId
     }
   ]
-}
+} as unknown as ScanOutput
 
 const fakeApnsNotificationOptions = {
   contentAvailable: true,
@@ -77,7 +76,7 @@ function getExpiredResponseForDevice(arrayIndex: number): Apns2Error {
     statusCode: 410,
     reason: 'BadExpirationDate',
     notification: {
-      deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
+      deviceToken: fakeGetDevicesResponse.Items?.[arrayIndex].token,
       options: fakeApnsNotificationOptions,
       get pushType(): PushType {
         return PushType.background
@@ -89,12 +88,12 @@ function getExpiredResponseForDevice(arrayIndex: number): Apns2Error {
         return fakeApnsNotificationOptions
       }
     }
-  } as Apns2Error
+  } as unknown as Apns2Error
 }
 
 function getSuccessfulResponseForDevice(arrayIndex: number): Notification {
   return {
-    deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
+    deviceToken: fakeGetDevicesResponse.Items?.[arrayIndex].token,
     options: fakeApnsNotificationOptions,
     get pushType(): PushType {
       return PushType.background
@@ -105,10 +104,9 @@ function getSuccessfulResponseForDevice(arrayIndex: number): Notification {
     buildApnsOptions(): ApnsPayload {
       return fakeApnsNotificationOptions
     }
-  } as Notification
+  } as unknown as Notification
 }
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#PruneDevices', () => {
   const event: ScheduledEvent = {
     'detail-type': 'Scheduled Event',

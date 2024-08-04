@@ -1,19 +1,22 @@
 import * as sinon from 'sinon'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
+import * as SNS from '../../../lib/vendor/AWS/SNS.js'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
 import * as chai from 'chai'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {APIGatewayEvent} from 'aws-lambda'
 import {CreateEndpointResponse, ListSubscriptionsByTopicResponse, SubscribeResponse} from 'aws-sdk/clients/sns'
 import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 import {v4 as uuidv4} from 'uuid'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 const fakeUserId = uuidv4()
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#RegisterDevice', () => {
   const context = testContext
   let createPlatformEndpointStub: sinon.SinonStub

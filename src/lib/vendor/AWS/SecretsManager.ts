@@ -1,6 +1,5 @@
-import * as AWS from 'aws-sdk'
-import {GetSecretValueRequest, GetSecretValueResponse} from 'aws-sdk/clients/secretsmanager'
-const asm = new AWS.SecretsManager({apiVersion: '2017-10-17'})
+import {SecretsManager, GetSecretValueRequest, GetSecretValueResponse} from '@aws-sdk/client-secrets-manager'
+const asm = new SecretsManager()
 export function getSecretValue(params: GetSecretValueRequest): Promise<GetSecretValueResponse> {
-  return asm.getSecretValue(params).promise()
+  return asm.getSecretValue(params)
 }

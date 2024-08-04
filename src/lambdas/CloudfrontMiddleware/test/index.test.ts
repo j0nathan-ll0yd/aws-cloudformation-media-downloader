@@ -1,10 +1,14 @@
 import {CloudFrontRequestEvent} from 'aws-lambda'
-import {getFixture, testContext} from '../../../util/mocha-setup'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
-import {handler} from '../src'
+import {handler} from '../src/index.js'
 import * as crypto from 'crypto'
 import * as sinon from 'sinon'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 
 describe('#CloudfrontMiddleware', () => {

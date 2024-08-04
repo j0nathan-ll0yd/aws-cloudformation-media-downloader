@@ -1,9 +1,9 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {getApiKeys, getUsage, getUsagePlans} from '../../../lib/vendor/AWS/ApiGateway'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers.js'
+import {getApiKeys, getUsage, getUsagePlans} from '../../../lib/vendor/AWS/ApiGateway.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
 import {ApiKey, ListOfLong, ListOfUsagePlan} from 'aws-sdk/clients/apigateway'
-import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import {verifyAccessToken} from '../../../util/secretsmanager-helpers.js'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
@@ -20,7 +20,7 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
     },
     principalId,
     usageIdentifierKey
-  }
+  } as CustomAuthorizerResult
 }
 
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {

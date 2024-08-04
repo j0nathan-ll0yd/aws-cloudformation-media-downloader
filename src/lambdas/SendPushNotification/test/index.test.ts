@@ -1,29 +1,31 @@
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
-import {getFixture} from '../../../util/mocha-setup'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as SNS from '../../../lib/vendor/AWS/SNS.js'
+import {getFixture} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
-import {handler} from '../src'
+import {handler} from '../src/index.js'
 import {SQSEvent} from 'aws-lambda'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 import {v4 as uuidv4} from 'uuid'
-import * as AWS from 'aws-sdk'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+import {ScanOutput} from '@aws-sdk/client-dynamodb'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-
-const docClient = new AWS.DynamoDB.DocumentClient()
 const getUserDevicesByUserIdResponse = {
   Items: [
     {
-      devices: docClient.createSet([fakeDeviceId]),
+      devices: new Set([fakeDeviceId]),
       userId: fakeUserId
     }
   ],
   Count: 1,
   ScannedCount: 1
-}
+} as unknown as ScanOutput
 
 const getDeviceResponse = {
   Items: [
@@ -38,7 +40,7 @@ const getDeviceResponse = {
   ],
   Count: 1,
   ScannedCount: 1
-}
+} as unknown as ScanOutput
 
 describe('#SendPushNotification', () => {
   let event: SQSEvent

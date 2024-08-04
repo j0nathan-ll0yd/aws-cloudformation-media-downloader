@@ -1,12 +1,12 @@
 import {S3Event} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+import {scan} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS.js'
 import {DynamoDBFile, UserFile} from '../../../types/main'
-import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
-import {logDebug} from '../../../util/lambda-helpers'
-import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
-import {UnexpectedError} from '../../../util/errors'
-import {SendMessageRequest} from 'aws-sdk/clients/sqs'
+import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers.js'
+import {logDebug} from '../../../util/lambda-helpers.js'
+import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers.js'
+import {UnexpectedError} from '../../../util/errors.js'
+import {SendMessageRequest} from '@aws-sdk/client-sqs'
 
 /**
  * Returns the DynamoDBFile by file name
@@ -19,7 +19,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
   const getFileByKeyResponse = await scan(getFileByKeyParams)
   logDebug('scan =>', getFileByKeyResponse)
   if (Array.isArray(getFileByKeyResponse.Items) && getFileByKeyResponse.Items.length > 0) {
-    return getFileByKeyResponse.Items[0] as DynamoDBFile
+    return getFileByKeyResponse.Items[0] as unknown as DynamoDBFile
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
@@ -35,7 +35,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
   logDebug('scan <=', getUsersByFileIdParams)
   const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
   logDebug('scan =>', getUsersByFileIdResponse)
-  const userFiles = getUsersByFileIdResponse.Items as [UserFile]
+  const userFiles = getUsersByFileIdResponse.Items as unknown as [UserFile]
   return userFiles.map((userDevice) => userDevice.userId)
 }
 
@@ -51,7 +51,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  } as unknown as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }

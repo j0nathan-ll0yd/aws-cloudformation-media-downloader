@@ -3,10 +3,10 @@ import * as MockAdapter from 'axios-mock-adapter'
 import * as crypto from 'crypto'
 import * as chai from 'chai'
 import * as sinon from 'sinon'
-import * as S3 from '../../../lib/vendor/AWS/S3'
+import * as S3 from '../../../lib/vendor/AWS/S3.js'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {partSize} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import {partSize} from '../../../util/mocha-setup.js'
+import {handler} from '../src/index.js'
 import {Part} from 'aws-sdk/clients/s3'
 const expect = chai.expect
 

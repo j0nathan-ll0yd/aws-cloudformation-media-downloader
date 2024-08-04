@@ -1,18 +1,18 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {sendMessage} from '../../../lib/vendor/AWS/SQS'
-import {getVideoID} from '../../../lib/vendor/YouTube'
+import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS.js'
+import {getVideoID} from '../../../lib/vendor/YouTube.js'
 import {DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {feedlyEventConstraints} from '../../../util/constraints'
-import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
-import {SendMessageRequest} from 'aws-sdk/clients/sqs'
-import {FileStatus} from '../../../types/enums'
-import {initiateFileDownload} from '../../../util/shared'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers.js'
+import {feedlyEventConstraints} from '../../../util/constraints.js'
+import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers.js'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers.js'
+import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers.js'
+import {SendMessageRequest} from '@aws-sdk/client-sqs'
+import {FileStatus} from '../../../types/enums.js'
+import {initiateFileDownload} from '../../../util/shared.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
 
 /**
  * Associates a File to a User in DynamoDB
@@ -51,7 +51,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
   const fileResponse = await query(fileParams)
   logDebug('getFile.query =>', fileResponse)
   if (fileResponse.Items && fileResponse.Items.length > 0) {
-    return fileResponse.Items[0] as DynamoDBFile
+    return fileResponse.Items[0] as unknown as DynamoDBFile
   }
   return undefined
 }
@@ -68,7 +68,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  } as unknown as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)

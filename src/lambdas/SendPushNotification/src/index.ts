@@ -1,11 +1,12 @@
 import {SQSEvent} from 'aws-lambda'
-import {query} from '../../../lib/vendor/AWS/DynamoDB'
-import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
+import {query} from '../../../lib/vendor/AWS/DynamoDB.js'
+import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS.js'
 import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
-import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
+import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers.js'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers.js'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
+import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers.js'
+import {PublishInput} from '@aws-sdk/client-sns'
 
 /**
  * Returns a Device by userId
@@ -24,7 +25,7 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
     return []
   }
   // There will always be 1 result (if the user has a device); but with the possibility of multiple devices
-  const userDevice = userResponse.Items[0] as DynamoDBUserDevice
+  const userDevice = userResponse.Items[0] as unknown as DynamoDBUserDevice
   return userDevice.devices.values as string[]
 }
 
@@ -39,7 +40,7 @@ async function getDevice(deviceId: string): Promise<Device> {
   const response = await query(params)
   logDebug('getDevice =>', response)
   if (response && response.Items && response.Items.length > 0) {
-    return response.Items[0] as Device
+    return response.Items[0] as unknown as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
@@ -68,7 +69,7 @@ export async function handler(event: SQSEvent): Promise<void> {
         const device = await getDevice(deviceId)
         const targetArn = device.endpointArn as string
         logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn)
+        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn) as PublishInput
         logDebug('publishSnsEvent <=', publishParams)
         const publishResponse = await publishSnsEvent(publishParams)
         logDebug('publishSnsEvent <=', publishResponse)

@@ -1,15 +1,15 @@
 // These are methods that are shared across multiple lambdas
-import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {logDebug} from './lambda-helpers'
-import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
+import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers.js'
+import {logDebug} from './lambda-helpers.js'
+import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB.js'
 import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
-import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
-import {providerFailureErrorMessage, UnexpectedError} from './errors'
+import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS.js'
+import {providerFailureErrorMessage, UnexpectedError} from './errors.js'
 import {Types} from 'aws-sdk/clients/stepfunctions'
-import {startExecution} from '../lib/vendor/AWS/StepFunctions'
-import {transformVideoIntoDynamoItem} from './transformers'
+import {startExecution} from '../lib/vendor/AWS/StepFunctions.js'
+import {transformVideoIntoDynamoItem} from './transformers.js'
 import axios, {AxiosRequestConfig} from 'axios'
-import {FileStatus} from '../types/enums'
+import {FileStatus} from '../types/enums.js'
 
 /**
  * Disassociates a deviceId from a User
@@ -57,7 +57,8 @@ export async function getUserDevices(table: string, userId: string): Promise<Dyn
   if (!response || !response.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return response.Items as DynamoDBUserDevice[]
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  return response.Items as unknown as DynamoDBUserDevice[]
 }
 
 /**
@@ -106,7 +107,8 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items as User[]
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  return scanResponse.Items as unknown as User[]
 }
 
 /**

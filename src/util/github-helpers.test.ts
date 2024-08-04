@@ -1,9 +1,9 @@
-import {createFailedUserDeletionIssue} from './github-helpers'
+import {createFailedUserDeletionIssue} from './github-helpers.js'
 import {Device} from '../types/main'
 import {Moctokit} from '@kie/mock-github'
 import * as chai from 'chai'
 import * as sinon from 'sinon'
-import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
+import * as SecretsManager from '../lib/vendor/AWS/SecretsManager.js'
 const expect = chai.expect
 
 describe('#Util:GithubHelper', () => {

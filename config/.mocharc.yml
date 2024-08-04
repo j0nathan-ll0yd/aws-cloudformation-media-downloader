@@ -6,7 +6,8 @@ ignore:
   - 'src/util/mocha-setup.ts'
 package: ./package.json
 require:
+  - '@babel/register'
   - 'ts-node/register'
-  - 'source-map-support/register'
   - 'src/util/mocha-setup.ts'
 spec: 'src/**/**/*.test.ts'
+loader: 'ts-node/esm'

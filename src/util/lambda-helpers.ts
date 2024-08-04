@@ -1,8 +1,8 @@
 import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {unknownErrorToString} from './transformers'
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors.js'
+import {unknownErrorToString} from './transformers.js'
 import {UserEventDetails} from '../types/main'
-import {UserStatus} from '../types/enums'
+import {UserStatus} from '../types/enums.js'
 
 export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'

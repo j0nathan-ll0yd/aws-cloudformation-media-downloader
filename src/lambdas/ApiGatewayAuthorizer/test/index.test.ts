@@ -1,21 +1,24 @@
 import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import * as APIGateway from '../../../lib/vendor/AWS/ApiGateway'
+import * as SecretsManagerHelper from './../../../util/secretsmanager-helpers.js'
+import * as APIGateway from '../../../lib/vendor/AWS/ApiGateway.js'
 import * as sinon from 'sinon'
-import {getFixture} from '../../../util/mocha-setup'
+import {getFixture} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
-import {handler} from '../src'
+import {handler} from '../src/index.js'
 import {ApiKeys} from 'aws-sdk/clients/apigateway'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#APIGatewayAuthorizer', () => {
   // Setup variations of the getApiKeys response
   const getApiKeysResponse = localFixture('getApiKeys.json') as ApiKeys

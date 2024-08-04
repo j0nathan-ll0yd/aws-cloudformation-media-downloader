@@ -1,18 +1,21 @@
 import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
-import * as SQS from '../../../lib/vendor/AWS/SQS'
-import {getFixture, testContext} from '../../../util/mocha-setup'
+import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB.js'
+import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions.js'
+import * as SQS from '../../../lib/vendor/AWS/SQS.js'
+import {getFixture, testContext} from '../../../util/mocha-setup.js'
 import * as chai from 'chai'
-import {handler} from '../src'
+import {handler} from '../src/index.js'
 import {APIGatewayEvent} from 'aws-lambda'
 import {v4 as uuidv4} from 'uuid'
-import {UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors.js'
 const expect = chai.expect
+import path from 'path'
+import {fileURLToPath} from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const localFixture = getFixture.bind(null, __dirname)
 const fakeUserId = uuidv4()
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
 describe('#WebhookFeedly', () => {
   const context = testContext
   let event: APIGatewayEvent
