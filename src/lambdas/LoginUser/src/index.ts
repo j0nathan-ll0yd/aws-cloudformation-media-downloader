@@ -1,10 +1,10 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {UserLogin} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers.js'
-import {loginUserConstraints} from '../../../util/constraints.js'
-import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers.js'
-import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers.js'
-import {getUsersByAppleDeviceIdentifier} from '../../../util/shared.js'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
+import {loginUserConstraints} from '../../../util/constraints'
+import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
+import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
+import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 
 /**
  * Logs in a User via Sign in with Apple

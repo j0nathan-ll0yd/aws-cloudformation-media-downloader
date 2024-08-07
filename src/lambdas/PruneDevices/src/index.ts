@@ -1,14 +1,14 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers.js'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB.js'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
+import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
+import {scan} from '../../../lib/vendor/AWS/DynamoDB'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device, DynamoDBUserDevice} from '../../../types/main'
-import {getUsersByDeviceId} from '../../../util/dynamodb-helpers.js'
-import {deleteDevice, deleteUserDevice} from '../../../util/shared.js'
-import {assertIsError} from '../../../util/transformers.js'
+import {getUsersByDeviceId} from '../../../util/dynamodb-helpers'
+import {deleteDevice, deleteUserDevice} from '../../../util/shared'
+import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
-import {Apns2Error} from '../../../util/errors.js'
-import {getApnsSigningKey} from '../../../util/secretsmanager-helpers.js'
+import {Apns2Error} from '../../../util/errors'
+import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded

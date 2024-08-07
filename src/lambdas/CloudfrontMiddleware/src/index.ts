@@ -1,6 +1,6 @@
 import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {logDebug, logInfo} from '../../../util/lambda-helpers.js'
+import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {CustomCloudFrontRequest} from '../../../types/main'
 
 /**

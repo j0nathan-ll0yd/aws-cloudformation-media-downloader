@@ -1,7 +1,7 @@
 import ytdlCore from 'ytdl-core'
-import {logDebug} from '../../util/lambda-helpers.js'
-import {UnexpectedError} from '../../util/errors.js'
-import {assertIsError} from '../../util/transformers.js'
+import {logDebug} from '../../util/lambda-helpers'
+import {UnexpectedError} from '../../util/errors'
+import {assertIsError} from '../../util/transformers'
 
 export async function fetchVideoInfo(uri: string): Promise<ytdlCore.videoInfo> {
   logDebug('fetchVideoInfo =>')

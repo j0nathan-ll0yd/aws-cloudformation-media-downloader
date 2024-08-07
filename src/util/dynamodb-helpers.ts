@@ -1,5 +1,5 @@
 import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
-import {FileStatus} from '../types/enums.js'
+import {FileStatus} from '../types/enums'
 import {DeleteItemInput, QueryInput, UpdateItemInput, PutItemInput, ScanInput, BatchGetItemInput} from '@aws-sdk/client-dynamodb'
 import {marshall} from '@aws-sdk/util-dynamodb'
 

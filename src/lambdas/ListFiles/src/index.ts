@@ -1,11 +1,11 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB.js'
-import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers.js'
-import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers.js'
+import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {DynamoDBFile} from '../../../types/main'
-import {FileStatus, UserStatus} from '../../../types/enums.js'
-import {defaultFile} from '../../../util/constants.js'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
+import {FileStatus, UserStatus} from '../../../types/enums'
+import {defaultFile} from '../../../util/constants'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 
 /**
  * Returns an array of Files, based on a list of File IDs

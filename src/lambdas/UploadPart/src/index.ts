@@ -1,11 +1,11 @@
 import {UploadPartRequest} from '@aws-sdk/client-s3'
 import {AxiosRequestConfig} from 'axios'
-import {uploadPart} from '../../../lib/vendor/AWS/S3.js'
+import {uploadPart} from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {logDebug, logInfo} from '../../../util/lambda-helpers.js'
-import {UnexpectedError} from '../../../util/errors.js'
-import {assertIsError} from '../../../util/transformers.js'
-import {makeHttpRequest} from '../../../util/shared.js'
+import {logDebug, logInfo} from '../../../util/lambda-helpers'
+import {UnexpectedError} from '../../../util/errors'
+import {assertIsError} from '../../../util/transformers'
+import {makeHttpRequest} from '../../../util/shared'
 
 /**
  * Uploads a part (by byte range) of a file to an S3 bucket

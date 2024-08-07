@@ -1,7 +1,7 @@
 import {CloudFrontRequestEvent} from 'aws-lambda'
-import {getFixture, testContext} from '../../../util/mocha-setup.js'
+import {getFixture, testContext} from '../../../util/mocha-setup'
 import * as chai from 'chai'
-import {handler} from '../src/index.js'
+import {handler} from '../src/index'
 import * as crypto from 'crypto'
 import * as sinon from 'sinon'
 const expect = chai.expect

@@ -1,11 +1,11 @@
 import {SQSEvent} from 'aws-lambda'
-import {query} from '../../../lib/vendor/AWS/DynamoDB.js'
-import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS.js'
+import {query} from '../../../lib/vendor/AWS/DynamoDB'
+import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
 import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
-import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers.js'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers.js'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
-import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers.js'
+import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 import {PublishInput} from '@aws-sdk/client-sns'
 
 /**

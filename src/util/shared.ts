@@ -1,15 +1,15 @@
 // These are methods that are shared across multiple lambdas
-import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers.js'
-import {logDebug} from './lambda-helpers.js'
-import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB.js'
+import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
+import {logDebug} from './lambda-helpers'
+import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
-import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS.js'
-import {providerFailureErrorMessage, UnexpectedError} from './errors.js'
+import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
+import {providerFailureErrorMessage, UnexpectedError} from './errors'
 import {Types} from 'aws-sdk/clients/stepfunctions'
-import {startExecution} from '../lib/vendor/AWS/StepFunctions.js'
-import {transformVideoIntoDynamoItem} from './transformers.js'
+import {startExecution} from '../lib/vendor/AWS/StepFunctions'
+import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
-import {FileStatus} from '../types/enums.js'
+import {FileStatus} from '../types/enums'
 
 /**
  * Disassociates a deviceId from a User

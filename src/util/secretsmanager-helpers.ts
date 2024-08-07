@@ -1,11 +1,11 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import {getSecretValue} from '../lib/vendor/AWS/SecretsManager.js'
+import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import * as jwksClient from 'jwks-rsa'
 import {promisify} from 'util'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
-import {logDebug, logError, logInfo} from './lambda-helpers.js'
-import {UnauthorizedError, UnexpectedError} from './errors.js'
+import {logDebug, logError, logInfo} from './lambda-helpers'
+import {UnauthorizedError, UnexpectedError} from './errors'
 import {GetSecretValueRequest} from '@aws-sdk/client-secrets-manager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string

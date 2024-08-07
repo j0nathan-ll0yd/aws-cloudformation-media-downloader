@@ -11,17 +11,17 @@ import {
   validateAuthCodeForToken,
   verifyAccessToken,
   verifyAppleToken
-} from './secretsmanager-helpers.js'
+} from './secretsmanager-helpers'
 import jwt from 'jsonwebtoken'
 const {JsonWebTokenError} = jwt
 import * as sinon from 'sinon'
-import * as SecretsManager from '../lib/vendor/AWS/SecretsManager.js'
+import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
 import * as MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
-import {UnauthorizedError} from './errors.js'
+import {UnauthorizedError} from './errors'
 import * as JwksRsa from 'jwks-rsa'
-import {fakePrivateKey, fakePublicKey} from './mocha-setup.js'
+import {fakePrivateKey, fakePublicKey} from './mocha-setup'
 const expect = chai.expect
 
 const fakeTokenResponse = {

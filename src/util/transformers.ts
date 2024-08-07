@@ -1,11 +1,11 @@
 import {PublishInput} from 'aws-sdk/clients/sns'
 import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
-import {chooseVideoFormat} from '../lib/vendor/YouTube.js'
+import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
-import {logDebug, logError} from './lambda-helpers.js'
+import {logDebug, logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
-import {NotFoundError, UnexpectedError} from './errors.js'
+import {NotFoundError, UnexpectedError} from './errors'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {

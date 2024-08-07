@@ -1,8 +1,8 @@
 import * as sinon from 'sinon'
-import * as SNS from '../../../lib/vendor/AWS/SNS.js'
+import * as SNS from '../../../lib/vendor/AWS/SNS'
 import * as chai from 'chai'
-import {getFixture, testContext} from '../../../util/mocha-setup.js'
-import {handler} from '../src/index.js'
+import {getFixture, testContext} from '../../../util/mocha-setup'
+import {handler} from '../src/index'
 import {APIGatewayEvent} from 'aws-lambda'
 const expect = chai.expect
 import path from 'path'

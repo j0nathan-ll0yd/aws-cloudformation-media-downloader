@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"allowSyntheticDefaultImports": true,
 		"module": "esnext",
-		"target": "es6",
+		"target": "esnext",
 		"outDir": "./dist",
 		"strict": true,
 		"types": ["node", "mocha"],
@@ -12,7 +12,8 @@
 		"noImplicitAny": true,
 		"noImplicitThis": true,
 		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true
+		"noFallthroughCasesInSwitch": true,
+		"resolveJsonModule": true
 	},
 	"include": ["src/**/*"],
 	"exclude": [

@@ -1,12 +1,12 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers.js'
-import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers.js'
-import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB.js'
-import {deleteDevice, getUserDevices} from '../../../util/shared.js'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors.js'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
+import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers'
+import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {deleteDevice, getUserDevices} from '../../../util/shared'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {Device} from '../../../types/main'
-import {assertIsError} from '../../../util/transformers.js'
-import {createFailedUserDeletionIssue} from '../../../util/github-helpers.js'
+import {assertIsError} from '../../../util/transformers'
+import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)

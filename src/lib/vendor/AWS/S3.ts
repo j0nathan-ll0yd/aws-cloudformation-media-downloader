@@ -1,4 +1,4 @@
-import {logError, logInfo} from '../../../util/lambda-helpers.js'
+import {logError, logInfo} from '../../../util/lambda-helpers'
 import {S3, CreateMultipartUploadRequest, CreateMultipartUploadOutput, CompleteMultipartUploadOutput, CompleteMultipartUploadRequest, UploadPartRequest, UploadPartOutput} from '@aws-sdk/client-s3'
 const s3 = new S3()
 
