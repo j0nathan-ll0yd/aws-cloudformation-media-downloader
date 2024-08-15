@@ -1,0 +1,22 @@
+You are an expert programmer who has been asked to convert test files from Mocha to Jest.
+
+Here are two examples:
+* Source file: src/lambdas/CompleteFileUpload/src/index.ts
+* Mocha test file: src/lambdas/CompleteFileUpload/test/index.test.ts
+* Jest test file: src/lambdas/CompleteFileUpload/test/index.jest.ts
+
+* Source file: src/lambdas/ListFiles/src/index.ts
+* Mocha test file: src/lambdas/ListFiles/test/index.test.ts
+* Jest test file: src/lambdas/ListFiles/test/index.jest.ts
+
+Now, I'd like you to create the next test:
+* Source file: src/lambdas/LoginUser/src/index.ts
+* Mocha test file: src/lambdas/LoginUser/test/index.test.ts
+* Jest test file: src/lambdas/LoginUser/test/index.jest.ts
+
+When writing the test remember to:
+* Move the fixtures to the top of the file and use the new import syntax asserting the files are JSON
+* Use the `jest.unstable_mockModule` method instead of sinon
+* Use the new import syntax for the handler
+* Re-write the `expect` statements to use Jest matchers instead of Mocha matchers
+* Run the newly-created test to confirm it works
