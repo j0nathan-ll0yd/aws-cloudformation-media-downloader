@@ -1,8 +1,8 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {DynamoDBFile} from '../../../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
@@ -52,10 +52,10 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
  *
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
-  const {userId, userStatus} = getUserDetailsFromEvent(event as APIGatewayEvent)
+  const {userId, userStatus} = getUserDetailsFromEvent(event)
   // User has registered; but not logged in; will trigger login
   if (userStatus == UserStatus.Unauthenticated) {
     return lambdaErrorResponse(context, generateUnauthorizedError())

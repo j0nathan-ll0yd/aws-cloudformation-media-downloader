@@ -1,18 +1,19 @@
+
 {
   "resource": "/files",
   "path": "/files",
   "httpMethod": "GET",
   "headers": {
     "Accept-Encoding": "gzip",
-    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjU0NTMwNjYsImV4cCI6MTY2NTQ1MzM2Nn0.qShvlkkudKZUr9KuKP9eUHIkuszV2I9IxTQxshgRd4o",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c",
     "Content-Type": "application/json",
     "Host": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
-    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
-    "Via": "2.0 cb0b891eddf58d69d157d55977c68bce.cloudfront.net (CloudFront)",
-    "X-Amz-Cf-Id": "utN-dqiOQSFxWwS1k6Tkyd6SHdPMhROdA4GmBGFqQcaQwIXSwYFziA==",
-    "X-Amzn-Trace-Id": "Root=1-634e106e-6c270305277d980413be1bb1",
+    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0",
+    "Via": "2.0 f4b741d03f791778aba8bb990c22e3d8.cloudfront.net (CloudFront)",
+    "X-Amz-Cf-Id": "nB3RRqdVxxwGoAt2d9DiluADO7LSuWhdGgI-vBOFWWPHUG0UTsDZqg==",
+    "X-Amzn-Trace-Id": "Root=1-66b3d354-7568c44440ec968a7274b384",
     "X-API-Key": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk",
-    "X-Forwarded-For": "104.1.88.244, 64.252.72.240",
+    "X-Forwarded-For": "104.1.88.244, 64.252.72.248",
     "X-Forwarded-Port": "443",
     "X-Forwarded-Proto": "https"
   },
@@ -21,7 +22,7 @@
       "gzip"
     ],
     "Authorization": [
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjU0NTMwNjYsImV4cCI6MTY2NTQ1MzM2Nn0.qShvlkkudKZUr9KuKP9eUHIkuszV2I9IxTQxshgRd4o"
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c"
     ],
     "Content-Type": [
       "application/json"
@@ -30,22 +31,22 @@
       "naf24gu6t6.execute-api.us-west-2.amazonaws.com"
     ],
     "User-Agent": [
-      "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0"
+      "OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0"
     ],
     "Via": [
-      "2.0 cb0b891eddf58d69d157d55977c68bce.cloudfront.net (CloudFront)"
+      "2.0 f4b741d03f791778aba8bb990c22e3d8.cloudfront.net (CloudFront)"
     ],
     "X-Amz-Cf-Id": [
-      "utN-dqiOQSFxWwS1k6Tkyd6SHdPMhROdA4GmBGFqQcaQwIXSwYFziA=="
+      "nB3RRqdVxxwGoAt2d9DiluADO7LSuWhdGgI-vBOFWWPHUG0UTsDZqg=="
     ],
     "X-Amzn-Trace-Id": [
-      "Root=1-634e106e-6c270305277d980413be1bb1"
+      "Root=1-66b3d354-7568c44440ec968a7274b384"
     ],
     "X-API-Key": [
       "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
     ],
     "X-Forwarded-For": [
-      "104.1.88.244, 64.252.72.240"
+      "104.1.88.244, 64.252.72.248"
     ],
     "X-Forwarded-Port": [
       "443"
@@ -68,19 +69,19 @@
     "resourceId": "3pdr46",
     "authorizer": {
       "principalId": "unknown",
-      "integrationLatency": 1988
+      "integrationLatency": 2078
     },
     "resourcePath": "/files",
     "httpMethod": "GET",
-    "extendedRequestId": "aLeBQFVcvHcFm-A=",
-    "requestTime": "18/Oct/2022:02:33:18 +0000",
+    "extendedRequestId": "cJ31QETpvHcEh8A=",
+    "requestTime": "07/Aug/2024:20:04:36 +0000",
     "path": "/prod/files",
     "accountId": "203465012143",
     "protocol": "HTTP/1.1",
     "stage": "prod",
     "domainPrefix": "naf24gu6t6",
-    "requestTimeEpoch": 1666060398201,
-    "requestId": "8d16d6b4-4011-43cc-aa83-90bdd49f436e",
+    "requestTimeEpoch": 1723061076591,
+    "requestId": "2126f4ef-9fd2-4ffb-8816-c1f889921e9a",
     "identity": {
       "cognitoIdentityPoolId": null,
       "cognitoIdentityId": null,
@@ -89,7 +90,7 @@
       "cognitoAuthenticationType": null,
       "userArn": null,
       "apiKeyId": "meptp2mf8d",
-      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0",
+      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0",
       "accountId": null,
       "caller": null,
       "sourceIp": "104.1.88.244",
@@ -98,6 +99,7 @@
       "user": null
     },
     "domainName": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "deploymentId": "ebluyy",
     "apiId": "naf24gu6t6"
   },
   "body": null,

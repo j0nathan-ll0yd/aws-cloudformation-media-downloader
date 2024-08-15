@@ -65,7 +65,7 @@
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@jest/globals": "^29.7.0",
     "@kie/mock-github": "^2.0.1",
-    "@types/aws-lambda": "^8.10.142",
+    "@types/aws-lambda": "^8.10.143",
     "@types/chai": "^4.3.16",
     "@types/chai-as-promised": "^7.1.8",
     "@types/debug": "^4.1.12",

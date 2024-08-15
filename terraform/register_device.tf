@@ -138,9 +138,9 @@ resource "aws_secretsmanager_secret_version" "ApnsSigningKey" {
 }
 
 variable "apnsSigningKey" {
-  type    = string
-  default = "./../secure/APNS_SANDBOX/signingKey.txt"
-  nullable  = false
+  type     = string
+  default  = "./../secure/APNS_SANDBOX/signingKey.txt"
+  nullable = false
 }
 
 variable "apnsPrivateKeyPath" {
