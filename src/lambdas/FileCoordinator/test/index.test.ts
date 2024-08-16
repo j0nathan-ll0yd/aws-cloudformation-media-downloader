@@ -1,4 +1,4 @@
-import * as sinon from 'sinon'
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
 import * as StepFunctions from '../../../lib/vendor/AWS/StepFunctions'
 import * as chai from 'chai'
@@ -23,18 +23,14 @@ describe('#FileCoordinator', () => {
     scanStub = sinon.stub(DynamoDB, 'scan')
     startExecutionStub = sinon.stub(StepFunctions, 'startExecution')
   })
-  afterEach(() => {
-    scanStub.restore()
-    startExecutionStub.restore()
-  })
-  it('should handle scheduled event (with no events)', async () => {
+  test('should handle scheduled event (with no events)', async () => {
     scanStub.returns(localFixture('scan-204-NoContent.json'))
     startExecutionStub.returns(localFixture('startExecution-200-OK.json'))
     const output = await handler(event, context)
     expect(output.statusCode).to.equal(200)
     expect(startExecutionStub.callCount).to.equal(0)
   })
-  it('should handle scheduled event (with 1 event)', async () => {
+  test('should handle scheduled event (with 1 event)', async () => {
     scanStub.returns(localFixture('scan-200-OK.json'))
     startExecutionStub.returns(localFixture('startExecution-200-OK.json'))
     const output = await handler(event, context)
@@ -42,7 +38,7 @@ describe('#FileCoordinator', () => {
     expect(startExecutionStub.callCount).to.equal(1)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.DocumentClient.scan', async () => {
+    test('AWS.DynamoDB.DocumentClient.scan', async () => {
       scanStub.returns(undefined)
       expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
     })
