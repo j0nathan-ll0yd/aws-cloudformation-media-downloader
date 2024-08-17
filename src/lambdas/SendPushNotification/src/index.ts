@@ -26,7 +26,10 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
   }
   // There will always be 1 result (if the user has a device); but with the possibility of multiple devices
   const userDevice = userResponse.Items[0] as unknown as DynamoDBUserDevice
-  return userDevice.devices.values as string[]
+  logDebug('userDevice', userDevice)
+  const userDeviceSet = userDevice.devices as unknown as Set<string>
+  logDebug('userDevice.devices.values', userDeviceSet.values())
+  return Array.from(userDeviceSet.values())
 }
 
 /**

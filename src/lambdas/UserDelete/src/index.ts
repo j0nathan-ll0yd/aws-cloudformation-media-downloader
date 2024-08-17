@@ -1,10 +1,10 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers'
 import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {deleteDevice, getUserDevices} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {Device} from '../../../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
 import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 
@@ -47,9 +47,9 @@ async function getDevice(deviceId: string): Promise<Device> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
-  const {userId} = getUserDetailsFromEvent(event as APIGatewayEvent)
+  const {userId} = getUserDetailsFromEvent(event)
   if (!userId) {
     // This should never happen; enforced by the API Gateway Authorizer
     const error = new UnexpectedError('No userId found')
@@ -59,9 +59,11 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   try {
     const userDevices = await getUserDevices(process.env.DynamoDBTableUserDevices as string, userId)
     /* istanbul ignore else */
+    logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
       for (const row of userDevices) {
-        const devices = row.devices.values as string[]
+        const devicesSet = row.devices as Set<string>
+        const devices = Array.from(devicesSet.values()) as string[]
         for (const deviceId of devices) {
           const device = await getDevice(deviceId)
           deletableDevices.push(device)
