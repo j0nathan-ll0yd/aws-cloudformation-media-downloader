@@ -1,14 +1,14 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
-import {Device, DeviceRegistrationRequest} from '../../../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceConstraints} from '../../../util/constraints'
 import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {SubscriptionsList} from 'aws-sdk/clients/sns'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 
 /**
@@ -24,7 +24,10 @@ async function createPlatformEndpointFromToken(token: string) {
   }
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
-  logDebug('createPlatformEndpoint =>', params)
+  if (!createPlatformEndpointResponse) {
+    throw new UnexpectedError('AWS failed to respond')
+  }
+  logDebug('createPlatformEndpoint =>', createPlatformEndpointResponse)
   return createPlatformEndpointResponse
 }
 
@@ -95,7 +98,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -105,12 +108,11 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
-
-  const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-  const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
-  const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-  const {userId, userStatus} = getUserDetailsFromEvent(event)
   try {
+    const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
+    const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
+    const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
+    const {userId, userStatus} = getUserDetailsFromEvent(event)
     // Store the device details, regardless of user status
     await upsertDevice(process.env.DynamoDBTableDevices as string, device)
     /* istanbul ignore else */
@@ -134,6 +136,9 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
     } else if (userStatus === UserStatus.Anonymous) {
       // If the user hasn't registered; add them to the unregistered topic
       await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+    } else if (userStatus === UserStatus.Unauthenticated) {
+      // If the user is unauthenticated, then need to authenticate
+      throw new UnauthorizedError('Unauthenticated -- please login')
     }
     return response(context, 200, {endpointArn: device.endpointArn})
   } catch (error) {

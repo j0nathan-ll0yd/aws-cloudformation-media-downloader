@@ -161,7 +161,8 @@ export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBF
  * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
-  //logDebug('axios <= ', options)
+  logDebug('axios <= ', options)
+  logDebug(JSON.stringify(axios))
   logDebug('axios')
   const axiosResponse = await axios(options)
   logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
