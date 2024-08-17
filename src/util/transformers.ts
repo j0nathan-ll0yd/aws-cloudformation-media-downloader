@@ -135,6 +135,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     }
   })
 
+  logDebug('cleanup')
   const date = new Date(Date.parse(publishDate))
   const ext = myVideoFormat.container
   const uploadDate = date.toISOString().substring(0, 10).replace(/-/g, '')

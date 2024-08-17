@@ -1,6 +1,6 @@
 // These are methods that are shared across multiple lambdas
 import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {logDebug} from './lambda-helpers'
+import {logDebug, logInfo} from './lambda-helpers'
 import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
@@ -135,6 +135,7 @@ export async function initiateFileDownload(fileId: string) {
  * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
 export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
+  logInfo('getFileFromMetadata <=', metadata)
   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
   const videoUrl = metadata.formats[0].url
   const options: AxiosRequestConfig = {
