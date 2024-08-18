@@ -25,9 +25,9 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
     return []
   }
   // There will always be 1 result (if the user has a device); but with the possibility of multiple devices
-  const userDevice = userResponse.Items[0] as unknown as DynamoDBUserDevice
+  const userDevice = userResponse.Items[0] as DynamoDBUserDevice
   logDebug('userDevice', userDevice)
-  const userDeviceSet = userDevice.devices as unknown as Set<string>
+  const userDeviceSet = userDevice.devices as Set<string>
   logDebug('userDevice.devices.values', userDeviceSet.values())
   return Array.from(userDeviceSet.values())
 }
@@ -43,7 +43,7 @@ async function getDevice(deviceId: string): Promise<Device> {
   const response = await query(params)
   logDebug('getDevice =>', response)
   if (response && response.Items && response.Items.length > 0) {
-    return response.Items[0] as unknown as Device
+    return response.Items[0] as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }

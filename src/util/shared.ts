@@ -58,7 +58,7 @@ export async function getUserDevices(table: string, userId: string): Promise<Dyn
     throw new UnexpectedError(providerFailureErrorMessage)
   }
 
-  return response.Items as unknown as DynamoDBUserDevice[]
+  return response.Items as DynamoDBUserDevice[]
 }
 
 /**
@@ -108,7 +108,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
     throw new UnexpectedError(providerFailureErrorMessage)
   }
 
-  return scanResponse.Items as unknown as User[]
+  return scanResponse.Items as User[]
 }
 
 /**

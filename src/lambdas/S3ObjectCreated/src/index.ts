@@ -19,7 +19,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
   const getFileByKeyResponse = await scan(getFileByKeyParams)
   logDebug('scan =>', getFileByKeyResponse)
   if (Array.isArray(getFileByKeyResponse.Items) && getFileByKeyResponse.Items.length > 0) {
-    return getFileByKeyResponse.Items[0] as unknown as DynamoDBFile
+    return getFileByKeyResponse.Items[0] as DynamoDBFile
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
@@ -35,7 +35,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
   logDebug('scan <=', getUsersByFileIdParams)
   const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
   logDebug('scan =>', getUsersByFileIdResponse)
-  const userFiles = getUsersByFileIdResponse.Items as unknown as [UserFile]
+  const userFiles = getUsersByFileIdResponse.Items as [UserFile]
   return userFiles.map((userDevice) => userDevice.userId)
 }
 
@@ -51,7 +51,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as unknown as SendMessageRequest
+  } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }

@@ -21,7 +21,7 @@ async function getFilesById(fileIds: string[]): Promise<DynamoDBFile[]> {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
   const table = process.env.DynamoDBTableFiles as string
-  return fileResponse.Responses[table] as unknown as DynamoDBFile[]
+  return fileResponse.Responses[table] as DynamoDBFile[]
 }
 
 /**
@@ -40,7 +40,7 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
   if (userFilesResponse.Items.length === 0) {
     return []
   }
-  const userFiles = userFilesResponse.Items as unknown as DynamoDBFile[]
+  const userFiles = userFilesResponse.Items as DynamoDBFile[]
   return userFiles.map((file) => file.fileId)
 }
 

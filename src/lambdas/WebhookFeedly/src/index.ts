@@ -51,7 +51,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
   const fileResponse = await query(fileParams)
   logDebug('getFile.query =>', fileResponse)
   if (fileResponse.Items && fileResponse.Items.length > 0) {
-    return fileResponse.Items[0] as unknown as DynamoDBFile
+    return fileResponse.Items[0] as DynamoDBFile
   }
   return undefined
 }
@@ -68,7 +68,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as unknown as SendMessageRequest
+  } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)

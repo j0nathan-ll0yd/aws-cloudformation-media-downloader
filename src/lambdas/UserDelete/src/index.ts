@@ -35,7 +35,7 @@ async function getDevice(deviceId: string): Promise<Device> {
   const response = await query(params)
   logDebug('getDevice <=', response)
   if (response && response.Items) {
-    return response.Items[0] as unknown as Device
+    return response.Items[0] as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }

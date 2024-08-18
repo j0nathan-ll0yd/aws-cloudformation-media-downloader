@@ -21,7 +21,7 @@ async function getDevices(): Promise<Device[]> {
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items as unknown as Device[]
+  return scanResponse.Items as Device[]
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -71,7 +71,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
   if (!response || !response.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  const userDevices = response.Items as unknown as DynamoDBUserDevice[]
+  const userDevices = response.Items as DynamoDBUserDevice[]
   return userDevices.map((userDevice) => userDevice.userId)
 }
 
