@@ -7,7 +7,6 @@ import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-hel
 import {registerDeviceConstraints} from '../../../util/constraints'
 import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
-import {SubscriptionsList} from 'aws-sdk/clients/sns'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 
@@ -87,7 +86,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
   }
   const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
     return subscription.Endpoint === endpointArn
-  }) as SubscriptionsList
+  })
   if (!result || result.length === 0 || !result[0].SubscriptionArn) {
     throw new UnexpectedError('Invalid subscription response')
   }

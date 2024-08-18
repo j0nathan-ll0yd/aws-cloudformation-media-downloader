@@ -2,8 +2,8 @@ import {describe, expect, test, jest} from '@jest/globals'
 import {AxiosError, AxiosRequestConfig, AxiosResponse, AxiosResponseHeaders, InternalAxiosRequestConfig} from 'axios'
 import * as crypto from 'crypto'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {partSize} from '../../../util/mocha-setup'
-import {Part} from 'aws-sdk/clients/s3'
+import {partSize} from '../../../util/jest-setup'
+import {Part} from '@aws-sdk/client-s3'
 
 const axiosGetMock = jest.fn()
 jest.unstable_mockModule('axios', () => ({

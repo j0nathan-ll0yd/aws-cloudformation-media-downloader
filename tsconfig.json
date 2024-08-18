@@ -5,7 +5,7 @@
 		"target": "esnext",
 		"outDir": "./dist",
 		"strict": true,
-		"types": ["node", "mocha"],
+		"types": ["node", "jest"],
 		"moduleResolution": "bundler",
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,

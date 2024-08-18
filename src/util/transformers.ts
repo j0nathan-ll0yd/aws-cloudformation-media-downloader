@@ -1,11 +1,10 @@
-import {PublishInput} from 'aws-sdk/clients/sns'
-import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logDebug, logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
 import {NotFoundError, UnexpectedError} from './errors'
+import {PublishInput} from '@aws-sdk/client-sns'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -42,7 +41,7 @@ export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResp
   }
 }
 
-export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string): MessageBodyAttributeMap {
+export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string) {
   return {
     fileId: {
       DataType: 'String',

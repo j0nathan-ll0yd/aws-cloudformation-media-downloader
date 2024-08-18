@@ -5,11 +5,11 @@ import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
-import {Types} from 'aws-sdk/clients/stepfunctions'
 import {startExecution} from '../lib/vendor/AWS/StepFunctions'
 import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
 import {FileStatus} from '../types/enums'
+import {StartExecutionInput} from '@aws-sdk/client-sfn'
 
 /**
  * Disassociates a deviceId from a User
@@ -122,7 +122,7 @@ export async function initiateFileDownload(fileId: string) {
     input: JSON.stringify({fileId}),
     name: new Date().getTime().toString(),
     stateMachineArn: process.env.StateMachineArn
-  } as Types.StartExecutionInput
+  } as StartExecutionInput
   logDebug('startExecution <=', params)
   const output = await startExecution(params)
   logDebug('startExecution =>', output)
