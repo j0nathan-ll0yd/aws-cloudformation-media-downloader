@@ -1,13 +1,11 @@
+import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import * as chai from 'chai'
 import {AwsLambdaFunction, TerraformD} from '../types/terraform'
-const expect = chai.expect
-import Debug from 'debug'
+import {logDebug} from '../util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const log = Debug(__filename.slice(__dirname.length + 1, -3))
 
 // IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE
 const excludedSourceVariables = {
@@ -28,19 +26,19 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const environmentVariablesForFunction: Record<string, string[]> = {}
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
-    log('aws_lambda_function.name', functionName)
+    logDebug('aws_lambda_function.name', functionName)
     const resources = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction[]
     const resource = resources[0]
     const environments = resource.environment
-    log('aws_lambda_function.resource', resource)
+    logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
       environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
-      log(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      logDebug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }
-  log('CloudFront distribution name', cloudFrontDistributionNames)
-  log('Environment variables by function', environmentVariablesForFunction)
-  log('Lambda function names', lambdaFunctionNames)
+  logDebug('CloudFront distribution name', cloudFrontDistributionNames)
+  logDebug('Environment variables by function', environmentVariablesForFunction)
+  logDebug('Lambda function names', lambdaFunctionNames)
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
@@ -50,10 +48,10 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   const functionSource = fs.readFileSync(functionPath, 'utf8')
   let environmentVariablesSource: string[]
   const matches = functionSource.match(sourceCodeRegex)
-  log(`functionSource.match(${sourceCodeRegex})`, matches)
+  logDebug(`functionSource.match(${sourceCodeRegex})`, JSON.stringify(matches))
   if (matches && matches.length > 0) {
     environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
-    log(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+    logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
     return environmentVariablesSource
   } else {
     return []
@@ -62,9 +60,9 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
 
 describe('#Terraform', () => {
   const jsonFilePath = `${__dirname}/../../build/terraform.json`
-  log('Retrieving Terraform plan configuration')
+  logDebug('Retrieving Terraform plan configuration')
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
-  log('JSON file', jsonFile)
+  logDebug('JSON file', jsonFile)
   const terraformPlan = JSON.parse(jsonFile) as TerraformD
   const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
@@ -74,16 +72,12 @@ describe('#Terraform', () => {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]
       environmentVariablesTerraformCount = environmentVariablesTerraform.length
       for (const environmentVariable of environmentVariablesTerraform) {
-        it(`should respect environment variable naming ${environmentVariable}`, async () => {
-          expect(environmentVariable.toUpperCase()).to.not.eql(environmentVariable)
+        test(`should respect environment variable naming ${environmentVariable}`, async () => {
+          expect(environmentVariable.toUpperCase()).not.toBe(environmentVariable)
           if (cloudFrontDistributionNames[functionName]) {
-            expect(environmentVariable)
-              .to.be.a('string')
-              .and.match(/^x-[a-z-]+$/)
+            expect(environmentVariable).toMatch(/^x-[a-z-]+$/)
           } else {
-            expect(environmentVariable)
-              .to.be.a('string')
-              .and.match(/^[A-Z][A-Za-z]*$/)
+            expect(environmentVariable).toMatch(/^[A-Z][A-Za-z]*$/)
           }
         })
       }
@@ -102,9 +96,9 @@ describe('#Terraform', () => {
     }
     const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
     const environmentVariablesSourceCount = environmentVariablesSource.length
-    it(`should match environment variables for lambda ${functionName}`, async () => {
-      expect(environmentVariablesTerraform.sort()).to.eql(environmentVariablesSource.sort())
-      expect(environmentVariablesTerraformCount).to.equal(environmentVariablesSourceCount)
+    test(`should match environment variables for lambda ${functionName}`, async () => {
+      expect(environmentVariablesTerraform.sort()).toEqual(environmentVariablesSource.sort())
+      expect(environmentVariablesTerraformCount).toEqual(environmentVariablesSourceCount)
     })
   }
 })

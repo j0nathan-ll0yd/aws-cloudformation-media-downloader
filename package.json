@@ -45,7 +45,6 @@
     "@octokit/rest": "^21.0.1",
     "apns2": "^11.7.0",
     "axios": "^1.7.2",
-    "debug": "^4.3.6",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.1.0",
     "uuid": "^10.0.0",

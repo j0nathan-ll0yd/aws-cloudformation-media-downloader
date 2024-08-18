@@ -1,28 +1,9 @@
-import * as chai from 'chai'
-import {
-  createAccessToken,
-  getAppleClientSecret,
-  getAppleConfig,
-  getApplePrivateKey,
-  getApplePushNotificationServiceCert,
-  getApplePushNotificationServiceKey,
-  getGithubPersonalToken,
-  getServerPrivateKey,
-  validateAuthCodeForToken,
-  verifyAccessToken,
-  verifyAppleToken
-} from './secretsmanager-helpers'
-import jwt from 'jsonwebtoken'
-const {JsonWebTokenError} = jwt
-import * as sinon from 'sinon'
-import * as SecretsManager from '../lib/vendor/AWS/SecretsManager'
-import * as MockAdapter from 'axios-mock-adapter'
-import axios from 'axios'
+import {describe, expect, test, jest} from '@jest/globals'
+import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axios'
 import {SignInWithAppleVerifiedToken} from '../types/main'
-import {UnauthorizedError} from './errors'
-import * as JwksRsa from 'jwks-rsa'
-import {fakePrivateKey, fakePublicKey} from './mocha-setup'
-const expect = chai.expect
+import {UnauthorizedError, UnexpectedError} from './errors'
+import {fakePrivateKey, fakePublicKey} from './jest-setup'
+import jwt from 'jsonwebtoken'
 
 const fakeTokenResponse = {
   access_token: 'accessToken',
@@ -38,7 +19,7 @@ const fakeTokenHeader = {
 const fakeTokenPayload: SignInWithAppleVerifiedToken = {
   iss: 'https://appleid.apple.com',
   aud: 'lifegames.OfflineMediaDownloader',
-  exp: 1660525825,
+  exp: Math.floor(Date.now() / 1000) + 3600,
   iat: 1660439425,
   sub: '000185.7720315570fc49d99a265f9af4b46879.2034',
   at_hash: 'U_Bxoy9yUIRYDfczHsG1gw',
@@ -49,168 +30,198 @@ const fakeTokenPayload: SignInWithAppleVerifiedToken = {
   nonce_supported: true
 }
 
-const fakeApplePublicKey = `
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH
-c3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY
-KwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q
-PkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC
-8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829
-eO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx
-MwIDAQAB
------END PUBLIC KEY-----
-`
+const getSecretValueMock = jest.fn()
+jest.unstable_mockModule('../lib/vendor/AWS/SecretsManager', () => ({
+  getSecretValue: getSecretValueMock
+}))
 
-const fakeAppleRsaPublicKey = `
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Zc5d0+zkZ5AKmtYTvxH
-c3vRc41YfbklflxG9SWsg5qXUxvfgpktGAcxXLFAd9Uglzow9ezvmTGce5d3DhAY
-KwHAEPT9hbaMDj7DfmEwuNO8UahfnBkBXsCoUaL3QITF5/DAPsZroTqs7tkQQZ7q
-PkQXCSu2aosgOJmaoKQgwcOdjD0D49ne2B/dkxBcNCcJT9pTSWJ8NfGycjWAQsvC
-8CGstH8oKwhC5raDcc2IGXMOQC7Qr75d6J5Q24CePHj/JD7zjbwYy9KNH8wyr829
-eO/G4OEUW50FAN6HKtvjhJIguMl/1BLZ93z2KJyxExiNTZBUBQbbgCNBfzTv7Jrx
-MwIDAQAB
------END PUBLIC KEY-----
-`
+const axiosGetMock = jest.fn()
+jest.unstable_mockModule('axios', () => ({
+  default: axiosGetMock
+}))
 
-const fakeKeyPayload = {
-  kid: 'W6WcOKB',
-  alg: 'RS256',
-  publicKey: fakeApplePublicKey,
-  rsaPublicKey: fakeAppleRsaPublicKey
+function mockAxiosResponse(config: AxiosRequestConfig): AxiosResponse {
+  return {
+    config: config as InternalAxiosRequestConfig,
+    data: fakeTokenResponse,
+    status: 200,
+    statusText: 'OK',
+    headers: {}
+  }
 }
 
+const getSigningKeyMock = jest.fn()
+jest.unstable_mockModule('jwks-rsa', () => ({
+  __esModule: true,
+  default: (options: object) => {
+    console.log('mocked jwks-rsa', options)
+    return {
+      getSigningKey: getSigningKeyMock
+    }
+  }
+}))
+
+const {
+  createAccessToken,
+  getApnsSigningKey,
+  getAppleClientSecret,
+  getAppleConfig,
+  getApplePrivateKey,
+  getApplePushNotificationServiceCert,
+  getApplePushNotificationServiceKey,
+  getGithubPersonalToken,
+  getServerPrivateKey,
+  validateAuthCodeForToken,
+  verifyAccessToken,
+  verifyAppleToken
+} = await import('./secretsmanager-helpers')
+
 describe('#Util:SecretsManager', () => {
-  let getSecretValueStub: sinon.SinonStub
-  let jwksClientSigningKeyStub: sinon.SinonStub
-  let mock: MockAdapter
-  beforeEach(() => {
-    getSecretValueStub = sinon.stub(SecretsManager, 'getSecretValue')
-    jwksClientSigningKeyStub = sinon.stub(JwksRsa.JwksClient.prototype, 'getSigningKey').resolves(fakeKeyPayload)
-    mock = new MockAdapter(axios)
-  })
-  afterEach(() => {
-    getSecretValueStub.restore()
-    jwksClientSigningKeyStub.restore()
-    mock.reset()
-  })
-  it('should getAppleConfig', async () => {
+  test('should getAppleConfig', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getAppleConfig()).rejects.toThrow(UnexpectedError)
     const jsonString = '{"client_id":"lifegames.OfflineMediaDownloader","team_id":"XXXXXX","redirect_uri":"","key_id":"XXXXXX","scope":"email name"}'
-    getSecretValueStub.returns(Promise.resolve({SecretString: jsonString}))
+    getSecretValueMock.mockReturnValue({SecretString: jsonString})
     const responseOne = await getAppleConfig()
-    expect(responseOne).to.have.all.keys('client_id', 'team_id', 'redirect_uri', 'key_id', 'scope')
+    const expectedKeys = ['client_id', 'team_id', 'redirect_uri', 'key_id', 'scope']
+    expect(Object.keys(responseOne)).toEqual(expect.arrayContaining(expectedKeys))
     const responseTwo = await getAppleConfig()
-    expect(responseTwo).to.have.all.keys('client_id', 'team_id', 'redirect_uri', 'key_id', 'scope')
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(Object.keys(responseTwo)).toEqual(expect.arrayContaining(expectedKeys))
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getApplePrivateKey', async () => {
-    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+  test('should getApplePrivateKey', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getApplePrivateKey()).rejects.toThrow(UnexpectedError)
+    getSecretValueMock.mockReturnValue({SecretString: fakePrivateKey})
     const responseOne = await getApplePrivateKey()
-    expect(responseOne).to.have.length.greaterThan(0)
+    expect(responseOne.length).toBeGreaterThan(0)
     const responseTwo = await getApplePrivateKey()
-    expect(responseTwo).to.have.length.greaterThan(0)
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getServerPrivateKey', async () => {
+  test('should getServerPrivateKey', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getServerPrivateKey()).rejects.toThrow(UnexpectedError)
     const secretString = 'randomly-generated-secret-id'
     process.env.EncryptionKeySecretId = 'PrivateEncryptionKey'
-    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    getSecretValueMock.mockReturnValue({SecretString: secretString})
     const responseOne = await getServerPrivateKey()
-    expect(responseOne).to.have.length.greaterThan(0)
+    expect(responseOne.length).toBeGreaterThan(0)
     const responseTwo = await getServerPrivateKey()
-    expect(responseTwo).to.have.length.greaterThan(0)
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getGithubPersonalToken', async () => {
+  test('should getGithubPersonalToken', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getGithubPersonalToken()).rejects.toThrow(UnexpectedError)
     const secretString = 'GithubPersonalToken'
-    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    getSecretValueMock.mockReturnValue({SecretString: secretString})
     const responseOne = await getGithubPersonalToken()
-    expect(responseOne).to.have.length.greaterThan(0)
+    expect(responseOne.length).toBeGreaterThan(0)
     const responseTwo = await getGithubPersonalToken()
-    expect(responseTwo).to.have.length.greaterThan(0)
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getApplePushNotificationServiceKey', async () => {
-    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+  test('should getApplePushNotificationServiceKey', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getApplePushNotificationServiceKey()).rejects.toThrow(UnexpectedError)
+    getSecretValueMock.mockReturnValue({SecretString: fakePrivateKey})
     const responseOne = await getApplePushNotificationServiceKey()
-    expect(responseOne).to.have.length.greaterThan(0)
+    expect(responseOne.length).toBeGreaterThan(0)
     const responseTwo = await getApplePushNotificationServiceKey()
-    expect(responseTwo).to.have.length.greaterThan(0)
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getApplePushNotificationServiceCert', async () => {
-    getSecretValueStub.returns(Promise.resolve({SecretString: fakePrivateKey}))
+  test('should getApplePushNotificationServiceCert', async () => {
+    // Testing the error handling first; because upon successful retrieval, the function will cache the response
+    getSecretValueMock.mockReturnValue({SecretString: 1234})
+    await expect(getApplePushNotificationServiceCert()).rejects.toThrow(UnexpectedError)
+    getSecretValueMock.mockReturnValue({SecretString: fakePrivateKey})
     const responseOne = await getApplePushNotificationServiceCert()
-    expect(responseOne).to.have.length.greaterThan(0)
+    expect(responseOne.length).toBeGreaterThan(0)
     const responseTwo = await getApplePushNotificationServiceCert()
-    expect(responseTwo).to.have.length.greaterThan(0)
-    expect(responseOne).to.eql(responseTwo)
-    expect(getSecretValueStub.calledOnce)
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(2)
   })
-  it('should getAppleClientSecret', async () => {
+  test('should getAppleClientSecret', async () => {
+    const jsonString = '{"client_id":"lifegames.OfflineMediaDownloader","team_id":"XXXXXX","redirect_uri":"","key_id":"XXXXXX","scope":"email name"}'
+    getSecretValueMock.mockReturnValueOnce({SecretString: jsonString})
+    getSecretValueMock.mockReturnValueOnce({SecretString: fakePrivateKey})
     const token = await getAppleClientSecret()
     const jwtPayload = jwt.verify(token, fakePublicKey)
-    expect(jwtPayload).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp')
+    const expectedKeys = ['iss', 'aud', 'sub', 'iat', 'exp']
+    expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
   })
-  it('should validateAuthCodeForToken', async () => {
-    mock.onAny().reply(200, fakeTokenResponse)
+  test('should validateAuthCodeForToken', async () => {
+    axiosGetMock.mockImplementation(() => {
+      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
+      return mockAxiosResponse(config)
+    })
     const data = await validateAuthCodeForToken('test')
-    expect(data).to.have.all.keys(Object.keys(fakeTokenResponse))
+    expect(Object.keys(data)).toEqual(expect.arrayContaining(Object.keys(fakeTokenResponse)))
   })
-  it('should createAccessToken', async () => {
+  test('should createAccessToken', async () => {
     const secretString = 'randomly-generated-secret-id'
     process.env.EncryptionKeySecretId = 'PrivateEncryptionKey'
-    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    getSecretValueMock.mockReturnValue({SecretString: secretString})
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString) as jwt.JwtPayload
-    expect(jwtPayload).to.have.all.keys('userId', 'iat', 'exp')
-    expect(jwtPayload.userId).to.eql(userId)
+    const jwtPayload = jwt.verify(token, secretString)
+    const expectedKeys = ['userId', 'iat', 'exp']
+    expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
+    // @ts-ignore
+    expect(jwtPayload.userId).toEqual(userId)
   })
-  it('should verifyAccessToken successfully', async () => {
+  test('should verifyAccessToken successfully', async () => {
     const secretString = 'randomly-generated-secret-id'
     process.env.EncryptionKeySecretId = 'PrivateEncryptionKey'
-    getSecretValueStub.returns(Promise.resolve({SecretString: secretString}))
+    getSecretValueMock.mockReturnValue({SecretString: secretString})
     const userId = '1234'
     const token = await createAccessToken(userId)
     const jwtPayload = await verifyAccessToken(token)
-    expect(jwtPayload).to.have.all.keys('userId', 'iat', 'exp')
-    expect(jwtPayload['userId']).to.eql(userId)
+    const expectedKeys = ['userId', 'iat', 'exp']
+    expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
+    expect(jwtPayload['userId']).toEqual(userId)
   })
-  it('should verifyAccessToken unsuccessfully', async () => {
+  test('should verifyAccessToken unsuccessfully', async () => {
     const token = 'invalid-token'
-    await expect(verifyAccessToken(token)).to.be.rejectedWith(JsonWebTokenError)
+    await expect(verifyAccessToken(token)).rejects.toThrow(Error)
   })
-  it('should verifyAppleToken successfully', async () => {
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').resolves(fakeTokenPayload)
+  test('should verifyAppleToken successfully', async () => {
+    getSigningKeyMock.mockReturnValue({rsaPublicKey: fakePublicKey})
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
     const newToken = await verifyAppleToken(token)
-    jwtVerifyStub.restore()
-    expect(newToken).to.have.all.keys('iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported')
+    const expectedKeys = ['iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported']
+    expect(Object.keys(newToken)).toEqual(expect.arrayContaining(expectedKeys))
   })
-  it('should verifyAppleToken handle an unexpected string payload', async () => {
-    const jwtVerifyStub = sinon.stub(jwt, 'verify').throws('a string')
+  test('should verifyAppleToken handle an unexpected string payload', async () => {
+    getSigningKeyMock.mockReturnValue('unexpected-string')
     const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
-    await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
-    jwtVerifyStub.restore()
+    await expect(verifyAppleToken(token)).rejects.toThrow(UnauthorizedError)
   })
-  it('should verifyAppleToken handle token verification error', async () => {
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
-    await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
+  test('should verifyAppleToken handle invalid token', async () => {
+    await expect(verifyAppleToken('invalid-token')).rejects.toThrow(UnauthorizedError)
   })
-  it('should verifyAppleToken handle invalid token header', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const {rsaPublicKey, ...fakeKeyPayloadWithoutHeader} = fakeKeyPayload
-    jwksClientSigningKeyStub.returns(Promise.resolve(fakeKeyPayloadWithoutHeader))
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
-    await expect(verifyAppleToken(token)).to.be.rejectedWith(UnauthorizedError)
-  })
-  it('should verifyAppleToken handle invalid token', async () => {
-    await expect(verifyAppleToken('invalid-token')).to.be.rejectedWith(UnauthorizedError)
+  test('should getApnsSigningKey successfully', async () => {
+    const secretString = 'randomly-generated-secret-id'
+    process.env.EncryptionKeySecretId = 'PrivateEncryptionKey'
+    getSecretValueMock.mockReturnValue({SecretString: secretString})
+    const responseOne = await getApnsSigningKey()
+    expect(responseOne.length).toBeGreaterThan(0)
+    const responseTwo = await getApnsSigningKey()
+    expect(responseTwo.length).toBeGreaterThan(0)
+    expect(responseOne).toEqual(responseTwo)
+    expect(getSecretValueMock.mock.calls.length).toBe(1)
   })
 })

@@ -1,15 +1,10 @@
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {CloudFrontRequestEvent} from 'aws-lambda'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import * as chai from 'chai'
-import {handler} from '../src/index'
+import {testContext} from '../../../util/jest-setup'
 import * as crypto from 'crypto'
-import * as sinon from 'sinon'
-const expect = chai.expect
-import path from 'path'
-import {fileURLToPath} from 'url'
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const localFixture = getFixture.bind(null, __dirname)
+
+const {default: eventMock} = await import('./fixtures/CloudFrontRequestEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#CloudfrontMiddleware', () => {
   const context = testContext
@@ -18,49 +13,46 @@ describe('#CloudfrontMiddleware', () => {
   const apiKeyValue = crypto.randomBytes(24).toString('hex')
   let event: CloudFrontRequestEvent
   beforeEach(() => {
-    event = localFixture('CloudFrontRequestEvent.json') as CloudFrontRequestEvent
+    event = JSON.parse(JSON.stringify(eventMock)) as CloudFrontRequestEvent
   })
-  afterEach(() => {
-    sinon.restore()
-  })
-  it('should handle a request with (header: present, querystring: blank)', async () => {
-    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+  test('should handle a request with (header: present, querystring: blank)', async () => {
+    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
-    expect(output.headers).to.have.property('x-api-key')
-    expect(spyURLParamsHas.callCount).to.eql(0)
-    expect(spyURLParamsGet.callCount).to.eql(0)
+    expect(output.headers).toHaveProperty('x-api-key')
+    expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
+    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
-  it('should handle a request with (header: blank, querystring: blank)', async () => {
-    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+  test('should handle a request with (header: blank, querystring: blank)', async () => {
+    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
-    expect(output.headers).to.not.have.property('x-api-key')
-    expect(spyURLParamsHas.callCount).to.eql(1)
-    expect(spyURLParamsGet.callCount).to.eql(0)
+    expect(output.headers!['x-api-key']).toBeUndefined()
+    expect(spyURLParamsHas).toHaveBeenCalledTimes(1)
+    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
-  it('should handle a request with (header: blank, querystring: present)', async () => {
-    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+  test('should handle a request with (header: blank, querystring: present)', async () => {
+    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
-    expect(output.headers).to.have.property('x-api-key')
-    expect(spyURLParamsHas.callCount).to.eql(1)
-    expect(spyURLParamsGet.callCount).to.eql(1)
+    expect(output.headers).toHaveProperty('x-api-key')
+    expect(spyURLParamsHas).toHaveBeenCalledTimes(1)
+    expect(spyURLParamsGet).toHaveBeenCalledTimes(1)
   })
-  it('should handle a request with (header: present, querystring: present)', async () => {
-    const spyURLParamsHas = sinon.spy(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = sinon.spy(URLSearchParams.prototype, 'get')
+  test('should handle a request with (header: present, querystring: present)', async () => {
+    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
-    expect(output.headers).to.have.property('x-api-key')
-    expect(spyURLParamsHas.callCount).to.eql(0)
-    expect(spyURLParamsGet.callCount).to.eql(0)
+    expect(output.headers).toHaveProperty('x-api-key')
+    expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
+    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
 })

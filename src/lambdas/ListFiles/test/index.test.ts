@@ -1,93 +1,102 @@
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src/index'
-import * as chai from 'chai'
-import {APIGatewayProxyEvent} from 'aws-lambda'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {UnauthorizedError, UnexpectedError} from '../../../util/errors'
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-const expect = chai.expect
-import path from 'path'
-import {fileURLToPath} from 'url'
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const localFixture = getFixture.bind(null, __dirname)
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+
 const fakeUserId = uuidv4()
+const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+if (Array.isArray(queryStubReturnObject.Items)) {
+  queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
+}
+
+const batchGetMock = jest.fn()
+const queryMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  batchGet: batchGetMock,
+  query: queryMock
+}))
+
+const {handler} = await import('./../src')
 
 describe('#ListFiles', () => {
   const context = testContext
-  let event: APIGatewayProxyEvent
-  let batchGetStub: sinon.SinonStub
-  let queryStub: sinon.SinonStub
-  const queryStubReturnObject = localFixture('query-200-OK.json') as DocumentClient.QueryOutput
-  if (Array.isArray(queryStubReturnObject.Items)) {
-    queryStubReturnObject.Items[0].fileId = new Set(queryStubReturnObject.Items[0].fileId)
-  }
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    event = localFixture('APIGatewayEvent.json') as APIGatewayProxyEvent
-    batchGetStub = sinon.stub(DynamoDB, 'batchGet')
-    queryStub = sinon.stub(DynamoDB, 'query')
+    event = JSON.parse(JSON.stringify(eventMock))
     process.env.DynamoDBTableFiles = 'Files'
     process.env.DynamoDBTableUserFiles = 'UserFiles'
   })
-  afterEach(() => {
-    event = localFixture('APIGatewayEvent.json') as APIGatewayProxyEvent
-    batchGetStub.restore()
-    queryStub.restore()
-  })
-  it('(anonymous) should list only the default file', async () => {
+  test('(anonymous) should list only the default file', async () => {
     delete event.headers['X-User-Id']
     delete event.headers['Authorization']
-    batchGetStub.returns(localFixture('batchGet-200-OK.json'))
-    queryStub.returns(queryStubReturnObject)
+    const {default: batchGetResponse} = await import('./fixtures/batchGet-200-OK.json', {assert: {type: 'json'}})
+    batchGetMock.mockReturnValue(batchGetResponse)
+    queryMock.mockReturnValue(queryStubReturnObject)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body).to.have.all.keys('keyCount', 'contents')
-    expect(body.body.keyCount).to.equal(1)
-    expect(body.body.contents[0]).to.have.property('authorName').that.is.a('string')
-    expect(body.body.contents[0].authorName).to.equal('Lifegames')
+    expect(Object.keys(body.body)).toEqual(expect.arrayContaining(['keyCount', 'contents']))
+    expect(body.body.keyCount).toEqual(1)
+    expect(body.body.contents[0]).toHaveProperty('authorName')
+    expect(body.body.contents[0].authorName).toEqual('Lifegames')
   })
-  it('(authenticated) should return users files', async () => {
+  test('(authenticated) should return users files', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    batchGetStub.returns(localFixture('batchGet-200-Filtered.json'))
-    queryStub.returns(queryStubReturnObject)
+    const {default: batchGetResponse} = await import('./fixtures/batchGet-200-Filtered.json', {assert: {type: 'json'}})
+    batchGetMock.mockReturnValue(batchGetResponse)
+    queryMock.mockReturnValue(queryStubReturnObject)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body).to.have.all.keys('keyCount', 'contents')
-    expect(body.body.keyCount).to.equal(1)
+    expect(Object.keys(body.body)).toEqual(expect.arrayContaining(['keyCount', 'contents']))
+    expect(body.body.keyCount).toEqual(1)
   })
-  it('(authenticated) should gracefully handle an empty list', async () => {
+  test('(authenticated) should gracefully handle an empty list', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    batchGetStub.returns(localFixture('batchGet-200-Empty.json'))
-    queryStub.returns(localFixture('query-200-Empty.json'))
+    const {default: batchGetResponse} = await import('./fixtures/batchGet-200-Empty.json', {assert: {type: 'json'}})
+    batchGetMock.mockReturnValue(batchGetResponse)
+    const {default: queryResponse} = await import('./fixtures/query-200-Empty.json', {assert: {type: 'json'}})
+    queryMock.mockReturnValue(queryResponse)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body).to.have.all.keys('keyCount', 'contents')
-    expect(body.body.keyCount).to.equal(0)
+    expect(Object.keys(body.body)).toEqual(expect.arrayContaining(['keyCount', 'contents']))
+    expect(body.body.keyCount).toEqual(0)
   })
-  it('should fail gracefully if query fails', async () => {
-    queryStub.rejects('Error')
-    expect(handler(event, context)).to.be.rejectedWith(Error)
+  test('should fail gracefully if query fails', async () => {
+    queryMock.mockImplementation(() => {
+      throw new Error()
+    })
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(401)
+    const body = JSON.parse(output.body)
+    expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
   })
-  it('(unauthenticated) should throw an error as token is invalid', async () => {
+  test('(unauthenticated) should throw an error as token is invalid', async () => {
     delete event.headers['X-User-Id']
-    expect(handler(event, context)).to.be.rejectedWith(UnauthorizedError)
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(401)
+    const body = JSON.parse(output.body)
+    expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.DocumentClient.query', async () => {
+    test('AWS.DynamoDB.DocumentClient.query', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryStub.returns(undefined)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+      queryMock.mockReturnValue(undefined)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
     })
-    it('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+    test('AWS.DynamoDB.DocumentClient.batchGet', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryStub.returns(queryStubReturnObject)
-      batchGetStub.returns(undefined)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+      queryMock.mockReturnValue(queryStubReturnObject)
+      batchGetMock.mockReturnValue(undefined)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
     })
   })
 })

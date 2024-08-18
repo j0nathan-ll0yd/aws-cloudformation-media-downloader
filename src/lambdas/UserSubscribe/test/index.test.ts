@@ -1,54 +1,50 @@
-import * as sinon from 'sinon'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
-import * as chai from 'chai'
-import {getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src/index'
-import {APIGatewayEvent} from 'aws-lambda'
-const expect = chai.expect
-import path from 'path'
-import {fileURLToPath} from 'url'
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const localFixture = getFixture.bind(null, __dirname)
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {testContext} from '../../../util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+
+const subscribeMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn(),
+  subscribe: subscribeMock
+}))
+
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#UserSubscribe', () => {
   const context = testContext
-  let subscribeStub: sinon.SinonStub
-  let event: APIGatewayEvent
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    subscribeStub = sinon.stub(SNS, 'subscribe')
-    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+    event = JSON.parse(JSON.stringify(eventMock))
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
   })
-  afterEach(() => {
-    subscribeStub.restore()
-  })
-  it('should create a new remote endpoint (for the mobile phone)', async () => {
-    subscribeStub.returns(localFixture('subscribe-200-OK.json'))
+  test('should create a new remote endpoint (for the mobile phone)', async () => {
+    const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
+    subscribeMock.mockReturnValue(subscribeResponse)
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
-    expect(output.statusCode).to.equal(201)
-    expect(body.body).to.have.property('subscriptionArn')
+    expect(output.statusCode).toEqual(201)
+    expect(body.body).toHaveProperty('subscriptionArn')
   })
-  it('should return an error if APNS is not configured', async () => {
+  test('should return an error if APNS is not configured', async () => {
     process.env.PlatformApplicationArn = ''
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(503)
+    expect(output.statusCode).toEqual(503)
   })
-  it('should handle an invalid request (no token)', async () => {
+  test('should handle an invalid request (no token)', async () => {
     event.body = '{}'
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(400)
+    expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).to.have.property('endpointArn')
-    expect(body.error.message.endpointArn[0]).to.have.string('is required')
+    expect(body.error.message).toHaveProperty('endpointArn')
+    expect(body.error.message.endpointArn[0]).toEqual('endpointArn is required')
   })
-  it('should handle an invalid request (no topicArn)', async () => {
+  test('should handle an invalid request (no topicArn)', async () => {
     event.body = '{}'
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(400)
+    expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).to.have.property('topicArn')
-    expect(body.error.message.topicArn[0]).to.have.string('is required')
+    expect(body.error.message).toHaveProperty('topicArn')
+    expect(body.error.message.topicArn[0]).toEqual('topicArn is required')
   })
 })
