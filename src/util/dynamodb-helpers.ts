@@ -2,6 +2,7 @@ import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
 import {FileStatus} from '../types/enums'
 import {BatchGetCommand, DeleteCommand, PutCommand, QueryCommand, ScanCommand, UpdateCommand} from '@aws-sdk/lib-dynamodb'
 
+// TODO: Refactor this to return COMMANDS instead of inputs, simplifying the DynamoDB client calls to just 'send'
 function transformObjectToDynamoUpdateQuery(item: object) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames: Record<string, string> = {}
