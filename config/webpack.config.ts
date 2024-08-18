@@ -13,7 +13,7 @@ const config: webpack.Configuration = {
     console.log(filePath)
     filePath = './' + filePath
     const functionName = filePath.split(/\//)[3]
-    acc[functionName] = './../' + filePath
+    acc[functionName] = './' + filePath
     return acc
   }, {}),
   externals: {
@@ -32,7 +32,7 @@ const config: webpack.Configuration = {
   },
   output: {
     libraryTarget: 'umd',
-    path: path.resolve(__dirname, 'build/lambdas'),
+    path: path.resolve(__dirname, './../build/lambdas'),
     filename: '[name].js'
   },
   optimization: {

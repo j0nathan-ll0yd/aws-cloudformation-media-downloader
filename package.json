@@ -16,7 +16,7 @@
     "lint": "./node_modules/.bin/eslint -c ./eslint.config.mjs .",
     "lint-fix": "./node_modules/.bin/eslint -c ./eslint.config.mjs . --fix",
     "plop": "./node_modules/plop/bin/plop.js",
-    "test": "node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --config config/jest.config.mjs",
+    "test": "node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.config.mjs",
     "test-full": "npm run build-dependencies && npm run build && npm run test",
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
