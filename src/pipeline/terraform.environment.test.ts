@@ -15,27 +15,6 @@ const excludedSourceVariables = {
   t: 1
 }
 
-function listAllFiles(dirPath: string, arrayOfFiles: string[] = []) {
-  const files = fs.readdirSync(dirPath)
-
-  files.forEach((file) => {
-    const fullPath = path.join(dirPath, file)
-    if (fs.statSync(fullPath).isDirectory()) {
-      arrayOfFiles = listAllFiles(fullPath, arrayOfFiles)
-    } else {
-      arrayOfFiles.push(fullPath)
-    }
-  })
-
-  return arrayOfFiles
-}
-
-console.log('__dirname', __dirname)
-console.log('__filename', __filename)
-
-const allFiles = listAllFiles(__dirname)
-console.log(allFiles)
-
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
     return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)

@@ -13,7 +13,7 @@ const config: webpack.Configuration = {
     console.log(filePath)
     filePath = './' + filePath
     const functionName = filePath.split(/\//)[3]
-    acc[functionName] = './' + filePath
+    acc[functionName] = './../' + filePath
     return acc
   }, {}),
   externals: {
@@ -25,7 +25,6 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-sns': '@aws-sdk/client-sns',
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
-    '@aws-sdk/smithy-client': '@aws-sdk/smithy-client',
     '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
   },
   resolve: {
