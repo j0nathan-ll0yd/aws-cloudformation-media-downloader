@@ -1,5 +1,5 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {UserSubscribe} from '../../../types/main'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {userSubscribeConstraints} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
@@ -13,7 +13,7 @@ import {subscribeEndpointToTopic} from '../../../util/shared'
  *
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {

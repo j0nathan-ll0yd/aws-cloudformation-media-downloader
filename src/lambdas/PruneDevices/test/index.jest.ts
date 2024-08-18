@@ -76,7 +76,6 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
 const sendMock = jest.fn()
 class MockApnsClient {
   send() {
-    console.log('MOCKED')
     return sendMock()
   }
 }

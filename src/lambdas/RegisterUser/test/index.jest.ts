@@ -5,7 +5,7 @@ const {default: validateAuthResponse} = await import('./fixtures/validateAuthCod
 const {default: verifyAppleResponse} = await import('./fixtures/verifyAppleToken-200-OK.json', {assert: {type: 'json'}})
 
 jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  createAccessToken: jest.fn().mockReturnValue(Promise.resolve(fakeJWT)),
+  createAccessToken: jest.fn().mockReturnValue(fakeJWT),
   validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse),
   verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
 }))
