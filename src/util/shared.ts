@@ -57,7 +57,7 @@ export async function getUserDevices(table: string, userId: string): Promise<Dyn
   if (!response || !response.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
   return response.Items as unknown as DynamoDBUserDevice[]
 }
 
@@ -107,7 +107,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
   return scanResponse.Items as unknown as User[]
 }
 

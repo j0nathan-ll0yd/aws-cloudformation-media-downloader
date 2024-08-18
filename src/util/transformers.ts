@@ -14,6 +14,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
     logDebug('getHighestVideoFormatFromVideoInfo', highestVideoFormat)
     return highestVideoFormat
   } catch (error) {
+    logError('getHighestVideoFormatFromVideoInfo', error)
     throw new NotFoundError('Unable to find acceptable video format')
   }
 }

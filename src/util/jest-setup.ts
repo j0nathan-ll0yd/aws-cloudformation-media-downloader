@@ -1,3 +1,5 @@
+import {beforeAll, afterAll, jest} from '@jest/globals'
+
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
 export const testContext = {
@@ -40,3 +42,13 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF
 jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
 -----END PUBLIC KEY-----
 `
+
+const originalLog = console.log
+
+beforeAll(() => {
+  console.log = jest.fn()
+})
+
+afterAll(() => {
+  console.log = originalLog
+})

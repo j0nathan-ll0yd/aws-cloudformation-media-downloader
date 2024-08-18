@@ -1,9 +1,7 @@
-import {APIGatewayEventDefaultAuthorizerContext, APIGatewayEventLambdaAuthorizerContext, APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEventBase, SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
+import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {Author, videoFormat} from 'ytdl-core'
-import {Part} from 'aws-sdk/clients/s3'
 import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {FileStatus, UserStatus} from './enums'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventMultiValueHeaders,
@@ -12,7 +10,8 @@ import {
   APIGatewayProxyEventQueryStringParameters,
   APIGatewayProxyEventStageVariables
 } from 'aws-lambda/trigger/api-gateway-proxy'
-import {APIGatewayEventClientCertificate, APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
+import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
+import {Part} from '@aws-sdk/client-s3'
 
 interface Metadata {
   videoId: string
@@ -84,7 +83,7 @@ interface Device extends DeviceRegistrationRequest {
 
 interface DynamoDBUserDevice {
   userId: string
-  devices: DocumentClient.DynamoDbSet | Set<string>
+  devices: Set<string>
 }
 
 interface DynamoDBFile {

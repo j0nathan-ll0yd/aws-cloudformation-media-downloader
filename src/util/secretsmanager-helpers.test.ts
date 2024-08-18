@@ -1,6 +1,6 @@
 import {describe, expect, test, jest} from '@jest/globals'
 import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axios'
-import {SignInWithAppleVerifiedToken} from '../types/main'
+import {ServerVerifiedToken, SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError, UnexpectedError} from './errors'
 import {fakePrivateKey, fakePublicKey} from './jest-setup'
 import jwt from 'jsonwebtoken'
@@ -177,10 +177,9 @@ describe('#Util:SecretsManager', () => {
     getSecretValueMock.mockReturnValue({SecretString: secretString})
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString)
+    const jwtPayload = jwt.verify(token, secretString) as ServerVerifiedToken
     const expectedKeys = ['userId', 'iat', 'exp']
     expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
-    // @ts-ignore
     expect(jwtPayload.userId).toEqual(userId)
   })
   test('should verifyAccessToken successfully', async () => {
