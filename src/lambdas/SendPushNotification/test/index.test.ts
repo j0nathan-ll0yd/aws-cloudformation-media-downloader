@@ -1,23 +1,13 @@
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
-import {getFixture} from '../../../util/mocha-setup'
-import * as chai from 'chai'
-import {handler} from '../src'
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
 import {UnexpectedError} from '../../../util/errors'
 import {v4 as uuidv4} from 'uuid'
-import * as AWS from 'aws-sdk'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-
-const docClient = new AWS.DynamoDB.DocumentClient()
 const getUserDevicesByUserIdResponse = {
   Items: [
     {
-      devices: docClient.createSet([fakeDeviceId]),
+      devices: new Set([fakeDeviceId]),
       userId: fakeUserId
     }
   ],
@@ -40,52 +30,60 @@ const getDeviceResponse = {
   ScannedCount: 1
 }
 
+const queryMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  query: queryMock
+}))
+
+const publishSnsEventMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
+  publishSnsEvent: publishSnsEventMock
+}))
+
+const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
+
 describe('#SendPushNotification', () => {
   let event: SQSEvent
   beforeEach(() => {
-    event = localFixture('SQSEvent.json') as SQSEvent
+    event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
-  afterEach(() => {
-    sinon.restore()
-  })
-  it('should send a notification for each user device', async () => {
-    const queryStub = sinon.stub(DynamoDB, 'query')
-    queryStub.onCall(0).resolves(getUserDevicesByUserIdResponse)
-    queryStub.onCall(1).resolves(getDeviceResponse)
-    sinon.stub(SNS, 'publishSnsEvent').resolves(localFixture('publishSnsEvent-200-OK.json'))
+  test('should send a notification for each user device', async () => {
+    queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
+    queryMock.mockReturnValueOnce(getDeviceResponse)
+    const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
+    publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event)
-    // tslint:disable-next-line:no-unused-expression
-    expect(notificationsSent).to.be.undefined
+    expect(notificationsSent).toBeUndefined()
   })
-  it('should exit gracefully if no devices exist', async () => {
-    const publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
-    sinon.stub(DynamoDB, 'query').resolves({
+  test('should exit gracefully if no devices exist', async () => {
+    queryMock.mockReturnValue({
       Items: [],
       Count: 0,
       ScannedCount: 0
     })
     const notificationsSent = await handler(event)
-    expect(notificationsSent).to.be.undefined
-    expect(publishSnsEventStub.notCalled)
+    expect(notificationsSent).toBeUndefined()
+    expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
-  it('should exit if its a different notification type', async () => {
-    const publishSnsEventStub = sinon.stub(SNS, 'publishSnsEvent')
+  test('should exit if its a different notification type', async () => {
     const modifiedEvent = event
     modifiedEvent.Records[0].body = 'OtherNotification'
     const notificationsSent = await handler(modifiedEvent)
-    expect(notificationsSent).to.be.undefined
-    expect(publishSnsEventStub.notCalled)
+    expect(notificationsSent).toBeUndefined()
+    expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
-      sinon.stub(DynamoDB, 'query').resolves(undefined)
-      expect(handler(event)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
+      queryMock.mockReturnValue(undefined)
+      await expect(handler(event)).rejects.toThrow(UnexpectedError)
     })
-    it('AWS.DynamoDB.DocumentClient.query.getDevice = ', async () => {
-      const queryStub = sinon.stub(DynamoDB, 'query')
-      queryStub.onCall(0).resolves(getUserDevicesByUserIdResponse)
-      queryStub.onCall(1).resolves(undefined)
-      expect(handler(event)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.DocumentClient.query.getDevice', async () => {
+      queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
+      queryMock.mockReturnValueOnce(undefined)
+      const notificationsSent = await handler(event)
+      expect(notificationsSent).toBeUndefined()
+      expect(publishSnsEventMock.mock.calls.length).toBe(0)
     })
   })
 })

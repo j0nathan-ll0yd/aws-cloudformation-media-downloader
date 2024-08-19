@@ -1,17 +1,8 @@
+import {describe, expect, test, jest} from '@jest/globals'
 import {ScheduledEvent} from 'aws-lambda'
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import {handler} from '../src'
-import {fakePrivateKey, testContext} from '../../../util/mocha-setup'
-import * as chai from 'chai'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-const expect = chai.expect
-import * as SNS from '../../../lib/vendor/AWS/SNS'
+import {fakePrivateKey, testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import * as AWS from 'aws-sdk'
-import {Apns2Error, UnexpectedError} from '../../../util/errors'
-import {ApnsClient, Notification, ApnsPayload, PushType, Priority} from 'apns2'
-const docClient = new AWS.DynamoDB.DocumentClient()
+import {UnexpectedError} from '../../../util/errors'
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {
   Items: [
@@ -55,60 +46,95 @@ const fakeGetDevicesResponse = {
 const fakeUserDevicesResponse = {
   Items: [
     {
-      devices: docClient.createSet(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
+      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
       userId: fakeUserId
     }
   ]
 }
 
+const scanMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  scan: scanMock,
+  deleteItem: jest.fn().mockReturnValue({}),
+  query: jest.fn(),
+  updateItem: jest.fn().mockReturnValue({})
+}))
+
+jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
+  getApnsSigningKey: jest.fn().mockReturnValue(fakePrivateKey)
+}))
+
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({
+    ResponseMetadata: {
+      RequestId: uuidv4()
+    }
+  }),
+  subscribe: jest.fn()
+}))
+
+const sendMock = jest.fn()
+class MockApnsClient {
+  send() {
+    return sendMock()
+  }
+}
+jest.unstable_mockModule('apns2', () => ({
+  ApnsClient: MockApnsClient,
+  Notification: jest.fn().mockReturnValue({fake: 'notification'}),
+  Priority: jest.fn(),
+  PushType: jest.fn()
+}))
+
 const fakeApnsNotificationOptions = {
   contentAvailable: true,
-  type: PushType.background,
-  priority: Priority.throttled,
+  type: 'background',
+  priority: 5,
   aps: {
     health: 'check'
   }
 }
 
-function getExpiredResponseForDevice(arrayIndex: number): Apns2Error {
+function getExpiredResponseForDevice(arrayIndex: number) {
   return {
     name: 'Apns2Error',
     message: 'BadExpirationDate',
     statusCode: 410,
     reason: 'BadExpirationDate',
     notification: {
-      deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
-      options: fakeApnsNotificationOptions,
-      get pushType(): PushType {
-        return PushType.background
-      },
-      get priority(): Priority {
-        return Priority.throttled
-      },
-      buildApnsOptions(): ApnsPayload {
+      buildApnsOptions() {
         return fakeApnsNotificationOptions
+      },
+      deviceToken: fakeGetDevicesResponse.Items?.[arrayIndex].token,
+      options: fakeApnsNotificationOptions,
+      get priority() {
+        return 5
+      },
+      get pushType() {
+        return 'background'
       }
     }
-  } as Apns2Error
+  }
 }
 
-function getSuccessfulResponseForDevice(arrayIndex: number): Notification {
+function getSuccessfulResponseForDevice(arrayIndex: number) {
   return {
-    deviceToken: fakeGetDevicesResponse.Items[arrayIndex].token,
+    deviceToken: fakeGetDevicesResponse.Items?.[arrayIndex].token,
     options: fakeApnsNotificationOptions,
-    get pushType(): PushType {
-      return PushType.background
+    get pushType() {
+      return 'background'
     },
-    get priority(): Priority {
-      return Priority.throttled
+    get priority() {
+      return 5
     },
-    buildApnsOptions(): ApnsPayload {
+    buildApnsOptions() {
       return fakeApnsNotificationOptions
     }
-  } as Notification
+  }
 }
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
+const {handler} = await import('./../src')
+
 describe('#PruneDevices', () => {
   const event: ScheduledEvent = {
     'detail-type': 'Scheduled Event',
@@ -122,51 +148,46 @@ describe('#PruneDevices', () => {
     version: ''
   }
   const context = testContext
-  beforeEach(() => {
-    sinon.stub(SecretsManagerHelper, 'getApnsSigningKey').resolves(fakePrivateKey)
-  })
-  afterEach(() => {
-    sinon.restore()
-  })
-  it('should search for and remove disabled devices (single)', async () => {
-    const scanStub = sinon.stub(DynamoDB, 'scan')
-    scanStub.onCall(0).resolves(fakeGetDevicesResponse)
-    scanStub.onCall(1).resolves(fakeUserDevicesResponse)
-    sinon.stub(DynamoDB, 'deleteItem').resolves({})
-    sinon.stub(DynamoDB, 'updateItem').resolves({})
-    const sendStub = sinon.stub(ApnsClient.prototype, 'send')
-    sendStub.onCall(0).throws(getExpiredResponseForDevice(0))
-    sendStub.onCall(1).resolves(getSuccessfulResponseForDevice(1))
-    sendStub.onCall(2).resolves(getSuccessfulResponseForDevice(2))
-    sendStub.onCall(3).resolves(getSuccessfulResponseForDevice(3))
-    sinon.stub(SNS, 'deleteEndpoint').resolves({
-      ResponseMetadata: {
-        RequestId: uuidv4()
-      }
+  test('should search for and remove disabled devices (single)', async () => {
+    scanMock.mockReturnValueOnce(fakeGetDevicesResponse)
+    scanMock.mockReturnValueOnce(fakeUserDevicesResponse)
+    sendMock.mockImplementationOnce(() => {
+      throw getExpiredResponseForDevice(0)
+    })
+    sendMock.mockImplementationOnce(() => {
+      return getSuccessfulResponseForDevice(1)
+    })
+    sendMock.mockImplementationOnce(() => {
+      return getSuccessfulResponseForDevice(2)
+    })
+    sendMock.mockImplementationOnce(() => {
+      return getSuccessfulResponseForDevice(3)
     })
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.scan.0', async () => {
-      const scanStub = sinon.stub(DynamoDB, 'scan')
-      scanStub.onCall(0).resolves(undefined)
-      scanStub.onCall(1).resolves(fakeUserDevicesResponse)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.scan.0', async () => {
+      scanMock.mockReturnValueOnce(undefined)
+      await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
-    it('AWS.DynamoDB.scan.1', async () => {
-      const scanStub = sinon.stub(DynamoDB, 'scan')
-      scanStub.onCall(0).resolves(fakeGetDevicesResponse)
-      scanStub.onCall(1).resolves(undefined)
-      sinon.stub(ApnsClient.prototype, 'send').throws(getExpiredResponseForDevice(0))
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.scan.1', async () => {
+      scanMock.mockReturnValueOnce(fakeGetDevicesResponse)
+      scanMock.mockReturnValueOnce(undefined)
+      sendMock.mockImplementationOnce(() => {
+        throw getExpiredResponseForDevice(0)
+      })
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
     })
   })
   describe('#APNSFailure', () => {
-    it('APNS.Failure', async () => {
-      sinon.stub(DynamoDB, 'scan').resolves(fakeGetDevicesResponse)
-      sinon.stub(ApnsClient.prototype, 'send').throws(undefined)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('APNS.Failure', async () => {
+      scanMock.mockReturnValue(fakeGetDevicesResponse)
+      sendMock.mockImplementation(() => {
+        throw undefined
+      })
+      await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
   })
 })

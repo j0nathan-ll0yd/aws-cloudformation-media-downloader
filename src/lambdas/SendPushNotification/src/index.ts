@@ -6,6 +6,7 @@ import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dyna
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
+import {PublishInput} from '@aws-sdk/client-sns'
 
 /**
  * Returns a Device by userId
@@ -25,7 +26,10 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
   }
   // There will always be 1 result (if the user has a device); but with the possibility of multiple devices
   const userDevice = userResponse.Items[0] as DynamoDBUserDevice
-  return userDevice.devices.values as string[]
+  logDebug('userDevice', userDevice)
+  const userDeviceSet = userDevice.devices as Set<string>
+  logDebug('userDevice.devices.values', userDeviceSet.values())
+  return Array.from(userDeviceSet.values())
 }
 
 /**
@@ -68,7 +72,7 @@ export async function handler(event: SQSEvent): Promise<void> {
         const device = await getDevice(deviceId)
         const targetArn = device.endpointArn as string
         logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn)
+        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn) as PublishInput
         logDebug('publishSnsEvent <=', publishParams)
         const publishResponse = await publishSnsEvent(publishParams)
         logDebug('publishSnsEvent <=', publishResponse)

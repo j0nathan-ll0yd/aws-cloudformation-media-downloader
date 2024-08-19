@@ -5,7 +5,7 @@ import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/m
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {assertIsError, transformVideoInfoToMetadata} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
-import {CreateMultipartUploadRequest} from 'aws-sdk/clients/s3'
+import {CreateMultipartUploadRequest} from '@aws-sdk/client-s3'
 import {getFileFromMetadata, upsertFile} from '../../../util/shared'
 
 /**

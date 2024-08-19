@@ -50,7 +50,7 @@ resource "aws_cloudwatch_event_target" "PruneDevices" {
 resource "aws_cloudwatch_event_rule" "PruneDevices" {
   name                = "PruneDevices"
   schedule_expression = "rate(1 day)"
-  is_enabled          = true
+  state               = "ENABLED"
 }
 
 resource "aws_lambda_permission" "PruneDevices" {

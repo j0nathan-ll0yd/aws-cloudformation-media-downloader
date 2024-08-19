@@ -2,8 +2,8 @@ import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lamb
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {getApiKeys, getUsage, getUsagePlans} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {ApiKey, ListOfLong, ListOfUsagePlan} from 'aws-sdk/clients/apigateway'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import {ApiKey, UsagePlan} from '@aws-sdk/client-api-gateway'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
@@ -20,7 +20,7 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
     },
     principalId,
     usageIdentifierKey
-  }
+  } as CustomAuthorizerResult
 }
 
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
@@ -54,7 +54,7 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
  * Returns an array of UsagePlans for a given APIKey
  * @notExported
  */
-async function fetchUsagePlans(keyId: string): Promise<ListOfUsagePlan> {
+async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
   const params = {keyId}
   logDebug('fetchUsagePlans <=', params)
   const response = await getUsagePlans(params)
@@ -69,7 +69,7 @@ async function fetchUsagePlans(keyId: string): Promise<ListOfUsagePlan> {
  * Returns an array, by day, of Usage for a given APIKey and UsagePlan
  * @notExported
  */
-async function fetchUsageData(keyId: string, usagePlanId: string): Promise<ListOfLong[]> {
+async function fetchUsageData(keyId: string, usagePlanId: string) {
   const usageDate = new Date().toISOString().split('T')[0]
   const params = {
     endDate: usageDate,

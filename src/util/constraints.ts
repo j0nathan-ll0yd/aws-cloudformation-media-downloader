@@ -1,5 +1,5 @@
-import * as validate from 'validate.js'
-import {validateURL} from 'ytdl-core'
+import validate from 'validate.js'
+import ytdlCore from 'ytdl-core'
 
 // A custom function is needed; because default logic mangles attribute names
 // https://validatejs.org/#utilities-prettify
@@ -47,7 +47,7 @@ const defaultPresenceConstraint = {
 }
 
 validate.validators.isYouTubeURL = (value: string) => {
-  if (value && !validateURL(value)) {
+  if (value && !ytdlCore.validateURL(value)) {
     return '^is not a valid YouTube URL'
   }
   return undefined

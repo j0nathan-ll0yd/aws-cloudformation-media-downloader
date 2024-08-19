@@ -1,22 +1,12 @@
-import {APIGatewayEvent} from 'aws-lambda'
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SNS from '../../../lib/vendor/AWS/SNS'
-import * as GithubHelper from '../../../util/github-helpers'
-import {handler} from '../src'
-import {getFixture, testContext} from '../../../util/mocha-setup'
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import * as AWS from 'aws-sdk'
-import * as chai from 'chai'
-import {UnexpectedError} from '../../../util/errors'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
-const docClient = new AWS.DynamoDB.DocumentClient()
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 const fakeUserDevicesResponse = {
   Items: [
     {
-      devices: docClient.createSet(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
+      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
       userId: fakeUserId
     }
   ]
@@ -58,58 +48,71 @@ const fakeGithubIssueResponse = {
   }
 }
 
-/* eslint-disable  @typescript-eslint/no-non-null-assertion */
+const queryMock = jest.fn()
+const deleteItemMock = jest.fn().mockReturnValue({})
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  updateItem: jest.fn().mockReturnValue({}),
+  deleteItem: deleteItemMock,
+  query: queryMock,
+  scan: jest.fn()
+}))
+
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({
+    ResponseMetadata: {
+      RequestId: uuidv4()
+    }
+  }),
+  subscribe: jest.fn()
+}))
+
+jest.unstable_mockModule('../../../util/github-helpers', () => ({
+  createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)
+}))
+
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
+
 describe('#UserDelete', () => {
-  let event: APIGatewayEvent
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   const context = testContext
   beforeEach(() => {
-    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+    event = JSON.parse(JSON.stringify(eventMock))
     event.requestContext.authorizer!.principalId = fakeUserId
   })
-  afterEach(() => {
-    sinon.restore()
-  })
-  it('should delete all user data', async () => {
-    sinon.stub(DynamoDB, 'deleteItem').resolves({})
-    sinon.stub(DynamoDB, 'updateItem').resolves({})
-    sinon.stub(SNS, 'deleteEndpoint').resolves({
-      ResponseMetadata: {
-        RequestId: uuidv4()
-      }
-    })
-    const queryStub = sinon.stub(DynamoDB, 'query')
-    queryStub.onCall(0).resolves(fakeUserDevicesResponse)
-    queryStub.onCall(1).resolves(fakeDeviceResponse1)
-    queryStub.onCall(2).resolves(fakeDeviceResponse2)
+  test('should delete all user data', async () => {
+    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
+    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
+    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(204)
+    expect(output.statusCode).toEqual(204)
   })
-  it('should create an issue if deletion fails', async () => {
-    sinon.stub(DynamoDB, 'deleteItem').throws(new Error('Delete failed'))
-    sinon.stub(DynamoDB, 'updateItem').resolves({})
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    sinon.stub(GithubHelper, 'createFailedUserDeletionIssue').resolves(fakeGithubIssueResponse)
-    const queryStub = sinon.stub(DynamoDB, 'query')
-    queryStub.onCall(0).resolves(fakeUserDevicesResponse)
-    queryStub.onCall(1).resolves(fakeDeviceResponse1)
-    queryStub.onCall(2).resolves(fakeDeviceResponse2)
-    expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+  test('should create an issue if deletion fails', async () => {
+    deleteItemMock.mockImplementationOnce(() => {
+      throw new Error('Delete failed')
+    })
+    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
+    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
+    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(500)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.query.0', async () => {
-      sinon.stub(DynamoDB, 'query').rejects(undefined)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.query.0', async () => {
+      queryMock.mockReturnValue(undefined)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
     })
-    it('AWS.DynamoDB.query.1', async () => {
-      const queryStub = sinon.stub(DynamoDB, 'query')
-      queryStub.onCall(0).resolves(fakeUserDevicesResponse)
-      queryStub.onCall(1).resolves({})
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.query.1', async () => {
+      queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
+      queryMock.mockReturnValueOnce({})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
     })
-    it('AWS.ApiGateway.CustomLambdaAuthorizer', async () => {
+    test('AWS.ApiGateway.CustomLambdaAuthorizer', async () => {
       event.requestContext.authorizer!.principalId = 'unknown'
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
     })
   })
 })

@@ -1,70 +1,89 @@
-import axios from 'axios'
-import * as MockAdapter from 'axios-mock-adapter'
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as YouTube from '../../../lib/vendor/YouTube'
-import * as S3 from '../../../lib/vendor/AWS/S3'
-import {getFixture, partSize} from '../../../util/mocha-setup'
-import * as chai from 'chai'
-import {handler} from '../src'
-import {videoInfo} from 'ytdl-core'
-import {UploadPartEvent} from '../../../types/main'
-import {CreateMultipartUploadOutput} from 'aws-sdk/clients/s3'
-import {NotFoundError, UnexpectedError} from '../../../util/errors'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
+import {describe, expect, test, jest} from '@jest/globals'
+import {partSize} from '../../../util/jest-setup'
+import {UnexpectedError} from '../../../util/errors'
+import {StartFileUploadParams} from '../../../types/main'
+import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axios'
+
+const axiosGetMock = jest.fn()
+jest.unstable_mockModule('axios', () => ({
+  default: axiosGetMock
+}))
+
+const createMultipartUploadMock = jest.fn()
+const {default: createMultipartUploadResponse} = await import('./fixtures/createMultipartUpload-200-OK.json', {assert: {type: 'json'}})
+jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
+  createMultipartUpload: createMultipartUploadMock
+}))
+
+const fetchVideoInfoMock = jest.fn()
+const {default: fetchVideoInfoResponse} = await import('./fixtures/fetchVideoInfo-200-OK.json', {assert: {type: 'json'}})
+jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
+  fetchVideoInfo: fetchVideoInfoMock,
+  chooseVideoFormat: jest.fn().mockReturnValue(fetchVideoInfoResponse.formats[0])
+}))
+
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  updateItem: jest.fn().mockReturnValue({}),
+  deleteItem: jest.fn(),
+  query: jest.fn(),
+  scan: jest.fn()
+}))
+
+const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
+
+function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number): AxiosResponse {
+  return {
+    config: config as InternalAxiosRequestConfig,
+    data: 'test',
+    status: 200,
+    statusText: 'hello',
+    headers: {
+      'accept-ranges': 'bytes',
+      'content-length': bytesTotal,
+      'content-type': 'video/mp4'
+    }
+  }
+}
 
 describe('#StartFileUpload', () => {
-  const event = localFixture('startFileUpload-200-OK.json') as UploadPartEvent
-  const mockSuccessHeaders = {
-    'accept-ranges': 'bytes',
-    'content-length': 82784319,
-    'content-type': 'video/mp4'
-  }
-  const createMultipartUploadResponse = localFixture('createMultipartUpload-200-OK.json') as CreateMultipartUploadOutput
-  const fetchVideoInfoResponse = localFixture('fetchVideoInfo-200-OK.json') as Promise<videoInfo>
-  let mock: MockAdapter
-  let fetchVideoInfoStub: sinon.SinonStub
-  let createMultipartUploadStub: sinon.SinonStub
-  let updateItemStub: sinon.SinonStub
-  beforeEach(() => {
-    mock = new MockAdapter(axios)
-    createMultipartUploadStub = sinon.stub(S3, 'createMultipartUpload')
-    fetchVideoInfoStub = sinon.stub(YouTube, 'fetchVideoInfo').returns(fetchVideoInfoResponse)
-    updateItemStub = sinon.stub(DynamoDB, 'updateItem')
-  })
-  afterEach(() => {
-    mock.reset()
-    createMultipartUploadStub.restore()
-    fetchVideoInfoStub.restore()
-    updateItemStub.restore()
-  })
-  it('should successfully handle a multipart upload', async () => {
-    createMultipartUploadStub.returns(createMultipartUploadResponse)
-    event.bytesTotal = mockSuccessHeaders['content-length'] = 82784319
-    mock.onAny().reply(200, '', mockSuccessHeaders)
+  const event = eventMock as StartFileUploadParams
+  test('should successfully handle a multipart upload', async () => {
+    createMultipartUploadMock.mockReturnValue(createMultipartUploadResponse)
+    fetchVideoInfoMock.mockReturnValue(fetchVideoInfoResponse)
+    const bytesTotal = 82784319
+    axiosGetMock.mockImplementation(() => {
+      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
+      return mockResponseUploadPart(config, bytesTotal)
+    })
     const output = await handler(event)
-    expect(output.bytesTotal).to.equal(event.bytesTotal)
-    expect(output.partEnd).to.equal(partSize - 1)
-    expect(output.uploadId).to.equal(createMultipartUploadResponse.UploadId)
+    expect(output.bytesTotal).toEqual(bytesTotal)
+    expect(output.partEnd).toEqual(partSize - 1)
+    expect(output.uploadId).toEqual(createMultipartUploadResponse.UploadId)
   })
-  it('should successfully handle a single part upload', async () => {
-    createMultipartUploadStub.returns(createMultipartUploadResponse)
-    event.bytesTotal = mockSuccessHeaders['content-length'] = 5242880 - 1000
-    mock.onAny().reply(200, '', mockSuccessHeaders)
+  test('should successfully handle a single part upload', async () => {
+    createMultipartUploadMock.mockReturnValue(createMultipartUploadResponse)
+    fetchVideoInfoMock.mockReturnValue(fetchVideoInfoResponse)
+    axiosGetMock.mockImplementation(() => {
+      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
+      return mockResponseUploadPart(config, bytesTotal)
+    })
+    const bytesTotal = 5242880 - 1000
     const output = await handler(event)
-    expect(output.bytesTotal).to.equal(event.bytesTotal)
-    expect(output.partEnd).to.equal(event.bytesTotal - 1)
-    expect(output.uploadId).to.equal(createMultipartUploadResponse.UploadId)
+    expect(output.bytesTotal).toEqual(bytesTotal)
+    expect(output.partEnd).toEqual(bytesTotal - 1)
+    expect(output.uploadId).toEqual(createMultipartUploadResponse.UploadId)
   })
-  it('should gracefully handle if a video cant be found', async () => {
-    fetchVideoInfoStub.returns({})
-    expect(handler(event)).to.be.rejectedWith(NotFoundError)
+  test('should gracefully handle if a video cant be found', async () => {
+    fetchVideoInfoMock.mockImplementation(() => {
+      throw new UnexpectedError('Video not found')
+    })
+    await expect(handler(event)).rejects.toThrow(UnexpectedError)
   })
   describe('#AWSFailure', () => {
-    it('AWS.S3.createMultipartUpload', async () => {
-      createMultipartUploadStub.returns(undefined)
-      expect(handler(event)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.S3.createMultipartUpload', async () => {
+      createMultipartUploadMock.mockReturnValue(undefined)
+      await expect(handler(event)).rejects.toThrow(UnexpectedError)
     })
   })
 })

@@ -16,7 +16,7 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items.map((file) => file.fileId)
+  return scanResponse.Items.map((file) => file.fileId.toString())
 }
 
 /**

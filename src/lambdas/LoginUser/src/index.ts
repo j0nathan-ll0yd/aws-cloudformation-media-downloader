@@ -1,5 +1,5 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {UserLogin} from '../../../types/main'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserConstraints} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
@@ -10,7 +10,7 @@ import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
  * Logs in a User via Sign in with Apple
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {

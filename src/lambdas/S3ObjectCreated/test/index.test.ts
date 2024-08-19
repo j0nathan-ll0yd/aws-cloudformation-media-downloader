@@ -1,34 +1,30 @@
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as chai from 'chai'
-import * as SQS from '../../../lib/vendor/AWS/SQS'
-import {getFixture} from '../../../util/mocha-setup'
-import {handler} from '../src'
+import {describe, expect, test, jest} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
+
+const scanMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  scan: scanMock
+}))
+
+jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
+  sendMessage: jest.fn()
+}))
+
+const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#S3ObjectCreated', () => {
-  const event = localFixture('Event.json') as S3Event
-  let scanStub: sinon.SinonStub
-  let sendMessageStub: sinon.SinonStub
-  beforeEach(() => {
-    scanStub = sinon.stub(DynamoDB, 'scan')
-    scanStub.onCall(0).returns(localFixture('getFileByKey-200-OK.json'))
-    scanStub.onCall(1).returns(localFixture('getUsersByFileId-200-OK.json'))
-    sendMessageStub = sinon.stub(SQS, 'sendMessage')
-  })
-  afterEach(() => {
-    scanStub.restore()
-    sendMessageStub.restore()
-  })
-  it('should dispatch push notifications for each user with the file', async () => {
+  const event = eventMock as S3Event
+  test('should dispatch push notifications for each user with the file', async () => {
+    const {default: getFileByKeyResponse} = await import('./fixtures/getFileByKey-200-OK.json', {assert: {type: 'json'}})
+    scanMock.mockReturnValueOnce(getFileByKeyResponse)
+    const {default: getUsersByFileIdResponse} = await import('./fixtures/getUsersByFileId-200-OK.json', {assert: {type: 'json'}})
+    scanMock.mockReturnValueOnce(getUsersByFileIdResponse)
     const output = await handler(event)
-    // tslint:disable-next-line:no-unused-expression
-    expect(output).to.be.undefined
+    expect(output).toBeUndefined()
   })
-  it('should throw an error if the file does not exist', async () => {
-    scanStub.onCall(0).returns({Count: 0})
-    expect(handler(event)).to.be.rejectedWith(Error)
+  test('should throw an error if the file does not exist', async () => {
+    scanMock.mockReturnValueOnce({Count: 0})
+    await expect(handler(event)).rejects.toThrow(Error)
   })
 })

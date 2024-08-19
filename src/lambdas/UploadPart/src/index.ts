@@ -1,4 +1,4 @@
-import {UploadPartRequest} from 'aws-sdk/clients/s3'
+import {UploadPartRequest} from '@aws-sdk/client-s3'
 import {AxiosRequestConfig} from 'axios'
 import {uploadPart} from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'

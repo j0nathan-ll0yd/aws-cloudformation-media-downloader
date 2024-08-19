@@ -1,10 +1,10 @@
-import {APIGatewayEvent} from 'aws-lambda'
 import {validate} from 'validate.js'
-import {DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '../types/main'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
 import {validateOptions} from './constraints'
+import {APIGatewayEvent} from 'aws-lambda'
 
 export function validateRequest(requestBody: Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin, constraints: unknown): void {
   const invalidAttributes = validate(requestBody, constraints, validateOptions)
@@ -14,7 +14,7 @@ export function validateRequest(requestBody: Webhook | DeviceRegistrationRequest
   }
 }
 
-export function getPayloadFromEvent(event: APIGatewayEvent): Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin {
+export function getPayloadFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent | APIGatewayEvent): Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin {
   if ('body' in event) {
     if (typeof event.body === 'string') {
       logDebug('getPayloadFromEvent.event.body <=', event.body)

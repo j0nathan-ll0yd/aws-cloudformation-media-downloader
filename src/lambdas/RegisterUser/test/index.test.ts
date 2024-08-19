@@ -1,62 +1,55 @@
-import axios from 'axios'
-import * as MockAdapter from 'axios-mock-adapter'
-import * as chai from 'chai'
-import * as sinon from 'sinon'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import * as Shared from '../../../util/shared'
-import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
-import {APIGatewayEvent} from 'aws-lambda'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-import {AppleTokenResponse, SignInWithAppleVerifiedToken, User} from '../../../types/main'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {fakeJWT, testContext} from '../../../util/jest-setup'
+
+const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
+const {default: verifyAppleResponse} = await import('./fixtures/verifyAppleToken-200-OK.json', {assert: {type: 'json'}})
+
+jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
+  createAccessToken: jest.fn().mockReturnValue(fakeJWT),
+  validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse),
+  verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
+}))
+
+const {default: putResponse} = await import('./fixtures/putItem-200-OK.json', {assert: {type: 'json'}})
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  scan: jest.fn(),
+  deleteItem: jest.fn(),
+  query: jest.fn(),
+  putItem: jest.fn().mockReturnValue(putResponse),
+  updateItem: jest.fn()
+}))
+
+const {default: getUsersByAppleDeviceIdentifierResponse} = await import('./fixtures/getUsersByAppleDeviceIdentifier-200-OK.json', {assert: {type: 'json'}})
+const getUsersByAppleDeviceIdentifierMock = jest.fn()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUsersByAppleDeviceIdentifier: getUsersByAppleDeviceIdentifierMock
+}))
+
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#RegisterUser', () => {
-  const mockResponse = localFixture('axios-200-OK.json')
-  const event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
+  const event = JSON.parse(JSON.stringify(eventMock))
   const context = testContext
-  let createAccessTokenStub: sinon.SinonStub
-  let mock: MockAdapter
-  let putItemStub: sinon.SinonStub
-  let validateAuthCodeForTokenStub: sinon.SinonStub
-  let verifyAppleTokenStub: sinon.SinonStub
-  let getUsersByAppleDeviceIdentifierStub: sinon.SinonStub
   beforeEach(() => {
-    mock = new MockAdapter(axios)
-    createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
-    putItemStub = sinon.stub(DynamoDB, 'putItem').returns(localFixture('putItem-200-OK.json') as Promise<DocumentClient.PutItemOutput>)
-    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(localFixture('validateAuthCodeForToken-200-OK.json') as Promise<AppleTokenResponse>)
-    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(localFixture('verifyAppleToken-200-OK.json') as Promise<SignInWithAppleVerifiedToken>)
-    getUsersByAppleDeviceIdentifierStub = sinon.stub(Shared, 'getUsersByAppleDeviceIdentifier').returns(localFixture('getUsersByAppleDeviceIdentifier-200-OK.json') as Promise<User[]>)
+    getUsersByAppleDeviceIdentifierMock.mockReturnValue(getUsersByAppleDeviceIdentifierResponse)
   })
-  afterEach(() => {
-    createAccessTokenStub.restore()
-    getUsersByAppleDeviceIdentifierStub.restore()
-    putItemStub.restore()
-    validateAuthCodeForTokenStub.restore()
-    verifyAppleTokenStub.restore()
-    mock.reset()
-  })
-  it('should successfully register a user, if they dont exist', async () => {
-    getUsersByAppleDeviceIdentifierStub.returns([])
-    mock.onAny().reply(200, mockResponse)
+  test('should successfully register a user, if they dont exist', async () => {
+    getUsersByAppleDeviceIdentifierMock.mockReturnValue([])
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body.token).to.be.a('string')
+    expect(typeof body.body.token).toEqual('string')
   })
-  it('should successfully login a user, if they do exist', async () => {
-    mock.onAny().reply(200, mockResponse)
+  test('should successfully login a user, if they do exist', async () => {
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body.token).to.be.a('string')
+    expect(typeof body.body.token).toEqual('string')
   })
-  it('should handle an invalid payload', async () => {
+  test('should handle an invalid payload', async () => {
     event.body = ''
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(400)
+    expect(output.statusCode).toEqual(400)
   })
 })

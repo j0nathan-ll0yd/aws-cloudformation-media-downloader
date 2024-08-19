@@ -1,31 +1,28 @@
-import axios, {AxiosRequestConfig, AxiosResponseHeaders} from 'axios'
-import * as MockAdapter from 'axios-mock-adapter'
+import {describe, expect, test, jest} from '@jest/globals'
+import {AxiosError, AxiosRequestConfig, AxiosResponse, AxiosResponseHeaders, InternalAxiosRequestConfig} from 'axios'
 import * as crypto from 'crypto'
-import * as chai from 'chai'
-import * as sinon from 'sinon'
-import * as S3 from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent, UploadPartEvent} from '../../../types/main'
-import {partSize} from '../../../util/mocha-setup'
-import {handler} from '../src'
-import {Part} from 'aws-sdk/clients/s3'
-const expect = chai.expect
+import {partSize} from '../../../util/jest-setup'
+import {Part} from '@aws-sdk/client-s3'
+
+const axiosGetMock = jest.fn()
+jest.unstable_mockModule('axios', () => ({
+  default: axiosGetMock
+}))
+
+jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
+  uploadPart: jest.fn().mockReturnValue({
+    ETag: crypto.createHash('md5').update('some_string').digest('hex')
+  })
+}))
+
+const {handler} = await import('./../src')
 
 describe('#UploadPart', () => {
-  let mock: MockAdapter
-  let uploadPartStub: sinon.SinonStub
-  beforeEach(() => {
-    mock = new MockAdapter(axios)
-    uploadPartStub = sinon.stub(S3, 'uploadPart').resolves({
-      ETag: crypto.createHash('md5').update('some_string').digest('hex')
-    })
-  })
-  afterEach(() => {
-    mock.reset()
-    uploadPartStub.restore()
-  })
-  it('should handle a multipart file', async () => {
+  test('should handle a multipart file', async () => {
     const bytesTotal = 82784319
-    mock.onAny().reply((config) => {
+    axiosGetMock.mockImplementation(() => {
+      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
       return mockResponseUploadPart(config, bytesTotal, partSize)
     })
     const totalParts = Math.round(bytesTotal / partSize)
@@ -33,45 +30,50 @@ describe('#UploadPart', () => {
     const finalPart = responses.pop() as CompleteFileUploadEvent
     const uploadPart = responses.pop() as UploadPartEvent
     if ('partNumber' in uploadPart) {
-      expect(uploadPart.partNumber).to.equal(totalParts)
+      expect(uploadPart.partNumber).toEqual(totalParts)
     }
-    expect(finalPart.partTags.length).to.equal(totalParts)
-    expect(finalPart.bytesRemaining).to.equal(0)
+    expect(finalPart.partTags.length).toEqual(totalParts)
+    expect(finalPart.bytesRemaining).toEqual(0)
   })
-  it('should handle a single part file', async () => {
+  test('should handle a single part file', async () => {
     const bytesTotal = 5242880 - 1000
-    mock.onAny().reply((config) => {
+    axiosGetMock.mockImplementation(() => {
+      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
       return mockResponseUploadPart(config, bytesTotal, partSize)
     })
     const totalParts = Math.round(bytesTotal / partSize)
     const responses = await mockIterationsOfUploadPart(bytesTotal, partSize)
-    expect(responses.length).to.equal(totalParts)
+    expect(responses.length).toEqual(totalParts)
     const finalPart = responses.pop() as CompleteFileUploadEvent
-    expect(finalPart.partTags.length).to.equal(totalParts)
-    expect(finalPart.bytesRemaining).to.equal(0)
+    expect(finalPart.partTags.length).toEqual(totalParts)
+    expect(finalPart.bytesRemaining).toEqual(0)
   })
   describe('#NetworkFailure', () => {
-    it('should gracefully handle a failure', async () => {
+    test('should gracefully handle a failure', async () => {
       const bytesTotal = 5242880 - 1000
-      mock.onAny().networkError()
-      expect(mockIterationsOfUploadPart(bytesTotal, partSize)).to.be.rejectedWith('Network Error')
+      axiosGetMock.mockImplementation(() => {
+        throw new AxiosError('Network Error')
+      })
+      await expect(mockIterationsOfUploadPart(bytesTotal, partSize)).rejects.toThrowError('Network Error')
     })
   })
 })
 
-function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number, partSize: number) {
+function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number, partSize: number): AxiosResponse {
   const headers = config.headers as AxiosResponseHeaders
   const [, beg, end] = /bytes=(\d+)-(\d+)/.exec(headers.Range.toString()) || ['', '', '']
-  return [
-    206,
-    'hello',
-    {
+  return {
+    config: config as InternalAxiosRequestConfig,
+    data: 'test',
+    status: 206,
+    statusText: 'hello',
+    headers: {
       'accept-ranges': 'bytes',
       'content-length': partSize,
       'content-range': `bytes ${beg}-${end}/${bytesTotal}`,
       'content-type': 'video/mp4'
     }
-  ]
+  }
 }
 
 async function mockIterationsOfUploadPart(bytesTotal: number, partSize: number) {

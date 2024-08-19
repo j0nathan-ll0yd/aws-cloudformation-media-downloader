@@ -1,4 +1,4 @@
-import {CompleteMultipartUploadOutput, CompleteMultipartUploadRequest} from 'aws-sdk/clients/s3'
+import {CompleteMultipartUploadOutput, CompleteMultipartUploadRequest} from '@aws-sdk/client-s3'
 import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {completeMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {CompleteFileUploadEvent} from '../../../types/main'

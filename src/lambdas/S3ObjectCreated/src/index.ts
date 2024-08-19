@@ -6,7 +6,7 @@ import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
 import {logDebug} from '../../../util/lambda-helpers'
 import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
-import {SendMessageRequest} from 'aws-sdk/clients/sqs'
+import {SendMessageRequest} from '@aws-sdk/client-sqs'
 
 /**
  * Returns the DynamoDBFile by file name

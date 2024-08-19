@@ -1,11 +1,10 @@
-import {PublishInput} from 'aws-sdk/clients/sns'
-import {MessageBodyAttributeMap} from 'aws-sdk/clients/sqs'
 import {videoFormat, videoInfo} from 'ytdl-core'
 import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, Metadata, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logDebug, logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
 import {NotFoundError, UnexpectedError} from './errors'
+import {PublishInput} from '@aws-sdk/client-sns'
 
 function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
   try {
@@ -15,6 +14,7 @@ function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat
     logDebug('getHighestVideoFormatFromVideoInfo', highestVideoFormat)
     return highestVideoFormat
   } catch (error) {
+    logError('getHighestVideoFormatFromVideoInfo', error)
     throw new NotFoundError('Unable to find acceptable video format')
   }
 }
@@ -42,7 +42,7 @@ export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResp
   }
 }
 
-export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string): MessageBodyAttributeMap {
+export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string) {
   return {
     fileId: {
       DataType: 'String',
@@ -94,7 +94,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
       throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
     }
   })
-  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+
   const clientFile: ClientFile = {
     fileId: file.fileId.stringValue!,
     key: file.key.stringValue!,
@@ -102,7 +102,7 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
     size: parseInt(file.size.stringValue!, 0),
     url: file.url.stringValue!
   }
-  /* eslint-enable @typescript-eslint/no-non-null-assertion */
+
   return {
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({
@@ -135,6 +135,7 @@ export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
     }
   })
 
+  logDebug('cleanup')
   const date = new Date(Date.parse(publishDate))
   const ext = myVideoFormat.container
   const uploadDate = date.toISOString().substring(0, 10).replace(/-/g, '')

@@ -1,8 +1,7 @@
-import {StartExecutionOutput, Types} from 'aws-sdk/clients/stepfunctions'
-import * as AWS from 'aws-sdk'
-import * as AWSXRay from 'aws-xray-sdk'
-const stepfunctions = AWSXRay.captureAWSClient(new AWS.StepFunctions({apiVersion: '2016-11-23'}))
+import {SFNClient, StartExecutionCommand, StartExecutionInput, StartExecutionOutput} from '@aws-sdk/client-sfn'
+const stepfunctions = new SFNClient()
 
-export function startExecution(params: Types.StartExecutionInput): Promise<StartExecutionOutput> {
-  return stepfunctions.startExecution(params).promise()
+export function startExecution(params: StartExecutionInput): Promise<StartExecutionOutput> {
+  const command = new StartExecutionCommand(params)
+  return stepfunctions.send(command)
 }

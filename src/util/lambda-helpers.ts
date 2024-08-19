@@ -1,7 +1,7 @@
-import {APIGatewayEvent, APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {unknownErrorToString} from './transformers'
-import {UserEventDetails} from '../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
 import {UserStatus} from '../types/enums'
 
 export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
@@ -95,7 +95,7 @@ export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
 }
 
-export function getUserDetailsFromEvent(event: APIGatewayEvent): UserEventDetails {
+export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
   let principalId = 'unknown'
   // This should always be present, via the API Gateway
   /* istanbul ignore else */

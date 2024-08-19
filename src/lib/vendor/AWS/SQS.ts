@@ -1,8 +1,6 @@
-import * as AWS from 'aws-sdk'
-import {SendMessageRequest, SendMessageResult} from 'aws-sdk/clients/sqs'
-import * as AWSXRay from 'aws-xray-sdk'
-const sqs = AWSXRay.captureAWSClient(new AWS.SQS({apiVersion: '2012-11-05'}))
-
+import {SQSClient, SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
+const sqs = new SQSClient()
 export function sendMessage(params: SendMessageRequest): Promise<SendMessageResult> {
-  return sqs.sendMessage(params).promise()
+  const command = new SendMessageCommand(params)
+  return sqs.send(command)
 }

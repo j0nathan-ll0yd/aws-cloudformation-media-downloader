@@ -1,9 +1,8 @@
-import * as AWS from 'aws-sdk'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
 import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
 import {FileStatus} from '../types/enums'
-const docClient = new AWS.DynamoDB.DocumentClient()
+import {BatchGetCommand, DeleteCommand, PutCommand, QueryCommand, ScanCommand, UpdateCommand} from '@aws-sdk/lib-dynamodb'
 
+// TODO: Refactor this to return COMMANDS instead of inputs, simplifying the DynamoDB client calls to just 'send'
 function transformObjectToDynamoUpdateQuery(item: object) {
   let UpdateExpression = 'SET'
   const ExpressionAttributeNames: Record<string, string> = {}
@@ -29,19 +28,20 @@ function transformObjectToDynamoUpdateQuery(item: object) {
   }
 }
 
-export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string): DocumentClient.UpdateItemInput {
-  return {
+export function updateCompletedFileParams(tableName: string, fileId: string, fileUrl: string) {
+  const updateCommand = new UpdateCommand({
     ExpressionAttributeNames: {'#FN': 'url', '#S': 'status'},
     ExpressionAttributeValues: {':fn': fileUrl, ':s': FileStatus.Downloaded},
     Key: {fileId: fileId},
     ReturnValues: 'ALL_NEW',
     TableName: tableName,
     UpdateExpression: 'SET #FN = :fn, #S = :s'
-  }
+  })
+  return updateCommand.input
 }
 
-export function scanForFileParams(tableName: string): DocumentClient.ScanInput {
-  return {
+export function scanForFileParams(tableName: string) {
+  const scanCommand = new ScanCommand({
     ExpressionAttributeNames: {
       '#AA': 'availableAt',
       '#FID': 'fileId',
@@ -53,147 +53,164 @@ export function scanForFileParams(tableName: string): DocumentClient.ScanInput {
     FilterExpression: '#AA <= :aa AND attribute_not_exists(#FN)',
     ProjectionExpression: '#AA, #FID',
     TableName: tableName
-  }
+  })
+  return scanCommand.input
 }
 
-export function getFileByKey(tableName: string, fileName: string): DocumentClient.ScanInput {
-  return {
+export function getFileByKey(tableName: string, fileName: string) {
+  const scanCommand = new ScanCommand({
     ExpressionAttributeNames: {'#key': 'key'},
     ExpressionAttributeValues: {':key': fileName},
     FilterExpression: '#key = :key',
     TableName: tableName
-  }
+  })
+  return scanCommand.input
 }
 
-export function getUsersByFileId(tableName: string, fileId: string): DocumentClient.ScanInput {
-  return {
+export function getUsersByFileId(tableName: string, fileId: string) {
+  const scanCommand = new ScanCommand({
     ExpressionAttributeValues: {':fileId': fileId},
     FilterExpression: 'contains (fileId, :fileId)',
     TableName: tableName
-  }
+  })
+  return scanCommand.input
 }
 
-export function getUsersByDeviceId(tableName: string, deviceId: string): DocumentClient.ScanInput {
-  return {
+export function getUsersByDeviceId(tableName: string, deviceId: string) {
+  const scanCommand = new ScanCommand({
     ExpressionAttributeValues: {':deviceId': deviceId},
     FilterExpression: 'contains (devices, :deviceId)',
     TableName: tableName
-  }
+  })
+  return scanCommand.input
 }
 
-export function userFileParams(tableName: string, userId: string, fileId: string): DocumentClient.UpdateItemInput {
-  return {
+export function userFileParams(tableName: string, userId: string, fileId: string) {
+  const updateCommand = new UpdateCommand({
     ExpressionAttributeNames: {'#FID': 'fileId'},
-    ExpressionAttributeValues: {':fid': docClient.createSet([fileId])},
+    ExpressionAttributeValues: {':fid': new Set([fileId])},
     Key: {userId: userId},
-    ReturnValues: 'NONE',
+    ReturnValues: 'ALL_NEW',
     UpdateExpression: 'ADD #FID :fid',
     TableName: tableName
-  }
+  })
+  return updateCommand.input
 }
 
-export function userDevicesParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
-  return {
+export function userDevicesParams(tableName: string, userId: string, deviceId: string) {
+  const updateCommand = new UpdateCommand({
     ExpressionAttributeNames: {'#DID': 'devices'},
-    ExpressionAttributeValues: {':did': docClient.createSet([deviceId])},
+    ExpressionAttributeValues: {':did': new Set([deviceId])},
     Key: {userId: userId},
     ReturnValues: 'NONE',
     UpdateExpression: 'ADD #DID :did',
     TableName: tableName
-  }
+  })
+  return updateCommand.input
 }
 
-export function deleteSingleUserDeviceParams(tableName: string, userId: string, deviceId: string): DocumentClient.UpdateItemInput {
-  return {
+export function deleteSingleUserDeviceParams(tableName: string, userId: string, deviceId: string) {
+  const updateCommand = new UpdateCommand({
     TableName: tableName,
     Key: {userId},
     UpdateExpression: 'DELETE devices :deviceId',
-    ExpressionAttributeValues: {':deviceId': docClient.createSet([deviceId])}
-  }
+    ExpressionAttributeValues: {':deviceId': new Set([deviceId])}
+  })
+  return updateCommand.input
 }
 
-export function upsertDeviceParams(tableName: string, device: Device): DocumentClient.UpdateItemInput {
+export function upsertDeviceParams(tableName: string, device: Device) {
   const {deviceId, ...deviceSubset} = device
   const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(deviceSubset)
-  return {
+  const updateCommand = new UpdateCommand({
     Key: {deviceId},
     TableName: tableName,
     UpdateExpression,
     ExpressionAttributeNames,
     ExpressionAttributeValues
-  }
+  })
+  return updateCommand.input
 }
 
-export function queryUserDeviceParams(tableName: string, userId: string): DocumentClient.QueryInput {
-  return {
+export function queryUserDeviceParams(tableName: string, userId: string) {
+  const queryCommand = new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
     ExpressionAttributeValues: {':userId': userId}
-  }
+  })
+  return queryCommand.input
 }
 
-export function queryFileParams(tableName: string, fileId: string): DocumentClient.QueryInput {
-  return {
+export function queryFileParams(tableName: string, fileId: string) {
+  const queryCommand = new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: 'fileId = :fileId',
     ExpressionAttributeValues: {':fileId': fileId}
-  }
+  })
+  return queryCommand.input
 }
 
-export function queryDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
-  return {
+export function queryDeviceParams(tableName: string, deviceId: string) {
+  const queryCommand = new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: 'deviceId = :deviceId',
     ExpressionAttributeValues: {':deviceId': deviceId}
-  }
+  })
+  return queryCommand.input
 }
 
-export function getUserDeviceByUserIdParams(tableName: string, userId: string): DocumentClient.QueryInput {
-  return {
+export function getUserDeviceByUserIdParams(tableName: string, userId: string) {
+  const queryCommand = new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: 'userId = :userId',
     ExpressionAttributeValues: {':userId': userId}
-  }
+  })
+  return queryCommand.input
 }
 
-export function getDeviceParams(tableName: string, deviceId: string): DocumentClient.QueryInput {
-  return {
+export function getDeviceParams(tableName: string, deviceId: string) {
+  const queryCommand = new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: 'deviceId = :deviceId',
     ExpressionAttributeValues: {':deviceId': deviceId}
-  }
+  })
+  return queryCommand.input
 }
 
-export function deleteDeviceParams(tableName: string, deviceId: string): DocumentClient.DeleteItemInput {
-  return {
+export function deleteDeviceParams(tableName: string, deviceId: string) {
+  const deleteCommand = new DeleteCommand({
     TableName: tableName,
     Key: {deviceId}
-  }
+  })
+  return deleteCommand.input
 }
 
-export function deleteUserParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
-  return {
+export function deleteUserParams(tableName: string, userId: string) {
+  const deleteCommand = new DeleteCommand({
     TableName: tableName,
     Key: {userId}
-  }
+  })
+  return deleteCommand.input
 }
 
-export function deleteUserFilesParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
-  return {
+export function deleteUserFilesParams(tableName: string, userId: string) {
+  const deleteCommand = new DeleteCommand({
     TableName: tableName,
     Key: {userId}
-  }
+  })
+  return deleteCommand.input
 }
 
-export function deleteAllUserDeviceParams(tableName: string, userId: string): DocumentClient.DeleteItemInput {
-  return {
+export function deleteAllUserDeviceParams(tableName: string, userId: string) {
+  const deleteCommand = new DeleteCommand({
     TableName: tableName,
     Key: {userId}
-  }
+  })
+  return deleteCommand.input
 }
 
-export function newFileParams(tableName: string, fileId: string): DocumentClient.UpdateItemInput {
-  return {
+export function newFileParams(tableName: string, fileId: string) {
+  const updateCommand = new UpdateCommand({
     ExpressionAttributeNames: {
       '#AA': 'availableAt',
       '#S': 'status'
@@ -206,32 +223,35 @@ export function newFileParams(tableName: string, fileId: string): DocumentClient
     ReturnValues: 'ALL_OLD',
     UpdateExpression: 'SET #AA = :aa, #S = :s',
     TableName: tableName
-  }
+  })
+  return updateCommand.input
 }
 
-export function newUserParams(tableName: string, user: User, identityProviderApple: IdentityProviderApple): DocumentClient.PutItemInput {
-  return {
+export function newUserParams(tableName: string, user: User, identityProviderApple: IdentityProviderApple) {
+  const putCommand = new PutCommand({
     Item: {
       ...user,
       identityProviders: {...identityProviderApple}
     },
     TableName: tableName
-  }
+  })
+  return putCommand.input
 }
 
-export function updateFileMetadataParams(tableName: string, item: DynamoDBFile): DocumentClient.UpdateItemInput {
+export function updateFileMetadataParams(tableName: string, item: DynamoDBFile) {
   const {UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues} = transformObjectToDynamoUpdateQuery(item)
-  return {
+  const updateCommand = new UpdateCommand({
     Key: {fileId: item.fileId},
     TableName: tableName,
     UpdateExpression,
     ExpressionAttributeNames,
     ExpressionAttributeValues
-  }
+  })
+  return updateCommand.input
 }
 
-export function getUserFilesParams(tableName: string, userId: string): DocumentClient.QueryInput {
-  return {
+export function getUserFilesParams(tableName: string, userId: string) {
+  const queryCommand = new QueryCommand({
     ExpressionAttributeValues: {
       ':uid': userId
     },
@@ -240,27 +260,32 @@ export function getUserFilesParams(tableName: string, userId: string): DocumentC
     },
     KeyConditionExpression: '#uid = :uid',
     TableName: tableName
-  }
+  })
+  return queryCommand.input
 }
 
-export function getBatchFilesParams(tableName: string, files: string[]): DocumentClient.BatchGetItemInput {
+export function getBatchFilesParams(tableName: string, files: string[]) {
   const Keys = []
-  const mySet = docClient.createSet(files)
-  for (const fileId of mySet.values) {
+  const mySet = new Set(files)
+  for (const fileId of mySet.values()) {
     Keys.push({fileId})
   }
 
-  return {
+  const batchGetItemCommand = new BatchGetCommand({
     RequestItems: {
-      [tableName]: {Keys}
+      [tableName]: {
+        Keys
+      }
     }
-  }
+  })
+  return batchGetItemCommand.input
 }
 
-export function getUserByAppleDeviceIdentifierParams(tableName: string, userId: string): DocumentClient.ScanInput {
-  return {
+export function getUserByAppleDeviceIdentifierParams(tableName: string, userId: string) {
+  const scanCommand = new ScanCommand({
     ExpressionAttributeValues: {':userId': userId},
     FilterExpression: 'identityProviders.userId = :userId',
     TableName: tableName
-  }
+  })
+  return scanCommand.input
 }

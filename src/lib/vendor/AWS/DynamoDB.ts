@@ -1,27 +1,28 @@
-import * as AWS from 'aws-sdk'
-import {DocumentClient} from 'aws-sdk/lib/dynamodb/document_client'
-const docClient = new AWS.DynamoDB.DocumentClient()
+import {BatchGetItemInput, DeleteItemInput, DynamoDBClient, PutItemInput, QueryInput, ScanInput, UpdateItemInput} from '@aws-sdk/client-dynamodb'
+import {DynamoDBDocument} from '@aws-sdk/lib-dynamodb'
+const client = new DynamoDBClient()
+const docClient = DynamoDBDocument.from(client)
 
-export function updateItem(params: DocumentClient.UpdateItemInput): Promise<DocumentClient.UpdateItemOutput> {
-  return docClient.update(params).promise()
+export function updateItem(params: UpdateItemInput) {
+  return docClient.update(params)
 }
 
-export function putItem(params: DocumentClient.PutItemInput): Promise<DocumentClient.PutItemOutput> {
-  return docClient.put(params).promise()
+export function putItem(params: PutItemInput) {
+  return docClient.put(params)
 }
 
-export function scan(params: DocumentClient.ScanInput): Promise<DocumentClient.ScanOutput> {
-  return docClient.scan(params).promise()
+export function scan(params: ScanInput) {
+  return docClient.scan(params)
 }
 
-export function batchGet(params: DocumentClient.BatchGetItemInput): Promise<DocumentClient.BatchGetItemOutput> {
-  return docClient.batchGet(params).promise()
+export function batchGet(params: BatchGetItemInput) {
+  return docClient.batchGet(params)
 }
 
-export function query(params: DocumentClient.QueryInput): Promise<DocumentClient.QueryOutput> {
-  return docClient.query(params).promise()
+export function query(params: QueryInput) {
+  return docClient.query(params)
 }
 
-export function deleteItem(params: DocumentClient.DeleteItemInput): Promise<DocumentClient.DeleteItemOutput> {
-  return docClient.delete(params).promise()
+export function deleteItem(params: DeleteItemInput) {
+  return docClient.delete(params)
 }

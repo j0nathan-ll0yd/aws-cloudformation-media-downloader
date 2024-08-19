@@ -1,15 +1,15 @@
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
-import {DynamoDBFile} from '../../../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventConstraints} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
-import {SendMessageRequest} from 'aws-sdk/clients/sqs'
+import {SendMessageRequest} from '@aws-sdk/client-sqs'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
@@ -83,14 +83,14 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
   logInfo('event <=', event)
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as Webhook
     validateRequest(requestBody, feedlyEventConstraints)
     const fileId = getVideoID(requestBody.articleURL)
-    const {userId} = getUserDetailsFromEvent(event as APIGatewayEvent)
+    const {userId} = getUserDetailsFromEvent(event)
     if (!userId) {
       // This should never happen; handled by API Gateway
       throw new UnexpectedError(providerFailureErrorMessage)

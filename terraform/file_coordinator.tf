@@ -38,7 +38,7 @@ resource "aws_cloudwatch_event_target" "FileCoordinator" {
 resource "aws_cloudwatch_event_rule" "FileCoordinator" {
   name                = "FileCoordinator"
   schedule_expression = "rate(4 minutes)"
-  is_enabled          = true
+  state               = "ENABLED"
 }
 
 resource "aws_lambda_permission" "FileCoordinator" {

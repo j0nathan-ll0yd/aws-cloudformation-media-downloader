@@ -1,69 +1,69 @@
-import * as sinon from 'sinon'
-import * as chai from 'chai'
-import * as DynamoDB from '../../../lib/vendor/AWS/DynamoDB'
-import * as SecretsManagerHelper from '../../../util/secretsmanager-helpers'
-import {fakeJWT, getFixture, testContext} from '../../../util/mocha-setup'
-import {handler} from '../src'
-import {APIGatewayEvent} from 'aws-lambda'
-import {AppleTokenResponse, SignInWithAppleVerifiedToken} from '../../../types/main'
-import {UnexpectedError} from '../../../util/errors'
-const expect = chai.expect
-const localFixture = getFixture.bind(null, __dirname)
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {fakeJWT, testContext} from '../../../util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+
+const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
+const {default: verifyAppleResponse} = await import('./fixtures/verifyAppleToken-200-OK.json', {assert: {type: 'json'}})
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+
+jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
+  createAccessToken: jest.fn().mockReturnValue(fakeJWT),
+  validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse),
+  verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
+}))
+
+const scanMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
+  scan: scanMock,
+  deleteItem: jest.fn(),
+  query: jest.fn(),
+  updateItem: jest.fn()
+}))
+
+const {handler} = await import('./../src')
 
 describe('#LoginUser', () => {
   const context = testContext
-  let createAccessTokenStub: sinon.SinonStub
-  let event: APIGatewayEvent
-  let scanStub: sinon.SinonStub
-  let validateAuthCodeForTokenStub: sinon.SinonStub
-  let verifyAppleTokenStub: sinon.SinonStub
+  let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    createAccessTokenStub = sinon.stub(SecretsManagerHelper, 'createAccessToken').returns(Promise.resolve(fakeJWT))
-    event = localFixture('APIGatewayEvent.json') as APIGatewayEvent
-    scanStub = sinon.stub(DynamoDB, 'scan')
-    const validateAuthResponse = localFixture('validateAuthCodeForToken-200-OK.json') as Promise<AppleTokenResponse>
-    validateAuthCodeForTokenStub = sinon.stub(SecretsManagerHelper, 'validateAuthCodeForToken').returns(validateAuthResponse)
-    const verifyAppleResponse = localFixture('validateAuthCodeForToken-200-OK.json') as Promise<SignInWithAppleVerifiedToken>
-    verifyAppleTokenStub = sinon.stub(SecretsManagerHelper, 'verifyAppleToken').returns(verifyAppleResponse)
+    event = JSON.parse(JSON.stringify(eventMock))
   })
-  afterEach(() => {
-    createAccessTokenStub.restore()
-    scanStub.restore()
-    validateAuthCodeForTokenStub.restore()
-    verifyAppleTokenStub.restore()
-  })
-  it('should successfully login a user', async () => {
-    scanStub.returns(localFixture('scan-200-OK.json'))
+  test('should successfully login a user', async () => {
+    const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
+    scanMock.mockReturnValue(scanResponse)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(200)
+    expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
-    expect(body.body.token).to.be.a('string')
+    expect(typeof body.body.token).toEqual('string')
   })
-  it('should throw an error if a user is not found', async () => {
-    scanStub.returns(localFixture('scan-404-NotFound.json'))
+  test('should throw an error if a user is not found', async () => {
+    const {default: scanResponse} = await import('./fixtures/scan-404-NotFound.json', {assert: {type: 'json'}})
+    scanMock.mockReturnValue(scanResponse)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(404)
+    expect(output.statusCode).toEqual(404)
     const body = JSON.parse(output.body)
-    expect(body.error.code).to.equal('custom-4XX-generic')
-    expect(body.error.message).to.equal("User doesn't exist")
+    expect(body.error.code).toEqual('custom-4XX-generic')
+    expect(body.error.message).toEqual("User doesn't exist")
   })
-  it('should throw an error if duplicates are found', async () => {
-    scanStub.returns(localFixture('scan-300-MultipleChoices.json'))
+  test('should throw an error if duplicates are found', async () => {
+    const {default: scanResponse} = await import('./fixtures/scan-300-MultipleChoices.json', {assert: {type: 'json'}})
+    scanMock.mockReturnValue(scanResponse)
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(300)
+    expect(output.statusCode).toEqual(300)
     const body = JSON.parse(output.body)
-    expect(body.error.code).to.equal('custom-3XX-generic')
-    expect(body.error.message).to.equal('Duplicate user detected')
+    expect(body.error.code).toEqual('custom-3XX-generic')
+    expect(body.error.message).toEqual('Duplicate user detected')
   })
-  it('should reject an invalid request', async () => {
+  test('should reject an invalid request', async () => {
     event.body = 'not-JSON'
     const output = await handler(event, context)
-    expect(output.statusCode).to.equal(400)
+    expect(output.statusCode).toEqual(400)
   })
   describe('#AWSFailure', () => {
-    it('AWS.DynamoDB.DocumentClient.scan', async () => {
-      scanStub.returns(undefined)
-      expect(handler(event, context)).to.be.rejectedWith(UnexpectedError)
+    test('AWS.DynamoDB.DocumentClient.scan', async () => {
+      const message = 'AWS request failed'
+      scanMock.mockReturnValue(undefined)
+      await expect(handler(event, context)).rejects.toThrowError(message)
     })
   })
 })

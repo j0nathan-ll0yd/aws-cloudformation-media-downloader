@@ -1,13 +1,11 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
-import * as jwt from 'jsonwebtoken'
-import {Jwt, SignOptions} from 'jsonwebtoken'
-import * as jwksClient from 'jwks-rsa'
-import {promisify} from 'util'
+import jwt from 'jsonwebtoken'
+import jwksClient from 'jwks-rsa'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
 import {UnauthorizedError, UnexpectedError} from './errors'
-import {GetSecretValueRequest} from 'aws-sdk/clients/secretsmanager'
+import {GetSecretValueRequest} from '@aws-sdk/client-secrets-manager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string
 let APPLESIGNINGKEY: string
@@ -142,7 +140,7 @@ export async function getAppleClientSecret(): Promise<string> {
     algorithm: 'ES256',
     header: headers,
     expiresIn: '24h'
-  } as SignOptions)
+  } as jwt.SignOptions)
 }
 
 /**
@@ -190,7 +188,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
   try {
-    const decodedPayload = jwt.decode(token, {complete: true}) as Jwt
+    const decodedPayload = jwt.decode(token, {complete: true}) as jwt.Jwt
     logDebug('verifyAppleToken.decodedPayload', decodedPayload)
     const kid = decodedPayload.header.kid
 
@@ -202,8 +200,9 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
     // lookup Apple's public keys (via JSON) and convert to a proper key file
     logInfo('verifyAppleToken.jwksClient')
     const client = jwksClient({jwksUri: 'https://appleid.apple.com/auth/keys'})
-    const getSigningKey = promisify(client.getSigningKey)
-    const key = await getSigningKey(kid)
+    logDebug('verifyAppleToken.jwksClient.client', client)
+    logDebug('verifyAppleToken.jwksClient.client.getSigningKey', client.getSigningKey)
+    const key = await client.getSigningKey(kid)
     logDebug('verifyAppleToken.key', key)
     if (typeof key === 'object' && 'rsaPublicKey' in key) {
       const jwtPayload = jwt.verify(token, key.rsaPublicKey) as SignInWithAppleVerifiedToken
@@ -216,6 +215,8 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
       throw new UnauthorizedError(message)
     }
   } catch (err) {
+    logError(`verifyAppleToken.err <= ${err}`)
+    logError(`verifyAppleToken.err <= ${JSON.stringify(err)}`)
     const message = 'Invalid token'
     logError(`jwt.verify <= ${message}`)
     throw new UnauthorizedError(message)

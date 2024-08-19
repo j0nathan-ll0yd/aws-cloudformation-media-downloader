@@ -1,15 +1,15 @@
 // These are methods that are shared across multiple lambdas
 import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {logDebug} from './lambda-helpers'
+import {logDebug, logInfo} from './lambda-helpers'
 import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
-import {Types} from 'aws-sdk/clients/stepfunctions'
 import {startExecution} from '../lib/vendor/AWS/StepFunctions'
 import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
 import {FileStatus} from '../types/enums'
+import {StartExecutionInput} from '@aws-sdk/client-sfn'
 
 /**
  * Disassociates a deviceId from a User
@@ -57,6 +57,7 @@ export async function getUserDevices(table: string, userId: string): Promise<Dyn
   if (!response || !response.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
+
   return response.Items as DynamoDBUserDevice[]
 }
 
@@ -106,6 +107,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   if (!scanResponse || !scanResponse.Items) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
+
   return scanResponse.Items as User[]
 }
 
@@ -120,7 +122,7 @@ export async function initiateFileDownload(fileId: string) {
     input: JSON.stringify({fileId}),
     name: new Date().getTime().toString(),
     stateMachineArn: process.env.StateMachineArn
-  } as Types.StartExecutionInput
+  } as StartExecutionInput
   logDebug('startExecution <=', params)
   const output = await startExecution(params)
   logDebug('startExecution =>', output)
@@ -133,6 +135,7 @@ export async function initiateFileDownload(fileId: string) {
  * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
 export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
+  logInfo('getFileFromMetadata <=', metadata)
   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
   const videoUrl = metadata.formats[0].url
   const options: AxiosRequestConfig = {
@@ -159,7 +162,8 @@ export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBF
  * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
-  //logDebug('axios <= ', options)
+  logDebug('axios <= ', options)
+  logDebug(JSON.stringify(axios))
   logDebug('axios')
   const axiosResponse = await axios(options)
   logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
