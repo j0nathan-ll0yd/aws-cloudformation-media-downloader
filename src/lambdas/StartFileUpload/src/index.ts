@@ -1,9 +1,8 @@
-import {videoInfo} from 'ytdl-core'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
 import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
 import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
-import {assertIsError, transformVideoInfoToMetadata} from '../../../util/transformers'
+import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {CreateMultipartUploadRequest} from '@aws-sdk/client-s3'
 import {getFileFromMetadata, upsertFile} from '../../../util/shared'
@@ -30,8 +29,7 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
   try {
     logDebug('fetchVideoInfo <=', fileId)
-    const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
-    const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
+    const myMetadata: Metadata = await fetchVideoInfo(fileUrl)
     const myDynamoItem = await getFileFromMetadata(myMetadata)
     await upsertFile(myDynamoItem)
 
@@ -59,7 +57,7 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
       partSize,
       partTags: [],
       uploadId: output.UploadId,
-      url: myMetadata.formats[0].url
+      url: myMetadata.videoUrl
     } as UploadPartEvent
   } catch (error) {
     assertIsError(error)

@@ -137,7 +137,7 @@ export async function initiateFileDownload(fileId: string) {
 export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
   logInfo('getFileFromMetadata <=', metadata)
   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-  const videoUrl = metadata.formats[0].url
+  const videoUrl = metadata.videoUrl
   const options: AxiosRequestConfig = {
     method: 'head',
     timeout: 900000,
@@ -163,8 +163,6 @@ export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBF
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
   logDebug('axios <= ', options)
-  logDebug(JSON.stringify(axios))
-  logDebug('axios')
   const axiosResponse = await axios(options)
   logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
   logDebug('axios.headers =>', axiosResponse.headers)

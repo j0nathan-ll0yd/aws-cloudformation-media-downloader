@@ -29,6 +29,10 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   scan: jest.fn()
 }))
 
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
+  invoke: jest.fn().mockReturnValue({})
+}))
+
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
