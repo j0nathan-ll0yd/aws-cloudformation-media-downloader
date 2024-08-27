@@ -10,7 +10,7 @@ const config: webpack.Configuration = {
   mode: 'production',
   entry: glob.sync('./src/lambdas/**/src/index.ts').reduce<Record<string, string>>((acc, filePath) => {
     // parse the filepath to the directory of the lambda
-    console.log(filePath)
+    console.log(`Building TypeScript file at: ${filePath}`)
     filePath = './' + filePath
     const functionName = filePath.split(/\//)[3]
     acc[functionName] = './' + filePath
@@ -24,6 +24,7 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-sfn': '@aws-sdk/client-sfn',
     '@aws-sdk/client-sns': '@aws-sdk/client-sns',
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
+    '@aws-sdk/client-lambda': '@aws-sdk/client-lambda',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
     '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
   },

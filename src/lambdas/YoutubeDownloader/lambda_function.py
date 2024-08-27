@@ -1,57 +1,145 @@
+import logging
+logger = logging.getLogger(__name__)
+
+FFMPEG_STATIC = "/var/task/ffmpeg"
+if logging.getLogger().hasHandlers():
+    # required for the Lambda context
+    logging.getLogger().setLevel(logging.DEBUG)
+
+    import subprocess
+    result = subprocess.run([FFMPEG_STATIC, '-version'], capture_output=True, text=True)
+    print("STDOUT:", result.stdout)
+    print("STDERR:", result.stderr)
+else:
+    # required for the local context
+    logging.basicConfig(level=logging.DEBUG)
+
 import os
+import time
 import json
+import sys
+
+filepath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, filepath + "/packages/local")
+import requests
 import yt_dlp
-import random
 
-# Split dependencies based on the architecture type; then switch for local development
-# https://www.reddit.com/r/learnpython/comments/152udwe/custom_directory_for_python_dependencies/
 
-def get_headers():
-  return [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/37.0.2062.94 Chrome/37.0.2062.94 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-  'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/600.8.9 (KHTML, like Gecko) Version/8.0.8 Safari/600.8.9',
-  'Mozilla/5.0 (iPad; CPU OS 8_4_1 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12H321 Safari/600.1.4',
-  'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10240',
-  'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0',
-  'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko',
-  'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko'
-  ]
+def get_static_formats():
+    with open(filepath + "/fixtures/formats.json", "r") as file:
+        formats = json.load(file)
+        return formats
 
-def get_random_header():
-    random_header = random.choice(get_headers())
-    refactored_header = random_header[:len(random_header)-1]
-    header_dict = {"User-Agent": str(refactored_header)}
-    return header_dict
-
-# To add dependencies: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries
 def lambda_handler(event, context):
-    print('## ENVIRONMENT VARIABLES')
-    print(os.environ['AWS_LAMBDA_LOG_GROUP_NAME'])
-    print(os.environ['AWS_LAMBDA_LOG_STREAM_NAME'])
-    print('## EVENT')
-    print(event)
-    json_region = os.environ['AWS_REGION']
+    logger.info('## EVENT')
+    logger.debug(event)
+    logger.info('## CONTEXT')
+    logger.debug(context)
+    uri = event.get("uri")
+    if uri is None:
+        return {
+            'statusCode': 400,
+            'body': {"message": "uri is required"}
+        }
 
-    # Proxy from: https://proxyscrape.com/free-proxy-list
+    # get a proxy to use via Lambda
+    proxy = get_proxy_list()
+
     options = {
-      "quiet": False,
-      "no_warnings": False
-      "allow_unplayable_formats": False,
-      "format": "bestvideo*+bestaudio/best",
-      "proxy": "http://130.36.47.108:80/",
-      "add_header": get_random_header()
+        "quiet": False,
+        "cachedir": "/tmp/", # won't work on AWS Lambda
+        "no_warnings": False,
+        "allow_unplayable_formats": False,
+        "format": 'bestvideo*+bestaudio/best',
+        "proxy": proxy,
+        "ffmpeg_location": FFMPEG_STATIC,
+        "prefer_ffmpeg": True,
     }
-    print(options)
+    logger.info('## YOUTUBEDL OPTIONS')
+    logger.debug(json.dumps(options, sort_keys=True, indent=2))
 
     ytdl = yt_dlp.YoutubeDL(options)
-    uri = "https://www.youtube.com/watch?v=7E-cwdnsiow"
-    print(uri)
     info = ytdl.extract_info(uri, download=False, force_generic_extractor=False)
-    print(json.dumps(ydl.sanitize_info(info)))
+    logger.info('## INFO')
+    logger.info(info)
+    formats = info.get("formats")
+    # formats = get_static_formats()
+    logger.info('## FORMATS')
+    logger.info(json.dumps(formats))
+    # the list is in ascending order of quality, so we reverse it to get the best quality first
+    filtered_formats = list(filter(lambda x: x.get("ext") == "mp4" and x.get("protocol") == "https", formats[::-1]))
+    best_format = filtered_formats[0]
+    logger.info('## BEST_FORMAT')
+    logger.info(json.dumps(best_format, sort_keys=True, indent=2))
+    response_data = {
+        "videoId": info.get("id"),
+        "videoUrl": best_format.get("url"),
+        "title": info.get("title"),
+        "description": info.get("description"),
+        "imageUri": info.get("thumbnail"),
+        "published": info.get("timestamp"),
+        "uploaderId": info.get("uploader_id"),
+        "uploaderName": info.get("uploader"),
+        "ext": best_format.get("ext"),
+        "mimeType": "video/mp4",
+    }
+    logger.info('## RESPONSE')
+    logger.info(json.dumps(response_data, sort_keys=True, indent=2))
+    return {
+        'statusCode': 200,
+        'body': response_data
+    }
+
+def check_proxy(proxy):
+    url = "https://httpbun.com/get"
+    proxies = {
+        "http": proxy,
+        "https": proxy
+    }
+    try:
+        logger.info('## CHECK PROXY')
+        logger.debug(proxy)
+        response = requests.get(url, proxies=proxies, timeout=5)
+        logger.debug(json.dumps(dict(response.headers), sort_keys=True, indent=2))
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Proxy check failed: {e}")
+        return False
+
+def get_proxy_list():
+    # Proxy from: https://proxyscrape.com/free-proxy-list
+    url = "https://api.proxyscrape.com/v3/free-proxy-list/get"
+    params = {
+        "request": "displayproxies",
+        "proxy_format": "protocolipport",
+        "timeout": 5000,
+        "country": "us",
+        "ssl": "all",
+        "anonymity": "all",
+        "format": "text"
+    }
+    logger.info('## GET PROXY LIST')
+    response = requests.get(url, params=params)
+    logger.debug(json.dumps(dict(response.headers), sort_keys=True, indent=2))
+    if response.status_code != 200:
+        raise Exception("Failed to get proxy list")
+    elif response.text == "":
+        raise Exception("Empty response")
+    elif response.content == 0:
+        raise Exception("Empty content")
+
+    proxies = response.text.split("\r\n")
+    for proxy in proxies:
+        if proxy.startswith("http") is False:
+            continue
+
+        if check_proxy(proxy):
+            return proxy
+        time.sleep(1)
+    raise Exception("No proxies available")
+
+# This call is ignored in production, but useful for local testing
+lambda_handler({ "uri": "https://www.youtube.com/watch?v=4ZmGmryMKI4"}, {})
