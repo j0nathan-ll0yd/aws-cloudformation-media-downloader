@@ -128,10 +128,10 @@ Once created, you will extract the certificate and the private key in to separat
 
 ```bash
 # Extract the private key
-openssl pkcs12 -in certificate.p12 -nodes -nocerts | sed -ne '/-BEGIN PRIVATE KEY-/,/-END PRIVATE KEY-/p' > privateKey.txt
+openssl pkcs12 -in certificate.p12 -nodes -nocerts -legacy | sed -ne '/-BEGIN PRIVATE KEY-/,/-END PRIVATE KEY-/p' > privateKey.txt
 
 # Extract the certificate file
-openssl pkcs12 -in certificate.p12 -clcerts -nokeys | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > certificate.txt
+openssl pkcs12 -in certificate.p12 -clcerts -nokeys -legacy  | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > certificate.txt
 
 # Create the directories
 mkdir -p secure/APNS_SANDBOX

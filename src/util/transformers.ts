@@ -38,7 +38,7 @@ export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResp
     userId: verifiedToken.sub,
     email: verifiedToken.email,
     emailVerified: verifiedToken.email_verified,
-    isPrivateEmail: verifiedToken.is_private_email
+    isPrivateEmail: verifiedToken.is_private_email !== undefined ? verifiedToken.is_private_email : false
   }
 }
 
