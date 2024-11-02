@@ -15,19 +15,36 @@ import {Part} from '@aws-sdk/client-s3'
 
 interface Metadata {
   videoId: string
+  videoUrl: string
   fileName: string
   escapedTitle: string
   description: string
-  formats: videoFormat[]
   mimeType: string
   ext: string
   imageUri?: string
-  viewCount?: number
-  timestamp?: number
-  keywords?: string[]
-  author: Author
+  authorId: string
+  authorName: string
   title: string
   published: number // time in milliseconds
+}
+
+interface YouTubeVideoMetadata {
+  [key: string]: string | number
+  videoId: string
+  videoUrl: string
+  description: string
+  title: string
+  imageUri: string
+  published: number // time in milliseconds
+  uploaderId: string
+  uploaderName: string
+  ext: string
+  mimeType: string
+}
+
+interface YouTubeDownloaderLambdaResponse {
+  statusCode: number
+  body: YouTubeVideoMetadata
 }
 
 interface StartFileUploadParams {

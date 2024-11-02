@@ -32,7 +32,9 @@ export async function handler(event: UploadPartEvent): Promise<CompleteFileUploa
       UploadId: uploadId
     }
 
+    logDebug('uploadPart <=')
     const partData = await uploadPart(params)
+    logDebug('partData =', partData)
     partTags.push({ETag: partData.ETag, PartNumber: partNumber})
     const newPartEnd = Math.min(partEnd + partSize, bytesTotal)
     const newBytesRemaining = bytesRemaining - partSize
@@ -50,6 +52,7 @@ export async function handler(event: UploadPartEvent): Promise<CompleteFileUploa
       uploadId,
       url
     }
+    logDebug('nextPart =', nextPart)
     if (newBytesRemaining < 0) {
       const finalPart = {
         bucket,

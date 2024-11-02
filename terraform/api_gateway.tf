@@ -28,7 +28,8 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_method.RegisterDevicePost),
       jsonencode(aws_api_gateway_method.RegisterUserPost),
       jsonencode(aws_api_gateway_method.WebhookFeedlyPost),
-      jsonencode(aws_api_gateway_method.UserSubscribePost)
+      jsonencode(aws_api_gateway_method.UserSubscribePost),
+      jsonencode(aws_api_gateway_method.HealthCheckGet)
     ])))
   }
   lifecycle {
