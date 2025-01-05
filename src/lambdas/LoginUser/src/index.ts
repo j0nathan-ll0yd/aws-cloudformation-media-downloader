@@ -1,7 +1,7 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {loginUserConstraints} from '../../../util/constraints'
+import {loginUserSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
@@ -15,7 +15,7 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as UserLogin
-    validateRequest(requestBody, loginUserConstraints)
+    validateRequest(requestBody, loginUserSchema)
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
