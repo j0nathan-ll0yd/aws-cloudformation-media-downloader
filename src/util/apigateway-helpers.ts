@@ -1,16 +1,16 @@
-import Joi from 'joi';
+import Joi from 'joi'
 import {CustomAPIGatewayRequestAuthorizerEvent, DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '../types/main'
 import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
-import {validateSchema} from './constraints'
 import {APIGatewayEvent} from 'aws-lambda'
+import {validateSchema} from './constraints'
 
 export function validateRequest(requestBody: Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin, schema: Joi.ObjectSchema): void {
-  const validationResult = validateSchema(schema, requestBody);
-  if (validationResult) {
-    logError('validateRequest =>', validationResult.errors);
-    throw new ValidationError('Bad Request', validationResult.errors);
+  const validationResult = validateSchema(schema, requestBody)
+  if (validationResult && validationResult.errors) {
+    logError('validateRequest =>', validationResult.errors)
+    throw new ValidationError('Bad Request', validationResult.errors)
   }
 }
 

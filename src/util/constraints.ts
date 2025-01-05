@@ -1,23 +1,8 @@
 import Joi from 'joi'
-import ytdlCore from 'ytdl-core'
-
-// Custom Joi extension for YouTube URL validation
-const joiYouTubeURL = Joi.extend((joi) => ({
-  type: 'youtubeUrl',
-  base: joi.string(),
-  messages: {
-    'youtubeUrl.invalid': '{{#label}} must be a valid YouTube URL'
-  },
-  validate(value, helpers) {
-    if (!ytdlCore.validateURL(value)) {
-      return {value, errors: helpers.error('youtubeUrl.invalid')}
-    }
-    return {value} // Add this line to return a value when validation passes
-  }
-}))
+import {logInfo} from './lambda-helpers'
 
 export const feedlyEventSchema = Joi.object({
-  articleURL: joiYouTubeURL.youtubeUrl().required()
+  articleURL: Joi.string().required().pattern(new RegExp('^((?:https?:)?\\/\\/)?((?:www|m)\\.)?((?:youtube(?:-nocookie)?\\.com|youtu.be))(\\/(?:[\\w\\-]+\\?v=|embed\\/|live\\/|v\\/)?)([\\w\\-]+)(\\S+)?$')).message('is not a valid YouTube URL')
 })
 
 export const registerDeviceSchema = Joi.object({
@@ -41,13 +26,29 @@ export const loginUserSchema = Joi.object({
 
 // Helper function to validate data against a schema
 export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
-  const {error} = schema.validate(data, {abortEarly: false})
+  const options = {
+    abortEarly: false,
+    allowUnknown: true,
+    errors: {
+      wrap: {
+        label: ''
+      }
+    }
+  }
+
+  const {error} = schema.validate(data, options)
   if (error) {
-    const errors = error.details.map((detail) => ({
-      attribute: detail.path.join('.'),
-      error: detail.message
-    }))
-    return {errors}
+    const errorHash: {[key: string]: [string]} = {}
+    error.details.map((detail) => {
+      logInfo('Error detail', detail)
+      console.log(JSON.stringify(detail))
+      if (!errorHash[`${detail.context?.label!}`]) {
+        errorHash[`${detail.context?.label!}`] = [detail.message]
+      } else {
+        errorHash[`${detail.context?.label!}`].push(detail.message)
+      }
+    })
+    return {errors: errorHash}
   }
   return null
 }
