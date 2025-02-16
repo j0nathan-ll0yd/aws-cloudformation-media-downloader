@@ -5,7 +5,7 @@ export class CustomLambdaError extends Error {
   statusCode: number | undefined
 }
 
-// Called when the client request is invalid (usually via validate.js)
+// Called when the client request is invalid (usually via Joi validation)
 export class ValidationError extends CustomLambdaError {
   constructor(message: string, errors?: object, statusCode = 400) {
     super(message)

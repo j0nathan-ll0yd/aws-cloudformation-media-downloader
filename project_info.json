@@ -16,7 +16,7 @@
   "Important utilities and data structures": {
     "apigateway-helpers.ts": "Utility functions for lambdas behind an API Gateway",
     "constants.ts": "Contains simple constant data structures",
-    "constraints.ts": "Constraint settings for the validate.js module - for validation of lambda inputs",
+    "constraints.ts": "Constraint settings using Joi - for validation of lambda inputs",
     "dynamodb-helpers.ts": "Utility functions for interaction with DynamoDB",
     "errors.ts": "Shared error types for the project",
     "github-helpers.ts": "Utility functions for using GitHub",

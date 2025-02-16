@@ -1,7 +1,7 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {userSubscribeConstraints} from '../../../util/constraints'
+import {userSubscribeSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {subscribeEndpointToTopic} from '../../../util/shared'
 
@@ -19,7 +19,7 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   try {
     verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as UserSubscribe
-    validateRequest(requestBody, userSubscribeConstraints)
+    validateRequest(requestBody, userSubscribeSchema)
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
