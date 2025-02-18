@@ -10,7 +10,7 @@
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
-    "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
+    "build": "node --no-warnings --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
     "build-dependencies": "./bin/build-dependencies.sh",
     "install-prod": "npm install --only=production",
     "lint": "./node_modules/.bin/eslint -c ./eslint.config.mjs .",
@@ -28,6 +28,7 @@
   "dependencies": {
     "@aws-sdk/client-api-gateway": "^3.716.0",
     "@aws-sdk/client-dynamodb": "^3.716.0",
+    "@aws-sdk/client-lambda": "^3.749.0",
     "@aws-sdk/client-s3": "^3.717.0",
     "@aws-sdk/client-secrets-manager": "^3.716.0",
     "@aws-sdk/client-sfn": "^3.716.0",

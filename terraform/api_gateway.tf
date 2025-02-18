@@ -28,7 +28,8 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_method.RegisterDevicePost),
       jsonencode(aws_api_gateway_method.RegisterUserPost),
       jsonencode(aws_api_gateway_method.WebhookFeedlyPost),
-      jsonencode(aws_api_gateway_method.UserSubscribePost)
+      jsonencode(aws_api_gateway_method.UserSubscribePost),
+      jsonencode(aws_api_gateway_method.HealthCheckGet)
     ])))
   }
   lifecycle {
@@ -93,7 +94,11 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 resource "aws_iam_role" "ApiGatewayCloudwatchRole" {
   name               = "ApiGatewayCloudwatchRole"
   assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatchRole.json
-  managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"]
+}
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayCloudwatchRole_policy" {
+  role       = aws_iam_role.ApiGatewayCloudwatchRole.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
 data "aws_iam_policy_document" "ApiGatewayCloudwatchRole" {

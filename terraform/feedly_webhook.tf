@@ -129,6 +129,10 @@ data "aws_iam_policy_document" "MultipartUpload" {
     ]
     resources = [aws_s3_bucket.Files.arn]
   }
+  statement {
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.YouTubeDownloader.arn]
+  }
 }
 
 resource "aws_iam_role" "MultipartUploadRole" {
@@ -170,8 +174,9 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket             = aws_s3_bucket.Files.id
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
+      Bucket                     = aws_s3_bucket.Files.id
+      DynamoDBTableFiles         = aws_dynamodb_table.Files.name
+      YouTubeDownloaderLambdaArn = aws_lambda_function.YouTubeDownloader.arn
     }
   }
 }
