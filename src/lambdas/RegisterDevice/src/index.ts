@@ -4,7 +4,7 @@ import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../
 import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {registerDeviceConstraints} from '../../../util/constraints'
+import {registerDeviceSchema} from '../../../util/constraints'
 import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
@@ -103,7 +103,7 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   try {
     verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
-    validateRequest(requestBody, registerDeviceConstraints)
+    validateRequest(requestBody, registerDeviceSchema)
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }

@@ -5,23 +5,23 @@ import {invoke} from './AWS/Lambda'
 import {InvocationType, LogType} from '@aws-sdk/client-lambda'
 
 export async function fetchVideoInfo(uri: string): Promise<Metadata> {
-  logDebug('fetchVideoInfo =>')
+  logDebug('YouTube.fetchVideoInfo =>')
   const params = {
     FunctionName: process.env.YouTubeDownloaderLambdaArn,
     InvocationType: InvocationType.RequestResponse,
     LogType: LogType.None,
     Payload: Buffer.from(JSON.stringify({uri}), 'utf8')
   }
-  logDebug('fetchVideoInfo <=', params)
+  logDebug('YouTube.fetchVideoInfo <=', params)
   const encodedResponse = await invoke(params)
-  logDebug('fetchVideoInfo =>', encodedResponse)
+  logDebug('YouTube.fetchVideoInfo =>', encodedResponse)
   if (!encodedResponse.Payload) {
     throw new UnexpectedError('No payload returned from YouTubeDownloaderLambda')
   }
   const responseBodyString = Buffer.from(encodedResponse.Payload).toString()
-  logDebug('fetchVideoInfo =>', responseBodyString)
+  logDebug('YouTube.fetchVideoInfo =>', responseBodyString)
   const response = JSON.parse(responseBodyString) as YouTubeDownloaderLambdaResponse
-  logDebug('fetchVideoInfo =>', response)
+  logDebug('YouTube.fetchVideoInfo =>', response)
   const info: YouTubeVideoMetadata = response.body as YouTubeVideoMetadata
   const keys = ['videoId', 'videoUrl', 'title', 'description', 'imageUri', 'ext', 'published', 'mimeType', 'uploaderId', 'uploaderName']
   for (const key of keys) {

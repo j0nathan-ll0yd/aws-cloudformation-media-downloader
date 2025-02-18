@@ -12,7 +12,9 @@ const excludedSourceVariables = {
   hasOwnProperty: 1,
   let: 1,
   no_proxy: 1,
-  t: 1
+  t: 1,
+  http_proxy: 1,
+  https_proxy: 1
 }
 
 function filterSourceVariables(extractedVariables: string[]): string[] {

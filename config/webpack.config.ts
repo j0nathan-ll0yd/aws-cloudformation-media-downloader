@@ -26,7 +26,8 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
     '@aws-sdk/client-lambda': '@aws-sdk/client-lambda',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
-    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
+    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb',
+    'supports-color': 'supports-color'
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']

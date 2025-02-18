@@ -6,10 +6,12 @@ if logging.getLogger().hasHandlers():
   # required for the Lambda context
   logging.getLogger().setLevel(logging.DEBUG)
 
+  ''' Used to ensure ffmpeg was installed; it is :)
   import subprocess
   result = subprocess.run([FFMPEG_STATIC, '-version'], capture_output=True, text=True)
   print("STDOUT:", result.stdout)
   print("STDERR:", result.stderr)
+  '''
 else:
   # required for the local context
   logging.basicConfig(level=logging.DEBUG)

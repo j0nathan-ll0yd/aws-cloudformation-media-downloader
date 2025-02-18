@@ -5,7 +5,7 @@ import {getVideoID} from '../../../lib/vendor/YouTube'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {feedlyEventConstraints} from '../../../util/constraints'
+import {feedlyEventSchema} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
@@ -88,7 +88,7 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as Webhook
-    validateRequest(requestBody, feedlyEventConstraints)
+    validateRequest(requestBody, feedlyEventSchema)
     const fileId = getVideoID(requestBody.articleURL)
     const {userId} = getUserDetailsFromEvent(event)
     if (!userId) {
