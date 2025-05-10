@@ -2,9 +2,28 @@ resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
 }
 
-resource "aws_s3_bucket_acl" "Files" {
+resource "aws_s3_bucket_ownership_controls" "Files" {
   bucket = aws_s3_bucket.Files.id
-  acl    = "public-read"
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "FilesAcl" {
+  depends_on = [aws_s3_bucket_ownership_controls.Files]
+  bucket     = aws_s3_bucket.Files.id
+  acl        = "private"
+}
+
+data "aws_iam_policy_document" "FilesPolicy" {
+  statement {
+    actions = ["s3:GetObject"]
+    resources = [ "${aws_s3_bucket.Files.arn}/*" ]
+    principals {
+      identifiers = ["*"]
+      type = "*"
+    }
+  }
 }
 
 resource "aws_s3_bucket_notification" "Files" {
@@ -68,6 +87,18 @@ data "aws_iam_policy_document" "S3ObjectCreated" {
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
+  }
+
+  # For uploading the DefaultFile
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:DeleteObject"
+    ]
+    resources = [
+      "${aws_s3_bucket.Files.arn}/*"
+    ]
   }
 }
 

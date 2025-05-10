@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
+    "codegraph-typescript": "npx tsx codegraph.ts",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
@@ -26,6 +27,7 @@
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
+    "@1password/sdk": "^0.3.0",
     "@aws-sdk/client-api-gateway": "^3.716.0",
     "@aws-sdk/client-dynamodb": "^3.716.0",
     "@aws-sdk/client-s3": "^3.717.0",
@@ -47,6 +49,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
+    "@anthropic-ai/claude-code": "^0.2.103",
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
     "@babel/preset-typescript": "^7.26.0",
@@ -78,6 +81,7 @@
     "terser-webpack-plugin": "^5.3.11",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
+    "ts-morph": "^25.0.1",
     "ts-node": "^10.9.2",
     "typedoc": "^0.27.6",
     "typescript": "^5.7.2",

@@ -14,6 +14,14 @@ data "aws_iam_policy_document" "ListFiles" {
       aws_dynamodb_table.UserFiles.arn
     ]
   }
+  statement {
+    actions = [
+      "s3:GetObject"
+    ]
+    resources = [
+      "${aws_s3_bucket.Files.arn}/*"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "ListFilesRolePolicy" {
@@ -118,5 +126,4 @@ resource "aws_s3_object" "DefaultFile" {
   key          = "default-file.mp4"
   source       = data.local_file.DefaultFile.filename
   etag         = filemd5(data.local_file.DefaultFile.filename)
-  acl          = "public-read"
 }
