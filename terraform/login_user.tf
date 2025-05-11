@@ -54,13 +54,11 @@ resource "aws_lambda_function" "LoginUser" {
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
 
   environment {
-    variables = merge(
-      local.common_lambda_environment_variables,
-      {
-        DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-        EncryptionKeySecretId = "PrivateEncryptionKey"
-      }
-    )
+    variables = {
+      DynamoDBTableUsers             = aws_dynamodb_table.Users.name
+      EncryptionKeySecretId          = "PrivateEncryptionKey"
+      OnePasswordServiceAccountToken = var.ONE_PASSWORD_SERVICE_ACCOUNT_TOKEN
+    }
   }
 }
 

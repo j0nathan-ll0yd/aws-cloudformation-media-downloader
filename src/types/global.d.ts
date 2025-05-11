@@ -15,6 +15,7 @@ declare global {
       EncryptionKeySecretId: string
       GithubPersonalToken: string
       MultiAuthenticationPathParts: string
+      OnePasswordServiceAccountToken: string
       ReservedClientIp: string
       SNSQueueUrl: string
       StateMachineArn: string

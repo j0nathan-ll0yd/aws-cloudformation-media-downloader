@@ -55,8 +55,9 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-      EncryptionKeySecretId = "PrivateEncryptionKey"
+      DynamoDBTableUsers             = aws_dynamodb_table.Users.name
+      EncryptionKeySecretId          = "PrivateEncryptionKey"
+      OnePasswordServiceAccountToken = var.ONE_PASSWORD_SERVICE_ACCOUNT_TOKEN
     }
   }
 }

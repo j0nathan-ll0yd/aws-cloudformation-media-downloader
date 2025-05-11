@@ -69,11 +69,12 @@ resource "aws_lambda_function" "UserDelete" {
 
   environment {
     variables = {
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
-      DynamoDBTableUsers       = aws_dynamodb_table.Users.name
-      GithubPersonalToken      = "GithubPersonalToken"
+      DynamoDBTableDevices           = aws_dynamodb_table.Devices.name
+      DynamoDBTableUserDevices       = aws_dynamodb_table.UserDevices.name
+      DynamoDBTableUserFiles         = aws_dynamodb_table.UserFiles.name
+      DynamoDBTableUsers             = aws_dynamodb_table.Users.name
+      GithubPersonalToken            = "GithubPersonalToken"
+      OnePasswordServiceAccountToken = var.ONE_PASSWORD_SERVICE_ACCOUNT_TOKEN
     }
   }
 }

@@ -21,27 +21,13 @@ data "aws_caller_identity" "current" {}
 
 # Pull environment variables from .env
 locals {
-  envs = { for tuple in regexall("(.*)=(.*)", file("./../.env")) : tuple[0] => sensitive(tuple[1]) }
+  envs = { for tuple in regexall("(.*?)=(.*)", file("./../.env")) : tuple[0] => sensitive(tuple[1]) }
 }
 
-# 1Password service account token
-variable "op_service_account_token" {
-  type        = string
-  description = "1Password service account token"
-  sensitive   = true
-  default     = ""
-}
-
-# Use token from .env file if not provided directly
-locals {
-  op_token = var.op_service_account_token != "" ? var.op_service_account_token : local.envs["OP_SERVICE_ACCOUNT_TOKEN"]
-}
-
-# Common Lambda environment variables for all functions
-locals {
-  common_lambda_environment_variables = {
-    OP_SERVICE_ACCOUNT_TOKEN = local.op_token
-  }
+variable "ONE_PASSWORD_SERVICE_ACCOUNT_TOKEN" {
+  type      = string
+  sensitive = true
+  nullable  = false
 }
 
 data "aws_iam_policy_document" "CommonLambdaLogging" {

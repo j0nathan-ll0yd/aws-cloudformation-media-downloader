@@ -75,18 +75,14 @@ resource "aws_lambda_function" "PruneDevices" {
   timeout          = 300
 
   environment {
-    variables = merge(
-      local.common_lambda_environment_variables,
-      {
-        DynamoDBTableDevices             = aws_dynamodb_table.Devices.name
-        DynamoDBTableUserDevices         = aws_dynamodb_table.UserDevices.name
-        ApnsSigningKey                   = "ApnsSigningKey"
-        ApnsTeam                         = var.APNS_SANDBOX_TEAM
-        ApnsKeyId                        = var.APNS_SANDBOX_KEY_ID
-        ApnsDefaultTopic                 = var.APNS_SANDBOX_DEFAULT_TOPIC
-        ApplePushNotificationServiceKey  = "ApplePushNotificationServiceKey"
-        ApplePushNotificationServiceCert = "ApplePushNotificationServiceCert"
-      }
-    )
+    variables = {
+      DynamoDBTableDevices           = aws_dynamodb_table.Devices.name
+      DynamoDBTableUserDevices       = aws_dynamodb_table.UserDevices.name
+      ApnsSigningKey                 = "ApnsSigningKey"
+      ApnsTeam                       = var.APNS_SANDBOX_TEAM
+      ApnsKeyId                      = var.APNS_SANDBOX_KEY_ID
+      ApnsDefaultTopic               = var.APNS_SANDBOX_DEFAULT_TOPIC
+      OnePasswordServiceAccountToken = var.ONE_PASSWORD_SERVICE_ACCOUNT_TOKEN
+    }
   }
 }
