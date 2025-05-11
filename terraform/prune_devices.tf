@@ -13,14 +13,6 @@ data "aws_iam_policy_document" "PruneDevices" {
     resources = [aws_dynamodb_table.UserDevices.arn]
   }
   statement {
-    actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      aws_secretsmanager_secret.ApplePushNotificationServiceCert.arn,
-      aws_secretsmanager_secret.ApplePushNotificationServiceKey.arn,
-      aws_secretsmanager_secret.ApnsSigningKey.arn,
-    ]
-  }
-  statement {
     actions   = ["sns:DeleteEndpoint"]
     resources = [length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""]
   }
@@ -83,35 +75,18 @@ resource "aws_lambda_function" "PruneDevices" {
   timeout          = 300
 
   environment {
-    variables = {
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      ApnsSigningKey           = aws_secretsmanager_secret.ApnsSigningKey.name
-      ApnsTeam                 = var.APNS_SANDBOX_TEAM
-      ApnsKeyId                = var.APNS_SANDBOX_KEY_ID
-      ApnsDefaultTopic         = var.APNS_SANDBOX_DEFAULT_TOPIC
-    }
+    variables = merge(
+      local.common_lambda_environment_variables,
+      {
+        DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
+        DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+        ApnsSigningKey           = "ApnsSigningKey"
+        ApnsTeam                 = var.APNS_SANDBOX_TEAM
+        ApnsKeyId                = var.APNS_SANDBOX_KEY_ID
+        ApnsDefaultTopic         = var.APNS_SANDBOX_DEFAULT_TOPIC
+        ApplePushNotificationServiceKey = "ApplePushNotificationServiceKey"
+        ApplePushNotificationServiceCert = "ApplePushNotificationServiceCert"
+      }
+    )
   }
-}
-
-resource "aws_secretsmanager_secret" "ApplePushNotificationServiceKey" {
-  name                    = "ApplePushNotificationServiceKey"
-  description             = "The private key for APNS"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "ApplePushNotificationServiceKey" {
-  secret_id     = aws_secretsmanager_secret.ApplePushNotificationServiceKey.id
-  secret_string = file(var.apnsPrivateKeyPath)
-}
-
-resource "aws_secretsmanager_secret" "ApplePushNotificationServiceCert" {
-  name                    = "ApplePushNotificationServiceCert"
-  description             = "The private certificate for APNS"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "ApplePushNotificationServiceCert" {
-  secret_id     = aws_secretsmanager_secret.ApplePushNotificationServiceCert.id
-  secret_string = file(var.apnsCertificatePath)
 }

@@ -1,11 +1,10 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
+import {getSecretValue} from '../lib/vendor/1Password'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
 import {UnauthorizedError, UnexpectedError} from './errors'
-import {GetSecretValueRequest} from '@aws-sdk/client-secrets-manager'
 let APPLE_CONFIG: SignInWithAppleConfig
 let APPLE_PRIVATEKEY: string
 let APPLESIGNINGKEY: string
@@ -15,7 +14,7 @@ let APPLE_PUSH_NOTIFICATION_SERVICE_CERT: string
 let GITHUBPERSONALTOKEN: string
 
 /**
- * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
+ * Retrieves the configuration (object) for Sign In With Apple via 1Password or cache.
  * @returns SignInWithAppleConfig - The configuration object
  * @notExported
  */
@@ -36,7 +35,7 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
 }
 
 /**
- * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * Retrieves the private key for Sign In With Apple via 1Password or cache.
  * @returns string - The private key file
  * @notExported
  */
@@ -57,7 +56,7 @@ export async function getApplePrivateKey(): Promise<string> {
 }
 
 /**
- * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * Retrieves the private key for Sign In With Apple via 1Password or cache.
  * @returns string - The private key file
  * @notExported
  */
@@ -78,7 +77,7 @@ export async function getApplePushNotificationServiceKey(): Promise<string> {
 }
 
 /**
- * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
+ * Retrieves the private key for Sign In With Apple via 1Password or cache.
  * @returns string - The private key file
  * @notExported
  */
@@ -99,7 +98,7 @@ export async function getApplePushNotificationServiceCert(): Promise<string> {
 }
 
 /**
- * Retrieves the private key for user-based login via Secrets Manager or cache.
+ * Retrieves the private key for user-based login via 1Password or cache.
  * @returns string - The private key file
  * @notExported
  */
@@ -107,8 +106,8 @@ export async function getServerPrivateKey(): Promise<string> {
   if (PRIVATEKEY !== undefined) {
     return PRIVATEKEY
   }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.EncryptionKeySecretId} as GetSecretValueRequest
+  // This SecretId has to map to the proper 1Password path
+  const params = {SecretId: process.env.EncryptionKeySecretId || 'PrivateEncryptionKey'}
   logDebug('getServerPrivateKey =>', params)
   const privateKeySecretResponse = await getSecretValue(params)
   logDebug('getServerPrivateKey <=', privateKeySecretResponse)
@@ -194,7 +193,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
 
     // Verify the nonce for the authentication
     // Verify that the iss field contains https://appleid.apple.com
-    // Verify that the aud field is the developer’s client_id
+    // Verify that the aud field is the developer's client_id
     // Verify that the time is earlier than the exp value of the token
 
     // lookup Apple's public keys (via JSON) and convert to a proper key file
@@ -255,7 +254,7 @@ export async function verifyAccessToken(token: string): Promise<ServerVerifiedTo
 }
 
 /**
- * Retrieves the GitHub access token via Secrets Manager or cache.
+ * Retrieves the GitHub access token via 1Password or cache.
  * @returns string - The GitHub personal access token
  * @notExported
  */
@@ -263,8 +262,8 @@ export async function getGithubPersonalToken(): Promise<string> {
   if (GITHUBPERSONALTOKEN !== undefined) {
     return GITHUBPERSONALTOKEN
   }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.GithubPersonalToken} as GetSecretValueRequest
+  // This SecretId has to map to the environment variable or default
+  const params = {SecretId: process.env.GithubPersonalToken || 'GithubPersonalToken'}
   logDebug('getGithubPersonalToken =>', params)
   const privateKeySecretResponse = await getSecretValue(params)
   logDebug('getGithubPersonalToken <=', privateKeySecretResponse)
@@ -277,7 +276,7 @@ export async function getGithubPersonalToken(): Promise<string> {
 }
 
 /**
- * Retrieves the GitHub access token via Secrets Manager or cache.
+ * Retrieves the GitHub access token via 1Password or cache.
  * @returns string - The GitHub personal access token
  * @notExported
  */
@@ -285,8 +284,8 @@ export async function getApnsSigningKey(): Promise<string> {
   if (APPLESIGNINGKEY !== undefined) {
     return APPLESIGNINGKEY
   }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.ApnsSigningKey} as GetSecretValueRequest
+  // This SecretId has to map to the environment variable or default
+  const params = {SecretId: process.env.ApnsSigningKey || 'ApnsSigningKey'}
   logDebug('getApnsSigningKey =>', params)
   const privateKeySecretResponse = await getSecretValue(params)
   logDebug('getApnsSigningKey <=', privateKeySecretResponse)

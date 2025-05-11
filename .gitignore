@@ -18,3 +18,4 @@ terraform/.terraform.lock.hcl
 terraform/.terraform
 .webpackCache
 .python-version
+graph.json

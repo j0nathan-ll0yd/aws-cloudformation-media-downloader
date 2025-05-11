@@ -71,12 +71,16 @@ resource "aws_lambda_function" "RegisterDevice" {
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
 
   environment {
-    variables = {
-      PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
-      PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-    }
+    variables = merge(
+      local.common_lambda_environment_variables,
+      {
+        PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+        PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
+        DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
+        DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+        ApnsSigningKey           = "ApnsSigningKey"
+      }
+    )
   }
 }
 
@@ -124,23 +128,6 @@ variable "APNS_SANDBOX_DEFAULT_TOPIC" {
   type      = string
   sensitive = true
   nullable  = false
-}
-
-resource "aws_secretsmanager_secret" "ApnsSigningKey" {
-  name                    = "ApnsSigningKey"
-  description             = "The private signing key for APNS"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "ApnsSigningKey" {
-  secret_id     = aws_secretsmanager_secret.ApnsSigningKey.id
-  secret_string = file(var.apnsSigningKey)
-}
-
-variable "apnsSigningKey" {
-  type     = string
-  default  = "./../secure/APNS_SANDBOX/signingKey.txt"
-  nullable = false
 }
 
 variable "apnsPrivateKeyPath" {

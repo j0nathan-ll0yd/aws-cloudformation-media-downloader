@@ -31,7 +31,7 @@ const fakeTokenPayload: SignInWithAppleVerifiedToken = {
 }
 
 const getSecretValueMock = jest.fn()
-jest.unstable_mockModule('../lib/vendor/AWS/SecretsManager', () => ({
+jest.unstable_mockModule('../lib/vendor/1Password', () => ({
   getSecretValue: getSecretValueMock
 }))
 

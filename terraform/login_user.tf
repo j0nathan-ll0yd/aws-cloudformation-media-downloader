@@ -5,13 +5,6 @@ resource "aws_iam_role" "LoginUserRole" {
 
 data "aws_iam_policy_document" "LoginUser" {
   statement {
-    actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:prod/SignInWithApple/*",
-      aws_secretsmanager_secret.PrivateEncryptionKey.arn
-    ]
-  }
-  statement {
     actions   = ["dynamodb:Scan"]
     resources = [aws_dynamodb_table.Users.arn]
   }
@@ -61,10 +54,13 @@ resource "aws_lambda_function" "LoginUser" {
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
 
   environment {
-    variables = {
-      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-      EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
-    }
+    variables = merge(
+      local.common_lambda_environment_variables,
+      {
+        DynamoDBTableUsers    = aws_dynamodb_table.Users.name
+        EncryptionKeySecretId = "PrivateEncryptionKey"
+      }
+    )
   }
 }
 
@@ -89,20 +85,4 @@ resource "aws_api_gateway_integration" "LoginUserPost" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.LoginUser.invoke_arn
-}
-
-resource "aws_secretsmanager_secret" "PrivateEncryptionKey" {
-  name                    = "PrivateEncryptionKey"
-  description             = "The secret for generating/validating server-issued JWTs."
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "PrivateEncryptionKey" {
-  secret_id     = aws_secretsmanager_secret.PrivateEncryptionKey.id
-  secret_string = random_password.PrivateEncryptionKey.result
-}
-
-resource "random_password" "PrivateEncryptionKey" {
-  length  = 50
-  special = true
 }
