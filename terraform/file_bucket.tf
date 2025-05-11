@@ -17,11 +17,11 @@ resource "aws_s3_bucket_acl" "FilesAcl" {
 
 data "aws_iam_policy_document" "FilesPolicy" {
   statement {
-    actions = ["s3:GetObject"]
-    resources = [ "${aws_s3_bucket.Files.arn}/*" ]
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.Files.arn}/*"]
     principals {
       identifiers = ["*"]
-      type = "*"
+      type        = "*"
     }
   }
 }
