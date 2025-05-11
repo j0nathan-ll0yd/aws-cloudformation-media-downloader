@@ -4,12 +4,12 @@ import {logDebug} from '../../../util/lambda-helpers'
 // Mapping for secret names to 1Password paths
 const secretPathMap: Record<string, string> = {
   GithubPersonalToken: 'op://AWS/GithubPersonalToken/credential',
-  ApnsSigningKey: 'op://AWS/ApnsSigningKey/credential',
-  ApplePushNotificationServiceKey: 'op://AWS/ApplePushNotificationServiceKey/credential',
-  ApplePushNotificationServiceCert: 'op://AWS/ApplePushNotificationServiceCert/credential',
+  ApnsSigningKey: 'op://AWS/ApnsSigningKey/credential', // signingKey.txt
+  ApplePushNotificationServiceKey: 'op://AWS/ApplePushNotificationServiceKey/credential', //
+  ApplePushNotificationServiceCert: 'op://AWS/ApplePushNotificationServiceCert/credential', // certificate.txt
   PrivateEncryptionKey: 'op://AWS/PrivateEncryptionKey/credential',
   'prod/SignInWithApple/Config': 'op://AWS/6rocnkruqbz74rdl2gyc2cxe5y/credential',
-  'prod/SignInWithApple/AuthKey': 'op://AWS/3wf2hes3b62foviwmwvedju2s4/credential'
+  'prod/SignInWithApple/AuthKey': 'op://AWS/3wf2hes3b62foviwmwvedju2s4/credential' // AuthKey_$team-id.p8
 }
 
 // Initialize the 1Password client

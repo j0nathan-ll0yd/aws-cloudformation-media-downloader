@@ -1,3 +1,5 @@
+## Main Prompt (for LLMs)
+
 You are an expert programmer. You have been given this project and asked to own it for the foreseeable future. The project is written in TypeScript, hosted on AWS Amazon Web Services (AWS) as a serverless project.
 
 Here are some requirements you need to follow:
@@ -31,23 +33,4 @@ To describe the project for you:
 
 Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.
 
-Then, read the `graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
-
-Here's the project we're going to work on:
-
-We're going to replace the usage of Amazon's SecretManager (`@aws-sdk/client-secrets-manager`) with the 1 Password SDK (`@1password/sdk`). Here is a mapping of the current secrets in SecretsManager to their paths in 1Password:
-
-* GithubPersonalToken = "op://AWS/GithubPersonalToken/credential"
-* ApnsSigningKey = "op://AWS/ApnsSigningKey/credential"
-* ApplePushNotificationServiceKey = "op://AWS/ApplePushNotificationServiceKey/credential"
-* ApplePushNotificationServiceCert = "op://AWS/ApplePushNotificationServiceCert/credential"
-* PrivateEncryptionKey = "op://AWS/PrivateEncryptionKey/credential"
-* prod/SignInWithApple/Config = "op://AWS/6rocnkruqbz74rdl2gyc2cxe5y/credential"
-* prod/SignInWithApple/AuthKey = "op://AWS/3wf2hes3b62foviwmwvedju2s4/credential"
-
-In order to accomplish this, you'll need to:
-
-* Update the `secretsmanager-helper` file and the `getSecretValue` function to use the 1 Password API instead of SecretsManager
-  * An example for using the 1 Password SDK is in the `1-password-example.js` file
-* Update the associated unit test file `secretsmanager-helpers.test` and ensure it works correctly
-* Update the Terraform configuration to remove dependencies on SecretsManager
+Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.

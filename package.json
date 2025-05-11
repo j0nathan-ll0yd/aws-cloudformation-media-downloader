@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
-    "codegraph-typescript": "npx tsx codegraph.ts",
+    "codegraph-typescript": "npx tsx ./bin/codegraph.ts > ./build/graph.json",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
