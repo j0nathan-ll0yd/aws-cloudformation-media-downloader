@@ -18,7 +18,7 @@ echo 'Converting HCL to JSON (via hcl2json)'
 hcl2json < "$terraform_hcl_file_path" > "$terraform_json_file_path"
 
 echo 'Converting JSON to Typescript (via Quicktype)'
-quicktype_command="${bin_dir}/../node_modules/.bin/quicktype ${terraform_json_file_path} -o ${types_file_path}"
+quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${terraform_json_file_path} -o ${types_file_path}"
 eval $quicktype_command
 
 echo 'Prepending Typescript nocheck on file'
