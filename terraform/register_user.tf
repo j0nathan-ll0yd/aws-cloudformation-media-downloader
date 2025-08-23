@@ -8,13 +8,6 @@ data "aws_iam_policy_document" "RegisterUser" {
     actions   = ["dynamodb:PutItem", "dynamodb:Scan"]
     resources = [aws_dynamodb_table.Users.arn]
   }
-  statement {
-    actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:prod/SignInWithApple/*",
-      aws_secretsmanager_secret.PrivateEncryptionKey.arn
-    ]
-  }
 }
 
 resource "aws_iam_policy" "RegisterUserRolePolicy" {
@@ -54,7 +47,7 @@ resource "aws_lambda_function" "RegisterUser" {
   function_name    = "RegisterUser"
   role             = aws_iam_role.RegisterUserRole.arn
   handler          = "RegisterUser.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs20.x"
   timeout          = 10
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
@@ -63,7 +56,9 @@ resource "aws_lambda_function" "RegisterUser" {
   environment {
     variables = {
       DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-      EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
+      EncryptionKeySecretId = data.sops_file.secrets.data["platform.key"]
+      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
+      SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
     }
   }
 }

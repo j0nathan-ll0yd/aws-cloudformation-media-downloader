@@ -36,10 +36,6 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
       "arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*/usage"
     ]
   }
-  statement {
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
-  }
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizerRolePolicy" {
@@ -57,7 +53,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   function_name = "ApiGatewayAuthorizer"
   role          = aws_iam_role.ApiGatewayAuthorizer.arn
   handler       = "ApiGatewayAuthorizer.handler"
-  runtime       = "nodejs22.x"
+  runtime       = "nodejs20.x"
   depends_on = [
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicy,
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicyLogging
@@ -67,7 +63,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = {
-      EncryptionKeySecretId = aws_secretsmanager_secret.PrivateEncryptionKey.name
+      EncryptionKeySecretId = data.sops_file.secrets.data["platform.key"]
       MultiAuthenticationPathParts = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part,

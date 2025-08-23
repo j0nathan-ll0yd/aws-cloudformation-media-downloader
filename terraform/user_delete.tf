@@ -62,7 +62,7 @@ resource "aws_lambda_function" "UserDelete" {
   function_name    = "UserDelete"
   role             = aws_iam_role.UserDeleteRole.arn
   handler          = "UserDelete.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
@@ -73,7 +73,7 @@ resource "aws_lambda_function" "UserDelete" {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
       DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
       DynamoDBTableUsers       = aws_dynamodb_table.Users.name
-      GithubPersonalToken      = aws_secretsmanager_secret.GithubPersonalToken.arn
+      GithubPersonalToken      = data.sops_file.secrets.data["github.issue.token"]
     }
   }
 }

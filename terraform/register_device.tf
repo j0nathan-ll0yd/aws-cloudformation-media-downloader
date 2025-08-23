@@ -65,7 +65,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
   handler          = "RegisterDevice.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs20.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
@@ -108,57 +108,12 @@ resource "aws_sns_topic" "PushNotifications" {
   name = "PushNotifications"
 }
 
-variable "APNS_SANDBOX_TEAM" {
-  type      = string
-  sensitive = true
-  nullable  = false
-}
-
-variable "APNS_SANDBOX_KEY_ID" {
-  type      = string
-  sensitive = true
-  nullable  = false
-}
-
-variable "APNS_SANDBOX_DEFAULT_TOPIC" {
-  type      = string
-  sensitive = true
-  nullable  = false
-}
-
-resource "aws_secretsmanager_secret" "ApnsSigningKey" {
-  name                    = "ApnsSigningKey"
-  description             = "The private signing key for APNS"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "ApnsSigningKey" {
-  secret_id     = aws_secretsmanager_secret.ApnsSigningKey.id
-  secret_string = file(var.apnsSigningKey)
-}
-
-variable "apnsSigningKey" {
-  type     = string
-  default  = "./../secure/APNS_SANDBOX/signingKey.txt"
-  nullable = false
-}
-
-variable "apnsPrivateKeyPath" {
-  type    = string
-  default = "./../secure/APNS_SANDBOX/privateKey.txt"
-}
-
-variable "apnsCertificatePath" {
-  type    = string
-  default = "./../secure/APNS_SANDBOX/certificate.txt"
-}
-
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
-  count                     = fileexists(var.apnsPrivateKeyPath) && fileexists(var.apnsCertificatePath) ? 1 : 0
+  count                     = 1
   name                      = "OfflineMediaDownloader"
   platform                  = "APNS_SANDBOX"
-  platform_credential       = file(var.apnsPrivateKeyPath)  # APNS PRIVATE KEY
-  platform_principal        = file(var.apnsCertificatePath) # APNS CERTIFICATE
+  platform_credential       = data.sops_file.secrets.data["apns.staging.privateKey"]  # APNS PRIVATE KEY
+  platform_principal        = data.sops_file.secrets.data["apns.staging.certificate"] # APNS CERTIFICATE
   success_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
   failure_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
 }

@@ -3,23 +3,6 @@ resource "aws_iam_role" "CloudfrontMiddlewareRole" {
   assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
 }
 
-data "aws_iam_policy_document" "CloudfrontMiddleware" {
-  statement {
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
-  }
-}
-
-resource "aws_iam_policy" "CloudfrontMiddlewarePolicy" {
-  name   = "CloudfrontMiddlewarePolicy"
-  policy = data.aws_iam_policy_document.CloudfrontMiddleware.json
-}
-
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicy" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
-  policy_arn = aws_iam_policy.CloudfrontMiddlewarePolicy.arn
-}
-
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   role       = aws_iam_role.CloudfrontMiddlewareRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -41,7 +24,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
   handler          = "CloudfrontMiddleware.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs20.x"
   publish          = true
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path

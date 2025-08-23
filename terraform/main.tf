@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/http"
       version = "3.4.4"
     }
+    sops = {
+      source  = "carlpett/sops"
+      version = "~> 0.7"
+    }
   }
 }
 
@@ -19,9 +23,9 @@ provider "aws" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-# Pull environment variables from .env
-locals {
-  envs = { for tuple in regexall("(.*)=(.*)", file("./../.env")) : tuple[0] => sensitive(tuple[1]) }
+# Read encrypted secrets from YAML
+data "sops_file" "secrets" {
+  source_file = "../secrets.encrypted.yaml"
 }
 
 data "aws_iam_policy_document" "CommonLambdaLogging" {
@@ -93,22 +97,6 @@ data "aws_iam_policy_document" "SNSAssumeRole" {
 
 data "http" "icanhazip" {
   url = "https://ipv4.icanhazip.com/"
-}
-
-variable "GithubPersonalToken" {
-  type    = string
-  default = "./../secure/githubPersonalToken.txt"
-}
-
-resource "aws_secretsmanager_secret" "GithubPersonalToken" {
-  name                    = "GithubPersonalToken"
-  description             = "The private certificate for APNS"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "GithubPersonalToken" {
-  secret_id     = aws_secretsmanager_secret.GithubPersonalToken.id
-  secret_string = file(var.GithubPersonalToken)
 }
 
 output "public_ip" {

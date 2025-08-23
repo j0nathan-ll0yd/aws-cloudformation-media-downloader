@@ -94,6 +94,38 @@ aws configure
 brew install terraform
 ```
 
+* Install [sops](https://www.terraform.io/) (used for secret management)
+
+```bash
+brew install sops age
+
+# Generate a local encryption key (AGE format - modern and simple)
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
+
+# Get the public key for SOPS config
+PUBLIC_KEY=$(age-keygen -y ~/.config/sops/age/keys.txt)
+echo "Your public key: $PUBLIC_KEY"
+
+# Create SOPS config in your project root
+cat > .sops.yaml << EOF
+creation_rules:
+  # YAML and JSON files
+  - path_regex: secrets/.*\.(json|yaml|yml)$
+    age: $PUBLIC_KEY
+EOF
+
+# Create secrets directory
+mkdir -p secrets
+
+echo "Setup complete! Your private key is in ~/.config/sops/age/keys.txt"
+echo "Public key added to .sops.yaml"
+echo "Keep your private key secure and share the public key with team members"
+
+# Encrypt secrets (when updated or created)
+sops --encrypt --output secrets.yaml.encrypted secrets.yaml
+```
+
 * Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
 
 ```bash

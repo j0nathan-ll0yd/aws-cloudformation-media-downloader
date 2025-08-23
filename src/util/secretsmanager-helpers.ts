@@ -1,18 +1,10 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import {getSecretValue} from '../lib/vendor/AWS/SecretsManager'
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
-import {UnauthorizedError, UnexpectedError} from './errors'
-import {GetSecretValueRequest} from '@aws-sdk/client-secrets-manager'
+import {UnauthorizedError} from './errors'
 let APPLE_CONFIG: SignInWithAppleConfig
-let APPLE_PRIVATEKEY: string
-let APPLESIGNINGKEY: string
-let PRIVATEKEY: string
-let APPLE_PUSH_NOTIFICATION_SERVICE_KEY: string
-let APPLE_PUSH_NOTIFICATION_SERVICE_CERT: string
-let GITHUBPERSONALTOKEN: string
 
 /**
  * Retrieves the configuration (object) for Sign In With Apple via Secrets Manager or cache.
@@ -23,16 +15,8 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
   if (APPLE_CONFIG) {
     return APPLE_CONFIG
   }
-  const params = {SecretId: 'prod/SignInWithApple/Config'}
-  logDebug('getAppleConfig =>', params)
-  const configSecretResponse = await getSecretValue(params)
-  logDebug('getAppleConfig <=', params)
-  if (typeof configSecretResponse.SecretString === 'string') {
-    APPLE_CONFIG = JSON.parse(configSecretResponse.SecretString) as SignInWithAppleConfig
-    return APPLE_CONFIG
-  } else {
-    throw new UnexpectedError('Error fetching Apple configuration')
-  }
+  APPLE_CONFIG = JSON.parse(process.env.SignInWithAppleConfig) as SignInWithAppleConfig
+  return APPLE_CONFIG
 }
 
 /**
@@ -41,61 +25,7 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
  * @notExported
  */
 export async function getApplePrivateKey(): Promise<string> {
-  if (APPLE_PRIVATEKEY) {
-    return APPLE_PRIVATEKEY
-  }
-  const params = {SecretId: 'prod/SignInWithApple/AuthKey'}
-  logDebug('getApplePrivateKey =>', params)
-  const authKeySecretResponse = await getSecretValue(params)
-  logDebug('getApplePrivateKey <=', params)
-  if (typeof authKeySecretResponse.SecretString === 'string') {
-    APPLE_PRIVATEKEY = authKeySecretResponse.SecretString
-    return APPLE_PRIVATEKEY
-  } else {
-    throw new UnexpectedError('Error fetching Apple private key')
-  }
-}
-
-/**
- * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
- * @returns string - The private key file
- * @notExported
- */
-export async function getApplePushNotificationServiceKey(): Promise<string> {
-  if (APPLE_PUSH_NOTIFICATION_SERVICE_KEY) {
-    return APPLE_PUSH_NOTIFICATION_SERVICE_KEY
-  }
-  const params = {SecretId: 'ApplePushNotificationServiceKey'}
-  logDebug('getApplePushNotificationServiceKey =>', params)
-  const authKeySecretResponse = await getSecretValue(params)
-  logDebug('getApplePushNotificationServiceKey <=', params)
-  if (typeof authKeySecretResponse.SecretString === 'string') {
-    APPLE_PUSH_NOTIFICATION_SERVICE_KEY = authKeySecretResponse.SecretString
-    return APPLE_PUSH_NOTIFICATION_SERVICE_KEY
-  } else {
-    throw new UnexpectedError('Error fetching Apple private key')
-  }
-}
-
-/**
- * Retrieves the private key for Sign In With Apple via Secrets Manager or cache.
- * @returns string - The private key file
- * @notExported
- */
-export async function getApplePushNotificationServiceCert(): Promise<string> {
-  if (APPLE_PUSH_NOTIFICATION_SERVICE_CERT) {
-    return APPLE_PUSH_NOTIFICATION_SERVICE_CERT
-  }
-  const params = {SecretId: 'ApplePushNotificationServiceCert'}
-  logDebug('getApplePushNotificationServiceCert =>', params)
-  const authKeySecretResponse = await getSecretValue(params)
-  logDebug('getApplePushNotificationServiceCert <=', params)
-  if (typeof authKeySecretResponse.SecretString === 'string') {
-    APPLE_PUSH_NOTIFICATION_SERVICE_CERT = authKeySecretResponse.SecretString
-    return APPLE_PUSH_NOTIFICATION_SERVICE_CERT
-  } else {
-    throw new UnexpectedError('Error fetching Apple private key')
-  }
+  return process.env.SignInWithAppleAuthKey
 }
 
 /**
@@ -104,20 +34,7 @@ export async function getApplePushNotificationServiceCert(): Promise<string> {
  * @notExported
  */
 export async function getServerPrivateKey(): Promise<string> {
-  if (PRIVATEKEY !== undefined) {
-    return PRIVATEKEY
-  }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.EncryptionKeySecretId} as GetSecretValueRequest
-  logDebug('getServerPrivateKey =>', params)
-  const privateKeySecretResponse = await getSecretValue(params)
-  logDebug('getServerPrivateKey <=', privateKeySecretResponse)
-  if (typeof privateKeySecretResponse.SecretString === 'string') {
-    PRIVATEKEY = privateKeySecretResponse.SecretString
-    return PRIVATEKEY
-  } else {
-    throw new UnexpectedError('Error fetching server private key')
-  }
+  return process.env.EncryptionKeySecretId
 }
 
 /**
@@ -260,20 +177,7 @@ export async function verifyAccessToken(token: string): Promise<ServerVerifiedTo
  * @notExported
  */
 export async function getGithubPersonalToken(): Promise<string> {
-  if (GITHUBPERSONALTOKEN !== undefined) {
-    return GITHUBPERSONALTOKEN
-  }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.GithubPersonalToken} as GetSecretValueRequest
-  logDebug('getGithubPersonalToken =>', params)
-  const privateKeySecretResponse = await getSecretValue(params)
-  logDebug('getGithubPersonalToken <=', privateKeySecretResponse)
-  if (typeof privateKeySecretResponse.SecretString === 'string') {
-    GITHUBPERSONALTOKEN = privateKeySecretResponse.SecretString
-    return GITHUBPERSONALTOKEN
-  } else {
-    throw new UnexpectedError('Error fetching Github personal token')
-  }
+  return process.env.GithubPersonalToken
 }
 
 /**
@@ -282,18 +186,5 @@ export async function getGithubPersonalToken(): Promise<string> {
  * @notExported
  */
 export async function getApnsSigningKey(): Promise<string> {
-  if (APPLESIGNINGKEY !== undefined) {
-    return APPLESIGNINGKEY
-  }
-  // This SecretId has to map to the CloudFormation file (LoginUser)
-  const params = {SecretId: process.env.ApnsSigningKey} as GetSecretValueRequest
-  logDebug('getApnsSigningKey =>', params)
-  const privateKeySecretResponse = await getSecretValue(params)
-  logDebug('getApnsSigningKey <=', privateKeySecretResponse)
-  if (typeof privateKeySecretResponse.SecretString === 'string') {
-    APPLESIGNINGKEY = privateKeySecretResponse.SecretString
-    return APPLESIGNINGKEY
-  } else {
-    throw new UnexpectedError('Error fetching Apple Signing Key')
-  }
+  return process.env.ApnsSigningKey
 }
