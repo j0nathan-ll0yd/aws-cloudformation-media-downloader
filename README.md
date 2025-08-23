@@ -115,15 +115,53 @@ creation_rules:
     age: $PUBLIC_KEY
 EOF
 
-# Create secrets directory
+# Create secrets directory and template
 mkdir -p secrets
+
+# Create secrets.yaml template
+cat > secrets.yaml << 'EOF'
+signInWithApple:
+  config: >
+    {"client_id":"your.bundle.id","team_id":"YOUR_TEAM_ID","redirect_uri":"","key_id":"YOUR_KEY_ID","scope":"email name"}
+  authKey: |
+    -----BEGIN PRIVATE KEY-----
+    YOUR_SIGN_IN_WITH_APPLE_PRIVATE_KEY_HERE
+    -----END PRIVATE KEY-----
+
+apns:
+  staging:
+    team: YOUR_TEAM_ID
+    keyId: YOUR_APNS_KEY_ID
+    defaultTopic: your.bundle.id
+    host: 'api.sandbox.push.apple.com'
+    signingKey: |
+      -----BEGIN PRIVATE KEY-----
+      YOUR_APNS_SIGNING_KEY_HERE
+      -----END PRIVATE KEY-----
+    privateKey: |
+      -----BEGIN PRIVATE KEY-----
+      YOUR_APNS_PRIVATE_KEY_HERE
+      -----END PRIVATE KEY-----
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      YOUR_APNS_CERTIFICATE_HERE
+      -----END CERTIFICATE-----
+
+github:
+  issue:
+    token: YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+
+platform:
+  key: 'YOUR_RANDOM_ENCRYPTION_KEY_HERE'
+EOF
 
 echo "Setup complete! Your private key is in ~/.config/sops/age/keys.txt"
 echo "Public key added to .sops.yaml"
+echo "Created secrets.yaml template - update with your actual values"
 echo "Keep your private key secure and share the public key with team members"
 
-# Encrypt secrets (when updated or created)
-sops --encrypt --output secrets.yaml.encrypted secrets.yaml
+# Encrypt secrets (after updating with real values)
+# sops --encrypt --output secrets.yaml.encrypted secrets.yaml
 ```
 
 * Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
