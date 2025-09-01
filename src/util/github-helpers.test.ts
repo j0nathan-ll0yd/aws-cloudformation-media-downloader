@@ -1,10 +1,6 @@
 import {describe, expect, test, jest} from '@jest/globals'
 import {Device} from '../types/main'
 
-jest.unstable_mockModule('../lib/vendor/AWS/SecretsManager', () => ({
-  getSecretValue: jest.fn().mockReturnValue({SecretString: 'GithubPersonalToken'})
-}))
-
 class MockOctokit {
   public rest: object
   constructor() {

@@ -73,7 +73,7 @@ resource "aws_lambda_function" "UserDelete" {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
       DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
       DynamoDBTableUsers       = aws_dynamodb_table.Users.name
-      GithubPersonalToken      = aws_secretsmanager_secret.GithubPersonalToken.arn
+      GithubPersonalToken      = data.sops_file.secrets.data["github.issue.token"]
     }
   }
 }

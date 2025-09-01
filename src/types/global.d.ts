@@ -12,10 +12,12 @@ declare global {
       DynamoDBTableFiles: string
       DynamoDBTableUserFiles: string
       DynamoDBTableUserDevices: string
-      EncryptionKeySecretId: string
+      PlatformEncryptionKey: string
       GithubPersonalToken: string
       MultiAuthenticationPathParts: string
       ReservedClientIp: string
+      SignInWithAppleConfig: string
+      SignInWithAppleAuthKey: string
       SNSQueueUrl: string
       StateMachineArn: string
       PlatformApplicationArn: string

@@ -29,7 +29,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 # Ensure the correct version of NodeJS (via NVM)
-nvm use lts/gallium
+nvm use lts/jod
 
 # Install dependencies
 npm install
@@ -55,8 +55,8 @@ npm run test-remote-hook
 ```bash
 # Install system dependencies and configure
 brew install act awscli jq nvm quicktype terraform terraform-docs
-nvm install lts/gallium
-nvm use lts/gallium
+nvm install lts/jod
+nvm use lts/jod
 aws configure
 
 # Install Node dependencies and deploy project
@@ -77,8 +77,8 @@ npm run test-remote-list
 
 ```bash
 brew install nvm
-nvm install lts/gallium
-nvm use lts/gallium
+nvm install lts/jod
+nvm use lts/jod
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
@@ -92,6 +92,73 @@ aws configure
 
 ```bash
 brew install terraform
+```
+
+* Install [sops](https://github.com/getsops/sops) (used for secret management)
+
+```bash
+brew install sops age
+
+# Generate a local encryption key (AGE format - modern and simple)
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
+
+# Get the public key for SOPS config
+PUBLIC_KEY=$(age-keygen -y ~/.config/sops/age/keys.txt)
+echo "Your public key: $PUBLIC_KEY"
+
+# Create SOPS config in your project root
+cat > .sops.yaml << EOF
+creation_rules:
+  # YAML and JSON files
+  - path_regex: secrets\.yaml
+    age: $PUBLIC_KEY
+EOF
+
+# Create secrets.yaml template
+cat > secrets.yaml << 'EOF'
+signInWithApple:
+  config: >
+    {"client_id":"your.bundle.id","team_id":"YOUR_TEAM_ID","redirect_uri":"","key_id":"YOUR_KEY_ID","scope":"email name"}
+  authKey: |
+    -----BEGIN PRIVATE KEY-----
+    YOUR_SIGN_IN_WITH_APPLE_PRIVATE_KEY_HERE
+    -----END PRIVATE KEY-----
+
+apns:
+  staging:
+    team: YOUR_TEAM_ID
+    keyId: YOUR_APNS_KEY_ID
+    defaultTopic: your.bundle.id
+    host: 'api.sandbox.push.apple.com'
+    signingKey: |
+      -----BEGIN PRIVATE KEY-----
+      YOUR_APNS_SIGNING_KEY_HERE
+      -----END PRIVATE KEY-----
+    privateKey: |
+      -----BEGIN PRIVATE KEY-----
+      YOUR_APNS_PRIVATE_KEY_HERE
+      -----END PRIVATE KEY-----
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      YOUR_APNS_CERTIFICATE_HERE
+      -----END CERTIFICATE-----
+
+github:
+  issue:
+    token: YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+
+platform:
+  key: 'YOUR_RANDOM_ENCRYPTION_KEY_HERE'
+EOF
+
+echo "Setup complete! Your private key is in ~/.config/sops/age/keys.txt"
+echo "Public key added to .sops.yaml"
+echo "Created secrets.yaml template - update with your actual values"
+echo "Keep your private key secure and share the public key with team members"
+
+# Encrypt secrets (after updating with real values)
+# sops --encrypt --output secrets.yaml.encrypted secrets.yaml
 ```
 
 * Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
@@ -119,6 +186,12 @@ brew install act
 ```
 
 You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
+
+* Install [gh](https://www.terraform.io/) (for Github usage by Claude Code)
+
+```bash
+brew install gh
+```
 
 ## Configuring Push Notifications
 

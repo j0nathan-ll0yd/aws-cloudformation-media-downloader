@@ -3,23 +3,6 @@ resource "aws_iam_role" "CloudfrontMiddlewareRole" {
   assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
 }
 
-data "aws_iam_policy_document" "CloudfrontMiddleware" {
-  statement {
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.PrivateEncryptionKey.arn]
-  }
-}
-
-resource "aws_iam_policy" "CloudfrontMiddlewarePolicy" {
-  name   = "CloudfrontMiddlewarePolicy"
-  policy = data.aws_iam_policy_document.CloudfrontMiddleware.json
-}
-
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicy" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
-  policy_arn = aws_iam_policy.CloudfrontMiddlewarePolicy.arn
-}
-
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   role       = aws_iam_role.CloudfrontMiddlewareRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -52,7 +35,7 @@ resource "aws_cloudfront_distribution" "Production" {
   // This comment needs to match the associated lambda function
   comment = aws_lambda_function.CloudfrontMiddleware.function_name
   origin {
-    domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
+    domain_name = "${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com"
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
     custom_origin_config {
