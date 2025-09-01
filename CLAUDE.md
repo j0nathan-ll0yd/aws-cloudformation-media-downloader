@@ -46,7 +46,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 │   ├── errors.ts                  # Shared error types
 │   ├── github-helpers.ts          # GitHub API utilities
 │   ├── lambdas-helpers.ts         # Lambda response/logging utilities
-│   ├── mocha-setup.ts             # Test environment setup
+│   ├── jest-setup.ts             # Test environment setup
 │   ├── shared.ts                  # Cross-lambda shared functions
 │   ├── transformers.ts            # Data structure converters
 │   └── *.test.ts                  # Corresponding test files
@@ -100,7 +100,7 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - **Unit Tests**: Mocha-based tests for each Lambda (`index.test.ts`)
 - **Test Fixtures**: JSON mock data in `test/fixtures/` directories
 - **Test Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
-- **Test Setup**: `util/mocha-setup.ts` configures the test environment
+- **Test Setup**: `util/jest-setup.ts` configures the test environment
 - **Pipeline Tests**: GitHub Actions tests in `pipeline/` directory
 - **Integration Tests**: Remote endpoint testing via npm scripts
     - `test-remote-list` - Tests file listing

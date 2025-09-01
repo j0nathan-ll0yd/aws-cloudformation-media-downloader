@@ -10,7 +10,7 @@ secure
 local
 temp
 node_modules
-secrets.yamlVBuComm
+secrets.yaml
 cloudformation.json
 src/types/terraform.d.ts
 terraform/terraform.tfstate*
@@ -19,4 +19,3 @@ terraform/.terraform.lock.hcl
 terraform/.terraform
 .webpackCache
 .python-version
-secrets.yaml
