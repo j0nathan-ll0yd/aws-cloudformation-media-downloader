@@ -24,7 +24,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
   handler          = "CloudfrontMiddleware.handler"
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs22.x"
   publish          = true
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path
@@ -35,7 +35,7 @@ resource "aws_cloudfront_distribution" "Production" {
   // This comment needs to match the associated lambda function
   comment = aws_lambda_function.CloudfrontMiddleware.function_name
   origin {
-    domain_name = replace(aws_api_gateway_deployment.Main.invoke_url, "/^https?://([^/]*).*/", "$1")
+    domain_name = "${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com"
     origin_path = "/${aws_api_gateway_stage.Production.stage_name}"
     origin_id   = "CloudfrontMiddleware"
     custom_origin_config {

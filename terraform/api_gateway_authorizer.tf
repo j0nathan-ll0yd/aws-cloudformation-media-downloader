@@ -30,10 +30,10 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
   statement {
     actions = ["apigateway:GET"]
     resources = [
-      "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/apikeys/*",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/usageplans",
-      "arn:aws:apigateway:${data.aws_region.current.name}::/usageplans/*/usage"
+      "arn:aws:apigateway:${data.aws_region.current.id}::/apikeys",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/apikeys/*",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans",
+      "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*/usage"
     ]
   }
 }
@@ -53,7 +53,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   function_name = "ApiGatewayAuthorizer"
   role          = aws_iam_role.ApiGatewayAuthorizer.arn
   handler       = "ApiGatewayAuthorizer.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   depends_on = [
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicy,
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicyLogging
@@ -63,7 +63,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = {
-      EncryptionKeySecretId = data.sops_file.secrets.data["platform.key"]
+      PlatformEncryptionKey = data.sops_file.secrets.data["platform.key"]
       MultiAuthenticationPathParts = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part,

@@ -47,7 +47,7 @@ resource "aws_lambda_function" "LoginUser" {
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
   handler          = "LoginUser.handler"
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs22.x"
   timeout          = 30
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path
@@ -55,9 +55,9 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-      EncryptionKeySecretId = data.sops_file.secrets.data["platform.key"]
-      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
+      DynamoDBTableUsers     = aws_dynamodb_table.Users.name
+      PlatformEncryptionKey  = data.sops_file.secrets.data["platform.key"]
+      SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
       SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
     }
   }

@@ -34,7 +34,7 @@ export async function getApplePrivateKey(): Promise<string> {
  * @notExported
  */
 export async function getServerPrivateKey(): Promise<string> {
-  return process.env.EncryptionKeySecretId
+  return process.env.PlatformEncryptionKey
 }
 
 /**

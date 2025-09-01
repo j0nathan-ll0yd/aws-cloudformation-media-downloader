@@ -47,7 +47,7 @@ resource "aws_lambda_function" "RegisterUser" {
   function_name    = "RegisterUser"
   role             = aws_iam_role.RegisterUserRole.arn
   handler          = "RegisterUser.handler"
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs22.x"
   timeout          = 10
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
@@ -55,9 +55,9 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTableUsers    = aws_dynamodb_table.Users.name
-      EncryptionKeySecretId = data.sops_file.secrets.data["platform.key"]
-      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
+      DynamoDBTableUsers     = aws_dynamodb_table.Users.name
+      PlatformEncryptionKey  = data.sops_file.secrets.data["platform.key"]
+      SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
       SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
     }
   }

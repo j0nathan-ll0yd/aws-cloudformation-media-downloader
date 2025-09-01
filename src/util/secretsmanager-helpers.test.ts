@@ -82,7 +82,7 @@ describe('#Util:SecretsManager', () => {
   })
   test('should createAccessToken', async () => {
     const secretString = 'randomly-generated-secret-id'
-    process.env.EncryptionKeySecretId = secretString
+    process.env.PlatformEncryptionKey = secretString
     const userId = '1234'
     const token = await createAccessToken(userId)
     const jwtPayload = jwt.verify(token, secretString) as ServerVerifiedToken
@@ -91,7 +91,7 @@ describe('#Util:SecretsManager', () => {
     expect(jwtPayload.userId).toEqual(userId)
   })
   test('should verifyAccessToken successfully', async () => {
-    process.env.EncryptionKeySecretId = 'PrivateEncryptionKey'
+    process.env.PlatformEncryptionKey = 'PrivateEncryptionKey'
     const userId = '1234'
     const token = await createAccessToken(userId)
     const jwtPayload = await verifyAccessToken(token)

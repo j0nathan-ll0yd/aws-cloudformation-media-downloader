@@ -111,12 +111,9 @@ echo "Your public key: $PUBLIC_KEY"
 cat > .sops.yaml << EOF
 creation_rules:
   # YAML and JSON files
-  - path_regex: secrets/.*\.(json|yaml|yml)$
+  - path_regex: secrets\.yaml
     age: $PUBLIC_KEY
 EOF
-
-# Create secrets directory and template
-mkdir -p secrets
 
 # Create secrets.yaml template
 cat > secrets.yaml << 'EOF'

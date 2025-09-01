@@ -2,15 +2,15 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.62.0"
+      version = "~> 6.11.0"
     }
     http = {
       source  = "hashicorp/http"
-      version = "3.4.4"
+      version = "3.5.0"
     }
     sops = {
       source  = "carlpett/sops"
-      version = "~> 0.7"
+      version = "1.2.1"
     }
   }
 }
@@ -25,7 +25,7 @@ data "aws_caller_identity" "current" {}
 
 # Read encrypted secrets from YAML
 data "sops_file" "secrets" {
-  source_file = "../secrets.encrypted.yaml"
+  source_file = "../secrets.enc.yaml"
 }
 
 data "aws_iam_policy_document" "CommonLambdaLogging" {
