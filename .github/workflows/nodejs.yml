@@ -22,7 +22,7 @@ jobs:
       run: brew install hcl2json
 
     - name: Install dependencies
-      run: npm ci --ignore-scripts
+      run: npm ci --force
 
     - name: Setup directories
       id: setup
