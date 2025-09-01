@@ -45,9 +45,6 @@ export async function getServerPrivateKey(): Promise<string> {
 export async function getAppleClientSecret(): Promise<string> {
   const config = await getAppleConfig()
   const privateKey = await getApplePrivateKey()
-  const headers = {
-    kid: config.key_id
-  }
   const claims = {
     iss: config.team_id,
     aud: 'https://appleid.apple.com',
@@ -55,7 +52,7 @@ export async function getAppleClientSecret(): Promise<string> {
   }
   return jwt.sign(claims, privateKey, {
     algorithm: 'ES256',
-    header: headers,
+    keyid: config.key_id,
     expiresIn: '24h'
   } as jwt.SignOptions)
 }
