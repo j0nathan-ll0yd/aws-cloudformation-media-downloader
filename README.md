@@ -29,7 +29,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 # Ensure the correct version of NodeJS (via NVM)
-nvm use lts/gallium
+nvm use lts/jod
 
 # Install dependencies
 npm install
@@ -55,8 +55,8 @@ npm run test-remote-hook
 ```bash
 # Install system dependencies and configure
 brew install act awscli jq nvm quicktype terraform terraform-docs
-nvm install lts/gallium
-nvm use lts/gallium
+nvm install lts/jod
+nvm use lts/jod
 aws configure
 
 # Install Node dependencies and deploy project
@@ -77,8 +77,8 @@ npm run test-remote-list
 
 ```bash
 brew install nvm
-nvm install lts/gallium
-nvm use lts/gallium
+nvm install lts/jod
+nvm use lts/jod
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
@@ -94,7 +94,7 @@ aws configure
 brew install terraform
 ```
 
-* Install [sops](https://www.terraform.io/) (used for secret management)
+* Install [sops](https://github.com/getsops/sops) (used for secret management)
 
 ```bash
 brew install sops age
@@ -189,6 +189,12 @@ brew install act
 ```
 
 You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
+
+* Install [gh](https://www.terraform.io/) (for Github usage by Claude Code)
+
+```bash
+brew install gh
+```
 
 ## Configuring Push Notifications
 
