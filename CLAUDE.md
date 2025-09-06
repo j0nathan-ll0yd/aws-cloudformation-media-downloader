@@ -74,12 +74,22 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Use the commitlint syntax when structuring commit messages
 
 ### Workflow
-- Be sure to typecheck when you’re done making a series of code changes
+- Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 - Don't output commands that just list files (like 'ls -l')
 - Always ignore the `node_modules` directory when searching
 - Always ignore the `dist` directory
 - Always ignore the `package-lock.json` file when searching, unless your dealing with dependencies
+
+### Pre-Push Verification (REQUIRED)
+Before pushing any changes or creating commits, ALWAYS run these commands to ensure code quality:
+
+```bash
+npm run build    # Verify TypeScript compilation and webpack build
+npm test         # Run full test suite to ensure all tests pass
+```
+
+Both commands must complete successfully without errors before pushing changes. This prevents broken builds in GitHub Actions and maintains code quality standards.
 
 ## Development Workflow
 

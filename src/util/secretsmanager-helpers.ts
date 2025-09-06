@@ -1,5 +1,6 @@
 import axios, {AxiosRequestConfig} from 'axios'
 import * as jose from 'jose'
+import * as crypto from 'crypto'
 import jwksClient from 'jwks-rsa'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
@@ -50,10 +51,13 @@ export async function getAppleClientSecret(): Promise<string> {
     aud: 'https://appleid.apple.com',
     sub: config.client_id
   }
+  // Convert EC private key to KeyObject since jose.importPKCS8 expects PKCS#8 format
+  const keyObject = crypto.createPrivateKey(privateKey)
   return await new jose.SignJWT(claims)
     .setProtectedHeader({alg: 'ES256', kid: config.key_id})
+    .setIssuedAt()
     .setExpirationTime('24h')
-    .sign(await jose.importPKCS8(privateKey, 'ES256'))
+    .sign(keyObject)
 }
 
 /**
@@ -117,14 +121,15 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
     logDebug('verifyAppleToken.jwksClient.client.getSigningKey', client.getSigningKey)
     const key = await client.getSigningKey(kid)
     logDebug('verifyAppleToken.key', key)
-    if (typeof key === 'object' && 'rsaPublicKey' in key) {
-      const {payload} = await jose.jwtVerify(token, await jose.importSPKI(key.rsaPublicKey, 'RS256'))
+    if (typeof key === 'object' && ('rsaPublicKey' in key || 'publicKey' in key)) {
+      const publicKey = 'rsaPublicKey' in key ? key.rsaPublicKey : key.publicKey
+      const {payload} = await jose.jwtVerify(token, crypto.createPublicKey(publicKey))
       const jwtPayload = payload as SignInWithAppleVerifiedToken
       logDebug('verifyAppleToken.jwtPayload <=', jwtPayload)
       logDebug(`verifyAppleToken.jwtPayload.typeof <= ${typeof jwtPayload}`)
       return jwtPayload
     } else {
-      const message = 'rsaPublicKey not present in payload'
+      const message = 'Public key not present in payload'
       logError(`jwt.verify <= ${message}`)
       throw new UnauthorizedError(message)
     }
@@ -146,6 +151,7 @@ export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
   return await new jose.SignJWT({userId})
     .setProtectedHeader({alg: 'HS256'})
+    .setIssuedAt()
     .setExpirationTime('5m')
     .sign(new TextEncoder().encode(secret))
 }
