@@ -1,5 +1,6 @@
 import axios, {AxiosRequestConfig} from 'axios'
-import jwt from 'jsonwebtoken'
+import * as jose from 'jose'
+import * as crypto from 'crypto'
 import jwksClient from 'jwks-rsa'
 import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
@@ -50,11 +51,13 @@ export async function getAppleClientSecret(): Promise<string> {
     aud: 'https://appleid.apple.com',
     sub: config.client_id
   }
-  return jwt.sign(claims, privateKey, {
-    algorithm: 'ES256',
-    keyid: config.key_id,
-    expiresIn: '24h'
-  } as jwt.SignOptions)
+  // Convert EC private key to KeyObject since jose.importPKCS8 expects PKCS#8 format
+  const keyObject = crypto.createPrivateKey(privateKey)
+  return await new jose.SignJWT(claims)
+    .setProtectedHeader({alg: 'ES256', kid: config.key_id})
+    .setIssuedAt()
+    .setExpirationTime('24h')
+    .sign(keyObject)
 }
 
 /**
@@ -102,9 +105,9 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
   logInfo('verifyAppleToken')
   // decode the token (insecurely), to determine the appropriate public key
   try {
-    const decodedPayload = jwt.decode(token, {complete: true}) as jwt.Jwt
-    logDebug('verifyAppleToken.decodedPayload', decodedPayload)
-    const kid = decodedPayload.header.kid
+    const decodedHeader = jose.decodeProtectedHeader(token)
+    logDebug('verifyAppleToken.decodedHeader', decodedHeader)
+    const kid = decodedHeader.kid
 
     // Verify the nonce for the authentication
     // Verify that the iss field contains https://appleid.apple.com
@@ -118,13 +121,15 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
     logDebug('verifyAppleToken.jwksClient.client.getSigningKey', client.getSigningKey)
     const key = await client.getSigningKey(kid)
     logDebug('verifyAppleToken.key', key)
-    if (typeof key === 'object' && 'rsaPublicKey' in key) {
-      const jwtPayload = jwt.verify(token, key.rsaPublicKey) as SignInWithAppleVerifiedToken
+    if (typeof key === 'object' && ('rsaPublicKey' in key || 'publicKey' in key)) {
+      const publicKey = 'rsaPublicKey' in key ? key.rsaPublicKey : key.publicKey
+      const {payload} = await jose.jwtVerify(token, crypto.createPublicKey(publicKey))
+      const jwtPayload = payload as SignInWithAppleVerifiedToken
       logDebug('verifyAppleToken.jwtPayload <=', jwtPayload)
       logDebug(`verifyAppleToken.jwtPayload.typeof <= ${typeof jwtPayload}`)
       return jwtPayload
     } else {
-      const message = 'rsaPublicKey not present in payload'
+      const message = 'Public key not present in payload'
       logError(`jwt.verify <= ${message}`)
       throw new UnauthorizedError(message)
     }
@@ -144,10 +149,11 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
  */
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
-  return jwt.sign({userId}, secret, {
-    // expiresIn: 86400 // expires in 24 hours
-    expiresIn: 60 * 5
-  })
+  return await new jose.SignJWT({userId})
+    .setProtectedHeader({alg: 'HS256'})
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(new TextEncoder().encode(secret))
 }
 
 /**
@@ -159,7 +165,8 @@ export async function createAccessToken(userId: string): Promise<string> {
 export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
   const secret = await getServerPrivateKey()
   try {
-    const jwtPayload = jwt.verify(token, secret) as ServerVerifiedToken
+    const {payload} = await jose.jwtVerify(token, new TextEncoder().encode(secret))
+    const jwtPayload = payload as ServerVerifiedToken
     logDebug('verifyAccessToken.jwtPayload <=', jwtPayload)
     return jwtPayload
   } catch (err) {
