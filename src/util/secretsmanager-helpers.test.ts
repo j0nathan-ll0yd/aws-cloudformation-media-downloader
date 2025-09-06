@@ -3,7 +3,7 @@ import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axi
 import {ServerVerifiedToken, SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
 import {fakePrivateKey, fakePublicKey} from './jest-setup'
-import jwt from 'jsonwebtoken'
+import * as jose from 'jose'
 
 const fakeTokenResponse = {
   access_token: 'accessToken',
@@ -66,7 +66,7 @@ describe('#Util:SecretsManager', () => {
     process.env.SignInWithAppleConfig = signWithAppleConfigString
     process.env.SignInWithAppleAuthKey = signInWithAppleAuthKeyString
     const token = await getAppleClientSecret()
-    const jwtPayload = jwt.verify(token, fakePublicKey)
+    const {payload: jwtPayload} = await jose.jwtVerify(token, await jose.importSPKI(fakePublicKey, 'ES256'))
     const expectedKeys = ['iss', 'aud', 'sub', 'iat', 'exp']
     expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
   })
@@ -85,7 +85,8 @@ describe('#Util:SecretsManager', () => {
     process.env.PlatformEncryptionKey = secretString
     const userId = '1234'
     const token = await createAccessToken(userId)
-    const jwtPayload = jwt.verify(token, secretString) as ServerVerifiedToken
+    const {payload} = await jose.jwtVerify(token, new TextEncoder().encode(secretString))
+    const jwtPayload = payload as ServerVerifiedToken
     const expectedKeys = ['userId', 'iat', 'exp']
     expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
     expect(jwtPayload.userId).toEqual(userId)
@@ -105,14 +106,18 @@ describe('#Util:SecretsManager', () => {
   })
   test('should verifyAppleToken successfully', async () => {
     getSigningKeyMock.mockReturnValue({rsaPublicKey: fakePublicKey})
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
+    const token = await new jose.SignJWT(fakeTokenPayload)
+      .setProtectedHeader(fakeTokenHeader)
+      .sign(await jose.importPKCS8(fakePrivateKey, 'ES256'))
     const newToken = await verifyAppleToken(token)
     const expectedKeys = ['iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported']
     expect(Object.keys(newToken)).toEqual(expect.arrayContaining(expectedKeys))
   })
   test('should verifyAppleToken handle an unexpected string payload', async () => {
     getSigningKeyMock.mockReturnValue('unexpected-string')
-    const token = jwt.sign(fakeTokenPayload, fakePrivateKey, {header: fakeTokenHeader, algorithm: 'ES256'})
+    const token = await new jose.SignJWT(fakeTokenPayload)
+      .setProtectedHeader(fakeTokenHeader)
+      .sign(await jose.importPKCS8(fakePrivateKey, 'ES256'))
     await expect(verifyAppleToken(token)).rejects.toThrow(UnauthorizedError)
   })
   test('should verifyAppleToken handle invalid token', async () => {
