@@ -75,12 +75,38 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - NEVER add AI assistant references in commit messages, PRs, or code comments
 
 ### Workflow
-- Be sure to typecheck when you’re done making a series of code changes
+- Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 - Don't output commands that just list files (like 'ls -l')
 - Always ignore the `node_modules` directory when searching
 - Always ignore the `dist` directory
 - Always ignore the `package-lock.json` file when searching, unless your dealing with dependencies
+- **Use TodoWrite tool** for complex tasks to track progress and ensure thoroughness - this prevents missing critical steps and provides visibility into progress
+
+### Pre-Push Verification (REQUIRED)
+Before pushing any changes or creating commits, ALWAYS run these commands to ensure code quality:
+
+```bash
+npm run build    # Verify TypeScript compilation and webpack build
+npm test         # Run full test suite to ensure all tests pass
+```
+
+Both commands must complete successfully without errors before pushing changes. This prevents broken builds in GitHub Actions and maintains code quality standards.
+
+### Library Migration Best Practices
+When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for success:
+
+1. **Understand Type Compatibility**: New libraries may have different type systems. Extend custom interfaces from the new library's types (e.g., `interface CustomToken extends JWTPayload`) rather than casting to `unknown`
+
+2. **Handle Key Formats Properly**: Different libraries expect different key formats. Use Node.js `crypto.createPrivateKey()` and `crypto.createPublicKey()` to normalize key handling rather than format-specific import methods
+
+3. **Test with Real Implementations**: Don't just fix TypeScript errors - run the actual functions to catch runtime issues like algorithm mismatches or missing claims
+
+4. **Maintain API Consistency**: Ensure the new library provides the same claims (e.g., `iat` timestamps) that existing code expects
+
+5. **Update Test Fixtures Appropriately**: Adapt test mocks to work with the new library's expectations while keeping existing test data formats
+
+6. **Follow the TodoWrite Pattern**: Break complex migrations into tracked steps to ensure nothing is missed and progress is visible
 
 ## Development Workflow
 
