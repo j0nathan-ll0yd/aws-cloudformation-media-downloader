@@ -15,7 +15,7 @@ Offline Media Downloader API
 │   ├── POST /user/register - Register new user with Sign in with Apple
 │   └── POST /user/login    - Login existing user with Sign in with Apple
 ├── Files (/files)
-│   └── GET /files          - List all files available to the authenticated user
+│   └── GET /files          - List files (authenticated, anonymous, or returns 401 for unauthenticated)
 ├── Devices (/device)
 │   └── POST /device/register - Register a device for push notifications
 └── Webhooks (/feedly)
