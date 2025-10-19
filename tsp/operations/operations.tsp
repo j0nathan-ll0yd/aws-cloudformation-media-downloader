@@ -267,7 +267,7 @@ interface Authentication {
     @statusCode statusCode: 200;
     @body body: UserLoginResponse;
   } | {
-    @statusCode statusCode: 300;
+    @statusCode statusCode: 409;
     @body body: ErrorResponse;
   } | {
     @statusCode statusCode: 400;

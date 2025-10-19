@@ -285,12 +285,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Models.UserLoginResponse'
-        '300':
-          description: JWT access token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '400':
           description: JWT access token
           content:
@@ -304,6 +298,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '404':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
           description: JWT access token
           content:
             application/json:

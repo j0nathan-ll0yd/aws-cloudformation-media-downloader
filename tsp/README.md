@@ -2,6 +2,17 @@
 
 This directory contains the TypeSpec definition for the Offline Media Downloader API.
 
+## Table of Contents
+
+- [About TypeSpec](#about-typespec)
+- [Structure](#structure)
+- [Compiling TypeSpec](#compiling-typespec)
+- [API Endpoints](#api-endpoints)
+- [Examples](#examples)
+- [Viewing the Documentation](#viewing-the-documentation)
+- [Maintenance](#maintenance)
+- [Benefits of TypeSpec](#benefits-of-typespec)
+
 ## About TypeSpec
 
 [TypeSpec](https://typespec.io/) is a language for defining APIs that can generate OpenAPI specifications, JSON schemas, and other API description formats. It provides a more maintainable and type-safe way to document APIs compared to writing OpenAPI YAML directly.
@@ -26,7 +37,7 @@ This will compile the TypeSpec definitions and generate an OpenAPI 3.0 specifica
 
 ## API Endpoints
 
-The API includes three main endpoint groups:
+The API includes four main endpoint groups:
 
 ### Files (`/files`)
 - **GET /files** - List all files available to the authenticated user
@@ -37,9 +48,15 @@ The API includes three main endpoint groups:
 ### Webhooks (`/feedly`)
 - **POST /feedly** - Process Feedly webhook to download media
 
+### Authentication (`/user`)
+- **POST /user/register** - Register new user with Sign in with Apple
+- **POST /user/login** - Login existing user with Sign in with Apple
+
 ## Examples
 
 The TypeSpec definitions include example requests and responses based on actual test fixtures from the codebase. These examples are embedded in the documentation comments and demonstrate real-world usage of the API.
+
+See [EXAMPLES.md](./EXAMPLES.md) for detailed information about how test fixtures are incorporated into the API documentation.
 
 ## Viewing the Documentation
 
