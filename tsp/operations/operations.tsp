@@ -21,23 +21,8 @@ interface Files {
    * - Anonymous users: returns a demo file for training purposes
    * - Unauthenticated users: returns 401 Unauthorized
    * 
-   * Example response:
-   * ```json
-   * {
-   *   "contents": [
-   *     {
-   *       "fileId": "PaZ1EmPOE_k",
-   *       "key": "20150826-[The School of Life].mp4",
-   *       "title": "On Feeling Melancholy",
-   *       "status": "Downloaded",
-   *       "size": 12023572,
-   *       "contentType": "video/mp4",
-   *       "authorName": "The School of Life"
-   *     }
-   *   ],
-   *   "keyCount": 1
-   * }
-   * ```
+   * Example response: See `tsp/examples/list-files-response.json`
+   * (sourced from `src/lambdas/ListFiles/test/fixtures/batchGet-200-OK.json`)
    * 
    * @returns List of available files
    */
@@ -75,23 +60,10 @@ interface Devices {
    * 2. Associates the device with the authenticated user
    * 3. Subscribes the device to push notification topics
    * 
-   * Example request:
-   * ```json
-   * {
-   *   "systemVersion": "16.0.2",
-   *   "deviceId": "67C431DE-37D2-4BBA-9055-E9D2766517E1",
-   *   "name": "iPhone",
-   *   "systemName": "iOS",
-   *   "token": "1270ac093113154918d1ae96e90247d068b98766842654b3cc2400c7342dc4ba"
-   * }
-   * ```
+   * Example request: See `tsp/examples/register-device-request.json`
+   * (sourced from `src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json`)
    * 
-   * Example response:
-   * ```json
-   * {
-   *   "endpointArn": "arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/abcd1234-5678-90ab-cdef-1234567890ab"
-   * }
-   * ```
+   * Example response: See `tsp/examples/register-device-response.json`
    * 
    * @returns Device registration confirmation with endpoint ARN
    */
@@ -138,27 +110,10 @@ interface Webhooks {
    * 
    * Background mode can be used to defer immediate download processing.
    * 
-   * Example request:
-   * ```json
-   * {
-   *   "articleFirstImageURL": "https://i.ytimg.com/vi/7jEzw5WLiMI/maxresdefault.jpg",
-   *   "articleCategories": "YouTube",
-   *   "articlePublishedAt": "April 27, 2020 at 04:10PM",
-   *   "articleTitle": "WOW! Ariana Grande Meme Backlash & Meme War",
-   *   "articleURL": "https://www.youtube.com/watch?v=wRG7lAGdRII",
-   *   "createdAt": "April 27, 2020 at 04:10PM",
-   *   "sourceFeedURL": "https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw",
-   *   "sourceTitle": "Philip DeFranco (uploads) on YouTube",
-   *   "sourceURL": "https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw"
-   * }
-   * ```
+   * Example request: See `tsp/examples/feedly-webhook-request.json`
+   * (sourced from `src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json`)
    * 
-   * Example response:
-   * ```json
-   * {
-   *   "status": "Dispatched"
-   * }
-   * ```
+   * Example response: See `tsp/examples/feedly-webhook-response.json`
    * 
    * @returns Webhook processing status
    */
@@ -198,21 +153,9 @@ interface Authentication {
    * Creates a new user account or returns existing user token.
    * All user details are sourced from the Apple identity token.
    * 
-   * Example request:
-   * ```json
-   * {
-   *   "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef",
-   *   "firstName": "John",
-   *   "lastName": "Doe"
-   * }
-   * ```
+   * Example request: See `tsp/examples/user-register-request.json`
    * 
-   * Example response:
-   * ```json
-   * {
-   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-   * }
-   * ```
+   * Example response: See `tsp/examples/auth-response.json`
    * 
    * @returns JWT access token
    */
@@ -241,19 +184,9 @@ interface Authentication {
    * 
    * Authenticates a user and returns a JWT access token.
    * 
-   * Example request:
-   * ```json
-   * {
-   *   "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef"
-   * }
-   * ```
+   * Example request: See `tsp/examples/user-login-request.json`
    * 
-   * Example response:
-   * ```json
-   * {
-   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-   * }
-   * ```
+   * Example response: See `tsp/examples/auth-response.json`
    * 
    * @returns JWT access token
    */

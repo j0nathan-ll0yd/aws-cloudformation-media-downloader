@@ -35,6 +35,16 @@ npm run document-api
 This will compile the TypeSpec definitions and generate an OpenAPI 3.0 specification at:
 `docs/api/openapi.yaml`
 
+## Syncing Examples
+
+To keep example files in sync with test fixtures:
+
+```bash
+./bin/sync-examples.sh
+```
+
+This script extracts data from test fixtures and creates/updates example JSON files in `tsp/examples/`. Run this whenever test fixtures are updated to ensure documentation stays in sync.
+
 ## API Endpoints
 
 The API includes four main endpoint groups:
