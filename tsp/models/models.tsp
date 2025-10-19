@@ -268,3 +268,53 @@ model WebhookResponse {
    */
   status: "Dispatched" | "Initiated" | "Accepted";
 }
+
+/**
+ * User login request
+ */
+model UserLogin {
+  /**
+   * Authorization code from Sign in with Apple
+   */
+  authorizationCode: string;
+}
+
+/**
+ * User login response
+ */
+model UserLoginResponse {
+  /**
+   * JWT access token for authenticated requests
+   */
+  token: string;
+}
+
+/**
+ * User registration request
+ */
+model UserRegistration {
+  /**
+   * Authorization code from Sign in with Apple
+   */
+  authorizationCode: string;
+
+  /**
+   * User's first name
+   */
+  firstName?: string;
+
+  /**
+   * User's last name
+   */
+  lastName?: string;
+}
+
+/**
+ * User registration response
+ */
+model UserRegistrationResponse {
+  /**
+   * JWT access token for authenticated requests
+   */
+  token: string;
+}

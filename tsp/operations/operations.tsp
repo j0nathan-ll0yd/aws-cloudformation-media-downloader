@@ -185,3 +185,101 @@ interface Webhooks {
     @body body: InternalServerError;
   };
 }
+
+/**
+ * User authentication operations
+ */
+@route("/user")
+@tag("Authentication")
+interface Authentication {
+  /**
+   * Register a new user with Sign in with Apple.
+   * 
+   * Creates a new user account or returns existing user token.
+   * All user details are sourced from the Apple identity token.
+   * 
+   * Example request:
+   * ```json
+   * {
+   *   "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef",
+   *   "firstName": "John",
+   *   "lastName": "Doe"
+   * }
+   * ```
+   * 
+   * Example response:
+   * ```json
+   * {
+   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   * }
+   * ```
+   * 
+   * @returns JWT access token
+   */
+  @post
+  @route("/register")
+  @summary("Register new user")
+  registerUser(
+    @header("X-API-Key") apiKey: string,
+    @body registration: UserRegistration,
+  ): {
+    @statusCode statusCode: 200;
+    @body body: UserRegistrationResponse;
+  } | {
+    @statusCode statusCode: 400;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 403;
+    @body body: ForbiddenError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
+   * Login an existing user with Sign in with Apple.
+   * 
+   * Authenticates a user and returns a JWT access token.
+   * 
+   * Example request:
+   * ```json
+   * {
+   *   "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef"
+   * }
+   * ```
+   * 
+   * Example response:
+   * ```json
+   * {
+   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   * }
+   * ```
+   * 
+   * @returns JWT access token
+   */
+  @post
+  @route("/login")
+  @summary("Login existing user")
+  loginUser(
+    @header("X-API-Key") apiKey: string,
+    @body login: UserLogin,
+  ): {
+    @statusCode statusCode: 200;
+    @body body: UserLoginResponse;
+  } | {
+    @statusCode statusCode: 300;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 400;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 404;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 403;
+    @body body: ForbiddenError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+}

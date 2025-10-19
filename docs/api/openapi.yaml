@@ -12,6 +12,7 @@ tags:
   - name: Files
   - name: Devices
   - name: Webhooks
+  - name: Authentication
 paths:
   /device/register:
     post:
@@ -249,6 +250,143 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - Files
+  /user/login:
+    post:
+      operationId: Authentication_loginUser
+      summary: Login existing user
+      description: |-
+        Login an existing user with Sign in with Apple.
+
+        Authenticates a user and returns a JWT access token.
+
+        Example request:
+        ```json
+        {
+          "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef"
+        }
+        ```
+
+        Example response:
+        ```json
+        {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+        ```
+      parameters:
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UserLoginResponse'
+        '300':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.UserLogin'
+  /user/register:
+    post:
+      operationId: Authentication_registerUser
+      summary: Register new user
+      description: |-
+        Register a new user with Sign in with Apple.
+
+        Creates a new user account or returns existing user token.
+        All user details are sourced from the Apple identity token.
+
+        Example request:
+        ```json
+        {
+          "authorizationCode": "c1234567890abcdef.0.a.b1234567890abcdef",
+          "firstName": "John",
+          "lastName": "Doe"
+        }
+        ```
+
+        Example response:
+        ```json
+        {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+        ```
+      parameters:
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UserRegistrationResponse'
+        '400':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: JWT access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.UserRegistration'
 components:
   schemas:
     ErrorResponse:
@@ -504,6 +642,48 @@ components:
         - INTELLIGENT_TIERING
         - DEEP_ARCHIVE
       description: S3 Storage class enumeration
+    Models.UserLogin:
+      type: object
+      required:
+        - authorizationCode
+      properties:
+        authorizationCode:
+          type: string
+          description: Authorization code from Sign in with Apple
+      description: User login request
+    Models.UserLoginResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: JWT access token for authenticated requests
+      description: User login response
+    Models.UserRegistration:
+      type: object
+      required:
+        - authorizationCode
+      properties:
+        authorizationCode:
+          type: string
+          description: Authorization code from Sign in with Apple
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+      description: User registration request
+    Models.UserRegistrationResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: JWT access token for authenticated requests
+      description: User registration response
     Models.WebhookResponse:
       type: object
       required:
