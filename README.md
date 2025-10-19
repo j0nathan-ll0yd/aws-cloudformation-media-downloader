@@ -4,7 +4,7 @@ A media downloader designed to integrate with [it's companion iOS App](https://g
 
 ## Architecture
 
-View the AWS architecture diagram: [GitDiagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader)
+View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader) (via GitDiagram)
 
 ## Background
 
