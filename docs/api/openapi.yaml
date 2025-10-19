@@ -1,0 +1,548 @@
+openapi: 3.0.0
+info:
+  title: (title)
+  description: |-
+    Offline Media Downloader API
+
+    A serverless AWS media downloader service that downloads media content
+    (primarily YouTube videos) and integrates with a companion iOS app for
+    offline playback.
+  version: 0.0.0
+tags:
+  - name: Files
+  - name: Devices
+  - name: Webhooks
+paths:
+  /device/register:
+    post:
+      operationId: Devices_registerDevice
+      summary: Register device for push notifications
+      description: |-
+        Register a device to receive push notifications.
+
+        This is an idempotent operation that:
+        1. Creates an AWS SNS endpoint for the device
+        2. Associates the device with the authenticated user
+        3. Subscribes the device to push notification topics
+
+        Example request:
+        ```json
+        {
+          "systemVersion": "16.0.2",
+          "deviceId": "67C431DE-37D2-4BBA-9055-E9D2766517E1",
+          "name": "iPhone",
+          "systemName": "iOS",
+          "token": "1270ac093113154918d1ae96e90247d068b98766842654b3cc2400c7342dc4ba"
+        }
+        ```
+
+        Example response:
+        ```json
+        {
+          "endpointArn": "arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/abcd1234-5678-90ab-cdef-1234567890ab"
+        }
+        ```
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+        '201':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+        '400':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Device registration confirmation with endpoint ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Devices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.DeviceRegistrationRequest'
+  /feedly:
+    post:
+      operationId: Webhooks_processFeedlyWebhook
+      summary: Process Feedly webhook
+      description: |-
+        Receive a webhook from Feedly to download media.
+
+        When a webhook is received:
+        - If the file exists: associates it with the user and sends push notification
+        - If the file doesn't exist: creates it, associates with user, and queues for download
+
+        Background mode can be used to defer immediate download processing.
+
+        Example request:
+        ```json
+        {
+          "articleFirstImageURL": "https://i.ytimg.com/vi/7jEzw5WLiMI/maxresdefault.jpg",
+          "articleCategories": "YouTube",
+          "articlePublishedAt": "April 27, 2020 at 04:10PM",
+          "articleTitle": "WOW! Ariana Grande Meme Backlash & Meme War",
+          "articleURL": "https://www.youtube.com/watch?v=wRG7lAGdRII",
+          "createdAt": "April 27, 2020 at 04:10PM",
+          "sourceFeedURL": "https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw",
+          "sourceTitle": "Philip DeFranco (uploads) on YouTube",
+          "sourceURL": "https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw"
+        }
+        ```
+
+        Example response:
+        ```json
+        {
+          "status": "Dispatched"
+        }
+        ```
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.WebhookResponse'
+        '202':
+          description: Webhook processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.WebhookResponse'
+        '400':
+          description: Webhook processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Webhook processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Webhook processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.FeedlyWebhook'
+  /files:
+    get:
+      operationId: Files_listFiles
+      summary: List available files
+      description: |-
+        List all files available to the authenticated user.
+
+        Returns files based on authentication status:
+        - Authenticated users: returns their personal file library
+        - Anonymous users: returns a demo file for training purposes
+        - Unauthenticated users: returns 401 Unauthorized
+
+        Example response:
+        ```json
+        {
+          "contents": [
+            {
+              "fileId": "PaZ1EmPOE_k",
+              "key": "20150826-[The School of Life].mp4",
+              "title": "On Feeling Melancholy",
+              "status": "Downloaded",
+              "size": 12023572,
+              "contentType": "video/mp4",
+              "authorName": "The School of Life"
+            }
+          ],
+          "keyCount": 1
+        }
+        ```
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of available files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.FileListResponse'
+        '401':
+          description: List of available files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: List of available files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: List of available files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Files
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - requestId
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Error message
+          required:
+            - code
+            - message
+          description: Error details
+        requestId:
+          type: string
+          description: Request ID for tracking
+      description: Common error response structure
+    ForbiddenError:
+      type: object
+      required:
+        - error
+        - requestId
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - Forbidden
+              description: Error code
+            message:
+              type: string
+              description: Error message
+          required:
+            - code
+            - message
+          description: Error details
+        requestId:
+          type: string
+          description: Request ID for tracking
+      description: Forbidden error response (403)
+    InternalServerError:
+      type: object
+      required:
+        - error
+        - requestId
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - InternalServerError
+              description: Error code
+            message:
+              type: string
+              description: Error message
+          required:
+            - code
+            - message
+          description: Error details
+        requestId:
+          type: string
+          description: Request ID for tracking
+      description: Internal Server Error response (500)
+    Models.Device:
+      type: object
+      required:
+        - deviceId
+        - name
+        - systemName
+        - systemVersion
+        - token
+      properties:
+        deviceId:
+          type: string
+          description: Unique device identifier (UUID)
+        name:
+          type: string
+          description: Device name
+        systemName:
+          type: string
+          description: Operating system name
+        systemVersion:
+          type: string
+          description: Operating system version
+        token:
+          type: string
+          description: Device push notification token
+        endpointArn:
+          type: string
+          description: AWS SNS endpoint ARN (returned after registration)
+      description: Device information for push notifications
+    Models.DeviceRegistrationRequest:
+      type: object
+      required:
+        - deviceId
+        - name
+        - systemName
+        - systemVersion
+        - token
+      properties:
+        deviceId:
+          type: string
+          description: Unique device identifier (UUID)
+        name:
+          type: string
+          description: Device name
+        systemName:
+          type: string
+          description: Operating system name
+        systemVersion:
+          type: string
+          description: Operating system version
+        token:
+          type: string
+          description: Device push notification token (APNS token)
+      description: Device registration request
+    Models.DeviceRegistrationResponse:
+      type: object
+      required:
+        - endpointArn
+      properties:
+        endpointArn:
+          type: string
+          description: AWS SNS endpoint ARN for the registered device
+      description: Device registration response
+    Models.FeedlyWebhook:
+      type: object
+      required:
+        - articleTitle
+        - articleURL
+      properties:
+        articleFirstImageURL:
+          type: string
+          format: uri
+          description: URL of the first image in the article
+        articleCategories:
+          type: string
+          description: Categories associated with the article
+        articlePublishedAt:
+          type: string
+          description: Publication date of the article
+        articleTitle:
+          type: string
+          description: Title of the article
+        articleURL:
+          type: string
+          format: uri
+          description: URL of the article (typically a YouTube video URL)
+        createdAt:
+          type: string
+          description: Timestamp when the webhook was created
+        sourceFeedURL:
+          type: string
+          format: uri
+          description: URL of the source feed
+        sourceTitle:
+          type: string
+          description: Title of the source
+        sourceURL:
+          type: string
+          format: uri
+          description: URL of the source
+        backgroundMode:
+          type: boolean
+          description: Whether the webhook was triggered in background mode
+      description: Feedly webhook event
+    Models.File:
+      type: object
+      required:
+        - fileId
+      properties:
+        fileId:
+          type: string
+          description: The unique file identifier (typically a YouTube video ID)
+        key:
+          type: string
+          description: The filename or key in S3 storage
+        lastModified:
+          type: string
+          format: date-time
+          description: The date the file was last modified
+        eTag:
+          type: string
+          description: The entity tag is an MD5 hash of the object
+        size:
+          type: integer
+          format: int64
+          description: Size in bytes of the file
+        storageClass:
+          allOf:
+            - $ref: '#/components/schemas/Models.StorageClass'
+          description: S3 storage class
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Models.FileStatus'
+          description: Current status of the file
+        title:
+          type: string
+          description: Title of the media file
+        thumbnail:
+          type: string
+          format: uri
+          description: Thumbnail URL for the media
+        duration:
+          type: integer
+          format: int32
+          description: Duration of the media in seconds
+      description: A media file available for download
+    Models.FileListResponse:
+      type: object
+      required:
+        - contents
+        - keyCount
+      properties:
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.File'
+          description: Array of available files
+        keyCount:
+          type: integer
+          format: int32
+          description: Number of files returned
+      description: Response containing a list of files
+    Models.FileStatus:
+      type: string
+      enum:
+        - Queued
+        - Downloading
+        - Downloaded
+        - Failed
+      description: File status enumeration
+    Models.StorageClass:
+      type: string
+      enum:
+        - STANDARD
+        - REDUCED_REDUNDANCY
+        - GLACIER
+        - STANDARD_IA
+        - ONEZONE_IA
+        - INTELLIGENT_TIERING
+        - DEEP_ARCHIVE
+      description: S3 Storage class enumeration
+    Models.WebhookResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - Dispatched
+            - Initiated
+            - Accepted
+          description: Status of the webhook processing
+      description: Webhook processing response
+    UnauthorizedError:
+      type: object
+      required:
+        - error
+        - requestId
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - Unauthorized
+              description: Error code
+            message:
+              type: string
+              description: Error message
+          required:
+            - code
+            - message
+          description: Error details
+        requestId:
+          type: string
+          description: Request ID for tracking
+      description: Unauthorized error response (401)
+servers:
+  - url: https://api.example.com
+    description: Production server
+    variables: {}
