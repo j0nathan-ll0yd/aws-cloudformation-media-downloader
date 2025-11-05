@@ -22,10 +22,21 @@ echo "🔨 Compiling TypeSpec to OpenAPI..."
 npx tsp compile "$PROJECT_DIR/tsp" --output-dir "$PROJECT_DIR/docs/api"
 
 echo ""
+
+# Step 3: Update OpenAPI spec with version from package.json
+echo "📦 Updating version from package.json..."
+PACKAGE_VERSION=$(node -p "require('$PROJECT_DIR/package.json').version")
+echo "   Version: $PACKAGE_VERSION"
+
+# Update the version in the generated OpenAPI file
+sed -i.bak "s/version: 0\.0\.0/version: $PACKAGE_VERSION/" "$PROJECT_DIR/docs/api/openapi.yaml"
+rm -f "$PROJECT_DIR/docs/api/openapi.yaml.bak"
+
+echo ""
 echo "✅ OpenAPI specification generated successfully!"
 echo ""
 
-# Step 3: Generate Redoc HTML documentation
+# Step 4: Generate Redoc HTML documentation
 echo "📄 Generating Redoc HTML documentation..."
 npx --yes @redocly/cli build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "Offline Media Downloader API"
 
@@ -49,7 +60,7 @@ grep "^  - name:" "$PROJECT_DIR/docs/api/openapi.yaml" | sed 's/^  - name: /    
 echo ""
 echo "🌐 Opening documentation in browser..."
 
-# Step 4: Open the HTML file in the default browser
+# Step 5: Open the HTML file in the default browser
 if command -v open &> /dev/null; then
     # macOS
     open "$PROJECT_DIR/docs/api/index.html"

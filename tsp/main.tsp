@@ -12,7 +12,9 @@ using TypeSpec.Http;
  * (primarily YouTube videos) and integrates with a companion iOS app for
  * offline playback.
  */
-@service
+@service(#{
+  title: "Offline Media Downloader API",
+})
 @server("https://api.example.com", "Production server")
 namespace OfflineMediaDownloader;
 
