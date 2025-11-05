@@ -26,14 +26,22 @@ This directory contains the TypeSpec definition for the Offline Media Downloader
 
 ## Compiling TypeSpec
 
-To generate OpenAPI documentation from TypeSpec:
+To generate and view API documentation from TypeSpec:
 
 ```bash
 npm run document-api
 ```
 
-This will compile the TypeSpec definitions and generate an OpenAPI 3.0 specification at:
-`docs/api/openapi.yaml`
+This will:
+1. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+2. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+3. Automatically open the documentation in your default browser
+
+You can also run the helper script directly:
+
+```bash
+./bin/document-api.sh
+```
 
 ## Syncing Examples
 

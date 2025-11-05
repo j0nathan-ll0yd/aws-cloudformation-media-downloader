@@ -258,16 +258,18 @@ This project uses multiple documentation approaches:
 
 ### API Documentation with TypeSpec
 
-The API is documented using [TypeSpec](https://typespec.io/), a language for defining APIs that generates OpenAPI specifications. To generate API documentation:
+The API is documented using [TypeSpec](https://typespec.io/), a language for defining APIs that generates OpenAPI specifications. To generate and view API documentation:
 
 ```bash
 npm run document-api
 ```
 
-The generated OpenAPI specification is located at `docs/api/openapi.yaml` and can be viewed with:
-- [Swagger Editor](https://editor.swagger.io/)
-- [Redoc](https://github.com/Redocly/redoc)
-- Any OpenAPI viewer
+This command will:
+1. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+2. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+3. Automatically open the documentation in your default browser
+
+You can also view the documentation by opening `docs/api/index.html` directly in any browser.
 
 See `tsp/README.md` for more details about the TypeSpec definitions.
 
