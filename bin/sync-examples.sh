@@ -79,12 +79,8 @@ cat > "$EXAMPLES_DIR/auth-response.json" << 'EOF'
 }
 EOF
 
-echo ""
 echo "✅ Examples synced successfully!"
 echo ""
 echo "📍 Examples location: $EXAMPLES_DIR"
 echo "📊 Files synced:"
 ls -lh "$EXAMPLES_DIR" | tail -n +2 | awk '{print "   -", $9, "("$5")"}'
-echo ""
-echo "💡 To regenerate TypeSpec documentation with updated examples:"
-echo "   npm run document-api"

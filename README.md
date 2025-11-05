@@ -265,9 +265,10 @@ npm run document-api
 ```
 
 This command will:
-1. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
-2. Generate a Redoc HTML documentation file (`docs/api/index.html`)
-3. Automatically open the documentation in your default browser
+1. Sync example files from test fixtures to ensure documentation stays current
+2. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+3. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+4. Automatically open the documentation in your default browser
 
 You can also view the documentation by opening `docs/api/index.html` directly in any browser.
 

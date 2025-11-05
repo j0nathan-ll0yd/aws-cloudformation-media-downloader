@@ -24,7 +24,7 @@ This directory contains the TypeSpec definition for the Offline Media Downloader
 - `operations/operations.tsp` - API operations and endpoints
 - `tspconfig.yaml` - TypeSpec compiler configuration
 
-## Compiling TypeSpec
+## Generating Documentation
 
 To generate and view API documentation from TypeSpec:
 
@@ -33,25 +33,12 @@ npm run document-api
 ```
 
 This will:
-1. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
-2. Generate a Redoc HTML documentation file (`docs/api/index.html`)
-3. Automatically open the documentation in your default browser
+1. Sync example files from test fixtures (automatically runs `bin/sync-examples.sh`)
+2. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+3. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+4. Automatically open the documentation in your default browser
 
-You can also run the helper script directly:
-
-```bash
-./bin/document-api.sh
-```
-
-## Syncing Examples
-
-To keep example files in sync with test fixtures:
-
-```bash
-./bin/sync-examples.sh
-```
-
-This script extracts data from test fixtures and creates/updates example JSON files in `tsp/examples/`. Run this whenever test fixtures are updated to ensure documentation stays in sync.
+The `document-api` command runs `bin/document-api.sh` which handles the entire workflow, including syncing examples from test fixtures. You don't need to run the sync script separately.
 
 ## API Endpoints
 

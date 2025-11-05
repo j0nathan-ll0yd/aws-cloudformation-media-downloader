@@ -23,17 +23,23 @@ All example files are located in `tsp/examples/` and are synchronized from test 
 
 ## Synchronizing Examples
 
-To keep examples in sync with test fixtures, run:
+Examples are automatically synced when you run:
 
 ```bash
-./bin/sync-examples.sh
+npm run document-api
 ```
 
-This script:
+The sync happens automatically as the first step of the documentation generation process. The sync script (`bin/sync-examples.sh`):
 1. Extracts relevant data from test fixtures
 2. Transforms them into API response format
 3. Creates example files in `tsp/examples/`
 4. Maintains references to source fixtures
+
+You can also run the sync script manually if needed:
+
+```bash
+./bin/sync-examples.sh
+```
 
 ## Benefits of Referencing Test Fixtures
 

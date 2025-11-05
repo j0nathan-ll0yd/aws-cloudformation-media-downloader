@@ -26,16 +26,19 @@ Instead of copying JSON content into TypeSpec documentation, we reference these 
 
 ## Syncing Examples
 
-These files are automatically generated/updated by running:
+These files are automatically synced when you generate documentation:
+
+```bash
+npm run document-api
+```
+
+The sync happens automatically as the first step of the documentation generation process.
+
+You can also run the sync script manually if needed:
 
 ```bash
 ./bin/sync-examples.sh
 ```
-
-**When to sync:**
-- After updating test fixtures
-- Before generating API documentation
-- When adding new API endpoints
 
 ## Usage in TypeSpec
 
@@ -56,9 +59,8 @@ This reference appears in the generated OpenAPI documentation, allowing readers 
 ## Development Workflow
 
 1. **Update test fixture** in `src/lambdas/*/test/fixtures/`
-2. **Run sync script**: `./bin/sync-examples.sh`
-3. **Regenerate docs**: `npm run document-api`
-4. **Verify changes**: Check `docs/api/openapi.yaml`
+2. **Regenerate docs**: `npm run document-api` (automatically syncs examples and generates documentation)
+3. **Verify changes**: Check `docs/api/openapi.yaml` and `docs/api/index.html`
 
 ## Benefits
 
