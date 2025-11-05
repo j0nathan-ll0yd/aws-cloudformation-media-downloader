@@ -23,12 +23,15 @@ npx tsp compile "$PROJECT_DIR/tsp" --output-dir "$PROJECT_DIR/docs/api"
 
 echo ""
 
-# Step 3: Update OpenAPI spec with version from package.json
-echo "📦 Updating version from package.json..."
+# Step 3: Update OpenAPI spec with title and version from package.json
+echo "📦 Updating title and version from package.json..."
+PACKAGE_NAME=$(node -p "require('$PROJECT_DIR/package.json').name")
 PACKAGE_VERSION=$(node -p "require('$PROJECT_DIR/package.json').version")
+echo "   Name: $PACKAGE_NAME"
 echo "   Version: $PACKAGE_VERSION"
 
-# Update the version in the generated OpenAPI file
+# Update the title and version in the generated OpenAPI file
+sed -i.bak "s/title: Offline Media Downloader API/title: $PACKAGE_NAME/" "$PROJECT_DIR/docs/api/openapi.yaml"
 sed -i.bak "s/version: 0\.0\.0/version: $PACKAGE_VERSION/" "$PROJECT_DIR/docs/api/openapi.yaml"
 rm -f "$PROJECT_DIR/docs/api/openapi.yaml.bak"
 
@@ -38,7 +41,7 @@ echo ""
 
 # Step 4: Generate Redoc HTML documentation
 echo "📄 Generating Redoc HTML documentation..."
-npx --yes @redocly/cli build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "Offline Media Downloader API"
+npx --yes @redocly/cli build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "$PACKAGE_NAME"
 
 echo ""
 echo "✅ Redoc HTML documentation generated successfully!"
