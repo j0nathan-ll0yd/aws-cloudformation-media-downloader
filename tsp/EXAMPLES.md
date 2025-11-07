@@ -8,18 +8,19 @@ The TypeSpec definitions reference real-world examples from the test fixtures in
 
 ## Example Files
 
-All example files are located in `tsp/examples/` and are synchronized from test fixtures:
+All example files are located in `tsp/examples/` and are automatically synchronized from API-specific test fixtures. These fixtures follow the naming convention `apiRequest-*.json` and `apiResponse-*.json` in each lambda's test fixtures directory:
 
 | Example File | Source Fixture | API Operation |
 |-------------|----------------|---------------|
-| `list-files-response.json` | `src/lambdas/ListFiles/test/fixtures/batchGet-200-OK.json` | GET /files |
-| `register-device-request.json` | `src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json` | POST /device/register |
-| `register-device-response.json` | Generated example | POST /device/register |
-| `feedly-webhook-request.json` | `src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json` | POST /feedly |
-| `feedly-webhook-response.json` | Generated example | POST /feedly |
-| `user-register-request.json` | Generated example | POST /user/register |
-| `user-login-request.json` | Generated example | POST /user/login |
-| `auth-response.json` | Generated example | POST /user/login, POST /user/register |
+| `list-files-response.json` | `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json` | GET /files |
+| `register-device-request.json` | `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json` | POST /device/register |
+| `register-device-response.json` | `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json` | POST /device/register |
+| `webhook-feedly-request.json` | `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json` | POST /feedly |
+| `webhook-feedly-response.json` | `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json` | POST /feedly |
+| `register-user-request.json` | `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json` | POST /user/register |
+| `register-user-response.json` | `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json` | POST /user/register |
+| `login-user-request.json` | `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json` | POST /user/login |
+| `login-user-response.json` | `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json` | POST /user/login |
 
 ## Synchronizing Examples
 
@@ -30,10 +31,10 @@ npm run document-api
 ```
 
 The sync happens automatically as the first step of the documentation generation process. The sync script (`bin/sync-examples.sh`):
-1. Extracts relevant data from test fixtures
-2. Transforms them into API response format
-3. Creates example files in `tsp/examples/`
-4. Maintains references to source fixtures
+1. Scans all lambda directories for files matching `apiRequest-*.json` and `apiResponse-*.json`
+2. Automatically copies these fixtures to `tsp/examples/` with standardized naming
+3. Converts lambda names from PascalCase to kebab-case for example file names
+4. Maintains a clear mapping between source fixtures and example files
 
 You can also run the sync script manually if needed:
 
@@ -53,11 +54,23 @@ You can also run the sync script manually if needed:
 
 When adding new endpoints or modifying existing ones:
 
-1. Create or update test fixtures in `src/lambdas/[LambdaName]/test/fixtures/`
-2. Update `bin/sync-examples.sh` to include the new fixture
-3. Run `./bin/sync-examples.sh` to sync examples
-4. Reference the example file in TypeSpec operation comments
-5. Regenerate documentation with `npm run document-api`
+1. **Create API-specific fixtures** in `src/lambdas/[LambdaName]/test/fixtures/` using the naming convention:
+   - `apiRequest-[METHOD]-[note].json` for request examples
+   - `apiResponse-[METHOD]-[statusCode]-[note].json` for response examples
+   
+   Examples:
+   - `apiRequest-POST-register.json`
+   - `apiResponse-GET-200-OK.json`
+   - `apiResponse-POST-201-Created.json`
+
+2. **Auto-discovery**: The sync script will automatically discover these fixtures during the next documentation build
+
+3. **Generate documentation**: Run `npm run document-api` to:
+   - Automatically sync the new fixtures to `tsp/examples/`
+   - Compile TypeSpec to OpenAPI
+   - Generate Redoc HTML documentation
+
+4. **Reference in TypeSpec**: Update operation comments to reference the new example files in `tsp/operations/operations.tsp`
 
 ## Example Reference Format in TypeSpec
 
