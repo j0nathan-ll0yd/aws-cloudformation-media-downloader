@@ -13,16 +13,19 @@ Instead of copying JSON content into TypeSpec documentation, we reference these 
 
 ## File Structure
 
+All example files in this directory are automatically synchronized from API-specific test fixtures. These fixtures follow the naming convention `apiRequest-*.json` and `apiResponse-*.json` in each lambda's test fixtures directory.
+
 | File | Description | Source |
 |------|-------------|--------|
-| `list-files-response.json` | Response from GET /files endpoint | `src/lambdas/ListFiles/test/fixtures/batchGet-200-OK.json` |
-| `register-device-request.json` | Request body for POST /device/register | `src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json` (body extracted) |
-| `register-device-response.json` | Response from POST /device/register | Generated example |
-| `feedly-webhook-request.json` | Request body for POST /feedly | `src/lambdas/WebhookFeedly/test/fixtures/handleFeedlyEvent-200-OK.json` |
-| `feedly-webhook-response.json` | Response from POST /feedly | Generated example |
-| `user-login-request.json` | Request body for POST /user/login | Generated example |
-| `user-register-request.json` | Request body for POST /user/register | Generated example |
-| `auth-response.json` | Response from authentication endpoints | Generated example |
+| `list-files-response.json` | Response from GET /files endpoint | `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json` |
+| `register-device-request.json` | Request body for POST /device/register | `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json` |
+| `register-device-response.json` | Response from POST /device/register | `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json` |
+| `webhook-feedly-request.json` | Request body for POST /feedly | `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json` |
+| `webhook-feedly-response.json` | Response from POST /feedly | `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json` |
+| `login-user-request.json` | Request body for POST /user/login | `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json` |
+| `login-user-response.json` | Response from POST /user/login | `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json` |
+| `register-user-request.json` | Request body for POST /user/register | `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json` |
+| `register-user-response.json` | Response from POST /user/register | `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json` |
 
 ## Syncing Examples
 
@@ -47,7 +50,7 @@ In TypeSpec operation documentation, examples are referenced like this:
 ```typescript
 /**
  * Example request: See `tsp/examples/register-device-request.json`
- * (sourced from `src/lambdas/RegisterDevice/test/fixtures/APIGatewayEvent.json`)
+ * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json`)
  */
 ```
 
@@ -58,9 +61,13 @@ This reference appears in the generated OpenAPI documentation, allowing readers 
 
 ## Development Workflow
 
-1. **Update test fixture** in `src/lambdas/*/test/fixtures/`
+1. **Create or update API fixtures** in `src/lambdas/[LambdaName]/test/fixtures/` using the naming convention:
+   - `apiRequest-[METHOD]-[note].json` for request examples
+   - `apiResponse-[METHOD]-[statusCode]-[note].json` for response examples
 2. **Regenerate docs**: `npm run document-api` (automatically syncs examples and generates documentation)
 3. **Verify changes**: Check `docs/api/openapi.yaml` and `docs/api/index.html`
+
+The sync script automatically discovers all `apiRequest-*.json` and `apiResponse-*.json` files and copies them to this directory with standardized names.
 
 ## Benefits
 

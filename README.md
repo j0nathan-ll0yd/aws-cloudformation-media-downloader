@@ -265,7 +265,7 @@ npm run document-api
 ```
 
 This command will:
-1. Sync example files from test fixtures to ensure documentation stays current
+1. Automatically discover and sync API fixtures (`apiRequest-*.json` and `apiResponse-*.json`) from lambda test directories
 2. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
 3. Generate a Redoc HTML documentation file (`docs/api/index.html`)
 4. Automatically open the documentation in your default browser
