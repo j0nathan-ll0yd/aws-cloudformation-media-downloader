@@ -15,17 +15,17 @@ Instead of copying JSON content into TypeSpec documentation, we reference these 
 
 All example files in this directory are automatically synchronized from API-specific test fixtures. These fixtures follow the naming convention `apiRequest-*.json` and `apiResponse-*.json` in each lambda's test fixtures directory.
 
-| File | Description | Source |
-|------|-------------|--------|
-| `list-files-response.json` | Response from GET /files endpoint | `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json` |
-| `register-device-request.json` | Request body for POST /device/register | `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json` |
-| `register-device-response.json` | Response from POST /device/register | `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json` |
-| `webhook-feedly-request.json` | Request body for POST /feedly | `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json` |
-| `webhook-feedly-response.json` | Response from POST /feedly | `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json` |
-| `login-user-request.json` | Request body for POST /user/login | `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json` |
-| `login-user-response.json` | Response from POST /user/login | `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json` |
-| `register-user-request.json` | Request body for POST /user/register | `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json` |
-| `register-user-response.json` | Response from POST /user/register | `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json` |
+| File | Description |
+|------|-------------|
+| `list-files-response.json` | Response from GET /files endpoint |
+| `register-device-request.json` | Request body for POST /device/register |
+| `register-device-response.json` | Response from POST /device/register |
+| `webhook-feedly-request.json` | Request body for POST /feedly |
+| `webhook-feedly-response.json` | Response from POST /feedly |
+| `login-user-request.json` | Request body for POST /user/login |
+| `login-user-response.json` | Response from POST /user/login |
+| `register-user-request.json` | Request body for POST /user/register |
+| `register-user-response.json` | Response from POST /user/register |
 
 ## Syncing Examples
 
