@@ -10,17 +10,17 @@ The TypeSpec definitions reference real-world examples from the test fixtures in
 
 All example files are located in `tsp/examples/` and are automatically synchronized from API-specific test fixtures. These fixtures follow the naming convention `apiRequest-*.json` and `apiResponse-*.json` in each lambda's test fixtures directory:
 
-| Example File | Source Fixture | API Operation |
-|-------------|----------------|---------------|
-| `list-files-response.json` | `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json` | GET /files |
-| `register-device-request.json` | `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json` | POST /device/register |
-| `register-device-response.json` | `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json` | POST /device/register |
-| `webhook-feedly-request.json` | `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json` | POST /feedly |
-| `webhook-feedly-response.json` | `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json` | POST /feedly |
-| `register-user-request.json` | `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json` | POST /user/register |
-| `register-user-response.json` | `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json` | POST /user/register |
-| `login-user-request.json` | `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json` | POST /user/login |
-| `login-user-response.json` | `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json` | POST /user/login |
+| Example File | API Operation |
+|-------------|---------------|
+| `list-files-response.json` | GET /files |
+| `register-device-request.json` | POST /device/register |
+| `register-device-response.json` | POST /device/register |
+| `webhook-feedly-request.json` | POST /feedly |
+| `webhook-feedly-response.json` | POST /feedly |
+| `register-user-request.json` | POST /user/register |
+| `register-user-response.json` | POST /user/register |
+| `login-user-request.json` | POST /user/login |
+| `login-user-response.json` | POST /user/login |
 
 ## Synchronizing Examples
 
