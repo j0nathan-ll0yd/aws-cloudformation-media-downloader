@@ -12,6 +12,7 @@ import {
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
 import {Part} from '@aws-sdk/client-s3'
+import {JWTPayload} from 'jose'
 
 interface Metadata {
   videoId: string
@@ -182,11 +183,11 @@ interface AppleTokenResponse {
   token_type: string // The type of access token. It will always be bearer.
 }
 
-interface ServerVerifiedToken {
+interface ServerVerifiedToken extends JWTPayload {
   userId: string
 }
 
-interface SignInWithAppleVerifiedToken {
+interface SignInWithAppleVerifiedToken extends JWTPayload {
   iss: string // https://appleid.apple.com
   aud: string // lifegames.OfflineMediaDownloader
   exp: number // 1590096639
