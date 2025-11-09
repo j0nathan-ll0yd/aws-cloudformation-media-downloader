@@ -2,6 +2,10 @@
 
 A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
 
+## Architecture
+
+View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader) (via GitDiagram)
+
 ## Background
 
 When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released they announced "exclusive original content, access to audio-only versions of videos and offline playback on your mobile device." I wasn't interested in the content, but I was excited about offline playback due to poor connectivity when commuting via the [MUNI](https://www.sfmta.com/). _Buuuuuuut_, there was a monthly fee of $11.99.
@@ -253,6 +257,28 @@ npm run test-remote-registerDevice
 ```
 
 ## Documentation
+
+This project uses multiple documentation approaches:
+
+### API Documentation with TypeSpec
+
+The API is documented using [TypeSpec](https://typespec.io/), a language for defining APIs that generates OpenAPI specifications. To generate and view API documentation:
+
+```bash
+npm run document-api
+```
+
+This command will:
+1. Automatically discover and sync API fixtures (`apiRequest-*.json` and `apiResponse-*.json`) from lambda test directories
+2. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+3. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+4. Automatically open the documentation in your default browser
+
+You can also view the documentation by opening `docs/api/index.html` directly in any browser.
+
+See `tsp/README.md` for more details about the TypeSpec definitions.
+
+### Source Code Documentation with TSDoc
 
 This project uses [TSDoc](https://tsdoc.org) for documenting the source code. To generate this documentation:
 

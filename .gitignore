@@ -5,7 +5,8 @@
 build
 coverage
 dist
-docs
+docs/source
+docs/terraform.md
 secure
 local
 temp

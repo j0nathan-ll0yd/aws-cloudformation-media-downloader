@@ -72,6 +72,7 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Use ES modules (import/export) syntax, not CommonJS (require)
 - Destructure imports when possible (eg. import { foo } from 'bar')
 - Use the commitlint syntax when structuring commit messages
+- NEVER add AI assistant references in commit messages, PRs, or code comments
 
 ### Workflow
 - Be sure to typecheck when you're done making a series of code changes
@@ -282,6 +283,46 @@ This project follows convention over configuration principles:
 - Terraform version compatibility
 - APNS certificate validity and renewal
 - AWS service quotas and limits
+
+## Dependabot Update Resolution
+
+When a Dependabot PR is created for a dependency update, use this automated resolution process:
+
+1. **Identify the Update**:
+   - Find and examine the open Dependabot PR
+   - Extract the dependency name, current version, and target version
+   - Review the changelog/release notes for breaking changes, security fixes, and new features
+
+2. **Impact Analysis**:
+   - Search the codebase for all files that import or use this dependency
+   - Identify direct usage, type imports, and any dependency-specific configurations
+   - Assess the scope of potential impact on the codebase
+
+3. **Compatibility Verification**:
+   - Check if the new version is compatible with our Node.js/runtime version
+   - Verify TypeScript type compatibility if applicable
+   - Review any peer dependency requirements
+
+4. **Automated Testing**:
+   - Run the build process (`npm run build`) to catch compilation errors
+   - Execute the full test suite (`npm test`) to ensure functionality
+   - Check for any failing tests or type errors
+
+5. **Security & Quality Review**:
+   - Evaluate any security fixes in the update
+   - Review bug fixes that might affect our usage patterns
+   - Assess performance improvements or regressions
+
+6. **Resolution**:
+   - If all checks pass: merge the PR automatically
+   - If issues found: investigate and fix them, then merge
+   - If breaking changes require significant work: document the migration plan and notify me
+
+7. **Documentation**:
+   - Briefly summarize what was updated and any notable changes
+   - Report the final status (merged, needs attention, etc.)
+
+Execute this process autonomously and only notify me if manual intervention is required for breaking changes or complex migration scenarios.
 
 ## Support & Maintenance
 - **CI/CD**: GitHub Actions workflows with tests in `pipeline/` directory
