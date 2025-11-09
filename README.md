@@ -254,6 +254,28 @@ npm run test-remote-registerDevice
 
 ## Documentation
 
+This project uses multiple documentation approaches:
+
+### API Documentation with TypeSpec
+
+The API is documented using [TypeSpec](https://typespec.io/), a language for defining APIs that generates OpenAPI specifications. To generate and view API documentation:
+
+```bash
+npm run document-api
+```
+
+This command will:
+1. Automatically discover and sync API fixtures (`apiRequest-*.json` and `apiResponse-*.json`) from lambda test directories
+2. Compile TypeSpec definitions to OpenAPI 3.0 specification (`docs/api/openapi.yaml`)
+3. Generate a Redoc HTML documentation file (`docs/api/index.html`)
+4. Automatically open the documentation in your default browser
+
+You can also view the documentation by opening `docs/api/index.html` directly in any browser.
+
+See `tsp/README.md` for more details about the TypeSpec definitions.
+
+### Source Code Documentation with TSDoc
+
 This project uses [TSDoc](https://tsdoc.org) for documenting the source code. To generate this documentation:
 
 ```bash
