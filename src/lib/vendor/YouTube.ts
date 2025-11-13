@@ -45,13 +45,22 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
   try {
     const ytDlp = new YTDlpWrap(YTDLP_BINARY_PATH)
 
+    // Copy cookies from read-only /opt to writable /tmp
+    // yt-dlp needs write access to update cookies after use
+    const fs = await import('fs')
+    const cookiesSource = '/opt/cookies/youtube-cookies.txt'
+    const cookiesDest = '/tmp/youtube-cookies.txt'
+    await fs.promises.copyFile(cookiesSource, cookiesDest)
+
     // Configure yt-dlp with flags to work around restrictions
     // - player_client=default: Use alternate extraction method
     // - no-warnings: Suppress format selection warnings
+    // - cookies: Use authentication cookies from /tmp (writable)
     // Note: Node.js runtime detection handled via PATH environment variable
     const ytdlpFlags = [
       '--extractor-args', 'youtube:player_client=default',
-      '--no-warnings'
+      '--no-warnings',
+      '--cookies', cookiesDest
     ]
 
     // Get video info in JSON format
@@ -81,29 +90,50 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
     throw new UnexpectedError('No formats available for video')
   }
 
-  // Filter for formats with both video and audio
-  const combinedFormats = info.formats.filter(f =>
+  // Filter for formats with both video and audio AND a known filesize
+  // Exclude HLS/DASH streaming formats (they have manifests, not direct files)
+  const directDownloadFormats = info.formats.filter(f =>
     f.vcodec && f.vcodec !== 'none' &&
     f.acodec && f.acodec !== 'none' &&
-    f.url
+    f.url &&
+    f.filesize && f.filesize > 0 &&  // Must have known filesize
+    !f.url.includes('manifest') &&    // Exclude HLS/DASH manifests
+    !f.url.includes('.m3u8')          // Exclude m3u8 playlists
   )
 
-  if (combinedFormats.length === 0) {
-    // Fallback to any format with a URL
-    logDebug('No combined formats found, using first available format')
-    return info.formats.find(f => f.url) || info.formats[0]
+  if (directDownloadFormats.length === 0) {
+    logDebug('No direct download formats found, trying combined formats')
+    // Fallback to combined formats even without filesize
+    const combinedFormats = info.formats.filter(f =>
+      f.vcodec && f.vcodec !== 'none' &&
+      f.acodec && f.acodec !== 'none' &&
+      f.url &&
+      !f.url.includes('manifest') &&
+      !f.url.includes('.m3u8')
+    )
+
+    if (combinedFormats.length === 0) {
+      throw new UnexpectedError('No suitable download formats available - all formats are streaming manifests')
+    }
+
+    // Sort by bitrate as filesize may not be available
+    const sorted = combinedFormats.sort((a, b) => {
+      if (a.tbr && b.tbr) return b.tbr - a.tbr
+      return 0
+    })
+
+    logDebug('chooseVideoFormat (no filesize) =>', {
+      formatId: sorted[0].format_id,
+      tbr: sorted[0].tbr,
+      ext: sorted[0].ext
+    })
+
+    return sorted[0]
   }
 
-  // Sort by filesize (best quality typically = largest file)
-  // If filesize not available, sort by bitrate
-  const sorted = combinedFormats.sort((a, b) => {
-    if (a.filesize && b.filesize) {
-      return b.filesize - a.filesize
-    }
-    if (a.tbr && b.tbr) {
-      return b.tbr - a.tbr
-    }
-    return 0
+  // Sort by filesize (best quality = largest file)
+  const sorted = directDownloadFormats.sort((a, b) => {
+    return (b.filesize || 0) - (a.filesize || 0)
   })
 
   logDebug('chooseVideoFormat =>', {

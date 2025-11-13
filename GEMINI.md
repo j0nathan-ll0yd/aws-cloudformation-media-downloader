@@ -1,4 +1,4 @@
-# Project Context for Claude
+# Project Context for Gemini
 
 ## Project Overview
 This is a serverless AWS media downloader service built with Terraform and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
@@ -65,8 +65,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 5. **Custom Authorization**: Query-based API token authorizer for Feedly integration
 6. **Error Handling**: Automated GitHub issue creation for actionable errors
 
-Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.
-Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
+Take a moment to familiarize yourself with the structure of the project. You can use your `codebase_investigator` tool to identify relationships between files and understand the overall architecture.
 
 ### Code style
 - Use ES modules (import/export) syntax, not CommonJS (require)
@@ -81,7 +80,6 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Always ignore the `node_modules` directory when searching
 - Always ignore the `dist` directory
 - Always ignore the `package-lock.json` file when searching, unless your dealing with dependencies
-- **Use TodoWrite tool** for complex tasks to track progress and ensure thoroughness - this prevents missing critical steps and provides visibility into progress
 
 ### Pre-Push Verification (REQUIRED)
 Before pushing any changes or creating commits, ALWAYS run these commands to ensure code quality:
@@ -105,8 +103,6 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 4. **Maintain API Consistency**: Ensure the new library provides the same claims (e.g., `iat` timestamps) that existing code expects
 
 5. **Update Test Fixtures Appropriately**: Adapt test mocks to work with the new library's expectations while keeping existing test data formats
-
-6. **Follow the TodoWrite Pattern**: Break complex migrations into tracked steps to ensure nothing is missed and progress is visible
 
 ## Development Workflow
 
@@ -341,11 +337,7 @@ This section outlines a common workflow for remotely testing the media download 
 To initiate the process, invoke the `FileCoordinator` Lambda function. This function scans for files that need to be downloaded and starts the process.
 
 ```bash
-/opt/homebrew/bin/aws lambda invoke \
-  --function-name FileCoordinator \
-  --region us-west-2 \
-  --payload '{}' \
-  /dev/null
+aws lambda invoke --function-name FileCoordinator --payload '{}' /dev/null
 ```
 
 This command invokes the `FileCoordinator` function with an empty JSON payload. The response from the lambda is discarded by redirecting it to `/dev/null`.
@@ -355,35 +347,30 @@ This command invokes the `FileCoordinator` function with an empty JSON payload. 
 After triggering the `FileCoordinator`, you can monitor the logs of the `StartFileUpload` Lambda to observe the file upload process.
 
 ```bash
-/opt/homebrew/bin/aws logs tail /aws/lambda/StartFileUpload --region us-west-2 --follow --format short
+aws logs tail /aws/lambda/StartFileUpload --follow
 ```
 
 This command will stream the logs from the `/aws/lambda/StartFileUpload` log group, allowing you to see real-time updates. The `--follow` flag keeps the connection open and continues to display new log entries.
 
-### 3. Testing The StartFileUpload Lambda with Error Filtering
+## Testing The StartFileUpload Lambda
+
+This section outlines a specific workflow for testing the `StartFileUpload` lambda and diagnosing a known issue with `yt-dlp`.
+
+### 1. Trigger the File Coordinator and Check for Errors
 
 The following command invokes the `FileCoordinator` lambda, waits for 5 seconds, and then filters the logs of the `StartFileUpload` lambda for "ERROR" messages in the last 5 minutes.
 
 ```bash
-/opt/homebrew/bin/aws lambda invoke \
-  --function-name FileCoordinator \
-  --region us-west-2 \
-  --payload '{}' \
-  /dev/null && \
-  sleep 5 && \
-  /opt/homebrew/bin/aws logs filter-log-events \
-  --log-group-name /aws/lambda/StartFileUpload \
-  --region us-west-2 \
-  --start-time $(date -v-5M +%s000) \
-  --filter-pattern "ERROR"
+aws lambda invoke --function-name FileCoordinator --region us-west-2 --payload '{}' /dev/null && sleep 5 && aws logs filter-log-events --log-group-name /aws/lambda/StartFileUpload --region us-west-2 --start-time $(date -v-5M +%s000) --filter-pattern "ERROR"
 ```
 
-### 4. Known Issue: YouTube Authentication
+### 2. Known Error: YouTube Authentication
 
-A known issue with video downloads is a `yt-dlp` error related to YouTube authentication. The error message is:
+A known issue with this workflow is a `yt-dlp` error related to YouTube authentication. The error message is:
 
 ```
-ERROR: [youtube] <video-id>: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.
+ERROR: [youtube] wRG7lAGdRII: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication.
 ```
 
-This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication (see Phase 2 of yt-dlp migration strategy).
+This error occurs because YouTube is blocking the request from the server environment. To resolve this, the `StartFileUpload` lambda needs to be updated to provide authentication cookies to `yt-dlp`.
+

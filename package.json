@@ -23,6 +23,7 @@
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
+    "update-cookies": "./bin/update-youtube-cookies.sh",
     "plan": "eval export $(cat .env) && cd terraform && terraform apply",
     "deploy": "eval export $(cat .env) && cd terraform && terraform apply -auto-approve"
   },

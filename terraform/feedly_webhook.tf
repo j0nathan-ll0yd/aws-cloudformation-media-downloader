@@ -169,7 +169,7 @@ resource "aws_lambda_layer_version" "YtDlp" {
   compatible_runtimes = ["nodejs22.x"]
   source_code_hash    = data.archive_file.YtDlpLayer.output_base64sha256
 
-  description = "yt-dlp binary (Linux x86_64) for video downloading"
+  description = "yt-dlp binary (Linux x86_64) and YouTube cookies for authenticated video downloading"
 }
 
 resource "aws_lambda_function" "StartFileUpload" {
