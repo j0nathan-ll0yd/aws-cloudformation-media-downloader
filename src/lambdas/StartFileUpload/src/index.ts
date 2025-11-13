@@ -1,12 +1,13 @@
-import {videoInfo} from 'ytdl-core'
 import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
-import {fetchVideoInfo} from '../../../lib/vendor/YouTube'
-import {Metadata, StartFileUploadParams, UploadPartEvent} from '../../../types/main'
+import {fetchVideoInfo, chooseVideoFormat} from '../../../lib/vendor/YouTube'
+import {StartFileUploadParams, UploadPartEvent, DynamoDBFile} from '../../../types/main'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
-import {assertIsError, transformVideoInfoToMetadata} from '../../../util/transformers'
+import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {CreateMultipartUploadRequest} from '@aws-sdk/client-s3'
-import {getFileFromMetadata, upsertFile} from '../../../util/shared'
+import {upsertFile, makeHttpRequest} from '../../../util/shared'
+import {AxiosRequestConfig} from 'axios'
+import {FileStatus} from '../../../types/enums'
 
 /**
  * Create a start for a multi-part upload
@@ -30,13 +31,46 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
   try {
     logDebug('fetchVideoInfo <=', fileId)
-    const myVideoInfo: videoInfo = await fetchVideoInfo(fileUrl)
-    const myMetadata: Metadata = transformVideoInfoToMetadata(myVideoInfo)
-    const myDynamoItem = await getFileFromMetadata(myMetadata)
+    const videoInfo = await fetchVideoInfo(fileUrl)
+    const selectedFormat = chooseVideoFormat(videoInfo)
+
+    logDebug('Selected format:', {
+      formatId: selectedFormat.format_id,
+      filesize: selectedFormat.filesize,
+      url: selectedFormat.url.substring(0, 50) + '...'
+    })
+
+    // Make HEAD request to get actual file size and content type
+    const videoUrl = selectedFormat.url
+    const headOptions: AxiosRequestConfig = {
+      method: 'head',
+      timeout: 900000,
+      url: videoUrl
+    }
+
+    const fileInfo = await makeHttpRequest(headOptions)
+    const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
+    const contentType = fileInfo.headers['content-type']
+
+    // Create DynamoDB item matching expected structure
+    const fileName = `${videoInfo.id}.${selectedFormat.ext}`
+    const myDynamoItem: DynamoDBFile = {
+      fileId: videoInfo.id,
+      key: fileName,
+      size: bytesTotal,
+      availableAt: new Date().getTime() / 1000,
+      authorName: videoInfo.uploader || 'Unknown',
+      authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
+      title: videoInfo.title,
+      description: videoInfo.description || '',
+      publishDate: videoInfo.upload_date || new Date().toISOString(),
+      contentType,
+      status: FileStatus.PendingDownload
+    }
+
     await upsertFile(myDynamoItem)
 
-    const key = myMetadata.fileName
-    const bytesTotal = myDynamoItem.size
+    const key = fileName
     const bucket = process.env.Bucket
     const partSize = 1024 * 1024 * 5
     const params = {
@@ -59,7 +93,7 @@ export async function handler(event: StartFileUploadParams): Promise<UploadPartE
       partSize,
       partTags: [],
       uploadId: output.UploadId,
-      url: myMetadata.formats[0].url
+      url: selectedFormat.url
     } as UploadPartEvent
   } catch (error) {
     assertIsError(error)

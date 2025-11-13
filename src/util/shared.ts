@@ -1,14 +1,14 @@
 // These are methods that are shared across multiple lambdas
 import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {logDebug, logInfo} from './lambda-helpers'
+import {logDebug} from './lambda-helpers'
 import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
-import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
+import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
 import {startExecution} from '../lib/vendor/AWS/StepFunctions'
-import {transformVideoIntoDynamoItem} from './transformers'
+// DEPRECATED: Commented out after yt-dlp migration
+// import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
-import {FileStatus} from '../types/enums'
 import {StartExecutionInput} from '@aws-sdk/client-sfn'
 
 /**
@@ -129,32 +129,34 @@ export async function initiateFileDownload(fileId: string) {
 }
 
 /**
+ * DEPRECATED after yt-dlp migration
+ * This function is no longer used. Functionality moved to StartFileUpload Lambda.
  * Create a DynamoDBFile object from a video's metadata
  * @param metadata - The Metadata for a video; generated through youtube-dl
  * @returns DynamoDBFile
  * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
-export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
-  logInfo('getFileFromMetadata <=', metadata)
-  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-  const videoUrl = metadata.formats[0].url
-  const options: AxiosRequestConfig = {
-    method: 'head',
-    timeout: 900000,
-    url: videoUrl
-  }
-
-  const fileInfo = await makeHttpRequest(options)
-  // TODO: Ensure these headers exist in the response
-  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-  const contentType = fileInfo.headers['content-type']
-
-  myDynamoItem.size = bytesTotal
-  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
-  myDynamoItem.contentType = contentType
-  myDynamoItem.status = FileStatus.PendingDownload
-  return myDynamoItem
-}
+// export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
+//   logInfo('getFileFromMetadata <=', metadata)
+//   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
+//   const videoUrl = metadata.formats[0].url
+//   const options: AxiosRequestConfig = {
+//     method: 'head',
+//     timeout: 900000,
+//     url: videoUrl
+//   }
+//
+//   const fileInfo = await makeHttpRequest(options)
+//   // TODO: Ensure these headers exist in the response
+//   const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
+//   const contentType = fileInfo.headers['content-type']
+//
+//   myDynamoItem.size = bytesTotal
+//   myDynamoItem.publishDate = new Date(metadata.published).toISOString()
+//   myDynamoItem.contentType = contentType
+//   myDynamoItem.status = FileStatus.PendingDownload
+//   return myDynamoItem
+// }
 
 /**
  * Makes an HTTP request via Axios

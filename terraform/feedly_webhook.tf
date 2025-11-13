@@ -157,6 +157,21 @@ data "archive_file" "StartFileUpload" {
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
+data "archive_file" "YtDlpLayer" {
+  type        = "zip"
+  source_dir  = "./../layers/yt-dlp"
+  output_path = "./../build/layers/yt-dlp.zip"
+}
+
+resource "aws_lambda_layer_version" "YtDlp" {
+  filename            = data.archive_file.YtDlpLayer.output_path
+  layer_name          = "yt-dlp"
+  compatible_runtimes = ["nodejs22.x"]
+  source_code_hash    = data.archive_file.YtDlpLayer.output_base64sha256
+
+  description = "yt-dlp binary (Linux x86_64) for video downloading"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
   description      = "Starts the multipart upload"
   function_name    = "StartFileUpload"
@@ -165,13 +180,17 @@ resource "aws_lambda_function" "StartFileUpload" {
   runtime          = "nodejs22.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
+  memory_size      = 512
   filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
+  layers           = [aws_lambda_layer_version.YtDlp.arn]
 
   environment {
     variables = {
       Bucket             = aws_s3_bucket.Files.id
       DynamoDBTableFiles = aws_dynamodb_table.Files.name
+      YTDLP_BINARY_PATH  = "/opt/bin/yt-dlp_linux"
+      PATH               = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
     }
   }
 }
