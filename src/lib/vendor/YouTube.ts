@@ -1,4 +1,8 @@
 import YTDlpWrap from 'yt-dlp-wrap'
+import {spawn} from 'child_process'
+import {PassThrough} from 'stream'
+import {Upload} from '@aws-sdk/lib-storage'
+import {S3Client, HeadObjectCommand} from '@aws-sdk/client-s3'
 import {logDebug, logError} from '../../util/lambda-helpers'
 import {UnexpectedError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
@@ -82,6 +86,7 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
 
 /**
  * Choose the best video format from available formats
+ * Strategy: Prefer progressive (direct download) > HLS > DASH
  * @param info - Video information from yt-dlp
  * @returns Selected video format
  */
@@ -90,56 +95,70 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
     throw new UnexpectedError('No formats available for video')
   }
 
-  // Filter for formats with both video and audio AND a known filesize
-  // Exclude HLS/DASH streaming formats (they have manifests, not direct files)
-  const directDownloadFormats = info.formats.filter(f =>
+  // Filter for combined formats (video + audio in one file)
+  const combinedFormats = info.formats.filter(f =>
     f.vcodec && f.vcodec !== 'none' &&
     f.acodec && f.acodec !== 'none' &&
-    f.url &&
-    f.filesize && f.filesize > 0 &&  // Must have known filesize
-    !f.url.includes('manifest') &&    // Exclude HLS/DASH manifests
-    !f.url.includes('.m3u8')          // Exclude m3u8 playlists
+    f.url
   )
 
-  if (directDownloadFormats.length === 0) {
-    logDebug('No direct download formats found, trying combined formats')
-    // Fallback to combined formats even without filesize
-    const combinedFormats = info.formats.filter(f =>
-      f.vcodec && f.vcodec !== 'none' &&
-      f.acodec && f.acodec !== 'none' &&
-      f.url &&
-      !f.url.includes('manifest') &&
-      !f.url.includes('.m3u8')
-    )
+  if (combinedFormats.length === 0) {
+    throw new UnexpectedError('No combined video+audio formats available')
+  }
 
-    if (combinedFormats.length === 0) {
-      throw new UnexpectedError('No suitable download formats available - all formats are streaming manifests')
-    }
+  // 1. Try progressive formats with known filesize (BEST - direct download URL)
+  const progressiveWithSize = combinedFormats.filter(f =>
+    f.filesize && f.filesize > 0 &&
+    !f.url.includes('manifest') &&
+    !f.url.includes('.m3u8')
+  )
 
-    // Sort by bitrate as filesize may not be available
-    const sorted = combinedFormats.sort((a, b) => {
+  if (progressiveWithSize.length > 0) {
+    const sorted = progressiveWithSize.sort((a, b) => (b.filesize || 0) - (a.filesize || 0))
+    logDebug('chooseVideoFormat: progressive with filesize', {
+      formatId: sorted[0].format_id,
+      filesize: sorted[0].filesize,
+      ext: sorted[0].ext
+    })
+    return sorted[0]
+  }
+
+  // 2. Try progressive formats without filesize (GOOD - direct download URL, size unknown)
+  const progressiveWithoutSize = combinedFormats.filter(f =>
+    !f.url.includes('manifest') &&
+    !f.url.includes('.m3u8')
+  )
+
+  if (progressiveWithoutSize.length > 0) {
+    const sorted = progressiveWithoutSize.sort((a, b) => {
       if (a.tbr && b.tbr) return b.tbr - a.tbr
       return 0
     })
-
-    logDebug('chooseVideoFormat (no filesize) =>', {
+    logDebug('chooseVideoFormat: progressive without filesize', {
       formatId: sorted[0].format_id,
       tbr: sorted[0].tbr,
       ext: sorted[0].ext
     })
-
     return sorted[0]
   }
 
-  // Sort by filesize (best quality = largest file)
-  const sorted = directDownloadFormats.sort((a, b) => {
-    return (b.filesize || 0) - (a.filesize || 0)
+  // 3. Accept HLS/DASH streaming formats (ACCEPTABLE - will stream via yt-dlp)
+  // This is the modern YouTube default - yt-dlp handles the streaming
+  const sorted = combinedFormats.sort((a, b) => {
+    // Prefer formats with filesize estimate
+    if (a.filesize && !b.filesize) return -1
+    if (!a.filesize && b.filesize) return 1
+    // Otherwise sort by bitrate (quality)
+    if (a.tbr && b.tbr) return b.tbr - a.tbr
+    return 0
   })
 
-  logDebug('chooseVideoFormat =>', {
+  logDebug('chooseVideoFormat: streaming format (HLS/DASH)', {
     formatId: sorted[0].format_id,
-    filesize: sorted[0].filesize,
-    ext: sorted[0].ext
+    filesize: sorted[0].filesize || 'estimated',
+    tbr: sorted[0].tbr,
+    ext: sorted[0].ext,
+    isManifest: sorted[0].url.includes('manifest') || sorted[0].url.includes('.m3u8')
   })
 
   return sorted[0]
@@ -165,4 +184,141 @@ export function getVideoID(url: string): string {
   }
 
   throw new UnexpectedError('Invalid YouTube URL format')
+}
+
+/**
+ * Stream video directly from yt-dlp to S3 using multipart upload
+ * @param uri - YouTube video URL
+ * @param s3Client - Configured S3 client
+ * @param bucket - Target S3 bucket name
+ * @param key - Target S3 object key
+ * @returns Upload results including file size, S3 URL, and duration
+ */
+export async function streamVideoToS3(
+  uri: string,
+  s3Client: S3Client,
+  bucket: string,
+  key: string
+): Promise<{
+  fileSize: number
+  s3Url: string
+  duration: number
+}> {
+  logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: YTDLP_BINARY_PATH})
+
+  try {
+    const startTime = Date.now()
+
+    // Copy cookies from read-only /opt to writable /tmp
+    // yt-dlp needs write access to update cookies after use
+    const fs = await import('fs')
+    const cookiesSource = '/opt/cookies/youtube-cookies.txt'
+    const cookiesDest = '/tmp/youtube-cookies.txt'
+    await fs.promises.copyFile(cookiesSource, cookiesDest)
+
+    // Configure yt-dlp arguments for streaming to stdout
+    const ytdlpArgs = [
+      '-o', '-',  // Output to stdout
+      '--extractor-args', 'youtube:player_client=default',
+      '--no-warnings',
+      '--cookies', cookiesDest,
+      uri
+    ]
+
+    logDebug('Spawning yt-dlp process', {args: ytdlpArgs})
+
+    // Spawn yt-dlp process
+    const ytdlp = spawn(YTDLP_BINARY_PATH, ytdlpArgs)
+
+    // Create pass-through stream to connect yt-dlp stdout to S3 upload
+    const passThrough = new PassThrough()
+
+    // Pipe yt-dlp stdout to pass-through stream
+    ytdlp.stdout.pipe(passThrough)
+
+    // Track stderr for error messages
+    let stderrOutput = ''
+    ytdlp.stderr.on('data', (chunk) => {
+      stderrOutput += chunk.toString()
+    })
+
+    // Handle passThrough stream errors
+    passThrough.on('error', (error) => {
+      logError('PassThrough stream error', error)
+    })
+
+    // Handle yt-dlp process errors
+    ytdlp.on('error', (error) => {
+      logError('yt-dlp process error', error)
+      passThrough.destroy(error)
+    })
+
+    // Handle yt-dlp process exit
+    ytdlp.on('exit', (code) => {
+      if (code !== 0) {
+        const error = new UnexpectedError(
+          `yt-dlp process exited with code ${code}: ${stderrOutput}`
+        )
+        logError('yt-dlp process exit error', error)
+        passThrough.destroy(error)
+      }
+    })
+
+    // Create S3 upload with streaming support
+    const upload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucket,
+        Key: key,
+        Body: passThrough,
+        ContentType: 'video/mp4'
+      },
+      queueSize: 4,  // Number of concurrent part uploads
+      partSize: 5 * 1024 * 1024  // 5MB parts (minimum for S3 multipart)
+    })
+
+    // Monitor upload progress
+    let bytesUploaded = 0
+    upload.on('httpUploadProgress', (progress) => {
+      if (progress.loaded) {
+        bytesUploaded = progress.loaded
+        logDebug('Upload progress', {
+          loaded: progress.loaded,
+          total: progress.total,
+          key
+        })
+      }
+    })
+
+    // Wait for upload to complete
+    logDebug('Starting S3 upload', {bucket, key})
+    const uploadResult = await upload.done()
+    logDebug('S3 upload completed', {location: uploadResult.Location})
+
+    // Get final file size from S3
+    const headResult = await s3Client.send(
+      new HeadObjectCommand({Bucket: bucket, Key: key})
+    )
+
+    const fileSize = headResult.ContentLength || bytesUploaded
+    const duration = Math.floor((Date.now() - startTime) / 1000)
+    const s3Url = `s3://${bucket}/${key}`
+
+    logDebug('streamVideoToS3 <=', {
+      fileSize,
+      s3Url,
+      duration,
+      bytesUploaded
+    })
+
+    return {
+      fileSize,
+      s3Url,
+      duration
+    }
+  } catch (error) {
+    assertIsError(error)
+    logError('streamVideoToS3 error', error)
+    throw new UnexpectedError(`Failed to stream video to S3: ${error.message}`)
+  }
 }

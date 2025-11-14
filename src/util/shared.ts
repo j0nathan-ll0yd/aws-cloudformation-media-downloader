@@ -5,11 +5,13 @@ import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
-import {startExecution} from '../lib/vendor/AWS/StepFunctions'
+// DEPRECATED: Commented out after yt-dlp migration - Step Functions no longer used
+// import {startExecution} from '../lib/vendor/AWS/StepFunctions'
+// import {StartExecutionInput} from '@aws-sdk/client-sfn'
 // DEPRECATED: Commented out after yt-dlp migration
 // import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
-import {StartExecutionInput} from '@aws-sdk/client-sfn'
+import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
 
 /**
  * Disassociates a deviceId from a User
@@ -112,20 +114,34 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 }
 
 /**
- * Triggers the process for downloading a file and storing it in S3
- * @param fileId - The YouTube fileId to be downloaded
+ * Initiates a file download by invoking the StartFileUpload Lambda
+ * Uses asynchronous invocation (Event type) to avoid blocking
+ * @param fileId - The YouTube video ID to download
  * @see {@link lambdas/FileCoordinator/src!#handler | FileCoordinator }
  * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
  */
 export async function initiateFileDownload(fileId: string) {
-  const params = {
-    input: JSON.stringify({fileId}),
-    name: new Date().getTime().toString(),
-    stateMachineArn: process.env.StateMachineArn
-  } as StartExecutionInput
-  logDebug('startExecution <=', params)
-  const output = await startExecution(params)
-  logDebug('startExecution =>', output)
+  const lambdaClient = new LambdaClient({region: process.env.AWS_REGION || 'us-west-2'})
+
+  const payload = JSON.stringify({fileId})
+  const command = new InvokeCommand({
+    FunctionName: 'StartFileUpload',
+    InvocationType: 'Event', // Asynchronous invocation
+    Payload: Buffer.from(payload)
+  })
+
+  logDebug('Lambda invoke (async) <=', {
+    FunctionName: 'StartFileUpload',
+    InvocationType: 'Event',
+    fileId
+  })
+
+  const output = await lambdaClient.send(command)
+
+  logDebug('Lambda invoke (async) =>', {
+    StatusCode: output.StatusCode,
+    fileId
+  })
 }
 
 /**

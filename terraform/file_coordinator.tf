@@ -5,8 +5,8 @@ resource "aws_iam_role" "FileCoordinatorRole" {
 
 data "aws_iam_policy_document" "FileCoordinator" {
   statement {
-    actions   = ["states:StartExecution"]
-    resources = [aws_sfn_state_machine.MultipartUpload.id]
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.StartFileUpload.arn]
   }
   statement {
     actions   = ["dynamodb:Scan"]
@@ -71,7 +71,6 @@ resource "aws_lambda_function" "FileCoordinator" {
 
   environment {
     variables = {
-      StateMachineArn    = aws_sfn_state_machine.MultipartUpload.id
       DynamoDBTableFiles = aws_dynamodb_table.Files.name
     }
   }

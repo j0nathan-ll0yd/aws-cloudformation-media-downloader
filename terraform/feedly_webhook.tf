@@ -9,8 +9,8 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
-    actions   = ["states:StartExecution"]
-    resources = [aws_sfn_state_machine.MultipartUpload.id]
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.StartFileUpload.arn]
   }
   statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
@@ -65,7 +65,6 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      StateMachineArn        = aws_sfn_state_machine.MultipartUpload.id
     }
   }
 }
@@ -173,14 +172,14 @@ resource "aws_lambda_layer_version" "YtDlp" {
 }
 
 resource "aws_lambda_function" "StartFileUpload" {
-  description      = "Starts the multipart upload"
+  description      = "Streams video downloads directly to S3 using yt-dlp"
   function_name    = "StartFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
   handler          = "StartFileUpload.handler"
   runtime          = "nodejs22.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
-  memory_size      = 512
+  memory_size      = 2048
   filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
   layers           = [aws_lambda_layer_version.YtDlp.arn]

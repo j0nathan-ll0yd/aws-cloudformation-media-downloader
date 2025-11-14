@@ -1,102 +1,107 @@
-import {createMultipartUpload} from '../../../lib/vendor/AWS/S3'
-import {fetchVideoInfo, chooseVideoFormat} from '../../../lib/vendor/YouTube'
-import {StartFileUploadParams, UploadPartEvent, DynamoDBFile} from '../../../types/main'
+import {S3Client} from '@aws-sdk/client-s3'
+import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
+import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
-import {CreateMultipartUploadRequest} from '@aws-sdk/client-s3'
-import {upsertFile, makeHttpRequest} from '../../../util/shared'
-import {AxiosRequestConfig} from 'axios'
+import {upsertFile} from '../../../util/shared'
 import {FileStatus} from '../../../types/enums'
 
 /**
- * Create a start for a multi-part upload
- * @param params - The CreateMultipartUploadRequest object
+ * Streams a YouTube video directly to S3 bucket
+ * Uses yt-dlp to download and AWS SDK streaming upload to S3
+ * @param event - Contains fileId (YouTube video ID)
+ * @returns Upload result with file size and status
  * @notExported
  */
-async function createMultipartUploadFromParams(params: CreateMultipartUploadRequest) {
-  logInfo('createMultipartUpload <=', params)
-  const output = await createMultipartUpload(params)
-  logInfo('createMultipartUpload =>', output)
-  return output
-}
-
-/**
- * Starts a multipart upload of a file to an S3 bucket
- * @notExported
- */
-export async function handler(event: StartFileUploadParams): Promise<UploadPartEvent> {
+export async function handler(event: StartFileUploadParams): Promise<{
+  fileId: string
+  status: string
+  fileSize: number
+  duration: number
+}> {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
+
   try {
+    // Fetch video metadata
     logDebug('fetchVideoInfo <=', fileId)
     const videoInfo = await fetchVideoInfo(fileUrl)
     const selectedFormat = chooseVideoFormat(videoInfo)
 
     logDebug('Selected format:', {
       formatId: selectedFormat.format_id,
-      filesize: selectedFormat.filesize,
-      url: selectedFormat.url.substring(0, 50) + '...'
+      filesize: selectedFormat.filesize || 'unknown',
+      ext: selectedFormat.ext,
+      isStreaming: selectedFormat.url.includes('manifest') || selectedFormat.url.includes('.m3u8')
     })
 
-    // Make HEAD request to get actual file size and content type
-    const videoUrl = selectedFormat.url
-    const headOptions: AxiosRequestConfig = {
-      method: 'head',
-      timeout: 900000,
-      url: videoUrl
+    // Create DynamoDB entry with PendingDownload status
+    const fileName = `${videoInfo.id}.${selectedFormat.ext}`
+    const bucket = process.env.Bucket
+
+    if (!bucket) {
+      throw new UnexpectedError('Bucket environment variable not set')
     }
 
-    const fileInfo = await makeHttpRequest(headOptions)
-    const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-    const contentType = fileInfo.headers['content-type']
-
-    // Create DynamoDB item matching expected structure
-    const fileName = `${videoInfo.id}.${selectedFormat.ext}`
-    const myDynamoItem: DynamoDBFile = {
+    const dynamoItem: DynamoDBFile = {
       fileId: videoInfo.id,
       key: fileName,
-      size: bytesTotal,
+      size: selectedFormat.filesize || 0, // Will be updated after upload
       availableAt: new Date().getTime() / 1000,
       authorName: videoInfo.uploader || 'Unknown',
       authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
       title: videoInfo.title,
       description: videoInfo.description || '',
       publishDate: videoInfo.upload_date || new Date().toISOString(),
-      contentType,
+      contentType: 'video/mp4',
       status: FileStatus.PendingDownload
     }
 
-    await upsertFile(myDynamoItem)
+    await upsertFile(dynamoItem)
+    logInfo('DynamoDB entry created with PendingDownload status')
 
-    const key = fileName
-    const bucket = process.env.Bucket
-    const partSize = 1024 * 1024 * 5
-    const params = {
-      ACL: 'public-read',
-      Bucket: bucket,
-      ContentType: myDynamoItem.contentType,
-      Key: key
-    } as CreateMultipartUploadRequest
-    const output = await createMultipartUploadFromParams(params)
-    const newPartEnd = Math.min(partSize, bytesTotal)
-    return {
+    // Stream video directly to S3
+    const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
+    logInfo('Starting stream upload to S3', {bucket, key: fileName})
+
+    const uploadResult = await streamVideoToS3(
+      fileUrl,
+      s3Client,
       bucket,
-      bytesRemaining: bytesTotal,
-      bytesTotal,
-      fileId,
-      key,
-      partBeg: 0,
-      partEnd: newPartEnd - 1,
-      partNumber: 1,
-      partSize,
-      partTags: [],
-      uploadId: output.UploadId,
-      url: selectedFormat.url
-    } as UploadPartEvent
+      fileName
+    )
+
+    logInfo('Stream upload completed', uploadResult)
+
+    // Update DynamoDB with final file size and Downloaded status
+    dynamoItem.size = uploadResult.fileSize
+    dynamoItem.status = FileStatus.Downloaded
+    await upsertFile(dynamoItem)
+    logInfo('DynamoDB entry updated with Downloaded status')
+
+    return {
+      fileId: videoInfo.id,
+      status: 'success',
+      fileSize: uploadResult.fileSize,
+      duration: uploadResult.duration
+    }
   } catch (error) {
     assertIsError(error)
-    throw new UnexpectedError(error.message)
+    logInfo('Upload failed, updating DynamoDB with Failed status')
+
+    // Update DynamoDB with Failed status
+    try {
+      await upsertFile({
+        fileId,
+        status: FileStatus.Failed
+      } as DynamoDBFile)
+    } catch (updateError) {
+      assertIsError(updateError)
+      logInfo('Failed to update DynamoDB with Failed status:', updateError.message)
+    }
+
+    throw new UnexpectedError(`File upload failed: ${error.message}`)
   }
 }
