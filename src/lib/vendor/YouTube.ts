@@ -227,8 +227,9 @@ export async function streamVideoToS3(
 
     logDebug('Spawning yt-dlp process', {args: ytdlpArgs})
 
-    // Spawn yt-dlp process
-    const ytdlp = spawn(YTDLP_BINARY_PATH, ytdlpArgs)
+    // Spawn yt-dlp process with /tmp as working directory
+    // This is critical for HLS/DASH downloads which need to write fragment files
+    const ytdlp = spawn(YTDLP_BINARY_PATH, ytdlpArgs, {cwd: '/tmp'})
 
     // Create pass-through stream to connect yt-dlp stdout to S3 upload
     const passThrough = new PassThrough()
@@ -256,6 +257,8 @@ export async function streamVideoToS3(
     // Handle yt-dlp process exit
     ytdlp.on('exit', (code) => {
       if (code !== 0) {
+        logError('yt-dlp stderr output', stderrOutput)
+        logError('yt-dlp exited with non-zero code', {code, uri})
         const error = new UnexpectedError(
           `yt-dlp process exited with code ${code}: ${stderrOutput}`
         )
