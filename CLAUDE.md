@@ -123,6 +123,44 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - `npm run test-remote-*` - Tests production endpoints
 - `npm run document-source` - Generates TSDoc documentation
 
+### Webpack Configuration & AWS SDK Dependencies
+**CRITICAL**: When adding or changing AWS SDK dependencies, you MUST update the webpack externals configuration.
+
+**Location**: `config/webpack.config.ts`
+
+**Why**: Webpack bundles Lambda code and needs to know which dependencies to externalize (exclude from bundling). AWS SDK packages should be externalized because they're available in the Lambda runtime environment.
+
+**Steps when adding new AWS SDK packages**:
+1. Install the package: `npm install @aws-sdk/client-xyz`
+2. Add to webpack externals in `config/webpack.config.ts`:
+   ```typescript
+   externals: {
+     // ... existing entries
+     '@aws-sdk/client-xyz': '@aws-sdk/client-xyz',
+   }
+   ```
+3. Clean build and redeploy:
+   ```bash
+   rm -rf build/lambdas
+   npm run build
+   npm run deploy
+   ```
+
+**Common AWS SDK packages that need externals**:
+- `@aws-sdk/client-lambda` - Lambda invocation
+- `@aws-sdk/client-s3` - S3 operations
+- `@aws-sdk/client-dynamodb` - DynamoDB client
+- `@aws-sdk/lib-storage` - S3 multipart uploads
+- `@aws-sdk/lib-dynamodb` - DynamoDB document client
+- `@aws-sdk/client-sfn` - Step Functions (legacy)
+- `@aws-sdk/client-sns` - SNS notifications
+- `@aws-sdk/client-sqs` - SQS queues
+
+**Troubleshooting**: If Terraform shows "No changes" after code updates, check:
+1. Archive hash in terraform output - should change when code changes
+2. Webpack externals - missing entries cause old code to bundle
+3. Build output - verify new packages are externalized, not bundled
+
 ### Testing Strategy
 - **Unit Tests**: Mocha-based tests for each Lambda (`index.test.ts`)
 - **Test Fixtures**: JSON mock data in `test/fixtures/` directories
