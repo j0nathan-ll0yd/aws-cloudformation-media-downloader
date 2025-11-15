@@ -6,7 +6,7 @@
 
 import {describe, expect, test, beforeAll} from '@jest/globals'
 import {PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand} from '@aws-sdk/client-s3'
-import {createLocalS3Client} from '../../../util/localstack-helpers.js'
+import {createLocalS3Client} from '../../../util/localstack-helpers'
 
 describe('S3 Operations (LocalStack Integration)', () => {
   let s3Client: ReturnType<typeof createLocalS3Client>

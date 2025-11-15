@@ -7,7 +7,7 @@
 import {describe, expect, test, beforeAll, afterEach} from '@jest/globals'
 import {PutCommand, GetCommand, UpdateCommand, DeleteCommand, ScanCommand} from '@aws-sdk/lib-dynamodb'
 import {DynamoDBDocument} from '@aws-sdk/lib-dynamodb'
-import {createLocalDynamoDBClient} from '../../../util/localstack-helpers.js'
+import {createLocalDynamoDBClient} from '../../../util/localstack-helpers'
 import {randomUUID} from 'crypto'
 
 describe('DynamoDB Operations (LocalStack Integration)', () => {

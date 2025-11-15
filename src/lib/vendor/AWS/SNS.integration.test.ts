@@ -6,7 +6,7 @@
 
 import {describe, expect, test, beforeAll} from '@jest/globals'
 import {PublishCommand, CreateTopicCommand, ListTopicsCommand} from '@aws-sdk/client-sns'
-import {createLocalSNSClient} from '../../../util/localstack-helpers.js'
+import {createLocalSNSClient} from '../../../util/localstack-helpers'
 
 describe('SNS Operations (LocalStack Integration)', () => {
   let snsClient: ReturnType<typeof createLocalSNSClient>
