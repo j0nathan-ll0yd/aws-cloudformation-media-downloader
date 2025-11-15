@@ -4,10 +4,10 @@
 
 This document outlines a strategy for integrating LocalStack into our development workflow to enable fast, offline testing of AWS services without incurring costs or requiring internet connectivity.
 
-**Status**: Planning - To be implemented after Phase 3 (yt-dlp streaming) is complete
+**Status**: Ready for Implementation - Phase 3a (yt-dlp streaming) is complete
 **Estimated Effort**: 2-3 days
 **Priority**: Medium (Quality of Life improvement)
-**ROI**: High (faster test cycles, zero AWS costs for integration tests)
+**ROI**: High (faster test cycles, zero AWS costs for integration tests, improved developer experience)
 
 ---
 
@@ -71,14 +71,14 @@ Unit Tests (Mocked AWS)
 
 | AWS Service | Our Usage | LocalStack Support | Testing Value |
 |-------------|-----------|-------------------|---------------|
-| **Lambda** | All business logic | ✅ Full | High - test handlers locally |
-| **S3** | Media file storage | ✅ Full | **Critical** - test uploads/downloads |
+| **Lambda** | All business logic | ✅ Full | **Critical** - test handlers locally |
+| **S3** | Media file storage | ✅ Full | **Critical** - test streaming uploads |
 | **DynamoDB** | Metadata storage | ✅ Full | **Critical** - test queries/updates |
 | **API Gateway** | REST endpoints | ✅ Full | High - test request routing |
-| **Step Functions** | Multipart workflow | ✅ Full | Medium - workflow testing |
 | **SNS** | Push notifications | ✅ Full | Medium - test APNS triggers |
 | **SQS** | SendPushNotification queue | ✅ Full | Medium - test queue processing |
-| **CloudWatch Logs** | Logging | ✅ Partial | Low - basic log verification |
+| **CloudWatch** | Metrics and logs | ✅ Partial | Medium - test metric publishing |
+| **EventBridge** | Scheduled triggers | ✅ Full | Medium - test cron jobs |
 | **IAM** | Permissions | ✅ Partial | Low - mostly Terraform concern |
 
 ### Services Not Supported (Acceptable)
@@ -109,7 +109,7 @@ services:
       - "4566:4566"      # LocalStack gateway
       - "4510-4559:4510-4559"  # External services (optional)
     environment:
-      - SERVICES=s3,dynamodb,lambda,apigateway,sns,sqs,stepfunctions
+      - SERVICES=s3,dynamodb,lambda,apigateway,sns,sqs,events,cloudwatch
       - DEBUG=1
       - DATA_DIR=/tmp/localstack/data
       - LAMBDA_EXECUTOR=docker-reuse  # Faster Lambda execution
@@ -232,7 +232,7 @@ module.exports = {
 
 #### 4. First Integration Test (1 hour)
 
-**Example: S3 Upload Test**
+**Example: S3 Streaming Upload Test**
 ```typescript
 // src/lib/vendor/YouTube.integration.test.ts
 
@@ -240,7 +240,7 @@ import { streamVideoToS3 } from './YouTube'
 import { createLocalS3Client } from '../../util/localstack-helpers'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { createReadStream } from 'fs'
-import { spawn } from 'child_process'
+import { PassThrough } from 'stream'
 
 describe('streamVideoToS3 (LocalStack Integration)', () => {
   let s3Client: S3Client
@@ -250,26 +250,28 @@ describe('streamVideoToS3 (LocalStack Integration)', () => {
     s3Client = createLocalS3Client()
   })
 
-  it('should stream video file to LocalStack S3', async () => {
-    const testVideoPath = '__fixtures__/test-video-5mb.mp4'
+  it('should stream video directly to S3 using multipart upload', async () => {
+    const testVideoPath = '__fixtures__/test-video-10mb.mp4'
 
     // Mock yt-dlp to stream real file
     const mockYtdlpProcess = {
       stdout: createReadStream(testVideoPath),
       stderr: new PassThrough(),
-      on: jest.fn()
+      on: jest.fn((event, cb) => {
+        if (event === 'exit') setTimeout(() => cb(0), 100)
+      })
     }
-    jest.spyOn(childProcess, 'spawn').mockReturnValue(mockYtdlpProcess)
+    jest.spyOn(require('child_process'), 'spawn').mockReturnValue(mockYtdlpProcess)
 
     // Stream to LocalStack S3
     const result = await streamVideoToS3(
-      'mock-url',
+      'https://www.youtube.com/watch?v=test123',
       s3Client,
       'lifegames-media-downloader-files',
       'test-video.mp4'
     )
 
-    // Verify file exists in LocalStack
+    // Verify file exists in LocalStack S3
     const { Body, ContentLength } = await s3Client.send(
       new GetObjectCommand({
         Bucket: 'lifegames-media-downloader-files',
@@ -278,18 +280,23 @@ describe('streamVideoToS3 (LocalStack Integration)', () => {
     )
 
     expect(ContentLength).toBe(result.fileSize)
+    expect(result.duration).toBeGreaterThan(0)
 
-    // Verify file content integrity
+    // Verify file content integrity (checksum comparison)
     const downloadedBuffer = await streamToBuffer(Body)
     const originalBuffer = await fs.promises.readFile(testVideoPath)
     expect(downloadedBuffer.equals(originalBuffer)).toBe(true)
   })
 
-  it('should handle S3 upload errors', async () => {
-    // Simulate S3 error by using invalid bucket
+  it('should handle S3 upload errors gracefully', async () => {
     await expect(
-      streamVideoToS3('url', s3Client, 'non-existent-bucket', 'key')
-    ).rejects.toThrow()
+      streamVideoToS3('url', s3Client, 'non-existent-bucket', 'key.mp4')
+    ).rejects.toThrow('Failed to stream video to S3')
+  })
+
+  it('should publish CloudWatch metrics on successful upload', async () => {
+    // Test metric publishing (would need CloudWatch mock setup)
+    // Verify VideoDownloadSuccess, VideoDownloadDuration, VideoFileSize metrics
   })
 })
 ```
@@ -311,27 +318,45 @@ describe('StartFileUpload Lambda (LocalStack Integration)', () => {
     process.env.S3_BUCKET = 'lifegames-media-downloader-files'
   })
 
-  it('should download video and upload to S3', async () => {
-    // Mock yt-dlp
+  it('should stream video and update DynamoDB status', async () => {
+    // Mock yt-dlp video info and streaming
+    jest.spyOn(YouTube, 'fetchVideoInfo').mockResolvedValue({
+      id: 'dQw4w9WgXcQ',
+      title: 'Test Video',
+      formats: [{
+        format_id: '22',
+        url: 'https://example.com/video',
+        ext: 'mp4',
+        filesize: 10485760,
+        vcodec: 'h264',
+        acodec: 'aac'
+      }],
+      thumbnail: 'https://example.com/thumb.jpg',
+      duration: 180
+    })
+
     jest.spyOn(YouTube, 'streamVideoToS3').mockResolvedValue({
       fileSize: 10485760,
-      s3Url: 's3://bucket/video.mp4',
+      s3Url: 's3://lifegames-media-downloader-files/dQw4w9WgXcQ.mp4',
       duration: 180
     })
 
     // Execute handler directly
     const result = await handler({ fileId: 'dQw4w9WgXcQ' })
 
-    // Verify DynamoDB was updated (in LocalStack)
+    expect(result.status).toBe('success')
+    expect(result.fileSize).toBe(10485760)
+
+    // Verify DynamoDB was updated in LocalStack
     const dynamoClient = createLocalDynamoClient()
     const { Item } = await dynamoClient.send(
       new GetItemCommand({
         TableName: 'Files',
-        Key: { id: { S: 'dQw4w9WgXcQ' } }
+        Key: { fileId: { S: 'dQw4w9WgXcQ' } }
       })
     )
 
-    expect(Item.status.S).toBe('completed')
+    expect(Item.status.S).toBe('Downloaded')
     expect(Item.size.N).toBe('10485760')
   })
 })
@@ -374,7 +399,7 @@ jobs:
         ports:
           - 4566:4566
         env:
-          SERVICES: s3,dynamodb,lambda,sns,sqs
+          SERVICES: s3,dynamodb,lambda,apigateway,sns,sqs,events,cloudwatch
           DEBUG: 1
         options: >-
           --health-cmd "awslocal s3 ls"
@@ -516,13 +541,7 @@ With LocalStack, we can add integration tests for:
 - ✅ Error handling and retries
 - ✅ Timeout scenarios
 
-### 4. Step Functions (if we keep them)
-- ✅ Workflow execution
-- ✅ Error states and retries
-- ✅ Parallel execution
-- ✅ Choice states
-
-### 5. SNS/SQS
+### 4. SNS/SQS
 - ✅ Push notification triggers
 - ✅ Queue processing
 - ✅ Dead letter queues
@@ -604,8 +623,8 @@ LocalStack is generally **faster** than real AWS (no network latency), but:
 | Team features | ❌ | ❌ | ✅ |
 
 **Recommendation for our project**: Start with **Community Edition** (free)
-- We get 95% of what we need
-- Can upgrade to Pro later if needed (~$300-600/year)
+- We get 95% of what we need for testing our streaming architecture
+- Can upgrade to Pro later if we need advanced features (~$300-600/year)
 - ROI is positive even with Pro ($300 cost vs >$1000 in time savings)
 
 ---
@@ -648,25 +667,26 @@ LocalStack is generally **faster** than real AWS (no network latency), but:
 
 ## Recommendation
 
-**Proceed with LocalStack integration after Phase 3 (yt-dlp streaming) is stable.**
+**Proceed with LocalStack integration now that Phase 3a (yt-dlp streaming) is complete.**
 
-**Priority**: Medium - Nice to have, not blocking
+**Priority**: Medium - Quality of life improvement, not blocking
 **Timeline**: 2-3 days of focused work
 **Expected ROI**:
 - 15-20% faster development cycles
 - 100% cost savings on testing
 - Better developer experience (offline work, faster feedback)
-- Higher test coverage (can test more scenarios)
+- Higher test coverage (can test streaming scenarios more easily)
 
 **Next Steps**:
-1. Complete Phase 3 (yt-dlp streaming)
-2. Validate streaming works in production
+1. ✅ Complete Phase 3a (yt-dlp streaming) - DONE
+2. ✅ Validate streaming works in production - DONE
 3. Open GitHub issue for LocalStack integration
-4. Implement incrementally (1-2 tests per day)
-5. Gradually expand coverage over 2-3 weeks
+4. Implement Phase 1 (Basic Setup) incrementally
+5. Add integration tests for streaming workflow
+6. Gradually expand coverage over 2-3 weeks
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: 2025-11-13*
-*Status: Planning - To be implemented post-Phase 3*
+*Document Version: 1.1*
+*Last Updated: 2025-11-15*
+*Status: Ready for Implementation - Phase 3a complete (yt-dlp streaming)*
