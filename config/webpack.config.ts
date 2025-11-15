@@ -18,6 +18,7 @@ const config: webpack.Configuration = {
   }, {}),
   externals: {
     '@aws-sdk/client-api-gateway': '@aws-sdk/client-api-gateway',
+    '@aws-sdk/client-cloudwatch': '@aws-sdk/client-cloudwatch',
     '@aws-sdk/client-dynamodb': '@aws-sdk/client-dynamodb',
     '@aws-sdk/client-lambda': '@aws-sdk/client-lambda',
     '@aws-sdk/client-s3': '@aws-sdk/client-s3',

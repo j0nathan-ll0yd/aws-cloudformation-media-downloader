@@ -3,11 +3,32 @@ import {spawn} from 'child_process'
 import {PassThrough} from 'stream'
 import {Upload} from '@aws-sdk/lib-storage'
 import {S3Client, HeadObjectCommand} from '@aws-sdk/client-s3'
-import {logDebug, logError} from '../../util/lambda-helpers'
-import {UnexpectedError} from '../../util/errors'
+import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
+import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
 
 const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
+
+/**
+ * Check if an error message indicates cookie expiration or bot detection
+ * @param errorMessage - Error message from yt-dlp
+ * @returns true if error is related to cookie expiration
+ */
+function isCookieExpirationError(errorMessage: string): boolean {
+  const cookieErrorPatterns = [
+    'Sign in to confirm you\'re not a bot',
+    'Sign in to confirm',
+    'bot detection',
+    'cookies',
+    'This helps protect our community',
+    'HTTP Error 403',
+    'Forbidden'
+  ]
+
+  const lowerMessage = errorMessage.toLowerCase()
+  return cookieErrorPatterns.some(pattern => lowerMessage.includes(pattern.toLowerCase()))
+}
 
 // yt-dlp video info types
 interface YtDlpVideoInfo {
@@ -80,6 +101,13 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
   } catch (error) {
     assertIsError(error)
     logError('fetchVideoInfo error', error)
+
+    // Check if this is a cookie expiration error
+    if (isCookieExpirationError(error.message)) {
+      logError('Cookie expiration detected', {message: error.message})
+      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
+    }
+
     throw new UnexpectedError(`Failed to fetch video info: ${error.message}`)
   }
 }
@@ -259,9 +287,20 @@ export async function streamVideoToS3(
       if (code !== 0) {
         logError('yt-dlp stderr output', stderrOutput)
         logError('yt-dlp exited with non-zero code', {code, uri})
-        const error = new UnexpectedError(
-          `yt-dlp process exited with code ${code}: ${stderrOutput}`
-        )
+
+        // Check if this is a cookie expiration error
+        let error: Error
+        if (isCookieExpirationError(stderrOutput)) {
+          logError('Cookie expiration detected in stderr', {stderrOutput})
+          error = new CookieExpirationError(
+            `YouTube cookie expiration or bot detection: ${stderrOutput}`
+          )
+        } else {
+          error = new UnexpectedError(
+            `yt-dlp process exited with code ${code}: ${stderrOutput}`
+          )
+        }
+
         logError('yt-dlp process exit error', error)
         passThrough.destroy(error)
       }
@@ -314,6 +353,18 @@ export async function streamVideoToS3(
       bytesUploaded
     })
 
+    // Publish CloudWatch metrics
+    const throughputMBps = fileSize > 0 && duration > 0
+      ? (fileSize / 1024 / 1024) / duration
+      : 0
+
+    await putMetrics([
+      {name: 'VideoDownloadSuccess', value: 1, unit: StandardUnit.Count},
+      {name: 'VideoDownloadDuration', value: duration, unit: StandardUnit.Seconds},
+      {name: 'VideoFileSize', value: fileSize, unit: StandardUnit.Bytes},
+      {name: 'VideoThroughput', value: throughputMBps, unit: StandardUnit.None}
+    ])
+
     return {
       fileSize,
       s3Url,
@@ -322,6 +373,22 @@ export async function streamVideoToS3(
   } catch (error) {
     assertIsError(error)
     logError('streamVideoToS3 error', error)
+
+    // Publish failure metric
+    await putMetrics([
+      {name: 'VideoDownloadFailure', value: 1, unit: StandardUnit.Count}
+    ])
+
+    // Re-throw CookieExpirationError without wrapping it
+    if (error instanceof CookieExpirationError) {
+      throw error
+    }
+
+    // Check if the error message contains cookie expiration indicators
+    if (isCookieExpirationError(error.message)) {
+      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
+    }
+
     throw new UnexpectedError(`Failed to stream video to S3: ${error.message}`)
   }
 }

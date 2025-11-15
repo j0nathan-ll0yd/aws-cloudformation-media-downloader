@@ -128,6 +128,10 @@ data "aws_iam_policy_document" "MultipartUpload" {
     ]
     resources = [aws_s3_bucket.Files.arn]
   }
+  statement {
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role" "MultipartUploadRole" {
@@ -186,10 +190,11 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket             = aws_s3_bucket.Files.id
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
-      YTDLP_BINARY_PATH  = "/opt/bin/yt-dlp_linux"
-      PATH               = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      Bucket              = aws_s3_bucket.Files.id
+      DynamoDBTableFiles  = aws_dynamodb_table.Files.name
+      YTDLP_BINARY_PATH   = "/opt/bin/yt-dlp_linux"
+      PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
     }
   }
 }
