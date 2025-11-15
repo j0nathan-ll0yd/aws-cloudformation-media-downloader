@@ -1,0 +1,78 @@
+name: Integration Tests (LocalStack)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'copilot/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: s3,dynamodb,lambda,apigateway,sns,sqs,events,cloudwatch
+          DEBUG: 1
+        options: >-
+          --health-cmd "curl -f http://localhost:4566/_localstack/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Wait for LocalStack to be ready
+        run: |
+          echo "Waiting for LocalStack to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:4566/_localstack/health; then
+              echo "LocalStack is ready!"
+              break
+            fi
+            echo "Waiting for LocalStack... (attempt $i/30)"
+            sleep 2
+          done
+
+      - name: Setup LocalStack resources
+        run: npm run localstack:setup
+        env:
+          USE_LOCALSTACK: true
+
+      - name: Run integration tests
+        run: npm run test:integration:run
+        env:
+          USE_LOCALSTACK: true
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-results
+          path: coverage/
+
+      - name: Debug LocalStack logs (on failure)
+        if: failure()
+        run: docker logs $(docker ps -q --filter ancestor=localstack/localstack:latest)
