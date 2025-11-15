@@ -992,15 +992,20 @@ WebhookFeedly → FileCoordinator
   S3ObjectCreated trigger → SendPushNotification
 ```
 
-**Deprecated Components (keep but mark inactive):**
-- Step Function `MultipartUpload`
-- Lambda `UploadPart`
-- Lambda `CompleteFileUpload`
+**Removed Components (Phase 3a streaming architecture):**
+- ~~Step Function `MultipartUpload`~~ - Removed (2025-11-14)
+- ~~Lambda `UploadPart`~~ - Removed (2025-11-14)
+- ~~Lambda `CompleteFileUpload`~~ - Removed (2025-11-14)
+- ~~IAM Role `MultipartUploadStateMachine`~~ - Removed (2025-11-14)
+- ~~IAM Policy `MultipartUploadStateMachineRolePolicy`~~ - Removed (2025-11-14)
+
+**Rationale:** Streaming architecture makes multipart coordination unnecessary.
+Rollback strategy: Revert git commit if needed.
 
 **Retained Components:**
-- `StartFileUpload` - complete rewrite
-- `FileCoordinator` - update to call Lambda directly
-- `WebhookFeedly` - update to call Lambda directly
+- `StartFileUpload` - completely rewritten for streaming
+- `FileCoordinator` - updated to call Lambda directly
+- `WebhookFeedly` - updated to call Lambda directly
 - All other Lambdas unchanged
 
 #### Code Changes Required
@@ -1677,6 +1682,6 @@ if (estimatedSize > 8GB || estimatedDuration > 10 * 60) {
 - Cookie Authentication: Working with /opt to /tmp copy workaround
 - Format Selection: 3-tier fallback (progressive+size → progressive → HLS/DASH)
 - IAM Permissions: Direct Lambda invocation (no Step Functions)
-- Rollback Ready: Step Functions infrastructure retained but unused
+- **Architecture Cleanup**: Step Functions and multipart Lambdas fully removed (2025-11-14)
 - **Monitoring**: CloudWatch metrics for success/failure, duration, file size, throughput
 - **Cookie Alerting**: Automated GitHub issue creation on bot detection/cookie expiration
