@@ -17,12 +17,13 @@ jest.unstable_mockModule('fs', () => ({
 }))
 
 // Mock AWS SDK
-let mockUploadInstance: any
-let uploadDoneResolver: any
+let mockUploadInstance: MockUpload | null = null
+let uploadDoneResolver: {resolve: (value: unknown) => void; reject: (reason: unknown) => void} | null = null
 class MockUpload extends EventEmitter {
-  public done: any
-  constructor(public config: any) {
+  public done: jest.Mock<() => Promise<unknown>>
+  constructor(public config: Record<string, unknown>) {
     super()
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     mockUploadInstance = this
     // Create a promise that can be resolved externally
     this.done = jest.fn(
@@ -63,7 +64,10 @@ describe('#Vendor:YouTube', () => {
   describe('streamVideoToS3', () => {
     test('should successfully stream video to S3', async () => {
       // Mock yt-dlp process
-      const mockProcess = new EventEmitter() as any
+      const mockProcess = new EventEmitter() as EventEmitter & {
+        stdout: Readable
+        stderr: EventEmitter
+      }
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data chunk 1')
@@ -79,7 +83,7 @@ describe('#Vendor:YouTube', () => {
         send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
           ContentLength: 1024000
         })
-      } as any
+      } as {send: jest.Mock<() => Promise<{ContentLength: number}>>}
 
       // Start the function (it will create the Upload instance)
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -118,14 +122,17 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should handle yt-dlp process error', async () => {
-      const mockProcess = new EventEmitter() as any
+      const mockProcess = new EventEmitter() as EventEmitter & {
+        stdout: Readable
+        stderr: EventEmitter
+      }
       const mockStdout = new Readable({read() {}})
       mockStdout.on('error', () => {}) // Suppress error for test
       mockProcess.stdout = mockStdout
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as any
+      const mockS3Client = {} as Record<string, never>
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -143,14 +150,17 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should handle yt-dlp exit with non-zero code', async () => {
-      const mockProcess = new EventEmitter() as any
+      const mockProcess = new EventEmitter() as EventEmitter & {
+        stdout: Readable
+        stderr: EventEmitter
+      }
       const mockStdout = new Readable({read() {}})
       mockStdout.on('error', () => {}) // Suppress error for test
       mockProcess.stdout = mockStdout
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as any
+      const mockS3Client = {} as Record<string, never>
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -169,7 +179,10 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should handle S3 upload failure', async () => {
-      const mockProcess = new EventEmitter() as any
+      const mockProcess = new EventEmitter() as EventEmitter & {
+        stdout: Readable
+        stderr: EventEmitter
+      }
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data')
@@ -179,7 +192,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as any
+      const mockS3Client = {} as Record<string, never>
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -196,7 +209,10 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should track upload progress', async () => {
-      const mockProcess = new EventEmitter() as any
+      const mockProcess = new EventEmitter() as EventEmitter & {
+        stdout: Readable
+        stderr: EventEmitter
+      }
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data')
@@ -210,7 +226,7 @@ describe('#Vendor:YouTube', () => {
         send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
           ContentLength: 2048000
         })
-      } as any
+      } as {send: jest.Mock<() => Promise<{ContentLength: number}>>}
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')

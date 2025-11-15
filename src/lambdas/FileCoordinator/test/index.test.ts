@@ -9,12 +9,12 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   query: jest.fn(),
   updateItem: jest.fn()
 }))
-const sendMock = jest.fn<any>()
+const sendMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
   LambdaClient: jest.fn(() => ({
     send: sendMock
   })),
-  InvokeCommand: jest.fn((params: any) => params)
+  InvokeCommand: jest.fn((params: unknown) => params)
 }))
 
 const {handler} = await import('./../src')

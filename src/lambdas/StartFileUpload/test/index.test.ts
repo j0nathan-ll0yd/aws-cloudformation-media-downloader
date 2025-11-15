@@ -10,8 +10,8 @@ jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
 }))
 
 // Mock YouTube functions
-const fetchVideoInfoMock = jest.fn<() => Promise<any>>()
-const chooseVideoFormatMock = jest.fn<() => any>()
+const fetchVideoInfoMock = jest.fn<() => Promise<unknown>>()
+const chooseVideoFormatMock = jest.fn<() => unknown>()
 const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 const {default: fetchVideoInfoResponse} = await import('./fixtures/fetchVideoInfo-200-OK.json', {assert: {type: 'json'}})
 
@@ -22,7 +22,7 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
 }))
 
 // Mock DynamoDB
-const updateItemMock = jest.fn<() => Promise<any>>()
+const updateItemMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   updateItem: updateItemMock,
   deleteItem: jest.fn(),
@@ -73,13 +73,13 @@ describe('#StartFileUpload', () => {
     expect(updateItemMock).toHaveBeenCalledTimes(2)
 
     // Verify status updates (Document Client uses plain objects, not .S/.N format)
-    // @ts-ignore - mock.calls type inference issue
-    const firstCall = updateItemMock.mock.calls[0][0] as any
+    // @ts-expect-error - mock.calls type inference issue
+    const firstCall = updateItemMock.mock.calls[0][0] as Record<string, unknown>
     expect(firstCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.PendingDownload})
 
     // Second call should update status to Downloaded with file size
-    // @ts-ignore - mock.calls type inference issue
-    const secondCall = updateItemMock.mock.calls[1][0] as any
+    // @ts-expect-error - mock.calls type inference issue
+    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
     expect(secondCall.ExpressionAttributeValues).toMatchObject({
       ':status': FileStatus.Downloaded,
       ':size': 82784319
@@ -123,8 +123,8 @@ describe('#StartFileUpload', () => {
     expect(output.duration).toEqual(120)
 
     // Verify DynamoDB was updated with Downloaded status
-    // @ts-ignore - mock.calls type inference issue
-    const secondCall = updateItemMock.mock.calls[1][0] as any
+    // @ts-expect-error - mock.calls type inference issue
+    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
     expect(secondCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Downloaded})
   })
 
@@ -148,8 +148,8 @@ describe('#StartFileUpload', () => {
     // Verify DynamoDB was called to set Failed status
     expect(updateItemMock).toHaveBeenCalled()
     const calls = updateItemMock.mock.calls
-    // @ts-ignore - mock.calls type inference issue
-    const lastCall = calls[calls.length - 1][0] as any
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
     expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
   })
 
@@ -161,14 +161,14 @@ describe('#StartFileUpload', () => {
 
     // Verify DynamoDB was called to set Failed status
     const calls = updateItemMock.mock.calls
-    // @ts-ignore - mock.calls type inference issue
-    const lastCall = calls[calls.length - 1][0] as any
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
     expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
   })
 
   test('should handle missing bucket environment variable', async () => {
     const originalBucket = process.env.Bucket
-    // @ts-ignore - Testing missing env var
+    // @ts-expect-error - Testing missing env var
     process.env.Bucket = '' // Empty string also triggers the check
     const mockFormat = {
       ...fetchVideoInfoResponse.formats[0],

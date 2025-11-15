@@ -42,10 +42,11 @@ export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
     error.details.map((detail) => {
       logInfo('Error detail', detail)
       console.log(JSON.stringify(detail))
-      if (!errorHash[`${detail.context?.label!}`]) {
-        errorHash[`${detail.context?.label!}`] = [detail.message]
+      const label = detail.context?.label ?? 'unknown'
+      if (!errorHash[label]) {
+        errorHash[label] = [detail.message]
       } else {
-        errorHash[`${detail.context?.label!}`].push(detail.message)
+        errorHash[label].push(detail.message)
       }
     })
     return {errors: errorHash}

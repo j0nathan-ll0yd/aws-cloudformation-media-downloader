@@ -102,7 +102,7 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
 
 /**
  * Choose the best video format from available formats
- * Strategy: Prefer progressive (direct download) > HLS > DASH
+ * Strategy: Prefer progressive (direct download) \> HLS \> DASH
  * @param info - Video information from yt-dlp
  * @returns Selected video format
  */
