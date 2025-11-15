@@ -44,6 +44,9 @@ npm run build
 # Run the tests to ensure everything is working
 npm run test
 
+# Run integration tests with LocalStack (optional)
+npm run test:integration
+
 # Use Terraform to deploy the infrastructure
 cd terraform
 terraform init
@@ -226,6 +229,23 @@ As an engineer, I appreciate actionable alerting. If something went wrong, I'd l
 Once generated, store it as `githubPersonalToken.txt` in the `secure` directory so that it isn't tracked by version control.
 
 ## Deployment
+
+### Testing Locally with LocalStack
+
+Before deploying to AWS, you can test AWS service integrations locally using LocalStack:
+
+```bash
+# Run integration tests with LocalStack
+npm run test:integration
+
+# Or manage LocalStack manually
+npm run localstack:start
+npm run localstack:setup
+npm run test:integration:run
+npm run localstack:stop
+```
+
+For detailed information about LocalStack integration, see [LocalStack Integration Guide](docs/LOCALSTACK.md).
 
 * Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
 
