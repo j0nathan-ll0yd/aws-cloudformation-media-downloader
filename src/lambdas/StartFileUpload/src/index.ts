@@ -68,12 +68,7 @@ export async function handler(event: StartFileUploadParams): Promise<{
     const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
     logInfo('Starting stream upload to S3', {bucket, key: fileName})
 
-    const uploadResult = await streamVideoToS3(
-      fileUrl,
-      s3Client,
-      bucket,
-      fileName
-    )
+    const uploadResult = await streamVideoToS3(fileUrl, s3Client, bucket, fileName)
 
     logInfo('Stream upload completed', uploadResult)
 
@@ -108,18 +103,14 @@ export async function handler(event: StartFileUploadParams): Promise<{
     }
 
     // Publish failure metric with error type dimension
-    await putMetric('LambdaExecutionFailure', 1, StandardUnit.Count, [
-      {Name: 'ErrorType', Value: error.constructor.name}
-    ])
+    await putMetric('LambdaExecutionFailure', 1, StandardUnit.Count, [{Name: 'ErrorType', Value: error.constructor.name}])
 
     // Handle cookie expiration errors specially
     if (error instanceof CookieExpirationError) {
       logInfo('Cookie expiration detected, creating specialized GitHub issue')
 
       // Publish cookie-specific metric
-      await putMetric('CookieAuthenticationFailure', 1, StandardUnit.Count, [
-        {Name: 'VideoId', Value: fileId}
-      ])
+      await putMetric('CookieAuthenticationFailure', 1, StandardUnit.Count, [{Name: 'VideoId', Value: fileId}])
 
       // Create specialized GitHub issue with cookie refresh instructions
       await createCookieExpirationIssue(fileId, fileUrl, error)
@@ -128,12 +119,7 @@ export async function handler(event: StartFileUploadParams): Promise<{
     }
 
     // Create generic GitHub issue for other video download failures
-    await createVideoDownloadFailureIssue(
-      fileId,
-      fileUrl,
-      error,
-      `Video download failed during processing. Check CloudWatch logs for full details.`
-    )
+    await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
 
     throw new UnexpectedError(`File upload failed: ${error.message}`)
   }

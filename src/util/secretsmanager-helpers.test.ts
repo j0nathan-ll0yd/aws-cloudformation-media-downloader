@@ -107,18 +107,14 @@ describe('#Util:SecretsManager', () => {
   })
   test('should verifyAppleToken successfully', async () => {
     getSigningKeyMock.mockReturnValue({publicKey: fakePublicKey})
-    const token = await new jose.SignJWT(fakeTokenPayload)
-      .setProtectedHeader(fakeTokenHeader)
-      .sign(crypto.createPrivateKey(fakePrivateKey))
+    const token = await new jose.SignJWT(fakeTokenPayload).setProtectedHeader(fakeTokenHeader).sign(crypto.createPrivateKey(fakePrivateKey))
     const newToken = await verifyAppleToken(token)
     const expectedKeys = ['iss', 'aud', 'sub', 'iat', 'exp', 'at_hash', 'email', 'email_verified', 'is_private_email', 'auth_time', 'nonce_supported']
     expect(Object.keys(newToken)).toEqual(expect.arrayContaining(expectedKeys))
   })
   test('should verifyAppleToken handle an unexpected string payload', async () => {
     getSigningKeyMock.mockReturnValue('unexpected-string')
-    const token = await new jose.SignJWT(fakeTokenPayload)
-      .setProtectedHeader(fakeTokenHeader)
-      .sign(crypto.createPrivateKey(fakePrivateKey))
+    const token = await new jose.SignJWT(fakeTokenPayload).setProtectedHeader(fakeTokenHeader).sign(crypto.createPrivateKey(fakePrivateKey))
     await expect(verifyAppleToken(token)).rejects.toThrow(UnauthorizedError)
   })
   test('should verifyAppleToken handle invalid token', async () => {

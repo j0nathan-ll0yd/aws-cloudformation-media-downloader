@@ -92,7 +92,7 @@ This issue was automatically created by the video download monitoring system.`
 }
 
 export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
-  const title = `🍪 YouTube Cookie Expiration Detected`
+  const title = '🍪 YouTube Cookie Expiration Detected'
   const body = `## YouTube Cookie Expiration
 
 YouTube has detected the cookies as expired or is blocking requests with bot detection.

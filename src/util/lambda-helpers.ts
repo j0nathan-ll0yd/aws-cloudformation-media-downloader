@@ -127,12 +127,7 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
  * @param unit - Unit of measurement (Seconds, Bytes, Count, etc.)
  * @param dimensions - Optional dimensions for filtering/grouping
  */
-export async function putMetric(
-  metricName: string,
-  value: number,
-  unit: StandardUnit = StandardUnit.Count,
-  dimensions: {Name: string; Value: string}[] = []
-): Promise<void> {
+export async function putMetric(metricName: string, value: number, unit: StandardUnit = StandardUnit.Count, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
@@ -168,7 +163,7 @@ export async function putMetrics(
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
-      MetricData: metrics.map(m => ({
+      MetricData: metrics.map((m) => ({
         MetricName: m.name,
         Value: m.value,
         Unit: m.unit || StandardUnit.Count,
@@ -176,7 +171,7 @@ export async function putMetrics(
         Dimensions: m.dimensions || []
       }))
     })
-    logDebug(`Published ${metrics.length} metrics`, {metrics: metrics.map(m => m.name)})
+    logDebug(`Published ${metrics.length} metrics`, {metrics: metrics.map((m) => m.name)})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
     logError('Failed to publish CloudWatch metrics', error)

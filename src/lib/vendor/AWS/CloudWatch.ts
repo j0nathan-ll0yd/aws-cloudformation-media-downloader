@@ -1,10 +1,4 @@
-import {
-  CloudWatchClient,
-  PutMetricDataCommand,
-  PutMetricDataCommandInput,
-  PutMetricDataCommandOutput,
-  StandardUnit
-} from '@aws-sdk/client-cloudwatch'
+import {CloudWatchClient, PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
 
 const cloudwatch = new CloudWatchClient({region: process.env.AWS_REGION || 'us-west-2'})
 

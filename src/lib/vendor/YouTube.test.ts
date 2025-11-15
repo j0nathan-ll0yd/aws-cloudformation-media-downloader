@@ -25,9 +25,12 @@ class MockUpload extends EventEmitter {
     super()
     mockUploadInstance = this
     // Create a promise that can be resolved externally
-    this.done = jest.fn(() => new Promise((resolve, reject) => {
-      uploadDoneResolver = {resolve, reject}
-    }))
+    this.done = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          uploadDoneResolver = {resolve, reject}
+        })
+    )
   }
 }
 
@@ -79,15 +82,10 @@ describe('#Vendor:YouTube', () => {
       } as any
 
       // Start the function (it will create the Upload instance)
-      const resultPromise = streamVideoToS3(
-        'https://www.youtube.com/watch?v=test123',
-        mockS3Client,
-        'test-bucket',
-        'test-key.mp4'
-      )
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate successful upload
       mockUploadInstance.emit('httpUploadProgress', {
@@ -112,20 +110,11 @@ describe('#Vendor:YouTube', () => {
       // Verify yt-dlp was spawned correctly
       expect(mockSpawn).toHaveBeenCalledWith(
         expect.stringContaining('yt-dlp'),
-        expect.arrayContaining([
-          '-o', '-',
-          '--extractor-args', 'youtube:player_client=default',
-          '--no-warnings',
-          '--cookies', '/tmp/youtube-cookies.txt',
-          'https://www.youtube.com/watch?v=test123'
-        ])
+        expect.arrayContaining(['-o', '-', '--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', '/tmp/youtube-cookies.txt', 'https://www.youtube.com/watch?v=test123'])
       )
 
       // Verify cookies were copied
-      expect(mockCopyFile).toHaveBeenCalledWith(
-        '/opt/cookies/youtube-cookies.txt',
-        '/tmp/youtube-cookies.txt'
-      )
+      expect(mockCopyFile).toHaveBeenCalledWith('/opt/cookies/youtube-cookies.txt', '/tmp/youtube-cookies.txt')
     })
 
     test('should handle yt-dlp process error', async () => {
@@ -139,15 +128,10 @@ describe('#Vendor:YouTube', () => {
       const mockS3Client = {} as any
 
       // Start the function
-      const resultPromise = streamVideoToS3(
-        'https://www.youtube.com/watch?v=test123',
-        mockS3Client,
-        'test-bucket',
-        'test-key.mp4'
-      )
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
 
       // Wait briefly then simulate process error
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
       mockProcess.emit('error', new Error('yt-dlp not found'))
 
       // Reject the upload promise to propagate the error
@@ -169,15 +153,10 @@ describe('#Vendor:YouTube', () => {
       const mockS3Client = {} as any
 
       // Start the function
-      const resultPromise = streamVideoToS3(
-        'https://www.youtube.com/watch?v=test123',
-        mockS3Client,
-        'test-bucket',
-        'test-key.mp4'
-      )
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
 
       // Wait briefly, then simulate stderr output and non-zero exit
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
       mockProcess.stderr.emit('data', Buffer.from('ERROR: Video not available'))
       mockProcess.emit('exit', 1)
 
@@ -203,15 +182,10 @@ describe('#Vendor:YouTube', () => {
       const mockS3Client = {} as any
 
       // Start the function
-      const resultPromise = streamVideoToS3(
-        'https://www.youtube.com/watch?v=test123',
-        mockS3Client,
-        'test-bucket',
-        'test-key.mp4'
-      )
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
       mockProcess.emit('exit', 0)
 
@@ -239,15 +213,10 @@ describe('#Vendor:YouTube', () => {
       } as any
 
       // Start the function
-      const resultPromise = streamVideoToS3(
-        'https://www.youtube.com/watch?v=test123',
-        mockS3Client,
-        'test-bucket',
-        'test-key.mp4'
-      )
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate progress updates
       mockUploadInstance.emit('httpUploadProgress', {
