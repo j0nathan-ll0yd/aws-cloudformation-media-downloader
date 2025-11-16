@@ -83,15 +83,27 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Always ignore the `package-lock.json` file when searching, unless your dealing with dependencies
 - **Use TodoWrite tool** for complex tasks to track progress and ensure thoroughness - this prevents missing critical steps and provides visibility into progress
 
-### Pre-Push Verification (REQUIRED)
-Before pushing any changes or creating commits, ALWAYS run these commands to ensure code quality:
+### Git Workflow (CRITICAL)
+
+**IMPORTANT**: ONLY push to remote when explicitly asked by the user. Never push automatically.
+
+**Commit Workflow**:
+1. Make code changes
+2. Run verification commands (see below)
+3. Stage changes: `git add -A`
+4. Commit: `git commit -m "message"`
+5. **STOP** - Wait for user to request push
+6. ONLY when asked: `git push`
+
+**Pre-Commit Verification (REQUIRED)**:
+Before committing changes, ALWAYS run these commands to ensure code quality:
 
 ```bash
 npm run build    # Verify TypeScript compilation and webpack build
 npm test         # Run full test suite to ensure all tests pass
 ```
 
-Both commands must complete successfully without errors before pushing changes. This prevents broken builds in GitHub Actions and maintains code quality standards.
+Both commands must complete successfully without errors before committing. This prevents broken builds in GitHub Actions and maintains code quality standards.
 
 ### Jest Test Mocking Strategy (CRITICAL)
 
