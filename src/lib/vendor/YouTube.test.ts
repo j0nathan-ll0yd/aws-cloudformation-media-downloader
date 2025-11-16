@@ -1,6 +1,7 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
+import type {S3Client} from '@aws-sdk/client-s3'
 
 // Mock child_process
 const mockSpawn = jest.fn()
@@ -83,7 +84,7 @@ describe('#Vendor:YouTube', () => {
         send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
           ContentLength: 1024000
         })
-      } as {send: jest.Mock<() => Promise<{ContentLength: number}>>}
+      } as unknown as S3Client
 
       // Start the function (it will create the Upload instance)
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -92,14 +93,14 @@ describe('#Vendor:YouTube', () => {
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate successful upload
-      mockUploadInstance.emit('httpUploadProgress', {
+      mockUploadInstance!.emit('httpUploadProgress', {
         loaded: 512000,
         total: 1024000
       })
       mockProcess.emit('exit', 0)
 
       // Resolve the upload
-      uploadDoneResolver.resolve({
+      uploadDoneResolver!.resolve({
         Location: 's3://test-bucket/test-key.mp4'
       })
 
@@ -132,7 +133,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as Record<string, never>
+      const mockS3Client = {} as unknown as S3Client
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -142,9 +143,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.emit('error', new Error('yt-dlp not found'))
 
       // Reject the upload promise to propagate the error
-      if (uploadDoneResolver) {
-        uploadDoneResolver.reject(new Error('yt-dlp not found'))
-      }
+      uploadDoneResolver?.reject(new Error('yt-dlp not found'))
 
       await expect(resultPromise).rejects.toThrow('Failed to stream video to S3')
     })
@@ -160,7 +159,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as Record<string, never>
+      const mockS3Client = {} as unknown as S3Client
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -171,9 +170,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.emit('exit', 1)
 
       // Reject the upload promise
-      if (uploadDoneResolver) {
-        uploadDoneResolver.reject(new Error('yt-dlp process exited with code 1'))
-      }
+      uploadDoneResolver?.reject(new Error('yt-dlp process exited with code 1'))
 
       await expect(resultPromise).rejects.toThrow('Failed to stream video to S3')
     })
@@ -192,7 +189,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as Record<string, never>
+      const mockS3Client = {} as unknown as S3Client
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -203,7 +200,7 @@ describe('#Vendor:YouTube', () => {
       mockProcess.emit('exit', 0)
 
       // Reject the upload promise
-      uploadDoneResolver.reject(new Error('S3 upload failed'))
+      uploadDoneResolver!.reject(new Error('S3 upload failed'))
 
       await expect(resultPromise).rejects.toThrow('Failed to stream video to S3')
     })
@@ -226,7 +223,7 @@ describe('#Vendor:YouTube', () => {
         send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
           ContentLength: 2048000
         })
-      } as {send: jest.Mock<() => Promise<{ContentLength: number}>>}
+      } as unknown as S3Client
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
@@ -235,22 +232,22 @@ describe('#Vendor:YouTube', () => {
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate progress updates
-      mockUploadInstance.emit('httpUploadProgress', {
+      mockUploadInstance!.emit('httpUploadProgress', {
         loaded: 512000,
         total: 2048000
       })
-      mockUploadInstance.emit('httpUploadProgress', {
+      mockUploadInstance!.emit('httpUploadProgress', {
         loaded: 1024000,
         total: 2048000
       })
-      mockUploadInstance.emit('httpUploadProgress', {
+      mockUploadInstance!.emit('httpUploadProgress', {
         loaded: 2048000,
         total: 2048000
       })
       mockProcess.emit('exit', 0)
 
       // Resolve the upload
-      uploadDoneResolver.resolve({
+      uploadDoneResolver!.resolve({
         Location: 's3://test-bucket/test-key.mp4'
       })
 

@@ -168,7 +168,6 @@ describe('#StartFileUpload', () => {
 
   test('should handle missing bucket environment variable', async () => {
     const originalBucket = process.env.Bucket
-    // @ts-expect-error - Testing missing env var
     process.env.Bucket = '' // Empty string also triggers the check
     const mockFormat = {
       ...fetchVideoInfoResponse.formats[0],
