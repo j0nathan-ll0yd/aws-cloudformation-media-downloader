@@ -2,7 +2,7 @@ import {Context} from 'aws-lambda'
 import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
 import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
-import {logDebug, logInfo, putMetric, lambdaErrorResponse, response, StandardUnit} from '../../../util/lambda-helpers'
+import {logDebug, logInfo, putMetric, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
@@ -64,7 +64,7 @@ export async function handler(event: StartFileUploadParams, context: Context): P
     await upsertFile(dynamoItem)
     logDebug('upsertFile =>')
 
-    await putMetric('LambdaExecutionSuccess', 1, StandardUnit.Count)
+    await putMetric('LambdaExecutionSuccess', 1)
 
     return response(context, 200, {
       fileId: videoInfo.id,
@@ -85,10 +85,10 @@ export async function handler(event: StartFileUploadParams, context: Context): P
       logDebug('upsertFile error =>', updateError.message)
     }
 
-    await putMetric('LambdaExecutionFailure', 1, StandardUnit.Count, [{Name: 'ErrorType', Value: error.constructor.name}])
+    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
 
     if (error instanceof CookieExpirationError) {
-      await putMetric('CookieAuthenticationFailure', 1, StandardUnit.Count, [{Name: 'VideoId', Value: fileId}])
+      await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
       await createCookieExpirationIssue(fileId, fileUrl, error)
       return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }

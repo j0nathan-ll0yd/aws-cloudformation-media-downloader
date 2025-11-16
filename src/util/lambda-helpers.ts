@@ -1,7 +1,5 @@
 import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putMetricData, StandardUnit} from '../lib/vendor/AWS/CloudWatch'
-
-export {StandardUnit}
+import {putMetricData, getStandardUnit} from '../lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {unknownErrorToString} from './transformers'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
@@ -129,7 +127,7 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
  * @param unit - Unit of measurement (Seconds, Bytes, Count, etc.)
  * @param dimensions - Optional dimensions for filtering/grouping
  */
-export async function putMetric(metricName: string, value: number, unit: StandardUnit = StandardUnit.Count, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
+export async function putMetric(metricName: string, value: number, unit?: string, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
@@ -137,13 +135,13 @@ export async function putMetric(metricName: string, value: number, unit: Standar
         {
           MetricName: metricName,
           Value: value,
-          Unit: unit,
+          Unit: getStandardUnit(unit),
           Timestamp: new Date(),
           Dimensions: dimensions
         }
       ]
     })
-    logDebug(`Published metric: ${metricName}`, {value, unit, dimensions})
+    logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
     logError('Failed to publish CloudWatch metric', {metricName, error})
@@ -158,7 +156,7 @@ export async function putMetrics(
   metrics: Array<{
     name: string
     value: number
-    unit?: StandardUnit
+    unit?: string
     dimensions?: {Name: string; Value: string}[]
   }>
 ): Promise<void> {
@@ -168,7 +166,7 @@ export async function putMetrics(
       MetricData: metrics.map((m) => ({
         MetricName: m.name,
         Value: m.value,
-        Unit: m.unit || StandardUnit.Count,
+        Unit: getStandardUnit(m.unit),
         Timestamp: new Date(),
         Dimensions: m.dimensions || []
       }))

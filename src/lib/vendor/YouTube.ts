@@ -7,7 +7,6 @@ import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
 import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
 import {headObject, getS3Client} from '../vendor/AWS/S3'
-import {StandardUnit} from '../vendor/AWS/CloudWatch'
 
 const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
 
@@ -300,10 +299,10 @@ export async function streamVideoToS3(
     const throughputMBps = fileSize > 0 && duration > 0 ? fileSize / 1024 / 1024 / duration : 0
 
     await putMetrics([
-      {name: 'VideoDownloadSuccess', value: 1, unit: StandardUnit.Count},
-      {name: 'VideoDownloadDuration', value: duration, unit: StandardUnit.Seconds},
-      {name: 'VideoFileSize', value: fileSize, unit: StandardUnit.Bytes},
-      {name: 'VideoThroughput', value: throughputMBps, unit: StandardUnit.None}
+      {name: 'VideoDownloadSuccess', value: 1, unit: 'Count'},
+      {name: 'VideoDownloadDuration', value: duration, unit: 'Seconds'},
+      {name: 'VideoFileSize', value: fileSize, unit: 'Bytes'},
+      {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}
     ])
 
     return {
@@ -316,7 +315,7 @@ export async function streamVideoToS3(
     logError('streamVideoToS3 error', error)
 
     // Publish failure metric
-    await putMetrics([{name: 'VideoDownloadFailure', value: 1, unit: StandardUnit.Count}])
+    await putMetrics([{name: 'VideoDownloadFailure', value: 1, unit: 'Count'}])
 
     // Re-throw CookieExpirationError without wrapping it
     if (error instanceof CookieExpirationError) {
