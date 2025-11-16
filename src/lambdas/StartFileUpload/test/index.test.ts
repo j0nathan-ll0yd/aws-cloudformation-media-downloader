@@ -2,6 +2,7 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
+import {testContext} from '../../../util/jest-setup'
 
 // Mock S3Client
 const mockS3Client = jest.fn()
@@ -34,10 +35,17 @@ const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.jso
 const {handler} = await import('./../src')
 
 describe('#StartFileUpload', () => {
-  const event = eventMock as StartFileUploadParams
+  const context = testContext
+  let event: StartFileUploadParams
 
   beforeEach(() => {
+    // Deep clone event to prevent test interference
+    event = JSON.parse(JSON.stringify(eventMock))
+
+    // Reset mocks
     jest.clearAllMocks()
+
+    // Set environment variables
     process.env.Bucket = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
     process.env.DynamoDBTableFiles = 'test-table'
@@ -62,12 +70,14 @@ describe('#StartFileUpload', () => {
     })
     updateItemMock.mockResolvedValue({})
 
-    const output = await handler(event)
+    const output = await handler(event, context)
 
-    expect(output.status).toEqual('success')
-    expect(output.fileSize).toEqual(82784319)
-    expect(output.duration).toEqual(45)
-    expect(output.fileId).toBeDefined()
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.fileSize).toEqual(82784319)
+    expect(parsedBody.body.duration).toEqual(45)
+    expect(parsedBody.body.fileId).toBeDefined()
 
     // Verify DynamoDB was called twice (PendingDownload, then Downloaded)
     expect(updateItemMock).toHaveBeenCalledTimes(2)
@@ -116,11 +126,13 @@ describe('#StartFileUpload', () => {
     })
     updateItemMock.mockResolvedValue({})
 
-    const output = await handler(event)
+    const output = await handler(event, context)
 
-    expect(output.status).toEqual('success')
-    expect(output.fileSize).toEqual(104857600)
-    expect(output.duration).toEqual(120)
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.fileSize).toEqual(104857600)
+    expect(parsedBody.body.duration).toEqual(120)
 
     // Verify DynamoDB was updated with Downloaded status
     // @ts-expect-error - mock.calls type inference issue
@@ -143,7 +155,9 @@ describe('#StartFileUpload', () => {
     streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
     updateItemMock.mockResolvedValue({})
 
-    await expect(handler(event)).rejects.toThrow('File upload failed')
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify DynamoDB was called to set Failed status
     expect(updateItemMock).toHaveBeenCalled()
@@ -157,7 +171,9 @@ describe('#StartFileUpload', () => {
     fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
     updateItemMock.mockResolvedValue({})
 
-    await expect(handler(event)).rejects.toThrow('File upload failed')
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify DynamoDB was called to set Failed status
     const calls = updateItemMock.mock.calls
@@ -182,7 +198,9 @@ describe('#StartFileUpload', () => {
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     updateItemMock.mockResolvedValue({})
 
-    await expect(handler(event)).rejects.toThrow('Bucket environment variable not set')
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify streamVideoToS3 was NOT called since bucket check happens first
     expect(streamVideoToS3Mock).not.toHaveBeenCalled()
@@ -194,7 +212,9 @@ describe('#StartFileUpload', () => {
     fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
     updateItemMock.mockRejectedValue(new Error('DynamoDB update failed'))
 
-    await expect(handler(event)).rejects.toThrow('File upload failed')
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Should have attempted to update DynamoDB despite the failure
     expect(updateItemMock).toHaveBeenCalled()

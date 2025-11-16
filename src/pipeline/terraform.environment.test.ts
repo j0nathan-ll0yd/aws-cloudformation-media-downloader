@@ -104,9 +104,7 @@ describe('#Terraform', () => {
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
       // Filter out infrastructure-level variables from Terraform list for comparison
-      const filteredTerraformVars = environmentVariablesTerraform.filter(
-        (v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v)
-      )
+      const filteredTerraformVars = environmentVariablesTerraform.filter((v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v))
       expect(filteredTerraformVars.sort()).toEqual(environmentVariablesSource.sort())
       expect(filteredTerraformVars.length).toEqual(environmentVariablesSourceCount)
     })
