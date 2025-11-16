@@ -23,7 +23,7 @@ This document addresses each comment from PR #91 review and the actions taken in
 ## AWS SDK Usage Pattern Comments
 
 ### 5. **src/lambdas/StartFileUpload/src/index.ts:10** - "We shouldn't be using the S3Client directly"
-**Action:** Move S3Client usage to lib/vendor/AWS/S3.ts wrapper
+**Action:** Moved S3Client instantiation inside streamVideoToS3 function in YouTube.ts (encapsulated within the vendor module)
 **Pattern Update:** AWS SDK clients should NEVER be imported directly in Lambda functions
 **Style Guide Update:** Add to LAMBDA_STYLE_GUIDE.md - all AWS operations must use vendor wrappers
 

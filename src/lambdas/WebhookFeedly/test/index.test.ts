@@ -23,13 +23,6 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
   subscribe: jest.fn()
 }))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
-  startExecution: jest.fn().mockReturnValue({
-    executionArn: 'arn:aws:states:us-west-2:203465012143:execution:MultipartUpload:1666060419059',
-    startDate: new Date()
-  })
-}))
-
 // Mock yt-dlp-wrap to prevent YouTube module from failing
 class MockYTDlpWrap {
   constructor(public binaryPath: string) {}
@@ -112,7 +105,7 @@ describe('#WebhookFeedly', () => {
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Dispatched')
   })
-  test('should fail gracefully if the startExecution fails', async () => {
+  test('should fail gracefully if the DynamoDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
     updateItem.mockImplementation(() => {

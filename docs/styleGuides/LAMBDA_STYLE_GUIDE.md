@@ -350,7 +350,6 @@ const userFilesResponse = await query(userFileParams)
 
 All AWS SDK usage must be wrapped in vendor modules:
 - `lib/vendor/AWS/DynamoDB.ts` - DynamoDB operations
-- `lib/vendor/AWS/S3.ts` - S3 operations
 - `lib/vendor/AWS/Lambda.ts` - Lambda invocations
 - `lib/vendor/AWS/SNS.ts` - SNS operations
 - `lib/vendor/AWS/SQS.ts` - SQS operations
