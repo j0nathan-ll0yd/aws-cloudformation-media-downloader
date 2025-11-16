@@ -44,14 +44,13 @@ jest.unstable_mockModule('fs', () => ({
   }
 }))
 
-// Mock AWS SDK for YouTube
-jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn()
-}))
-
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn(),
-  HeadObjectCommand: jest.fn()
+// Mock S3 vendor wrapper for YouTube
+jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
+  headObject: jest.fn<() => Promise<{ContentLength: number}>>(),
+  createS3Upload: jest.fn().mockReturnValue({
+    on: jest.fn(),
+    done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
+  })
 }))
 
 jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({

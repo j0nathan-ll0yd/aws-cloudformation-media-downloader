@@ -26,12 +26,12 @@ jest.unstable_mockModule('fs', () => ({
   }
 }))
 
-// Mock AWS SDK
+// Mock S3 Upload
 let mockUploadInstance: MockUpload | null = null
 let uploadDoneResolver: {resolve: (value: unknown) => void; reject: (reason: unknown) => void} | null = null
 class MockUpload extends EventEmitter {
   public done: jest.Mock<() => Promise<unknown>>
-  constructor(public config: Record<string, unknown>) {
+  constructor(public bucket: string, public key: string, public body: unknown, public contentType: string, public options?: Record<string, unknown>) {
     super()
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     mockUploadInstance = this
@@ -45,16 +45,14 @@ class MockUpload extends EventEmitter {
   }
 }
 
-jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
-  Upload: MockUpload
-}))
+const mockHeadObject = jest.fn<() => Promise<{ContentLength: number}>>()
+const mockCreateS3Upload = jest.fn((bucket: string, key: string, body: unknown, contentType: string, options?: Record<string, unknown>) => {
+  return new MockUpload(bucket, key, body, contentType, options)
+})
 
-const mockS3Send = jest.fn<() => Promise<{ContentLength: number}>>()
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: mockS3Send
-  })),
-  HeadObjectCommand: jest.fn()
+jest.unstable_mockModule('../vendor/AWS/S3', () => ({
+  headObject: mockHeadObject,
+  createS3Upload: mockCreateS3Upload
 }))
 
 // Mock logger
@@ -92,8 +90,8 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      // Mock S3Client send method for HeadObjectCommand
-      mockS3Send.mockResolvedValue({ContentLength: 1024000})
+      // Mock headObject for file size retrieval
+      mockHeadObject.mockResolvedValue({ContentLength: 1024000})
 
       // Start the function (it will create the Upload instance)
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
@@ -223,8 +221,8 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      // Mock S3Client send method for HeadObjectCommand
-      mockS3Send.mockResolvedValue({ContentLength: 2048000})
+      // Mock headObject for file size retrieval
+      mockHeadObject.mockResolvedValue({ContentLength: 2048000})
 
       // Start the function
       const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')

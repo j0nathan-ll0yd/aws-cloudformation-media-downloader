@@ -5,12 +5,6 @@ import {FileStatus} from '../../../types/enums'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
 
-// Mock S3Client
-const mockS3Client = jest.fn()
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: mockS3Client
-}))
-
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()

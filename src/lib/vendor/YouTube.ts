@@ -1,12 +1,11 @@
 import YTDlpWrap from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
 import {PassThrough} from 'stream'
-import {Upload} from '@aws-sdk/lib-storage'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../types/youtube'
 import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
 import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
-import {headObject, getS3Client} from '../vendor/AWS/S3'
+import {headObject, createS3Upload} from '../vendor/AWS/S3'
 
 const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
 
@@ -176,7 +175,6 @@ export async function streamVideoToS3(
   s3Url: string
   duration: number
 }> {
-  const s3Client = getS3Client()
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: YTDLP_BINARY_PATH})
 
   try {
@@ -251,14 +249,7 @@ export async function streamVideoToS3(
     })
 
     // Create S3 upload with streaming support
-    const upload = new Upload({
-      client: s3Client,
-      params: {
-        Bucket: bucket,
-        Key: key,
-        Body: passThrough,
-        ContentType: 'video/mp4'
-      },
+    const upload = createS3Upload(bucket, key, passThrough, 'video/mp4', {
       queueSize: 4, // Number of concurrent part uploads
       partSize: 5 * 1024 * 1024 // 5MB parts (minimum for S3 multipart)
     })
