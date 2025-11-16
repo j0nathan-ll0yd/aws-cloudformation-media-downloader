@@ -3,6 +3,16 @@ import {EventEmitter} from 'events'
 import {Readable} from 'stream'
 import type {S3Client} from '@aws-sdk/client-s3'
 
+// Mock yt-dlp-wrap
+const mockGetVideoInfo = jest.fn()
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = mockGetVideoInfo
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+
 // Mock child_process
 const mockSpawn = jest.fn()
 jest.unstable_mockModule('child_process', () => ({
@@ -48,7 +58,8 @@ jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
 // Mock logger
 jest.unstable_mockModule('../../util/lambda-helpers', () => ({
   logDebug: jest.fn(),
-  logError: jest.fn()
+  logError: jest.fn(),
+  putMetrics: jest.fn<() => Promise<void>>()
 }))
 
 // Import after mocking
