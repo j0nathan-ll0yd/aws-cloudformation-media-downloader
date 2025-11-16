@@ -1,7 +1,6 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
-import type {S3Client} from '@aws-sdk/client-s3'
 
 // Mock yt-dlp-wrap
 const mockGetVideoInfo = jest.fn()
@@ -50,8 +49,11 @@ jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
   Upload: MockUpload
 }))
 
+const mockS3Send = jest.fn<() => Promise<{ContentLength: number}>>()
 jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn(),
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: mockS3Send
+  })),
   HeadObjectCommand: jest.fn()
 }))
 
@@ -90,15 +92,11 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      // Mock S3 client
-      const mockS3Client = {
-        send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
-          ContentLength: 1024000
-        })
-      } as unknown as S3Client
+      // Mock S3Client send method for HeadObjectCommand
+      mockS3Send.mockResolvedValue({ContentLength: 1024000})
 
       // Start the function (it will create the Upload instance)
-      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -145,10 +143,8 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as unknown as S3Client
-
       // Start the function
-      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
 
       // Wait briefly then simulate process error
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -171,10 +167,8 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as unknown as S3Client
-
       // Start the function
-      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
 
       // Wait briefly, then simulate stderr output and non-zero exit
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -201,10 +195,8 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {} as unknown as S3Client
-
       // Start the function
-      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -231,14 +223,11 @@ describe('#Vendor:YouTube', () => {
       mockProcess.stderr = new EventEmitter()
       mockSpawn.mockReturnValue(mockProcess)
 
-      const mockS3Client = {
-        send: jest.fn<() => Promise<{ContentLength: number}>>().mockResolvedValue({
-          ContentLength: 2048000
-        })
-      } as unknown as S3Client
+      // Mock S3Client send method for HeadObjectCommand
+      mockS3Send.mockResolvedValue({ContentLength: 2048000})
 
       // Start the function
-      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', mockS3Client, 'test-bucket', 'test-key.mp4')
+      const resultPromise = streamVideoToS3('https://www.youtube.com/watch?v=test123', 'test-bucket', 'test-key.mp4')
 
       // Wait for Upload instance to be created
       await new Promise((resolve) => setTimeout(resolve, 10))

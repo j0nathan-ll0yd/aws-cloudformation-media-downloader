@@ -5,13 +5,8 @@ import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
-// DEPRECATED: Commented out after yt-dlp migration - Step Functions no longer used
-// import {startExecution} from '../lib/vendor/AWS/StepFunctions'
-// import {StartExecutionInput} from '@aws-sdk/client-sfn'
-// DEPRECATED: Commented out after yt-dlp migration
-// import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
-import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
+import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
 /**
  * Disassociates a deviceId from a User
@@ -121,58 +116,16 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
  * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
  */
 export async function initiateFileDownload(fileId: string) {
-  const lambdaClient = new LambdaClient({region: process.env.AWS_REGION || 'us-west-2'})
+  logDebug('initiateFileDownload <=', fileId)
 
-  const payload = JSON.stringify({fileId})
-  const command = new InvokeCommand({
-    FunctionName: 'StartFileUpload',
-    InvocationType: 'Event', // Asynchronous invocation
-    Payload: Buffer.from(payload)
-  })
+  const result = await invokeAsync('StartFileUpload', {fileId})
 
-  logDebug('Lambda invoke (async) <=', {
-    FunctionName: 'StartFileUpload',
-    InvocationType: 'Event',
-    fileId
-  })
-
-  const output = await lambdaClient.send(command)
-
-  logDebug('Lambda invoke (async) =>', {
-    StatusCode: output.StatusCode,
+  logDebug('initiateFileDownload =>', {
+    StatusCode: result.StatusCode,
     fileId
   })
 }
 
-/**
- * DEPRECATED after yt-dlp migration
- * This function is no longer used. Functionality moved to StartFileUpload Lambda.
- * Create a DynamoDBFile object from a video's metadata
- * @param metadata - The Metadata for a video; generated through youtube-dl
- * @returns DynamoDBFile
- * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
- */
-// export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
-//   logInfo('getFileFromMetadata <=', metadata)
-//   const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-//   const videoUrl = metadata.formats[0].url
-//   const options: AxiosRequestConfig = {
-//     method: 'head',
-//     timeout: 900000,
-//     url: videoUrl
-//   }
-//
-//   const fileInfo = await makeHttpRequest(options)
-//   // TODO: Ensure these headers exist in the response
-//   const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-//   const contentType = fileInfo.headers['content-type']
-//
-//   myDynamoItem.size = bytesTotal
-//   myDynamoItem.publishDate = new Date(metadata.published).toISOString()
-//   myDynamoItem.contentType = contentType
-//   myDynamoItem.status = FileStatus.PendingDownload
-//   return myDynamoItem
-// }
 
 /**
  * Makes an HTTP request via Axios

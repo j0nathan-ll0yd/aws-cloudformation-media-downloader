@@ -4,6 +4,7 @@ import {PassThrough} from 'stream'
 import {Upload} from '@aws-sdk/lib-storage'
 import {S3Client, HeadObjectCommand} from '@aws-sdk/client-s3'
 import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {YtDlpVideoInfo, YtDlpFormat} from '../../types/youtube'
 import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
 import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
@@ -22,34 +23,6 @@ function isCookieExpirationError(errorMessage: string): boolean {
   return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
 }
 
-// yt-dlp video info types
-interface YtDlpVideoInfo {
-  id: string
-  title: string
-  formats: YtDlpFormat[]
-  thumbnail: string
-  duration: number
-  description?: string
-  uploader?: string
-  upload_date?: string
-  view_count?: number
-  filesize?: number
-}
-
-interface YtDlpFormat {
-  format_id: string
-  url: string
-  ext: string
-  filesize?: number
-  width?: number
-  height?: number
-  fps?: number
-  vcodec?: string
-  acodec?: string
-  abr?: number
-  vbr?: number
-  tbr?: number
-}
 
 /**
  * Fetch video information using yt-dlp
@@ -197,7 +170,6 @@ export function getVideoID(url: string): string {
  */
 export async function streamVideoToS3(
   uri: string,
-  s3Client: S3Client,
   bucket: string,
   key: string
 ): Promise<{
@@ -205,6 +177,7 @@ export async function streamVideoToS3(
   s3Url: string
   duration: number
 }> {
+  const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: YTDLP_BINARY_PATH})
 
   try {

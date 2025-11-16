@@ -1,5 +1,7 @@
 import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {putMetricData, StandardUnit} from '../lib/vendor/AWS/CloudWatch'
+
+export {StandardUnit}
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {unknownErrorToString} from './transformers'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'

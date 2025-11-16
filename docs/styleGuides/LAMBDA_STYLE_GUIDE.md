@@ -22,13 +22,15 @@ import {DynamoDBFile, CustomAPIGatewayRequestAuthorizerEvent} from '../../../typ
 import {FileStatus, UserStatus} from '../../../types/enums'
 
 // 4. Utility imports (util/*)
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logInfo, response, StandardUnit} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {validateRequest} from '../../../util/apigateway-helpers'
 
-// 5. External AWS SDK imports LAST (only if needed)
-import {S3Client} from '@aws-sdk/client-s3'
-import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+// 5. NEVER import AWS SDK directly in Lambda functions
+// BAD:
+// import {S3Client} from '@aws-sdk/client-s3'
+// import {LambdaClient} from '@aws-sdk/client-lambda'
+// GOOD: Use vendor wrappers in lib/vendor/AWS/*
 ```
 
 ### Function Organization
@@ -306,8 +308,53 @@ const userFilesResponse = await query(userFileParams)
    // GOOD
    export async function handler(event): Promise<APIGatewayProxyResult>
    export async function handler(event): Promise<void>
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
    export async function handler(event): Promise<any>  // For Lambda-to-Lambda
    ```
+
+5. **No AWS SDK imports in Lambda functions**
+   ```typescript
+   // BAD
+   import {S3Client} from '@aws-sdk/client-s3'
+   import {LambdaClient} from '@aws-sdk/client-lambda'
+   const s3Client = new S3Client({region: 'us-west-2'})
+
+   // GOOD
+   import {uploadToS3} from '../../../lib/vendor/AWS/S3'
+   await uploadToS3(bucket, key, data)
+   ```
+
+6. **No commented out code blocks**
+   ```typescript
+   // BAD
+   // export function oldFunction() {
+   //   // Old implementation
+   // }
+
+   // GOOD
+   // Use version control history for old code
+   ```
+
+7. **All interfaces and types in types directory**
+   ```typescript
+   // BAD - interfaces defined in lib/vendor files
+   interface VideoInfo {
+     id: string
+   }
+
+   // GOOD - interfaces in types/
+   import {VideoInfo} from '../../types/youtube'
+   ```
+
+## AWS Service Wrappers
+
+All AWS SDK usage must be wrapped in vendor modules:
+- `lib/vendor/AWS/DynamoDB.ts` - DynamoDB operations
+- `lib/vendor/AWS/S3.ts` - S3 operations
+- `lib/vendor/AWS/Lambda.ts` - Lambda invocations
+- `lib/vendor/AWS/SNS.ts` - SNS operations
+- `lib/vendor/AWS/SQS.ts` - SQS operations
+- `lib/vendor/AWS/CloudWatch.ts` - CloudWatch metrics
 
 ## Special Cases
 

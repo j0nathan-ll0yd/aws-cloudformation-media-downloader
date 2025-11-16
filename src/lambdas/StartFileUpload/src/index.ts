@@ -2,13 +2,11 @@ import {Context} from 'aws-lambda'
 import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
 import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
-import {logDebug, logInfo, putMetric, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
+import {logDebug, logInfo, putMetric, lambdaErrorResponse, response, StandardUnit} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
-import {S3Client} from '@aws-sdk/client-s3'
-import {StandardUnit} from '@aws-sdk/client-cloudwatch'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -55,10 +53,8 @@ export async function handler(event: StartFileUploadParams, context: Context): P
     await upsertFile(dynamoItem)
     logDebug('upsertFile =>')
 
-    const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
-
     logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
-    const uploadResult = await streamVideoToS3(fileUrl, s3Client, bucket, fileName)
+    const uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
     logDebug('streamVideoToS3 =>', uploadResult)
 
     dynamoItem.size = uploadResult.fileSize

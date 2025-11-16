@@ -2,6 +2,7 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
+import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
 
 // Mock S3Client
@@ -11,10 +12,9 @@ jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
 }))
 
 // Mock YouTube functions
-const fetchVideoInfoMock = jest.fn<() => Promise<unknown>>()
-const chooseVideoFormatMock = jest.fn<() => unknown>()
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
 const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
-const {default: fetchVideoInfoResponse} = await import('./fixtures/fetchVideoInfo-200-OK.json', {assert: {type: 'json'}})
 
 jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
   fetchVideoInfo: fetchVideoInfoMock,
@@ -53,14 +53,23 @@ describe('#StartFileUpload', () => {
 
   test('should successfully stream video to S3', async () => {
     const mockFormat = {
-      ...fetchVideoInfoResponse.formats[0],
-      ext: 'mp4'
-    }
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
     const mockVideoInfo = {
-      ...fetchVideoInfoResponse,
       id: 'test-video-id',
-      title: 'Test Video'
-    }
+      title: 'Test Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     streamVideoToS3Mock.mockResolvedValue({
@@ -98,7 +107,6 @@ describe('#StartFileUpload', () => {
     // Verify streamVideoToS3 was called with correct parameters
     expect(streamVideoToS3Mock).toHaveBeenCalledWith(
       expect.stringContaining('youtube.com/watch?v='),
-      expect.anything(), // S3Client
       'test-bucket',
       expect.stringMatching(/\.mp4$/)
     )
@@ -106,17 +114,24 @@ describe('#StartFileUpload', () => {
 
   test('should handle HLS/DASH streaming formats', async () => {
     const hlsFormat = {
-      ...fetchVideoInfoResponse.formats[0],
+      format_id: 'hls-720',
       url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
+      ext: 'mp4',
       filesize: undefined,
-      ext: 'mp4'
-    }
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
 
     const mockVideoInfo = {
-      ...fetchVideoInfoResponse,
       id: 'test-video-hls',
-      title: 'Test HLS Video'
-    }
+      title: 'Test HLS Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [hlsFormat]
+    } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(hlsFormat)
     streamVideoToS3Mock.mockResolvedValue({
@@ -142,14 +157,23 @@ describe('#StartFileUpload', () => {
 
   test('should handle streaming errors and mark file as Failed', async () => {
     const mockFormat = {
-      ...fetchVideoInfoResponse.formats[0],
-      ext: 'mp4'
-    }
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
     const mockVideoInfo = {
-      ...fetchVideoInfoResponse,
       id: 'test-video-error',
-      title: 'Test Error Video'
-    }
+      title: 'Test Error Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
@@ -186,14 +210,23 @@ describe('#StartFileUpload', () => {
     const originalBucket = process.env.Bucket
     process.env.Bucket = '' // Empty string also triggers the check
     const mockFormat = {
-      ...fetchVideoInfoResponse.formats[0],
-      ext: 'mp4'
-    }
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
     const mockVideoInfo = {
-      ...fetchVideoInfoResponse,
       id: 'test-video-no-bucket',
-      title: 'Test No Bucket Video'
-    }
+      title: 'Test No Bucket Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     updateItemMock.mockResolvedValue({})

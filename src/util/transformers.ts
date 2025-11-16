@@ -7,20 +7,6 @@ import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '@aws-sdk/client-sns'
 
-// DEPRECATED: This function used ytdl-core which has been replaced by yt-dlp
-// Kept for reference but not used after migration
-// function getHighestVideoFormatFromVideoInfo(myVideoInfo: videoInfo): videoFormat {
-//   try {
-//     const highestVideoFormat = chooseVideoFormat(myVideoInfo, {
-//       filter: (format) => format.container === 'mp4'
-//     })
-//     logDebug('getHighestVideoFormatFromVideoInfo', highestVideoFormat)
-//     return highestVideoFormat
-//   } catch (error) {
-//     logError('getHighestVideoFormatFromVideoInfo', error)
-//     throw new NotFoundError('Unable to find acceptable video format')
-//   }
-// }
 
 export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
   return {
@@ -126,54 +112,6 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
   }
 }
 
-// DEPRECATED: These functions used ytdl-core which has been replaced by yt-dlp
-// The functionality is now implemented directly in StartFileUpload Lambda
-// export function transformVideoInfoToMetadata(myVideoInfo: videoInfo): Metadata {
-//   const myVideoFormat: videoFormat = getHighestVideoFormatFromVideoInfo(myVideoInfo)
-//   logDebug('videoDetails', myVideoInfo.videoDetails)
-//   const {title, description, publishDate, author, thumbnails, videoId} = myVideoInfo.videoDetails
-//   logDebug('thumbnails', thumbnails)
-//   const keys: (keyof typeof myVideoInfo.videoDetails)[] = ['author', 'description', 'publishDate', 'title']
-//   keys.forEach((key) => {
-//     if (!myVideoInfo.videoDetails[key]) {
-//       throw new UnexpectedError(`Missing required value in videoDetails: ${key}`)
-//     }
-//   })
-//
-//   logDebug('cleanup')
-//   const date = new Date(Date.parse(publishDate))
-//   const ext = myVideoFormat.container
-//   const uploadDate = date.toISOString().substring(0, 10).replace(/-/g, '')
-//   const fileName = `${uploadDate}-[${author.name}].${ext}`
-//   const escapedTitle = title.replace(/[°()@,;:"/[\]\\?={}']/g, '')
-//
-//   return {
-//     videoId,
-//     fileName,
-//     escapedTitle,
-//     author,
-//     description,
-//     ext: myVideoFormat.container,
-//     formats: [myVideoFormat],
-//     imageUri: thumbnails[thumbnails.length - 1].url,
-//     mimeType: myVideoFormat.mimeType,
-//     published: Date.parse(publishDate),
-//     title
-//   } as Metadata
-// }
-//
-// export function transformVideoIntoDynamoItem(metadata: Metadata): DynamoDBFile {
-//   return {
-//     fileId: metadata.videoId,
-//     key: metadata.fileName,
-//     size: 0,
-//     availableAt: new Date().getTime() / 1000,
-//     authorName: metadata.author.name,
-//     authorUser: metadata.author.user || metadata.author.name.toLowerCase(),
-//     title: metadata.title,
-//     description: metadata.description
-//   } as DynamoDBFile
-// }
 
 export function assertIsError(error: unknown): asserts error is Error {
   logError('error', error)

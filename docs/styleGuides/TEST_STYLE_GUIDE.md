@@ -407,3 +407,48 @@ expect(output.statusCode).toBeGreaterThanOrEqual(400)
 3. **Don't forget to reset mocks** - Use jest.clearAllMocks() in beforeEach
 4. **Don't modify shared fixtures** - Deep clone before modification
 5. **Don't skip error scenarios** - Test all failure modes
+6. **Don't mock logging functions** - Let logDebug, logInfo, logError run naturally
+7. **Don't use `unknown` when types are known** - Use specific types for mocks
+
+## Type-Safe Mocking
+
+### Use Specific Types for Mock Functions
+
+```typescript
+// BAD - using unknown
+const fetchVideoInfoMock = jest.fn<() => Promise<unknown>>()
+const chooseVideoFormatMock = jest.fn<() => unknown>()
+
+// GOOD - using specific types
+import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
+```
+
+### Mock Return Types Should Match Function Signatures
+
+```typescript
+// If the actual function returns Promise<{StatusCode: number}>
+const sendMock = jest.fn<() => Promise<{StatusCode: number}>>()
+  .mockResolvedValue({StatusCode: 202})
+```
+
+## Fixture Best Practices
+
+### Large Test Data in Fixtures
+
+```typescript
+// BAD - large inline object
+const videoInfo = {
+  id: 'test-id',
+  title: 'Test Video',
+  formats: [/* ... 50 lines of data ... */]
+}
+
+// GOOD - import from fixture
+const {default: videoInfo} = await import('./fixtures/videoInfo.json', {assert: {type: 'json'}})
+```
+
+### Reuse Fixtures Across Tests
+
+Create common fixtures that can be imported and modified as needed rather than duplicating data in multiple tests.
