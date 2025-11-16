@@ -61,6 +61,13 @@ jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
   HeadObjectCommand: jest.fn()
 }))
 
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>().mockImplementation(() => ({
+    send: jest.fn<() => Promise<{StatusCode: number}>>().mockResolvedValue({StatusCode: 202})
+  })),
+  InvokeCommand: jest.fn()
+}))
+
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 const {default: queryNoContentResponse} = await import('./fixtures/query-204-NoContent.json', {assert: {type: 'json'}})
 const {default: querySuccessResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
