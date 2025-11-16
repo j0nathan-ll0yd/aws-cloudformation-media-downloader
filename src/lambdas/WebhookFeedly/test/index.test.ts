@@ -31,8 +31,12 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
 }))
 
 // Mock yt-dlp-wrap to prevent YouTube module from failing
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
 jest.unstable_mockModule('yt-dlp-wrap', () => ({
-  default: jest.fn()
+  default: MockYTDlpWrap
 }))
 
 // Mock child_process for YouTube spawn operations
