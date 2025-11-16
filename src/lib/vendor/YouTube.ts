@@ -2,12 +2,12 @@ import YTDlpWrap from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
 import {PassThrough} from 'stream'
 import {Upload} from '@aws-sdk/lib-storage'
-import {S3Client, HeadObjectCommand} from '@aws-sdk/client-s3'
-import {StandardUnit} from '@aws-sdk/client-cloudwatch'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../types/youtube'
 import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
 import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
+import {headObject, getS3Client} from '../vendor/AWS/S3'
+import {StandardUnit} from '../vendor/AWS/CloudWatch'
 
 const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
 
@@ -177,7 +177,7 @@ export async function streamVideoToS3(
   s3Url: string
   duration: number
 }> {
-  const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
+  const s3Client = getS3Client()
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: YTDLP_BINARY_PATH})
 
   try {
@@ -283,7 +283,7 @@ export async function streamVideoToS3(
     logDebug('S3 upload completed', {location: uploadResult.Location})
 
     // Get final file size from S3
-    const headResult = await s3Client.send(new HeadObjectCommand({Bucket: bucket, Key: key}))
+    const headResult = await headObject(bucket, key)
 
     const fileSize = headResult.ContentLength || bytesUploaded
     const duration = Math.floor((Date.now() - startTime) / 1000)
