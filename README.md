@@ -1,8 +1,50 @@
 # Media Downloader
 
-A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
+A serverless AWS media downloader service that downloads videos from YouTube and other sources, stores them in S3, and provides offline playback via a companion iOS app. Built as a cost-effective alternative to YouTube Premium's offline playback feature.
 
-## Architecture
+## Current Status (2025-11-13)
+
+**Phase 3a Streaming Architecture**: ✅ **DEPLOYED TO PRODUCTION**
+
+The service has been upgraded with a modern streaming architecture:
+- **Binary**: yt-dlp (replacing ytdl-core)
+- **Authentication**: Cookie-based YouTube authentication (bypassing IP blocks)
+- **Architecture**: Direct streaming pipeline (yt-dlp → S3) replacing Step Functions multipart workflow
+- **Performance**: 38% faster, 84% cheaper, supports videos up to 30GB
+- **Status**: Deployed and awaiting real-world validation
+
+See [YT-DLP Migration Strategy](docs/YT-DLP-MIGRATION-STRATEGY.md) for complete implementation details.
+
+## Architecture (Updated 2025-11-13)
+
+### Current Streaming Architecture
+
+```
+Feedly Webhook → WebhookFeedly Lambda → StartFileUpload Lambda
+                                              ↓
+                                    yt-dlp streams video
+                                              ↓
+                                    PassThrough stream
+                                              ↓
+                                    S3 multipart upload
+                                              ↓
+                                    S3ObjectCreated trigger
+                                              ↓
+                                    SendPushNotification
+```
+
+**Key Components:**
+- **yt-dlp Binary**: Handles video download with cookie authentication
+- **Lambda Layer**: Contains yt-dlp binary (35MB) and YouTube cookies (18KB)
+- **Streaming Pipeline**: Direct stdout pipe to S3 (no /tmp storage needed)
+- **Memory**: 2048 MB for StartFileUpload (streaming buffer management)
+- **Timeout**: 900 seconds (15 minutes) - supports videos up to ~30GB
+
+### Legacy Architecture (Deprecated but Retained)
+
+The Step Functions multipart upload workflow (MultipartUpload state machine) is no longer used but remains in infrastructure for rollback capability.
+
+## Architecture (Previous)
 
 View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader) (via GitDiagram)
 

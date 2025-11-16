@@ -30,6 +30,44 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
   })
 }))
 
+// Mock yt-dlp-wrap to prevent YouTube module from failing
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+
+// Mock child_process for YouTube spawn operations
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
+// Mock fs for YouTube cookie operations
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn<() => Promise<void>>()
+  }
+}))
+
+// Mock AWS SDK for YouTube
+jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn()
+}))
+
+jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn(),
+  HeadObjectCommand: jest.fn()
+}))
+
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>().mockImplementation(() => ({
+    send: jest.fn<() => Promise<{StatusCode: number}>>().mockResolvedValue({StatusCode: 202})
+  })),
+  InvokeCommand: jest.fn()
+}))
+
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 const {default: queryNoContentResponse} = await import('./fixtures/query-204-NoContent.json', {assert: {type: 'json'}})
 const {default: querySuccessResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})

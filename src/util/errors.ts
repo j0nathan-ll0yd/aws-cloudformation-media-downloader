@@ -53,6 +53,15 @@ export class UnexpectedError extends CustomLambdaError {
   }
 }
 
+// Cookie expiration or bot detection error from YouTube
+export class CookieExpirationError extends CustomLambdaError {
+  constructor(message: string, statusCode = 403) {
+    super(message)
+    this.name = 'CookieExpirationError'
+    this.statusCode = statusCode
+  }
+}
+
 // The errors thrown by node-apns2 (when sending push health checks)
 export class Apns2Error extends Error {
   notification: Notification
