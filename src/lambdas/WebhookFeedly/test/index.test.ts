@@ -30,6 +30,18 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
   })
 }))
 
+// Mock yt-dlp-wrap to prevent YouTube module from failing
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: jest.fn()
+}))
+
+// Mock fs for YouTube cookie operations
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn<() => Promise<void>>()
+  }
+}))
+
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 const {default: queryNoContentResponse} = await import('./fixtures/query-204-NoContent.json', {assert: {type: 'json'}})
 const {default: querySuccessResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
