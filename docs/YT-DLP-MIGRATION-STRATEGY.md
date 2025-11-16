@@ -1663,8 +1663,226 @@ if (estimatedSize > 8GB || estimatedDuration > 10 * 60) {
 
 ---
 
-*Document Version: 4.2*
-*Last Updated: 2025-11-14*
+## Critical Lesson: Comprehensive Test Mocking Strategy
+
+**Date Learned**: 2025-11-15 (PR #91 build failures)
+**Problem**: Tests failing with 500 errors despite code working in production
+**Root Cause**: Missing mocks for transitive dependencies introduced by yt-dlp migration
+
+### The Issue
+
+When migrating from ytdl-core to yt-dlp, we introduced new dependencies in the YouTube module:
+- `yt-dlp-wrap` - NPM wrapper for yt-dlp binary
+- `child_process` - For spawning yt-dlp process
+- `fs` - For cookie file operations
+- `@aws-sdk/lib-storage` - For S3 multipart uploads
+- `@aws-sdk/client-s3` - For S3 operations
+- `@aws-sdk/client-lambda` - For Lambda invocation in shared utilities
+
+### Why Tests Failed
+
+**Test Structure**:
+```
+WebhookFeedly test → handler import → getVideoID() from YouTube module
+                                    → initiateFileDownload() from shared.ts
+```
+
+**The Failure Chain**:
+1. Test imports WebhookFeedly handler
+2. Handler imports `getVideoID` from YouTube module
+3. YouTube module loads ALL dependencies at module initialization
+4. Handler imports `initiateFileDownload` from shared.ts
+5. shared.ts imports `LambdaClient` from `@aws-sdk/client-lambda`
+6. **None of these modules were mocked** → Tests fail with 500 errors
+
+### Critical Insight: Module Initialization
+
+In ES modules with Jest, **ALL module-level code executes when ANY function from that module is imported**. This means:
+
+```typescript
+// YouTube.ts
+import YTDlpWrap from 'yt-dlp-wrap'  // ← Executes even if you only import getVideoID()
+import {spawn} from 'child_process'   // ← Executes
+import {Upload} from '@aws-sdk/lib-storage'  // ← Executes
+
+export function getVideoID(url: string) { /* ... */ }  // ← What you actually imported
+export function streamVideoToS3() { /* uses all the above */ }
+```
+
+When WebhookFeedly test imports `getVideoID`, the entire YouTube module loads, which tries to instantiate `YTDlpWrap` and other unmocked dependencies.
+
+### The Solution: Transitive Dependency Mapping
+
+**Before writing ANY test, you MUST:**
+
+1. **Identify Direct Imports** - What does the test file import?
+   ```typescript
+   import {handler} from './../src'  // WebhookFeedly handler
+   ```
+
+2. **Identify Handler Dependencies** - What does the handler import?
+   ```typescript
+   // In WebhookFeedly/src/index.ts
+   import {getVideoID} from '../../../lib/vendor/YouTube'
+   import {initiateFileDownload} from '../../../util/shared'
+   ```
+
+3. **Identify Module-Level Dependencies** - What do THOSE modules import?
+   ```typescript
+   // In YouTube.ts
+   import YTDlpWrap from 'yt-dlp-wrap'
+   import {spawn} from 'child_process'
+   import {Upload} from '@aws-sdk/lib-storage'
+   import {S3Client} from '@aws-sdk/client-s3'
+
+   // In shared.ts
+   import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
+   ```
+
+4. **Mock EVERYTHING** - Every single import must be mocked:
+   ```typescript
+   // Mock YouTube dependencies
+   class MockYTDlpWrap {
+     constructor(public binaryPath: string) {}
+     getVideoInfo = jest.fn()
+   }
+   jest.unstable_mockModule('yt-dlp-wrap', () => ({
+     default: MockYTDlpWrap
+   }))
+
+   jest.unstable_mockModule('child_process', () => ({
+     spawn: jest.fn()
+   }))
+
+   jest.unstable_mockModule('fs', () => ({
+     promises: {
+       copyFile: jest.fn<() => Promise<void>>()
+     }
+   }))
+
+   jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
+     Upload: jest.fn()
+   }))
+
+   jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
+     S3Client: jest.fn(),
+     HeadObjectCommand: jest.fn()
+   }))
+
+   // Mock shared.ts dependencies
+   jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+     LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>()
+       .mockImplementation(() => ({
+         send: jest.fn<() => Promise<{StatusCode: number}>>()
+           .mockResolvedValue({StatusCode: 202})
+       })),
+     InvokeCommand: jest.fn()
+   }))
+
+   // THEN import the handler
+   const {handler} = await import('./../src')
+   ```
+
+### Testing Checklist
+
+**For EVERY new test file, complete this checklist:**
+
+- [ ] **Step 1**: List all direct imports in the test
+- [ ] **Step 2**: For each import, read the source file and list its imports
+- [ ] **Step 3**: Recursively map transitive dependencies (imports of imports)
+- [ ] **Step 4**: Mock ALL external dependencies BEFORE importing handler
+- [ ] **Step 5**: Verify mocks match module structure (classes vs functions)
+- [ ] **Step 6**: Add proper TypeScript types to mocks (especially for SDK clients)
+- [ ] **Step 7**: Test locally AND in CI to verify mocks work
+
+### Common Mocking Patterns
+
+**AWS SDK Clients**:
+```typescript
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>()
+    .mockImplementation(() => ({
+      send: jest.fn<() => Promise<{StatusCode: number}>>()
+        .mockResolvedValue({StatusCode: 202})
+    })),
+  InvokeCommand: jest.fn()
+}))
+```
+
+**NPM Class Constructors**:
+```typescript
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+```
+
+**Node.js Built-ins**:
+```typescript
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn<() => Promise<void>>()
+  }
+}))
+```
+
+### Files Modified During Fix
+
+The PR #91 build failures required updating these test files:
+
+1. **src/pipeline/terraform.environment.test.ts**
+   - Added infrastructure variable exclusions (PATH, YTDLP_BINARY_PATH)
+   - Fixed TypeScript type casting for dynamic property access
+
+2. **src/lib/vendor/YouTube.test.ts**
+   - Added comprehensive mocks for yt-dlp-wrap, child_process, fs
+   - Fixed spawn() expectations to include `{cwd: '/tmp'}` parameter
+   - Added putMetrics mock for CloudWatch
+
+3. **src/lambdas/WebhookFeedly/test/index.test.ts**
+   - Added MockYTDlpWrap class constructor
+   - Added mocks for child_process, fs, @aws-sdk/lib-storage, @aws-sdk/client-s3
+   - **Critical**: Added @aws-sdk/client-lambda mock (was missing, caused 500 errors)
+
+### Prevention Strategy
+
+**Going Forward:**
+
+1. **Update test templates** - Create template with common mocks pre-filled
+2. **Documentation** - Update CLAUDE.md with this testing strategy
+3. **Code Review** - Verify all transitive dependencies mocked before PR approval
+4. **CI/CD** - Tests must pass in GitHub Actions before merge
+5. **Dependency Audit** - When adding new imports to shared modules, audit all test files that transitively depend on them
+
+### Why This Matters
+
+**Without comprehensive mocking:**
+- ✗ Tests fail with obscure 500 errors
+- ✗ Difficult to debug (error doesn't point to missing mock)
+- ✗ CI/CD pipeline blocks valid code
+- ✗ False negatives slow development
+
+**With comprehensive mocking:**
+- ✓ Tests pass reliably
+- ✓ Clear error messages when mocks missing
+- ✓ CI/CD pipeline validates code correctly
+- ✓ Faster development iteration
+
+### Key Takeaway
+
+**When importing ANY function from a module, you must mock ALL of that module's dependencies, not just the function you're using.**
+
+---
+
+*Document Version: 4.3*
+*Last Updated: 2025-11-15*
 *Status: Phase 1, 2, & 3a DEPLOYED with Full Monitoring & Cookie Alerting - Production Ready*
 
 **Phase 3a Summary:**

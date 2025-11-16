@@ -93,6 +93,129 @@ npm test         # Run full test suite to ensure all tests pass
 
 Both commands must complete successfully without errors before pushing changes. This prevents broken builds in GitHub Actions and maintains code quality standards.
 
+### Jest Test Mocking Strategy (CRITICAL)
+
+**Problem Solved**: PR #91 revealed tests failing with obscure 500 errors despite code working in production. Root cause: missing mocks for transitive dependencies.
+
+#### The Core Issue: Module-Level Imports
+
+In ES modules with Jest, **ALL module-level code executes when ANY function from that module is imported**. This means:
+
+```typescript
+// YouTube.ts
+import YTDlpWrap from 'yt-dlp-wrap'  // ← Executes even if you only import getVideoID()
+import {spawn} from 'child_process'   // ← Executes
+import {Upload} from '@aws-sdk/lib-storage'  // ← Executes
+
+export function getVideoID(url: string) { /* ... */ }  // ← What you actually imported
+export function streamVideoToS3() { /* uses all the above */ }
+```
+
+When a test imports `getVideoID`, the entire YouTube module loads, attempting to instantiate all dependencies. **All must be mocked.**
+
+#### Mandatory Testing Checklist
+
+**For EVERY new test file:**
+
+- [ ] **Step 1**: List all direct imports in the test
+- [ ] **Step 2**: Read each source file and list its imports
+- [ ] **Step 3**: Recursively map transitive dependencies (imports of imports)
+- [ ] **Step 4**: Mock ALL external dependencies BEFORE importing handler
+- [ ] **Step 5**: Verify mocks match module structure (classes vs functions)
+- [ ] **Step 6**: Add proper TypeScript types to mocks (especially SDK clients)
+- [ ] **Step 7**: Test locally AND in CI
+
+#### Common Mocking Patterns
+
+**AWS SDK Clients** (require full type annotations):
+```typescript
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>()
+    .mockImplementation(() => ({
+      send: jest.fn<() => Promise<{StatusCode: number}>>()
+        .mockResolvedValue({StatusCode: 202})
+    })),
+  InvokeCommand: jest.fn()
+}))
+```
+
+**NPM Class Constructors** (must be actual classes):
+```typescript
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+```
+
+**Node.js Built-ins**:
+```typescript
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn<() => Promise<void>>()
+  }
+}))
+```
+
+#### Transitive Dependency Example
+
+**Test Structure**:
+```
+WebhookFeedly test → handler import → getVideoID() from YouTube.ts
+                                    → initiateFileDownload() from shared.ts
+```
+
+**Required Mocks** (ALL of these):
+```typescript
+// YouTube.ts dependencies
+jest.unstable_mockModule('yt-dlp-wrap', () => ({ default: MockYTDlpWrap }))
+jest.unstable_mockModule('child_process', () => ({ spawn: jest.fn() }))
+jest.unstable_mockModule('fs', () => ({ promises: { copyFile: jest.fn() } }))
+jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({ Upload: jest.fn() }))
+jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn(),
+  HeadObjectCommand: jest.fn()
+}))
+
+// shared.ts dependencies
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({StatusCode: 202})
+  })),
+  InvokeCommand: jest.fn()
+}))
+
+// THEN import the handler
+const {handler} = await import('./../src')
+```
+
+#### Why This Matters
+
+**Without comprehensive mocking:**
+- ✗ Tests fail with obscure 500 errors
+- ✗ Error doesn't point to missing mock
+- ✗ CI/CD blocks valid code
+- ✗ Wastes hours debugging
+
+**With comprehensive mocking:**
+- ✓ Tests pass reliably
+- ✓ Clear errors when mocks missing
+- ✓ Fast iteration
+
+#### Key Takeaway
+
+**When importing ANY function from a module, you must mock ALL of that module's dependencies, not just the function you're using.**
+
+**Reference**: See `docs/YT-DLP-MIGRATION-STRATEGY.md` section "Critical Lesson: Comprehensive Test Mocking Strategy" for full details.
+
+---
+
 ### Library Migration Best Practices
 When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for success:
 
