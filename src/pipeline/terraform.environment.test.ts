@@ -14,7 +14,9 @@ const excludedSourceVariables = {
   no_proxy: 1,
   t: 1,
   http_proxy: 1,
-  https_proxy: 1
+  https_proxy: 1,
+  PATH: 1, // System PATH for Lambda runtime and custom binaries
+  YTDLP_BINARY_PATH: 1 // Path to yt-dlp binary in Lambda layer
 }
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
