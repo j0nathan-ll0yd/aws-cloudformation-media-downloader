@@ -126,7 +126,8 @@ describe('#Vendor:YouTube', () => {
       // Verify yt-dlp was spawned correctly
       expect(mockSpawn).toHaveBeenCalledWith(
         expect.stringContaining('yt-dlp'),
-        expect.arrayContaining(['-o', '-', '--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', '/tmp/youtube-cookies.txt', 'https://www.youtube.com/watch?v=test123'])
+        expect.arrayContaining(['-o', '-', '--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', '/tmp/youtube-cookies.txt', 'https://www.youtube.com/watch?v=test123']),
+        {cwd: '/tmp'}
       )
 
       // Verify cookies were copied
