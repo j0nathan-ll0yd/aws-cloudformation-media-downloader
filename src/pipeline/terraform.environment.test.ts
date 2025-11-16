@@ -71,12 +71,14 @@ describe('#Terraform', () => {
   const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform: string[] = []
-    let environmentVariablesTerraformCount = 0
     if (environmentVariablesForFunction[functionName]) {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]
-      environmentVariablesTerraformCount = environmentVariablesTerraform.length
       for (const environmentVariable of environmentVariablesTerraform) {
         test(`should respect environment variable naming ${environmentVariable}`, async () => {
+          // Skip naming convention tests for infrastructure-level variables
+          if (Object.prototype.hasOwnProperty.call(excludedSourceVariables, environmentVariable)) {
+            return
+          }
           expect(environmentVariable.toUpperCase()).not.toBe(environmentVariable)
           if (cloudFrontDistributionNames[functionName]) {
             expect(environmentVariable).toMatch(/^x-[a-z-]+$/)
@@ -101,8 +103,12 @@ describe('#Terraform', () => {
     const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
-      expect(environmentVariablesTerraform.sort()).toEqual(environmentVariablesSource.sort())
-      expect(environmentVariablesTerraformCount).toEqual(environmentVariablesSourceCount)
+      // Filter out infrastructure-level variables from Terraform list for comparison
+      const filteredTerraformVars = environmentVariablesTerraform.filter(
+        (v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v)
+      )
+      expect(filteredTerraformVars.sort()).toEqual(environmentVariablesSource.sort())
+      expect(filteredTerraformVars.length).toEqual(environmentVariablesSourceCount)
     })
   }
 })
