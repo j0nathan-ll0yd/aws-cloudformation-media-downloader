@@ -35,11 +35,26 @@ jest.unstable_mockModule('yt-dlp-wrap', () => ({
   default: jest.fn()
 }))
 
+// Mock child_process for YouTube spawn operations
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
 // Mock fs for YouTube cookie operations
 jest.unstable_mockModule('fs', () => ({
   promises: {
     copyFile: jest.fn<() => Promise<void>>()
   }
+}))
+
+// Mock AWS SDK for YouTube
+jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn()
+}))
+
+jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn(),
+  HeadObjectCommand: jest.fn()
 }))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
