@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {AwsLambdaFunction, TerraformD} from '../types/terraform'
+import {TerraformD} from '../types/terraform'
 import {logDebug} from '../util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
@@ -29,8 +29,8 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction[]
-    const resource = resources[0]
+    const resources = (terraformPlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
+    const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
