@@ -1,0 +1,116 @@
+name: Update yt-dlp Binary
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get latest yt-dlp version
+        id: latest
+        run: |
+          LATEST=$(gh api repos/yt-dlp/yt-dlp/releases/latest --jq '.tag_name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+          echo "Latest yt-dlp version: ${LATEST}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Get current version
+        id: current
+        run: |
+          CURRENT=$(cat layers/yt-dlp/VERSION 2>/dev/null || echo "none")
+          echo "version=${CURRENT}" >> $GITHUB_OUTPUT
+          echo "Current yt-dlp version: ${CURRENT}"
+      
+      - name: Check if update is needed
+        id: check
+        run: |
+          LATEST="${{ steps.latest.outputs.version }}"
+          CURRENT="${{ steps.current.outputs.version }}"
+          
+          if [ "$LATEST" != "$CURRENT" ]; then
+            echo "Update needed: $CURRENT -> $LATEST"
+            echo "needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No update needed (current: $CURRENT)"
+            echo "needed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Download and verify new binary
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION=${{ steps.latest.outputs.version }}
+          echo "Downloading yt-dlp ${VERSION}..."
+          
+          wget -q https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/yt-dlp_linux
+          wget -q https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/SHA2-256SUMS
+          
+          echo "Verifying checksum..."
+          sha256sum --check --ignore-missing SHA2-256SUMS
+          
+          echo "Testing binary..."
+          chmod +x yt-dlp_linux
+          BINARY_VERSION=$(./yt-dlp_linux --version)
+          echo "Binary version: ${BINARY_VERSION}"
+          
+          if [ "$BINARY_VERSION" != "$VERSION" ]; then
+            echo "ERROR: Binary version mismatch"
+            exit 1
+          fi
+      
+      - name: Update layer and create PR
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION=${{ steps.latest.outputs.version }}
+          CURRENT_VERSION=${{ steps.current.outputs.version }}
+          BRANCH_NAME="chore/update-yt-dlp-${VERSION}"
+          
+          echo "Moving binary to Lambda layer..."
+          mv yt-dlp_linux layers/yt-dlp/bin/yt-dlp_linux
+          echo "${VERSION}" > layers/yt-dlp/VERSION
+          
+          echo "Configuring git..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          echo "Creating branch and commit..."
+          git checkout -b "${BRANCH_NAME}"
+          git add layers/yt-dlp/
+          git commit -m "chore(deps): update yt-dlp to ${VERSION}"
+          git push origin "${BRANCH_NAME}"
+          
+          echo "Creating pull request..."
+          cat > /tmp/pr-body.md << EOF
+          Automated update of yt-dlp binary to ${VERSION}
+
+          **Release Notes**: https://github.com/yt-dlp/yt-dlp/releases/tag/${VERSION}
+
+          ## Changes
+          - Updated yt-dlp binary from ${CURRENT_VERSION} to ${VERSION}
+          - Updated VERSION file
+
+          ## Verification
+          - ✅ Binary downloaded and checksum verified
+          - ✅ Binary execution test passed
+          - ⏳ CI/CD tests pending
+
+          ## Deployment
+          After merging, the new Lambda layer will be deployed with the updated yt-dlp binary.
+          EOF
+          
+          gh pr create \
+            --title "chore(deps): update yt-dlp to ${VERSION}" \
+            --body-file /tmp/pr-body.md \
+            --label "dependencies" \
+            --label "automated"
+        env:
+          GH_TOKEN: ${{ github.token }}
