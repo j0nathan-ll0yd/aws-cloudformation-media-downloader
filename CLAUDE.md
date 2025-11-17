@@ -268,7 +268,7 @@ Your commit message must NEVER contain:
 
 ### Jest Test Mocking Strategy (CRITICAL)
 
-**Problem Solved**: PR #91 revealed tests failing with obscure 500 errors despite code working in production. Root cause: missing mocks for transitive dependencies.
+**Problem Solved**: Tests can fail with obscure 500 errors despite code working in production. Root cause: missing mocks for transitive dependencies.
 
 #### The Core Issue: Module-Level Imports
 
@@ -752,7 +752,7 @@ This section outlines a common workflow for remotely testing the media download 
 To initiate the process, invoke the `FileCoordinator` Lambda function. This function scans for files that need to be downloaded and starts the process.
 
 ```bash
-/opt/homebrew/bin/aws lambda invoke \
+aws lambda invoke \
   --function-name FileCoordinator \
   --region us-west-2 \
   --payload '{}' \
@@ -766,7 +766,7 @@ This command invokes the `FileCoordinator` function with an empty JSON payload. 
 After triggering the `FileCoordinator`, you can monitor the logs of the `StartFileUpload` Lambda to observe the file upload process.
 
 ```bash
-/opt/homebrew/bin/aws logs tail /aws/lambda/StartFileUpload --region us-west-2 --follow --format short
+aws logs tail /aws/lambda/StartFileUpload --region us-west-2 --follow --format short
 ```
 
 This command will stream the logs from the `/aws/lambda/StartFileUpload` log group, allowing you to see real-time updates. The `--follow` flag keeps the connection open and continues to display new log entries.
@@ -776,13 +776,13 @@ This command will stream the logs from the `/aws/lambda/StartFileUpload` log gro
 The following command invokes the `FileCoordinator` lambda, waits for 5 seconds, and then filters the logs of the `StartFileUpload` lambda for "ERROR" messages in the last 5 minutes.
 
 ```bash
-/opt/homebrew/bin/aws lambda invoke \
+aws lambda invoke \
   --function-name FileCoordinator \
   --region us-west-2 \
   --payload '{}' \
   /dev/null && \
   sleep 5 && \
-  /opt/homebrew/bin/aws logs filter-log-events \
+  aws logs filter-log-events \
   --log-group-name /aws/lambda/StartFileUpload \
   --region us-west-2 \
   --start-time $(date -v-5M +%s000) \
@@ -798,72 +798,3 @@ ERROR: [youtube] <video-id>: Sign in to confirm you're not a bot. Use --cookies-
 ```
 
 This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication.
-
----
-
-## Current Work-in-Progress: yt-dlp Upgrade (PR #91)
-
-**Status**: All implementation complete, waiting for CI build to pass
-**Branch**: `f/yt-dlp-upgrade`
-**PR**: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/pull/91
-**Related Issue**: LocalStack integration #92
-
-### Completed Tasks
-
-#### Phase 1: Binary Migration & Streaming Architecture ✅
-- Migrated from NPM yt-dlp wrapper to native binary
-- Implemented direct stdout streaming from yt-dlp to S3
-- Configured Lambda to use /tmp for HLS/DASH fragment writes
-- Updated webpack externals for AWS SDK packages
-
-#### Phase 2: Cookie-Based Authentication ✅
-- Deployed YouTube cookies via Terraform to Lambda layer
-- Implemented cookie file copying from /opt to /tmp
-- Added `CookieExpirationError` error type
-- Pattern matching for bot detection errors
-
-#### Phase 3: Automated Monitoring ✅
-- Created `CookieMonitor` Lambda for hourly expiration checks
-- GitHub issue automation for cookie rotation alerts
-- EventBridge hourly cron trigger
-- DynamoDB integration for failed file tracking
-
-#### Phase 4: Infrastructure Cleanup ✅
-- Removed deprecated multipart upload Lambdas (UploadPart, CompleteFileUpload)
-- Removed Step Functions workflow
-- Simplified DynamoDB schema to single-stage flow
-- Deleted 200+ lines of deprecated test code
-
-#### Phase 5: Code Quality ✅
-- Fixed all linter issues (36 errors → 0)
-- Fixed TypeScript build errors in test files
-- Updated LocalStack strategy documentation
-- Comprehensive PR description added
-
-### Recent Commits
-```
-95fb276 chore: update encrypted secrets after build-dependencies
-3f2b36e fix: resolve TypeScript build errors in test files
-35ca3e9 docs: update LocalStack strategy for streaming architecture
-a47ce38 style: fix remaining linter issues
-2bc3e6f style: fix linter issues in cookie monitoring and video download code
-3008228 refactor: remove deprecated multipart upload infrastructure
-d42dea6 feat: add automated cookie expiration monitoring and alerting
-a500abb fix: resolve HLS/DASH fragment file write errors in Lambda
-7e4c21d fix: add missing AWS SDK externals to webpack config
-e93c06d feat: implement streaming architecture for yt-dlp video downloads
-f6193e6 feat: Used cookies parameter for yt-dlp downloading
-c1d3fa3 feat: Uploaded binary, replaced NPM package, testing remotely
-```
-
-### Next Steps After Merge
-1. Monitor production for any issues with streaming architecture
-2. Validate cookie expiration monitoring is working correctly
-3. Consider implementing LocalStack integration (Issue #92)
-4. Consider automating cookie rotation process
-
-### Important Notes
-- Always run `npm run build-dependencies` after Terraform changes to regenerate types
-- The `secrets.enc.yaml` file will be updated by build-dependencies and should be committed
-- PATH must include `/opt/homebrew/bin` for hcl2json and sops commands
-- Build-dependencies requires: hcl2json, quicktype, sops
