@@ -11,7 +11,6 @@ import {
   APIGatewayProxyEventStageVariables
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
-import {Part} from '@aws-sdk/client-s3'
 import {JWTPayload} from 'jose'
 
 interface Metadata {
@@ -35,34 +34,9 @@ interface StartFileUploadParams {
   fileId: string
 }
 
-interface UploadPartEvent {
-  bucket: string
-  bytesRemaining: number
-  bytesTotal: number
-  fileId: string
-  key: string
-  partBeg: number
-  partEnd: number
-  partNumber: number
-  partSize: number
-  partTags: Part[]
-  uploadId: string
-  url: string
-}
-
 interface ApplePushNotificationResponse {
   statusCode: number
   reason?: string
-}
-
-interface CompleteFileUploadEvent {
-  partNumber?: number
-  bucket: string
-  bytesRemaining: number
-  fileId: string
-  key: string
-  partTags: Part[]
-  uploadId: string
 }
 
 interface UserFile {

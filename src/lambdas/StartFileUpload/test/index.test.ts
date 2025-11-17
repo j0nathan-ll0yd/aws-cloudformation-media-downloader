@@ -1,29 +1,25 @@
-import {describe, expect, test, jest} from '@jest/globals'
-import {partSize} from '../../../util/jest-setup'
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
-import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axios'
+import {FileStatus} from '../../../types/enums'
+import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
+import {testContext} from '../../../util/jest-setup'
 
-const axiosGetMock = jest.fn()
-jest.unstable_mockModule('axios', () => ({
-  default: axiosGetMock
-}))
+// Mock YouTube functions
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
+const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-const createMultipartUploadMock = jest.fn()
-const {default: createMultipartUploadResponse} = await import('./fixtures/createMultipartUpload-200-OK.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  createMultipartUpload: createMultipartUploadMock
-}))
-
-const fetchVideoInfoMock = jest.fn()
-const {default: fetchVideoInfoResponse} = await import('./fixtures/fetchVideoInfo-200-OK.json', {assert: {type: 'json'}})
 jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
   fetchVideoInfo: fetchVideoInfoMock,
-  chooseVideoFormat: jest.fn().mockReturnValue(fetchVideoInfoResponse.formats[0])
+  chooseVideoFormat: chooseVideoFormatMock,
+  streamVideoToS3: streamVideoToS3Mock
 }))
 
+// Mock DynamoDB
+const updateItemMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: jest.fn().mockReturnValue({}),
+  updateItem: updateItemMock,
   deleteItem: jest.fn(),
   query: jest.fn(),
   scan: jest.fn()
@@ -32,58 +28,218 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
-function mockResponseUploadPart(config: AxiosRequestConfig, bytesTotal: number): AxiosResponse {
-  return {
-    config: config as InternalAxiosRequestConfig,
-    data: 'test',
-    status: 200,
-    statusText: 'hello',
-    headers: {
-      'accept-ranges': 'bytes',
-      'content-length': bytesTotal,
-      'content-type': 'video/mp4'
-    }
-  }
-}
-
 describe('#StartFileUpload', () => {
-  const event = eventMock as StartFileUploadParams
-  test('should successfully handle a multipart upload', async () => {
-    createMultipartUploadMock.mockReturnValue(createMultipartUploadResponse)
-    fetchVideoInfoMock.mockReturnValue(fetchVideoInfoResponse)
-    const bytesTotal = 82784319
-    axiosGetMock.mockImplementation(() => {
-      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
-      return mockResponseUploadPart(config, bytesTotal)
-    })
-    const output = await handler(event)
-    expect(output.bytesTotal).toEqual(bytesTotal)
-    expect(output.partEnd).toEqual(partSize - 1)
-    expect(output.uploadId).toEqual(createMultipartUploadResponse.UploadId)
+  const context = testContext
+  let event: StartFileUploadParams
+
+  beforeEach(() => {
+    // Deep clone event to prevent test interference
+    event = JSON.parse(JSON.stringify(eventMock))
+
+    // Reset mocks
+    jest.clearAllMocks()
+
+    // Set environment variables
+    process.env.Bucket = 'test-bucket'
+    process.env.AWS_REGION = 'us-west-2'
+    process.env.DynamoDBTableFiles = 'test-table'
   })
-  test('should successfully handle a single part upload', async () => {
-    createMultipartUploadMock.mockReturnValue(createMultipartUploadResponse)
-    fetchVideoInfoMock.mockReturnValue(fetchVideoInfoResponse)
-    axiosGetMock.mockImplementation(() => {
-      const config = axiosGetMock.mock.calls[0][0] as AxiosRequestConfig
-      return mockResponseUploadPart(config, bytesTotal)
+
+  test('should successfully stream video to S3', async () => {
+    const mockFormat = {
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
+    const mockVideoInfo = {
+      id: 'test-video-id',
+      title: 'Test Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
+    fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
+    chooseVideoFormatMock.mockReturnValue(mockFormat)
+    streamVideoToS3Mock.mockResolvedValue({
+      fileSize: 82784319,
+      s3Url: 's3://test-bucket/test-video.mp4',
+      duration: 45
     })
-    const bytesTotal = 5242880 - 1000
-    const output = await handler(event)
-    expect(output.bytesTotal).toEqual(bytesTotal)
-    expect(output.partEnd).toEqual(bytesTotal - 1)
-    expect(output.uploadId).toEqual(createMultipartUploadResponse.UploadId)
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.fileSize).toEqual(82784319)
+    expect(parsedBody.body.duration).toEqual(45)
+    expect(parsedBody.body.fileId).toBeDefined()
+
+    // Verify DynamoDB was called twice (PendingDownload, then Downloaded)
+    expect(updateItemMock).toHaveBeenCalledTimes(2)
+
+    // Verify status updates (Document Client uses plain objects, not .S/.N format)
+    // @ts-expect-error - mock.calls type inference issue
+    const firstCall = updateItemMock.mock.calls[0][0] as Record<string, unknown>
+    expect(firstCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.PendingDownload})
+
+    // Second call should update status to Downloaded with file size
+    // @ts-expect-error - mock.calls type inference issue
+    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
+    expect(secondCall.ExpressionAttributeValues).toMatchObject({
+      ':status': FileStatus.Downloaded,
+      ':size': 82784319
+    })
+
+    // Verify streamVideoToS3 was called with correct parameters
+    expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
   })
-  test('should gracefully handle if a video cant be found', async () => {
-    fetchVideoInfoMock.mockImplementation(() => {
-      throw new UnexpectedError('Video not found')
+
+  test('should handle HLS/DASH streaming formats', async () => {
+    const hlsFormat = {
+      format_id: 'hls-720',
+      url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
+      ext: 'mp4',
+      filesize: undefined,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
+
+    const mockVideoInfo = {
+      id: 'test-video-hls',
+      title: 'Test HLS Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [hlsFormat]
+    } as YtDlpVideoInfo
+    fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
+    chooseVideoFormatMock.mockReturnValue(hlsFormat)
+    streamVideoToS3Mock.mockResolvedValue({
+      fileSize: 104857600,
+      s3Url: 's3://test-bucket/test-video.mp4',
+      duration: 120
     })
-    await expect(handler(event)).rejects.toThrow(UnexpectedError)
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.fileSize).toEqual(104857600)
+    expect(parsedBody.body.duration).toEqual(120)
+
+    // Verify DynamoDB was updated with Downloaded status
+    // @ts-expect-error - mock.calls type inference issue
+    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
+    expect(secondCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Downloaded})
   })
-  describe('#AWSFailure', () => {
-    test('AWS.S3.createMultipartUpload', async () => {
-      createMultipartUploadMock.mockReturnValue(undefined)
-      await expect(handler(event)).rejects.toThrow(UnexpectedError)
-    })
+
+  test('should handle streaming errors and mark file as Failed', async () => {
+    const mockFormat = {
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
+    const mockVideoInfo = {
+      id: 'test-video-error',
+      title: 'Test Error Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
+    fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
+    chooseVideoFormatMock.mockReturnValue(mockFormat)
+    streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify DynamoDB was called to set Failed status
+    expect(updateItemMock).toHaveBeenCalled()
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
+  })
+
+  test('should handle video not found error', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify DynamoDB was called to set Failed status
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
+  })
+
+  test('should handle missing bucket environment variable', async () => {
+    const originalBucket = process.env.Bucket
+    process.env.Bucket = '' // Empty string also triggers the check
+    const mockFormat = {
+      format_id: '22',
+      url: 'https://example.com/video.mp4',
+      ext: 'mp4',
+      filesize: 44992120,
+      width: 1280,
+      height: 720,
+      vcodec: 'avc1.64001F',
+      acodec: 'mp4a.40.2',
+      tbr: 1080
+    } as YtDlpFormat
+    const mockVideoInfo = {
+      id: 'test-video-no-bucket',
+      title: 'Test No Bucket Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      formats: [mockFormat]
+    } as YtDlpVideoInfo
+    fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
+    chooseVideoFormatMock.mockReturnValue(mockFormat)
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify streamVideoToS3 was NOT called since bucket check happens first
+    expect(streamVideoToS3Mock).not.toHaveBeenCalled()
+
+    process.env.Bucket = originalBucket
+  })
+
+  test('should continue even if DynamoDB update fails during error handling', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
+    updateItemMock.mockRejectedValue(new Error('DynamoDB update failed'))
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Should have attempted to update DynamoDB despite the failure
+    expect(updateItemMock).toHaveBeenCalled()
   })
 })

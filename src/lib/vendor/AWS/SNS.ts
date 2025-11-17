@@ -17,7 +17,11 @@ import {
   UnsubscribeCommand,
   DeleteEndpointCommand
 } from '@aws-sdk/client-sns'
+
 const sns = new SNSClient()
+
+// Re-export types for application code to use
+export type {PublishInput}
 
 export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> {
   const command = new PublishCommand(params)

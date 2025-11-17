@@ -1,15 +1,12 @@
 // These are methods that are shared across multiple lambdas
 import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
-import {logDebug, logInfo} from './lambda-helpers'
+import {logDebug} from './lambda-helpers'
 import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
-import {Device, DynamoDBFile, DynamoDBUserDevice, Metadata, User} from '../types/main'
+import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
 import {providerFailureErrorMessage, UnexpectedError} from './errors'
-import {startExecution} from '../lib/vendor/AWS/StepFunctions'
-import {transformVideoIntoDynamoItem} from './transformers'
 import axios, {AxiosRequestConfig} from 'axios'
-import {FileStatus} from '../types/enums'
-import {StartExecutionInput} from '@aws-sdk/client-sfn'
+import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
 /**
  * Disassociates a deviceId from a User
@@ -112,48 +109,21 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 }
 
 /**
- * Triggers the process for downloading a file and storing it in S3
- * @param fileId - The YouTube fileId to be downloaded
+ * Initiates a file download by invoking the StartFileUpload Lambda
+ * Uses asynchronous invocation (Event type) to avoid blocking
+ * @param fileId - The YouTube video ID to download
  * @see {@link lambdas/FileCoordinator/src!#handler | FileCoordinator }
  * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
  */
 export async function initiateFileDownload(fileId: string) {
-  const params = {
-    input: JSON.stringify({fileId}),
-    name: new Date().getTime().toString(),
-    stateMachineArn: process.env.StateMachineArn
-  } as StartExecutionInput
-  logDebug('startExecution <=', params)
-  const output = await startExecution(params)
-  logDebug('startExecution =>', output)
-}
+  logDebug('initiateFileDownload <=', fileId)
 
-/**
- * Create a DynamoDBFile object from a video's metadata
- * @param metadata - The Metadata for a video; generated through youtube-dl
- * @returns DynamoDBFile
- * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
- */
-export async function getFileFromMetadata(metadata: Metadata): Promise<DynamoDBFile> {
-  logInfo('getFileFromMetadata <=', metadata)
-  const myDynamoItem = transformVideoIntoDynamoItem(metadata)
-  const videoUrl = metadata.formats[0].url
-  const options: AxiosRequestConfig = {
-    method: 'head',
-    timeout: 900000,
-    url: videoUrl
-  }
+  const result = await invokeAsync('StartFileUpload', {fileId})
 
-  const fileInfo = await makeHttpRequest(options)
-  // TODO: Ensure these headers exist in the response
-  const bytesTotal = parseInt(fileInfo.headers['content-length'], 10)
-  const contentType = fileInfo.headers['content-type']
-
-  myDynamoItem.size = bytesTotal
-  myDynamoItem.publishDate = new Date(metadata.published).toISOString()
-  myDynamoItem.contentType = contentType
-  myDynamoItem.status = FileStatus.PendingDownload
-  return myDynamoItem
+  logDebug('initiateFileDownload =>', {
+    StatusCode: result.StatusCode,
+    fileId
+  })
 }
 
 /**

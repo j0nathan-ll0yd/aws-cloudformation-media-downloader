@@ -53,11 +53,7 @@ export async function getAppleClientSecret(): Promise<string> {
   }
   // Convert EC private key to KeyObject since jose.importPKCS8 expects PKCS#8 format
   const keyObject = crypto.createPrivateKey(privateKey)
-  return await new jose.SignJWT(claims)
-    .setProtectedHeader({alg: 'ES256', kid: config.key_id})
-    .setIssuedAt()
-    .setExpirationTime('24h')
-    .sign(keyObject)
+  return await new jose.SignJWT(claims).setProtectedHeader({alg: 'ES256', kid: config.key_id}).setIssuedAt().setExpirationTime('24h').sign(keyObject)
 }
 
 /**
@@ -149,11 +145,7 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
  */
 export async function createAccessToken(userId: string): Promise<string> {
   const secret = await getServerPrivateKey()
-  return await new jose.SignJWT({userId})
-    .setProtectedHeader({alg: 'HS256'})
-    .setIssuedAt()
-    .setExpirationTime('5m')
-    .sign(new TextEncoder().encode(secret))
+  return await new jose.SignJWT({userId}).setProtectedHeader({alg: 'HS256'}).setIssuedAt().setExpirationTime('5m').sign(new TextEncoder().encode(secret))
 }
 
 /**

@@ -9,8 +9,8 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
-    actions   = ["states:StartExecution"]
-    resources = [aws_sfn_state_machine.MultipartUpload.id]
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.StartFileUpload.arn]
   }
   statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
@@ -65,7 +65,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      StateMachineArn        = aws_sfn_state_machine.MultipartUpload.id
+      YtdlpBinaryPath        = "/opt/bin/yt-dlp_linux"
     }
   }
 }
@@ -129,6 +129,10 @@ data "aws_iam_policy_document" "MultipartUpload" {
     ]
     resources = [aws_s3_bucket.Files.arn]
   }
+  statement {
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role" "MultipartUploadRole" {
@@ -157,21 +161,41 @@ data "archive_file" "StartFileUpload" {
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
+data "archive_file" "YtDlpLayer" {
+  type        = "zip"
+  source_dir  = "./../layers/yt-dlp"
+  output_path = "./../build/layers/yt-dlp.zip"
+}
+
+resource "aws_lambda_layer_version" "YtDlp" {
+  filename            = data.archive_file.YtDlpLayer.output_path
+  layer_name          = "yt-dlp"
+  compatible_runtimes = ["nodejs22.x"]
+  source_code_hash    = data.archive_file.YtDlpLayer.output_base64sha256
+
+  description = "yt-dlp binary (Linux x86_64) and YouTube cookies for authenticated video downloading"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
-  description      = "Starts the multipart upload"
+  description      = "Streams video downloads directly to S3 using yt-dlp"
   function_name    = "StartFileUpload"
   role             = aws_iam_role.MultipartUploadRole.arn
   handler          = "StartFileUpload.handler"
   runtime          = "nodejs22.x"
   depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout          = 900
+  memory_size      = 2048
   filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
+  layers           = [aws_lambda_layer_version.YtDlp.arn]
 
   environment {
     variables = {
-      Bucket             = aws_s3_bucket.Files.id
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
+      Bucket              = aws_s3_bucket.Files.id
+      DynamoDBTableFiles  = aws_dynamodb_table.Files.name
+      YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
+      PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
     }
   }
 }
@@ -185,135 +209,4 @@ resource "aws_lambda_permission" "StartFileUpload" {
 resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
   retention_in_days = 14
-}
-
-data "archive_file" "UploadPart" {
-  type        = "zip"
-  source_file = "./../build/lambdas/UploadPart.js"
-  output_path = "./../build/lambdas/UploadPart.zip"
-}
-
-resource "aws_lambda_function" "UploadPart" {
-  description      = "Uploads a part of a multipart upload"
-  function_name    = "UploadPart"
-  role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "UploadPart.handler"
-  runtime          = "nodejs22.x"
-  depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  filename         = data.archive_file.UploadPart.output_path
-  source_code_hash = data.archive_file.UploadPart.output_base64sha256
-}
-
-resource "aws_cloudwatch_log_group" "UploadPart" {
-  name              = "/aws/lambda/${aws_lambda_function.UploadPart.function_name}"
-  retention_in_days = 14
-}
-
-data "archive_file" "CompleteFileUpload" {
-  type        = "zip"
-  source_file = "./../build/lambdas/CompleteFileUpload.js"
-  output_path = "./../build/lambdas/CompleteFileUpload.zip"
-}
-
-resource "aws_lambda_function" "CompleteFileUpload" {
-  description      = "Completes the multipart upload"
-  function_name    = "CompleteFileUpload"
-  role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "CompleteFileUpload.handler"
-  runtime          = "nodejs22.x"
-  depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  filename         = data.archive_file.CompleteFileUpload.output_path
-  source_code_hash = data.archive_file.CompleteFileUpload.output_base64sha256
-
-  environment {
-    variables = {
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
-    }
-  }
-}
-
-resource "aws_cloudwatch_log_group" "CompleteFileUpload" {
-  name              = "/aws/lambda/${aws_lambda_function.CompleteFileUpload.function_name}"
-  retention_in_days = 14
-}
-
-resource "aws_iam_role" "MultipartUploadStateMachine" {
-  name               = "MultipartUploadStateMachine"
-  assume_role_policy = data.aws_iam_policy_document.StatesAssumeRole.json
-}
-
-data "aws_iam_policy_document" "MultipartUploadStateMachine" {
-  statement {
-    actions = ["lambda:InvokeFunction"]
-    resources = [
-      aws_lambda_function.StartFileUpload.arn,
-      aws_lambda_function.UploadPart.arn,
-      aws_lambda_function.CompleteFileUpload.arn,
-    ]
-  }
-}
-
-resource "aws_iam_policy" "MultipartUploadStateMachineRolePolicy" {
-  name   = "MultipartUploadStateMachineRolePolicy"
-  policy = data.aws_iam_policy_document.MultipartUploadStateMachine.json
-}
-
-resource "aws_iam_role_policy_attachment" "MultipartUploadStateMachinePolicy" {
-  role       = aws_iam_role.MultipartUploadStateMachine.name
-  policy_arn = aws_iam_policy.MultipartUploadStateMachineRolePolicy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "MultipartUploadStateMachinePolicyLogging" {
-  role       = aws_iam_role.MultipartUploadStateMachine.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-}
-
-resource "aws_sfn_state_machine" "MultipartUpload" {
-  name     = "MultipartUpload"
-  role_arn = aws_iam_role.MultipartUploadStateMachine.arn
-  depends_on = [
-    aws_lambda_function.StartFileUpload,
-    aws_lambda_function.UploadPart,
-    aws_lambda_function.CompleteFileUpload
-  ]
-  definition = <<EOF
-{
-  "Comment": "A multipart file upload via S3",
-  "StartAt": "StartUpload",
-  "States": {
-    "StartUpload": {
-      "Type" : "Task",
-      "Resource": "${aws_lambda_function.StartFileUpload.arn}",
-      "TimeoutSeconds": 900,
-      "HeartbeatSeconds": 600,
-      "Next": "UploadOrComplete"
-    },
-    "UploadPart": {
-      "Type" : "Task",
-      "Resource": "${aws_lambda_function.UploadPart.arn}",
-      "Next": "UploadOrComplete"
-    },
-    "CompleteUpload": {
-      "Type" : "Task",
-      "Resource": "${aws_lambda_function.CompleteFileUpload.arn}",
-      "End": true
-    },
-    "UploadOrComplete": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.bytesRemaining",
-          "NumericGreaterThan": 0,
-          "Next": "UploadPart"
-        },
-        {
-          "Variable": "$.bytesRemaining",
-          "NumericEquals": 0,
-          "Next": "CompleteUpload"
-        }
-      ]
-    }
-  }
-}
-EOF
 }

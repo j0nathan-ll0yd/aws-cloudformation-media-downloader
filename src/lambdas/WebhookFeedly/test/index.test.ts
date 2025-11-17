@@ -23,11 +23,39 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
   subscribe: jest.fn()
 }))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
-  startExecution: jest.fn().mockReturnValue({
-    executionArn: 'arn:aws:states:us-west-2:203465012143:execution:MultipartUpload:1666060419059',
-    startDate: new Date()
+// Mock yt-dlp-wrap to prevent YouTube module from failing
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+
+// Mock child_process for YouTube spawn operations
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
+// Mock fs for YouTube cookie operations
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn()
+  }
+}))
+
+// Mock S3 vendor wrapper for YouTube
+jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
+  headObject: jest.fn<() => Promise<{ContentLength: number}>>(),
+  createS3Upload: jest.fn().mockReturnValue({
+    on: jest.fn(),
+    done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
   })
+}))
+
+const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
+  invokeAsync: invokeAsyncMock
 }))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
@@ -47,6 +75,7 @@ describe('#WebhookFeedly', () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
     queryMock.mockReturnValue(queryNoContentResponse)
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
@@ -74,7 +103,7 @@ describe('#WebhookFeedly', () => {
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Dispatched')
   })
-  test('should fail gracefully if the startExecution fails', async () => {
+  test('should fail gracefully if the DynamoDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
     updateItem.mockImplementation(() => {

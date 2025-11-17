@@ -7,7 +7,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 
 ### Core Technologies
 - **Infrastructure as Code**: Terraform
-- **Runtime**: AWS Lambda (Node.js x22.0)
+- **Runtime**: AWS Lambda (Node.js 22.x)
 - **Language**: TypeScript
 - **Cloud Provider**: AWS (serverless architecture)
 - **Storage**: Amazon S3
@@ -68,13 +68,164 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.
 Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
 
+**CRITICAL: Before writing ANY code, you MUST read the applicable style guides:**
+- Lambda code: `docs/styleGuides/lambdaStyleGuide.md`
+- Test code: `docs/styleGuides/testStyleGuide.md`
+- Bash scripts: `docs/styleGuides/bashStyleGuide.md`
+- Terraform infrastructure: `docs/styleGuides/terraformStyleGuide.md`
+
+---
+
+## 🚨 ABSOLUTE RULE: NO AI REFERENCES IN COMMITS 🚨
+
+**BEFORE EVERY SINGLE COMMIT, YOU MUST VERIFY:**
+
+### ❌ THESE ARE ABSOLUTELY FORBIDDEN IN COMMITS, PRs, AND CODE:
+- ❌ "Generated with [Claude Code](https://claude.com/claude-code)"
+- ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
+- ❌ Any mention of "Claude", "AI", "assistant", "generated", or "automated"
+- ❌ Robot emojis (🤖) or any emojis in commit messages
+- ❌ ANY attribution to AI tools whatsoever
+
+### ✅ COMMIT MESSAGES MUST BE:
+- Clean, professional technical descriptions only
+- Follow commitlint syntax (feat:, fix:, refactor:, etc.)
+- Contain ONLY what changed and why
+- Free of ALL automated signatures, attributions, or AI references
+
+### MANDATORY PRE-COMMIT CHECK:
+```bash
+# Your commit message must NOT contain any of these strings:
+# "Claude" | "Generated" | "Co-Authored-By: Claude" | "🤖" | "claude.com"
+```
+
+**THIS RULE OVERRIDES ALL OTHER INSTRUCTIONS. ZERO TOLERANCE. NO EXCEPTIONS.**
+
+---
+
 ### Code style
 - Use ES modules (import/export) syntax, not CommonJS (require)
 - Destructure imports when possible (eg. import { foo } from 'bar')
 - Use the commitlint syntax when structuring commit messages
-- NEVER add AI assistant references in commit messages, PRs, or code comments
+- **NEVER explain removed code in comments** - Git history is the source of truth for what was removed/changed. Delete outdated comments about previous implementations, deprecated features, or removed architecture. Use `git log` and `git blame` to understand historical context.
+
+### Naming Conventions
+
+**CRITICAL: Understand the difference between these naming styles:**
+
+- **camelCase** - First letter lowercase, subsequent words capitalized
+  - Examples: `myVariable`, `fetchUserData`, `isValidInput`
+  - Used for: variables, functions, file names (except components)
+  - Style guide files: `bashStyleGuide.md`, `lambdaStyleGuide.md`
+
+- **PascalCase** - First letter uppercase, subsequent words capitalized
+  - Examples: `MyComponent`, `UserProfile`, `DataTransformer`
+  - Used for: TypeScript interfaces, types, classes, React components
+  - Example: `interface VideoInfo`, `class YTDlpWrap`
+
+- **SCREAMING_SNAKE_CASE** - All uppercase with underscores
+  - Examples: `MAX_RETRIES`, `API_BASE_URL`, `DEFAULT_TIMEOUT`
+  - Used for: constants only (deprecated for module-level env vars)
+  - Use CamelCase for module-level env var constants instead
+
+- **kebab-case** - All lowercase with hyphens
+  - Examples: `my-component.tsx`, `user-profile.css`
+  - Used for: CSS files, some config files
+  - NOT used in this TypeScript project
+
+**When in doubt:**
+- Variables/functions → camelCase
+- Types/Interfaces/Classes → PascalCase
+- File names → camelCase (our convention)
+
+---
+
+## 🚨 CRITICAL: AWS SDK ENCAPSULATION POLICY 🚨
+
+**THIS IS A ZERO-TOLERANCE RULE. NO EXCEPTIONS.**
+
+### The Rule
+
+**NEVER import AWS SDK packages directly in application code.**
+
+ALL AWS SDK usage MUST be wrapped in vendor modules located in `lib/vendor/AWS/`.
+
+### What This Means
+
+❌ **FORBIDDEN** - These imports are BANNED outside of `lib/vendor/AWS/*`:
+```typescript
+import {S3Client, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3'
+import {Upload} from '@aws-sdk/lib-storage'
+import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {SNSClient, PublishCommand} from '@aws-sdk/client-sns'
+import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs'
+```
+
+✅ **REQUIRED** - Use vendor wrappers instead:
+```typescript
+import {createS3Upload, headObject} from '../../../lib/vendor/AWS/S3'
+import {invokeLambda} from '../../../lib/vendor/AWS/Lambda'
+import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {putMetric, putMetrics} from '../../../util/lambda-helpers'
+import {publish} from '../../../lib/vendor/AWS/SNS'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+```
+
+### Why This Rule Exists
+
+1. **Encapsulation**: AWS SDK types and clients are implementation details that should be hidden
+2. **Type Safety**: Public APIs use simple types (string, number) instead of AWS enums
+3. **Testability**: Mocking vendor wrappers is cleaner than mocking AWS SDK
+4. **Maintainability**: AWS SDK version changes isolated to vendor files
+5. **Consistency**: One pattern across the entire codebase
+
+### Where AWS SDK Imports Are Allowed
+
+ONLY in these files:
+- `lib/vendor/AWS/S3.ts`
+- `lib/vendor/AWS/Lambda.ts`
+- `lib/vendor/AWS/DynamoDB.ts`
+- `lib/vendor/AWS/CloudWatch.ts`
+- `lib/vendor/AWS/SNS.ts`
+- `lib/vendor/AWS/SQS.ts`
+
+### Before Writing ANY Code
+
+**MANDATORY CHECKS**:
+
+1. ✅ Does the vendor wrapper for this AWS service exist?
+   - YES → Use the wrapper functions
+   - NO → CREATE the wrapper FIRST, then use it
+
+2. ✅ Am I importing from `@aws-sdk/*`?
+   - YES → STOP. You're violating the policy. Use the wrapper instead.
+   - NO → Proceed
+
+3. ✅ Am I exposing AWS SDK types in function signatures?
+   - YES → STOP. Change to simple types (string, number, boolean)
+   - NO → Proceed
+
+### Enforcement
+
+Before committing:
+```bash
+# This should ONLY show files in lib/vendor/AWS/
+grep -r "from '@aws-sdk/" src/ --include="*.ts" | grep -v "lib/vendor/AWS"
+# If this returns ANY results, you've violated the policy
+```
+
+### If You Violate This Rule
+
+The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
+
+**STOP. THINK. CHECK.** Does this code import from `@aws-sdk/*`? If yes, refactor to use vendor wrappers.
+
+---
 
 ### Workflow
+- **Format code automatically**: Run `npm run format` to auto-format all code with Prettier (250 char line width)
 - Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 - Don't output commands that just list files (like 'ls -l')
@@ -83,15 +234,214 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Always ignore the `package-lock.json` file when searching, unless your dealing with dependencies
 - **Use TodoWrite tool** for complex tasks to track progress and ensure thoroughness - this prevents missing critical steps and provides visibility into progress
 
-### Pre-Push Verification (REQUIRED)
-Before pushing any changes or creating commits, ALWAYS run these commands to ensure code quality:
+### Git Workflow (CRITICAL)
+
+**IMPORTANT**: ONLY push to remote when explicitly asked by the user. Never push automatically.
+
+**Commit Workflow**:
+1. Make code changes
+2. Run verification commands (see below)
+3. Stage changes: `git add -A`
+4. **VERIFY COMMIT MESSAGE**: Ensure NO AI references (Claude, Generated, Co-Authored-By, emojis)
+5. Commit: `git commit -m "message"`
+6. **STOP** - Wait for user to request push
+7. ONLY when asked: `git push`
+
+**Pre-Commit Verification (REQUIRED)**:
+Before committing changes, ALWAYS run these commands to ensure code quality:
 
 ```bash
+npm run format   # Auto-format all code with Prettier
 npm run build    # Verify TypeScript compilation and webpack build
 npm test         # Run full test suite to ensure all tests pass
 ```
 
-Both commands must complete successfully without errors before pushing changes. This prevents broken builds in GitHub Actions and maintains code quality standards.
+All commands must complete successfully without errors before committing. This prevents broken builds in GitHub Actions and maintains code quality standards.
+
+**Commit Message Verification (MANDATORY)**:
+Your commit message must NEVER contain:
+- "Claude" or "claude"
+- "Generated" or "generated"
+- "Co-Authored-By: Claude"
+- Any emojis (🤖, ✨, etc.)
+- "claude.com" or any AI tool references
+
+### Jest Test Mocking Strategy (CRITICAL)
+
+**Problem Solved**: Tests can fail with obscure 500 errors despite code working in production. Root cause: missing mocks for transitive dependencies.
+
+#### The Core Issue: Module-Level Imports
+
+In ES modules with Jest, **ALL module-level code executes when ANY function from that module is imported**. This means:
+
+```typescript
+// YouTube.ts
+import YTDlpWrap from 'yt-dlp-wrap'  // ← Executes even if you only import getVideoID()
+import {spawn} from 'child_process'   // ← Executes
+import {Upload} from '@aws-sdk/lib-storage'  // ← Executes
+
+export function getVideoID(url: string) { /* ... */ }  // ← What you actually imported
+export function streamVideoToS3() { /* uses all the above */ }
+```
+
+When a test imports `getVideoID`, the entire YouTube module loads, attempting to instantiate all dependencies. **All must be mocked.**
+
+#### Mandatory Testing Checklist
+
+**For EVERY new test file:**
+
+- [ ] **Step 1**: List all direct imports in the test
+- [ ] **Step 2**: Read each source file and list its imports
+- [ ] **Step 3**: Recursively map transitive dependencies (imports of imports)
+- [ ] **Step 4**: Mock ALL external dependencies BEFORE importing handler
+- [ ] **Step 5**: Verify mocks match module structure (classes vs functions)
+- [ ] **Step 6**: Add proper TypeScript types to mocks (especially SDK clients)
+- [ ] **Step 7**: Test locally AND in CI
+
+#### Common Mocking Patterns
+
+**Type Annotation Policy for jest.fn():**
+
+❌ **AVOID truly generic type annotations**:
+```typescript
+// ❌ DON'T - `unknown` and `any` provide no type safety
+const sendMock = jest.fn<() => Promise<unknown>>()
+const updateMock = jest.fn<() => Promise<any>>()
+```
+
+✅ **USE specific type annotations when using mockResolvedValue/mockReturnValue**:
+```typescript
+// ✅ DO - specific return shapes for AWS responses
+const sendMock = jest.fn<() => Promise<{StatusCode: number}>>()
+const updateMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const headObjectMock = jest.fn<() => Promise<{ContentLength: number}>>()
+```
+
+✅ **USE type annotations for domain-specific types**:
+```typescript
+// ✅ DO - provides meaningful type safety for domain models
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseFormatMock = jest.fn<() => YtDlpFormat>()
+```
+
+✅ **OMIT type annotations for simple mocks without mockResolvedValue/mockReturnValue**:
+```typescript
+// ✅ DO - TypeScript can infer from usage
+const logDebugMock = jest.fn()
+const spawnMock = jest.fn()
+```
+
+⚠️ **USE `Promise<void>` when calling mockResolvedValue(undefined)**:
+```typescript
+// ✅ DO - Promise<void> required for mockResolvedValue(undefined)
+const copyFileMock = jest.fn<() => Promise<void>>()
+// In test:
+copyFileMock.mockResolvedValue(undefined)
+```
+
+**AWS SDK Clients** (require full type annotations for proper client structure):
+```typescript
+jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
+  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>()
+    .mockImplementation(() => ({
+      send: jest.fn<() => Promise<{StatusCode: number}>>()
+        .mockResolvedValue({StatusCode: 202})
+    })),
+  InvokeCommand: jest.fn()
+}))
+```
+
+**NPM Class Constructors** (must be actual classes):
+```typescript
+class MockYTDlpWrap {
+  constructor(public binaryPath: string) {}
+  getVideoInfo = jest.fn()
+}
+jest.unstable_mockModule('yt-dlp-wrap', () => ({
+  default: MockYTDlpWrap
+}))
+```
+
+**Node.js Built-ins** (no type annotations needed):
+```typescript
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}))
+
+jest.unstable_mockModule('fs', () => ({
+  promises: {
+    copyFile: jest.fn()
+  }
+}))
+```
+
+#### Transitive Dependency Example
+
+**Test Structure**:
+```
+WebhookFeedly test → handler import → getVideoID() from YouTube.ts
+                                    → initiateFileDownload() from shared.ts
+```
+
+**Required Mocks** (ALL of these):
+```typescript
+// YouTube.ts dependencies (external packages)
+jest.unstable_mockModule('yt-dlp-wrap', () => ({ default: MockYTDlpWrap }))
+jest.unstable_mockModule('child_process', () => ({ spawn: jest.fn() }))
+jest.unstable_mockModule('fs', () => ({ promises: { copyFile: jest.fn() } }))
+
+// YouTube.ts dependencies (vendor wrappers - NEVER mock @aws-sdk/* directly)
+jest.unstable_mockModule('./AWS/S3', () => ({
+  headObject: jest.fn(),
+  createS3Upload: jest.fn()
+}))
+
+// CloudWatch vendor wrapper (used by util/lambda-helpers)
+jest.unstable_mockModule('./AWS/CloudWatch', () => ({
+  putMetricData: jest.fn(),
+  getStandardUnit: (unit?: string) => unit || 'None'
+}))
+
+// shared.ts dependencies (vendor wrappers - NEVER mock @aws-sdk/* directly)
+jest.unstable_mockModule('./AWS/Lambda', () => ({
+  invokeLambda: jest.fn<() => Promise<{StatusCode: number}>>()
+    .mockResolvedValue({StatusCode: 202})
+}))
+
+// DynamoDB vendor wrapper
+jest.unstable_mockModule('./AWS/DynamoDB', () => ({
+  query: jest.fn(),
+  updateItem: jest.fn()
+}))
+
+// THEN import the handler
+const {handler} = await import('./../src')
+```
+
+**CRITICAL**: Notice we mock `./AWS/S3`, `./AWS/Lambda`, `./AWS/DynamoDB` (vendor wrappers), NOT `@aws-sdk/*` packages directly. This follows our AWS SDK Encapsulation Policy.
+
+#### Why This Matters
+
+**Without comprehensive mocking:**
+- ✗ Tests fail with obscure 500 errors
+- ✗ Error doesn't point to missing mock
+- ✗ CI/CD blocks valid code
+- ✗ Wastes hours debugging
+
+**With comprehensive mocking:**
+- ✓ Tests pass reliably
+- ✓ Clear errors when mocks missing
+- ✓ Fast iteration
+- ✓ Follows AWS SDK Encapsulation Policy
+
+#### Key Takeaway
+
+**When importing ANY function from a module, you must mock ALL of that module's transitive dependencies:**
+1. External NPM packages (yt-dlp-wrap, etc.)
+2. Node.js built-ins (child_process, fs, etc.)
+3. **Vendor wrappers** (lib/vendor/AWS/*) - NEVER mock @aws-sdk/* directly
+
+---
 
 ### Library Migration Best Practices
 When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for success:
@@ -123,8 +473,46 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - `npm run test-remote-*` - Tests production endpoints
 - `npm run document-source` - Generates TSDoc documentation
 
+### Webpack Configuration & AWS SDK Dependencies
+**CRITICAL**: When adding or changing AWS SDK dependencies, you MUST update the webpack externals configuration.
+
+**Location**: `config/webpack.config.ts`
+
+**Why**: Webpack bundles Lambda code and needs to know which dependencies to externalize (exclude from bundling). AWS SDK packages should be externalized because they're available in the Lambda runtime environment.
+
+**Steps when adding new AWS SDK packages**:
+1. Install the package: `npm install @aws-sdk/client-xyz`
+2. Add to webpack externals in `config/webpack.config.ts`:
+   ```typescript
+   externals: {
+     // ... existing entries
+     '@aws-sdk/client-xyz': '@aws-sdk/client-xyz',
+   }
+   ```
+3. Clean build and redeploy:
+   ```bash
+   rm -rf build/lambdas
+   npm run build
+   npm run deploy
+   ```
+
+**Common AWS SDK packages that need externals**:
+- `@aws-sdk/client-lambda` - Lambda invocation
+- `@aws-sdk/client-s3` - S3 operations
+- `@aws-sdk/client-dynamodb` - DynamoDB client
+- `@aws-sdk/lib-storage` - S3 multipart uploads
+- `@aws-sdk/lib-dynamodb` - DynamoDB document client
+- `@aws-sdk/client-sfn` - Step Functions (legacy)
+- `@aws-sdk/client-sns` - SNS notifications
+- `@aws-sdk/client-sqs` - SQS queues
+
+**Troubleshooting**: If Terraform shows "No changes" after code updates, check:
+1. Archive hash in terraform output - should change when code changes
+2. Webpack externals - missing entries cause old code to bundle
+3. Build output - verify new packages are externalized, not bundled
+
 ### Testing Strategy
-- **Unit Tests**: Mocha-based tests for each Lambda (`index.test.ts`)
+- **Unit Tests**: Jest-based tests for each Lambda (`index.test.ts`)
 - **Test Fixtures**: JSON mock data in `test/fixtures/` directories
 - **Test Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
 - **Test Setup**: `util/jest-setup.ts` configures the test environment
@@ -173,7 +561,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - All secrets are outlined in the README and stored as `secrets.yaml`
 - Never read the `secrets.yaml` file
 - Use environment variables for production secrets
-- The file `secrets.encrypted.yaml` is read by Terraform at deploy timee
+- The file `secrets.encrypted.yaml` is read by Terraform at deploy time
 
 ### Certificate Management
 - APNS requires p12 certificate conversion
@@ -181,6 +569,44 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - Sandbox vs Production environments
 
 ## Code Style & Documentation
+
+### 🚨 MANDATORY: Style Guides 🚨
+
+**BEFORE WRITING ANY CODE, YOU MUST READ AND FOLLOW THE APPLICABLE STYLE GUIDE.**
+
+This project has four comprehensive style guides that define ALL coding standards:
+
+1. **`docs/styleGuides/lambdaStyleGuide.md`** - Lambda function patterns
+   - Import organization
+   - Environment variables
+   - Error handling patterns
+   - Logging conventions
+   - AWS service wrapper usage
+   - Response patterns
+   - **YOU MUST FOLLOW THIS FOR ALL LAMBDA CODE**
+
+2. **`docs/styleGuides/testStyleGuide.md`** - Testing patterns
+   - Jest mocking strategies
+   - Test file organization
+   - Fixture management
+   - Mock naming conventions
+   - **YOU MUST FOLLOW THIS FOR ALL TEST CODE**
+
+3. **`docs/styleGuides/bashStyleGuide.md`** - Bash script patterns
+   - Variable naming (snake_case vs UPPER_CASE)
+   - Error handling with `set -e`
+   - Directory resolution
+   - User output formatting
+   - **YOU MUST FOLLOW THIS FOR ALL BASH SCRIPTS**
+
+4. **`docs/styleGuides/terraformStyleGuide.md`** - Terraform infrastructure patterns
+   - Resource naming (PascalCase)
+   - File organization
+   - Environment variable consistency
+   - Comment usage (no removed resource explanations)
+   - **YOU MUST FOLLOW THIS FOR ALL TERRAFORM CODE**
+
+**THESE STYLE GUIDES ARE NOT SUGGESTIONS. THEY ARE REQUIREMENTS.**
 
 ### TypeScript Guidelines
 - **Type Definitions**: Centralized in `types/` directory
@@ -209,7 +635,7 @@ When developing Lambda functions, utilize these shared utilities:
 ### Adding New Lambda Functions
 1. Create directory structure: `src/lambdas/[function-name]/`
 2. Implement handler in `src/index.ts` with TypeDoc comments
-3. Write Mocha tests in `test/index.test.ts`
+3. Write Jest tests in `test/index.test.ts`
 4. Add test fixtures in `test/fixtures/`
 5. Define Lambda resource in Terraform
 6. Configure webpack entry point
@@ -331,3 +757,59 @@ Execute this process autonomously and only notify me if manual intervention is r
 - **Infrastructure Docs**: Generated with terraform-docs
 - **Automated Testing**: Jest tests for regression prevention
 - **Error Tracking**: Automated GitHub issue creation for production errors
+
+## Remote Testing Workflow
+
+This section outlines a common workflow for remotely testing the media download process.
+
+### 1. Trigger the File Coordinator
+
+To initiate the process, invoke the `FileCoordinator` Lambda function. This function scans for files that need to be downloaded and starts the process.
+
+```bash
+aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{}' \
+  /dev/null
+```
+
+This command invokes the `FileCoordinator` function with an empty JSON payload. The response from the lambda is discarded by redirecting it to `/dev/null`.
+
+### 2. Monitor the StartFileUpload Logs
+
+After triggering the `FileCoordinator`, you can monitor the logs of the `StartFileUpload` Lambda to observe the file upload process.
+
+```bash
+aws logs tail /aws/lambda/StartFileUpload --region us-west-2 --follow --format short
+```
+
+This command will stream the logs from the `/aws/lambda/StartFileUpload` log group, allowing you to see real-time updates. The `--follow` flag keeps the connection open and continues to display new log entries.
+
+### 3. Testing The StartFileUpload Lambda with Error Filtering
+
+The following command invokes the `FileCoordinator` lambda, waits for 5 seconds, and then filters the logs of the `StartFileUpload` lambda for "ERROR" messages in the last 5 minutes.
+
+```bash
+aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{}' \
+  /dev/null && \
+  sleep 5 && \
+  aws logs filter-log-events \
+  --log-group-name /aws/lambda/StartFileUpload \
+  --region us-west-2 \
+  --start-time $(date -v-5M +%s000) \
+  --filter-pattern "ERROR"
+```
+
+### 4. Known Issue: YouTube Authentication
+
+A known issue with video downloads is a `yt-dlp` error related to YouTube authentication. The error message is:
+
+```
+ERROR: [youtube] <video-id>: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.
+```
+
+This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication.

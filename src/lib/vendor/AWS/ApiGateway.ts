@@ -1,5 +1,9 @@
-import {ApiKeys, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlans, APIGateway} from '@aws-sdk/client-api-gateway'
+import {ApiKey, ApiKeys, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlan, UsagePlans, APIGateway} from '@aws-sdk/client-api-gateway'
+
 const apigateway = new APIGateway()
+
+// Re-export types for application code to use
+export type {ApiKey, UsagePlan}
 
 export function getApiKeys(params: GetApiKeysRequest): Promise<ApiKeys> {
   return apigateway.getApiKeys(params)

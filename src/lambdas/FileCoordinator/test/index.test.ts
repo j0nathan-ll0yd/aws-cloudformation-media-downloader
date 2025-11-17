@@ -9,9 +9,9 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   query: jest.fn(),
   updateItem: jest.fn()
 }))
-const startExecutionMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/StepFunctions', () => ({
-  startExecution: startExecutionMock
+const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
+  invokeAsync: invokeAsyncMock
 }))
 
 const {handler} = await import('./../src')
@@ -22,21 +22,19 @@ describe('#FileCoordinator', () => {
   const event = JSON.parse(JSON.stringify(eventMock))
   test('should handle scheduled event (with no events)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-204-NoContent.json', {assert: {type: 'json'}})
-    const {default: startExecutionResponse} = await import('./fixtures/startExecution-200-OK.json', {assert: {type: 'json'}})
     scanMock.mockReturnValue(scanResponse)
-    startExecutionMock.mockReturnValue(startExecutionResponse)
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
-    expect(startExecutionMock).toHaveBeenCalledTimes(0)
+    expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
   })
   test('should handle scheduled event (with 1 event)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    const {default: startExecutionResponse} = await import('./fixtures/startExecution-200-OK.json', {assert: {type: 'json'}})
     scanMock.mockReturnValue(scanResponse)
-    startExecutionMock.mockReturnValue(startExecutionResponse)
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
-    expect(startExecutionMock).toHaveBeenCalled()
+    expect(invokeAsyncMock).toHaveBeenCalled()
   })
   describe('#AWSFailure', () => {
     test('AWS.DynamoDB.DocumentClient.scan', async () => {

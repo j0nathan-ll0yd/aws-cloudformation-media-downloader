@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {AwsLambdaFunction, TerraformD} from '../types/terraform'
+import {TerraformD} from '../types/terraform'
 import {logDebug} from '../util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
@@ -14,7 +14,8 @@ const excludedSourceVariables = {
   no_proxy: 1,
   t: 1,
   http_proxy: 1,
-  https_proxy: 1
+  https_proxy: 1,
+  PATH: 1 // System PATH for Lambda runtime and custom binaries
 }
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
@@ -29,8 +30,8 @@ function preprocessTerraformPlan(terraformPlan: TerraformD) {
   const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = terraformPlan.resource.aws_lambda_function[functionName] as AwsLambdaFunction[]
-    const resource = resources[0]
+    const resources = (terraformPlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
+    const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
@@ -69,12 +70,14 @@ describe('#Terraform', () => {
   const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform: string[] = []
-    let environmentVariablesTerraformCount = 0
     if (environmentVariablesForFunction[functionName]) {
       environmentVariablesTerraform = environmentVariablesForFunction[functionName]
-      environmentVariablesTerraformCount = environmentVariablesTerraform.length
       for (const environmentVariable of environmentVariablesTerraform) {
         test(`should respect environment variable naming ${environmentVariable}`, async () => {
+          // Skip naming convention tests for infrastructure-level variables
+          if (Object.prototype.hasOwnProperty.call(excludedSourceVariables, environmentVariable)) {
+            return
+          }
           expect(environmentVariable.toUpperCase()).not.toBe(environmentVariable)
           if (cloudFrontDistributionNames[functionName]) {
             expect(environmentVariable).toMatch(/^x-[a-z-]+$/)
@@ -99,8 +102,10 @@ describe('#Terraform', () => {
     const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
-      expect(environmentVariablesTerraform.sort()).toEqual(environmentVariablesSource.sort())
-      expect(environmentVariablesTerraformCount).toEqual(environmentVariablesSourceCount)
+      // Filter out infrastructure-level variables from Terraform list for comparison
+      const filteredTerraformVars = environmentVariablesTerraform.filter((v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v))
+      expect(filteredTerraformVars.sort()).toEqual(environmentVariablesSource.sort())
+      expect(filteredTerraformVars.length).toEqual(environmentVariablesSourceCount)
     })
   }
 })
