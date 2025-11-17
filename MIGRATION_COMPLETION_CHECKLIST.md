@@ -114,6 +114,27 @@ git push origin copilot/migrate-to-opentofu
 - **Backward Compatibility**: OpenTofu is 100% compatible with Terraform state files
 - **No Infrastructure Changes**: Migration is tool-only, no AWS resources should be modified
 
+### Why "terraform" Names Remain
+
+Some files keep "terraform" in their names - this is **intentional**:
+
+| File/Directory | Renamed? | Why Not? |
+|----------------|----------|----------|
+| `terraform/` directory | ❌ NO | Industry standard used by both Terraform and OpenTofu |
+| `.terraform/` subdirectory | ❌ NO | Convention used by both tools for provider storage |
+| `.terraform.lock.hcl` | ❌ NO | HCL standard filename (not Terraform-specific) |
+| `terraform.tfstate` | ❌ NO | IaC state file standard (both tools use this) |
+| State file backups | ❌ NO | Same naming convention for compatibility |
+
+**These are NOT Terraform branding** - they're Infrastructure as Code ecosystem conventions that predate the licensing change and are maintained by OpenTofu for compatibility.
+
+**What we DID rename**:
+- `build/terraform.*` → `build/infrastructure.*` (our generated files)
+- `src/types/terraform.d.ts` → `src/types/infrastructure.d.ts` (our types)
+- `terraform.environment.test.ts` → `infrastructure.environment.test.ts` (our tests)
+
+**Rule**: We renamed OUR generated artifacts for accuracy, but kept industry-standard filenames unchanged.
+
 ## Rollback Plan (If Needed)
 
 If production issues occur:
