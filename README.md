@@ -256,6 +256,27 @@ Remotely test the register device method for registering for push notifications 
 npm run test-remote-registerDevice
 ```
 
+## Maintenance
+
+### Automated yt-dlp Updates
+
+The project uses a GitHub Actions workflow to automatically check for and propose updates to the yt-dlp binary used in the Lambda layer. This workflow:
+
+- Runs weekly on Sundays at midnight UTC
+- Can be manually triggered via GitHub Actions workflow_dispatch
+- Checks for new yt-dlp releases from the [official repository](https://github.com/yt-dlp/yt-dlp)
+- Downloads and verifies new binaries with SHA256 checksum validation
+- Creates a pull request with the updated binary when a new version is available
+
+The current yt-dlp version is tracked in `layers/yt-dlp/VERSION`. When a new version is detected, the workflow automatically:
+
+1. Downloads the Linux x86_64 binary
+2. Verifies the checksum against official SHA2-256SUMS
+3. Tests binary execution
+4. Creates a PR with release notes and change details
+
+This ensures the project stays up-to-date with YouTube format changes and new features without manual intervention, while maintaining a review process before deployment.
+
 ## Documentation
 
 This project uses multiple documentation approaches:
