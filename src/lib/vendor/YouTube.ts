@@ -7,7 +7,7 @@ import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
 import {headObject, createS3Upload} from '../vendor/AWS/S3'
 
-const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
+const ytdlpBinaryPath = process.env.YtdlpBinaryPath as string
 
 /**
  * Check if an error message indicates cookie expiration or bot detection
@@ -27,10 +27,10 @@ function isCookieExpirationError(errorMessage: string): boolean {
  * @returns Video information including formats and metadata
  */
 export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
-  logDebug('fetchVideoInfo =>', {uri, binaryPath: YTDLP_BINARY_PATH})
+  logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
   try {
-    const ytDlp = new YTDlpWrap(YTDLP_BINARY_PATH)
+    const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
 
     // Copy cookies from read-only /opt to writable /tmp
     // yt-dlp needs write access to update cookies after use
@@ -174,7 +174,7 @@ export async function streamVideoToS3(
   s3Url: string
   duration: number
 }> {
-  logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: YTDLP_BINARY_PATH})
+  logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: ytdlpBinaryPath})
 
   try {
     const startTime = Date.now()
@@ -202,7 +202,7 @@ export async function streamVideoToS3(
 
     // Spawn yt-dlp process with /tmp as working directory
     // This is critical for HLS/DASH downloads which need to write fragment files
-    const ytdlp = spawn(YTDLP_BINARY_PATH, ytdlpArgs, {cwd: '/tmp'})
+    const ytdlp = spawn(ytdlpBinaryPath, ytdlpArgs, {cwd: '/tmp'})
 
     // Create pass-through stream to connect yt-dlp stdout to S3 upload
     const passThrough = new PassThrough()

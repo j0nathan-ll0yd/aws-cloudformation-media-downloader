@@ -219,6 +219,24 @@ const table = process.env.DynamoDBTableFiles as string
 const bucket = process.env.Bucket as string
 ```
 
+**Module-level constants from environment variables:**
+
+When declaring module-level constants from environment variables, use CamelCase:
+
+```typescript
+// GOOD - CamelCase constant name, direct reference to typed env var
+const ytdlpBinaryPath = process.env.YtdlpBinaryPath as string
+
+// BAD - SCREAMING_SNAKE_CASE for module constant
+const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linux'
+```
+
+**Important:**
+- All environment variables must be declared in `types/global.d.ts`
+- Use direct reference with `as string` (no fallback values)
+- Module-level constants follow CamelCase naming
+- No need to exclude from Terraform infrastructure tests
+
 ### Early Returns
 
 Use early returns for validation failures and edge cases:

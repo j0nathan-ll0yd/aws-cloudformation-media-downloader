@@ -65,6 +65,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
       DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
       SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
+      YtdlpBinaryPath        = "/opt/bin/yt-dlp_linux"
     }
   }
 }
@@ -192,7 +193,7 @@ resource "aws_lambda_function" "StartFileUpload" {
     variables = {
       Bucket              = aws_s3_bucket.Files.id
       DynamoDBTableFiles  = aws_dynamodb_table.Files.name
-      YTDLP_BINARY_PATH   = "/opt/bin/yt-dlp_linux"
+      YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
       PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
     }

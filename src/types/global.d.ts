@@ -22,6 +22,7 @@ declare global {
       StateMachineArn: string
       PlatformApplicationArn: string
       PushNotificationTopicArn: string
+      YtdlpBinaryPath: string
     }
   }
 }

@@ -61,12 +61,14 @@ jest.unstable_mockModule('../vendor/AWS/S3', () => ({
   createS3Upload: mockCreateS3Upload
 }))
 
-// Mock logger
-jest.unstable_mockModule('../../util/lambda-helpers', () => ({
-  logDebug: jest.fn(),
-  logError: jest.fn(),
-  putMetrics: jest.fn()
+// Mock CloudWatch vendor wrapper (let logging run normally)
+jest.unstable_mockModule('./AWS/CloudWatch', () => ({
+  putMetricData: jest.fn(),
+  getStandardUnit: (unit?: string) => unit || 'None'
 }))
+
+// Set up environment variable before importing
+process.env.YtdlpBinaryPath = '/opt/bin/yt-dlp_linux'
 
 // Import after mocking
 const {streamVideoToS3, chooseVideoFormat, getVideoID} = await import('./YouTube')
@@ -106,16 +108,11 @@ describe('#Vendor:YouTube', () => {
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate successful upload
-      mockUploadInstance!.emit('httpUploadProgress', {
-        loaded: 512000,
-        total: 1024000
-      })
+      mockUploadInstance!.emit('httpUploadProgress', {loaded: 512000, total: 1024000})
       mockProcess.emit('exit', 0)
 
       // Resolve the upload
-      uploadDoneResolver!.resolve({
-        Location: 's3://test-bucket/test-key.mp4'
-      })
+      uploadDoneResolver!.resolve({Location: 's3://test-bucket/test-key.mp4'})
 
       const result = await resultPromise
 
@@ -237,24 +234,13 @@ describe('#Vendor:YouTube', () => {
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Simulate progress updates
-      mockUploadInstance!.emit('httpUploadProgress', {
-        loaded: 512000,
-        total: 2048000
-      })
-      mockUploadInstance!.emit('httpUploadProgress', {
-        loaded: 1024000,
-        total: 2048000
-      })
-      mockUploadInstance!.emit('httpUploadProgress', {
-        loaded: 2048000,
-        total: 2048000
-      })
+      mockUploadInstance!.emit('httpUploadProgress', {loaded: 512000, total: 2048000})
+      mockUploadInstance!.emit('httpUploadProgress', {loaded: 1024000, total: 2048000})
+      mockUploadInstance!.emit('httpUploadProgress', {loaded: 2048000, total: 2048000})
       mockProcess.emit('exit', 0)
 
       // Resolve the upload
-      uploadDoneResolver!.resolve({
-        Location: 's3://test-bucket/test-key.mp4'
-      })
+      uploadDoneResolver!.resolve({Location: 's3://test-bucket/test-key.mp4'})
 
       const result = await resultPromise
 
@@ -263,32 +249,16 @@ describe('#Vendor:YouTube', () => {
   })
 
   describe('chooseVideoFormat', () => {
+    const baseVideoInfo = {id: 'test123', title: 'Test Video', thumbnail: '', duration: 300}
+    // prettier-ignore
+    const hlsFormat = (id: string, tbr: number, filesize?: number) =>
+      ({format_id: id, url: 'https://manifest.googlevideo.com/api/manifest.m3u8', ext: 'mp4', vcodec: 'h264', acodec: 'aac', tbr, ...(filesize && {filesize})})
+    // prettier-ignore
+    const progressiveFormat = (id: string, tbr: number, filesize?: number) =>
+      ({format_id: id, url: 'https://rr1---sn-ab5l6nez.googlevideo.com/videoplayback', ext: 'mp4', vcodec: 'h264', acodec: 'aac', tbr, ...(filesize && {filesize})})
+
     test('should prefer progressive format with filesize', () => {
-      const info = {
-        id: 'test123',
-        title: 'Test Video',
-        formats: [
-          {
-            format_id: 'hls-720',
-            url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
-            ext: 'mp4',
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 2000
-          },
-          {
-            format_id: '22',
-            url: 'https://rr1---sn-ab5l6nez.googlevideo.com/videoplayback',
-            ext: 'mp4',
-            filesize: 52428800,
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 1500
-          }
-        ],
-        thumbnail: '',
-        duration: 300
-      }
+      const info = {...baseVideoInfo, formats: [hlsFormat('hls-720', 2000), progressiveFormat('22', 1500, 52428800)]}
 
       const format = chooseVideoFormat(info)
       expect(format.format_id).toBe('22')
@@ -296,61 +266,14 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should fall back to progressive without filesize', () => {
-      const info = {
-        id: 'test123',
-        title: 'Test Video',
-        formats: [
-          {
-            format_id: 'hls-720',
-            url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
-            ext: 'mp4',
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 2000
-          },
-          {
-            format_id: '18',
-            url: 'https://rr1---sn-ab5l6nez.googlevideo.com/videoplayback',
-            ext: 'mp4',
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 800
-          }
-        ],
-        thumbnail: '',
-        duration: 300
-      }
+      const info = {...baseVideoInfo, formats: [hlsFormat('hls-720', 2000), progressiveFormat('18', 800)]}
 
       const format = chooseVideoFormat(info)
       expect(format.format_id).toBe('18')
     })
 
     test('should accept HLS/DASH streaming formats as last resort', () => {
-      const info = {
-        id: 'test123',
-        title: 'Test Video',
-        formats: [
-          {
-            format_id: 'hls-1080',
-            url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
-            ext: 'mp4',
-            filesize: 104857600,
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 3000
-          },
-          {
-            format_id: 'hls-720',
-            url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
-            ext: 'mp4',
-            vcodec: 'h264',
-            acodec: 'aac',
-            tbr: 2000
-          }
-        ],
-        thumbnail: '',
-        duration: 300
-      }
+      const info = {...baseVideoInfo, formats: [hlsFormat('hls-1080', 3000, 104857600), hlsFormat('hls-720', 2000)]}
 
       const format = chooseVideoFormat(info)
       expect(format.format_id).toBe('hls-1080')
@@ -358,39 +281,18 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should throw error if no formats available', () => {
-      const info = {
-        id: 'test123',
-        title: 'Test Video',
-        formats: [],
-        thumbnail: '',
-        duration: 300
-      }
+      const info = {...baseVideoInfo, formats: []}
 
       expect(() => chooseVideoFormat(info)).toThrow('No formats available for video')
     })
 
     test('should throw error if no combined formats available', () => {
       const info = {
-        id: 'test123',
-        title: 'Test Video',
+        ...baseVideoInfo,
         formats: [
-          {
-            format_id: 'video-only',
-            url: 'https://example.com/video',
-            ext: 'mp4',
-            vcodec: 'h264',
-            acodec: 'none'
-          },
-          {
-            format_id: 'audio-only',
-            url: 'https://example.com/audio',
-            ext: 'm4a',
-            vcodec: 'none',
-            acodec: 'aac'
-          }
-        ],
-        thumbnail: '',
-        duration: 300
+          {format_id: 'video-only', url: 'https://example.com/video', ext: 'mp4', vcodec: 'h264', acodec: 'none'},
+          {format_id: 'audio-only', url: 'https://example.com/audio', ext: 'm4a', vcodec: 'none', acodec: 'aac'}
+        ]
       }
 
       expect(() => chooseVideoFormat(info)).toThrow('No combined video+audio formats available')
