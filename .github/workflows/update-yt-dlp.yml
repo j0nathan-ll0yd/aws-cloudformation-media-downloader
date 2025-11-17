@@ -2,7 +2,7 @@ name: Update yt-dlp Binary
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+    - cron: '0 2 * * 0'  # Weekly on Sunday at 2am UTC
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
@@ -14,103 +14,132 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Get latest yt-dlp version
-        id: latest
-        run: |
-          LATEST=$(gh api repos/yt-dlp/yt-dlp/releases/latest --jq '.tag_name')
-          echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          echo "Latest yt-dlp version: ${LATEST}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-      
-      - name: Get current version
-        id: current
-        run: |
-          CURRENT=$(cat layers/yt-dlp/VERSION 2>/dev/null || echo "none")
-          echo "version=${CURRENT}" >> $GITHUB_OUTPUT
-          echo "Current yt-dlp version: ${CURRENT}"
-      
-      - name: Check if update is needed
+
+      - name: Check for yt-dlp updates
         id: check
         run: |
-          LATEST="${{ steps.latest.outputs.version }}"
-          CURRENT="${{ steps.current.outputs.version }}"
-          
+          set -e
+
+          echo "Fetching latest stable yt-dlp release (excluding pre-releases)..."
+          LATEST=$(gh api repos/yt-dlp/yt-dlp/releases \
+            --jq '[.[] | select(.prerelease == false)][0].tag_name')
+
+          CURRENT=$(cat layers/yt-dlp/VERSION 2>/dev/null | tr -d '[:space:]' || echo "none")
+
+          echo "latest=${LATEST}" >> $GITHUB_OUTPUT
+          echo "current=${CURRENT}" >> $GITHUB_OUTPUT
+
           if [ "$LATEST" != "$CURRENT" ]; then
-            echo "Update needed: $CURRENT -> $LATEST"
-            echo "needed=true" >> $GITHUB_OUTPUT
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "✅ Update available: ${CURRENT} → ${LATEST}"
           else
-            echo "No update needed (current: $CURRENT)"
-            echo "needed=false" >> $GITHUB_OUTPUT
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Already on latest version: ${CURRENT}"
           fi
-      
-      - name: Download and verify new binary
-        if: steps.check.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download and verify binary for testing
+        if: steps.check.outputs.update_needed == 'true'
         run: |
-          VERSION=${{ steps.latest.outputs.version }}
-          echo "Downloading yt-dlp ${VERSION}..."
-          
-          wget -q https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/yt-dlp_linux
-          wget -q https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/SHA2-256SUMS
-          
-          echo "Verifying checksum..."
-          sha256sum --check --ignore-missing SHA2-256SUMS
-          
-          echo "Testing binary..."
+          set -e
+
+          VERSION="${{ steps.check.outputs.latest }}"
+
+          echo "Downloading yt-dlp ${VERSION} for verification..."
+          wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/yt-dlp_linux"
+          wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/SHA2-256SUMS"
+
+          echo "Verifying SHA256 checksum..."
+          grep "yt-dlp_linux$" SHA2-256SUMS | sha256sum --check --status
+
+          echo "Testing binary execution..."
           chmod +x yt-dlp_linux
           BINARY_VERSION=$(./yt-dlp_linux --version)
-          echo "Binary version: ${BINARY_VERSION}"
-          
-          if [ "$BINARY_VERSION" != "$VERSION" ]; then
-            echo "ERROR: Binary version mismatch"
+
+          if [ "${BINARY_VERSION}" != "${VERSION}" ]; then
+            echo "ERROR: Binary version mismatch (expected: ${VERSION}, got: ${BINARY_VERSION})"
             exit 1
           fi
-      
-      - name: Update layer and create PR
-        if: steps.check.outputs.needed == 'true'
+
+          echo "Testing format listing capability..."
+          ./yt-dlp_linux --list-formats "https://www.youtube.com/watch?v=jNQXAC9IVRw" --no-warnings --quiet || {
+            echo "ERROR: Binary failed format listing test"
+            exit 1
+          }
+
+          rm -f yt-dlp_linux SHA2-256SUMS
+          echo "✅ Binary verification complete"
+
+      - name: Update VERSION file and create PR
+        if: steps.check.outputs.update_needed == 'true'
         run: |
-          VERSION=${{ steps.latest.outputs.version }}
-          CURRENT_VERSION=${{ steps.current.outputs.version }}
-          BRANCH_NAME="chore/update-yt-dlp-${VERSION}"
-          
-          echo "Moving binary to Lambda layer..."
-          mv yt-dlp_linux layers/yt-dlp/bin/yt-dlp_linux
+          set -e
+
+          readonly VERSION="${{ steps.check.outputs.latest }}"
+          readonly CURRENT_VERSION="${{ steps.check.outputs.current }}"
+          readonly BRANCH_NAME="chore/update-yt-dlp-${VERSION}"
+
+          echo "Updating VERSION file to ${VERSION}..."
           echo "${VERSION}" > layers/yt-dlp/VERSION
-          
-          echo "Configuring git..."
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          echo "Creating branch and commit..."
+
           git checkout -b "${BRANCH_NAME}"
-          git add layers/yt-dlp/
+          git add layers/yt-dlp/VERSION
           git commit -m "chore(deps): update yt-dlp to ${VERSION}"
           git push origin "${BRANCH_NAME}"
-          
-          echo "Creating pull request..."
+
           cat > /tmp/pr-body.md << EOF
-          Automated update of yt-dlp binary to ${VERSION}
+          Automated update of yt-dlp version to ${VERSION}.
 
           **Release Notes**: https://github.com/yt-dlp/yt-dlp/releases/tag/${VERSION}
 
           ## Changes
-          - Updated yt-dlp binary from ${CURRENT_VERSION} to ${VERSION}
-          - Updated VERSION file
+          - Updated VERSION file from ${CURRENT_VERSION} to ${VERSION}
+          - Binary will be downloaded by Terraform during deployment
 
-          ## Verification
-          - ✅ Binary downloaded and checksum verified
-          - ✅ Binary execution test passed
+          ## Pre-merge Verification
+          - ✅ Binary downloaded and SHA256 checksum verified
+          - ✅ Binary execution test passed (\`--version\`)
+          - ✅ Format listing capability verified
           - ⏳ CI/CD tests pending
 
-          ## Deployment
-          After merging, the new Lambda layer will be deployed with the updated yt-dlp binary.
+          ## Deployment Process
+          1. Merge this PR to update the VERSION file
+          2. Run \`terraform apply\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
+          3. Terraform will download, verify, and package the new binary into the Lambda layer
+          4. Monitor CloudWatch logs for any download issues after deployment
+
+          ## Rollback Procedure
+          If issues occur after deployment:
+          \`\`\`bash
+          echo "${CURRENT_VERSION}" > layers/yt-dlp/VERSION
+          git commit -am "chore(deps): revert yt-dlp to ${CURRENT_VERSION}"
+          git push
+          terraform apply
+          \`\`\`
           EOF
-          
+
           gh pr create \
             --title "chore(deps): update yt-dlp to ${VERSION}" \
             --body-file /tmp/pr-body.md \
             --label "dependencies" \
-            --label "automated"
+            --label "automated" \
+            --label "yt-dlp" \
+            --label "infrastructure"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          gh issue create \
+            --title "yt-dlp update workflow failed" \
+            --body "The automated yt-dlp update workflow failed. Check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
+            --label "bug" \
+            --label "automation" \
+            --label "yt-dlp"
         env:
           GH_TOKEN: ${{ github.token }}
