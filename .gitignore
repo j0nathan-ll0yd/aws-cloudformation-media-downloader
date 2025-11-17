@@ -21,3 +21,4 @@ terraform/.terraform.lock.hcl
 terraform/.terraform
 .webpackCache
 .python-version
+layers/yt-dlp/bin/yt-dlp_linux
