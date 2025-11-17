@@ -506,8 +506,8 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - `@aws-sdk/client-sns` - SNS notifications
 - `@aws-sdk/client-sqs` - SQS queues
 
-**Troubleshooting**: If Terraform shows "No changes" after code updates, check:
-1. Archive hash in terraform output - should change when code changes
+**Troubleshooting**: If OpenTofu shows "No changes" after code updates, check:
+1. Archive hash in OpenTofu output - should change when code changes
 2. Webpack externals - missing entries cause old code to bundle
 3. Build output - verify new packages are externalized, not bundled
 
@@ -599,12 +599,12 @@ This project has four comprehensive style guides that define ALL coding standard
    - User output formatting
    - **YOU MUST FOLLOW THIS FOR ALL BASH SCRIPTS**
 
-4. **`docs/styleGuides/terraformStyleGuide.md`** - Terraform infrastructure patterns
+4. **`docs/styleGuides/tofuStyleGuide.md`** - OpenTofu infrastructure patterns
    - Resource naming (PascalCase)
    - File organization
    - Environment variable consistency
    - Comment usage (no removed resource explanations)
-   - **YOU MUST FOLLOW THIS FOR ALL TERRAFORM CODE**
+   - **YOU MUST FOLLOW THIS FOR ALL OPENTOFU CODE**
 
 **THESE STYLE GUIDES ARE NOT SUGGESTIONS. THEY ARE REQUIREMENTS.**
 
