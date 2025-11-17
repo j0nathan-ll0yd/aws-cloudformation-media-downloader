@@ -68,6 +68,11 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.
 Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
 
+**CRITICAL: Before writing ANY code, you MUST read the applicable style guides:**
+- Lambda code: `docs/styleGuides/LambdaStyleGuide.md`
+- Test code: `docs/styleGuides/TestStyleGuide.md`
+- Bash scripts: `docs/styleGuides/BashStyleGuide.md`
+
 ---
 
 ## 🚨 ABSOLUTE RULE: NO AI REFERENCES IN COMMITS 🚨
@@ -518,6 +523,37 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - Sandbox vs Production environments
 
 ## Code Style & Documentation
+
+### 🚨 MANDATORY: Style Guides 🚨
+
+**BEFORE WRITING ANY CODE, YOU MUST READ AND FOLLOW THE APPLICABLE STYLE GUIDE.**
+
+This project has three comprehensive style guides that define ALL coding standards:
+
+1. **`docs/styleGuides/LambdaStyleGuide.md`** - Lambda function patterns
+   - Import organization
+   - Environment variables
+   - Error handling patterns
+   - Logging conventions
+   - AWS service wrapper usage
+   - Response patterns
+   - **YOU MUST FOLLOW THIS FOR ALL LAMBDA CODE**
+
+2. **`docs/styleGuides/TestStyleGuide.md`** - Testing patterns
+   - Jest mocking strategies
+   - Test file organization
+   - Fixture management
+   - Mock naming conventions
+   - **YOU MUST FOLLOW THIS FOR ALL TEST CODE**
+
+3. **`docs/styleGuides/BashStyleGuide.md`** - Bash script patterns
+   - Variable naming (snake_case vs UPPER_CASE)
+   - Error handling with `set -e`
+   - Directory resolution
+   - User output formatting
+   - **YOU MUST FOLLOW THIS FOR ALL BASH SCRIPTS**
+
+**THESE STYLE GUIDES ARE NOT SUGGESTIONS. THEY ARE REQUIREMENTS.**
 
 ### TypeScript Guidelines
 - **Type Definitions**: Centralized in `types/` directory
