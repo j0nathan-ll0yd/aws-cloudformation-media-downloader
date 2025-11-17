@@ -1,12 +1,11 @@
 import {S3Event} from 'aws-lambda'
 import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile, UserFile} from '../../../types/main'
 import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
 import {logDebug} from '../../../util/lambda-helpers'
 import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
-import {SendMessageRequest} from '@aws-sdk/client-sqs'
 
 /**
  * Returns the DynamoDBFile by file name

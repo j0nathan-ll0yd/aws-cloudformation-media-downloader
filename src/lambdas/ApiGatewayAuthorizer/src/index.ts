@@ -1,9 +1,8 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {getApiKeys, getUsage, getUsagePlans} from '../../../lib/vendor/AWS/ApiGateway'
+import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
-import {ApiKey, UsagePlan} from '@aws-sdk/client-api-gateway'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {

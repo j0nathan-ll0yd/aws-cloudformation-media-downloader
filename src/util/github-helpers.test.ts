@@ -28,7 +28,8 @@ describe('#Util:GithubHelper', () => {
     const error: Error = new Error('test error')
     const requestId = '1234'
     const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
-    expect(response.status).toEqual(201)
-    expect(response.data.id).toEqual(1234)
+    expect(response).not.toBeNull()
+    expect(response?.status).toEqual(201)
+    expect(response?.data.id).toEqual(1234)
   })
 })

@@ -2,6 +2,57 @@
 
 This document defines the coding standards and patterns for AWS Lambda functions in this project.
 
+---
+
+## ⚠️ CRITICAL RULE: AWS SDK ENCAPSULATION ⚠️
+
+**NEVER import AWS SDK packages directly in application code.**
+
+### ❌ FORBIDDEN - Direct AWS SDK Usage
+```typescript
+// NEVER DO THIS - Direct AWS SDK imports
+import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'
+import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import {Upload} from '@aws-sdk/lib-storage'
+import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+
+// NEVER DO THIS - Creating AWS clients in application code
+const s3Client = new S3Client({region: 'us-west-2'})
+const upload = new Upload({client: s3Client, params: {...}})
+```
+
+### ✅ REQUIRED - Vendor Wrapper Usage
+```typescript
+// ALWAYS DO THIS - Use vendor wrappers
+import {createS3Upload, headObject} from '../../../lib/vendor/AWS/S3'
+import {invokeLambda} from '../../../lib/vendor/AWS/Lambda'
+import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {putMetric} from '../../../util/lambda-helpers'
+
+// Use wrapper functions - NO AWS SDK types exposed
+const upload = createS3Upload(bucket, key, stream, 'video/mp4')
+await putMetric('MetricName', 1, 'Count')
+```
+
+### Why This Rule Exists
+
+1. **Encapsulation**: AWS SDK implementation details hidden from business logic
+2. **Type Safety**: Public APIs use simple types (strings, numbers) instead of AWS SDK enums
+3. **Testability**: Mocking vendor wrappers is cleaner than mocking AWS SDK
+4. **Maintainability**: AWS SDK changes isolated to vendor wrapper files
+5. **Consistency**: One pattern for all AWS service usage
+
+### Enforcement Checklist
+
+Before committing ANY code:
+- [ ] Search codebase for `from '@aws-sdk/` - should ONLY appear in `lib/vendor/AWS/*` files
+- [ ] Check imports - NO AWS SDK packages in Lambda handlers or util files
+- [ ] Verify vendor wrappers exist for all AWS services you need
+- [ ] If wrapper doesn't exist, CREATE it in `lib/vendor/AWS/` before using the service
+
+---
+
 ## File Structure and Organization
 
 ### Import Order (STRICT)

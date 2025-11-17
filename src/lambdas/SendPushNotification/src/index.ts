@@ -1,12 +1,11 @@
 import {SQSEvent} from 'aws-lambda'
 import {query} from '../../../lib/vendor/AWS/DynamoDB'
-import {publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
+import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
 import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
 import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
-import {PublishInput} from '@aws-sdk/client-sns'
 
 /**
  * Returns a Device by userId

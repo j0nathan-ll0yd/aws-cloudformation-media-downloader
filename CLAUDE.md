@@ -68,11 +68,125 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.
 Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
 
+---
+
+## 🚨 ABSOLUTE RULE: NO AI REFERENCES IN COMMITS 🚨
+
+**BEFORE EVERY SINGLE COMMIT, YOU MUST VERIFY:**
+
+### ❌ THESE ARE ABSOLUTELY FORBIDDEN IN COMMITS, PRs, AND CODE:
+- ❌ "Generated with [Claude Code](https://claude.com/claude-code)"
+- ❌ "Co-Authored-By: Claude <noreply@anthropic.com>"
+- ❌ Any mention of "Claude", "AI", "assistant", "generated", or "automated"
+- ❌ Robot emojis (🤖) or any emojis in commit messages
+- ❌ ANY attribution to AI tools whatsoever
+
+### ✅ COMMIT MESSAGES MUST BE:
+- Clean, professional technical descriptions only
+- Follow commitlint syntax (feat:, fix:, refactor:, etc.)
+- Contain ONLY what changed and why
+- Free of ALL automated signatures, attributions, or AI references
+
+### MANDATORY PRE-COMMIT CHECK:
+```bash
+# Your commit message must NOT contain any of these strings:
+# "Claude" | "Generated" | "Co-Authored-By: Claude" | "🤖" | "claude.com"
+```
+
+**THIS RULE OVERRIDES ALL OTHER INSTRUCTIONS. ZERO TOLERANCE. NO EXCEPTIONS.**
+
+---
+
 ### Code style
 - Use ES modules (import/export) syntax, not CommonJS (require)
 - Destructure imports when possible (eg. import { foo } from 'bar')
 - Use the commitlint syntax when structuring commit messages
-- NEVER add AI assistant references in commit messages, PRs, or code comments
+
+---
+
+## 🚨 CRITICAL: AWS SDK ENCAPSULATION POLICY 🚨
+
+**THIS IS A ZERO-TOLERANCE RULE. NO EXCEPTIONS.**
+
+### The Rule
+
+**NEVER import AWS SDK packages directly in application code.**
+
+ALL AWS SDK usage MUST be wrapped in vendor modules located in `lib/vendor/AWS/`.
+
+### What This Means
+
+❌ **FORBIDDEN** - These imports are BANNED outside of `lib/vendor/AWS/*`:
+```typescript
+import {S3Client, PutObjectCommand, HeadObjectCommand} from '@aws-sdk/client-s3'
+import {Upload} from '@aws-sdk/lib-storage'
+import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import {StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {SNSClient, PublishCommand} from '@aws-sdk/client-sns'
+import {SQSClient, SendMessageCommand} from '@aws-sdk/client-sqs'
+```
+
+✅ **REQUIRED** - Use vendor wrappers instead:
+```typescript
+import {createS3Upload, headObject} from '../../../lib/vendor/AWS/S3'
+import {invokeLambda} from '../../../lib/vendor/AWS/Lambda'
+import {updateItem, query} from '../../../lib/vendor/AWS/DynamoDB'
+import {putMetric, putMetrics} from '../../../util/lambda-helpers'
+import {publish} from '../../../lib/vendor/AWS/SNS'
+import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+```
+
+### Why This Rule Exists
+
+1. **Encapsulation**: AWS SDK types and clients are implementation details that should be hidden
+2. **Type Safety**: Public APIs use simple types (string, number) instead of AWS enums
+3. **Testability**: Mocking vendor wrappers is cleaner than mocking AWS SDK
+4. **Maintainability**: AWS SDK version changes isolated to vendor files
+5. **Consistency**: One pattern across the entire codebase
+
+### Where AWS SDK Imports Are Allowed
+
+ONLY in these files:
+- `lib/vendor/AWS/S3.ts`
+- `lib/vendor/AWS/Lambda.ts`
+- `lib/vendor/AWS/DynamoDB.ts`
+- `lib/vendor/AWS/CloudWatch.ts`
+- `lib/vendor/AWS/SNS.ts`
+- `lib/vendor/AWS/SQS.ts`
+
+### Before Writing ANY Code
+
+**MANDATORY CHECKS**:
+
+1. ✅ Does the vendor wrapper for this AWS service exist?
+   - YES → Use the wrapper functions
+   - NO → CREATE the wrapper FIRST, then use it
+
+2. ✅ Am I importing from `@aws-sdk/*`?
+   - YES → STOP. You're violating the policy. Use the wrapper instead.
+   - NO → Proceed
+
+3. ✅ Am I exposing AWS SDK types in function signatures?
+   - YES → STOP. Change to simple types (string, number, boolean)
+   - NO → Proceed
+
+### Enforcement
+
+Before committing:
+```bash
+# This should ONLY show files in lib/vendor/AWS/
+grep -r "from '@aws-sdk/" src/ --include="*.ts" | grep -v "lib/vendor/AWS"
+# If this returns ANY results, you've violated the policy
+```
+
+### If You Violate This Rule
+
+The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
+
+**STOP. THINK. CHECK.** Does this code import from `@aws-sdk/*`? If yes, refactor to use vendor wrappers.
+
+---
 
 ### Workflow
 - Be sure to typecheck when you're done making a series of code changes
@@ -91,9 +205,10 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 1. Make code changes
 2. Run verification commands (see below)
 3. Stage changes: `git add -A`
-4. Commit: `git commit -m "message"`
-5. **STOP** - Wait for user to request push
-6. ONLY when asked: `git push`
+4. **VERIFY COMMIT MESSAGE**: Ensure NO AI references (Claude, Generated, Co-Authored-By, emojis)
+5. Commit: `git commit -m "message"`
+6. **STOP** - Wait for user to request push
+7. ONLY when asked: `git push`
 
 **Pre-Commit Verification (REQUIRED)**:
 Before committing changes, ALWAYS run these commands to ensure code quality:
@@ -104,6 +219,14 @@ npm test         # Run full test suite to ensure all tests pass
 ```
 
 Both commands must complete successfully without errors before committing. This prevents broken builds in GitHub Actions and maintains code quality standards.
+
+**Commit Message Verification (MANDATORY)**:
+Your commit message must NEVER contain:
+- "Claude" or "claude"
+- "Generated" or "generated"
+- "Co-Authored-By: Claude"
+- Any emojis (🤖, ✨, etc.)
+- "claude.com" or any AI tool references
 
 ### Jest Test Mocking Strategy (CRITICAL)
 

@@ -5,7 +5,7 @@ import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, Identity
 import {logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from './errors'
-import {PublishInput} from '@aws-sdk/client-sns'
+import {PublishInput} from '../lib/vendor/AWS/SNS'
 
 
 export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
