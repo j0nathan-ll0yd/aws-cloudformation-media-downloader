@@ -264,7 +264,46 @@ When a test imports `getVideoID`, the entire YouTube module loads, attempting to
 
 #### Common Mocking Patterns
 
-**AWS SDK Clients** (require full type annotations):
+**Type Annotation Policy for jest.fn():**
+
+❌ **AVOID truly generic type annotations**:
+```typescript
+// ❌ DON'T - `unknown` and `any` provide no type safety
+const sendMock = jest.fn<() => Promise<unknown>>()
+const updateMock = jest.fn<() => Promise<any>>()
+```
+
+✅ **USE specific type annotations when using mockResolvedValue/mockReturnValue**:
+```typescript
+// ✅ DO - specific return shapes for AWS responses
+const sendMock = jest.fn<() => Promise<{StatusCode: number}>>()
+const updateMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const headObjectMock = jest.fn<() => Promise<{ContentLength: number}>>()
+```
+
+✅ **USE type annotations for domain-specific types**:
+```typescript
+// ✅ DO - provides meaningful type safety for domain models
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseFormatMock = jest.fn<() => YtDlpFormat>()
+```
+
+✅ **OMIT type annotations for simple mocks without mockResolvedValue/mockReturnValue**:
+```typescript
+// ✅ DO - TypeScript can infer from usage
+const logDebugMock = jest.fn()
+const spawnMock = jest.fn()
+```
+
+⚠️ **USE `Promise<void>` when calling mockResolvedValue(undefined)**:
+```typescript
+// ✅ DO - Promise<void> required for mockResolvedValue(undefined)
+const copyFileMock = jest.fn<() => Promise<void>>()
+// In test:
+copyFileMock.mockResolvedValue(undefined)
+```
+
+**AWS SDK Clients** (require full type annotations for proper client structure):
 ```typescript
 jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
   LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>()
@@ -287,7 +326,7 @@ jest.unstable_mockModule('yt-dlp-wrap', () => ({
 }))
 ```
 
-**Node.js Built-ins**:
+**Node.js Built-ins** (no type annotations needed):
 ```typescript
 jest.unstable_mockModule('child_process', () => ({
   spawn: jest.fn()
@@ -295,7 +334,7 @@ jest.unstable_mockModule('child_process', () => ({
 
 jest.unstable_mockModule('fs', () => ({
   promises: {
-    copyFile: jest.fn<() => Promise<void>>()
+    copyFile: jest.fn()
   }
 }))
 ```

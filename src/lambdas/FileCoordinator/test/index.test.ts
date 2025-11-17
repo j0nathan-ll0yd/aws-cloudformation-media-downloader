@@ -9,12 +9,9 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   query: jest.fn(),
   updateItem: jest.fn()
 }))
-const sendMock = jest.fn<() => Promise<unknown>>()
-jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
-  LambdaClient: jest.fn(() => ({
-    send: sendMock
-  })),
-  InvokeCommand: jest.fn((params: unknown) => params)
+const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
+  invokeAsync: invokeAsyncMock
 }))
 
 const {handler} = await import('./../src')
@@ -26,18 +23,18 @@ describe('#FileCoordinator', () => {
   test('should handle scheduled event (with no events)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-204-NoContent.json', {assert: {type: 'json'}})
     scanMock.mockReturnValue(scanResponse)
-    sendMock.mockResolvedValue({StatusCode: 202})
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
-    expect(sendMock).toHaveBeenCalledTimes(0)
+    expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
   })
   test('should handle scheduled event (with 1 event)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
     scanMock.mockReturnValue(scanResponse)
-    sendMock.mockResolvedValue({StatusCode: 202})
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
-    expect(sendMock).toHaveBeenCalled()
+    expect(invokeAsyncMock).toHaveBeenCalled()
   })
   describe('#AWSFailure', () => {
     test('AWS.DynamoDB.DocumentClient.scan', async () => {

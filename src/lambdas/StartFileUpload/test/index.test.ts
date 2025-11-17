@@ -17,7 +17,7 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
 }))
 
 // Mock DynamoDB
-const updateItemMock = jest.fn<() => Promise<unknown>>()
+const updateItemMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   updateItem: updateItemMock,
   deleteItem: jest.fn(),

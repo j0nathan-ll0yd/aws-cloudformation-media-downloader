@@ -65,7 +65,7 @@ jest.unstable_mockModule('../vendor/AWS/S3', () => ({
 jest.unstable_mockModule('../../util/lambda-helpers', () => ({
   logDebug: jest.fn(),
   logError: jest.fn(),
-  putMetrics: jest.fn<() => Promise<void>>()
+  putMetrics: jest.fn()
 }))
 
 // Import after mocking

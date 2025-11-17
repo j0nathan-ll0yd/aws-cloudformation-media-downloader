@@ -40,7 +40,7 @@ jest.unstable_mockModule('child_process', () => ({
 // Mock fs for YouTube cookie operations
 jest.unstable_mockModule('fs', () => ({
   promises: {
-    copyFile: jest.fn<() => Promise<void>>()
+    copyFile: jest.fn()
   }
 }))
 
@@ -53,11 +53,9 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
   })
 }))
 
-jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
-  LambdaClient: jest.fn<() => {send: jest.Mock<() => Promise<{StatusCode: number}>>}>().mockImplementation(() => ({
-    send: jest.fn<() => Promise<{StatusCode: number}>>().mockResolvedValue({StatusCode: 202})
-  })),
-  InvokeCommand: jest.fn()
+const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
+  invokeAsync: invokeAsyncMock
 }))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
@@ -77,6 +75,7 @@ describe('#WebhookFeedly', () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
     queryMock.mockReturnValue(queryNoContentResponse)
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
