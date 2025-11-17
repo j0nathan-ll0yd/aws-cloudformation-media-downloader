@@ -135,6 +135,22 @@ Some files keep "terraform" in their names - this is **intentional**:
 
 **Rule**: We renamed OUR generated artifacts for accuracy, but kept industry-standard filenames unchanged.
 
+### State File Management Policy
+
+**Files maintained**:
+- `terraform.tfstate` - Current infrastructure state
+- `terraform.tfstate.backup` - Single most recent backup
+
+**Cleanup policy**: Delete older timestamped backups (e.g., `terraform.tfstate.1763236722.backup`)
+
+**Rationale**:
+- One backup is sufficient for disaster recovery
+- Worst case: destroy and rebuild infrastructure from code
+- State files are tools, not source of truth (IaC code is)
+- Reduces clutter and confusion
+
+**Already cleaned**: Removed old timestamped backup during migration
+
 ## Rollback Plan (If Needed)
 
 If production issues occur:
