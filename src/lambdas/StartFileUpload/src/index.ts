@@ -14,8 +14,7 @@ import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../.
  * @param context - AWS Lambda context
  * @notExported
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function handler(event: StartFileUploadParams, context: Context): Promise<any> {
+export async function handler(event: StartFileUploadParams, context: Context) {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`

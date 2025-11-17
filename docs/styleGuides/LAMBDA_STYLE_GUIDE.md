@@ -356,11 +356,15 @@ const userFilesResponse = await query(userFileParams)
    // BAD
    export async function handler(event): Promise<{status: string}>
 
-   // GOOD
+   // GOOD - Use standard AWS Lambda return types
    export async function handler(event): Promise<APIGatewayProxyResult>
    export async function handler(event): Promise<void>
-   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-   export async function handler(event): Promise<any>  // For Lambda-to-Lambda
+
+   // GOOD - Omit return type and let TypeScript infer (avoids Promise<any> and eslint exceptions)
+   export async function handler(event, context) {
+     // TypeScript infers return type from implementation
+     return response(context, 200, {status: 'success'})
+   }
    ```
 
 5. **No AWS SDK imports in Lambda functions**
@@ -410,18 +414,25 @@ All AWS SDK usage must be wrapped in vendor modules:
 
 ### Lambda-to-Lambda Invocation
 
-Return type should be `Promise<any>` and use `response()` helper:
+Omit return type annotation and let TypeScript infer:
 
 ```typescript
-export async function handler(event: StartFileUploadParams, context: Context): Promise<any> {
+// GOOD - TypeScript infers return type from response() helper
+export async function handler(event: StartFileUploadParams, context: Context) {
   // ... processing
   return response(context, 200, {status: 'success'})
 }
 ```
 
+**Why omit the return type?**
+- Avoids `Promise<any>` which provides no type safety
+- Eliminates need for `eslint-disable-next-line @typescript-eslint/no-explicit-any`
+- TypeScript correctly infers the return type from implementation
+- Cleaner code without eslint exceptions
+
 ### Non-HTTP Event Sources
 
-Return `Promise<void>` for S3, SQS, etc.:
+Explicitly use `Promise<void>` for S3, SQS, etc.:
 
 ```typescript
 export async function handler(event: S3Event): Promise<void> {
