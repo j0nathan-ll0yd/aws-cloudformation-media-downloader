@@ -1,6 +1,6 @@
 # Media Downloader
 
-A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
+A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [OpenTofu](https://opentofu.org/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Architecture
 
@@ -44,10 +44,10 @@ npm run build
 # Run the tests to ensure everything is working
 npm run test
 
-# Use Terraform to deploy the infrastructure
+# Use OpenTofu to deploy the infrastructure
 cd terraform
-terraform init
-terraform apply
+tofu init
+tofu apply
 
 # Once complete, verify the application works remotely
 npm run test-remote-list
@@ -58,7 +58,7 @@ npm run test-remote-hook
 
 ```bash
 # Install system dependencies and configure
-brew install act awscli jq nvm quicktype terraform terraform-docs
+brew install act awscli jq nvm quicktype opentofu terraform-docs
 nvm install lts/jod
 nvm use lts/jod
 aws configure
@@ -92,10 +92,10 @@ brew install awscli
 aws configure
 ```
 
-* Install [terraform](https://www.terraform.io/) (used for deployment scripts)
+* Install [OpenTofu](https://opentofu.org/) (used for deployment scripts)
 
 ```bash
-brew install terraform
+brew install opentofu
 ```
 
 * Install [sops](https://github.com/getsops/sops) (used for secret management)
@@ -171,7 +171,7 @@ echo "Keep your private key secure and share the public key with team members"
 brew install quicktype
 ```
 
-* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for Terraform documentation)
+* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for infrastructure documentation)
 
 ```bash
 brew install terraform-docs
@@ -191,7 +191,7 @@ brew install act
 
 You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
 
-* Install [gh](https://www.terraform.io/) (for Github usage by Claude Code)
+* Install [gh](https://cli.github.com/) (for Github usage by Claude Code)
 
 ```bash
 brew install gh
@@ -217,7 +217,7 @@ mkdir -p secure/APNS_SANDBOX
 mv privateKey.txt certificate.txt secure/APNS_SANDBOX
 ```
 
-Once complete, run `terraform apply` and a new platform application will be created so you can register your device to receive push notifications.
+Once complete, run `tofu apply` and a new platform application will be created so you can register your device to receive push notifications.
 
 ## Configuring Github Issue Creation
 
@@ -227,7 +227,7 @@ Once generated, store it as `githubPersonalToken.txt` in the `secure` directory 
 
 ## Deployment
 
-* Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
+* Deploy Code - To deploy code changes only, this command will build the distribution files and trigger an OpenTofu **auto approval**.
 
 ```bash
 npm run build

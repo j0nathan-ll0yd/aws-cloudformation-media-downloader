@@ -1,12 +1,12 @@
 # Project Context for Claude
 
 ## Project Overview
-This is a serverless AWS media downloader service built with Terraform and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
+This is a serverless AWS media downloader service built with OpenTofu and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
 
 ## Architecture & Technology Stack
 
 ### Core Technologies
-- **Infrastructure as Code**: Terraform
+- **Infrastructure as Code**: OpenTofu
 - **Runtime**: AWS Lambda (Node.js 22.x)
 - **Language**: TypeScript
 - **Cloud Provider**: AWS (serverless architecture)
@@ -25,7 +25,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 
 ```
 .
-├── terraform/             # AWS Infrastructure definitions (Terraform)
+├── terraform/             # AWS Infrastructure definitions (OpenTofu)
 ├── src/
 │   └── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │       └── [lambda-name]/
@@ -72,7 +72,7 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Lambda code: `docs/styleGuides/lambdaStyleGuide.md`
 - Test code: `docs/styleGuides/testStyleGuide.md`
 - Bash scripts: `docs/styleGuides/bashStyleGuide.md`
-- Terraform infrastructure: `docs/styleGuides/terraformStyleGuide.md`
+- OpenTofu infrastructure: `docs/styleGuides/tofuStyleGuide.md`
 
 ---
 

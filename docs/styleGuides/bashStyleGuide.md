@@ -58,7 +58,7 @@ Use lowercase with underscores for regular variables:
 ```bash
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 test_file_path="${bin_dir}/../src/pipeline/test.ts"
-api_key="$(terraform output api_gateway_api_key | tr -d '"')"
+api_key="$(tofu output api_gateway_api_key | tr -d '"')"
 ```
 
 ### Constants (UPPER_CASE)
@@ -155,11 +155,11 @@ Use `$()` instead of backticks:
 
 ```bash
 # GOOD - Modern syntax
-domain=$(terraform output cloudfront_distribution_domain | tr -d '"')
+domain=$(tofu output cloudfront_distribution_domain | tr -d '"')
 cookie_count=$(wc -l < "${file}" | tr -d ' ')
 
 # BAD - Old syntax, harder to nest
-domain=`terraform output cloudfront_distribution_domain | tr -d '"'`
+domain=`tofu output cloudfront_distribution_domain | tr -d '"'`
 ```
 
 ### eval (Use Sparingly)
@@ -325,12 +325,12 @@ echo "Files synced: $FILES_SYNCED"
 
 ## Working with External Commands
 
-### Terraform Outputs
+### OpenTofu Outputs
 
 ```bash
 cd "${bin_dir}/../terraform"
-domain=$(terraform output cloudfront_distribution_domain | tr -d '"')
-api_key=$(terraform output api_gateway_api_key | tr -d '"')
+domain=$(tofu output cloudfront_distribution_domain | tr -d '"')
+api_key=$(tofu output api_gateway_api_key | tr -d '"')
 ```
 
 ### npm/Node.js Integration
