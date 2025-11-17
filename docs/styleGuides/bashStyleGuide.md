@@ -504,6 +504,7 @@ git checkout "$file_path"
 - ❌ Assume commands are available without checking
 - ❌ Use `eval` with untrusted input
 - ❌ Forget to document complex operations
+- ❌ Add comments explaining removed code or deprecated features (use git history instead)
 
 ---
 

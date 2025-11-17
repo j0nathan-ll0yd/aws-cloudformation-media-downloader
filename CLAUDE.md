@@ -69,9 +69,10 @@ Take a moment to familiarize yourself with the structure of the project. You sho
 Then, read the `build/graph.json` file. This is a code graph of the project using `ts-morph`. Use it to identify relationships between files.
 
 **CRITICAL: Before writing ANY code, you MUST read the applicable style guides:**
-- Lambda code: `docs/styleGuides/LambdaStyleGuide.md`
-- Test code: `docs/styleGuides/TestStyleGuide.md`
-- Bash scripts: `docs/styleGuides/BashStyleGuide.md`
+- Lambda code: `docs/styleGuides/lambdaStyleGuide.md`
+- Test code: `docs/styleGuides/testStyleGuide.md`
+- Bash scripts: `docs/styleGuides/bashStyleGuide.md`
+- Terraform infrastructure: `docs/styleGuides/terraformStyleGuide.md`
 
 ---
 
@@ -106,6 +107,36 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Use ES modules (import/export) syntax, not CommonJS (require)
 - Destructure imports when possible (eg. import { foo } from 'bar')
 - Use the commitlint syntax when structuring commit messages
+- **NEVER explain removed code in comments** - Git history is the source of truth for what was removed/changed. Delete outdated comments about previous implementations, deprecated features, or removed architecture. Use `git log` and `git blame` to understand historical context.
+
+### Naming Conventions
+
+**CRITICAL: Understand the difference between these naming styles:**
+
+- **camelCase** - First letter lowercase, subsequent words capitalized
+  - Examples: `myVariable`, `fetchUserData`, `isValidInput`
+  - Used for: variables, functions, file names (except components)
+  - Style guide files: `bashStyleGuide.md`, `lambdaStyleGuide.md`
+
+- **PascalCase** - First letter uppercase, subsequent words capitalized
+  - Examples: `MyComponent`, `UserProfile`, `DataTransformer`
+  - Used for: TypeScript interfaces, types, classes, React components
+  - Example: `interface VideoInfo`, `class YTDlpWrap`
+
+- **SCREAMING_SNAKE_CASE** - All uppercase with underscores
+  - Examples: `MAX_RETRIES`, `API_BASE_URL`, `DEFAULT_TIMEOUT`
+  - Used for: constants only (deprecated for module-level env vars)
+  - Use CamelCase for module-level env var constants instead
+
+- **kebab-case** - All lowercase with hyphens
+  - Examples: `my-component.tsx`, `user-profile.css`
+  - Used for: CSS files, some config files
+  - NOT used in this TypeScript project
+
+**When in doubt:**
+- Variables/functions → camelCase
+- Types/Interfaces/Classes → PascalCase
+- File names → camelCase (our convention)
 
 ---
 
@@ -528,9 +559,9 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 
 **BEFORE WRITING ANY CODE, YOU MUST READ AND FOLLOW THE APPLICABLE STYLE GUIDE.**
 
-This project has three comprehensive style guides that define ALL coding standards:
+This project has four comprehensive style guides that define ALL coding standards:
 
-1. **`docs/styleGuides/LambdaStyleGuide.md`** - Lambda function patterns
+1. **`docs/styleGuides/lambdaStyleGuide.md`** - Lambda function patterns
    - Import organization
    - Environment variables
    - Error handling patterns
@@ -539,19 +570,26 @@ This project has three comprehensive style guides that define ALL coding standar
    - Response patterns
    - **YOU MUST FOLLOW THIS FOR ALL LAMBDA CODE**
 
-2. **`docs/styleGuides/TestStyleGuide.md`** - Testing patterns
+2. **`docs/styleGuides/testStyleGuide.md`** - Testing patterns
    - Jest mocking strategies
    - Test file organization
    - Fixture management
    - Mock naming conventions
    - **YOU MUST FOLLOW THIS FOR ALL TEST CODE**
 
-3. **`docs/styleGuides/BashStyleGuide.md`** - Bash script patterns
+3. **`docs/styleGuides/bashStyleGuide.md`** - Bash script patterns
    - Variable naming (snake_case vs UPPER_CASE)
    - Error handling with `set -e`
    - Directory resolution
    - User output formatting
    - **YOU MUST FOLLOW THIS FOR ALL BASH SCRIPTS**
+
+4. **`docs/styleGuides/terraformStyleGuide.md`** - Terraform infrastructure patterns
+   - Resource naming (PascalCase)
+   - File organization
+   - Environment variable consistency
+   - Comment usage (no removed resource explanations)
+   - **YOU MUST FOLLOW THIS FOR ALL TERRAFORM CODE**
 
 **THESE STYLE GUIDES ARE NOT SUGGESTIONS. THEY ARE REQUIREMENTS.**
 
@@ -759,7 +797,7 @@ A known issue with video downloads is a `yt-dlp` error related to YouTube authen
 ERROR: [youtube] <video-id>: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.
 ```
 
-This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication (see Phase 2 of yt-dlp migration strategy).
+This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication.
 
 ---
 

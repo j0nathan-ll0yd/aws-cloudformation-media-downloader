@@ -210,8 +210,3 @@ resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
   retention_in_days = 14
 }
-
-# Multipart upload Step Function removed - now using direct streaming to S3
-# See Phase 3a implementation in docs/YT-DLP-MIGRATION-STRATEGY.md
-# Previous architecture: StartFileUpload -> UploadPart (loop) -> CompleteFileUpload
-# New architecture: StartFileUpload (streams directly to S3 via yt-dlp)

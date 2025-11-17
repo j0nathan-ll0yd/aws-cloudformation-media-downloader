@@ -1,6 +1,3 @@
-// TODO: These imports are deprecated after yt-dlp migration
-// import {videoFormat, videoInfo} from 'ytdl-core'
-// import {chooseVideoFormat} from '../lib/vendor/YouTube'
 import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, SignInWithAppleVerifiedToken, User} from '../types/main'
 import {logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'

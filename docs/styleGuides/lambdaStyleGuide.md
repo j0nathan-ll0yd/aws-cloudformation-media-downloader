@@ -419,6 +419,23 @@ const userFilesResponse = await query(userFileParams)
    import {VideoInfo} from '../../types/youtube'
    ```
 
+8. **No comments explaining removed code or deprecated features**
+   ```typescript
+   // BAD - explaining what was removed
+   // Multipart upload removed - now using direct streaming
+   // Previous implementation used Step Functions
+   // Old architecture: start -> upload -> complete
+
+   // BAD - TODO comments about deprecated code
+   // TODO: These imports are deprecated after migration
+   // import {oldLibrary} from 'old-package'
+
+   // GOOD - just delete the comments, use git history
+   // (no comments needed - git log shows what changed)
+   ```
+
+   **Why**: Git is the source of truth for historical code. Use `git log`, `git blame`, and `git diff` to understand what was removed and why.
+
 ## AWS Service Wrappers
 
 All AWS SDK usage must be wrapped in vendor modules:
