@@ -165,7 +165,7 @@ echo "Keep your private key secure and share the public key with team members"
 # sops --encrypt --output secrets.yaml.encrypted secrets.yaml
 ```
 
-* Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
+* Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from OpenTofu)
 
 ```bash
 brew install quicktype
@@ -294,7 +294,7 @@ open docs/source/index.html
 
 ### TODOS
 
-* Update Terraform
+* Update OpenTofu
   * Better handle conditional variables (like Github Personal Token)
 
 * Update Unit Tests
