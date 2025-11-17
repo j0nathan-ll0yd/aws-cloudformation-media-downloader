@@ -260,22 +260,126 @@ npm run test-remote-registerDevice
 
 ### Automated yt-dlp Updates
 
-The project uses a GitHub Actions workflow to automatically check for and propose updates to the yt-dlp binary used in the Lambda layer. This workflow:
+The project uses a **Terraform-based binary management system** with GitHub Actions automation to keep yt-dlp up-to-date without bloating the git repository.
 
-- Runs weekly on Sundays at midnight UTC
-- Can be manually triggered via GitHub Actions workflow_dispatch
-- Checks for new yt-dlp releases from the [official repository](https://github.com/yt-dlp/yt-dlp)
-- Downloads and verifies new binaries with SHA256 checksum validation
-- Creates a pull request with the updated binary when a new version is available
+#### Architecture
 
-The current yt-dlp version is tracked in `layers/yt-dlp/VERSION`. When a new version is detected, the workflow automatically:
+**Version Tracking**: The `layers/yt-dlp/VERSION` file contains the current yt-dlp version (e.g., `2025.11.12`)
 
-1. Downloads the Linux x86_64 binary
-2. Verifies the checksum against official SHA2-256SUMS
-3. Tests binary execution
-4. Creates a PR with release notes and change details
+**Terraform Download**: The `null_resource.DownloadYtDlpBinary` resource in `terraform/feedly_webhook.tf`:
+- Triggers whenever the VERSION file changes
+- Downloads the yt-dlp binary from GitHub releases
+- Verifies SHA256 checksum against official release checksums
+- Tests binary execution (`--version` check)
+- Makes binary executable and places it in `layers/yt-dlp/bin/`
 
-This ensures the project stays up-to-date with YouTube format changes and new features without manual intervention, while maintaining a review process before deployment.
+**Git Exclusion**: The binary (`layers/yt-dlp/bin/yt-dlp_linux`) is excluded from git via `.gitignore`, preventing repository bloat
+
+#### Automated GitHub Actions Workflow
+
+The workflow (`.github/workflows/update-yt-dlp.yml`):
+- **Runs**: Weekly on Sunday at 2am UTC
+- **Trigger**: Can be manually triggered via workflow_dispatch
+- **Process**:
+  1. Fetches latest stable release (excludes pre-releases)
+  2. Compares with current VERSION file
+  3. Downloads and verifies binary for testing
+  4. Tests format listing capability
+  5. Updates VERSION file only (not the binary)
+  6. Creates PR with release notes and deployment instructions
+
+#### Manual Update Process
+
+To manually check for and apply yt-dlp updates:
+
+```bash
+# Check for updates
+npm run update-yt-dlp check
+
+# Update VERSION file (if update available)
+npm run update-yt-dlp update
+
+# Review the change
+git diff layers/yt-dlp/VERSION
+
+# Test locally with Terraform
+cd terraform
+terraform plan  # Should show null_resource.DownloadYtDlpBinary will run
+
+# Commit and push
+git add layers/yt-dlp/VERSION
+git commit -m "chore(deps): update yt-dlp to <VERSION>"
+git push
+```
+
+#### Deployment Process
+
+When a VERSION update is merged:
+
+1. **Terraform Apply**: Run `terraform apply` or deploy via your normal process
+2. **Binary Download**: Terraform's `null_resource.DownloadYtDlpBinary` executes:
+   - Downloads binary from yt-dlp GitHub releases
+   - Verifies SHA256 checksum
+   - Tests binary execution
+3. **Layer Update**: `data.archive_file.YtDlpLayer` creates new layer zip with updated binary
+4. **Lambda Update**: `aws_lambda_layer_version.YtDlp` deploys new layer version
+5. **Monitoring**: Check CloudWatch logs for any download issues
+
+#### Rollback Procedure
+
+If a yt-dlp update causes issues in production:
+
+```bash
+# Find the previous working version
+git log layers/yt-dlp/VERSION
+
+# Revert to previous version (example: 2025.11.10)
+echo "2025.11.10" > layers/yt-dlp/VERSION
+
+# Commit and redeploy
+git commit -am "chore(deps): revert yt-dlp to 2025.11.10"
+git push
+
+# Deploy with Terraform
+cd terraform
+terraform apply  # Downloads and deploys the previous version
+```
+
+Alternatively, use git revert:
+
+```bash
+# Revert the problematic commit
+git revert <commit-hash>
+git push
+
+# Redeploy
+cd terraform
+terraform apply
+```
+
+#### Monitoring yt-dlp Updates
+
+**CloudWatch Logs**: Monitor `/aws/lambda/StartFileUpload` for download failures or errors
+
+**GitHub Issues**: The workflow automatically creates a GitHub issue if the update process fails
+
+**Version Tracking**: The deployed version can be verified by:
+```bash
+# Check VERSION file
+cat layers/yt-dlp/VERSION
+
+# Check deployed Lambda layer description
+aws lambda list-layer-versions --layer-name yt-dlp --region us-west-2 | jq '.LayerVersions[0]'
+```
+
+#### Benefits of This Approach
+
+- **No repository bloat**: 35MB binary not committed to git history
+- **Single source of truth**: VERSION file tracks desired version
+- **Automated verification**: Checksum validation on every download
+- **Easy rollback**: Change VERSION file and redeploy
+- **Terraform integration**: Binary download is part of infrastructure deployment
+- **Testing before commit**: GitHub Actions verifies binary works before creating PR
 
 ## Documentation
 
