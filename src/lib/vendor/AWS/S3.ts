@@ -28,13 +28,7 @@ export async function headObject(bucket: string, key: string): Promise<HeadObjec
  * @param options - Optional upload configuration
  * @returns Upload instance for streaming data to S3
  */
-export function createS3Upload(
-  bucket: string,
-  key: string,
-  body: Readable | Buffer,
-  contentType: string = 'video/mp4',
-  options?: Partial<UploadOptions>
-): Upload {
+export function createS3Upload(bucket: string, key: string, body: Readable | Buffer, contentType: string = 'video/mp4', options?: Partial<UploadOptions>): Upload {
   return new Upload({
     client: s3Client,
     params: {
@@ -44,7 +38,7 @@ export function createS3Upload(
       ContentType: contentType
     },
     queueSize: options?.queueSize || 4,
-    partSize: options?.partSize || (5 * 1024 * 1024), // 5MB default
+    partSize: options?.partSize || 5 * 1024 * 1024, // 5MB default
     ...options
   })
 }

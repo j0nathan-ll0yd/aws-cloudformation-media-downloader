@@ -101,9 +101,7 @@
               "port": 443,
               "protocol": "https",
               "readTimeout": 30,
-              "sslProtocols": [
-                "TLSv1.2"
-              ]
+              "sslProtocols": ["TLSv1.2"]
             }
           },
           "querystring": "ApiKey=pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy",

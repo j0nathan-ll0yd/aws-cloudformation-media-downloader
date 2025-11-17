@@ -1,13 +1,6 @@
 import {DynamoDBFile, IdentityProviderApple, User, Device} from '../types/main'
 import {FileStatus} from '../types/enums'
-import {
-  BatchGetCommandInput,
-  DeleteCommandInput,
-  PutCommandInput,
-  QueryCommandInput,
-  ScanCommandInput,
-  UpdateCommandInput
-} from '../lib/vendor/AWS/DynamoDB'
+import {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '../lib/vendor/AWS/DynamoDB'
 
 // TODO: Refactor this to return COMMANDS instead of inputs, simplifying the DynamoDB client calls to just 'send'
 function transformObjectToDynamoUpdateQuery(item: object) {

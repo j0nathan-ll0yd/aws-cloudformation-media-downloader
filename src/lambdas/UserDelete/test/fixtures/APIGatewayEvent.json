@@ -17,50 +17,24 @@
     "X-Forwarded-Proto": "https"
   },
   "multiValueHeaders": {
-    "Accept-Encoding": [
-      "gzip"
-    ],
-    "Authorization": [
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjYwNjA0MTAsImV4cCI6MTY2NjA2MDcxMH0.vfi7_lViDIAU0ohNCx-aFrU_ZMKLNrXwau5EUZTzgiw"
-    ],
-    "Content-Type": [
-      "application/json"
-    ],
-    "Host": [
-      "naf24gu6t6.execute-api.us-west-2.amazonaws.com"
-    ],
-    "User-Agent": [
-      "OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0"
-    ],
-    "Via": [
-      "2.0 fd35f1fff2f9fd0955b7c73222980a2c.cloudfront.net (CloudFront)"
-    ],
-    "X-Amz-Cf-Id": [
-      "a2TqZ6MwdM8GDD989yrofqJPPcMSnAnu0bB0PavGMGm4lV_nsaQksw=="
-    ],
-    "X-Amzn-Trace-Id": [
-      "Root=1-634e10cf-3758f3da59deef4d4445da0c"
-    ],
-    "X-API-Key": [
-      "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
-    ],
-    "X-Forwarded-For": [
-      "104.1.88.244, 64.252.70.221"
-    ],
-    "X-Forwarded-Port": [
-      "443"
-    ],
-    "X-Forwarded-Proto": [
-      "https"
-    ]
+    "Accept-Encoding": ["gzip"],
+    "Authorization": ["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjYwNjA0MTAsImV4cCI6MTY2NjA2MDcxMH0.vfi7_lViDIAU0ohNCx-aFrU_ZMKLNrXwau5EUZTzgiw"],
+    "Content-Type": ["application/json"],
+    "Host": ["naf24gu6t6.execute-api.us-west-2.amazonaws.com"],
+    "User-Agent": ["OfflineMediaDownloader/1 CFNetwork/1390 Darwin/22.0.0"],
+    "Via": ["2.0 fd35f1fff2f9fd0955b7c73222980a2c.cloudfront.net (CloudFront)"],
+    "X-Amz-Cf-Id": ["a2TqZ6MwdM8GDD989yrofqJPPcMSnAnu0bB0PavGMGm4lV_nsaQksw=="],
+    "X-Amzn-Trace-Id": ["Root=1-634e10cf-3758f3da59deef4d4445da0c"],
+    "X-API-Key": ["NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"],
+    "X-Forwarded-For": ["104.1.88.244, 64.252.70.221"],
+    "X-Forwarded-Port": ["443"],
+    "X-Forwarded-Proto": ["https"]
   },
   "queryStringParameters": {
     "ApiKey": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
   },
   "multiValueQueryStringParameters": {
-    "ApiKey": [
-      "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
-    ]
+    "ApiKey": ["NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"]
   },
   "pathParameters": null,
   "stageVariables": null,

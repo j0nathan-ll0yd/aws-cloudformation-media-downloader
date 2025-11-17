@@ -7,7 +7,6 @@ import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
 
-
 export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
   return {
     userId: uuidv4(),
@@ -111,7 +110,6 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
     TargetArn: targetArn
   }
 }
-
 
 export function assertIsError(error: unknown): asserts error is Error {
   logError('error', error)

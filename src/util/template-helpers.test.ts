@@ -56,7 +56,7 @@ describe('#template-helpers', () => {
         fileId: 'file-123',
         fileUrl: 'https://youtube.com/watch?v=test',
         error: mockError,
-        errorDetails: 'ERROR: [youtube] test: Sign in to confirm you\'re not a bot'
+        errorDetails: "ERROR: [youtube] test: Sign in to confirm you're not a bot"
       })
 
       expect(result).toContain('## Video Download Failure')
@@ -64,7 +64,7 @@ describe('#template-helpers', () => {
       expect(result).toContain('https://youtube.com/watch?v=test')
       expect(result).toContain('yt-dlp process exited with code 1')
       expect(result).toContain('## Additional Details')
-      expect(result).toContain('Sign in to confirm you\'re not a bot')
+      expect(result).toContain("Sign in to confirm you're not a bot")
       expect(result).toContain(mockError.stack)
 
       // Verify template variables were replaced
@@ -94,7 +94,7 @@ describe('#template-helpers', () => {
     })
 
     test('should render cookie-expiration template with all variables', () => {
-      const mockError = new Error('Sign in to confirm you\'re not a bot')
+      const mockError = new Error("Sign in to confirm you're not a bot")
       mockError.stack = 'CookieExpirationError: Sign in to confirm\n    at fetchVideoInfo'
 
       const result = renderGithubIssueTemplate('cookie-expiration', {
@@ -106,7 +106,7 @@ describe('#template-helpers', () => {
       expect(result).toContain('## YouTube Cookie Expiration')
       expect(result).toContain('file-789')
       expect(result).toContain('https://youtube.com/watch?v=test3')
-      expect(result).toContain('Sign in to confirm you\'re not a bot')
+      expect(result).toContain("Sign in to confirm you're not a bot")
       expect(result).toContain('npm run update-cookies')
       expect(result).toContain('npm run build')
       expect(result).toContain('npm run deploy')

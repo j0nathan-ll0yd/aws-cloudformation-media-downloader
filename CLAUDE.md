@@ -189,6 +189,7 @@ The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
 ---
 
 ### Workflow
+- **Format code automatically**: Run `npm run format` to auto-format all code with Prettier (250 char line width)
 - Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 - Don't output commands that just list files (like 'ls -l')
@@ -214,11 +215,12 @@ The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
 Before committing changes, ALWAYS run these commands to ensure code quality:
 
 ```bash
+npm run format   # Auto-format all code with Prettier
 npm run build    # Verify TypeScript compilation and webpack build
 npm test         # Run full test suite to ensure all tests pass
 ```
 
-Both commands must complete successfully without errors before committing. This prevents broken builds in GitHub Actions and maintains code quality standards.
+All commands must complete successfully without errors before committing. This prevents broken builds in GitHub Actions and maintains code quality standards.
 
 **Commit Message Verification (MANDATORY)**:
 Your commit message must NEVER contain:

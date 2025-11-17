@@ -4,12 +4,12 @@ const cloudwatch = new CloudWatchClient({region: process.env.AWS_REGION || 'us-w
 
 // Map simple unit strings to AWS StandardUnit values (internal use only)
 const unitMapping: Record<string, StandardUnit> = {
-  'Count': StandardUnit.Count,
-  'Seconds': StandardUnit.Seconds,
-  'Bytes': StandardUnit.Bytes,
-  'None': StandardUnit.None,
-  'Percent': StandardUnit.Percent,
-  'Milliseconds': StandardUnit.Milliseconds
+  Count: StandardUnit.Count,
+  Seconds: StandardUnit.Seconds,
+  Bytes: StandardUnit.Bytes,
+  None: StandardUnit.None,
+  Percent: StandardUnit.Percent,
+  Milliseconds: StandardUnit.Milliseconds
 }
 
 export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMetricDataCommandOutput> {

@@ -21,7 +21,6 @@ function isCookieExpirationError(errorMessage: string): boolean {
   return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
 }
 
-
 /**
  * Fetch video information using yt-dlp
  * @param uri - YouTube video URL

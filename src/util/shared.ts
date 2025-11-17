@@ -126,7 +126,6 @@ export async function initiateFileDownload(fileId: string) {
   })
 }
 
-
 /**
  * Makes an HTTP request via Axios
  * @param options - The [request configuration](https://github.com/axios/axios#request-config)

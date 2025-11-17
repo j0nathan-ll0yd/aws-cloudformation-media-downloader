@@ -15,6 +15,7 @@
     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
     "build-dependencies": "./bin/build-dependencies.sh",
     "install-prod": "npm install --only=production",
+    "format": "./node_modules/.bin/prettier --write 'src/**/*.{ts,js,json}' 'config/**/*.{ts,js,json}'",
     "lint": "./node_modules/.bin/eslint -c ./eslint.config.mjs .",
     "lint-fix": "./node_modules/.bin/eslint -c ./eslint.config.mjs . --fix",
     "plop": "./node_modules/plop/bin/plop.js",
