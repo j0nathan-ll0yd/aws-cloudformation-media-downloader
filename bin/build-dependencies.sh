@@ -10,14 +10,14 @@ terraform_json_file_path="${bin_dir}/../build/terraform.json"
 
 echo "terraform_files_list = $terraform_files_list"
 
-echo 'Concatenating Terraform files'
+echo 'Concatenating infrastructure files'
 consolidate_command="cat ${terraform_files_list} > ${terraform_hcl_file_path}"
 eval $consolidate_command
 
 echo 'Converting HCL to JSON (via hcl2json)'
 hcl2json < "$terraform_hcl_file_path" > "$terraform_json_file_path"
 
-echo 'Converting JSON to Typescript (via Quicktype)'
+echo 'Converting JSON to TypeScript (via Quicktype)'
 quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${terraform_json_file_path} -o ${types_file_path}"
 eval $quicktype_command
 

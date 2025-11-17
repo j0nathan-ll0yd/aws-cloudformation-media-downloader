@@ -27,6 +27,6 @@ To describe the project for you:
 ** secretsmanager-helpers.ts are utility functions for using AWS SecretsManager
 ** shared.ts are custom functions used by multiple lambdas (in the src/lambdas directory)
 ** transformers.ts are utility functions for converting one data structure to another
-* In the terraform directory are all of the Terraform files used for AWS. Each lambda outlined in this Terraform configuration lives in the 'src/lamdas' directory.
+* In the terraform directory are all of the OpenTofu files used for AWS. Each lambda outlined in this OpenTofu configuration lives in the 'src/lamdas' directory.
 
 Take a moment to familiarize yourself with the structure of the project. You should also read the package.json file.

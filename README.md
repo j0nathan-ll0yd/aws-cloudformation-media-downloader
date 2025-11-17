@@ -197,6 +197,48 @@ You will also need to create an environment variable called `GITHUB_TOKEN` with 
 brew install gh
 ```
 
+## Migration from Terraform to OpenTofu
+
+This project migrated from Terraform to OpenTofu in [PR #95](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/pull/95). OpenTofu is a drop-in replacement for Terraform with 100% HCL compatibility.
+
+### Why OpenTofu?
+
+- **Open Source Fork**: Based on Terraform 1.5 with MPL v2 license (no relicensing risk)
+- **Community Governance**: Steering committee prevents single-vendor control
+- **Enhanced Features**: State encryption, provider iteration, resource exclusion, early variable evaluation
+- **Provider Compatibility**: Uses identical provider source code as Terraform with OpenTofu's own registry at registry.opentofu.org
+
+Read more: [Make the Switch to OpenTofu](https://gruntwork.io/blog/make-the-switch-to-opentofu)
+
+### For Existing Deployments
+
+If you have an existing Terraform deployment, migration is straightforward:
+
+```bash
+# 1. Install OpenTofu (if not already installed)
+brew install opentofu
+
+# 2. No changes needed to .terraform/ directory or state files
+# OpenTofu is fully compatible with Terraform state
+
+# 3. Clean and reinitialize to use OpenTofu registry
+cd terraform
+rm -rf .terraform .terraform.lock.hcl
+tofu init
+
+# 4. Verify configuration
+tofu validate
+
+# 5. Review planned changes (should show no infrastructure changes)
+tofu plan
+
+# 6. Continue using npm scripts as before
+cd ..
+npm run deploy
+```
+
+**Note**: The `.terraform/` directory name and `.tf` file extensions remain unchanged - OpenTofu maintains backward compatibility with these conventions.
+
 ## Configuring Push Notifications
 
 In order for this project to work out-of-the-box, you will need to do some additional configuration in order to support push notifications. This includes generating a certificate to use the Apple Push Notification Service (APNS) and a subsequent p12 file. Instructions can be found [here](https://calvium.com/how-to-make-a-p12-file/).

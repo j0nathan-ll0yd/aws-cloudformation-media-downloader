@@ -25,7 +25,7 @@
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
     "update-cookies": "./bin/update-youtube-cookies.sh",
-    "plan": "eval export $(cat .env) && cd terraform && tofu apply",
+    "plan": "eval export $(cat .env) && cd terraform && tofu plan",
     "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve"
   },
   "author": "Jonathan Lloyd",
