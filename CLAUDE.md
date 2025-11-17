@@ -7,7 +7,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 
 ### Core Technologies
 - **Infrastructure as Code**: Terraform
-- **Runtime**: AWS Lambda (Node.js x22.0)
+- **Runtime**: AWS Lambda (Node.js 22.x)
 - **Language**: TypeScript
 - **Cloud Provider**: AWS (serverless architecture)
 - **Storage**: Amazon S3
@@ -385,27 +385,40 @@ WebhookFeedly test → handler import → getVideoID() from YouTube.ts
 
 **Required Mocks** (ALL of these):
 ```typescript
-// YouTube.ts dependencies
+// YouTube.ts dependencies (external packages)
 jest.unstable_mockModule('yt-dlp-wrap', () => ({ default: MockYTDlpWrap }))
 jest.unstable_mockModule('child_process', () => ({ spawn: jest.fn() }))
 jest.unstable_mockModule('fs', () => ({ promises: { copyFile: jest.fn() } }))
-jest.unstable_mockModule('@aws-sdk/lib-storage', () => ({ Upload: jest.fn() }))
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn(),
-  HeadObjectCommand: jest.fn()
+
+// YouTube.ts dependencies (vendor wrappers - NEVER mock @aws-sdk/* directly)
+jest.unstable_mockModule('./AWS/S3', () => ({
+  headObject: jest.fn(),
+  createS3Upload: jest.fn()
 }))
 
-// shared.ts dependencies
-jest.unstable_mockModule('@aws-sdk/client-lambda', () => ({
-  LambdaClient: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({StatusCode: 202})
-  })),
-  InvokeCommand: jest.fn()
+// CloudWatch vendor wrapper (used by util/lambda-helpers)
+jest.unstable_mockModule('./AWS/CloudWatch', () => ({
+  putMetricData: jest.fn(),
+  getStandardUnit: (unit?: string) => unit || 'None'
+}))
+
+// shared.ts dependencies (vendor wrappers - NEVER mock @aws-sdk/* directly)
+jest.unstable_mockModule('./AWS/Lambda', () => ({
+  invokeLambda: jest.fn<() => Promise<{StatusCode: number}>>()
+    .mockResolvedValue({StatusCode: 202})
+}))
+
+// DynamoDB vendor wrapper
+jest.unstable_mockModule('./AWS/DynamoDB', () => ({
+  query: jest.fn(),
+  updateItem: jest.fn()
 }))
 
 // THEN import the handler
 const {handler} = await import('./../src')
 ```
+
+**CRITICAL**: Notice we mock `./AWS/S3`, `./AWS/Lambda`, `./AWS/DynamoDB` (vendor wrappers), NOT `@aws-sdk/*` packages directly. This follows our AWS SDK Encapsulation Policy.
 
 #### Why This Matters
 
@@ -419,12 +432,14 @@ const {handler} = await import('./../src')
 - ✓ Tests pass reliably
 - ✓ Clear errors when mocks missing
 - ✓ Fast iteration
+- ✓ Follows AWS SDK Encapsulation Policy
 
 #### Key Takeaway
 
-**When importing ANY function from a module, you must mock ALL of that module's dependencies, not just the function you're using.**
-
-**Reference**: See `docs/YT-DLP-MIGRATION-STRATEGY.md` section "Critical Lesson: Comprehensive Test Mocking Strategy" for full details.
+**When importing ANY function from a module, you must mock ALL of that module's transitive dependencies:**
+1. External NPM packages (yt-dlp-wrap, etc.)
+2. Node.js built-ins (child_process, fs, etc.)
+3. **Vendor wrappers** (lib/vendor/AWS/*) - NEVER mock @aws-sdk/* directly
 
 ---
 
@@ -497,7 +512,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 3. Build output - verify new packages are externalized, not bundled
 
 ### Testing Strategy
-- **Unit Tests**: Mocha-based tests for each Lambda (`index.test.ts`)
+- **Unit Tests**: Jest-based tests for each Lambda (`index.test.ts`)
 - **Test Fixtures**: JSON mock data in `test/fixtures/` directories
 - **Test Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
 - **Test Setup**: `util/jest-setup.ts` configures the test environment
@@ -546,7 +561,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - All secrets are outlined in the README and stored as `secrets.yaml`
 - Never read the `secrets.yaml` file
 - Use environment variables for production secrets
-- The file `secrets.encrypted.yaml` is read by Terraform at deploy timee
+- The file `secrets.encrypted.yaml` is read by Terraform at deploy time
 
 ### Certificate Management
 - APNS requires p12 certificate conversion
@@ -620,7 +635,7 @@ When developing Lambda functions, utilize these shared utilities:
 ### Adding New Lambda Functions
 1. Create directory structure: `src/lambdas/[function-name]/`
 2. Implement handler in `src/index.ts` with TypeDoc comments
-3. Write Mocha tests in `test/index.test.ts`
+3. Write Jest tests in `test/index.test.ts`
 4. Add test fixtures in `test/fixtures/`
 5. Define Lambda resource in Terraform
 6. Configure webpack entry point

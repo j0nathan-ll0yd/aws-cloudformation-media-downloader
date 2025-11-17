@@ -7,7 +7,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 
 ### Core Technologies
 - **Infrastructure as Code**: Terraform
-- **Runtime**: AWS Lambda (Node.js x22.0)
+- **Runtime**: AWS Lambda (Node.js 22.x)
 - **Language**: TypeScript
 - **Cloud Provider**: AWS (serverless architecture)
 - **Storage**: Amazon S3
@@ -120,7 +120,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - `npm run document-source` - Generates TSDoc documentation
 
 ### Testing Strategy
-- **Unit Tests**: Mocha-based tests for each Lambda (`index.test.ts`)
+- **Unit Tests**: Jest-based tests for each Lambda (`index.test.ts`)
 - **Test Fixtures**: JSON mock data in `test/fixtures/` directories
 - **Test Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
 - **Test Setup**: `util/jest-setup.ts` configures the test environment
@@ -169,7 +169,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - All secrets are outlined in the README and stored as `secrets.yaml`
 - Never read the `secrets.yaml` file
 - Use environment variables for production secrets
-- The file `secrets.encrypted.yaml` is read by Terraform at deploy timee
+- The file `secrets.encrypted.yaml` is read by Terraform at deploy time
 
 ### Certificate Management
 - APNS requires p12 certificate conversion
@@ -205,7 +205,7 @@ When developing Lambda functions, utilize these shared utilities:
 ### Adding New Lambda Functions
 1. Create directory structure: `src/lambdas/[function-name]/`
 2. Implement handler in `src/index.ts` with TypeDoc comments
-3. Write Mocha tests in `test/index.test.ts`
+3. Write Jest tests in `test/index.test.ts`
 4. Add test fixtures in `test/fixtures/`
 5. Define Lambda resource in Terraform
 6. Configure webpack entry point
@@ -337,7 +337,11 @@ This section outlines a common workflow for remotely testing the media download 
 To initiate the process, invoke the `FileCoordinator` Lambda function. This function scans for files that need to be downloaded and starts the process.
 
 ```bash
-aws lambda invoke --function-name FileCoordinator --payload '{}' /dev/null
+aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{}' \
+  /dev/null
 ```
 
 This command invokes the `FileCoordinator` function with an empty JSON payload. The response from the lambda is discarded by redirecting it to `/dev/null`.
@@ -347,7 +351,7 @@ This command invokes the `FileCoordinator` function with an empty JSON payload. 
 After triggering the `FileCoordinator`, you can monitor the logs of the `StartFileUpload` Lambda to observe the file upload process.
 
 ```bash
-aws logs tail /aws/lambda/StartFileUpload --follow
+aws logs tail /aws/lambda/StartFileUpload --region us-west-2 --follow --format short
 ```
 
 This command will stream the logs from the `/aws/lambda/StartFileUpload` log group, allowing you to see real-time updates. The `--follow` flag keeps the connection open and continues to display new log entries.
@@ -361,16 +365,26 @@ This section outlines a specific workflow for testing the `StartFileUpload` lamb
 The following command invokes the `FileCoordinator` lambda, waits for 5 seconds, and then filters the logs of the `StartFileUpload` lambda for "ERROR" messages in the last 5 minutes.
 
 ```bash
-aws lambda invoke --function-name FileCoordinator --region us-west-2 --payload '{}' /dev/null && sleep 5 && aws logs filter-log-events --log-group-name /aws/lambda/StartFileUpload --region us-west-2 --start-time $(date -v-5M +%s000) --filter-pattern "ERROR"
+aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{}' \
+  /dev/null && \
+  sleep 5 && \
+  aws logs filter-log-events \
+  --log-group-name /aws/lambda/StartFileUpload \
+  --region us-west-2 \
+  --start-time $(date -v-5M +%s000) \
+  --filter-pattern "ERROR"
 ```
 
-### 2. Known Error: YouTube Authentication
+### 2. Known Issue: YouTube Authentication
 
-A known issue with this workflow is a `yt-dlp` error related to YouTube authentication. The error message is:
+A known issue with video downloads is a `yt-dlp` error related to YouTube authentication. The error message is:
 
 ```
-ERROR: [youtube] wRG7lAGdRII: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication.
+ERROR: [youtube] <video-id>: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.
 ```
 
-This error occurs because YouTube is blocking the request from the server environment. To resolve this, the `StartFileUpload` lambda needs to be updated to provide authentication cookies to `yt-dlp`.
+This error occurs because YouTube is blocking requests from AWS Lambda datacenter IPs. This is resolved by implementing cookie-based authentication.
 
