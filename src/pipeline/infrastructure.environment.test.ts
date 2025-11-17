@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {TerraformD} from '../types/terraform'
+import {InfrastructureD} from '../types/infrastructure'
 import {logDebug} from '../util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
@@ -24,13 +24,13 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
   })
 }
 
-function preprocessTerraformPlan(terraformPlan: TerraformD) {
+function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
-  const lambdaFunctionNames = Object.keys(terraformPlan.resource.aws_lambda_function)
+  const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = (terraformPlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
+    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
     const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
@@ -61,13 +61,13 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   }
 }
 
-describe('#Terraform', () => {
-  const jsonFilePath = `${__dirname}/../../build/terraform.json`
-  logDebug('Retrieving Terraform plan configuration')
+describe('#Infrastructure', () => {
+  const jsonFilePath = `${__dirname}/../../build/infrastructure.json`
+  logDebug('Retrieving infrastructure configuration')
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
   logDebug('JSON file', jsonFile)
-  const terraformPlan = JSON.parse(jsonFile) as TerraformD
-  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessTerraformPlan(terraformPlan)
+  const infrastructurePlan = JSON.parse(jsonFile) as InfrastructureD
+  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessInfrastructurePlan(infrastructurePlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform: string[] = []
     if (environmentVariablesForFunction[functionName]) {

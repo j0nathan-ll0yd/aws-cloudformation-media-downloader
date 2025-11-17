@@ -3,22 +3,22 @@
 # Get the directory of this file (where the package.json file is located)
 bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-terraform_files_list="${bin_dir}/../terraform/*.tf"
-types_file_path="${bin_dir}/../src/types/terraform.d.ts"
-terraform_hcl_file_path="${bin_dir}/../build/terraform.tf"
-terraform_json_file_path="${bin_dir}/../build/terraform.json"
+infrastructure_files_list="${bin_dir}/../terraform/*.tf"
+types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
+infrastructure_hcl_file_path="${bin_dir}/../build/infrastructure.tf"
+infrastructure_json_file_path="${bin_dir}/../build/infrastructure.json"
 
-echo "terraform_files_list = $terraform_files_list"
+echo "infrastructure_files_list = $infrastructure_files_list"
 
 echo 'Concatenating infrastructure files'
-consolidate_command="cat ${terraform_files_list} > ${terraform_hcl_file_path}"
+consolidate_command="cat ${infrastructure_files_list} > ${infrastructure_hcl_file_path}"
 eval $consolidate_command
 
 echo 'Converting HCL to JSON (via hcl2json)'
-hcl2json < "$terraform_hcl_file_path" > "$terraform_json_file_path"
+hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"
 
 echo 'Converting JSON to TypeScript (via Quicktype)'
-quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${terraform_json_file_path} -o ${types_file_path}"
+quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
 eval $quicktype_command
 
 echo 'Encrypting Secrets (secrets.yaml) via SOPS'
