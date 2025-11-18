@@ -5,6 +5,8 @@
  * This file runs before all integration tests via setupFilesAfterEnv in jest.integration.config.mjs
  */
 
+import {jest, beforeAll} from '@jest/globals'
+
 /**
  * Ensure USE_LOCALSTACK is set
  * This triggers all vendor wrappers to use LocalStack clients instead of production AWS
