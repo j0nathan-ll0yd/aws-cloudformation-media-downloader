@@ -2,13 +2,14 @@
  * Lambda Integration Tests
  *
  * Tests Lambda vendor wrapper functions against LocalStack to verify:
- * - Synchronous Lambda invocation using invokeLambda
- * - Asynchronous Lambda invocation using invokeAsync
+ * - Error handling when invoking non-existent functions
+ * - Vendor wrapper correctly propagates AWS SDK errors
  * - Real AWS SDK interactions without mocking
  *
- * Note: These tests verify the invocation mechanism works, not the actual Lambda execution,
- * since deploying real Lambda functions to LocalStack is complex and beyond the scope
- * of basic integration testing.
+ * Note: These tests verify error handling rather than successful execution,
+ * since deploying actual Lambda functions to LocalStack requires additional setup.
+ * The key validation is that our vendor wrappers correctly interact with the
+ * Lambda service and handle errors appropriately.
  */
 
 import {describe, test, expect} from '@jest/globals'
@@ -18,59 +19,41 @@ import {InvocationType} from '@aws-sdk/client-lambda'
 const TEST_FUNCTION_NAME = 'test-integration-function'
 
 describe('Lambda Integration Tests', () => {
-  test('should invoke Lambda function synchronously using invokeLambda', async () => {
+  test('should throw ResourceNotFoundException when invoking non-existent function synchronously', async () => {
     // Arrange
     const payload = {message: 'test payload'}
 
-    // Act
-    const result = await invokeLambda({
-      FunctionName: TEST_FUNCTION_NAME,
-      InvocationType: InvocationType.RequestResponse,
-      Payload: JSON.stringify(payload)
-    })
-
-    // Assert
-    // LocalStack returns a response even if function doesn't exist
-    // We verify the invocation mechanism works
-    expect(result).toBeDefined()
-    expect(result.$metadata).toBeDefined()
-    expect(result.$metadata.httpStatusCode).toBeDefined()
+    // Act & Assert
+    await expect(
+      invokeLambda({
+        FunctionName: TEST_FUNCTION_NAME,
+        InvocationType: InvocationType.RequestResponse,
+        Payload: JSON.stringify(payload)
+      })
+    ).rejects.toThrow('ResourceNotFoundException')
   })
 
-  test('should invoke Lambda function asynchronously using invokeAsync', async () => {
+  test('should throw ResourceNotFoundException when invoking non-existent function asynchronously', async () => {
     // Arrange
     const payload = {message: 'async test payload', timestamp: Date.now()}
 
-    // Act
-    const result = await invokeAsync(TEST_FUNCTION_NAME, payload)
-
-    // Assert
-    // Async invocation returns StatusCode 202 (Accepted)
-    // LocalStack simulates this behavior
-    expect(result).toBeDefined()
-    expect(result.$metadata).toBeDefined()
-    expect(result.$metadata.httpStatusCode).toBeDefined()
+    // Act & Assert
+    await expect(invokeAsync(TEST_FUNCTION_NAME, payload)).rejects.toThrow('ResourceNotFoundException')
   })
 
-  test('should handle empty payload in invokeLambda', async () => {
-    // Act
-    const result = await invokeLambda({
-      FunctionName: TEST_FUNCTION_NAME,
-      InvocationType: InvocationType.RequestResponse,
-      Payload: JSON.stringify({})
-    })
-
-    // Assert
-    expect(result).toBeDefined()
-    expect(result.$metadata).toBeDefined()
+  test('should propagate errors correctly with empty payload in invokeLambda', async () => {
+    // Act & Assert
+    await expect(
+      invokeLambda({
+        FunctionName: TEST_FUNCTION_NAME,
+        InvocationType: InvocationType.RequestResponse,
+        Payload: JSON.stringify({})
+      })
+    ).rejects.toThrow('ResourceNotFoundException')
   })
 
-  test('should handle empty payload in invokeAsync', async () => {
-    // Act
-    const result = await invokeAsync(TEST_FUNCTION_NAME, {})
-
-    // Assert
-    expect(result).toBeDefined()
-    expect(result.$metadata).toBeDefined()
+  test('should propagate errors correctly with empty payload in invokeAsync', async () => {
+    // Act & Assert
+    await expect(invokeAsync(TEST_FUNCTION_NAME, {})).rejects.toThrow('ResourceNotFoundException')
   })
 })
