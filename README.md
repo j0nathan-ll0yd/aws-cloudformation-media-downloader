@@ -310,7 +310,7 @@ test/integration/
 
 **LocalStack Configuration:**
 
-LocalStack runs on `http://localhost:4566` and provides the following AWS services:
+LocalStack runs on `http://localhost:4566` with ephemeral storage (fresh state each run) and provides the following AWS services:
 
 - S3 (Simple Storage Service)
 - DynamoDB (NoSQL Database)

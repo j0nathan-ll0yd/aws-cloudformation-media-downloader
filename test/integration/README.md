@@ -111,7 +111,7 @@ LocalStack is configured via `docker-compose.localstack.yml`:
 
 - **Endpoint**: http://localhost:4566
 - **Services**: S3, DynamoDB, SNS, SQS, Lambda, CloudWatch, API Gateway
-- **Persistence**: Enabled (data persists between container restarts)
+- **Storage**: Ephemeral (fresh state each run for consistent test results)
 - **Debug Mode**: Enabled for troubleshooting
 
 ## Troubleshooting

@@ -13,12 +13,7 @@ services:
       - DEBUG=1
       # Use single edge port (4566) for all services
       - EDGE_PORT=4566
-      # Persistence configuration
-      - PERSISTENCE=1
-      - DATA_DIR=/tmp/localstack/data
     volumes:
-      # Persist LocalStack data between restarts
-      - localstack-data:/tmp/localstack
       # Mount Docker socket for Lambda execution
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -29,10 +24,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-volumes:
-  localstack-data:
-    driver: local
 
 networks:
   localstack-network:
