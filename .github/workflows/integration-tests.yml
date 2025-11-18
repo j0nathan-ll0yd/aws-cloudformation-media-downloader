@@ -1,0 +1,76 @@
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Start LocalStack
+        run: |
+          docker-compose -f docker-compose.localstack.yml up -d
+          echo "Waiting for LocalStack to be ready..."
+
+      - name: Wait for LocalStack health check
+        run: |
+          max_retries=30
+          retry_count=0
+
+          while [ $retry_count -lt $max_retries ]; do
+            if curl -sf http://localhost:4566/_localstack/health > /dev/null 2>&1; then
+              echo "LocalStack is healthy"
+              curl -s http://localhost:4566/_localstack/health | jq
+              exit 0
+            fi
+
+            retry_count=$((retry_count + 1))
+            echo "Attempt $retry_count of $max_retries..."
+            sleep 1
+          done
+
+          echo "LocalStack failed to become healthy"
+          docker-compose -f docker-compose.localstack.yml logs
+          exit 1
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          CI: true
+          USE_LOCALSTACK: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            coverage/
+            test-results/
+          retention-days: 7
+
+      - name: Show LocalStack logs on failure
+        if: failure()
+        run: docker-compose -f docker-compose.localstack.yml logs
+
+      - name: Stop LocalStack
+        if: always()
+        run: docker-compose -f docker-compose.localstack.yml down

@@ -1,6 +1,7 @@
-import {CloudWatchClient, PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {createCloudWatchClient} from './clients'
 
-const cloudwatch = new CloudWatchClient({region: process.env.AWS_REGION || 'us-west-2'})
+const cloudwatch = createCloudWatchClient()
 
 // Map simple unit strings to AWS StandardUnit values (internal use only)
 const unitMapping: Record<string, StandardUnit> = {

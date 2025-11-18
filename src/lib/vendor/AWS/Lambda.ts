@@ -1,6 +1,7 @@
-import {LambdaClient, InvokeCommand, InvokeCommandInput, InvokeCommandOutput} from '@aws-sdk/client-lambda'
+import {InvokeCommand, InvokeCommandInput, InvokeCommandOutput} from '@aws-sdk/client-lambda'
+import {createLambdaClient} from './clients'
 
-const lambda = new LambdaClient({region: process.env.AWS_REGION || 'us-west-2'})
+const lambda = createLambdaClient()
 
 /**
  * Invokes a Lambda function

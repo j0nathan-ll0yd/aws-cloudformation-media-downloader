@@ -1,8 +1,9 @@
-import {S3Client, HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
+import {HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
 import {Upload, Options as UploadOptions} from '@aws-sdk/lib-storage'
 import {Readable} from 'stream'
+import {createS3Client} from './clients'
 
-const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
+const s3Client = createS3Client()
 
 /**
  * Get metadata for an S3 object

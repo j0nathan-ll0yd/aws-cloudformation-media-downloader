@@ -1,6 +1,7 @@
-import {SQSClient, SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
+import {SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
+import {createSQSClient} from './clients'
 
-const sqs = new SQSClient()
+const sqs = createSQSClient()
 
 // Re-export types for application code to use
 export type {SendMessageRequest}

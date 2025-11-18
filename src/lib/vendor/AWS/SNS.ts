@@ -9,7 +9,6 @@ import {
   SubscribeInput,
   SubscribeResponse,
   UnsubscribeInput,
-  SNSClient,
   SubscribeCommand,
   PublishCommand,
   ListSubscriptionsByTopicCommand,
@@ -17,8 +16,9 @@ import {
   UnsubscribeCommand,
   DeleteEndpointCommand
 } from '@aws-sdk/client-sns'
+import {createSNSClient} from './clients'
 
-const sns = new SNSClient()
+const sns = createSNSClient()
 
 // Re-export types for application code to use
 export type {PublishInput}

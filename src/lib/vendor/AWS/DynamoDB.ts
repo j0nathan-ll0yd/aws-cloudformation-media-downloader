@@ -1,10 +1,10 @@
-import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
 import {BatchGetCommandInput, DeleteCommandInput, DynamoDBDocument, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
+import {createDynamoDBClient} from './clients'
 
 // Re-export types for application code to use
 export type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput}
 
-const client = new DynamoDBClient()
+const client = createDynamoDBClient()
 const docClient = DynamoDBDocument.from(client)
 
 export function updateItem(params: UpdateCommandInput) {

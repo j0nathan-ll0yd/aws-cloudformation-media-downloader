@@ -256,6 +256,77 @@ Remotely test the register device method for registering for push notifications 
 npm run test-remote-registerDevice
 ```
 
+### Integration Testing with LocalStack
+
+This project includes integration tests that run against [LocalStack](https://localstack.cloud/), a local AWS cloud emulator. Integration tests verify that AWS service interactions work correctly without mocking, providing higher confidence in production deployments.
+
+#### Prerequisites
+
+- **Docker**: Required to run LocalStack container
+- **docker-compose**: Used to manage LocalStack lifecycle
+- **jq**: Optional, for pretty-printing health check results
+
+```bash
+brew install docker docker-compose jq
+```
+
+#### Running Integration Tests
+
+**Quick Start:**
+
+```bash
+# Start LocalStack
+npm run localstack:start
+
+# Run integration tests
+npm run test:integration:full
+
+# Stop LocalStack when done
+npm run localstack:stop
+```
+
+**Available Commands:**
+
+- `npm run localstack:start` - Start LocalStack container in detached mode
+- `npm run localstack:stop` - Stop and remove LocalStack container
+- `npm run localstack:logs` - Stream LocalStack logs
+- `npm run localstack:health` - Check LocalStack service health
+- `npm run test:integration` - Run integration tests (assumes LocalStack is running)
+- `npm run test:integration:full` - Full integration test suite with LocalStack lifecycle management
+
+**Test Organization:**
+
+Integration tests are located in `test/integration/` and organized by AWS service:
+
+```
+test/integration/
+├── s3/                   # S3 integration tests
+├── dynamodb/             # DynamoDB integration tests
+├── lambda/               # Lambda integration tests
+├── sns/                  # SNS integration tests
+├── sqs/                  # SQS integration tests
+├── cloudwatch/           # CloudWatch integration tests
+└── apigateway/           # API Gateway integration tests
+```
+
+**LocalStack Configuration:**
+
+LocalStack runs on `http://localhost:4566` and provides the following AWS services:
+
+- S3 (Simple Storage Service)
+- DynamoDB (NoSQL Database)
+- SNS (Simple Notification Service)
+- SQS (Simple Queue Service)
+- Lambda (Serverless Functions)
+- CloudWatch (Monitoring)
+- API Gateway (REST APIs)
+
+**Architecture:**
+
+Integration tests use the same vendor wrappers (`src/lib/vendor/AWS/*`) as production code. When `USE_LOCALSTACK=true` environment variable is set, the vendor wrappers automatically configure AWS SDK clients to connect to LocalStack instead of production AWS.
+
+See `test/integration/README.md` for detailed integration testing documentation.
+
 ## Documentation
 
 This project uses multiple documentation approaches:

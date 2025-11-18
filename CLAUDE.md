@@ -512,15 +512,44 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 3. Build output - verify new packages are externalized, not bundled
 
 ### Testing Strategy
-- **Unit Tests**: Jest-based tests for each Lambda (`index.test.ts`)
-- **Test Fixtures**: JSON mock data in `test/fixtures/` directories
-- **Test Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
-- **Test Setup**: `util/jest-setup.ts` configures the test environment
-- **Pipeline Tests**: GitHub Actions tests in `pipeline/` directory
-- **Integration Tests**: Remote endpoint testing via npm scripts
-    - `test-remote-list` - Tests file listing
-    - `test-remote-hook` - Tests Feedly webhook
-    - `test-remote-registerDevice` - Tests device registration
+
+#### Unit Tests
+- **Location**: Each Lambda has `test/index.test.ts` alongside `src/index.ts`
+- **Framework**: Jest with ES modules support
+- **Mocking**: Comprehensive mocking of AWS SDK and external dependencies
+- **Fixtures**: JSON mock data in `test/fixtures/` directories
+- **Utilities**: Most `util/*.ts` files have corresponding `*.test.ts` files
+- **Setup**: `util/jest-setup.ts` configures the test environment
+- **Run**: `npm test`
+
+#### Integration Tests with LocalStack
+- **Location**: `test/integration/` organized by AWS service (s3, dynamodb, lambda, etc.)
+- **Framework**: Jest with LocalStack environment configuration
+- **Purpose**: Verify AWS service interactions work correctly without mocking
+- **Environment**: LocalStack running on `http://localhost:4566`
+- **Architecture**: Uses vendor wrappers with `USE_LOCALSTACK=true` environment variable
+- **Commands**:
+  - `npm run localstack:start` - Start LocalStack container
+  - `npm run localstack:stop` - Stop LocalStack container
+  - `npm run localstack:logs` - View LocalStack logs
+  - `npm run localstack:health` - Check LocalStack service health
+  - `npm run test:integration` - Run integration tests (assumes LocalStack running)
+  - `npm run test:integration:full` - Full test suite with LocalStack lifecycle management
+- **CI/CD**: GitHub Actions workflow automatically runs integration tests on push/PR
+- **Configuration**: `config/jest.integration.config.mjs` and `docker-compose.localstack.yml`
+- **Documentation**: See `test/integration/README.md` for detailed information
+
+#### Production Integration Tests
+- **Purpose**: Remote endpoint testing against production AWS
+- **Commands**:
+  - `test-remote-list` - Tests file listing
+  - `test-remote-hook` - Tests Feedly webhook
+  - `test-remote-registerDevice` - Tests device registration
+
+#### Pipeline Tests
+- **Location**: `pipeline/` directory
+- **Purpose**: GitHub Actions workflow validation
+- **Framework**: act (local GitHub Actions runner)
 
 ## API Design
 

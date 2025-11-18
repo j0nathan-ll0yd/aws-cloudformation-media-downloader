@@ -1,6 +1,7 @@
-import {ApiKey, ApiKeys, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlan, UsagePlans, APIGateway} from '@aws-sdk/client-api-gateway'
+import {ApiKey, ApiKeys, GetApiKeysRequest, GetUsagePlansRequest, GetUsageRequest, Usage, UsagePlan, UsagePlans} from '@aws-sdk/client-api-gateway'
+import {createAPIGatewayClient} from './clients'
 
-const apigateway = new APIGateway()
+const apigateway = createAPIGatewayClient()
 
 // Re-export types for application code to use
 export type {ApiKey, UsagePlan}
