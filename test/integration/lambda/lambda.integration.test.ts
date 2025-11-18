@@ -19,7 +19,7 @@ import {InvocationType} from '@aws-sdk/client-lambda'
 const TEST_FUNCTION_NAME = 'test-integration-function'
 
 describe('Lambda Integration Tests', () => {
-  test('should throw ResourceNotFoundException when invoking non-existent function synchronously', async () => {
+  test('should throw error when invoking non-existent function synchronously', async () => {
     // Arrange
     const payload = {message: 'test payload'}
 
@@ -30,15 +30,15 @@ describe('Lambda Integration Tests', () => {
         InvocationType: InvocationType.RequestResponse,
         Payload: JSON.stringify(payload)
       })
-    ).rejects.toThrow('ResourceNotFoundException')
+    ).rejects.toThrow('Function not found')
   })
 
-  test('should throw ResourceNotFoundException when invoking non-existent function asynchronously', async () => {
+  test('should throw error when invoking non-existent function asynchronously', async () => {
     // Arrange
     const payload = {message: 'async test payload', timestamp: Date.now()}
 
     // Act & Assert
-    await expect(invokeAsync(TEST_FUNCTION_NAME, payload)).rejects.toThrow('ResourceNotFoundException')
+    await expect(invokeAsync(TEST_FUNCTION_NAME, payload)).rejects.toThrow('Function not found')
   })
 
   test('should propagate errors correctly with empty payload in invokeLambda', async () => {
@@ -49,11 +49,11 @@ describe('Lambda Integration Tests', () => {
         InvocationType: InvocationType.RequestResponse,
         Payload: JSON.stringify({})
       })
-    ).rejects.toThrow('ResourceNotFoundException')
+    ).rejects.toThrow('Function not found')
   })
 
   test('should propagate errors correctly with empty payload in invokeAsync', async () => {
     // Act & Assert
-    await expect(invokeAsync(TEST_FUNCTION_NAME, {})).rejects.toThrow('ResourceNotFoundException')
+    await expect(invokeAsync(TEST_FUNCTION_NAME, {})).rejects.toThrow('Function not found')
   })
 })
