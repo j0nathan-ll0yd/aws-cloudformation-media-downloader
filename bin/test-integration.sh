@@ -58,13 +58,13 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo -e "${RED}Error: docker-compose is not installed${NC}"
-    echo "Please install docker-compose"
+if ! docker compose version &> /dev/null; then
+    echo -e "${RED}Error: docker compose is not available${NC}"
+    echo "Please install Docker with Compose plugin or docker-compose standalone"
     exit 1
 fi
 
-echo "✅ Docker and docker-compose are available"
+echo "✅ Docker and docker compose are available"
 echo ""
 
 # Function to check LocalStack health
@@ -107,7 +107,7 @@ if [ "$start_localstack" = true ]; then
     echo ""
   else
     echo "🚀 Starting LocalStack container..."
-    docker-compose -f "$COMPOSE_FILE" up -d
+    docker compose -f "$COMPOSE_FILE" up -d
     echo ""
   fi
 
@@ -164,7 +164,7 @@ echo ""
 # Cleanup if requested
 if [ "$cleanup_after" = true ]; then
   echo -e "${YELLOW}Stopping LocalStack...${NC}"
-  docker-compose -f "$COMPOSE_FILE" down
+  docker compose -f "$COMPOSE_FILE" down
   echo -e "${GREEN}✅ LocalStack stopped${NC}"
   echo ""
 else

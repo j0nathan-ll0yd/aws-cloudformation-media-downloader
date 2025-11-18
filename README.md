@@ -262,12 +262,11 @@ This project includes integration tests that run against [LocalStack](https://lo
 
 #### Prerequisites
 
-- **Docker**: Required to run LocalStack container
-- **docker-compose**: Used to manage LocalStack lifecycle
+- **Docker**: Required to run LocalStack container (includes Compose plugin)
 - **jq**: Optional, for pretty-printing health check results
 
 ```bash
-brew install docker docker-compose jq
+brew install docker jq
 ```
 
 #### Running Integration Tests

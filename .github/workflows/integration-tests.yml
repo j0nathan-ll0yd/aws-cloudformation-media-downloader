@@ -27,7 +27,7 @@ jobs:
 
       - name: Start LocalStack
         run: |
-          docker-compose -f docker-compose.localstack.yml up -d
+          docker compose -f docker-compose.localstack.yml up -d
           echo "Waiting for LocalStack to be ready..."
 
       - name: Wait for LocalStack health check
@@ -48,7 +48,7 @@ jobs:
           done
 
           echo "LocalStack failed to become healthy"
-          docker-compose -f docker-compose.localstack.yml logs
+          docker compose -f docker-compose.localstack.yml logs
           exit 1
 
       - name: Run integration tests
@@ -69,8 +69,8 @@ jobs:
 
       - name: Show LocalStack logs on failure
         if: failure()
-        run: docker-compose -f docker-compose.localstack.yml logs
+        run: docker compose -f docker-compose.localstack.yml logs
 
       - name: Stop LocalStack
         if: always()
-        run: docker-compose -f docker-compose.localstack.yml down
+        run: docker compose -f docker-compose.localstack.yml down

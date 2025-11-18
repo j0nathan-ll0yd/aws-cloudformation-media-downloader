@@ -10,9 +10,8 @@ Integration tests validate that our vendor wrappers (`src/lib/vendor/AWS/*`) wor
 
 ### Prerequisites
 
-1. **Docker**: Required to run LocalStack container
-2. **docker-compose**: Used to manage LocalStack lifecycle
-3. **jq**: Optional, for pretty-printing health check results
+1. **Docker**: Required to run LocalStack container (includes Compose plugin)
+2. **jq**: Optional, for pretty-printing health check results
 
 ### Quick Start
 
