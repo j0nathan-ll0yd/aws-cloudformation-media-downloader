@@ -20,7 +20,7 @@
     "lint-fix": "./node_modules/.bin/eslint -c ./eslint.config.mjs . --fix",
     "plop": "./node_modules/plop/bin/plop.js",
     "test": "node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.config.mjs",
-    "test:integration": "USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --config config/jest.integration.config.mjs",
+    "test:integration": "USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.integration.config.mjs",
     "test:integration:with-lifecycle": "./bin/test-integration.sh",
     "test:all": "./bin/test-all.sh",
     "test-full": "npm run build-dependencies && npm run build && npm run test",

@@ -19,8 +19,17 @@ import {FileStatus} from '../../../src/types/enums'
 const dynamoDBClient = createDynamoDBClient()
 
 // Table names from environment
-const FILES_TABLE = process.env.DynamoDBTableFiles || 'test-files'
-const USERS_TABLE = process.env.DynamoDBTableUsers || 'test-users'
+function getFilesTable() {
+  return process.env.DynamoDBTableFiles || 'test-files'
+}
+
+function getUsersTable() {
+  return process.env.DynamoDBTableUsers || 'test-users'
+}
+
+function getUserFilesTable() {
+  return process.env.DynamoDBTableUserFiles || 'test-user-files'
+}
 
 /**
  * Create test Files table in LocalStack
@@ -29,7 +38,7 @@ export async function createFilesTable(): Promise<void> {
   try {
     await dynamoDBClient.send(
       new CreateTableCommand({
-        TableName: FILES_TABLE,
+        TableName: getFilesTable(),
         KeySchema: [{AttributeName: 'fileId', KeyType: 'HASH'}],
         AttributeDefinitions: [{AttributeName: 'fileId', AttributeType: 'S'}],
         BillingMode: 'PAY_PER_REQUEST'
@@ -50,7 +59,28 @@ export async function createUsersTable(): Promise<void> {
   try {
     await dynamoDBClient.send(
       new CreateTableCommand({
-        TableName: USERS_TABLE,
+        TableName: getUsersTable(),
+        KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
+        AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
+        BillingMode: 'PAY_PER_REQUEST'
+      })
+    )
+  } catch (error) {
+    // Table might already exist
+    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
+      throw error
+    }
+  }
+}
+
+/**
+ * Create test UserFiles table in LocalStack
+ */
+export async function createUserFilesTable(): Promise<void> {
+  try {
+    await dynamoDBClient.send(
+      new CreateTableCommand({
+        TableName: getUserFilesTable(),
         KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
         AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
         BillingMode: 'PAY_PER_REQUEST'
@@ -69,7 +99,7 @@ export async function createUsersTable(): Promise<void> {
  */
 export async function deleteFilesTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: FILES_TABLE}))
+    await dynamoDBClient.send(new DeleteTableCommand({TableName: getFilesTable()}))
   } catch (error) {
     // Table might not exist
   }
@@ -80,7 +110,18 @@ export async function deleteFilesTable(): Promise<void> {
  */
 export async function deleteUsersTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: USERS_TABLE}))
+    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUsersTable()}))
+  } catch (error) {
+    // Table might not exist
+  }
+}
+
+/**
+ * Delete test UserFiles table from LocalStack
+ */
+export async function deleteUserFilesTable(): Promise<void> {
+  try {
+    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUserFilesTable()}))
   } catch (error) {
     // Table might not exist
   }
@@ -92,7 +133,7 @@ export async function deleteUsersTable(): Promise<void> {
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
   const item: Record<string, AttributeValue> = {
     fileId: {S: file.fileId!},
-    status: {S: file.status || FileStatus.Pending}
+    status: {S: file.status || FileStatus.PendingMetadata}
   }
 
   if (file.key) item.key = {S: file.key}
@@ -107,7 +148,7 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
 
   await dynamoDBClient.send(
     new PutItemCommand({
-      TableName: FILES_TABLE,
+      TableName: getFilesTable(),
       Item: item
     })
   )
@@ -116,10 +157,10 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
 /**
  * Get a file record from DynamoDB
  */
-export async function getFile(fileId: string): Promise<DynamoDBFile | null> {
+export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
   const response = await dynamoDBClient.send(
     new GetItemCommand({
-      TableName: FILES_TABLE,
+      TableName: getFilesTable(),
       Key: {fileId: {S: fileId}}
     })
   )
@@ -146,10 +187,10 @@ export async function getFile(fileId: string): Promise<DynamoDBFile | null> {
 /**
  * Scan all files from DynamoDB
  */
-export async function scanAllFiles(): Promise<DynamoDBFile[]> {
+export async function scanAllFiles(): Promise<Partial<DynamoDBFile>[]> {
   const response = await dynamoDBClient.send(
     new ScanCommand({
-      TableName: FILES_TABLE
+      TableName: getFilesTable()
     })
   )
 
@@ -180,7 +221,7 @@ export async function insertPendingFiles(fileIds: string[]): Promise<void> {
     fileIds.map((fileId) =>
       insertFile({
         fileId,
-        status: FileStatus.Pending,
+        status: FileStatus.PendingMetadata,
         title: `Test Video ${fileId}`
       })
     )

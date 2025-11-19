@@ -309,6 +309,17 @@ const sendMock = jest.fn<() => Promise<unknown>>()
 const updateMock = jest.fn<() => Promise<any>>()
 ```
 
+❌ **NEVER use type escape hatches (as any, as unknown)**:
+```typescript
+// ❌ ABSOLUTELY FORBIDDEN - defeats the entire purpose of TypeScript
+const queryMock = jest.fn() as any
+const batchGetMock = jest.fn() as unknown
+
+// ❌ FORBIDDEN - even for "just testing" or "quick fixes"
+const result = data as any
+const value = response as unknown as MyType
+```
+
 ✅ **USE specific type annotations when using mockResolvedValue/mockReturnValue**:
 ```typescript
 // ✅ DO - specific return shapes for AWS responses

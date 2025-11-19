@@ -35,7 +35,7 @@ function getBaseConfig() {
   if (isLocalStackMode()) {
     return {
       endpoint: LOCALSTACK_ENDPOINT,
-      region: 'us-east-1',
+      region: 'us-west-2',
       credentials: {
         accessKeyId: 'test',
         secretAccessKey: 'test'

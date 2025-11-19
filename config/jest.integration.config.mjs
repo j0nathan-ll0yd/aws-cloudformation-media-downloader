@@ -10,12 +10,8 @@ const config = {
   // Automatically clear mock calls between tests
   clearMocks: true,
 
-  // Enable coverage collection for integration tests
-  // Coverage will be merged with unit test coverage when using jest.all.config.mjs
-  collectCoverage: true,
-
-  // Write coverage to same directory as unit tests for merging
-  coverageDirectory: 'coverage',
+  // Coverage and timeout options are configured in jest.all.config.mjs when running multi-project tests
+  // For standalone runs, use: npm run test:integration -- --coverage
 
   // Treat .ts files as ES modules
   extensionsToTreatAsEsm: ['.ts'],
@@ -34,9 +30,6 @@ const config = {
 
   // Ignore node_modules and build artifacts
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
-
-  // Longer timeout for integration tests (LocalStack operations can be slower)
-  testTimeout: 30000,
 
   // Transform TypeScript files with ts-jest
   transform: {

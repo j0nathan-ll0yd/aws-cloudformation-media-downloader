@@ -6,6 +6,7 @@
  */
 
 import {Readable} from 'stream'
+import {jest} from '@jest/globals'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../src/types/youtube'
 
 /**
@@ -28,6 +29,7 @@ export function createMockVideoInfo(overrides?: Partial<YtDlpVideoInfo>): YtDlpV
   return {
     id: 'test-video-123',
     title: 'Test Video Title',
+    thumbnail: 'https://mock-youtube.com/thumbnail.jpg',
     uploader: 'Test Channel',
     upload_date: '20240101',
     description: 'Test video description',
@@ -103,14 +105,14 @@ export function createMockStreamResult(sizeInBytes: number): {
  * Create mock implementation of fetchVideoInfo
  */
 export function mockFetchVideoInfo(videoInfo?: YtDlpVideoInfo): jest.Mock {
-  return jest.fn().mockResolvedValue(videoInfo || createMockVideoInfo())
+  return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(videoInfo || createMockVideoInfo())
 }
 
 /**
  * Create mock implementation of chooseVideoFormat
  */
 export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
-  return jest.fn().mockReturnValue(format || createMockVideoFormat())
+  return jest.fn<() => YtDlpFormat>().mockReturnValue(format || createMockVideoFormat())
 }
 
 /**
@@ -119,8 +121,8 @@ export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
  */
 export function createMockStreamVideoToS3WithRealUpload(
   createS3Upload: (bucket: string, key: string, body: any, contentType?: string) => any
-): jest.Mock {
-  return jest.fn(async (uri: string, bucket: string, key: string) => {
+) {
+  return jest.fn(async (_uri: string, bucket: string, key: string) => {
     // Create mock video stream
     const videoStream = createMockVideoStream(5242880) // 5MB
 
@@ -140,5 +142,5 @@ export function createMockStreamVideoToS3WithRealUpload(
  * Create mock implementation of streamVideoToS3 that fails for testing error handling
  */
 export function createMockStreamVideoToS3WithFailure(errorMessage: string = 'Mock S3 upload failed'): jest.Mock {
-  return jest.fn().mockRejectedValue(new Error(errorMessage))
+  return jest.fn<() => Promise<never>>().mockRejectedValue(new Error(errorMessage))
 }

@@ -8,10 +8,12 @@ const lambda = createLambdaClient()
  * @param params - The invocation parameters
  * @returns The invocation response
  */
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
 export function invokeLambda(params: InvokeCommandInput): Promise<InvokeCommandOutput> {
   const command = new InvokeCommand(params)
   return lambda.send(command)
 }
+/* c8 ignore stop */
 
 /**
  * Invokes a Lambda function asynchronously
@@ -19,6 +21,7 @@ export function invokeLambda(params: InvokeCommandInput): Promise<InvokeCommandO
  * @param payload - The payload to send to the function
  * @returns The invocation response
  */
+/* c8 ignore start - Thin wrapper with minimal logic, tested via integration tests */
 export async function invokeAsync(functionName: string, payload: Record<string, unknown>): Promise<InvokeCommandOutput> {
   const params: InvokeCommandInput = {
     FunctionName: functionName,
@@ -27,3 +30,4 @@ export async function invokeAsync(functionName: string, payload: Record<string, 
   }
   return invokeLambda(params)
 }
+/* c8 ignore stop */

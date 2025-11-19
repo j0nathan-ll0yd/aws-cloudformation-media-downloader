@@ -400,6 +400,73 @@ expect(output.statusCode).toBeGreaterThanOrEqual(400)
 - Test both success and failure paths
 - Verify mock interactions, not just outputs
 
+## Coverage Pragmas for Vendor Wrappers
+
+### When to Use c8 ignore
+
+Use `/* c8 ignore start */` / `/* c8 ignore stop */` comments for pure AWS SDK wrappers that:
+1. Contain no business logic
+2. Only create a command and call `.send()`
+3. Are already tested via integration tests
+
+**Rationale:**
+- Coverage metrics should focus on code with actual logic
+- Integration tests already verify these wrappers work with LocalStack
+- Unit testing pure wrappers provides no value (tests that mocking works, not that code works)
+
+**Note:** We use c8 syntax because Jest is configured with `coverageProvider: 'v8'`
+
+### Pattern
+
+```typescript
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+export function query(params: QueryCommandInput) {
+  return docClient.query(params)
+}
+/* c8 ignore stop */
+
+/* c8 ignore start - Thin wrapper with minimal logic, tested via integration tests */
+export async function invokeAsync(functionName: string, payload: Record<string, unknown>): Promise<InvokeCommandOutput> {
+  const params: InvokeCommandInput = {
+    FunctionName: functionName,
+    InvocationType: 'Event',
+    Payload: JSON.stringify(payload)
+  }
+  return invokeLambda(params)
+}
+/* c8 ignore stop */
+```
+
+### When NOT to Use c8 ignore
+
+Do NOT use coverage pragmas for functions with:
+- Business logic or validation
+- Error transformation
+- Parameter manipulation beyond simple defaults
+- Conditional branching
+- Data transformation
+
+**Example of code that SHOULD be tested:**
+```typescript
+// Has validation logic - SHOULD be tested
+export function transformData(input: unknown): string {
+  if (typeof input === 'string') {
+    return input
+  } else if (Array.isArray(input)) {
+    return input.map(s => transformData(s)).join(', ')
+  }
+  return 'Unknown'
+}
+```
+
+### Files with Coverage Pragmas
+
+Currently excluded from coverage:
+- `src/lib/vendor/AWS/SNS.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/Lambda.ts` - Both functions (pure/thin wrappers)
+- `src/lib/vendor/AWS/DynamoDB.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/S3.ts` - Both functions (pure/thin wrappers)
+
 ## Common Patterns to Avoid
 
 1. **Don't test implementation details** - Test behavior, not internal function calls

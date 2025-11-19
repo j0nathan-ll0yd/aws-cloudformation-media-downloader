@@ -12,6 +12,15 @@
  * This tests YOUR orchestration logic, not AWS SDK behavior.
  */
 
+// Test configuration
+const TEST_FILES_TABLE = 'test-files-list'
+const TEST_USER_FILES_TABLE = 'test-user-files-list'
+
+// Set environment variables for Lambda
+process.env.DynamoDBTableFiles = TEST_FILES_TABLE
+process.env.DynamoDBTableUserFiles = TEST_USER_FILES_TABLE
+process.env.USE_LOCALSTACK = 'true'
+
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
 
@@ -19,20 +28,68 @@ import {FileStatus, UserStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
-// Test configuration
-const TEST_FILES_TABLE = 'test-files'
-const TEST_USER_FILES_TABLE = 'test-user-files'
+import {fileURLToPath} from 'url'
+import {dirname, resolve} from 'path'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
-// Set environment variables for Lambda
-process.env.DynamoDBTableFiles = TEST_FILES_TABLE
-process.env.DynamoDBTableUserFiles = TEST_USER_FILES_TABLE
-process.env.USE_LOCALSTACK = 'true'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const dynamodbModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/DynamoDB')
+
+const queryMock = jest.fn<() => Promise<{Items?: unknown[]}>>()
+const batchGetMock = jest.fn<() => Promise<{Responses?: Record<string, unknown[]>}>>()
+jest.unstable_mockModule(dynamodbModulePath, () => ({
+  query: queryMock,
+  batchGet: batchGetMock,
+  updateItem: jest.fn(),
+  scan: jest.fn()
+}))
+
+const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
+
+type BatchGetCallArgs = [{RequestItems: Record<string, {Keys: unknown[]}>}]
+
+function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
+  return {
+    body: null,
+    headers: userId && userStatus === UserStatus.Authenticated ? {'Authorization': 'Bearer test-token'} : userStatus === UserStatus.Unauthenticated ? {'Authorization': 'Bearer invalid-token'} : {},
+    multiValueHeaders: {},
+    httpMethod: 'GET',
+    isBase64Encoded: false,
+    path: '/files',
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      protocol: 'HTTP/1.1',
+      httpMethod: 'GET',
+      path: '/files',
+      stage: 'test',
+      requestId: 'test-request',
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: '/files',
+      authorizer: {
+        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
+        userId,
+        userStatus,
+        integrationLatency: 342
+      },
+      identity: {
+        sourceIp: '127.0.0.1',
+        userAgent: 'test-agent'
+      }
+    },
+    resource: '/files'
+  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+}
 
 describe('ListFiles Workflow Integration Tests', () => {
-  let handler: any
   let mockContext: any
-  let queryMock: jest.Mock
-  let batchGetMock: jest.Mock
 
   beforeAll(async () => {
     // Create LocalStack infrastructure
@@ -50,24 +107,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     await deleteFilesTable()
   })
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks()
-
-    // Mock DynamoDB query and batchGet
-    queryMock = jest.fn()
-    batchGetMock = jest.fn()
-
-    jest.unstable_mockModule('../../../src/lib/vendor/AWS/DynamoDB', () => ({
-      query: queryMock,
-      batchGet: batchGetMock,
-      updateItem: jest.fn(),
-      scan: jest.fn()
-    }))
-
-    // Import handler AFTER mocks are set up
-    const module = await import('../../../src/lambdas/ListFiles/src/index')
-    handler = module.handler
   })
 
   test('should query UserFiles and return Downloaded files for authenticated user', async () => {
@@ -110,115 +152,66 @@ describe('ListFiles Workflow Integration Tests', () => {
       }
     })
 
-    // API Gateway event with authenticated user
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: 'user-abc-123',
-          userStatus: UserStatus.Authenticated
-        }
-      }
-    }
+    const event = createListFilesEvent('user-abc-123', UserStatus.Authenticated)
 
-    // Act: Invoke ListFiles handler
     const result = await handler(event, mockContext)
 
-    // Assert: Successful response
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
+    const response = JSON.parse(result.body)
 
-    // Assert: Only Downloaded files returned (video-3 filtered out)
-    expect(body.keyCount).toBe(2)
-    expect(body.contents).toHaveLength(2)
-    expect(body.contents[0].fileId).toBe('video-1')
-    expect(body.contents[1].fileId).toBe('video-2')
+    expect(response.body.keyCount).toBe(2)
+    expect(response.body.contents).toHaveLength(2)
+    expect(response.body.contents[0].fileId).toBe('video-1')
+    expect(response.body.contents[1].fileId).toBe('video-2')
 
-    // Assert: DynamoDB query called for UserFiles
     expect(queryMock).toHaveBeenCalledTimes(1)
-    const queryParams = queryMock.mock.calls[0][0] as {TableName: string}
-    expect(queryParams.TableName).toBe(TEST_USER_FILES_TABLE)
 
-    // Assert: BatchGet called for Files
     expect(batchGetMock).toHaveBeenCalledTimes(1)
-    const batchGetParams = batchGetMock.mock.calls[0][0] as any
+    const batchGetParams = (batchGetMock.mock.calls as unknown as BatchGetCallArgs[])[0][0]
     expect(batchGetParams.RequestItems[TEST_FILES_TABLE].Keys).toHaveLength(3)
   })
 
   test('should return empty list when user has no files', async () => {
-    // Arrange: Mock DynamoDB to return empty UserFiles
     queryMock.mockResolvedValueOnce({
       Items: []
     })
 
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: 'user-no-files',
-          userStatus: UserStatus.Authenticated
-        }
-      }
-    }
+    const event = createListFilesEvent('user-no-files', UserStatus.Authenticated)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Successful response with empty list
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
-    expect(body.keyCount).toBe(0)
-    expect(body.contents).toHaveLength(0)
+    const response = JSON.parse(result.body)
+    expect(response.body.keyCount).toBe(0)
+    expect(response.body.contents).toHaveLength(0)
 
-    // Assert: Only UserFiles query (no BatchGet)
     expect(queryMock).toHaveBeenCalledTimes(1)
     expect(batchGetMock).not.toHaveBeenCalled()
   })
 
   test('should return demo file for anonymous user without querying DynamoDB', async () => {
-    // Arrange: Anonymous user event
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: undefined,
-          userStatus: UserStatus.Anonymous
-        }
-      }
-    }
+    const event = createListFilesEvent(undefined, UserStatus.Anonymous)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Successful response
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
+    const response = JSON.parse(result.body)
 
-    // Assert: Demo file returned
-    expect(body.keyCount).toBe(1)
-    expect(body.contents).toHaveLength(1)
-    expect(body.contents[0]).toHaveProperty('fileId')
+    expect(response.body.keyCount).toBe(1)
+    expect(response.body.contents).toHaveLength(1)
+    expect(response.body.contents[0]).toHaveProperty('fileId')
 
-    // Assert: No DynamoDB queries (anonymous user)
     expect(queryMock).not.toHaveBeenCalled()
     expect(batchGetMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 for unauthenticated user', async () => {
-    // Arrange: Unauthenticated user event
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: undefined,
-          userStatus: UserStatus.Unauthenticated
-        }
-      }
-    }
+    const event = createListFilesEvent(undefined, UserStatus.Unauthenticated)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Unauthorized response
     expect(result.statusCode).toBe(401)
 
-    // Assert: No DynamoDB queries
     expect(queryMock).not.toHaveBeenCalled()
     expect(batchGetMock).not.toHaveBeenCalled()
   })
@@ -247,30 +240,19 @@ describe('ListFiles Workflow Integration Tests', () => {
       }
     })
 
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: 'user-mixed-files',
-          userStatus: UserStatus.Authenticated
-        }
-      }
-    }
+    const event = createListFilesEvent('user-mixed-files', UserStatus.Authenticated)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Successful response
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
+    const response = JSON.parse(result.body)
 
-    // Assert: Only Downloaded files returned
-    expect(body.keyCount).toBe(2)
-    expect(body.contents).toHaveLength(2)
-    expect(body.contents[0].status).toBe(FileStatus.Downloaded)
-    expect(body.contents[1].status).toBe(FileStatus.Downloaded)
+    expect(response.body.keyCount).toBe(2)
+    expect(response.body.contents).toHaveLength(2)
+    expect(response.body.contents[0].status).toBe(FileStatus.Downloaded)
+    expect(response.body.contents[1].status).toBe(FileStatus.Downloaded)
 
-    // Verify specific files
-    const fileIds = body.contents.map((file: any) => file.fileId).sort()
+    const fileIds = response.body.contents.map((file: any) => file.fileId).sort()
     expect(fileIds).toEqual(['downloaded-1', 'downloaded-2'])
   })
 
@@ -296,48 +278,27 @@ describe('ListFiles Workflow Integration Tests', () => {
       }
     })
 
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: 'user-many-files',
-          userStatus: UserStatus.Authenticated
-        }
-      }
-    }
+    const event = createListFilesEvent('user-many-files', UserStatus.Authenticated)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Successful response
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
+    const response = JSON.parse(result.body)
 
-    // Assert: Only Downloaded files returned (25 out of 50)
-    expect(body.keyCount).toBe(25)
-    expect(body.contents).toHaveLength(25)
-    expect(body.contents.every((file: any) => file.status === FileStatus.Downloaded)).toBe(true)
+    expect(response.body.keyCount).toBe(25)
+    expect(response.body.contents).toHaveLength(25)
+    expect(response.body.contents.every((file: any) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {
-    // Arrange: Mock DynamoDB query to fail
     queryMock.mockRejectedValueOnce(new Error('DynamoDB service unavailable'))
 
-    const event = {
-      requestContext: {
-        authorizer: {
-          userId: 'user-error',
-          userStatus: UserStatus.Authenticated
-        }
-      }
-    }
+    const event = createListFilesEvent('user-error', UserStatus.Authenticated)
 
-    // Act: Invoke handler
     const result = await handler(event, mockContext)
 
-    // Assert: Error response returned
     expect(result.statusCode).toBe(500)
 
-    // Assert: Query was attempted
     expect(queryMock).toHaveBeenCalledTimes(1)
     expect(batchGetMock).not.toHaveBeenCalled()
   })

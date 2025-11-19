@@ -41,6 +41,9 @@ const config = {
     'lcov'         // For CI/CD tools
   ],
 
+  // Longer timeout for integration tests (LocalStack operations can be slower)
+  testTimeout: 30000,
+
   // Optional: Set coverage thresholds
   // coverageThreshold: {
   //   global: {

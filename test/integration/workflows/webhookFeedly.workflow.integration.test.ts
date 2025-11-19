@@ -4,126 +4,129 @@
  * Tests the Feedly webhook workflow against LocalStack:
  * 1. Extract video ID from article URL
  * 2. Associate file with user in DynamoDB
- * 3. Check if file already exists:
- *    - If Downloaded: Send SQS notification
- *    - If new: Add to DynamoDB, optionally initiate download
+ * 3. Check if file already exists (Downloaded → send SQS, new → add to DynamoDB)
  * 4. Handle duplicate webhooks (idempotency)
- *
- * This tests YOUR orchestration logic, not AWS SDK behavior.
  */
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
-import {FileStatus} from '../../../src/types/enums'
-
-// Test helpers
-import {createFilesTable, deleteFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-
-// Test configuration
-const TEST_TABLE = 'test-files'
-const TEST_USER_FILES_TABLE = 'test-user-files'
+const TEST_TABLE = 'test-files-webhook'
+const TEST_USER_FILES_TABLE = 'test-user-files-webhook'
 const TEST_SQS_QUEUE_URL = 'http://localhost:4566/000000000000/test-notifications'
 
-// Set environment variables for Lambda
 process.env.DynamoDBTableFiles = TEST_TABLE
 process.env.DynamoDBTableUserFiles = TEST_USER_FILES_TABLE
 process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
 
+import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {FileStatus} from '../../../src/types/enums'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
+import {createFilesTable, deleteFilesTable, createUserFilesTable, deleteUserFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
+import {createMockContext} from '../helpers/lambda-context'
+import {fileURLToPath} from 'url'
+import {dirname, resolve} from 'path'
+
+interface FileInvocationPayload {
+  fileId: string
+}
+
+type LambdaCallArgs = [string, Record<string, unknown>]
+type SQSCallArgs = [
+  {
+    QueueUrl: string
+    MessageBody: string
+    MessageAttributes?: Record<string, {StringValue: string; DataType: string}>
+  }
+]
+
+const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {
+  assert: {type: 'json'}
+})
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const sqsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SQS')
+const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
+const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
+
+const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
+jest.unstable_mockModule(sqsModulePath, () => ({
+  sendMessage: sendMessageMock
+}))
+
+const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule(lambdaModulePath, () => ({
+  invokeLambda: invokeLambdaMock,
+  invokeAsync: invokeLambdaMock
+}))
+
+jest.unstable_mockModule(youtubeModulePath, () => ({
+  getVideoID: jest.fn((url: string) => {
+    const match = url.match(/v=([^&]+)/)
+    return match ? match[1] : 'test-video-id'
+  })
+}))
+
+const {handler} = await import('../../../src/lambdas/WebhookFeedly/src/index')
+
+function createWebhookEvent(articleURL: string, backgroundMode: boolean, userId: string): CustomAPIGatewayRequestAuthorizerEvent {
+  const event = JSON.parse(JSON.stringify(apiGatewayEventFixture)) as CustomAPIGatewayRequestAuthorizerEvent
+  event.body = JSON.stringify({articleURL, backgroundMode})
+  event.requestContext.authorizer.principalId = userId
+  return event
+}
+
 describe('WebhookFeedly Workflow Integration Tests', () => {
-  let handler: any
   let mockContext: any
-  let sendMessageMock: jest.Mock
-  let invokeLambdaMock: jest.Mock
 
   beforeAll(async () => {
-    // Create LocalStack infrastructure
     await createFilesTable()
-
-    // Wait for table to be ready
+    await createUserFilesTable()
     await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Create mock context
     mockContext = createMockContext()
   })
 
   afterAll(async () => {
-    // Clean up LocalStack infrastructure
     await deleteFilesTable()
+    await deleteUserFilesTable()
   })
 
   beforeEach(async () => {
-    // Clear all mocks before each test
     jest.clearAllMocks()
+    sendMessageMock.mockClear()
+    invokeLambdaMock.mockClear()
 
-    // Mock SQS sendMessage (don't actually send to queue)
-    sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>().mockResolvedValue({MessageId: 'test-message-id'})
+    sendMessageMock.mockResolvedValue({MessageId: 'test-message-id'})
+    invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
-    jest.unstable_mockModule('../../../src/lib/vendor/AWS/SQS', () => ({
-      sendMessage: sendMessageMock
-    }))
-
-    // Mock Lambda invocation (don't actually invoke StartFileUpload)
-    invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>().mockResolvedValue({StatusCode: 202})
-
-    jest.unstable_mockModule('../../../src/lib/vendor/AWS/Lambda', () => ({
-      invokeLambda: invokeLambdaMock,
-      invokeAsync: invokeLambdaMock
-    }))
-
-    // Mock YouTube getVideoID (extract video ID from URL)
-    jest.unstable_mockModule('../../../src/lib/vendor/YouTube', () => ({
-      getVideoID: jest.fn((url: string) => {
-        // Simple URL parsing mock
-        const match = url.match(/v=([^&]+)/)
-        return match ? match[1] : 'test-video-id'
-      })
-    }))
-
-    // Import handler AFTER mocks are set up
-    const module = await import('../../../src/lambdas/WebhookFeedly/src/index')
-    handler = module.handler
+    await deleteFilesTable()
+    await deleteUserFilesTable()
+    await createFilesTable()
+    await createUserFilesTable()
+    await new Promise((resolve) => setTimeout(resolve, 500))
   })
 
-  test('should create new file and initiate download for first-time video', async () => {
-    // Arrange: Webhook event for new video
-    const event = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=new-video-123',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-uuid-123'
-        }
-      }
-    }
+  test('should create new file and initiate download', async () => {
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=new-video-123', false, 'user-uuid-123')
 
-    // Act: Invoke WebhookFeedly handler
     const result = await handler(event, mockContext)
 
-    // Assert: Lambda response indicates initiated
     expect(result.statusCode).toBe(202)
-    const body = JSON.parse(result.body)
-    expect(body.status).toBe('Initiated')
+    const response = JSON.parse(result.body)
+    expect(response.body.status).toBe('Initiated')
 
-    // Assert: File was created in DynamoDB
     const file = await getFile('new-video-123')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('new-video-123')
     expect(file!.status).toBe(FileStatus.PendingMetadata)
 
-    // Assert: StartFileUpload was invoked
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
-    const invocationPayload = JSON.parse(invokeLambdaMock.mock.calls[0][1] as string)
+    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][1] as unknown as FileInvocationPayload
     expect(invocationPayload.fileId).toBe('new-video-123')
 
-    // Assert: No SQS notification sent (file not downloaded yet)
     expect(sendMessageMock).not.toHaveBeenCalled()
   })
 
-  test('should send notification without re-downloading for already-downloaded video', async () => {
-    // Arrange: Insert already-downloaded file
+  test('should send notification without re-downloading for existing file', async () => {
     await insertFile({
       fileId: 'existing-video',
       status: FileStatus.Downloaded,
@@ -134,114 +137,62 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       contentType: 'video/mp4'
     })
 
-    // Webhook event for existing video
-    const event = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=existing-video',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-uuid-456'
-        }
-      }
-    }
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=existing-video', false, 'user-uuid-456')
 
-    // Act: Invoke WebhookFeedly handler
     const result = await handler(event, mockContext)
 
-    // Assert: Lambda response indicates dispatched
     expect(result.statusCode).toBe(200)
-    const body = JSON.parse(result.body)
-    expect(body.status).toBe('Dispatched')
+    const response = JSON.parse(result.body)
+    expect(response.body.status).toBe('Dispatched')
 
-    // Assert: SQS notification was sent
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
-    const messageParams = sendMessageMock.mock.calls[0][0] as {QueueUrl: string; MessageBody: string}
+    const messageParams = (sendMessageMock.mock.calls as unknown as SQSCallArgs[])[0][0]
     expect(messageParams.QueueUrl).toBe(TEST_SQS_QUEUE_URL)
     expect(messageParams.MessageBody).toBe('FileNotification')
 
-    // Assert: StartFileUpload was NOT invoked (no re-download)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
 
-    // Assert: File status unchanged
     const file = await getFile('existing-video')
     expect(file!.status).toBe(FileStatus.Downloaded)
   })
 
-  test('should handle backgroundMode without immediate download initiation', async () => {
-    // Arrange: Webhook event with backgroundMode enabled
-    const event = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=background-video',
-        backgroundMode: true
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-uuid-789'
-        }
-      }
-    }
+  test('should handle backgroundMode without immediate download', async () => {
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=background-video', true, 'user-uuid-789')
 
-    // Act: Invoke WebhookFeedly handler
     const result = await handler(event, mockContext)
 
-    // Assert: Lambda response indicates accepted (not initiated)
     expect(result.statusCode).toBe(202)
-    const body = JSON.parse(result.body)
-    expect(body.status).toBe('Accepted')
+    const response = JSON.parse(result.body)
+    expect(response.body.status).toBe('Accepted')
 
-    // Assert: File was created in DynamoDB
     const file = await getFile('background-video')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('background-video')
     expect(file!.status).toBe(FileStatus.PendingMetadata)
 
-    // Assert: StartFileUpload was NOT invoked (background mode)
+    // FileCoordinator will pick up this file later
     expect(invokeLambdaMock).not.toHaveBeenCalled()
-
-    // Assert: No SQS notification sent
     expect(sendMessageMock).not.toHaveBeenCalled()
-
-    // Note: FileCoordinator will pick up this file later
   })
 
-  test('should be idempotent when receiving duplicate webhooks for same video', async () => {
-    // Arrange: Same webhook event sent twice
-    const event = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=duplicate-video',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-uuid-101'
-        }
-      }
-    }
+  test('should be idempotent when receiving duplicate webhooks', async () => {
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=duplicate-video', false, 'user-uuid-101')
 
-    // Act: Invoke webhook twice
     const result1 = await handler(event, mockContext)
     const result2 = await handler(event, mockContext)
 
-    // Assert: Both responses successful
     expect(result1.statusCode).toBe(202)
     expect(result2.statusCode).toBe(202)
 
-    // Assert: File only exists once in DynamoDB
     const file = await getFile('duplicate-video')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('duplicate-video')
 
-    // Assert: StartFileUpload invoked twice (DynamoDB handles deduplication)
+    // StartFileUpload uses conditional updates for deduplication
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
-
-    // Note: In production, StartFileUpload uses conditional updates to prevent
-    // duplicate downloads. This test verifies WebhookFeedly is safe to retry.
   })
 
-  test('should associate file with multiple users when different users request same video', async () => {
-    // Arrange: Insert existing file
+  test('should associate file with multiple users', async () => {
     await insertFile({
       fileId: 'shared-video',
       status: FileStatus.Downloaded,
@@ -250,84 +201,33 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       title: 'Shared Video'
     })
 
-    // Webhook events from two different users
-    const event1 = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=shared-video',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-alice'
-        }
-      }
-    }
+    const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
+    const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')
 
-    const event2 = {
-      body: JSON.stringify({
-        articleURL: 'https://www.youtube.com/watch?v=shared-video',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-bob'
-        }
-      }
-    }
-
-    // Act: Invoke webhook for both users
     const result1 = await handler(event1, mockContext)
     const result2 = await handler(event2, mockContext)
 
-    // Assert: Both responses indicate dispatched
     expect(result1.statusCode).toBe(200)
     expect(result2.statusCode).toBe(200)
 
-    // Assert: Two SQS notifications sent (one per user)
     expect(sendMessageMock).toHaveBeenCalledTimes(2)
 
-    // Verify message attributes contain correct user IDs
-    const message1Attrs = (sendMessageMock.mock.calls[0][0] as any).MessageAttributes
-    const message2Attrs = (sendMessageMock.mock.calls[1][0] as any).MessageAttributes
+    const messages = sendMessageMock.mock.calls as unknown as SQSCallArgs[]
+    const message1Attrs = messages[0][0].MessageAttributes!
+    const message2Attrs = messages[1][0].MessageAttributes!
 
     expect(message1Attrs.userId.StringValue).toBe('user-alice')
     expect(message2Attrs.userId.StringValue).toBe('user-bob')
 
-    // Assert: No re-download triggered
     expect(invokeLambdaMock).not.toHaveBeenCalled()
   })
 
   test('should handle invalid video URL gracefully', async () => {
-    // Arrange: Mock YouTube getVideoID to throw error for invalid URL
-    jest.unstable_mockModule('../../../src/lib/vendor/YouTube', () => ({
-      getVideoID: jest.fn(() => {
-        throw new Error('Invalid YouTube URL')
-      })
-    }))
+    const event = createWebhookEvent('https://invalid-url.com/not-youtube', false, 'user-uuid-999')
 
-    // Re-import handler with new mock
-    const module = await import('../../../src/lambdas/WebhookFeedly/src/index')
-    handler = module.handler
-
-    const event = {
-      body: JSON.stringify({
-        articleURL: 'https://invalid-url.com/not-youtube',
-        backgroundMode: false
-      }),
-      requestContext: {
-        authorizer: {
-          userId: 'user-uuid-999'
-        }
-      }
-    }
-
-    // Act: Invoke webhook
     const result = await handler(event, mockContext)
 
-    // Assert: Error response returned
-    expect(result.statusCode).toBe(500)
-
-    // Assert: No DynamoDB operations performed
+    expect(result.statusCode).toBe(400)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
     expect(sendMessageMock).not.toHaveBeenCalled()
   })

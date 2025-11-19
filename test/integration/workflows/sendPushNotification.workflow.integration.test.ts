@@ -11,26 +11,79 @@
  * This tests YOUR orchestration logic, not AWS SDK behavior.
  */
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
-import {SQSEvent} from 'aws-lambda'
-
-// Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
-
 // Test configuration
-const TEST_USER_DEVICES_TABLE = 'test-user-devices'
-const TEST_DEVICES_TABLE = 'test-devices'
+const TEST_USER_DEVICES_TABLE = 'test-user-devices-push'
+const TEST_DEVICES_TABLE = 'test-devices-push'
 
 // Set environment variables for Lambda
 process.env.DynamoDBTableUserDevices = TEST_USER_DEVICES_TABLE
 process.env.DynamoDBTableDevices = TEST_DEVICES_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-describe('SendPushNotification Workflow Integration Tests', () => {
-  let handler: any
-  let publishSnsEventMock: jest.Mock
-  let queryMock: jest.Mock
+import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {SQSEvent} from 'aws-lambda'
 
+// Test helpers
+import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+
+import {fileURLToPath} from 'url'
+import {dirname, resolve} from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
+const dynamodbModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/DynamoDB')
+
+const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
+jest.unstable_mockModule(snsModulePath, () => ({
+  publishSnsEvent: publishSnsEventMock,
+  publish: publishSnsEventMock
+}))
+
+const queryMock = jest.fn<() => Promise<{Items?: unknown[]}>>()
+jest.unstable_mockModule(dynamodbModulePath, () => ({
+  query: queryMock,
+  updateItem: jest.fn(),
+  scan: jest.fn()
+}))
+
+const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
+
+type QueryCallArgs = [{TableName: string}]
+type PublishCallArgs = [{TargetArn: string}]
+
+function createFileNotificationEvent(userId: string, fileId: string, title?: string): SQSEvent {
+  return {
+    Records: [
+      {
+        messageId: `test-message-${fileId}`,
+        receiptHandle: `test-receipt-${fileId}`,
+        body: 'FileNotification',
+        attributes: {
+          ApproximateReceiveCount: '1',
+          SentTimestamp: '1234567890',
+          SenderId: 'test-sender',
+          ApproximateFirstReceiveTimestamp: '1234567890'
+        },
+        messageAttributes: {
+          userId: {stringValue: userId, dataType: 'String'},
+          fileId: {stringValue: fileId, dataType: 'String'},
+          key: {stringValue: `${fileId}.mp4`, dataType: 'String'},
+          publishDate: {stringValue: new Date().toISOString(), dataType: 'String'},
+          size: {stringValue: '5242880', dataType: 'String'},
+          url: {stringValue: `https://example.com/${fileId}.mp4`, dataType: 'String'},
+          title: {stringValue: title || 'Test Video', dataType: 'String'}
+        },
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
+        awsRegion: 'us-west-2'
+      }
+    ]
+  }
+}
+
+describe('SendPushNotification Workflow Integration Tests', () => {
   beforeAll(async () => {
     // Create LocalStack infrastructure (if needed)
     await createFilesTable()
@@ -44,30 +97,12 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await deleteFilesTable()
   })
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks()
 
-    // Mock SNS publish (don't actually send push notifications)
-    publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>().mockResolvedValue({MessageId: 'test-sns-message-id'})
-
-    jest.unstable_mockModule('../../../src/lib/vendor/AWS/SNS', () => ({
-      publishSnsEvent: publishSnsEventMock,
-      publish: publishSnsEventMock
-    }))
-
-    // Mock DynamoDB query to return device data
-    queryMock = jest.fn()
-
-    jest.unstable_mockModule('../../../src/lib/vendor/AWS/DynamoDB', () => ({
-      query: queryMock,
-      updateItem: jest.fn(),
-      scan: jest.fn()
-    }))
-
-    // Import handler AFTER mocks are set up
-    const module = await import('../../../src/lambdas/SendPushNotification/src/index')
-    handler = module.handler
+    // Reset mock implementations
+    publishSnsEventMock.mockResolvedValue({MessageId: 'test-sns-message-id'})
   })
 
   test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
@@ -76,76 +111,36 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     queryMock.mockResolvedValueOnce({
       Items: [
         {
-          userId: {S: 'user-123'},
-          devices: {SS: ['device-abc']}
+          userId: 'user-123',
+          devices: new Set(['device-abc'])
         }
       ]
     })
 
-    // Second query: getDevice returns device details
     queryMock.mockResolvedValueOnce({
       Items: [
         {
-          deviceId: {S: 'device-abc'},
-          endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'}
+          deviceId: 'device-abc',
+          endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'
         }
       ]
     })
 
-    // SQS event with file notification
-    const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-1',
-          receiptHandle: 'test-receipt-1',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {
-              stringValue: 'user-123',
-              dataType: 'String'
-            },
-            fileId: {
-              stringValue: 'video-123',
-              dataType: 'String'
-            },
-            title: {
-              stringValue: 'Test Video',
-              dataType: 'String'
-            }
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
-    }
+    const event = createFileNotificationEvent('user-123', 'video-123')
 
-    // Act: Invoke SendPushNotification handler
     await handler(event)
 
-    // Assert: DynamoDB queried twice (UserDevices, Devices)
     expect(queryMock).toHaveBeenCalledTimes(2)
 
-    // Verify first query was for UserDevices
-    const userDevicesQuery = queryMock.mock.calls[0][0] as {TableName: string}
+    const userDevicesQuery = (queryMock.mock.calls as unknown as QueryCallArgs[])[0][0]
     expect(userDevicesQuery.TableName).toBe(TEST_USER_DEVICES_TABLE)
 
-    // Verify second query was for Devices
-    const devicesQuery = queryMock.mock.calls[1][0] as {TableName: string}
+    const devicesQuery = (queryMock.mock.calls as unknown as QueryCallArgs[])[1][0]
     expect(devicesQuery.TableName).toBe(TEST_DEVICES_TABLE)
 
-    // Assert: SNS publish was called once
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
 
-    // Verify SNS publish parameters
-    const publishParams = publishSnsEventMock.mock.calls[0][0] as {TargetArn: string}
+    const publishParams = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0]
     expect(publishParams.TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
   })
 
@@ -155,60 +150,26 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     queryMock.mockResolvedValueOnce({
       Items: [
         {
-          userId: {S: 'user-456'},
-          devices: {SS: ['device-1', 'device-2', 'device-3']}
+          userId: 'user-456',
+          devices: new Set(['device-1', 'device-2', 'device-3'])
         }
       ]
     })
 
-    // Subsequent queries: getDevice returns device details for each
     queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-1'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'}}]
+      Items: [{deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'}]
     })
 
     queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-2'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'}}]
+      Items: [{deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'}]
     })
 
     queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-3'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'}}]
+      Items: [{deviceId: 'device-3', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'}]
     })
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-2',
-          receiptHandle: 'test-receipt-2',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {
-              stringValue: 'user-456',
-              dataType: 'String'
-            },
-            fileId: {
-              stringValue: 'video-456',
-              dataType: 'String'
-            },
-            title: {
-              stringValue: 'Multi-Device Video',
-              dataType: 'String'
-            }
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
-    }
+    const event = createFileNotificationEvent('user-456', 'video-456', 'Multi-Device Video')
 
-    // Act: Invoke handler
     await handler(event)
 
     // Assert: DynamoDB queried 4 times (1 UserDevices + 3 Devices)
@@ -217,8 +178,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // Assert: SNS publish called 3 times (one per device)
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
 
-    // Verify all endpoints were targeted
-    const targetArns = publishSnsEventMock.mock.calls.map((call) => (call[0] as {TargetArn: string}).TargetArn)
+    const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((call) => call[0].TargetArn)
     expect(targetArns).toEqual([
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
@@ -232,37 +192,8 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       Items: []
     })
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-3',
-          receiptHandle: 'test-receipt-3',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {
-              stringValue: 'user-no-devices',
-              dataType: 'String'
-            },
-            fileId: {
-              stringValue: 'video-789',
-              dataType: 'String'
-            }
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
-    }
+    const event = createFileNotificationEvent('user-no-devices', 'video-789')
 
-    // Act: Invoke handler
     await handler(event)
 
     // Assert: Only one DynamoDB query (UserDevices)
@@ -277,15 +208,14 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     queryMock.mockResolvedValueOnce({
       Items: [
         {
-          userId: {S: 'user-789'},
-          devices: {SS: ['device-good', 'device-bad']}
+          userId: 'user-789',
+          devices: new Set(['device-good', 'device-bad'])
         }
       ]
     })
 
-    // First device query succeeds
     queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-good'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'}}]
+      Items: [{deviceId: 'device-good', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'}]
     })
 
     // Second device query fails (device not found)
@@ -293,107 +223,37 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       Items: []
     })
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-4',
-          receiptHandle: 'test-receipt-4',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {
-              stringValue: 'user-789',
-              dataType: 'String'
-            },
-            fileId: {
-              stringValue: 'video-error',
-              dataType: 'String'
-            }
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
-    }
+    const event = createFileNotificationEvent('user-789', 'video-error')
 
-    // Act: Invoke handler (should not throw)
     await expect(handler(event)).resolves.not.toThrow()
 
-    // Assert: First device got notification
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
-    expect((publishSnsEventMock.mock.calls[0][0] as {TargetArn: string}).TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
+    expect((publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0].TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
   })
 
   test('should process multiple SQS records in same batch', async () => {
     // Arrange: Mock DynamoDB responses for two different users
-    // User 1
     queryMock.mockResolvedValueOnce({
-      Items: [{userId: {S: 'user-1'}, devices: {SS: ['device-user1']}}]
+      Items: [{userId: 'user-1', devices: new Set(['device-user1'])}]
     })
     queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-user1'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'}}]
-    })
-
-    // User 2
-    queryMock.mockResolvedValueOnce({
-      Items: [{userId: {S: 'user-2'}, devices: {SS: ['device-user2']}}]
-    })
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: {S: 'device-user2'}, endpointArn: {S: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'}}]
+      Items: [{deviceId: 'device-user1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'}]
     })
 
-    const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-5a',
-          receiptHandle: 'test-receipt-5a',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {stringValue: 'user-1', dataType: 'String'},
-            fileId: {stringValue: 'video-batch-1', dataType: 'String'}
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        },
-        {
-          messageId: 'test-message-5b',
-          receiptHandle: 'test-receipt-5b',
-          body: 'FileNotification',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {
-            userId: {stringValue: 'user-2', dataType: 'String'},
-            fileId: {stringValue: 'video-batch-2', dataType: 'String'}
-          },
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
+    queryMock.mockResolvedValueOnce({
+      Items: [{userId: 'user-2', devices: new Set(['device-user2'])}]
+    })
+    queryMock.mockResolvedValueOnce({
+      Items: [{deviceId: 'device-user2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'}]
+    })
+
+    const event1 = createFileNotificationEvent('user-1', 'video-batch-1')
+    const event2 = createFileNotificationEvent('user-2', 'video-batch-2')
+    const batchEvent: SQSEvent = {
+      Records: [...event1.Records, ...event2.Records]
     }
 
-    // Act: Invoke handler
-    await handler(event)
+    await handler(batchEvent)
 
     // Assert: DynamoDB queried 4 times (2 users × 2 queries each)
     expect(queryMock).toHaveBeenCalledTimes(4)
