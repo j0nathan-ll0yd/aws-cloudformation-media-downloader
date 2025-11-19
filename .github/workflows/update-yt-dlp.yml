@@ -108,7 +108,7 @@ jobs:
 
           ## Deployment Process
           1. Merge this PR to update the VERSION file
-          2. Run \`tofu apply\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
+          2. Run \`npm run deploy\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
           3. OpenTofu will download, verify, and package the new binary into the Lambda layer
           4. Monitor CloudWatch logs for any download issues after deployment
 
@@ -118,7 +118,7 @@ jobs:
           echo "${CURRENT_VERSION}" > layers/yt-dlp/VERSION
           git commit -am "chore(deps): revert yt-dlp to ${CURRENT_VERSION}"
           git push
-          tofu apply
+          npm run deploy
           \`\`\`
           EOF
 
