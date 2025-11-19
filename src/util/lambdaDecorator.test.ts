@@ -34,11 +34,7 @@ describe('#lambdaDecorator', () => {
 
     await wrappedHandler({test: 'event'}, testContext)
 
-    expect(mockHandler).toHaveBeenCalledWith(
-      {test: 'event'},
-      testContext,
-      {traceId: '1-67abc123-456def789ghi012jkl345mno'}
-    )
+    expect(mockHandler).toHaveBeenCalledWith({test: 'event'}, testContext, {traceId: '1-67abc123-456def789ghi012jkl345mno'})
   })
 
   test('should handle successful execution', async () => {

@@ -9,6 +9,7 @@ import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
 import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
@@ -85,8 +86,8 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * @param context - An AWS Context object
  * @notExported
  */
-export async function handler(event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> {
-  logInfo('event', event)
+export const handler = withXRay(async (event: ScheduledEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+  logInfo('event <=', event)
   const devices = await getDevices()
   for (const device of devices) {
     const deviceId = device.deviceId
@@ -105,4 +106,4 @@ export async function handler(event: ScheduledEvent, context: Context): Promise<
     }
   }
   return response(context, 200)
-}
+})

@@ -9,6 +9,7 @@ import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-help
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -97,7 +98,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
  * @notExported
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -143,4 +144,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
-}
+})

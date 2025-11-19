@@ -2,20 +2,12 @@ import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Co
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {CustomCloudFrontRequest} from '../../../types/main'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * For **every request** to the system:
  * - Extract the API key as a header if sent via querystring (a limitation of API Gateway)
  */
-export async function handler(event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> {
-  logInfo('event <=', event)
-  logInfo('context <=', context)
-  const request = event.Records[0].cf.request as CustomCloudFrontRequest
-  await handleQueryString(request)
-  logDebug('request <=', request)
-  return request
-}
-
 /**
  * Transforms the API key to a header via the querystring (if not already present)
  * @param request - A **reference** to the CloudFrontRequest (modified in place)
@@ -42,3 +34,12 @@ async function handleQueryString(request: CloudFrontRequest) {
     ]
   }
 }
+
+export const handler = withXRay(async (event: CloudFrontRequestEvent, context: Context, {traceId: _traceId}): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> => {
+  logInfo('event <=', event)
+  logInfo('context <=', context)
+  const request = event.Records[0].cf.request as CustomCloudFrontRequest
+  await handleQueryString(request)
+  logDebug('request <=', request)
+  return request
+})

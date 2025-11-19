@@ -1,4 +1,5 @@
 import {Context} from 'aws-lambda'
+import AWSXRay from 'aws-xray-sdk-core'
 import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
 import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
@@ -7,6 +8,7 @@ import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -14,14 +16,22 @@ import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../.
  * @param context - AWS Lambda context
  * @notExported
  */
-export async function handler(event: StartFileUploadParams, context: Context) {
+export const handler = withXRay(async (event: StartFileUploadParams, context: Context, {traceId: _traceId}) => {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 
   try {
+    const segment = AWSXRay.getSegment()
+
     logDebug('fetchVideoInfo <=', fileUrl)
+    const subsegmentFetch = segment?.addNewSubsegment('yt-dlp-fetch-info')
     const videoInfo = await fetchVideoInfo(fileUrl)
+    if (subsegmentFetch) {
+      subsegmentFetch.addAnnotation('videoId', videoInfo.id)
+      subsegmentFetch.addMetadata('videoUrl', fileUrl)
+      subsegmentFetch.close()
+    }
     logDebug('fetchVideoInfo =>', videoInfo)
 
     const selectedFormat = chooseVideoFormat(videoInfo)
@@ -53,7 +63,15 @@ export async function handler(event: StartFileUploadParams, context: Context) {
     logDebug('upsertFile =>')
 
     logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
+    const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
     const uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
+    if (subsegmentStream) {
+      subsegmentStream.addAnnotation('s3Bucket', bucket)
+      subsegmentStream.addAnnotation('s3Key', fileName)
+      subsegmentStream.addMetadata('fileSize', uploadResult.fileSize)
+      subsegmentStream.addMetadata('duration', uploadResult.duration)
+      subsegmentStream.close()
+    }
     logDebug('streamVideoToS3 =>', uploadResult)
 
     dynamoItem.size = uploadResult.fileSize
@@ -95,4 +113,4 @@ export async function handler(event: StartFileUploadParams, context: Context) {
     await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
     return lambdaErrorResponse(context, error)
   }
-}
+})

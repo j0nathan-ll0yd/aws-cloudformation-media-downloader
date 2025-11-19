@@ -12,6 +12,7 @@ import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/t
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * Associates a File to a User in DynamoDB
@@ -82,7 +83,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -91,15 +92,11 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
     const fileId = getVideoID(requestBody.articleURL)
     const {userId} = getUserDetailsFromEvent(event)
     if (!userId) {
-      // This should never happen; handled by API Gateway
       throw new UnexpectedError(providerFailureErrorMessage)
     }
-    // Associate the user with the file; regardless of FileStatus
     await associateFileToUser(fileId, userId)
-    // Check to see if the file already exists
     const file = await getFile(fileId)
     if (file && file.status == FileStatus.Downloaded) {
-      // If the file already exists, trigger the download on the user's device
       await sendFileNotification(file, userId)
       return response(context, 200, {status: 'Dispatched'})
     } else {
@@ -114,4 +111,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
-}
+})

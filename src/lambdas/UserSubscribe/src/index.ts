@@ -4,6 +4,7 @@ import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-hel
 import {userSubscribeSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {subscribeEndpointToTopic} from '../../../util/shared'
+import {withXRay} from '../../../util/lambdaDecorator'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic
@@ -13,7 +14,7 @@ import {subscribeEndpointToTopic} from '../../../util/shared'
  *
  * @notExported
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -28,4 +29,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   return response(context, 201, {
     subscriptionArn: subscribeResponse.SubscriptionArn
   })
-}
+})
