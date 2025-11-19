@@ -22,8 +22,28 @@ resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
 }
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyLogging" {
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyXRay" {
+  role       = aws_iam_role.ApiGatewayAuthorizerRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
   role       = aws_iam_role.ApiGatewayAuthorizer.name
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyXRay" {
+  role       = aws_iam_role.ApiGatewayAuthorizerRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyXRay" {
+  role       = aws_iam_role.ApiGatewayAuthorizerRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+}
+
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyXRay" {
+  role       = aws_iam_role.ApiGatewayAuthorizerRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
 data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
@@ -60,6 +80,10 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   ]
   filename         = data.archive_file.ApiGatewayAuthorizer.output_path
   source_code_hash = data.archive_file.ApiGatewayAuthorizer.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

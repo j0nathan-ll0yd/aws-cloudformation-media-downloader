@@ -29,6 +29,11 @@ resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyXRay" {
+  role       = aws_iam_role.FileCoordinatorRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_cloudwatch_event_target" "FileCoordinator" {
   rule = aws_cloudwatch_event_rule.FileCoordinator.name
   arn  = aws_lambda_function.FileCoordinator.arn
@@ -68,6 +73,10 @@ resource "aws_lambda_function" "FileCoordinator" {
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

@@ -33,6 +33,11 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyXRay" {
+  role       = aws_iam_role.WebhookFeedlyRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "WebhookFeedly" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.WebhookFeedly.function_name
@@ -59,6 +64,10 @@ resource "aws_lambda_function" "WebhookFeedly" {
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -155,6 +164,11 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyXRay" {
+  role       = aws_iam_role.MultipartUploadRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 data "archive_file" "StartFileUpload" {
   type        = "zip"
   source_file = "./../build/lambdas/StartFileUpload.js"
@@ -229,6 +243,10 @@ resource "aws_lambda_function" "StartFileUpload" {
   filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
   layers           = [aws_lambda_layer_version.YtDlp.arn]
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

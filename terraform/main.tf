@@ -45,6 +45,22 @@ resource "aws_iam_policy" "CommonLambdaLogging" {
   policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
 }
 
+data "aws_iam_policy_document" "CommonLambdaXRay" {
+  statement {
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "CommonLambdaXRay" {
+  name        = "CommonLambdaXRay"
+  description = "Allows Lambda functions to write X-Ray traces"
+  policy      = data.aws_iam_policy_document.CommonLambdaXRay.json
+}
+
 data "aws_iam_policy_document" "LambdaGatewayAssumeRole" {
   statement {
     actions = ["sts:AssumeRole"]

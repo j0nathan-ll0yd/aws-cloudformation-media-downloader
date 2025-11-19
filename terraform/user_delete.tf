@@ -36,8 +36,28 @@ resource "aws_iam_role_policy_attachment" "UserDeletePolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "UserDeletePolicyLogging" {
+
+resource "aws_iam_role_policy_attachment" "UserDeletePolicyXRay" {
   role       = aws_iam_role.UserDeleteRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+  role       = aws_iam_role.UserDeleteRole.name
+
+resource "aws_iam_role_policy_attachment" "UserDeletePolicyXRay" {
+  role       = aws_iam_role.UserDeleteRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+
+resource "aws_iam_role_policy_attachment" "UserDeletePolicyXRay" {
+  role       = aws_iam_role.UserDeleteRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+}
+
+resource "aws_iam_role_policy_attachment" "UserDeletePolicyXRay" {
+  role       = aws_iam_role.UserDeleteRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
 resource "aws_lambda_permission" "UserDelete" {
@@ -66,6 +86,10 @@ resource "aws_lambda_function" "UserDelete" {
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

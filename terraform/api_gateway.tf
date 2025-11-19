@@ -40,6 +40,8 @@ resource "aws_api_gateway_stage" "Production" {
   stage_name    = "prod"
   rest_api_id   = aws_api_gateway_rest_api.Main.id
   deployment_id = aws_api_gateway_deployment.Main.id
+
+  xray_tracing_enabled = true
 }
 
 resource "aws_api_gateway_method_settings" "Production" {
