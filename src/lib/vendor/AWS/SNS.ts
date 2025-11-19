@@ -17,8 +17,11 @@ import {
   UnsubscribeCommand,
   DeleteEndpointCommand
 } from '@aws-sdk/client-sns'
+import AWSXRay from 'aws-xray-sdk-core'
 
-const sns = new SNSClient()
+const enableXRay = process.env.ENABLE_XRAY !== 'false'
+const baseClient = new SNSClient()
+const sns = enableXRay ? AWSXRay.captureAWSv3Client(baseClient) : baseClient
 
 // Re-export types for application code to use
 export type {PublishInput}

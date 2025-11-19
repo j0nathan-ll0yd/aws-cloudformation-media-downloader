@@ -1,8 +1,11 @@
 import {S3Client, HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
 import {Upload, Options as UploadOptions} from '@aws-sdk/lib-storage'
 import {Readable} from 'stream'
+import AWSXRay from 'aws-xray-sdk-core'
 
-const s3Client = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
+const enableXRay = process.env.ENABLE_XRAY !== 'false'
+const baseClient = new S3Client({region: process.env.AWS_REGION || 'us-west-2'})
+const s3Client = enableXRay ? AWSXRay.captureAWSv3Client(baseClient) : baseClient
 
 /**
  * Get metadata for an S3 object

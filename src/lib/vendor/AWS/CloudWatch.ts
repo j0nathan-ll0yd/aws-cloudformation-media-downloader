@@ -1,6 +1,9 @@
 import {CloudWatchClient, PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
+import AWSXRay from 'aws-xray-sdk-core'
 
-const cloudwatch = new CloudWatchClient({region: process.env.AWS_REGION || 'us-west-2'})
+const enableXRay = process.env.ENABLE_XRAY !== 'false'
+const baseClient = new CloudWatchClient({region: process.env.AWS_REGION || 'us-west-2'})
+const cloudwatch = enableXRay ? AWSXRay.captureAWSv3Client(baseClient) : baseClient
 
 // Map simple unit strings to AWS StandardUnit values (internal use only)
 const unitMapping: Record<string, StandardUnit> = {

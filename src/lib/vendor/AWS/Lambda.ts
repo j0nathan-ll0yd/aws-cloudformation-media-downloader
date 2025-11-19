@@ -1,6 +1,9 @@
 import {LambdaClient, InvokeCommand, InvokeCommandInput, InvokeCommandOutput} from '@aws-sdk/client-lambda'
+import AWSXRay from 'aws-xray-sdk-core'
 
-const lambda = new LambdaClient({region: process.env.AWS_REGION || 'us-west-2'})
+const enableXRay = process.env.ENABLE_XRAY !== 'false'
+const baseClient = new LambdaClient({region: process.env.AWS_REGION || 'us-west-2'})
+const lambda = enableXRay ? AWSXRay.captureAWSv3Client(baseClient) : baseClient
 
 /**
  * Invokes a Lambda function
