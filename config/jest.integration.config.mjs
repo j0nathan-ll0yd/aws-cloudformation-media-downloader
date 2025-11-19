@@ -10,8 +10,12 @@ const config = {
   // Automatically clear mock calls between tests
   clearMocks: true,
 
-  // Disable coverage collection for integration tests
-  collectCoverage: false,
+  // Enable coverage collection for integration tests
+  // Coverage will be merged with unit test coverage when using jest.all.config.mjs
+  collectCoverage: true,
+
+  // Write coverage to same directory as unit tests for merging
+  coverageDirectory: 'coverage',
 
   // Treat .ts files as ES modules
   extensionsToTreatAsEsm: ['.ts'],
