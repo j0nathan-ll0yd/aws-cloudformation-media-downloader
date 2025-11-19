@@ -17,7 +17,7 @@ export default function (plop) {
       {
         type: 'add',
         path: 'terraform/{{snakeCase name}}.tf',
-        templateFile: './plop/templates/lambda-scheduled-terraform.hbs'
+        templateFile: './plop/templates/lambda-scheduled-infrastructure.hbs'
       },
       {
         type: 'add',

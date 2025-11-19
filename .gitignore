@@ -14,10 +14,11 @@ node_modules
 secrets.yaml
 youtube-cookies.txt
 cloudformation.json
-src/types/terraform.d.ts
+src/types/infrastructure.d.ts
 terraform/terraform.tfstate*
 terraform/.terraform.tfstate.lock.info
 terraform/.terraform.lock.hcl
 terraform/.terraform
 .webpackCache
 .python-version
+layers/yt-dlp/bin/yt-dlp_linux

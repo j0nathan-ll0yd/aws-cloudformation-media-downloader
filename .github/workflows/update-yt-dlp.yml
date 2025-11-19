@@ -1,0 +1,145 @@
+name: Update yt-dlp Binary
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday at 2am UTC
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for yt-dlp updates
+        id: check
+        run: |
+          set -e
+
+          echo "Fetching latest stable yt-dlp release (excluding pre-releases)..."
+          LATEST=$(gh api repos/yt-dlp/yt-dlp/releases \
+            --jq '[.[] | select(.prerelease == false)][0].tag_name')
+
+          CURRENT=$(cat layers/yt-dlp/VERSION 2>/dev/null | tr -d '[:space:]' || echo "none")
+
+          echo "latest=${LATEST}" >> $GITHUB_OUTPUT
+          echo "current=${CURRENT}" >> $GITHUB_OUTPUT
+
+          if [ "$LATEST" != "$CURRENT" ]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "✅ Update available: ${CURRENT} → ${LATEST}"
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Already on latest version: ${CURRENT}"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download and verify binary for testing
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          set -e
+
+          VERSION="${{ steps.check.outputs.latest }}"
+
+          echo "Downloading yt-dlp ${VERSION} for verification..."
+          wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/yt-dlp_linux"
+          wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/${VERSION}/SHA2-256SUMS"
+
+          echo "Verifying SHA256 checksum..."
+          grep "yt-dlp_linux$" SHA2-256SUMS | sha256sum --check --status
+
+          echo "Testing binary execution..."
+          chmod +x yt-dlp_linux
+          BINARY_VERSION=$(./yt-dlp_linux --version)
+
+          if [ "${BINARY_VERSION}" != "${VERSION}" ]; then
+            echo "ERROR: Binary version mismatch (expected: ${VERSION}, got: ${BINARY_VERSION})"
+            exit 1
+          fi
+
+          echo "Testing format listing capability..."
+          ./yt-dlp_linux --list-formats "https://www.youtube.com/watch?v=jNQXAC9IVRw" --no-warnings --quiet || {
+            echo "ERROR: Binary failed format listing test"
+            exit 1
+          }
+
+          rm -f yt-dlp_linux SHA2-256SUMS
+          echo "✅ Binary verification complete"
+
+      - name: Update VERSION file and create PR
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          set -e
+
+          readonly VERSION="${{ steps.check.outputs.latest }}"
+          readonly CURRENT_VERSION="${{ steps.check.outputs.current }}"
+          readonly BRANCH_NAME="chore/update-yt-dlp-${VERSION}"
+
+          echo "Updating VERSION file to ${VERSION}..."
+          echo "${VERSION}" > layers/yt-dlp/VERSION
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "${BRANCH_NAME}"
+          git add layers/yt-dlp/VERSION
+          git commit -m "chore(deps): update yt-dlp to ${VERSION}"
+          git push origin "${BRANCH_NAME}"
+
+          cat > /tmp/pr-body.md << EOF
+          Automated update of yt-dlp version to ${VERSION}.
+
+          **Release Notes**: https://github.com/yt-dlp/yt-dlp/releases/tag/${VERSION}
+
+          ## Changes
+          - Updated VERSION file from ${CURRENT_VERSION} to ${VERSION}
+          - Binary will be downloaded by OpenTofu during deployment
+
+          ## Pre-merge Verification
+          - ✅ Binary downloaded and SHA256 checksum verified
+          - ✅ Binary execution test passed (\`--version\`)
+          - ✅ Format listing capability verified
+          - ⏳ CI/CD tests pending
+
+          ## Deployment Process
+          1. Merge this PR to update the VERSION file
+          2. Run \`npm run deploy\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
+          3. OpenTofu will download, verify, and package the new binary into the Lambda layer
+          4. Monitor CloudWatch logs for any download issues after deployment
+
+          ## Rollback Procedure
+          If issues occur after deployment:
+          \`\`\`bash
+          echo "${CURRENT_VERSION}" > layers/yt-dlp/VERSION
+          git commit -am "chore(deps): revert yt-dlp to ${CURRENT_VERSION}"
+          git push
+          npm run deploy
+          \`\`\`
+          EOF
+
+          gh pr create \
+            --title "chore(deps): update yt-dlp to ${VERSION}" \
+            --body-file /tmp/pr-body.md \
+            --label "dependencies" \
+            --label "automated" \
+            --label "yt-dlp" \
+            --label "infrastructure"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          gh issue create \
+            --title "yt-dlp update workflow failed" \
+            --body "The automated yt-dlp update workflow failed. Check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
+            --label "bug" \
+            --label "automation" \
+            --label "yt-dlp"
+        env:
+          GH_TOKEN: ${{ github.token }}

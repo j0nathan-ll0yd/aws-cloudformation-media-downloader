@@ -31,8 +31,9 @@
     "localstack:logs": "docker compose -f docker-compose.localstack.yml logs -f localstack",
     "localstack:health": "curl -s http://localhost:4566/_localstack/health | jq",
     "update-cookies": "./bin/update-youtube-cookies.sh",
-    "plan": "eval export $(cat .env) && cd terraform && terraform apply",
-    "deploy": "eval export $(cat .env) && cd terraform && terraform apply -auto-approve"
+    "update-yt-dlp": "./bin/update-yt-dlp.sh",
+    "plan": "eval export $(cat .env) && cd terraform && tofu plan",
+    "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
@@ -88,7 +89,7 @@
     "eslint-plugin-tsdoc": "^0.4.0",
     "esm": "^3.2.25",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
-    "glob": "^11.0.0",
+    "glob": "^11.1.0",
     "jest": "^29.7.0",
     "plop": "^3.1.2",
     "quicktype": "^23.1.3",

@@ -4,8 +4,8 @@
 bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 cd "${bin_dir}/../terraform"
-domain=`terraform output cloudfront_distribution_domain | tr -d '"'`
-api_key=`terraform output api_gateway_api_key | tr -d '"'`
+domain=`tofu output cloudfront_distribution_domain | tr -d '"'`
+api_key=`tofu output api_gateway_api_key | tr -d '"'`
 
 REQUEST_URL="https://${domain}/files?ApiKey=${api_key}"
 echo "Calling ${REQUEST_URL}"

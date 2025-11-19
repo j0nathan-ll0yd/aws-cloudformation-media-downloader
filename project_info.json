@@ -26,5 +26,5 @@
     "shared.ts": "Functions utilized by multiple lambdas in the src/lambdas directory",
     "transformers.ts": "Functions for thoughtful conversion of data structures"
   },
-  "Terraform": "Terraform files used for AWS - Correspondence with each lambda in the src/lambdas directory"
+  "OpenTofu": "OpenTofu files used for AWS - Correspondence with each lambda in the src/lambdas directory"
 }

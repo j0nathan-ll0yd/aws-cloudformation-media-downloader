@@ -1,6 +1,6 @@
-# Terraform Style Guide
+# OpenTofu Style Guide
 
-This document defines the coding standards and patterns for Terraform infrastructure code in this project.
+This document defines the coding standards and patterns for OpenTofu infrastructure code in this project.
 
 ---
 

@@ -235,7 +235,7 @@ const YTDLP_BINARY_PATH = process.env.YTDLP_BINARY_PATH || '/opt/bin/yt-dlp_linu
 - All environment variables must be declared in `types/global.d.ts`
 - Use direct reference with `as string` (no fallback values)
 - Module-level constants follow CamelCase naming
-- No need to exclude from Terraform infrastructure tests
+- No need to exclude from OpenTofu infrastructure tests
 
 ### Early Returns
 
