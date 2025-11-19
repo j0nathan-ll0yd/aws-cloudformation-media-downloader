@@ -1,6 +1,6 @@
 # Media Downloader
 
-A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [Terraform](https://www.terraform.io/), and built with [TypeScript](https://www.typescriptlang.org/).
+A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [OpenTofu](https://opentofu.org/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Architecture
 
@@ -12,7 +12,7 @@ When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was releas
 
 So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportunity to build my own media downloader service, experiment with the latest AWS features, along with a [companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader) using SwiftUI and Combine.
 
-The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, Terraform templates, deployment scripts, documentation and tests that power the App's backend. This includes:
+The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, OpenTofu templates, deployment scripts, documentation and tests that power the App's backend. This includes:
 
 * The ability to download videos and have them stored to an S3 bucket.
 * The ability to view downloaded videos (via API).
@@ -44,10 +44,10 @@ npm run build
 # Run the tests to ensure everything is working
 npm run test
 
-# Use Terraform to deploy the infrastructure
+# Use OpenTofu to deploy the infrastructure
 cd terraform
-terraform init
-terraform apply
+tofu init
+tofu apply
 
 # Once complete, verify the application works remotely
 npm run test-remote-list
@@ -58,7 +58,7 @@ npm run test-remote-hook
 
 ```bash
 # Install system dependencies and configure
-brew install act awscli jq nvm quicktype terraform terraform-docs
+brew install act awscli jq nvm quicktype opentofu terraform-docs
 nvm install lts/jod
 nvm use lts/jod
 aws configure
@@ -92,10 +92,10 @@ brew install awscli
 aws configure
 ```
 
-* Install [terraform](https://www.terraform.io/) (used for deployment scripts)
+* Install [OpenTofu](https://opentofu.org/) (used for deployment scripts)
 
 ```bash
-brew install terraform
+brew install opentofu
 ```
 
 * Install [sops](https://github.com/getsops/sops) (used for secret management)
@@ -165,13 +165,13 @@ echo "Keep your private key secure and share the public key with team members"
 # sops --encrypt --output secrets.yaml.encrypted secrets.yaml
 ```
 
-* Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from Terraform)
+* Install [quicktype](https://quicktype.io/) (used for generating TypeScript types from OpenTofu)
 
 ```bash
 brew install quicktype
 ```
 
-* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for Terraform documentation)
+* Install [terraform-docs](https://github.com/terraform-docs/terraform-docs) (used for infrastructure documentation)
 
 ```bash
 brew install terraform-docs
@@ -191,11 +191,53 @@ brew install act
 
 You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
 
-* Install [gh](https://www.terraform.io/) (for Github usage by Claude Code)
+* Install [gh](https://cli.github.com/) (for Github usage by Claude Code)
 
 ```bash
 brew install gh
 ```
+
+## Migration from Terraform to OpenTofu
+
+This project migrated from Terraform to OpenTofu in [PR #95](https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/pull/95). OpenTofu is a drop-in replacement for Terraform with 100% HCL compatibility.
+
+### Why OpenTofu?
+
+- **Open Source Fork**: Based on Terraform 1.5 with MPL v2 license (no relicensing risk)
+- **Community Governance**: Steering committee prevents single-vendor control
+- **Enhanced Features**: State encryption, provider iteration, resource exclusion, early variable evaluation
+- **Provider Compatibility**: Uses identical provider source code as Terraform with OpenTofu's own registry at registry.opentofu.org
+
+Read more: [Make the Switch to OpenTofu](https://gruntwork.io/blog/make-the-switch-to-opentofu)
+
+### For Existing Deployments
+
+If you have an existing Terraform deployment, migration is straightforward:
+
+```bash
+# 1. Install OpenTofu (if not already installed)
+brew install opentofu
+
+# 2. No changes needed to .terraform/ directory or state files
+# OpenTofu is fully compatible with Terraform state
+
+# 3. Clean and reinitialize to use OpenTofu registry
+cd terraform
+rm -rf .terraform .terraform.lock.hcl
+tofu init
+
+# 4. Verify configuration
+tofu validate
+
+# 5. Review planned changes (should show no infrastructure changes)
+tofu plan
+
+# 6. Continue using npm scripts as before
+cd ..
+npm run deploy
+```
+
+**Note**: The `.terraform/` directory name and `.tf` file extensions remain unchanged - OpenTofu maintains backward compatibility with these conventions.
 
 ## Configuring Push Notifications
 
@@ -217,7 +259,7 @@ mkdir -p secure/APNS_SANDBOX
 mv privateKey.txt certificate.txt secure/APNS_SANDBOX
 ```
 
-Once complete, run `terraform apply` and a new platform application will be created so you can register your device to receive push notifications.
+Once complete, run `tofu apply` and a new platform application will be created so you can register your device to receive push notifications.
 
 ## Configuring Github Issue Creation
 
@@ -227,7 +269,7 @@ Once generated, store it as `githubPersonalToken.txt` in the `secure` directory 
 
 ## Deployment
 
-* Deploy Code - To deploy code changes only, this command will build the distribution files and trigger a terraform **auto approval**.
+* Deploy Code - To deploy code changes only, this command will build the distribution files and trigger an OpenTofu **auto approval**.
 
 ```bash
 npm run build
@@ -419,7 +461,7 @@ open docs/source/index.html
 
 ### TODOS
 
-* Update Terraform
+* Update OpenTofu
   * Better handle conditional variables (like Github Personal Token)
 
 * Update Unit Tests

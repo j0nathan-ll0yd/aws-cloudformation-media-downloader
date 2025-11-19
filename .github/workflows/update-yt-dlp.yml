@@ -98,7 +98,7 @@ jobs:
 
           ## Changes
           - Updated VERSION file from ${CURRENT_VERSION} to ${VERSION}
-          - Binary will be downloaded by Terraform during deployment
+          - Binary will be downloaded by OpenTofu during deployment
 
           ## Pre-merge Verification
           - ✅ Binary downloaded and SHA256 checksum verified
@@ -108,8 +108,8 @@ jobs:
 
           ## Deployment Process
           1. Merge this PR to update the VERSION file
-          2. Run \`terraform apply\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
-          3. Terraform will download, verify, and package the new binary into the Lambda layer
+          2. Run \`npm run deploy\` to trigger binary download via \`null_resource.DownloadYtDlpBinary\`
+          3. OpenTofu will download, verify, and package the new binary into the Lambda layer
           4. Monitor CloudWatch logs for any download issues after deployment
 
           ## Rollback Procedure
@@ -118,7 +118,7 @@ jobs:
           echo "${CURRENT_VERSION}" > layers/yt-dlp/VERSION
           git commit -am "chore(deps): revert yt-dlp to ${CURRENT_VERSION}"
           git push
-          terraform apply
+          npm run deploy
           \`\`\`
           EOF
 

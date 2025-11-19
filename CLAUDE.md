@@ -1,12 +1,12 @@
 # Project Context for Claude
 
 ## Project Overview
-This is a serverless AWS media downloader service built with Terraform and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
+This is a serverless AWS media downloader service built with OpenTofu and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
 
 ## Architecture & Technology Stack
 
 ### Core Technologies
-- **Infrastructure as Code**: Terraform
+- **Infrastructure as Code**: OpenTofu
 - **Runtime**: AWS Lambda (Node.js 22.x)
 - **Language**: TypeScript
 - **Cloud Provider**: AWS (serverless architecture)
@@ -25,7 +25,7 @@ This is a serverless AWS media downloader service built with Terraform and TypeS
 
 ```
 .
-├── terraform/             # AWS Infrastructure definitions (Terraform)
+├── terraform/             # AWS Infrastructure definitions (OpenTofu)
 ├── src/
 │   └── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │       └── [lambda-name]/
@@ -72,7 +72,7 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Lambda code: `docs/styleGuides/lambdaStyleGuide.md`
 - Test code: `docs/styleGuides/testStyleGuide.md`
 - Bash scripts: `docs/styleGuides/bashStyleGuide.md`
-- Terraform infrastructure: `docs/styleGuides/terraformStyleGuide.md`
+- OpenTofu infrastructure: `docs/styleGuides/tofuStyleGuide.md`
 
 ---
 
@@ -468,7 +468,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 
 ### Build & Deployment Commands
 - `npm run build` - Builds Lambda functions with webpack (each `src/lambdas/*/src/index.ts` becomes an entry point)
-- `npm run deploy` - Deploys infrastructure with Terraform
+- `npm run deploy` - Deploys infrastructure with OpenTofu
 - `npm run test` - Runs local tests
 - `npm run test-remote-*` - Tests production endpoints
 - `npm run document-source` - Generates TSDoc documentation
@@ -506,8 +506,8 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - `@aws-sdk/client-sns` - SNS notifications
 - `@aws-sdk/client-sqs` - SQS queues
 
-**Troubleshooting**: If Terraform shows "No changes" after code updates, check:
-1. Archive hash in terraform output - should change when code changes
+**Troubleshooting**: If OpenTofu shows "No changes" after code updates, check:
+1. Archive hash in OpenTofu output - should change when code changes
 2. Webpack externals - missing entries cause old code to bundle
 3. Build output - verify new packages are externalized, not bundled
 
@@ -561,7 +561,7 @@ When migrating libraries (e.g., jsonwebtoken → jose), follow these steps for s
 - All secrets are outlined in the README and stored as `secrets.yaml`
 - Never read the `secrets.yaml` file
 - Use environment variables for production secrets
-- The file `secrets.encrypted.yaml` is read by Terraform at deploy time
+- The file `secrets.encrypted.yaml` is read by OpenTofu at deploy time
 
 ### Certificate Management
 - APNS requires p12 certificate conversion
@@ -599,12 +599,12 @@ This project has four comprehensive style guides that define ALL coding standard
    - User output formatting
    - **YOU MUST FOLLOW THIS FOR ALL BASH SCRIPTS**
 
-4. **`docs/styleGuides/terraformStyleGuide.md`** - Terraform infrastructure patterns
+4. **`docs/styleGuides/tofuStyleGuide.md`** - OpenTofu infrastructure patterns
    - Resource naming (PascalCase)
    - File organization
    - Environment variable consistency
    - Comment usage (no removed resource explanations)
-   - **YOU MUST FOLLOW THIS FOR ALL TERRAFORM CODE**
+   - **YOU MUST FOLLOW THIS FOR ALL OPENTOFU CODE**
 
 **THESE STYLE GUIDES ARE NOT SUGGESTIONS. THEY ARE REQUIREMENTS.**
 
@@ -614,7 +614,7 @@ This project has four comprehensive style guides that define ALL coding standard
 - **TSDoc**: Required for all public functions in Lambda handlers
 - **Generated Documentation**: Run `npm run document-source` to update `docs/source/`
 
-### Terraform Best Practices
+### OpenTofu Best Practices
 - **Lambda Mapping**: Each Lambda in `terraform/` corresponds to a directory in `src/lambdas/`
 - **Modular Resources**: Separate `.tf` files for different resource types
 - **Documentation**: Use terraform-docs to generate infrastructure documentation
@@ -637,13 +637,13 @@ When developing Lambda functions, utilize these shared utilities:
 2. Implement handler in `src/index.ts` with TypeDoc comments
 3. Write Jest tests in `test/index.test.ts`
 4. Add test fixtures in `test/fixtures/`
-5. Define Lambda resource in Terraform
+5. Define Lambda resource in OpenTofu
 6. Configure webpack entry point
 7. Add appropriate IAM permissions
 8. Import and use utilities from `util/` directory
 
 ### Modifying API Endpoints
-1. Update API Gateway configuration in Terraform
+1. Update API Gateway configuration in OpenTofu
 2. Modify Lambda handler code
 3. Update custom authorizer if needed
 4. Test with `test-remote-*` scripts
@@ -706,7 +706,7 @@ This project follows convention over configuration principles:
 
 ## Critical Dependencies
 - Node.js version must match AWS Lambda runtime
-- Terraform version compatibility
+- OpenTofu version compatibility
 - APNS certificate validity and renewal
 - AWS service quotas and limits
 
