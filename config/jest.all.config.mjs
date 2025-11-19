@@ -10,11 +10,18 @@
  * Usage: npm run test:all
  */
 
+import {fileURLToPath} from 'url'
+import {dirname, join} from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 const config = {
   // Run both unit and integration tests as separate projects
+  // Using absolute paths to ensure correct resolution
   projects: [
-    './jest.config.mjs',           // Unit tests
-    './jest.integration.config.mjs' // Integration tests
+    join(__dirname, 'jest.config.mjs'),           // Unit tests
+    join(__dirname, 'jest.integration.config.mjs') // Integration tests
   ],
 
   // Collect coverage from both projects
