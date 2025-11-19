@@ -161,10 +161,51 @@ data "archive_file" "StartFileUpload" {
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
+resource "null_resource" "DownloadYtDlpBinary" {
+  triggers = {
+    version = fileexists("${path.module}/../layers/yt-dlp/VERSION") ? trimspace(file("${path.module}/../layers/yt-dlp/VERSION")) : "none"
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+
+      VERSION="${trimspace(file("${path.module}/../layers/yt-dlp/VERSION"))}"
+      LAYER_BIN_DIR="${path.module}/../layers/yt-dlp/bin"
+      BINARY_PATH="$${LAYER_BIN_DIR}/yt-dlp_linux"
+
+      echo "Downloading yt-dlp $${VERSION}..."
+      mkdir -p "$${LAYER_BIN_DIR}"
+
+      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/yt-dlp_linux" -O "$${BINARY_PATH}"
+      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/SHA2-256SUMS" -O /tmp/yt-dlp-SHA2-256SUMS
+
+      echo "Verifying checksum..."
+      cd "$${LAYER_BIN_DIR}"
+      grep "yt-dlp_linux$" /tmp/yt-dlp-SHA2-256SUMS | sha256sum --check --status
+
+      echo "Making binary executable..."
+      chmod +x "$${BINARY_PATH}"
+
+      echo "Testing binary..."
+      BINARY_VERSION=$("$${BINARY_PATH}" --version)
+      if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
+        echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
+        exit 1
+      fi
+
+      rm -f /tmp/yt-dlp-SHA2-256SUMS
+      echo "✅ yt-dlp $${VERSION} downloaded and verified successfully"
+    EOT
+  }
+}
+
 data "archive_file" "YtDlpLayer" {
   type        = "zip"
   source_dir  = "./../layers/yt-dlp"
   output_path = "./../build/layers/yt-dlp.zip"
+
+  depends_on = [null_resource.DownloadYtDlpBinary]
 }
 
 resource "aws_lambda_layer_version" "YtDlp" {
