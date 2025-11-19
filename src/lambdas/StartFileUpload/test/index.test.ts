@@ -18,10 +18,11 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
 
 // Mock DynamoDB
 const updateItemMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const queryMock = jest.fn<() => Promise<{Items?: unknown[]}>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
   updateItem: updateItemMock,
   deleteItem: jest.fn(),
-  query: jest.fn(),
+  query: queryMock,
   scan: jest.fn()
 }))
 
@@ -43,6 +44,9 @@ describe('#StartFileUpload', () => {
     process.env.Bucket = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
     process.env.DynamoDBTableFiles = 'test-table'
+
+    // Default: no existing file in DynamoDB
+    queryMock.mockResolvedValue({Items: []})
   })
 
   test('should successfully stream video to S3', async () => {
@@ -241,5 +245,131 @@ describe('#StartFileUpload', () => {
 
     // Should have attempted to update DynamoDB despite the failure
     expect(updateItemMock).toHaveBeenCalled()
+  })
+
+  test('should schedule retry for unavailable video with release_timestamp', async () => {
+    const futureTimestamp = Math.floor(Date.now() / 1000) + 86400
+
+    fetchVideoInfoMock
+      .mockRejectedValueOnce(new Error('This video is unavailable'))
+      .mockResolvedValueOnce({
+        id: 'test123',
+        title: 'Scheduled Video',
+        thumbnail: 'https://example.com/thumbnail.jpg',
+        duration: 300,
+        formats: [],
+        release_timestamp: futureTimestamp,
+        availability: 'public'
+      } as YtDlpVideoInfo)
+
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(202)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.retryCount).toEqual(1)
+    expect(parsedBody.body.retryAfter).toBeGreaterThan(Date.now() / 1000)
+
+    // Verify DynamoDB was called to set Scheduled status
+    expect(updateItemMock).toHaveBeenCalled()
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({
+      ':status': FileStatus.Scheduled,
+      ':retryCount': 1
+    })
+  })
+
+  test('should fail permanently after max retries for scheduled video', async () => {
+    queryMock.mockResolvedValue({
+      Items: [
+        {
+          fileId: 'test123',
+          retryCount: 5,
+          maxRetries: 5,
+          status: FileStatus.Scheduled
+        }
+      ]
+    })
+
+    fetchVideoInfoMock
+      .mockRejectedValueOnce(new Error('This video is unavailable'))
+      .mockResolvedValueOnce({
+        id: 'test123',
+        title: 'Scheduled Video',
+        thumbnail: 'https://example.com/thumbnail.jpg',
+        duration: 300,
+        formats: [],
+        release_timestamp: Math.floor(Date.now() / 1000) + 86400,
+        availability: 'public'
+      } as YtDlpVideoInfo)
+
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify DynamoDB was called to set Failed status
+    expect(updateItemMock).toHaveBeenCalled()
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({
+      ':status': FileStatus.Failed,
+      ':retryCount': 6
+    })
+  })
+
+  test('should handle transient network errors with retry', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Network timeout occurred'))
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(202)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.retryCount).toEqual(1)
+
+    // Verify DynamoDB was called to set Scheduled status
+    expect(updateItemMock).toHaveBeenCalled()
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({
+      ':status': FileStatus.Scheduled
+    })
+  })
+
+  test('should not retry private videos', async () => {
+    fetchVideoInfoMock
+      .mockRejectedValueOnce(new Error('This video is unavailable'))
+      .mockResolvedValueOnce({
+        id: 'test123',
+        title: 'Private Video',
+        thumbnail: 'https://example.com/thumbnail.jpg',
+        duration: 300,
+        formats: [],
+        availability: 'private'
+      } as YtDlpVideoInfo)
+
+    updateItemMock.mockResolvedValue({})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify DynamoDB was called to set Failed status (not Scheduled)
+    expect(updateItemMock).toHaveBeenCalled()
+    const calls = updateItemMock.mock.calls
+    // @ts-expect-error - mock.calls type inference issue
+    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
+    expect(lastCall.ExpressionAttributeValues).toMatchObject({
+      ':status': FileStatus.Failed
+    })
   })
 })
