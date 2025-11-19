@@ -13,8 +13,8 @@
 const config = {
   // Run both unit and integration tests as separate projects
   projects: [
-    '<rootDir>/config/jest.config.mjs',           // Unit tests
-    '<rootDir>/config/jest.integration.config.mjs' // Integration tests
+    './jest.config.mjs',           // Unit tests
+    './jest.integration.config.mjs' // Integration tests
   ],
 
   // Collect coverage from both projects
