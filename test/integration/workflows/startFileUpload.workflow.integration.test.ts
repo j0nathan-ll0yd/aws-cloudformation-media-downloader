@@ -76,15 +76,15 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
     // Mock YouTube vendor functions
     jest.unstable_mockModule('../../../src/lib/vendor/YouTube', () => ({
-      fetchVideoInfo: jest.fn().mockResolvedValue(mockVideoInfo),
-      chooseVideoFormat: jest.fn().mockReturnValue(mockFormat),
+      fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
+      chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
       streamVideoToS3: createMockStreamVideoToS3WithRealUpload(createS3Upload)
     }))
 
     // Mock GitHub helpers (don't create real issues in tests)
     jest.unstable_mockModule('../../../src/util/github-helpers', () => ({
-      createVideoDownloadFailureIssue: jest.fn().mockResolvedValue(undefined),
-      createCookieExpirationIssue: jest.fn().mockResolvedValue(undefined)
+      createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
     }))
 
     // Import handler AFTER mocks are set up
@@ -127,10 +127,13 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should update DynamoDB to failed status when S3 upload fails', async () => {
     // Arrange: Mock streamVideoToS3 to fail
+    const failVideoInfo = createMockVideoInfo({id: 'fail-video'})
+    const failFormat = createMockVideoFormat()
+
     jest.unstable_mockModule('../../../src/lib/vendor/YouTube', () => ({
-      fetchVideoInfo: jest.fn().mockResolvedValue(createMockVideoInfo({id: 'fail-video'})),
-      chooseVideoFormat: jest.fn().mockReturnValue(createMockVideoFormat()),
-      streamVideoToS3: jest.fn().mockRejectedValue(new Error('Mock S3 upload failed'))
+      fetchVideoInfo: jest.fn<() => Promise<typeof failVideoInfo>>().mockResolvedValue(failVideoInfo),
+      chooseVideoFormat: jest.fn<() => typeof failFormat>().mockReturnValue(failFormat),
+      streamVideoToS3: jest.fn<() => Promise<never>>().mockRejectedValue(new Error('Mock S3 upload failed'))
     }))
 
     // Re-import handler with new mock
@@ -188,7 +191,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     const results = await Promise.all(events.map((event) => handler(event, mockContext)))
 
     // Assert: All responses are successful
-    results.forEach((result, index) => {
+    results.forEach((result) => {
       expect(result.statusCode).toBe(200)
       const body = JSON.parse(result.body)
       expect(body.status).toBe('success')
@@ -228,9 +231,9 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
     // Mock YouTube functions for large file
     jest.unstable_mockModule('../../../src/lib/vendor/YouTube', () => ({
-      fetchVideoInfo: jest.fn().mockResolvedValue(mockLargeVideoInfo),
-      chooseVideoFormat: jest.fn().mockReturnValue(mockLargeFormat),
-      streamVideoToS3: jest.fn(async (uri: string, bucket: string, key: string) => {
+      fetchVideoInfo: jest.fn<() => Promise<typeof mockLargeVideoInfo>>().mockResolvedValue(mockLargeVideoInfo),
+      chooseVideoFormat: jest.fn<() => typeof mockLargeFormat>().mockReturnValue(mockLargeFormat),
+      streamVideoToS3: jest.fn(async (_uri: string, bucket: string, key: string) => {
         // Create large mock video stream
         const largeStream = createMockVideoStream(largeFileSize)
 

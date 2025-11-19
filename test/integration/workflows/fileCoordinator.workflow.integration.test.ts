@@ -13,7 +13,7 @@ import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@je
 import {FileStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
 // Test configuration
@@ -70,7 +70,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       fileIds.map((fileId) =>
         insertFile({
           fileId,
-          status: FileStatus.Pending,
+          status: FileStatus.PendingMetadata,
           availableAt: now - 1000, // Available 1 second ago
           title: `Test Video ${fileId}`
         })
@@ -97,7 +97,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
     // Verify each file was invoked with correct payload
-    const invocationPayloads = invokeLambdaMock.mock.calls.map((call) => JSON.parse(call[1]))
+    const invocationPayloads = invokeLambdaMock.mock.calls.map((call) => JSON.parse(call[1] as string))
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(fileIds.sort())
@@ -130,21 +130,21 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
     await insertFile({
       fileId: 'past-video',
-      status: FileStatus.Pending,
+      status: FileStatus.PendingMetadata,
       availableAt: now - 10000, // 10 seconds ago
       title: 'Past Video'
     })
 
     await insertFile({
       fileId: 'future-video',
-      status: FileStatus.Pending,
+      status: FileStatus.PendingMetadata,
       availableAt: now + 86400000, // 24 hours in future
       title: 'Future Video'
     })
 
     await insertFile({
       fileId: 'now-video',
-      status: FileStatus.Pending,
+      status: FileStatus.PendingMetadata,
       availableAt: now, // Exactly now
       title: 'Now Video'
     })
@@ -167,7 +167,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     // Assert: Only 2 files processed (past-video and now-video)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = invokeLambdaMock.mock.calls.map((call) => JSON.parse(call[1]))
+    const invocationPayloads = invokeLambdaMock.mock.calls.map((call) => JSON.parse(call[1] as string))
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(['now-video', 'past-video'])
@@ -179,7 +179,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
     await insertFile({
       fileId: 'pending-video',
-      status: FileStatus.Pending,
+      status: FileStatus.PendingMetadata,
       availableAt: now - 1000,
       title: 'Pending Video'
     })
@@ -222,7 +222,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     // Assert: Only 1 file processed (pending-video)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
 
-    const invocationPayload = JSON.parse(invokeLambdaMock.mock.calls[0][1])
+    const invocationPayload = JSON.parse(invokeLambdaMock.mock.calls[0][1] as string)
     expect(invocationPayload.fileId).toBe('pending-video')
   })
 
@@ -235,7 +235,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       fileIds.map((fileId) =>
         insertFile({
           fileId,
-          status: FileStatus.Pending,
+          status: FileStatus.PendingMetadata,
           availableAt: now - 1000,
           title: `Concurrent Video ${fileId}`
         })

@@ -134,18 +134,18 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     expect(queryMock).toHaveBeenCalledTimes(2)
 
     // Verify first query was for UserDevices
-    const userDevicesQuery = queryMock.mock.calls[0][0]
+    const userDevicesQuery = queryMock.mock.calls[0][0] as {TableName: string}
     expect(userDevicesQuery.TableName).toBe(TEST_USER_DEVICES_TABLE)
 
     // Verify second query was for Devices
-    const devicesQuery = queryMock.mock.calls[1][0]
+    const devicesQuery = queryMock.mock.calls[1][0] as {TableName: string}
     expect(devicesQuery.TableName).toBe(TEST_DEVICES_TABLE)
 
     // Assert: SNS publish was called once
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
 
     // Verify SNS publish parameters
-    const publishParams = publishSnsEventMock.mock.calls[0][0]
+    const publishParams = publishSnsEventMock.mock.calls[0][0] as {TargetArn: string}
     expect(publishParams.TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
   })
 
@@ -218,7 +218,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
 
     // Verify all endpoints were targeted
-    const targetArns = publishSnsEventMock.mock.calls.map((call) => call[0].TargetArn)
+    const targetArns = publishSnsEventMock.mock.calls.map((call) => (call[0] as {TargetArn: string}).TargetArn)
     expect(targetArns).toEqual([
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
@@ -328,7 +328,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     // Assert: First device got notification
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
-    expect(publishSnsEventMock.mock.calls[0][0].TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
+    expect((publishSnsEventMock.mock.calls[0][0] as {TargetArn: string}).TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
   })
 
   test('should process multiple SQS records in same batch', async () => {

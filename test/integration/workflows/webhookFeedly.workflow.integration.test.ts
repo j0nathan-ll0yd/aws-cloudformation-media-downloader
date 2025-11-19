@@ -111,11 +111,11 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     const file = await getFile('new-video-123')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('new-video-123')
-    expect(file!.status).toBe(FileStatus.Pending)
+    expect(file!.status).toBe(FileStatus.PendingMetadata)
 
     // Assert: StartFileUpload was invoked
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
-    const invocationPayload = JSON.parse(invokeLambdaMock.mock.calls[0][1])
+    const invocationPayload = JSON.parse(invokeLambdaMock.mock.calls[0][1] as string)
     expect(invocationPayload.fileId).toBe('new-video-123')
 
     // Assert: No SQS notification sent (file not downloaded yet)
@@ -157,7 +157,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
 
     // Assert: SQS notification was sent
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
-    const messageParams = sendMessageMock.mock.calls[0][0]
+    const messageParams = sendMessageMock.mock.calls[0][0] as {QueueUrl: string; MessageBody: string}
     expect(messageParams.QueueUrl).toBe(TEST_SQS_QUEUE_URL)
     expect(messageParams.MessageBody).toBe('FileNotification')
 
@@ -195,7 +195,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     const file = await getFile('background-video')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('background-video')
-    expect(file!.status).toBe(FileStatus.Pending)
+    expect(file!.status).toBe(FileStatus.PendingMetadata)
 
     // Assert: StartFileUpload was NOT invoked (background mode)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
@@ -287,8 +287,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(sendMessageMock).toHaveBeenCalledTimes(2)
 
     // Verify message attributes contain correct user IDs
-    const message1Attrs = sendMessageMock.mock.calls[0][0].MessageAttributes
-    const message2Attrs = sendMessageMock.mock.calls[1][0].MessageAttributes
+    const message1Attrs = (sendMessageMock.mock.calls[0][0] as any).MessageAttributes
+    const message2Attrs = (sendMessageMock.mock.calls[1][0] as any).MessageAttributes
 
     expect(message1Attrs.userId.StringValue).toBe('user-alice')
     expect(message2Attrs.userId.StringValue).toBe('user-bob')

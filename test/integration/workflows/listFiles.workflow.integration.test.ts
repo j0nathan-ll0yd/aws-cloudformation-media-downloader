@@ -16,7 +16,7 @@ import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@je
 import {FileStatus, UserStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
 // Test configuration
@@ -101,7 +101,7 @@ describe('ListFiles Workflow Integration Tests', () => {
           },
           {
             fileId: 'video-3',
-            status: FileStatus.Pending,
+            status: FileStatus.PendingDownload,
             title: 'Video 3 (not ready)',
             key: undefined,
             size: undefined
@@ -135,12 +135,12 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     // Assert: DynamoDB query called for UserFiles
     expect(queryMock).toHaveBeenCalledTimes(1)
-    const queryParams = queryMock.mock.calls[0][0]
+    const queryParams = queryMock.mock.calls[0][0] as {TableName: string}
     expect(queryParams.TableName).toBe(TEST_USER_FILES_TABLE)
 
     // Assert: BatchGet called for Files
     expect(batchGetMock).toHaveBeenCalledTimes(1)
-    const batchGetParams = batchGetMock.mock.calls[0][0]
+    const batchGetParams = batchGetMock.mock.calls[0][0] as any
     expect(batchGetParams.RequestItems[TEST_FILES_TABLE].Keys).toHaveLength(3)
   })
 
@@ -240,7 +240,7 @@ describe('ListFiles Workflow Integration Tests', () => {
         [TEST_FILES_TABLE]: [
           {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'},
           {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'},
-          {fileId: 'pending-1', status: FileStatus.Pending, title: 'Pending 1'},
+          {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'},
           {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'},
           {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
         ]
@@ -284,7 +284,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     const files = fileIds.map((fileId, index) => ({
       fileId,
-      status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.Pending,
+      status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
       title: `Video ${index}`,
       key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
       size: index % 2 === 0 ? 5242880 : undefined
