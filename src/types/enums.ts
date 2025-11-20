@@ -8,5 +8,6 @@ export enum FileStatus {
   PendingMetadata = 'PendingMetadata',
   PendingDownload = 'PendingDownload',
   Downloaded = 'Downloaded',
-  Failed = 'Failed'
+  Failed = 'Failed',
+  Scheduled = 'Scheduled'
 }

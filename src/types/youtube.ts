@@ -13,6 +13,8 @@ export interface YtDlpVideoInfo {
   upload_date?: string
   view_count?: number
   filesize?: number
+  release_timestamp?: number
+  availability?: string
 }
 
 export interface YtDlpFormat {

@@ -40,17 +40,21 @@ export function updateCompletedFileParams(tableName: string, fileId: string, fil
 }
 
 export function scanForFileParams(tableName: string): ScanCommandInput {
+  const now = Math.floor(Date.now() / 1000)
   return {
     ExpressionAttributeNames: {
       '#AA': 'availableAt',
       '#FID': 'fileId',
-      '#FN': 'url'
+      '#FN': 'url',
+      '#S': 'status',
+      '#RA': 'retryAfter'
     },
     ExpressionAttributeValues: {
-      ':aa': parseInt(Date.now().toString(), 10)
+      ':aa': now,
+      ':statusScheduled': 'Scheduled'
     },
-    FilterExpression: '#AA <= :aa AND attribute_not_exists(#FN)',
-    ProjectionExpression: '#AA, #FID',
+    FilterExpression: 'attribute_not_exists(#FN) AND (#AA <= :aa OR (#S = :statusScheduled AND #RA <= :aa))',
+    ProjectionExpression: '#AA, #FID, #S, #RA',
     TableName: tableName
   }
 }
