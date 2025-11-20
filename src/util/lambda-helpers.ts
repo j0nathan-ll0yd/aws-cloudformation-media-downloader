@@ -195,14 +195,3 @@ export function logOutgoingFixture(response: string | object): void {
   const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   logInfo(`[FIXTURE:OUTGOING:${lambdaName}]`, response)
 }
-
-/**
- * Logs internal AWS service response as a fixture marker for CloudWatch extraction
- * @param serviceName - The AWS service name (e.g., 'DynamoDB', 'S3', 'SNS')
- * @param operationName - The operation name (e.g., 'query', 'putObject', 'publish')
- * @param data - The AWS service response data
- */
-export function logInternalFixture(serviceName: string, operationName: string, data: string | object): void {
-  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-  logInfo(`[FIXTURE:INTERNAL:${lambdaName}:${serviceName}:${operationName}]`, data)
-}

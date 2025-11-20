@@ -1,5 +1,5 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture} from '../../../util/lambda-helpers'
 import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
@@ -135,7 +135,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * @notExported
  */
 export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
     logInfo('No API key found')
@@ -156,7 +156,9 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
 
   if (isRemoteTestRequest(event)) {
     const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
-    return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
+    const response = generateAllow(fakeUserId, event.methodArn, apiKeyValue)
+    logOutgoingFixture(response)
+    return response
   }
 
   const apiKeyId = apiKey.id as string
@@ -178,14 +180,20 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
         logInfo('Multi-authentication path; userId not required')
       } else {
         logInfo('Token is invalid')
-        return generateDeny('unknown', event.methodArn)
+        const denyResponse = generateDeny('unknown', event.methodArn)
+        logOutgoingFixture(denyResponse)
+        return denyResponse
       }
     }
   } else {
     // If it's not a multi-authentication path, it needs the Authorization header
     if (!multiAuthenticationPaths.includes(pathPart)) {
-      return generateDeny('unknown', event.methodArn)
+      const denyResponse = generateDeny('unknown', event.methodArn)
+      logOutgoingFixture(denyResponse)
+      return denyResponse
     }
   }
-  return generateAllow(principalId, event.methodArn, apiKeyValue)
+  const allowResponse = generateAllow(principalId, event.methodArn, apiKeyValue)
+  logOutgoingFixture(allowResponse)
+  return allowResponse
 }

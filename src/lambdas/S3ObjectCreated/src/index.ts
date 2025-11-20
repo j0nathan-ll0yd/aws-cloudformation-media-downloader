@@ -3,7 +3,7 @@ import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile, UserFile} from '../../../types/main'
 import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
-import {logDebug} from '../../../util/lambda-helpers'
+import {logDebug, logIncomingFixture} from '../../../util/lambda-helpers'
 import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 
@@ -60,7 +60,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  * @notExported
  */
 export async function handler(event: S3Event): Promise<void> {
-  logDebug('event', event)
+  logIncomingFixture(event)
   try {
     const record = event.Records[0]
     const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')

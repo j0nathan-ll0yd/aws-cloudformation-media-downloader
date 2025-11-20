@@ -3,7 +3,7 @@ import {query} from '../../../lib/vendor/AWS/DynamoDB'
 import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
 import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
 import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {logDebug, logError, logInfo, logIncomingFixture} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 
@@ -53,7 +53,7 @@ async function getDevice(deviceId: string): Promise<Device> {
  * @notExported
  */
 export async function handler(event: SQSEvent): Promise<void> {
-  logDebug('event', event)
+  logIncomingFixture(event)
   for (const record of event.Records) {
     const notificationType = record.body
     if (notificationType !== 'FileNotification') {
