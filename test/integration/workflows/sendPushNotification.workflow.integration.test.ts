@@ -21,7 +21,7 @@ process.env.DynamoDBTableDevices = TEST_DEVICES_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
-import {SQSEvent} from 'aws-lambda'
+import {SQSEvent, Context} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
@@ -51,6 +51,23 @@ const {handler} = await import('../../../src/lambdas/SendPushNotification/src/in
 
 type QueryCallArgs = [{TableName: string}]
 type PublishCallArgs = [{TargetArn: string}]
+
+function createMockContext(): Context {
+  return {
+    callbackWaitsForEmptyEventLoop: false,
+    functionName: 'SendPushNotification',
+    functionVersion: '$LATEST',
+    invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:SendPushNotification',
+    memoryLimitInMB: '128',
+    awsRequestId: 'test-request-id',
+    logGroupName: '/aws/lambda/SendPushNotification',
+    logStreamName: 'test-log-stream',
+    getRemainingTimeInMillis: () => 30000,
+    done: () => {},
+    fail: () => {},
+    succeed: () => {}
+  }
+}
 
 function createFileNotificationEvent(userId: string, fileId: string, title?: string): SQSEvent {
   return {
@@ -128,7 +145,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     const event = createFileNotificationEvent('user-123', 'video-123')
 
-    await handler(event)
+    await handler(event, createMockContext())
 
     expect(queryMock).toHaveBeenCalledTimes(2)
 
@@ -170,7 +187,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     const event = createFileNotificationEvent('user-456', 'video-456', 'Multi-Device Video')
 
-    await handler(event)
+    await handler(event, createMockContext())
 
     // Assert: DynamoDB queried 4 times (1 UserDevices + 3 Devices)
     expect(queryMock).toHaveBeenCalledTimes(4)
@@ -194,7 +211,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     const event = createFileNotificationEvent('user-no-devices', 'video-789')
 
-    await handler(event)
+    await handler(event, createMockContext())
 
     // Assert: Only one DynamoDB query (UserDevices)
     expect(queryMock).toHaveBeenCalledTimes(1)
@@ -225,7 +242,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     const event = createFileNotificationEvent('user-789', 'video-error')
 
-    await expect(handler(event)).resolves.not.toThrow()
+    await expect(handler(event, createMockContext())).resolves.not.toThrow()
 
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
     expect((publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0].TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
@@ -253,7 +270,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       Records: [...event1.Records, ...event2.Records]
     }
 
-    await handler(batchEvent)
+    await handler(batchEvent, createMockContext())
 
     // Assert: DynamoDB queried 4 times (2 users × 2 queries each)
     expect(queryMock).toHaveBeenCalledTimes(4)
@@ -286,7 +303,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     }
 
     // Act: Invoke handler
-    await handler(event)
+    await handler(event, createMockContext())
 
     // Assert: No DynamoDB queries
     expect(queryMock).not.toHaveBeenCalled()
