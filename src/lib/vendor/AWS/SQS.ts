@@ -1,12 +1,19 @@
-import {SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
+import {SendMessageRequest, SendMessageResult, SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
 import {createSQSClient} from './clients'
 
-const sqs = createSQSClient()
+// Lazy initialization to avoid module-level client creation (breaks Jest mocking)
+let sqs: SQSClient | null = null
+function getClient(): SQSClient {
+  if (!sqs) {
+    sqs = createSQSClient()
+  }
+  return sqs
+}
 
 // Re-export types for application code to use
 export type {SendMessageRequest}
 
 export function sendMessage(params: SendMessageRequest): Promise<SendMessageResult> {
   const command = new SendMessageCommand(params)
-  return sqs.send(command)
+  return getClient().send(command)
 }

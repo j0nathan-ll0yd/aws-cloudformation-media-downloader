@@ -1,8 +1,5 @@
 import {beforeAll, afterAll, jest} from '@jest/globals'
 
-// Disable X-Ray in tests to preserve existing test behavior
-process.env.ENABLE_XRAY = 'false'
-
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
 export const testContext = {
@@ -27,19 +24,6 @@ export const testContext = {
   succeed: () => {
     return
   }
-}
-
-export const mockXRaySegment = {
-  trace_id: '1-67abc123-456def789ghi012jkl345mno',
-  addError: jest.fn(),
-  addAnnotation: jest.fn(),
-  addMetadata: jest.fn(),
-  addNewSubsegment: jest.fn().mockReturnValue({
-    addAnnotation: jest.fn(),
-    addMetadata: jest.fn(),
-    close: jest.fn()
-  }),
-  close: jest.fn()
 }
 
 // Randomly generated key; not actually used anywhere (safe)

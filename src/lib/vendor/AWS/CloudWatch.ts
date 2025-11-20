@@ -1,7 +1,14 @@
-import {PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit, CloudWatchClient} from '@aws-sdk/client-cloudwatch'
 import {createCloudWatchClient} from './clients'
 
-const cloudwatch = createCloudWatchClient()
+// Lazy initialization to avoid module-level client creation (breaks Jest mocking)
+let cloudwatch: CloudWatchClient | null = null
+function getClient(): CloudWatchClient {
+  if (!cloudwatch) {
+    cloudwatch = createCloudWatchClient()
+  }
+  return cloudwatch
+}
 
 // Map simple unit strings to AWS StandardUnit values (internal use only)
 const unitMapping: Record<string, StandardUnit> = {
@@ -15,7 +22,7 @@ const unitMapping: Record<string, StandardUnit> = {
 
 export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMetricDataCommandOutput> {
   const command = new PutMetricDataCommand(params)
-  return cloudwatch.send(command)
+  return getClient().send(command)
 }
 
 /**
