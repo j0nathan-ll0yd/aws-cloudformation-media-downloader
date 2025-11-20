@@ -1,7 +1,7 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
 import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
-import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
@@ -53,17 +53,21 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
  * @notExported
  */
 export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
   // User has registered; but not logged in; will trigger login
   if (userStatus == UserStatus.Unauthenticated) {
-    return lambdaErrorResponse(context, generateUnauthorizedError())
+    const errorResponse = lambdaErrorResponse(context, generateUnauthorizedError())
+    logOutgoingFixture(errorResponse)
+    return errorResponse
   }
   if (userStatus == UserStatus.Anonymous) {
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
-    return response(context, 200, myResponse)
+    const anonymousResponse = response(context, 200, myResponse)
+    logOutgoingFixture(anonymousResponse)
+    return anonymousResponse
   }
   try {
     const fileIds = await getFileIdsByUser(userId as string)
@@ -72,8 +76,12 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
       myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     }
     myResponse.keyCount = myResponse.contents.length
-    return response(context, 200, myResponse)
+    const successResponse = response(context, 200, myResponse)
+    logOutgoingFixture(successResponse)
+    return successResponse
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResponse = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResponse)
+    return errorResponse
   }
 }

@@ -146,6 +146,44 @@ export async function handler(event: EventType, context: Context) {
 }
 ```
 
+### Fixture Logging for Production Data Extraction
+
+Use fixture logging functions to mark events, responses, and AWS service calls for automatic extraction from CloudWatch Logs:
+
+```typescript
+export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+  // Log incoming event for fixture extraction
+  logIncomingFixture(event)
+  
+  try {
+    // Business logic...
+    const result = await doSomething()
+    
+    // Log outgoing response for fixture extraction
+    const response = response(context, 200, result)
+    logOutgoingFixture(response)
+    return response
+  } catch (error) {
+    const errorResponse = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResponse)
+    return errorResponse
+  }
+}
+```
+
+**When to use fixture logging:**
+- `logIncomingFixture()`: Log Lambda handler entry (replaces `logInfo('event <=', event)`)
+- `logOutgoingFixture()`: Log Lambda handler response before returning
+- `logInternalFixture()`: Log AWS service responses (optional, for complex workflows)
+
+**Benefits:**
+- Fixtures automatically extracted from production CloudWatch Logs
+- Always matches actual production payloads
+- Eliminates manual fixture maintenance
+- Single-parameter API (auto-detects Lambda name)
+
+**Note:** Fixture logging replaces the traditional `logInfo('event <=', event)` pattern at handler entry. For internal debugging, continue using `logDebug()` with arrow notation.
+
 ## Error Handling Patterns
 
 ### API Gateway Lambda Pattern

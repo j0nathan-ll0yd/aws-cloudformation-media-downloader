@@ -4,7 +4,7 @@ import {IdentityProviderApple, User, UserRegistration} from '../../../types/main
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserSchema} from '../../../util/constraints'
 import {newUserParams} from '../../../util/dynamodb-helpers'
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
@@ -29,7 +29,7 @@ async function createUser(user: User, identityProviderApple: IdentityProviderApp
  * @notExported
  */
 export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as UserRegistration
@@ -48,8 +48,12 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
       await createUser(user, identityProviderApple)
       token = await createAccessToken(user.userId)
     }
-    return response(context, 200, {token})
+    const successResponse = response(context, 200, {token})
+    logOutgoingFixture(successResponse)
+    return successResponse
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResponse = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResponse)
+    return errorResponse
   }
 }

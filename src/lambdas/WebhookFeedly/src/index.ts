@@ -7,7 +7,7 @@ import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
 import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
@@ -83,7 +83,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  * @notExported
  */
 export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as Webhook
@@ -101,17 +101,25 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
     if (file && file.status == FileStatus.Downloaded) {
       // If the file already exists, trigger the download on the user's device
       await sendFileNotification(file, userId)
-      return response(context, 200, {status: 'Dispatched'})
+      const successResponse = response(context, 200, {status: 'Dispatched'})
+      logOutgoingFixture(successResponse)
+      return successResponse
     } else {
       await addFile(fileId)
       if (!requestBody.backgroundMode) {
         await initiateFileDownload(fileId)
-        return response(context, 202, {status: 'Initiated'})
+        const initiatedResponse = response(context, 202, {status: 'Initiated'})
+        logOutgoingFixture(initiatedResponse)
+        return initiatedResponse
       } else {
-        return response(context, 202, {status: 'Accepted'})
+        const acceptedResponse = response(context, 202, {status: 'Accepted'})
+        logOutgoingFixture(acceptedResponse)
+        return acceptedResponse
       }
     }
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResponse = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResponse)
+    return errorResponse
   }
 }
