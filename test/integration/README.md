@@ -1,10 +1,14 @@
 # Integration Tests
 
-This directory contains integration tests that verify AWS service interactions using LocalStack.
+This directory contains integration tests that verify multi-service workflows using LocalStack.
 
 ## Overview
 
-Integration tests validate that our vendor wrappers (`src/lib/vendor/AWS/*`) work correctly with real AWS SDK clients in a LocalStack environment. Unlike unit tests which mock AWS services, integration tests execute actual AWS operations against LocalStack.
+**Integration tests validate YOUR orchestration logic across multiple AWS services, not AWS SDK behavior.**
+
+Unlike unit tests which mock AWS services, integration tests execute complete end-to-end workflows against LocalStack. The goal is to test YOUR code's orchestration, state management, and error handling—not to verify that S3 uploads work or DynamoDB queries succeed.
+
+**Testing Philosophy:** See [`docs/styleGuides/testStyleGuide.md`](../../docs/styleGuides/testStyleGuide.md) for comprehensive testing philosophy and patterns.
 
 ## Running Integration Tests
 
@@ -42,26 +46,60 @@ npm run localstack:stop
 
 ## Test Organization
 
-Tests are organized by AWS service:
+Tests are organized by workflow, not by service:
 
 ```
 test/integration/
-├── setup.ts              # Global test setup (health checks, env vars)
-├── README.md             # This file
-├── s3/                   # S3 integration tests
-├── dynamodb/             # DynamoDB integration tests
-├── lambda/               # Lambda integration tests
-├── sns/                  # SNS integration tests
-├── sqs/                  # SQS integration tests
-├── cloudwatch/           # CloudWatch integration tests
-└── apigateway/           # API Gateway integration tests
+├── setup.ts                                      # Global test setup
+├── README.md                                     # This file
+├── workflows/                                    # Workflow-based integration tests
+│   ├── webhookFeedly.workflow.integration.test.ts
+│   ├── fileCoordinator.workflow.integration.test.ts
+│   ├── startFileUpload.workflow.integration.test.ts
+│   └── listFiles.workflow.integration.test.ts
+└── helpers/                                      # Test utilities
+    ├── dynamodb-helpers.ts                       # DynamoDB test data helpers
+    ├── s3-helpers.ts                             # S3 test utilities
+    ├── lambda-helpers.ts                         # Lambda invocation helpers
+    └── sqs-helpers.ts                            # SQS test utilities
 ```
+
+**Why Workflow-Based?**
+- Tests YOUR multi-service orchestration, not individual AWS services
+- Mirrors real production workflows (webhook → DynamoDB → Lambda → S3)
+- Coverage of vendor wrappers happens naturally as a side effect
 
 ## Writing Integration Tests
 
 Integration tests should:
 
-1. **Use vendor wrappers**, not AWS SDK directly:
+1. **Test YOUR workflows, not AWS SDK behavior**:
+   ```typescript
+   // ✅ Correct - tests YOUR orchestration logic
+   test('should complete video download workflow and update DynamoDB status', async () => {
+     // Arrange: Create pending file in DynamoDB
+     await insertFile({fileId: 'test-video', status: 'PendingDownload'})
+
+     // Act: Execute YOUR Lambda handler
+     await handler({fileId: 'test-video'}, mockContext)
+
+     // Assert: Verify YOUR state management worked
+     const file = await getFile('test-video')
+     expect(file.status).toBe('Downloaded')  // YOUR status transition
+
+     const s3Object = await headObject(bucket, 'test-video.mp4')
+     expect(s3Object.ContentLength).toBeGreaterThan(0)  // YOUR upload succeeded
+   })
+
+   // ❌ Wrong - tests AWS SDK, not YOUR code
+   test('should upload object to S3', async () => {
+     const upload = createS3Upload(bucket, key, content)
+     await upload.done()
+     expect(await headObject(bucket, key)).toBeDefined()
+   })
+   ```
+
+2. **Use vendor wrappers**, not AWS SDK directly:
    ```typescript
    // ✅ Correct - uses vendor wrapper
    import {headObject, createS3Upload} from '../../../src/lib/vendor/AWS/S3'
@@ -70,31 +108,29 @@ Integration tests should:
    import {S3Client, HeadObjectCommand} from '@aws-sdk/client-s3'
    ```
 
-2. **Test real AWS operations**:
+3. **Test multi-service workflows**:
    ```typescript
-   test('should upload and retrieve object from S3', async () => {
-     const bucket = 'test-bucket'
-     const key = 'test-key'
-     const content = Buffer.from('test data')
+   // ✅ Good - tests YOUR orchestration across services
+   test('should process webhook, create DynamoDB record, and send SQS message', async () => {
+     await handler(webhookPayload, context)
 
-     // Create upload
-     const upload = createS3Upload(bucket, key, content)
-     await upload.done()
+     const dbRecord = await getFile('video-id')  // DynamoDB check
+     expect(dbRecord.status).toBe('Pending')
 
-     // Verify upload
-     const metadata = await headObject(bucket, key)
-     expect(metadata.ContentLength).toBe(content.length)
+     const messages = await getSQSMessages(queueUrl)  // SQS check
+     expect(messages).toHaveLength(1)
    })
    ```
 
-3. **Clean up resources** after each test:
+4. **Clean up resources** after each test:
    ```typescript
    afterEach(async () => {
-     // Delete test objects, tables, etc.
+     await deleteFilesTable()
+     await deleteS3Objects()
    })
    ```
 
-4. **Follow naming convention**: `*.integration.test.ts`
+5. **Follow naming convention**: `*.workflow.integration.test.ts`
 
 ## Environment Variables
 
