@@ -60,7 +60,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: S3Event, {traceId: _traceId}): Promise<void> => {
+export const handler = withXRay(async (event: S3Event, context: Context, {traceId: _traceId}): Promise<void> => {
   logDebug('event', event)
   try {
     const record = event.Records[0]

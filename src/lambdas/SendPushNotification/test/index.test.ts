@@ -1,6 +1,7 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
 import {UnexpectedError} from '../../../util/errors'
+import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
@@ -53,7 +54,7 @@ describe('#SendPushNotification', () => {
     queryMock.mockReturnValueOnce(getDeviceResponse)
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
-    const notificationsSent = await handler(event)
+    const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
   })
   test('should exit gracefully if no devices exist', async () => {
@@ -62,26 +63,26 @@ describe('#SendPushNotification', () => {
       Count: 0,
       ScannedCount: 0
     })
-    const notificationsSent = await handler(event)
+    const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   test('should exit if its a different notification type', async () => {
     const modifiedEvent = event
     modifiedEvent.Records[0].body = 'OtherNotification'
-    const notificationsSent = await handler(modifiedEvent)
+    const notificationsSent = await handler(modifiedEvent, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
     test('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
       queryMock.mockReturnValue(undefined)
-      await expect(handler(event)).rejects.toThrow(UnexpectedError)
+      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
     test('AWS.DynamoDB.DocumentClient.query.getDevice', async () => {
       queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
       queryMock.mockReturnValueOnce(undefined)
-      const notificationsSent = await handler(event)
+      const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
       expect(publishSnsEventMock.mock.calls.length).toBe(0)
     })

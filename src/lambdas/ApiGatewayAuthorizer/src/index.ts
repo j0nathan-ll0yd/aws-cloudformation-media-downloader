@@ -135,7 +135,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
-export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent, {traceId: _traceId}): Promise<CustomAuthorizerResult> => {
+export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<CustomAuthorizerResult> => {
   logInfo('event <=', event)
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
