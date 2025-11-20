@@ -177,3 +177,32 @@ export async function putMetrics(
     logError('Failed to publish CloudWatch metrics', error)
   }
 }
+
+/**
+ * Logs incoming Lambda event as a fixture marker for CloudWatch extraction
+ * @param event - The Lambda event object (API Gateway, S3, SQS, etc.)
+ */
+export function logIncomingFixture(event: string | object): void {
+  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  logInfo(`[FIXTURE:INCOMING:${lambdaName}]`, event)
+}
+
+/**
+ * Logs outgoing Lambda response as a fixture marker for CloudWatch extraction
+ * @param response - The Lambda response object (APIGatewayProxyResult, custom response, etc.)
+ */
+export function logOutgoingFixture(response: string | object): void {
+  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  logInfo(`[FIXTURE:OUTGOING:${lambdaName}]`, response)
+}
+
+/**
+ * Logs internal AWS service response as a fixture marker for CloudWatch extraction
+ * @param serviceName - The AWS service name (e.g., 'DynamoDB', 'S3', 'SNS')
+ * @param operationName - The operation name (e.g., 'query', 'putObject', 'publish')
+ * @param data - The AWS service response data
+ */
+export function logInternalFixture(serviceName: string, operationName: string, data: string | object): void {
+  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  logInfo(`[FIXTURE:INTERNAL:${lambdaName}:${serviceName}:${operationName}]`, data)
+}
