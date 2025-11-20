@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: aws-media-downloader-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      # Enable specific AWS services
+      - SERVICES=s3,dynamodb,sns,sqs,lambda,cloudwatch,apigateway
+      # Enable debug mode for troubleshooting
+      - DEBUG=1
+      # Use single edge port (4566) for all services
+      - EDGE_PORT=4566
+    volumes:
+      # Mount Docker socket for Lambda execution
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - localstack-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  localstack-network:
+    driver: bridge

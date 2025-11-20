@@ -298,17 +298,87 @@ Remotely test the register device method for registering for push notifications 
 npm run test-remote-registerDevice
 ```
 
+### Integration Testing with LocalStack
+
+This project includes integration tests that run against [LocalStack](https://localstack.cloud/), a local AWS cloud emulator. Integration tests verify that AWS service interactions work correctly without mocking, providing higher confidence in production deployments.
+
+#### Prerequisites
+
+- **Docker**: Required to run LocalStack container (includes Compose plugin)
+- **jq**: Optional, for pretty-printing health check results
+
+```bash
+brew install docker jq
+```
+
+#### Running Integration Tests
+
+**Quick Start:**
+
+```bash
+# Start LocalStack
+npm run localstack:start
+
+# Run integration tests
+npm run test:integration:full
+
+# Stop LocalStack when done
+npm run localstack:stop
+```
+
+**Available Commands:**
+
+- `npm run localstack:start` - Start LocalStack container in detached mode
+- `npm run localstack:stop` - Stop and remove LocalStack container
+- `npm run localstack:logs` - Stream LocalStack logs
+- `npm run localstack:health` - Check LocalStack service health
+- `npm run test:integration` - Run integration tests (assumes LocalStack is running)
+- `npm run test:integration:full` - Full integration test suite with LocalStack lifecycle management
+
+**Test Organization:**
+
+Integration tests are located in `test/integration/` and organized by AWS service:
+
+```
+test/integration/
+├── s3/                   # S3 integration tests
+├── dynamodb/             # DynamoDB integration tests
+├── lambda/               # Lambda integration tests
+├── sns/                  # SNS integration tests
+├── sqs/                  # SQS integration tests
+├── cloudwatch/           # CloudWatch integration tests
+└── apigateway/           # API Gateway integration tests
+```
+
+**LocalStack Configuration:**
+
+LocalStack runs on `http://localhost:4566` with ephemeral storage (fresh state each run) and provides the following AWS services:
+
+- S3 (Simple Storage Service)
+- DynamoDB (NoSQL Database)
+- SNS (Simple Notification Service)
+- SQS (Simple Queue Service)
+- Lambda (Serverless Functions)
+- CloudWatch (Monitoring)
+- API Gateway (REST APIs)
+
+**Architecture:**
+
+Integration tests use the same vendor wrappers (`lib/vendor/AWS/*`) as production code. When `USE_LOCALSTACK=true` environment variable is set, the vendor wrappers automatically configure AWS SDK clients to connect to LocalStack instead of production AWS.
+
+See `test/integration/README.md` for detailed integration testing documentation.
+
 ## Maintenance
 
 ### Automated yt-dlp Updates
 
-The project uses a **Terraform-based binary management system** with GitHub Actions automation to keep yt-dlp up-to-date without bloating the git repository.
+The project uses an **OpenTofu-based binary management system** with GitHub Actions automation to keep yt-dlp up-to-date without bloating the git repository.
 
 #### Architecture
 
 **Version Tracking**: The `layers/yt-dlp/VERSION` file contains the current yt-dlp version (e.g., `2025.11.12`)
 
-**Terraform Download**: The `null_resource.DownloadYtDlpBinary` resource in `terraform/feedly_webhook.tf`:
+**OpenTofu Download**: The `null_resource.DownloadYtDlpBinary` resource in `terraform/feedly_webhook.tf`:
 - Triggers whenever the VERSION file changes
 - Downloads the yt-dlp binary from GitHub releases
 - Verifies SHA256 checksum against official release checksums
@@ -344,9 +414,8 @@ npm run update-yt-dlp update
 # Review the change
 git diff layers/yt-dlp/VERSION
 
-# Test locally with Terraform
-cd terraform
-terraform plan  # Should show null_resource.DownloadYtDlpBinary will run
+# Test locally with OpenTofu
+npm run plan  # Should show null_resource.DownloadYtDlpBinary will run
 
 # Commit and push
 git add layers/yt-dlp/VERSION
@@ -358,8 +427,8 @@ git push
 
 When a VERSION update is merged:
 
-1. **Terraform Apply**: Run `terraform apply` or deploy via your normal process
-2. **Binary Download**: Terraform's `null_resource.DownloadYtDlpBinary` executes:
+1. **Deploy**: Run `npm run deploy` to apply infrastructure changes
+2. **Binary Download**: OpenTofu's `null_resource.DownloadYtDlpBinary` executes:
    - Downloads binary from yt-dlp GitHub releases
    - Verifies SHA256 checksum
    - Tests binary execution
@@ -382,9 +451,8 @@ echo "2025.11.10" > layers/yt-dlp/VERSION
 git commit -am "chore(deps): revert yt-dlp to 2025.11.10"
 git push
 
-# Deploy with Terraform
-cd terraform
-terraform apply  # Downloads and deploys the previous version
+# Deploy with OpenTofu
+npm run deploy  # Downloads and deploys the previous version
 ```
 
 Alternatively, use git revert:
@@ -395,8 +463,7 @@ git revert <commit-hash>
 git push
 
 # Redeploy
-cd terraform
-terraform apply
+npm run deploy
 ```
 
 #### Monitoring yt-dlp Updates
@@ -420,7 +487,7 @@ aws lambda list-layer-versions --layer-name yt-dlp --region us-west-2 | jq '.Lay
 - **Single source of truth**: VERSION file tracks desired version
 - **Automated verification**: Checksum validation on every download
 - **Easy rollback**: Change VERSION file and redeploy
-- **Terraform integration**: Binary download is part of infrastructure deployment
+- **OpenTofu integration**: Binary download is part of infrastructure deployment
 - **Testing before commit**: GitHub Actions verifies binary works before creating PR
 
 ## Documentation

@@ -1,17 +1,25 @@
-name: Node CI
+name: Unit Tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Build artifacts
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version-file: '.nvmrc'
+        cache: 'npm'
 
     - name: Set up Homebrew
       id: set-up-homebrew
@@ -36,7 +44,7 @@ jobs:
       id: build
       run: npm run build
 
-    - name: Run Tests
+    - name: Run unit tests
       run: npm run test
       env:
         CI: true
