@@ -490,6 +490,58 @@ aws lambda list-layer-versions --layer-name yt-dlp --region us-west-2 | jq '.Lay
 - **OpenTofu integration**: Binary download is part of infrastructure deployment
 - **Testing before commit**: GitHub Actions verifies binary works before creating PR
 
+## Test Fixture Automation
+
+This project uses an automated fixture extraction system that captures real production data from CloudWatch Logs, eliminating manual fixture maintenance.
+
+### Overview
+
+Lambda functions log structured markers that can be extracted from CloudWatch:
+- **Incoming fixtures**: API Gateway events
+- **Outgoing fixtures**: Lambda responses  
+- **Internal fixtures**: AWS service responses (DynamoDB, S3, SNS, etc.)
+
+### Benefits
+
+- **Always Current**: Fixtures automatically match production payloads
+- **Zero Manual Work**: Weekly extraction from CloudWatch Logs
+- **Sanitized**: Sensitive data (tokens, user IDs) automatically redacted
+- **67% Fewer Fixtures**: ~45 fixtures reduced to ~15 (hand-crafted → production-extracted)
+- **No Drift**: Fixtures never become stale
+
+### Quick Start
+
+Extract fixtures from the last 7 days:
+
+```bash
+# Extract from specific Lambda function
+./bin/extract-fixtures.sh WebhookFeedly 7
+
+# Extract from all Lambda functions
+./bin/extract-fixtures.sh
+
+# Process extracted fixtures
+node bin/process-fixture-markers.js
+
+# Review and move validated fixtures
+mv src/lambdas/WebhookFeedly/test/fixtures/extracted/*.json \
+   src/lambdas/WebhookFeedly/test/fixtures/
+```
+
+### How It Works
+
+1. **Lambda Logging**: Handlers use `logIncomingFixture()` and `logOutgoingFixture()`
+2. **CloudWatch Markers**: Structured logs with `[FIXTURE:*]` markers
+3. **Automated Extraction**: Scripts query CloudWatch and parse logs
+4. **Sanitization**: Sensitive data automatically redacted
+5. **Test Integration**: Fixtures saved to `test/fixtures/` directories
+
+### Documentation
+
+- **Runbook**: See [docs/FIXTURE_EXTRACTION_RUNBOOK.md](docs/FIXTURE_EXTRACTION_RUNBOOK.md) for detailed extraction guide
+- **Lambda Style Guide**: See [docs/styleGuides/lambdaStyleGuide.md](docs/styleGuides/lambdaStyleGuide.md) for fixture logging patterns
+- **Test Style Guide**: See [docs/styleGuides/testStyleGuide.md](docs/styleGuides/testStyleGuide.md) for fixture usage in tests
+
 ## Documentation
 
 This project uses multiple documentation approaches:

@@ -270,29 +270,77 @@ expect(streamVideoToS3Mock).toHaveBeenCalledWith(
 
 ## Fixture Management
 
+### Fixture Sources
+
+This project uses two types of fixtures:
+
+**1. Production-Extracted Fixtures (Preferred)**
+
+Automatically extracted from CloudWatch Logs using the fixture extraction system:
+- Located in `test/fixtures/` with `-production` or `-extracted` suffix
+- Always match real production payloads
+- Automatically sanitized (tokens, user IDs redacted)
+- Updated weekly or on-demand
+
+**2. Hand-Crafted Fixtures (Legacy/Edge Cases)**
+
+Manually created for edge cases not seen in production:
+- Located in `test/fixtures/` with descriptive names
+- Used for error scenarios, boundary conditions
+- Maintained manually when API contracts change
+
 ### Loading Fixtures
 
 Always use dynamic imports with JSON assertion:
 
 ```typescript
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+// Production-extracted fixture (preferred)
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent-production.json', {assert: {type: 'json'}})
+
+// Hand-crafted fixture (for edge cases)
 const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 ```
 
 ### Fixture Naming Convention
 
-Name fixtures with HTTP status codes when applicable:
-
+**Production-Extracted Fixtures:**
 ```
 fixtures/
-  APIGatewayEvent.json
-  query-200-OK.json
-  query-200-Empty.json
-  batchGet-200-OK.json
-  batchGet-200-Filtered.json
-  createPlatformEndpoint-200-OK.json
-  query-201-Created.json
+  APIGatewayEvent-production.json          # Real production event
+  APIGatewayResponse-production.json       # Real production response
+  DynamoDB-query-production.json           # Real DynamoDB query response
+  S3-putObject-production.json             # Real S3 response
 ```
+
+**Hand-Crafted Fixtures:**
+```
+fixtures/
+  APIGatewayEvent.json                     # Base event template
+  query-200-OK.json                        # Success case
+  query-200-Empty.json                     # Empty result
+  batchGet-200-Filtered.json               # Filtered results
+  createPlatformEndpoint-200-OK.json       # SNS endpoint creation
+  query-201-Created.json                   # Resource creation
+```
+
+### Updating Fixtures
+
+**For production-extracted fixtures:**
+1. Run extraction script: `./bin/extract-fixtures.sh WebhookFeedly 7`
+2. Process results: `node bin/process-fixture-markers.js`
+3. Review extracted fixtures in `test/fixtures/extracted/`
+4. Move validated fixtures to `test/fixtures/`
+5. Update tests to use new fixtures
+
+**For hand-crafted fixtures:**
+1. Update JSON file manually
+2. Verify structure matches current API contract
+3. Run tests to ensure compatibility
+4. Consider if this scenario appears in production (if so, extract instead)
+
+### Fixture Extraction Workflow
+
+See [docs/FIXTURE_EXTRACTION_RUNBOOK.md](../FIXTURE_EXTRACTION_RUNBOOK.md) for detailed extraction instructions.
 
 ## Error Testing
 
