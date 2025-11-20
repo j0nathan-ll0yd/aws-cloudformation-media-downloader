@@ -2,6 +2,98 @@
 
 This document defines the testing standards and patterns for Lambda function tests.
 
+## Testing Philosophy
+
+### Test YOUR Code, Not Library Code
+
+**Core Principle:** Integration tests should validate YOUR orchestration logic, not AWS SDK behavior.
+
+**Wrong Focus (Testing Libraries):**
+- ❌ "Can I upload to S3?" → Testing AWS SDK
+- ❌ "Does multipart upload work?" → Testing AWS SDK
+- ❌ "Can I query DynamoDB?" → Testing AWS SDK
+
+**Correct Focus (Testing YOUR Business Logic):**
+- ✅ "Does the complete download workflow succeed?" → Testing YOUR code
+- ✅ "When DynamoDB query returns files, does Lambda fan-out work?" → Testing YOUR orchestration
+- ✅ "After S3 upload, is DynamoDB updated with correct status?" → Testing YOUR state management
+- ✅ "Does error handling rollback DynamoDB when S3 fails?" → Testing YOUR error recovery
+
+### Unit Tests vs Integration Tests
+
+**Unit Tests:**
+- Mock ALL external dependencies (AWS services, external APIs)
+- Test individual function logic in isolation
+- Fast execution (milliseconds)
+- High coverage of edge cases and error paths
+- Located in: `src/*/test/index.test.ts`
+
+**Integration Tests:**
+- Use real AWS services (via LocalStack)
+- Test multi-service workflows end-to-end
+- Test YOUR orchestration, state management, error handling
+- Coverage of vendor wrappers is a SIDE EFFECT, not the goal
+- Located in: `test/integration/workflows/*.workflow.integration.test.ts`
+
+### Workflow-Based Integration Testing
+
+Prioritize integration tests by workflow complexity:
+
+**High Priority (Multi-Service Workflows):**
+- Test complete end-to-end workflows (webhook → DynamoDB → queue → Lambda → S3)
+- Test state transitions across services (pending → downloading → downloaded)
+- Test error rollback logic (S3 failure → DynamoDB update to "failed")
+- Test fan-out patterns (one Lambda invoking multiple others)
+
+**Medium Priority (Single Service + Logic):**
+- Test query filtering and pagination
+- Test presigned URL generation
+- Test conditional creates and updates
+
+**Low Priority (Simple CRUD):**
+- Don't write integration tests just for coverage
+- If the function is pure CRUD with no orchestration, unit tests are sufficient
+
+### Coverage Philosophy
+
+**Coverage Should Be a Side Effect, Not a Goal:**
+
+Unit test coverage targets YOUR application logic:
+- Lambda handlers: Aim for 80%+ coverage
+- Utility functions: Aim for 90%+ coverage
+- Vendor wrappers: Ignore in unit tests (use `/* c8 ignore */`)
+
+Integration test coverage happens naturally:
+- Vendor wrappers get exercised by workflow tests
+- Don't write integration tests to hit coverage targets
+- Don't write shallow "library behavior" tests
+
+**Success Metric:** Coverage of YOUR CODE, not library code.
+
+### Integration Test Organization
+
+Structure integration tests by workflow, not by service:
+
+```
+test/integration/
+├── workflows/                                   # Workflow-based tests
+│   ├── webhookFeedly.workflow.integration.test.ts
+│   ├── fileCoordinator.workflow.integration.test.ts
+│   ├── startFileUpload.workflow.integration.test.ts
+│   └── listFiles.workflow.integration.test.ts
+└── helpers/                                     # Test utilities
+    ├── dynamodb-helpers.ts
+    ├── s3-helpers.ts
+    └── lambda-helpers.ts
+```
+
+**Avoid:**
+- ❌ `test/integration/s3/s3.integration.test.ts` (testing AWS SDK)
+- ❌ `test/integration/dynamodb/query.integration.test.ts` (testing AWS SDK)
+
+**Prefer:**
+- ✅ `test/integration/workflows/startFileUpload.workflow.integration.test.ts` (testing YOUR workflow)
+
 ## File Structure and Organization
 
 ### Import Order (STRICT)
@@ -399,6 +491,73 @@ expect(output.statusCode).toBeGreaterThanOrEqual(400)
 - Separate AWS failure tests in nested describe block
 - Test both success and failure paths
 - Verify mock interactions, not just outputs
+
+## Coverage Pragmas for Vendor Wrappers
+
+### When to Use c8 ignore
+
+Use `/* c8 ignore start */` / `/* c8 ignore stop */` comments for pure AWS SDK wrappers that:
+1. Contain no business logic
+2. Only create a command and call `.send()`
+3. Are already tested via integration tests
+
+**Rationale:**
+- Coverage metrics should focus on code with actual logic
+- Integration tests already verify these wrappers work with LocalStack
+- Unit testing pure wrappers provides no value (tests that mocking works, not that code works)
+
+**Note:** We use c8 syntax because Jest is configured with `coverageProvider: 'v8'`
+
+### Pattern
+
+```typescript
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+export function query(params: QueryCommandInput) {
+  return docClient.query(params)
+}
+/* c8 ignore stop */
+
+/* c8 ignore start - Thin wrapper with minimal logic, tested via integration tests */
+export async function invokeAsync(functionName: string, payload: Record<string, unknown>): Promise<InvokeCommandOutput> {
+  const params: InvokeCommandInput = {
+    FunctionName: functionName,
+    InvocationType: 'Event',
+    Payload: JSON.stringify(payload)
+  }
+  return invokeLambda(params)
+}
+/* c8 ignore stop */
+```
+
+### When NOT to Use c8 ignore
+
+Do NOT use coverage pragmas for functions with:
+- Business logic or validation
+- Error transformation
+- Parameter manipulation beyond simple defaults
+- Conditional branching
+- Data transformation
+
+**Example of code that SHOULD be tested:**
+```typescript
+// Has validation logic - SHOULD be tested
+export function transformData(input: unknown): string {
+  if (typeof input === 'string') {
+    return input
+  } else if (Array.isArray(input)) {
+    return input.map(s => transformData(s)).join(', ')
+  }
+  return 'Unknown'
+}
+```
+
+### Files with Coverage Pragmas
+
+Currently excluded from coverage:
+- `src/lib/vendor/AWS/SNS.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/Lambda.ts` - Both functions (pure/thin wrappers)
+- `src/lib/vendor/AWS/DynamoDB.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/S3.ts` - Both functions (pure/thin wrappers)
 
 ## Common Patterns to Avoid
 

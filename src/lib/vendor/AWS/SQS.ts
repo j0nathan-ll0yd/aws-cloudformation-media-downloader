@@ -1,9 +1,7 @@
-import {SQSClient, SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
-import AWSXRay from 'aws-xray-sdk-core'
+import {SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
+import {createSQSClient} from './clients'
 
-const enableXRay = process.env.ENABLE_XRAY !== 'false'
-const baseClient = new SQSClient()
-const sqs = enableXRay ? AWSXRay.captureAWSv3Client(baseClient) : baseClient
+const sqs = createSQSClient()
 
 // Re-export types for application code to use
 export type {SendMessageRequest}

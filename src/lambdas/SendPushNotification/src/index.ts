@@ -1,4 +1,4 @@
-import {SQSEvent} from 'aws-lambda'
+import {SQSEvent, Context} from 'aws-lambda'
 import {query} from '../../../lib/vendor/AWS/DynamoDB'
 import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
 import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
@@ -53,7 +53,7 @@ async function getDevice(deviceId: string): Promise<Device> {
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: SQSEvent, context: Context, {traceId: _traceId}): Promise<void> => {
+export const handler = withXRay(async (event: SQSEvent, _context: Context, {traceId: _traceId}): Promise<void> => {
   logDebug('event', event)
   for (const record of event.Records) {
     const notificationType = record.body

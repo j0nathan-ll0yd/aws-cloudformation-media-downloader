@@ -22,9 +22,7 @@ const getDeviceResponse = {
       deviceId: fakeDeviceId,
       token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
       systemName: 'iOS',
-      endpointArn: 'arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/OfflineMediaDownloader/3447299f-275f-329f-b71f-d1f6945033ba',
-      systemVersion: '15.6.1',
-      name: "Programmer's iPhone"
+      userId: fakeUserId
     }
   ],
   Count: 1,
