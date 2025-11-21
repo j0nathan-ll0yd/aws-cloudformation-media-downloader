@@ -1,22 +1,5 @@
 # Project Context for Claude
 
----
-## 🔄 IMPORTANT: Keep AI Agents Synchronized
-
-**When updating this file (CLAUDE.md), you MUST also update:**
-1. **GEMINI.md** - Google Gemini configuration (keep in sync with CLAUDE.md)
-2. **.github/agents/aws-media-downloader.md** - GitHub Copilot custom agent
-
-These files share the same project context, rules, and conventions. Any changes to policies, style guides, or critical rules must be propagated to all three files to ensure consistent AI assistance across all platforms.
-
-**Quick sync command:**
-```bash
-# After updating CLAUDE.md, review changes needed in:
-diff CLAUDE.md GEMINI.md
-cat .github/agents/aws-media-downloader.md  # Check GitHub agent rules
-```
----
-
 ## Project Overview
 This is a serverless AWS media downloader service built with OpenTofu and TypeScript. It downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. The project was created as a cost-effective alternative to YouTube Premium's offline playback feature.
 
