@@ -1,5 +1,7 @@
 # Media Downloader
 
+[![codecov](https://codecov.io/gh/j0nathan-ll0yd/aws-cloudformation-media-downloader/branch/master/graph/badge.svg)](https://codecov.io/gh/j0nathan-ll0yd/aws-cloudformation-media-downloader)
+
 A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [OpenTofu](https://opentofu.org/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Architecture
