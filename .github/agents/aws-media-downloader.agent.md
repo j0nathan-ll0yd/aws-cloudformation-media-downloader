@@ -1,3 +1,10 @@
+---
+name: aws-media-downloader
+description: Expert agent for the AWS CloudFormation Media Downloader project, enforcing AWS SDK wrapper usage, commit rules, and test patterns.
+tools: ['read', 'search', 'edit', 'git']
+target: github-copilot
+---
+
 # AWS Media Downloader Agent
 
 <!--
