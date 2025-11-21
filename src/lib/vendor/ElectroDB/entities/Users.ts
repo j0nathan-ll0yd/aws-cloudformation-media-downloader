@@ -78,14 +78,6 @@ export const Users = new Entity({
         field: 'userId',
         composite: ['userId']
       }
-    },
-    byAppleId: {
-      index: 'gsi1',
-      pk: {
-        field: 'gsi1pk',
-        composite: [],
-        template: 'APPLE#${identityProviders.userId}'
-      }
     }
   }
 })

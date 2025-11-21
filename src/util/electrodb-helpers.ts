@@ -6,16 +6,7 @@
  */
 
 import {DynamoDBFile, User, Device, IdentityProviderApple} from '../types/main'
-import {
-  Files,
-  Users,
-  Devices,
-  UserFiles,
-  UserDevices,
-  addFileToUser,
-  addDeviceToUser,
-  removeDeviceFromUser
-} from '../lib/vendor/ElectroDB/service'
+import {Files, Users, Devices, UserFiles, UserDevices, addFileToUser, addDeviceToUser, removeDeviceFromUser} from '../lib/vendor/ElectroDB/service'
 
 // ========================================
 // Files Table Operations
@@ -56,9 +47,7 @@ export async function scanForPendingFiles() {
  */
 export async function getFileByKey(fileName: string) {
   // This requires a scan since key is not indexed
-  return Files.scan
-    .where(({key}, {eq}) => eq(key, fileName))
-    .go()
+  return Files.scan.where(({key}, {eq}) => eq(key, fileName)).go()
 }
 
 /**
@@ -102,7 +91,7 @@ export async function getBatchFiles(fileIds: string[]) {
   const uniqueFileIds = Array.from(new Set(fileIds))
 
   // ElectroDB batch get
-  const keys = uniqueFileIds.map(fileId => ({fileId}))
+  const keys = uniqueFileIds.map((fileId) => ({fileId}))
   return Files.get(keys).go()
 }
 
@@ -130,9 +119,7 @@ export async function getUserByAppleDeviceIdentifier(appleUserId: string) {
   // Filter in memory for now
   const allUsers = await Users.scan.go()
   return {
-    data: allUsers.data.filter(user =>
-      user.identityProviders?.userId === appleUserId
-    )
+    data: allUsers.data.filter((user) => user.identityProviders?.userId === appleUserId)
   }
 }
 
@@ -206,9 +193,7 @@ export async function getUsersByFileId(fileId: string) {
   // For now, return all UserFiles and filter in memory
   const allUserFiles = await UserFiles.scan.go()
   return {
-    data: allUserFiles.data.filter(uf =>
-      uf.fileId && (uf.fileId as string[]).includes(fileId)
-    )
+    data: allUserFiles.data.filter((uf) => uf.fileId && (uf.fileId as string[]).includes(fileId))
   }
 }
 
@@ -258,9 +243,7 @@ export async function getUsersByDeviceId(deviceId: string) {
   // For now, return all UserDevices and filter in memory
   const allUserDevices = await UserDevices.scan.go()
   return {
-    data: allUserDevices.data.filter(ud =>
-      ud.devices && (ud.devices as string[]).includes(deviceId)
-    )
+    data: allUserDevices.data.filter((ud) => ud.devices && (ud.devices as string[]).includes(deviceId))
   }
 }
 
@@ -276,10 +259,4 @@ export async function deleteAllUserDevices(userId: string) {
 // Export commonly used entities for direct access
 // ========================================
 
-export {
-  Files,
-  Users,
-  Devices,
-  UserFiles,
-  UserDevices
-} from '../lib/vendor/ElectroDB/service'
+export {Files, Users, Devices, UserFiles, UserDevices} from '../lib/vendor/ElectroDB/service'

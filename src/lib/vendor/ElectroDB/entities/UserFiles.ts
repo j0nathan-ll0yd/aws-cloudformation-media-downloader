@@ -51,9 +51,7 @@ export async function addFileToUser(userId: string, fileId: string) {
     // Update existing record by adding to the set
     const currentFiles = existing.data.fileId || []
     const updatedFiles = Array.from(new Set([...currentFiles, fileId]))
-    return UserFiles.update({userId})
-      .set({fileId: updatedFiles})
-      .go()
+    return UserFiles.update({userId}).set({fileId: updatedFiles}).go()
   } else {
     // Create new record with the file
     return UserFiles.create({
@@ -71,10 +69,8 @@ export async function removeFileFromUser(userId: string, fileId: string) {
   const existing = await UserFiles.get({userId}).go()
 
   if (existing.data && existing.data.fileId) {
-    const updatedFiles = existing.data.fileId.filter(id => id !== fileId)
-    return UserFiles.update({userId})
-      .set({fileId: updatedFiles})
-      .go()
+    const updatedFiles = existing.data.fileId.filter((id) => id !== fileId)
+    return UserFiles.update({userId}).set({fileId: updatedFiles}).go()
   }
 
   return existing

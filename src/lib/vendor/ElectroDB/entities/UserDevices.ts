@@ -51,9 +51,7 @@ export async function addDeviceToUser(userId: string, deviceId: string) {
     // Update existing record by adding to the set
     const currentDevices = existing.data.devices || []
     const updatedDevices = Array.from(new Set([...currentDevices, deviceId]))
-    return UserDevices.update({userId})
-      .set({devices: updatedDevices})
-      .go()
+    return UserDevices.update({userId}).set({devices: updatedDevices}).go()
   } else {
     // Create new record with the device
     return UserDevices.create({
@@ -71,10 +69,8 @@ export async function removeDeviceFromUser(userId: string, deviceId: string) {
   const existing = await UserDevices.get({userId}).go()
 
   if (existing.data && existing.data.devices) {
-    const updatedDevices = existing.data.devices.filter(id => id !== deviceId)
-    return UserDevices.update({userId})
-      .set({devices: updatedDevices})
-      .go()
+    const updatedDevices = existing.data.devices.filter((id) => id !== deviceId)
+    return UserDevices.update({userId}).set({devices: updatedDevices}).go()
   }
 
   return existing

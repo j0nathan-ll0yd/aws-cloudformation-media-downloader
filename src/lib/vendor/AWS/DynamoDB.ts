@@ -8,35 +8,13 @@
  * This approach allows gradual migration without changing Lambda functions immediately.
  */
 
-import {
-  Files,
-  Users,
-  Devices,
-  UserFiles,
-  UserDevices,
-  addFileToUser,
-  removeDeviceFromUser
-} from '../ElectroDB/service'
+import {Files, Users, Devices, UserFiles, UserDevices, addFileToUser, removeDeviceFromUser} from '../ElectroDB/service'
 
 // Re-export types for backward compatibility
-export type {
-  BatchGetCommandInput,
-  DeleteCommandInput,
-  PutCommandInput,
-  QueryCommandInput,
-  ScanCommandInput,
-  UpdateCommandInput
-} from '@aws-sdk/lib-dynamodb'
+export type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
 
 // Type imports for internal use
-import type {
-  BatchGetCommandInput,
-  DeleteCommandInput,
-  PutCommandInput,
-  QueryCommandInput,
-  ScanCommandInput,
-  UpdateCommandInput
-} from '@aws-sdk/lib-dynamodb'
+import type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
 
 /**
  * Helper function to determine which entity to use based on table name
@@ -83,9 +61,9 @@ export async function updateItem(params: UpdateCommandInput) {
       if (params.UpdateExpression) {
         const setMatch = params.UpdateExpression.match(/SET (.+)/i)
         if (setMatch) {
-          const setPairs = setMatch[1].split(',').map(s => s.trim())
+          const setPairs = setMatch[1].split(',').map((s) => s.trim())
           for (const pair of setPairs) {
-            const [nameExpr, valueExpr] = pair.split('=').map(s => s.trim())
+            const [nameExpr, valueExpr] = pair.split('=').map((s) => s.trim())
             // Resolve the actual field name
             let fieldName = nameExpr
             if (nameExpr.startsWith('#')) {
@@ -120,9 +98,9 @@ export async function updateItem(params: UpdateCommandInput) {
       if (params.UpdateExpression) {
         const setMatch = params.UpdateExpression.match(/SET (.+)/i)
         if (setMatch) {
-          const setPairs = setMatch[1].split(',').map(s => s.trim())
+          const setPairs = setMatch[1].split(',').map((s) => s.trim())
           for (const pair of setPairs) {
-            const [nameExpr, valueExpr] = pair.split('=').map(s => s.trim())
+            const [nameExpr, valueExpr] = pair.split('=').map((s) => s.trim())
             let fieldName = nameExpr
             if (nameExpr.startsWith('#')) {
               fieldName = expressionNames[nameExpr] || nameExpr.substring(1)
@@ -153,9 +131,9 @@ export async function updateItem(params: UpdateCommandInput) {
       if (params.UpdateExpression) {
         const setMatch = params.UpdateExpression.match(/SET (.+)/i)
         if (setMatch) {
-          const setPairs = setMatch[1].split(',').map(s => s.trim())
+          const setPairs = setMatch[1].split(',').map((s) => s.trim())
           for (const pair of setPairs) {
-            const [nameExpr, valueExpr] = pair.split('=').map(s => s.trim())
+            const [nameExpr, valueExpr] = pair.split('=').map((s) => s.trim())
             let fieldName = nameExpr
             if (nameExpr.startsWith('#')) {
               fieldName = expressionNames[nameExpr] || nameExpr.substring(1)
@@ -256,9 +234,7 @@ export async function scan(params: ScanCommandInput) {
         const fileId = params.ExpressionAttributeValues?.[':fileId'] as string
         // ElectroDB doesn't support contains on sets natively, filter in memory
         const results = await UserFiles.scan.go()
-        const filtered = results.data.filter(item =>
-          item.fileId && (item.fileId as string[]).includes(fileId)
-        )
+        const filtered = results.data.filter((item) => item.fileId && (item.fileId as string[]).includes(fileId))
         return {Items: filtered, Count: filtered.length}
       }
 
@@ -266,9 +242,7 @@ export async function scan(params: ScanCommandInput) {
         const deviceId = params.ExpressionAttributeValues?.[':deviceId'] as string
         // ElectroDB doesn't support contains on sets natively, filter in memory
         const results = await UserDevices.scan.go()
-        const filtered = results.data.filter(item =>
-          item.devices && (item.devices as string[]).includes(deviceId)
-        )
+        const filtered = results.data.filter((item) => item.devices && (item.devices as string[]).includes(deviceId))
         return {Items: filtered, Count: filtered.length}
       }
     }
@@ -278,9 +252,7 @@ export async function scan(params: ScanCommandInput) {
       const appleUserId = params.ExpressionAttributeValues?.[':userId'] as string
       // ElectroDB doesn't support nested field queries in scan easily, filter in memory
       const results = await Users.scan.go()
-      const filtered = results.data.filter(item =>
-        item.identityProviders?.userId === appleUserId
-      )
+      const filtered = results.data.filter((item) => item.identityProviders?.userId === appleUserId)
       return {Items: filtered, Count: filtered.length}
     }
 
@@ -292,9 +264,7 @@ export async function scan(params: ScanCommandInput) {
           .where(({availableAt}, {lte}) => lte(availableAt, now))
           .where(({url}, {notExists}) => notExists(url))
           .go({
-            attributes: params.ProjectionExpression
-              ? ['availableAt', 'fileId']
-              : undefined
+            attributes: params.ProjectionExpression ? ['availableAt', 'fileId'] : undefined
           })
         return {Items: results.data, Count: results.data.length}
       }
@@ -303,9 +273,7 @@ export async function scan(params: ScanCommandInput) {
     // Special case: key equality filter
     if (params.FilterExpression.includes('#key = :key')) {
       const key = params.ExpressionAttributeValues?.[':key'] as string
-      const results = await Files.scan
-        .where(({key: fileKey}, {eq}) => eq(fileKey, key))
-        .go()
+      const results = await Files.scan.where(({key: fileKey}, {eq}) => eq(fileKey, key)).go()
       return {Items: results.data, Count: results.data.length}
     }
   }
