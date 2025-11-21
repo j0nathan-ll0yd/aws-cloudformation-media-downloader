@@ -2,7 +2,7 @@ import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Co
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {CustomCloudFrontRequest} from '../../../types/main'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * For **every request** to the system:

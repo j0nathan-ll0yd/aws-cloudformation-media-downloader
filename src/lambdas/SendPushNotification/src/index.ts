@@ -6,7 +6,7 @@ import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dyna
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns a Device by userId

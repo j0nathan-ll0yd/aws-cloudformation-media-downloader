@@ -3,14 +3,7 @@ import {Upload, Options as UploadOptions} from '@aws-sdk/lib-storage'
 import {Readable} from 'stream'
 import {createS3Client} from './clients'
 
-// Lazy initialization to avoid module-level client creation (breaks Jest mocking)
-let s3Client: S3Client | null = null
-function getClient(): S3Client {
-  if (!s3Client) {
-    s3Client = createS3Client()
-  }
-  return s3Client
-}
+const s3Client = createS3Client()
 
 /**
  * Get metadata for an S3 object
@@ -25,7 +18,7 @@ export async function headObject(bucket: string, key: string): Promise<HeadObjec
     Key: key
   }
   const command = new HeadObjectCommand(params)
-  return getClient().send(command)
+  return s3Client.send(command)
 }
 /* c8 ignore stop */
 
@@ -41,7 +34,7 @@ export async function headObject(bucket: string, key: string): Promise<HeadObjec
 /* c8 ignore start - Thin wrapper with default parameters, tested via integration tests */
 export function createS3Upload(bucket: string, key: string, body: Readable | Buffer, contentType: string = 'video/mp4', options?: Partial<UploadOptions>): Upload {
   return new Upload({
-    client: getClient(),
+    client: s3Client,
     params: {
       Bucket: bucket,
       Key: key,

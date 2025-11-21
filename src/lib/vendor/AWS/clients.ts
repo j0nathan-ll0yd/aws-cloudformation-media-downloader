@@ -15,7 +15,7 @@ import {SQSClient, SQSClientConfig} from '@aws-sdk/client-sqs'
 import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
 import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
-import AWSXRay from 'aws-xray-sdk-core'
+import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -28,24 +28,6 @@ function isLocalStackMode(): boolean {
   return process.env.USE_LOCALSTACK === 'true'
 }
 
-/**
- * Check if X-Ray tracing is enabled
- * X-Ray is disabled for LocalStack (unsupported) and when ENABLE_XRAY=false
- * @returns true if X-Ray should be enabled
- */
-function isXRayEnabled(): boolean {
-  return process.env.ENABLE_XRAY !== 'false' && !isLocalStackMode()
-}
-
-/**
- * Wrap an AWS SDK client with X-Ray instrumentation
- * Returns the client unchanged if X-Ray is disabled
- * @param client - AWS SDK client to wrap
- * @returns X-Ray instrumented client or original client
- */
-function wrapWithXRay<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
-  return isXRayEnabled() ? AWSXRay.captureAWSv3Client(client) : client
-}
 
 /**
  * Get base configuration for AWS clients
@@ -81,7 +63,7 @@ export function createS3Client(): S3Client {
   }
 
   const client = new S3Client(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -92,7 +74,7 @@ export function createS3Client(): S3Client {
 export function createDynamoDBClient(): DynamoDBClient {
   const config: DynamoDBClientConfig = getBaseConfig()
   const client = new DynamoDBClient(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -103,7 +85,7 @@ export function createDynamoDBClient(): DynamoDBClient {
 export function createSNSClient(): SNSClient {
   const config: SNSClientConfig = getBaseConfig()
   const client = new SNSClient(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -114,7 +96,7 @@ export function createSNSClient(): SNSClient {
 export function createSQSClient(): SQSClient {
   const config: SQSClientConfig = getBaseConfig()
   const client = new SQSClient(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -125,7 +107,7 @@ export function createSQSClient(): SQSClient {
 export function createLambdaClient(): LambdaClient {
   const config: LambdaClientConfig = getBaseConfig()
   const client = new LambdaClient(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -136,7 +118,7 @@ export function createLambdaClient(): LambdaClient {
 export function createCloudWatchClient(): CloudWatchClient {
   const config: CloudWatchClientConfig = getBaseConfig()
   const client = new CloudWatchClient(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }
 
 /**
@@ -147,5 +129,5 @@ export function createCloudWatchClient(): CloudWatchClient {
 export function createAPIGatewayClient(): APIGateway {
   const config: APIGatewayClientConfig = getBaseConfig()
   const client = new APIGateway(config)
-  return wrapWithXRay(client)
+  return captureAWSClient(client)
 }

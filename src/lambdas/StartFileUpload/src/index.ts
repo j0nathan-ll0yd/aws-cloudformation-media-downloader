@@ -1,5 +1,4 @@
 import {Context} from 'aws-lambda'
-import AWSXRay from 'aws-xray-sdk-core'
 import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
 import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
@@ -8,7 +7,7 @@ import {assertIsError} from '../../../util/transformers'
 import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -22,7 +21,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 
   try {
-    const segment = AWSXRay.getSegment()
+    const segment = getSegment()
 
     logDebug('fetchVideoInfo <=', fileUrl)
     const subsegmentFetch = segment?.addNewSubsegment('yt-dlp-fetch-info')

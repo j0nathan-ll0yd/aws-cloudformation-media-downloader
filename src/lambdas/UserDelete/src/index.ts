@@ -7,7 +7,7 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
 import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)

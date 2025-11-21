@@ -4,7 +4,7 @@ import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-hel
 import {userSubscribeSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {subscribeEndpointToTopic} from '../../../util/shared'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

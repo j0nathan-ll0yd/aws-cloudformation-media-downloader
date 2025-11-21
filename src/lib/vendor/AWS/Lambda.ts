@@ -1,14 +1,7 @@
-import {InvokeCommand, InvokeCommandInput, InvokeCommandOutput, LambdaClient} from '@aws-sdk/client-lambda'
+import {InvokeCommand, InvokeCommandInput, InvokeCommandOutput} from '@aws-sdk/client-lambda'
 import {createLambdaClient} from './clients'
 
-// Lazy initialization to avoid module-level client creation (breaks Jest mocking)
-let lambda: LambdaClient | null = null
-function getClient(): LambdaClient {
-  if (!lambda) {
-    lambda = createLambdaClient()
-  }
-  return lambda
-}
+const lambda = createLambdaClient()
 
 /**
  * Invokes a Lambda function
@@ -18,7 +11,7 @@ function getClient(): LambdaClient {
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
 export function invokeLambda(params: InvokeCommandInput): Promise<InvokeCommandOutput> {
   const command = new InvokeCommand(params)
-  return getClient().send(command)
+  return lambda.send(command)
 }
 /* c8 ignore stop */
 

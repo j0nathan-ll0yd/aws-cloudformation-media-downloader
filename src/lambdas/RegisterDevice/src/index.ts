@@ -9,7 +9,7 @@ import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-help
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)

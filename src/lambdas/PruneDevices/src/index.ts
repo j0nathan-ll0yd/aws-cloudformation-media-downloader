@@ -9,7 +9,7 @@ import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
 import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded

@@ -5,7 +5,7 @@ import {loginUserSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Logs in a User via Sign in with Apple

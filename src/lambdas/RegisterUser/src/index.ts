@@ -8,7 +8,7 @@ import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/la
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Creates a new user record in DynamoDB

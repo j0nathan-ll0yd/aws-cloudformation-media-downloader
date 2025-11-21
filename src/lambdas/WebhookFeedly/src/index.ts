@@ -12,7 +12,7 @@ import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/t
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Associates a File to a User in DynamoDB

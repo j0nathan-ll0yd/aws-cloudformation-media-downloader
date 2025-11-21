@@ -6,7 +6,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../typ
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of Files, based on a list of File IDs

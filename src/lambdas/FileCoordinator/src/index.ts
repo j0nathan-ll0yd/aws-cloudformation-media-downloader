@@ -4,7 +4,7 @@ import {scanForFileParams} from '../../../util/dynamodb-helpers'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {initiateFileDownload} from '../../../util/shared'
-import {withXRay} from '../../../util/lambdaDecorator'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of filesIds that are ready to be downloaded
