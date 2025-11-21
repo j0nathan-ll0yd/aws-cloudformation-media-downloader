@@ -11,12 +11,12 @@ jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
 }))
 
 const {default: putResponse} = await import('./fixtures/putItem-200-OK.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: jest.fn(),
-  deleteItem: jest.fn(),
-  query: jest.fn(),
-  putItem: jest.fn().mockReturnValue(putResponse),
-  updateItem: jest.fn()
+const usersCreateMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
+  Users: {
+    create: jest.fn(() => ({go: usersCreateMock})),
+    scan: {go: jest.fn()}
+  }
 }))
 
 const {default: getUsersByAppleDeviceIdentifierResponse} = await import('./fixtures/getUsersByAppleDeviceIdentifier-200-OK.json', {assert: {type: 'json'}})

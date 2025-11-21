@@ -10,11 +10,21 @@ if (Array.isArray(queryStubReturnObject.Items)) {
   queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
 }
 
-const batchGetMock = jest.fn()
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  batchGet: batchGetMock,
-  query: queryMock
+const userFilesGetMock = jest.fn()
+const filesGetMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+  UserFiles: {
+    get: jest.fn(() => ({
+      go: userFilesGetMock
+    }))
+  }
+}))
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+  Files: {
+    get: jest.fn(() => ({
+      go: filesGetMock
+    }))
+  }
 }))
 
 const {handler} = await import('./../src')
@@ -24,22 +34,21 @@ describe('#ListFiles', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    process.env.DynamoDBTableFiles = 'Files'
-    process.env.DynamoDBTableUserFiles = 'UserFiles'
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.DocumentClient.query', async () => {
+    test('ElectroDB UserFiles.get', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(undefined)
+      userFilesGetMock.mockResolvedValue(undefined)
       const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
+      expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
-      expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
+      expect(body.keyCount).toEqual(0)
     })
-    test('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+    test('ElectroDB Files.get', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(queryStubReturnObject)
-      batchGetMock.mockReturnValue(undefined)
+      const userFileData = queryStubReturnObject.Items?.[0]
+      userFilesGetMock.mockResolvedValue({data: userFileData})
+      filesGetMock.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)

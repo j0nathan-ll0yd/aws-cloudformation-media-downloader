@@ -4,14 +4,18 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 
-const queryMock = jest.fn()
-const updateItem = jest.fn().mockReturnValue({})
-const deleteItemMock = jest.fn().mockReturnValue({})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: updateItem,
-  deleteItem: deleteItemMock,
-  query: queryMock,
-  scan: jest.fn()
+const filesGetMock = jest.fn()
+const filesCreateMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+  Files: {
+    get: jest.fn(() => ({go: filesGetMock})),
+    create: jest.fn(() => ({go: filesCreateMock}))
+  }
+}))
+
+const addFileToUserMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+  addFileToUser: addFileToUserMock
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
@@ -69,12 +73,12 @@ describe('#WebhookFeedly', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
   })
-  test('should fail gracefully if the DynamoDB update fails', async () => {
+  test('should fail gracefully if the ElectroDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
-    updateItem.mockImplementation(() => {
-      throw new Error('Update failed')
-    })
+    filesGetMock.mockResolvedValue({data: undefined})
+    filesCreateMock.mockResolvedValue({data: {}})
+    addFileToUserMock.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })

@@ -4,12 +4,22 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: jest.fn(),
-  deleteItem: jest.fn().mockReturnValue({}),
-  query: queryMock,
-  updateItem: jest.fn().mockReturnValue({})
+const devicesUpsertMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
+  Devices: {
+    upsert: jest.fn(() => ({go: devicesUpsertMock}))
+  }
+}))
+
+const addDeviceToUserMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
+  addDeviceToUser: addDeviceToUserMock
+}))
+
+const getUserDevicesMock = jest.fn()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUserDevices: getUserDevicesMock,
+  subscribeEndpointToTopic: jest.fn()
 }))
 
 const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {assert: {type: 'json'}})
@@ -39,7 +49,9 @@ describe('#RegisterDevice', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    queryMock.mockReturnValue(queryDefaultResponse)
+    getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
+    devicesUpsertMock.mockResolvedValue({data: {}})
+    addDeviceToUserMock.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
@@ -60,7 +72,7 @@ describe('#RegisterDevice', () => {
   })
   test('(authenticated-first) should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    queryMock.mockReturnValue(querySuccessResponse)
+    getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
