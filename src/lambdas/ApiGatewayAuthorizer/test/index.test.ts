@@ -3,6 +3,7 @@ import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '../../../util/errors'
+import {testContext} from '../../../util/jest-setup'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
@@ -44,19 +45,19 @@ describe('#APIGatewayAuthorizer', () => {
     })
     test('should throw an error if there is no API key', async () => {
       delete event.queryStringParameters!['ApiKey']
-      await expect(handler(event)).rejects.toThrow(unauthorizedError)
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should throw an error if the API key is invalid', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       event.queryStringParameters!['ApiKey'] = 'invalid-key'
-      await expect(handler(event)).rejects.toThrow(unauthorizedError)
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should throw an error if the API key is disabled', async () => {
       const getApiKeysErrorResponse = JSON.parse(JSON.stringify(getApiKeysResponse))
       getApiKeysErrorResponse.items![0].value = fakeUsageIdentifierKey
       getApiKeysErrorResponse.items![0].enabled = false
       getApiKeysMock.mockReturnValue(getApiKeysErrorResponse)
-      await expect(handler(event)).rejects.toThrow(unauthorizedError)
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
   })
   describe('#HeaderAuthorization', () => {
@@ -71,7 +72,7 @@ describe('#APIGatewayAuthorizer', () => {
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual(fakeUserId)
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(output.usageIdentifierKey).toEqual(fakeUsageIdentifierKey)
@@ -82,7 +83,7 @@ describe('#APIGatewayAuthorizer', () => {
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
@@ -92,7 +93,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
@@ -105,7 +106,7 @@ describe('#APIGatewayAuthorizer', () => {
         throw new Error('TokenExpiredError: jwt expired')
       })
       event.resource = event.path = '/files'
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(successResponseKeys))
@@ -118,7 +119,7 @@ describe('#APIGatewayAuthorizer', () => {
         throw new Error('TokenExpiredError: jwt expired')
       })
       event.resource = event.path = '/any-path-not-multi-auth'
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
@@ -131,7 +132,7 @@ describe('#APIGatewayAuthorizer', () => {
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
@@ -140,7 +141,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       event.headers!['User-Agent'] = 'localhost@lifegames'
       process.env.ReservedClientIp = event.requestContext.identity.sourceIp = '127.0.0.1'
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('123e4567-e89b-12d3-a456-426614174000')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(output.usageIdentifierKey).toEqual(fakeUsageIdentifierKey)
@@ -158,7 +159,7 @@ describe('#APIGatewayAuthorizer', () => {
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       event.headers = null
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
@@ -169,25 +170,25 @@ describe('#APIGatewayAuthorizer', () => {
       getUsageMock.mockReturnValue(getUsageResponse)
       event.headers = null
       event.resource = event.path = '/files'
-      const output = await handler(event)
+      const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(successResponseKeys))
     })
     test('AWS.ApiGateway.getApiKeys', async () => {
       getApiKeysMock.mockReturnValue(undefined)
-      await expect(handler(event)).rejects.toThrow(UnexpectedError)
+      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
     test('AWS.ApiGateway.getUsagePlans', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(undefined)
-      await expect(handler(event)).rejects.toThrow(UnexpectedError)
+      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
     test('AWS.ApiGateway.getUsage', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(undefined)
-      await expect(handler(event)).rejects.toThrow(UnexpectedError)
+      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
   })
 })

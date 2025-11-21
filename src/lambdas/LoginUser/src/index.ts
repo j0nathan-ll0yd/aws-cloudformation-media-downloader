@@ -5,12 +5,13 @@ import {loginUserSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Logs in a User via Sign in with Apple
  * @notExported
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -34,4 +35,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   const userId = users[0].userId
   const token = await createAccessToken(userId)
   return response(context, 200, {token})
-}
+})

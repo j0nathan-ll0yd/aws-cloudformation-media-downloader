@@ -15,6 +15,7 @@ import {SQSClient, SQSClientConfig} from '@aws-sdk/client-sqs'
 import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
 import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
+import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -26,6 +27,7 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 function isLocalStackMode(): boolean {
   return process.env.USE_LOCALSTACK === 'true'
 }
+
 
 /**
  * Get base configuration for AWS clients
@@ -51,6 +53,7 @@ function getBaseConfig() {
 /**
  * Create an S3 client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createS3Client(): S3Client {
   const config: S3ClientConfig = {
@@ -59,59 +62,72 @@ export function createS3Client(): S3Client {
     forcePathStyle: isLocalStackMode()
   }
 
-  return new S3Client(config)
+  const client = new S3Client(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create a DynamoDB client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createDynamoDBClient(): DynamoDBClient {
   const config: DynamoDBClientConfig = getBaseConfig()
-  return new DynamoDBClient(config)
+  const client = new DynamoDBClient(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create an SNS client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createSNSClient(): SNSClient {
   const config: SNSClientConfig = getBaseConfig()
-  return new SNSClient(config)
+  const client = new SNSClient(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create an SQS client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createSQSClient(): SQSClient {
   const config: SQSClientConfig = getBaseConfig()
-  return new SQSClient(config)
+  const client = new SQSClient(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create a Lambda client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createLambdaClient(): LambdaClient {
   const config: LambdaClientConfig = getBaseConfig()
-  return new LambdaClient(config)
+  const client = new LambdaClient(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create a CloudWatch client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createCloudWatchClient(): CloudWatchClient {
   const config: CloudWatchClientConfig = getBaseConfig()
-  return new CloudWatchClient(config)
+  const client = new CloudWatchClient(config)
+  return captureAWSClient(client)
 }
 
 /**
  * Create an API Gateway client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
  */
 export function createAPIGatewayClient(): APIGateway {
   const config: APIGatewayClientConfig = getBaseConfig()
-  return new APIGateway(config)
+  const client = new APIGateway(config)
+  return captureAWSClient(client)
 }

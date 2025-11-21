@@ -8,6 +8,7 @@ import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/la
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Creates a new user record in DynamoDB
@@ -28,7 +29,7 @@ async function createUser(user: User, identityProviderApple: IdentityProviderApp
  * - NOTE: All User details are sourced from the identity token
  * @notExported
  */
-export async function handler(event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: APIGatewayEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   let requestBody
   try {
@@ -52,4 +53,4 @@ export async function handler(event: APIGatewayEvent, context: Context): Promise
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
-}
+})

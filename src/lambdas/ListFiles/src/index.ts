@@ -6,6 +6,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../typ
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of Files, based on a list of File IDs
@@ -52,11 +53,10 @@ async function getFileIdsByUser(userId: string): Promise<string[]> {
  *
  * @notExported
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
-  // User has registered; but not logged in; will trigger login
   if (userStatus == UserStatus.Unauthenticated) {
     return lambdaErrorResponse(context, generateUnauthorizedError())
   }
@@ -76,4 +76,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
   } catch (error) {
     return lambdaErrorResponse(context, error)
   }
-}
+})

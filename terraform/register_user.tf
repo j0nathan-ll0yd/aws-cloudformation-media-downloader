@@ -25,6 +25,11 @@ resource "aws_iam_role_policy_attachment" "RegisterUserPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {
+  role       = aws_iam_role.RegisterUserRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "RegisterUser" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterUser.function_name
@@ -52,6 +57,10 @@ resource "aws_lambda_function" "RegisterUser" {
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = data.archive_file.RegisterUser.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

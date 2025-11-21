@@ -31,6 +31,11 @@ resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "ListFilesPolicyXRay" {
+  role       = aws_iam_role.ListFilesRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "ListFiles" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ListFiles.function_name
@@ -58,6 +63,10 @@ resource "aws_lambda_function" "ListFiles" {
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

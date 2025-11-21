@@ -33,6 +33,11 @@ resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
+  role       = aws_iam_role.PruneDevicesRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_cloudwatch_event_target" "PruneDevices" {
   rule = aws_cloudwatch_event_rule.PruneDevices.name
   arn  = aws_lambda_function.PruneDevices.arn
@@ -72,7 +77,11 @@ resource "aws_lambda_function" "PruneDevices" {
   depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
-  timeout          = 300
+
+  tracing_config {
+    mode = "Active"
+  }
+  timeout = 300
 
   environment {
     variables = {

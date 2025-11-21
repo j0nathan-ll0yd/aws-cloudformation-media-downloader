@@ -43,6 +43,11 @@ resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {
+  role       = aws_iam_role.RegisterDeviceRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "RegisterDevice" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterDevice.function_name
@@ -69,6 +74,10 @@ resource "aws_lambda_function" "RegisterDevice" {
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
