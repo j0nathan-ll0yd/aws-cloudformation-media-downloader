@@ -29,9 +29,17 @@ const getDeviceResponse = {
   ScannedCount: 1
 }
 
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  query: queryMock
+const userDevicesGetMock = jest.fn()
+const devicesGetMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
+  UserDevices: {
+    get: jest.fn(() => ({go: userDevicesGetMock}))
+  }
+}))
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
+  Devices: {
+    get: jest.fn(() => ({go: devicesGetMock}))
+  }
 }))
 
 const publishSnsEventMock = jest.fn()
