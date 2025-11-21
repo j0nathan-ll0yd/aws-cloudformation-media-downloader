@@ -8,6 +8,11 @@ resource "aws_iam_role_policy_attachment" "LogClientEventPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {
+  role       = aws_iam_role.LogClientEventRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "LogClientEvent" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.LogClientEvent.function_name
@@ -34,6 +39,10 @@ resource "aws_lambda_function" "LogClientEvent" {
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path
   source_code_hash = data.archive_file.LogClientEvent.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 }
 
 resource "aws_api_gateway_resource" "LogEvent" {

@@ -1,8 +1,9 @@
-import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult, Context} from 'aws-lambda'
 import {logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture} from '../../../util/lambda-helpers'
 import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
@@ -134,7 +135,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
-export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> {
+export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent, _context: Context, {traceId: _traceId}): Promise<CustomAuthorizerResult> => {
   logIncomingFixture(event)
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
@@ -196,4 +197,4 @@ export async function handler(event: APIGatewayRequestAuthorizerEvent): Promise<
   const allowResponse = generateAllow(principalId, event.methodArn, apiKeyValue)
   logOutgoingFixture(allowResponse)
   return allowResponse
-}
+})

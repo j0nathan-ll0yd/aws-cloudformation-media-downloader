@@ -141,6 +141,56 @@ const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {a
 const {handler} = await import('./../src')
 ```
 
+### AWS X-Ray Mocking
+
+AWS X-Ray SDK creates a transitive dependency challenge in Jest ES modules. When vendor files import from `lib/vendor/AWS/clients.ts`, that file imports `aws-xray-sdk-core`, which must be mocked before Jest validates module paths.
+
+**Current Solution: Lazy Initialization**
+
+All vendor files use lazy initialization to defer client creation until first use:
+
+```typescript
+// lib/vendor/AWS/DynamoDB.ts
+let docClient: DynamoDBDocument | null = null
+function getDocClient(): DynamoDBDocument {
+  if (!docClient) {
+    const client = createDynamoDBClient()
+    docClient = DynamoDBDocument.from(client)
+  }
+  return docClient
+}
+
+export function query(params: QueryCommandInput) {
+  return getDocClient().query(params)
+}
+```
+
+This pattern:
+- Avoids module-level client instantiation
+- Prevents `aws-xray-sdk-core` from loading during Jest module validation
+- Maintains singleton pattern (client cached after first creation)
+- Works with existing test mocks without modification
+
+**setupFilesAfterEnv Configuration**
+
+The `setupFilesAfterEnv` option in `jest.config.mjs` must remain commented out:
+
+```javascript
+// setupFilesAfterEnv: [],  // KEEP COMMENTED - causes module resolution issues with X-Ray
+```
+
+Tests import `jest-setup.ts` directly for utilities, making global setup unnecessary. Enabling `setupFilesAfterEnv` causes Jest to load `jest-setup.ts` globally, interfering with module resolution for X-Ray dependencies.
+
+**Future Improvements**
+
+See `.github/ISSUE_TEMPLATE/xray-testing-improvements.md` for:
+- Alternative approaches explored
+- Jest limitations with ES modules
+- Potential solutions in future Jest versions
+- Migration considerations for test frameworks with better ESM support
+
+**Key Takeaway:** With lazy initialization in vendor files, NO additional X-Ray mocking is required in test files. The existing vendor mocks handle everything.
+
 ## Test Structure
 
 ### Describe Block

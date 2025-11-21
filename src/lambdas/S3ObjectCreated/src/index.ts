@@ -1,4 +1,4 @@
-import {S3Event} from 'aws-lambda'
+import {S3Event, Context} from 'aws-lambda'
 import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile, UserFile} from '../../../types/main'
@@ -6,6 +6,7 @@ import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
 import {logDebug, logIncomingFixture} from '../../../util/lambda-helpers'
 import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns the DynamoDBFile by file name
@@ -59,7 +60,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export async function handler(event: S3Event): Promise<void> {
+export const handler = withXRay(async (event: S3Event, _context: Context, {traceId: _traceId}): Promise<void> => {
   logIncomingFixture(event)
   try {
     const record = event.Records[0]
@@ -72,4 +73,4 @@ export async function handler(event: S3Event): Promise<void> {
     assertIsError(error)
     throw new UnexpectedError(error.message)
   }
-}
+})

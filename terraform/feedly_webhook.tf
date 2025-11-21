@@ -33,6 +33,11 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyXRay" {
+  role       = aws_iam_role.WebhookFeedlyRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 resource "aws_lambda_permission" "WebhookFeedly" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.WebhookFeedly.function_name
@@ -59,6 +64,10 @@ resource "aws_lambda_function" "WebhookFeedly" {
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
@@ -155,6 +164,11 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyXRay" {
+  role       = aws_iam_role.MultipartUploadRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 data "archive_file" "StartFileUpload" {
   type        = "zip"
   source_file = "./../build/lambdas/StartFileUpload.js"
@@ -172,26 +186,38 @@ resource "null_resource" "DownloadYtDlpBinary" {
 
       VERSION="${trimspace(file("${path.module}/../layers/yt-dlp/VERSION"))}"
       LAYER_BIN_DIR="${path.module}/../layers/yt-dlp/bin"
-      BINARY_PATH="$${LAYER_BIN_DIR}/yt-dlp_linux"
+      BINARY_NAME="yt-dlp_linux"
 
       echo "Downloading yt-dlp $${VERSION}..."
       mkdir -p "$${LAYER_BIN_DIR}"
 
-      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/yt-dlp_linux" -O "$${BINARY_PATH}"
+      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/$${BINARY_NAME}" -O "$${LAYER_BIN_DIR}/$${BINARY_NAME}"
       wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/SHA2-256SUMS" -O /tmp/yt-dlp-SHA2-256SUMS
 
       echo "Verifying checksum..."
       cd "$${LAYER_BIN_DIR}"
-      grep "yt-dlp_linux$" /tmp/yt-dlp-SHA2-256SUMS | sha256sum --check --status
+      if command -v shasum >/dev/null 2>&1; then
+        grep "$${BINARY_NAME}$" /tmp/yt-dlp-SHA2-256SUMS | shasum -a 256 -c -s
+      elif sha256sum --version 2>&1 | grep -q GNU; then
+        grep "$${BINARY_NAME}$" /tmp/yt-dlp-SHA2-256SUMS | sha256sum --check --status
+      else
+        echo "ERROR: No compatible checksum utility found (shasum or GNU sha256sum)"
+        exit 1
+      fi
 
       echo "Making binary executable..."
-      chmod +x "$${BINARY_PATH}"
+      chmod +x "$${BINARY_NAME}"
 
-      echo "Testing binary..."
-      BINARY_VERSION=$("$${BINARY_PATH}" --version)
-      if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
-        echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
-        exit 1
+      if [ "$(uname -s)" = "Linux" ]; then
+        echo "Testing binary..."
+        BINARY_VERSION=$(./"$${BINARY_NAME}" --version)
+        if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
+          echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
+          exit 1
+        fi
+        echo "✅ Binary version verified: $${BINARY_VERSION}"
+      else
+        echo "⏭️  Skipping binary test (Linux binary, non-Linux host)"
       fi
 
       rm -f /tmp/yt-dlp-SHA2-256SUMS
@@ -229,6 +255,10 @@ resource "aws_lambda_function" "StartFileUpload" {
   filename         = data.archive_file.StartFileUpload.output_path
   source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
   layers           = [aws_lambda_layer_version.YtDlp.arn]
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {

@@ -29,6 +29,7 @@ const config: webpack.Configuration = {
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
     '@aws-sdk/lib-storage': '@aws-sdk/lib-storage',
     '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb',
+    'aws-xray-sdk-core': 'aws-xray-sdk-core',
     'supports-color': 'supports-color'
   },
   resolve: {

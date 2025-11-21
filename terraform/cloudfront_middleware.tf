@@ -8,6 +8,11 @@ resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {
+  role       = aws_iam_role.CloudfrontMiddlewareRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
@@ -29,6 +34,10 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path
   source_code_hash = data.archive_file.CloudfrontMiddleware.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
 }
 
 resource "aws_cloudfront_distribution" "Production" {

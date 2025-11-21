@@ -1,5 +1,6 @@
 import {describe, expect, test, jest} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
+import {testContext} from '../../../util/jest-setup'
 
 const scanMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
@@ -20,11 +21,11 @@ describe('#S3ObjectCreated', () => {
     scanMock.mockReturnValueOnce(getFileByKeyResponse)
     const {default: getUsersByFileIdResponse} = await import('./fixtures/getUsersByFileId-200-OK.json', {assert: {type: 'json'}})
     scanMock.mockReturnValueOnce(getUsersByFileIdResponse)
-    const output = await handler(event)
+    const output = await handler(event, testContext)
     expect(output).toBeUndefined()
   })
   test('should throw an error if the file does not exist', async () => {
     scanMock.mockReturnValueOnce({Count: 0})
-    await expect(handler(event)).rejects.toThrow(Error)
+    await expect(handler(event, testContext)).rejects.toThrow(Error)
   })
 })

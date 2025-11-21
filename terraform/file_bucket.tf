@@ -43,6 +43,10 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
 
+  tracing_config {
+    mode = "Active"
+  }
+
   environment {
     variables = {
       DynamoDBTableFiles     = aws_dynamodb_table.Files.name
@@ -84,4 +88,9 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicy" {
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyLogging" {
   role       = aws_iam_role.S3ObjectCreatedRole.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+}
+
+resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
+  role       = aws_iam_role.S3ObjectCreatedRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }

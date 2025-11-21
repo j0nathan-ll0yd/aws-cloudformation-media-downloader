@@ -7,6 +7,7 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
 import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
+import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
@@ -47,7 +48,7 @@ async function getDevice(deviceId: string): Promise<Device> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logIncomingFixture(event)
   const {userId} = getUserDetailsFromEvent(event)
   if (!userId) {
@@ -93,4 +94,4 @@ export async function handler(event: CustomAPIGatewayRequestAuthorizerEvent, con
     logOutgoingFixture(errorResponse)
     return errorResponse
   }
-}
+})

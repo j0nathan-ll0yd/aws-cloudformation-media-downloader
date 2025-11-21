@@ -8,6 +8,11 @@ resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyLogging" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
+resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyXRay" {
+  role       = aws_iam_role.SendPushNotificationRole.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
 data "aws_iam_policy_document" "SendPushNotification" {
   statement {
     actions = [
@@ -68,6 +73,10 @@ resource "aws_lambda_function" "SendPushNotification" {
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
+
+  tracing_config {
+    mode = "Active"
+  }
   environment {
     variables = {
       DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
