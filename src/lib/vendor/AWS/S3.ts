@@ -1,4 +1,4 @@
-import {HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput, S3Client} from '@aws-sdk/client-s3'
+import {HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
 import {Upload, Options as UploadOptions} from '@aws-sdk/lib-storage'
 import {Readable} from 'stream'
 import {createS3Client} from './clients'
