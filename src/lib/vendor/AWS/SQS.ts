@@ -1,4 +1,4 @@
-import {SendMessageRequest, SendMessageResult, SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+import {SendMessageRequest, SendMessageResult, SendMessageCommand} from '@aws-sdk/client-sqs'
 import {createSQSClient} from './clients'
 
 const sqs = createSQSClient()
