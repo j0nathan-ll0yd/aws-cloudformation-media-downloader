@@ -4,23 +4,8 @@ resource "aws_iam_role" "LogClientEventRole" {
 }
 
 resource "aws_iam_role_policy_attachment" "LogClientEventPolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {
   role       = aws_iam_role.LogClientEventRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.LogClientEventRole.name
-
-resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {
-  role       = aws_iam_role.LogClientEventRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {
-  role       = aws_iam_role.LogClientEventRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {

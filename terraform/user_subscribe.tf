@@ -24,23 +24,8 @@ resource "aws_iam_role_policy_attachment" "UserSubscribePolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "UserSubscribePolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicyXRay" {
   role       = aws_iam_role.UserSubscribeRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.UserSubscribeRole.name
-
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicyXRay" {
-  role       = aws_iam_role.UserSubscribeRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicyXRay" {
-  role       = aws_iam_role.UserSubscribeRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "UserSubscribePolicyXRay" {

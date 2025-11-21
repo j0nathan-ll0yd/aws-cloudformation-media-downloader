@@ -21,23 +21,8 @@ resource "aws_iam_role_policy_attachment" "RegisterUserPolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterUserPolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {
   role       = aws_iam_role.RegisterUserRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.RegisterUserRole.name
-
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {
-  role       = aws_iam_role.RegisterUserRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {
-  role       = aws_iam_role.RegisterUserRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {

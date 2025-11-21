@@ -29,23 +29,8 @@ resource "aws_iam_role_policy_attachment" "PruneDevicesPolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
   role       = aws_iam_role.PruneDevicesRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.PruneDevicesRole.name
-
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
-  role       = aws_iam_role.PruneDevicesRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
-  role       = aws_iam_role.PruneDevicesRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
@@ -96,7 +81,7 @@ resource "aws_lambda_function" "PruneDevices" {
   tracing_config {
     mode = "Active"
   }
-  timeout          = 300
+  timeout = 300
 
   environment {
     variables = {

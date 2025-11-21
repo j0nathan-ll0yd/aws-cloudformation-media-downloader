@@ -39,23 +39,8 @@ resource "aws_iam_role_policy_attachment" "RegisterDevicePolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {
   role       = aws_iam_role.RegisterDeviceRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.RegisterDeviceRole.name
-
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {
-  role       = aws_iam_role.RegisterDeviceRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {
-  role       = aws_iam_role.RegisterDeviceRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {

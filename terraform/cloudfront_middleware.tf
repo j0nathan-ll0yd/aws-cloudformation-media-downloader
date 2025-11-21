@@ -4,23 +4,8 @@ resource "aws_iam_role" "CloudfrontMiddlewareRole" {
 }
 
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {
   role       = aws_iam_role.CloudfrontMiddlewareRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
-
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {

@@ -86,23 +86,8 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyLogging" {
-
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
   role       = aws_iam_role.S3ObjectCreatedRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
-  role       = aws_iam_role.S3ObjectCreatedRole.name
-
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
-  role       = aws_iam_role.S3ObjectCreatedRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
-
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
-  role       = aws_iam_role.S3ObjectCreatedRole.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
 }
 
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
