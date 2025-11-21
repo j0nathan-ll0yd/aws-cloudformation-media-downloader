@@ -1,9 +1,9 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
+import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
+import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
 import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {ApplePushNotificationResponse, Device, DynamoDBUserDevice} from '../../../types/main'
-import {getUsersByDeviceId} from '../../../util/dynamodb-helpers'
+import {ApplePushNotificationResponse, Device} from '../../../types/main'
 import {deleteDevice, deleteUserDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
@@ -12,17 +12,17 @@ import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of filesIds that are ready to be downloaded
+ * Returns an array of all devices
  * @notExported
  */
 async function getDevices(): Promise<Device[]> {
   logDebug('getDevices <=')
-  const scanResponse = await scan({TableName: process.env.DynamoDBTableDevices as string})
+  const scanResponse = await Devices.scan.go()
   logDebug('getDevices =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
+  if (!scanResponse || !scanResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items as Device[]
+  return scanResponse.data as Device[]
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -65,15 +65,14 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 }
 
 async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
-  const params = getUsersByDeviceId(process.env.DynamoDBTableUserDevices as string, deviceId)
-  logDebug('getUserIdsByDeviceId <=', params)
-  const response = await scan(params)
-  logDebug('getUserIdsByDeviceId <=', response)
-  if (!response || !response.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
+  logDebug('getUserIdsByDeviceId <=', deviceId)
+  const response = await UserDevices.scan.go()
+  logDebug('getUserIdsByDeviceId =>', response)
+  if (!response || !response.data) {
+    return []
   }
-  const userDevices = response.Items as DynamoDBUserDevice[]
-  return userDevices.map((userDevice) => userDevice.userId)
+  const userDevicesWithDevice = response.data.filter((userDevice) => userDevice.devices?.includes(deviceId))
+  return userDevicesWithDevice.map((userDevice) => userDevice.userId)
 }
 
 /**

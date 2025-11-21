@@ -1,12 +1,12 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
+import {addFileToUser} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
-import {newFileParams, queryFileParams, userFileParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
@@ -20,11 +20,10 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param userId - The UUID of the user
  */
 export async function associateFileToUser(fileId: string, userId: string) {
-  const params = userFileParams(process.env.DynamoDBTableUserFiles as string, userId, fileId)
-  logDebug('associateFileToUser.updateItem <=', params)
-  const updateResponse = await updateItem(params)
-  logDebug('associateFileToUser.updateItem =>', updateResponse)
-  return updateResponse
+  logDebug('associateFileToUser <=', {fileId, userId})
+  const response = await addFileToUser(userId, fileId)
+  logDebug('associateFileToUser =>', response)
+  return response
 }
 
 /**
@@ -33,11 +32,22 @@ export async function associateFileToUser(fileId: string, userId: string) {
  * @notExported
  */
 async function addFile(fileId: string) {
-  const params = newFileParams(process.env.DynamoDBTableFiles as string, fileId)
-  logDebug('addFile.updateItem <=', params)
-  const updateResponse = await updateItem(params)
-  logDebug('addFile.updateItem =>', updateResponse)
-  return updateResponse
+  logDebug('addFile <=', fileId)
+  const response = await Files.create({
+    fileId,
+    availableAt: Date.now(),
+    size: 0,
+    status: FileStatus.PendingMetadata,
+    authorName: '',
+    authorUser: '',
+    publishDate: new Date().toISOString(),
+    description: '',
+    key: fileId,
+    contentType: '',
+    title: ''
+  }).go()
+  logDebug('addFile =>', response)
+  return response
 }
 
 /**
@@ -46,14 +56,10 @@ async function addFile(fileId: string) {
  * @notExported
  */
 async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
-  const fileParams = queryFileParams(process.env.DynamoDBTableFiles as string, fileId)
-  logDebug('getFile.query <=', fileParams)
-  const fileResponse = await query(fileParams)
-  logDebug('getFile.query =>', fileResponse)
-  if (fileResponse.Items && fileResponse.Items.length > 0) {
-    return fileResponse.Items[0] as DynamoDBFile
-  }
-  return undefined
+  logDebug('getFile <=', fileId)
+  const fileResponse = await Files.get({fileId}).go()
+  logDebug('getFile =>', fileResponse)
+  return fileResponse.data as DynamoDBFile | undefined
 }
 
 /**

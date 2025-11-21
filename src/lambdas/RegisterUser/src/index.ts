@@ -1,9 +1,8 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {Users} from '../../../lib/vendor/ElectroDB/entities/Users'
 import {IdentityProviderApple, User, UserRegistration} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserSchema} from '../../../util/constraints'
-import {newUserParams} from '../../../util/dynamodb-helpers'
 import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
@@ -17,11 +16,17 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 async function createUser(user: User, identityProviderApple: IdentityProviderApple) {
-  const putItemParams = newUserParams(process.env.DynamoDBTableUsers as string, user, identityProviderApple)
-  logDebug('putItem <=', putItemParams)
-  const putItemResponse = await putItem(putItemParams)
-  logDebug('putItem =>', putItemResponse)
-  return putItemResponse
+  logDebug('createUser <=', {user, identityProviderApple})
+  const response = await Users.create({
+    userId: user.userId,
+    email: identityProviderApple.email,
+    firstName: user.firstName || '',
+    lastName: user.lastName,
+    emailVerified: identityProviderApple.emailVerified,
+    identityProviders: identityProviderApple
+  }).go()
+  logDebug('createUser =>', response)
+  return response
 }
 
 /**

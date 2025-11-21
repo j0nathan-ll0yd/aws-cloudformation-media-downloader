@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
-import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
+import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
+import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
@@ -14,35 +14,30 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 async function getFilesById(fileIds: string[]): Promise<DynamoDBFile[]> {
-  const fileParams = getBatchFilesParams(process.env.DynamoDBTableFiles as string, fileIds)
-  logDebug('getFilesById <=', fileParams)
-  const fileResponse = await batchGet(fileParams)
-  logDebug('getFilesById =>', fileResponse)
-  if (!fileResponse || !fileResponse.Responses) {
+  logDebug('getFilesById <=', fileIds)
+  const filePromises = fileIds.map((fileId) => Files.get({fileId}).go())
+  const fileResponses = await Promise.all(filePromises)
+  logDebug('getFilesById =>', fileResponses)
+  const files = fileResponses.filter((response) => response.data).map((response) => response.data as DynamoDBFile)
+  if (files.length === 0) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  const table = process.env.DynamoDBTableFiles as string
-  return fileResponse.Responses[table] as DynamoDBFile[]
+  return files
 }
 
 /**
- * Searches for a User record via their Apple Device ID
+ * Gets file IDs associated with a user
  * @param userId - The User ID
  * @notExported
  */
 async function getFileIdsByUser(userId: string): Promise<string[]> {
-  const userFileParams = getUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
-  logDebug('getFileIdsByUser <=', userFileParams)
-  const userFilesResponse = await query(userFileParams)
+  logDebug('getFileIdsByUser <=', userId)
+  const userFilesResponse = await UserFiles.get({userId}).go()
   logDebug('getFileIdsByUser =>', userFilesResponse)
-  if (!userFilesResponse || !userFilesResponse.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  if (userFilesResponse.Items.length === 0) {
+  if (!userFilesResponse || !userFilesResponse.data) {
     return []
   }
-  const userFiles = userFilesResponse.Items as DynamoDBFile[]
-  return userFiles.map((file) => file.fileId)
+  return userFilesResponse.data.fileId || []
 }
 
 /**

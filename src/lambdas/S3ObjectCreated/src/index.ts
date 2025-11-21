@@ -1,8 +1,8 @@
 import {S3Event, Context} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
+import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
+import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
-import {DynamoDBFile, UserFile} from '../../../types/main'
-import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
+import {DynamoDBFile} from '../../../types/main'
 import {logDebug} from '../../../util/lambda-helpers'
 import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
@@ -14,29 +14,27 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
-  const getFileByKeyParams = getFileByKey(process.env.DynamoDBTableFiles as string, fileName)
-  logDebug('scan <=', getFileByKeyParams)
-  const getFileByKeyResponse = await scan(getFileByKeyParams)
-  logDebug('scan =>', getFileByKeyResponse)
-  if (Array.isArray(getFileByKeyResponse.Items) && getFileByKeyResponse.Items.length > 0) {
-    return getFileByKeyResponse.Items[0] as DynamoDBFile
+  logDebug('scan for file <=', fileName)
+  const scanResponse = await Files.scan.where(({key}, {eq}) => eq(key, fileName)).go()
+  logDebug('scan for file =>', scanResponse)
+  if (scanResponse.data && scanResponse.data.length > 0) {
+    return scanResponse.data[0] as DynamoDBFile
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
 }
 
 /**
- * Returns a array of users who have requested a given file
+ * Returns an array of user IDs who have requested a given file
  * @param file - The DynamoDBFile you want to search for
  * @notExported
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
-  const getUsersByFileIdParams = getUsersByFileId(process.env.DynamoDBTableUserFiles as string, file.fileId)
-  logDebug('scan <=', getUsersByFileIdParams)
-  const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
-  logDebug('scan =>', getUsersByFileIdResponse)
-  const userFiles = getUsersByFileIdResponse.Items as [UserFile]
-  return userFiles.map((userDevice) => userDevice.userId)
+  logDebug('scan for users with file <=', file.fileId)
+  const scanResponse = await UserFiles.scan.go()
+  logDebug('scan for users with file =>', scanResponse)
+  const userFiles = scanResponse.data.filter((userFile) => userFile.fileId?.includes(file.fileId))
+  return userFiles.map((userFile) => userFile.userId)
 }
 
 /**

@@ -1,11 +1,11 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {updateItem} from '../../../lib/vendor/AWS/DynamoDB'
+import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
+import {addDeviceToUser} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceSchema} from '../../../util/constraints'
-import {upsertDeviceParams, userDevicesParams} from '../../../util/dynamodb-helpers'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
@@ -44,30 +44,33 @@ export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
 
 /**
  * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB
- * @param table - The DynamoDB table to perform the operation on
  * @param userId - The userId
  * @param deviceId - The UUID of the device (either iOS or Android)
  * @notExported
  */
-async function upsertUserDevices(table: string, userId: string, deviceId: string) {
-  const params = userDevicesParams(table, userId, deviceId)
-  logDebug('upsertUserDevices <=', params)
-  const response = await updateItem(params)
-  logDebug('upsertUserDevices =>', params)
+async function upsertUserDevices(userId: string, deviceId: string) {
+  logDebug('upsertUserDevices <=', {userId, deviceId})
+  const response = await addDeviceToUser(userId, deviceId)
+  logDebug('upsertUserDevices =>', response)
   return response
 }
 
 /**
  * Store the device details independent of the user (e.g. iPhone, Android) and stores it to DynamoDB
- * @param table - The DynamoDB table to perform the operation on
  * @param device - The Device details (e.g. endpointArn)
  * @notExported
  */
-async function upsertDevice(table: string, device: Device) {
-  const params = upsertDeviceParams(table, device)
-  logDebug('upsertDevice <=', params)
-  const response = await updateItem(params)
-  logDebug('upsertDevice =>', params)
+async function upsertDevice(device: Device) {
+  logDebug('upsertDevice <=', device)
+  const response = await Devices.upsert({
+    deviceId: device.deviceId,
+    endpointArn: device.endpointArn,
+    token: device.token,
+    name: device.name,
+    systemVersion: device.systemVersion,
+    systemName: device.systemName
+  }).go()
+  logDebug('upsertDevice =>', response)
   return response
 }
 
@@ -114,15 +117,14 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
     const {userId, userStatus} = getUserDetailsFromEvent(event)
     // Store the device details, regardless of user status
-    await upsertDevice(process.env.DynamoDBTableDevices as string, device)
+    await upsertDevice(device)
     /* istanbul ignore else */
     if (userStatus === UserStatus.Authenticated && userId) {
       // Extract the userId and associate them
-      const table = process.env.DynamoDBTableUserDevices as string
       // Store the device details associated with the user
-      await upsertUserDevices(table, userId, requestBody.deviceId)
+      await upsertUserDevices(userId, requestBody.deviceId)
       // Determine if the user already exists
-      const userDevices = await getUserDevices(table, userId)
+      const userDevices = await getUserDevices(userId)
       if (userDevices.length === 1) {
         return response(context, 200, {endpointArn: device.endpointArn})
       } else {

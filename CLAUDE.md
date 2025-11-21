@@ -224,6 +224,85 @@ The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
 
 ---
 
+## 🚨 DEVELOPMENT PHILOSOPHY: DO IT THE RIGHT WAY FIRST 🚨
+
+**THIS IS A CORE PROJECT PRINCIPLE. ALWAYS APPLY IT.**
+
+### The Philosophy
+
+When solving problems, **ALWAYS prioritize doing it the RIGHT way over doing it the least disruptive way.**
+
+### What This Means
+
+❌ **WRONG APPROACH** - Optimizing for backward compatibility at the expense of code quality:
+- Creating translation layers to avoid changing existing code
+- Adding complex marshalling/routing logic to preserve old interfaces
+- Building elaborate compatibility wrappers around new libraries
+- Choosing "least breaking" over "most correct"
+
+✅ **RIGHT APPROACH** - Prioritizing correctness and simplicity:
+- Using libraries and tools as they were designed to be used
+- Refactoring existing code to adopt better patterns
+- Embracing breaking changes when they lead to cleaner solutions
+- Choosing "most correct" over "least effort"
+
+### Why This Matters
+
+**Choosing backward compatibility over correctness leads to:**
+- ✗ Unnecessary complexity in the codebase
+- ✗ More code to maintain and test
+- ✗ Harder debugging when things go wrong
+- ✗ Technical debt that compounds over time
+- ✗ Confusion for future developers about "why is it done this way?"
+
+**Choosing correctness leads to:**
+- ✓ Simpler, more maintainable code
+- ✓ Patterns that align with documentation and best practices
+- ✓ Easier onboarding for new developers
+- ✓ Less code overall (deletion is better than addition)
+- ✓ Solutions that are obvious in retrospect
+
+### Real-World Example: ElectroDB Migration
+
+**WRONG (what was initially done)**:
+```typescript
+// Created elaborate DynamoDB wrapper that translates old calls to ElectroDB
+// Added complex table routing logic
+// Each Lambda still used old DynamoDB wrapper API
+// Result: 3 layers of indirection, env var routing complexity, messy marshalling
+```
+
+**RIGHT (what should have been done)**:
+```typescript
+// Import ElectroDB entities directly in each Lambda
+import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
+
+// Use ElectroDB naturally
+const file = await Files.get({fileId}).go()
+
+// Result: Clean, direct, obvious. Each Lambda references only tables it uses.
+```
+
+### Application Guidelines
+
+1. **When adopting a new library**: Use it as designed, don't wrap it to mimic the old one
+2. **When refactoring**: Change the consumers, don't add compatibility layers
+3. **When facing breaking changes**: Embrace them if they lead to better code
+4. **When in doubt**: Ask "What would the library author recommend?" not "What changes the least code?"
+
+### Enforcement
+
+Before implementing a solution, ask yourself:
+
+1. ✅ Am I using this library/pattern as it was designed?
+2. ✅ Would a new developer looking at this code understand it without archaeology?
+3. ✅ Am I adding indirection to avoid changing existing code?
+4. ✅ Is this the simplest correct solution, or the simplest backward-compatible solution?
+
+**If your answers reveal you're optimizing for backward compatibility over correctness, STOP and redesign.**
+
+---
+
 ### Workflow
 - **Format code automatically**: Run `npm run format` to auto-format all code with Prettier (250 char line width)
 - Be sure to typecheck when you're done making a series of code changes

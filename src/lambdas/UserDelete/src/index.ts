@@ -1,7 +1,9 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {Users} from '../../../lib/vendor/ElectroDB/entities/Users'
+import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
+import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
+import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers'
-import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {deleteDevice, getUserDevices} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
@@ -10,33 +12,29 @@ import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
-  const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
-  logDebug('deleteUserFiles <=', params)
-  const response = await updateItem(params)
+  logDebug('deleteUserFiles <=', userId)
+  const response = await UserFiles.delete({userId}).go()
   logDebug('deleteUserFiles =>', response)
 }
 
-async function deleteUser(deviceId: string): Promise<void> {
-  const params = deleteUserParams(process.env.DynamoDBTableUsers as string, deviceId)
-  logDebug('deleteUser <=', params)
-  const response = await deleteItem(params)
+async function deleteUser(userId: string): Promise<void> {
+  logDebug('deleteUser <=', userId)
+  const response = await Users.delete({userId}).go()
   logDebug('deleteUser =>', response)
 }
 
 async function deleteUserDevices(userId: string): Promise<void> {
-  const params = deleteAllUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId)
-  logDebug('deleteUserDevices <=', params)
-  const response = await deleteItem(params)
+  logDebug('deleteUserDevices <=', userId)
+  const response = await UserDevices.delete({userId}).go()
   logDebug('deleteUserDevices =>', response)
 }
 
 async function getDevice(deviceId: string): Promise<Device> {
-  const params = getDeviceParams(process.env.DynamoDBTableDevices as string, deviceId)
-  logDebug('getDevice <=', params)
-  const response = await query(params)
-  logDebug('getDevice <=', response)
-  if (response && response.Items) {
-    return response.Items[0] as Device
+  logDebug('getDevice <=', deviceId)
+  const response = await Devices.get({deviceId}).go()
+  logDebug('getDevice =>', response)
+  if (response && response.data) {
+    return response.data as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
@@ -58,7 +56,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   const deletableDevices: Device[] = []
   try {
-    const userDevices = await getUserDevices(process.env.DynamoDBTableUserDevices as string, userId)
+    const userDevices = await getUserDevices(userId)
     /* istanbul ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {

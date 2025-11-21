@@ -1,35 +1,26 @@
 import {SQSEvent, Context} from 'aws-lambda'
-import {query} from '../../../lib/vendor/AWS/DynamoDB'
+import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
+import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
 import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
-import {Device, DynamoDBUserDevice, FileNotification} from '../../../types/main'
-import {getUserDeviceByUserIdParams, queryDeviceParams} from '../../../util/dynamodb-helpers'
+import {Device, FileNotification} from '../../../types/main'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns a Device by userId
+ * Returns device IDs for a user
  * @param userId - The UUID of the user
  * @notExported
  */
 async function getUserDevicesByUserId(userId: string): Promise<string[]> {
-  const userParams = getUserDeviceByUserIdParams(process.env.DynamoDBTableUserDevices as string, userId)
-  logDebug('getUserDevicesByUserId <=', userParams)
-  const userResponse = await query(userParams)
+  logDebug('getUserDevicesByUserId <=', userId)
+  const userResponse = await UserDevices.get({userId}).go()
   logDebug('getUserDevicesByUserId =>', userResponse)
-  if (!userResponse || !Array.isArray(userResponse.Items)) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  if (userResponse.Items.length === 0) {
+  if (!userResponse || !userResponse.data) {
     return []
   }
-  // There will always be 1 result (if the user has a device); but with the possibility of multiple devices
-  const userDevice = userResponse.Items[0] as DynamoDBUserDevice
-  logDebug('userDevice', userDevice)
-  const userDeviceSet = userDevice.devices as Set<string>
-  logDebug('userDevice.devices.values', userDeviceSet.values())
-  return Array.from(userDeviceSet.values())
+  return userResponse.data.devices || []
 }
 
 /**
@@ -38,12 +29,11 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
  * @notExported
  */
 async function getDevice(deviceId: string): Promise<Device> {
-  const params = queryDeviceParams(process.env.DynamoDBTableDevices as string, deviceId)
-  logDebug('getDevice <=', params)
-  const response = await query(params)
+  logDebug('getDevice <=', deviceId)
+  const response = await Devices.get({deviceId}).go()
   logDebug('getDevice =>', response)
-  if (response && response.Items && response.Items.length > 0) {
-    return response.Items[0] as Device
+  if (response && response.data) {
+    return response.data as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
