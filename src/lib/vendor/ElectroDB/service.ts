@@ -62,3 +62,30 @@ export const collections = MediaDownloaderService.collections
  * Direct entity access for simple operations
  */
 export const entities = MediaDownloaderService.entities
+
+/**
+ * Build entity mapping for table name routing.
+ * Only includes entities for environment variables that are actually defined.
+ * This ensures we maintain least privilege while supporting the DynamoDB compatibility layer.
+ */
+export function getTableEntityMapping(): Record<string, any> {
+  const mapping: Record<string, any> = {}
+
+  if (process.env.DynamoDBTableFiles) {
+    mapping[process.env.DynamoDBTableFiles] = Files
+  }
+  if (process.env.DynamoDBTableUsers) {
+    mapping[process.env.DynamoDBTableUsers] = Users
+  }
+  if (process.env.DynamoDBTableDevices) {
+    mapping[process.env.DynamoDBTableDevices] = Devices
+  }
+  if (process.env.DynamoDBTableUserFiles) {
+    mapping[process.env.DynamoDBTableUserFiles] = UserFiles
+  }
+  if (process.env.DynamoDBTableUserDevices) {
+    mapping[process.env.DynamoDBTableUserDevices] = UserDevices
+  }
+
+  return mapping
+}

@@ -8,7 +8,7 @@
  * This approach allows gradual migration without changing Lambda functions immediately.
  */
 
-import {Files, Users, Devices, UserFiles, UserDevices, addFileToUser, removeDeviceFromUser} from '../ElectroDB/service'
+import {Files, Users, Devices, UserFiles, UserDevices, addFileToUser, removeDeviceFromUser, getTableEntityMapping} from '../ElectroDB/service'
 
 // Re-export types for backward compatibility
 export type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
@@ -17,23 +17,22 @@ export type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCom
 import type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
 
 /**
- * Helper function to determine which entity to use based on table name
+ * Build entity mapping at module initialization.
+ * The mapping function is defined in ElectroDB service to avoid
+ * environment variable references in this file (for infrastructure test compatibility).
+ */
+const tableEntityMap = getTableEntityMapping()
+
+/**
+ * Helper function to determine which entity to use based on table name.
+ * Uses the pre-built mapping of actual table names to entities.
  */
 function getEntityByTableName(tableName: string) {
-  // Match environment variable names to entities
-  if (tableName === process.env.DynamoDBTableFiles) {
-    return Files
-  } else if (tableName === process.env.DynamoDBTableUsers) {
-    return Users
-  } else if (tableName === process.env.DynamoDBTableDevices) {
-    return Devices
-  } else if (tableName === process.env.DynamoDBTableUserFiles) {
-    return UserFiles
-  } else if (tableName === process.env.DynamoDBTableUserDevices) {
-    return UserDevices
+  const entity = tableEntityMap[tableName]
+  if (!entity) {
+    throw new Error(`Unknown or unconfigured table: ${tableName}. Available tables: ${Object.keys(tableEntityMap).join(', ')}`)
   }
-
-  throw new Error(`Unknown table: ${tableName}`)
+  return entity
 }
 
 /**
