@@ -186,26 +186,38 @@ resource "null_resource" "DownloadYtDlpBinary" {
 
       VERSION="${trimspace(file("${path.module}/../layers/yt-dlp/VERSION"))}"
       LAYER_BIN_DIR="${path.module}/../layers/yt-dlp/bin"
-      BINARY_PATH="$${LAYER_BIN_DIR}/yt-dlp_linux"
+      BINARY_NAME="yt-dlp_linux"
 
       echo "Downloading yt-dlp $${VERSION}..."
       mkdir -p "$${LAYER_BIN_DIR}"
 
-      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/yt-dlp_linux" -O "$${BINARY_PATH}"
+      wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/$${BINARY_NAME}" -O "$${LAYER_BIN_DIR}/$${BINARY_NAME}"
       wget -q "https://github.com/yt-dlp/yt-dlp/releases/download/$${VERSION}/SHA2-256SUMS" -O /tmp/yt-dlp-SHA2-256SUMS
 
       echo "Verifying checksum..."
       cd "$${LAYER_BIN_DIR}"
-      grep "yt-dlp_linux$" /tmp/yt-dlp-SHA2-256SUMS | sha256sum --check --status
+      if command -v shasum >/dev/null 2>&1; then
+        grep "$${BINARY_NAME}$" /tmp/yt-dlp-SHA2-256SUMS | shasum -a 256 -c -s
+      elif sha256sum --version 2>&1 | grep -q GNU; then
+        grep "$${BINARY_NAME}$" /tmp/yt-dlp-SHA2-256SUMS | sha256sum --check --status
+      else
+        echo "ERROR: No compatible checksum utility found (shasum or GNU sha256sum)"
+        exit 1
+      fi
 
       echo "Making binary executable..."
-      chmod +x "$${BINARY_PATH}"
+      chmod +x "$${BINARY_NAME}"
 
-      echo "Testing binary..."
-      BINARY_VERSION=$("$${BINARY_PATH}" --version)
-      if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
-        echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
-        exit 1
+      if [ "$(uname -s)" = "Linux" ]; then
+        echo "Testing binary..."
+        BINARY_VERSION=$(./"$${BINARY_NAME}" --version)
+        if [ "$${BINARY_VERSION}" != "$${VERSION}" ]; then
+          echo "ERROR: Binary version mismatch (expected: $${VERSION}, got: $${BINARY_VERSION})"
+          exit 1
+        fi
+        echo "✅ Binary version verified: $${BINARY_VERSION}"
+      else
+        echo "⏭️  Skipping binary test (Linux binary, non-Linux host)"
       fi
 
       rm -f /tmp/yt-dlp-SHA2-256SUMS
