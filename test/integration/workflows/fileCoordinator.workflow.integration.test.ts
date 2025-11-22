@@ -55,7 +55,7 @@ function createScheduledEvent(eventId: string): ScheduledEvent {
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
   await insertFile({
     fileId,
-    status: FileStatus.PendingMetadata,
+    status: FileStatus.PendingDownload,
     availableAt,
     title: title || `Test Video ${fileId}`
   })

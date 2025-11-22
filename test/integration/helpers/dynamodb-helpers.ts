@@ -11,34 +11,83 @@ import {FileStatus} from '../../../src/types/enums'
 
 const dynamoDBClient = createDynamoDBClient()
 
-// Table names from environment
-function getFilesTable() {
-  return process.env.DynamoDBTableFiles || 'test-files'
-}
-
-function getUsersTable() {
-  return process.env.DynamoDBTableUsers || 'test-users'
-}
-
-function getUserFilesTable() {
-  return process.env.DynamoDBTableUserFiles || 'test-user-files'
+function getMediaDownloaderTable() {
+  return process.env.DynamoDBTableName || 'test-media-downloader'
 }
 
 /**
- * Create test Files table in LocalStack
+ * Create MediaDownloader table in LocalStack with single-table design
+ * Matches production Terraform configuration with pk/sk and 5 GSIs
  */
-export async function createFilesTable(): Promise<void> {
+export async function createMediaDownloaderTable(): Promise<void> {
   try {
     await dynamoDBClient.send(
       new CreateTableCommand({
-        TableName: getFilesTable(),
-        KeySchema: [{AttributeName: 'fileId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'fileId', AttributeType: 'S'}],
+        TableName: getMediaDownloaderTable(),
+        KeySchema: [
+          {AttributeName: 'pk', KeyType: 'HASH'},
+          {AttributeName: 'sk', KeyType: 'RANGE'}
+        ],
+        AttributeDefinitions: [
+          {AttributeName: 'pk', AttributeType: 'S'},
+          {AttributeName: 'sk', AttributeType: 'S'},
+          {AttributeName: 'gsi1pk', AttributeType: 'S'},
+          {AttributeName: 'gsi1sk', AttributeType: 'S'},
+          {AttributeName: 'gsi2pk', AttributeType: 'S'},
+          {AttributeName: 'gsi2sk', AttributeType: 'S'},
+          {AttributeName: 'gsi3pk', AttributeType: 'S'},
+          {AttributeName: 'gsi3sk', AttributeType: 'S'},
+          {AttributeName: 'gsi4pk', AttributeType: 'S'},
+          {AttributeName: 'gsi4sk', AttributeType: 'S'},
+          {AttributeName: 'gsi5pk', AttributeType: 'S'},
+          {AttributeName: 'gsi5sk', AttributeType: 'S'}
+        ],
+        GlobalSecondaryIndexes: [
+          {
+            IndexName: 'UserCollection',
+            KeySchema: [
+              {AttributeName: 'gsi1pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
+            ],
+            Projection: {ProjectionType: 'ALL'}
+          },
+          {
+            IndexName: 'FileCollection',
+            KeySchema: [
+              {AttributeName: 'gsi2pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
+            ],
+            Projection: {ProjectionType: 'ALL'}
+          },
+          {
+            IndexName: 'DeviceCollection',
+            KeySchema: [
+              {AttributeName: 'gsi3pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
+            ],
+            Projection: {ProjectionType: 'ALL'}
+          },
+          {
+            IndexName: 'StatusIndex',
+            KeySchema: [
+              {AttributeName: 'gsi4pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
+            ],
+            Projection: {ProjectionType: 'ALL'}
+          },
+          {
+            IndexName: 'KeyIndex',
+            KeySchema: [
+              {AttributeName: 'gsi5pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
+            ],
+            Projection: {ProjectionType: 'ALL'}
+          }
+        ],
         BillingMode: 'PAY_PER_REQUEST'
       })
     )
   } catch (error) {
-    // Table might already exist
     if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
       throw error
     }
@@ -46,79 +95,30 @@ export async function createFilesTable(): Promise<void> {
 }
 
 /**
- * Create test Users table in LocalStack
+ * Delete MediaDownloader table from LocalStack
  */
-export async function createUsersTable(): Promise<void> {
+export async function deleteMediaDownloaderTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getUsersTable(),
-        KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
-  } catch (error) {
-    // Table might already exist
-    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
-      throw error
-    }
-  }
-}
-
-/**
- * Create test UserFiles table in LocalStack
- */
-export async function createUserFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getUserFilesTable(),
-        KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
-  } catch (error) {
-    // Table might already exist
-    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
-      throw error
-    }
-  }
-}
-
-/**
- * Delete test Files table from LocalStack
- */
-export async function deleteFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getFilesTable()}))
+    await dynamoDBClient.send(new DeleteTableCommand({TableName: getMediaDownloaderTable()}))
   } catch (error) {
     // Table might not exist
   }
 }
 
 /**
- * Delete test Users table from LocalStack
+ * Legacy aliases for backward compatibility - these call the new single-table functions
+ * @deprecated Use createMediaDownloaderTable instead
  */
-export async function deleteUsersTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUsersTable()}))
-  } catch (error) {
-    // Table might not exist
-  }
-}
+export const createFilesTable = createMediaDownloaderTable
+export const createUsersTable = createMediaDownloaderTable
+export const createUserFilesTable = createMediaDownloaderTable
 
 /**
- * Delete test UserFiles table from LocalStack
+ * @deprecated Use deleteMediaDownloaderTable instead
  */
-export async function deleteUserFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUserFilesTable()}))
-  } catch (error) {
-    // Table might not exist
-  }
-}
+export const deleteFilesTable = deleteMediaDownloaderTable
+export const deleteUsersTable = deleteMediaDownloaderTable
+export const deleteUserFilesTable = deleteMediaDownloaderTable
 
 /**
  * Insert a file record into DynamoDB using ElectroDB
@@ -165,7 +165,7 @@ export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | n
 export async function scanAllFiles(): Promise<Partial<DynamoDBFile>[]> {
   const response = await dynamoDBClient.send(
     new ScanCommand({
-      TableName: getFilesTable()
+      TableName: getMediaDownloaderTable()
     })
   )
 
