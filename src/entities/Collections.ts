@@ -1,5 +1,4 @@
-import {Service} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createService, documentClient} from '../lib/vendor/ElectroDB/service'
 import {Files} from './Files'
 import {Users} from './Users'
 import {Devices} from './Devices'
@@ -23,7 +22,7 @@ import {UserDevices} from './UserDevices'
  * // Efficient JOIN query
  * const result = await collections.userWithFiles({userId}).go()
  */
-export const MediaDownloaderService = new Service(
+export const MediaDownloaderService = createService(
   {
     files: Files,
     users: Users,
@@ -32,7 +31,7 @@ export const MediaDownloaderService = new Service(
     userDevices: UserDevices
   },
   {
-    client: documentClient as any,
+    client: documentClient,
     table: process.env.DynamoDBTableName || 'MediaDownloader'
   }
 )

@@ -1,11 +1,10 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Devices DynamoDB table.
  * This entity manages device registrations for push notifications.
  */
-export const Devices = new Entity(
+export const Devices = createEntity(
   {
     model: {
       entity: 'Device',

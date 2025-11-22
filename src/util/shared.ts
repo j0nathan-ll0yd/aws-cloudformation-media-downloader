@@ -108,7 +108,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   }
 
   // Filter in memory since we can't query on nested identity provider field
-  const usersWithAppleId = scanResponse.data.filter((user) => user.identityProviders.userId === userDeviceId)
+  const usersWithAppleId = scanResponse.data.filter((user: any) => user.identityProviders.userId === userDeviceId)
   return usersWithAppleId as User[]
 }
 

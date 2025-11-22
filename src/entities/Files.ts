@@ -1,11 +1,10 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Files DynamoDB table.
  * This entity manages media file metadata and download status.
  */
-export const Files = new Entity(
+export const Files = createEntity(
   {
     model: {
       entity: 'File',

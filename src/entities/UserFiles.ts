@@ -1,12 +1,11 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the UserFiles DynamoDB table.
  * This entity manages the many-to-many relationship between users and files.
  * Uses a DynamoDB Set to store multiple fileIds per user.
  */
-export const UserFiles = new Entity(
+export const UserFiles = createEntity(
   {
     model: {
       entity: 'UserFile',

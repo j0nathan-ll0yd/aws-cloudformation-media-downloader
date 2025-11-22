@@ -1,12 +1,11 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the UserDevices DynamoDB table.
  * This entity manages the many-to-many relationship between users and devices.
  * Uses a DynamoDB Set to store multiple deviceIds per user.
  */
-export const UserDevices = new Entity(
+export const UserDevices = createEntity(
   {
     model: {
       entity: 'UserDevice',

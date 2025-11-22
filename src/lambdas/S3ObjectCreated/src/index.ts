@@ -33,8 +33,8 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
   logDebug('scan for users with file <=', file.fileId)
   const scanResponse = await UserFiles.scan.go()
   logDebug('scan for users with file =>', scanResponse)
-  const userFiles = scanResponse.data.filter((userFile) => userFile.fileId?.includes(file.fileId))
-  return userFiles.map((userFile) => userFile.userId)
+  const userFiles = scanResponse.data.filter((userFile: any) => userFile.fileId?.includes(file.fileId))
+  return userFiles.map((userFile: any) => userFile.userId)
 }
 
 /**

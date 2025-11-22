@@ -1,11 +1,10 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/AWS/DynamoDB'
+import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Users DynamoDB table.
  * This entity manages user accounts and identity provider information.
  */
-export const Users = new Entity(
+export const Users = createEntity(
   {
     model: {
       entity: 'User',
