@@ -13,8 +13,12 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
-  const response = await UserFiles.delete({userId}).go()
-  logDebug('deleteUserFiles =>', response)
+  const userFiles = await UserFiles.query.byUser({userId}).go()
+  if (userFiles.data && userFiles.data.length > 0) {
+    const deletePromises = userFiles.data.map((userFile) => UserFiles.delete({userId: userFile.userId, fileId: userFile.fileId}).go())
+    await Promise.all(deletePromises)
+  }
+  logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
 }
 
 async function deleteUser(userId: string): Promise<void> {
@@ -25,8 +29,12 @@ async function deleteUser(userId: string): Promise<void> {
 
 async function deleteUserDevices(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
-  const response = await UserDevices.delete({userId}).go()
-  logDebug('deleteUserDevices =>', response)
+  const userDevices = await UserDevices.query.byUser({userId}).go()
+  if (userDevices.data && userDevices.data.length > 0) {
+    const deletePromises = userDevices.data.map((userDevice) => UserDevices.delete({userId: userDevice.userId, deviceId: userDevice.deviceId}).go())
+    await Promise.all(deletePromises)
+  }
+  logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
 }
 
 async function getDevice(deviceId: string): Promise<Device> {
@@ -60,13 +68,9 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     /* istanbul ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
-      for (const row of userDevices) {
-        const devicesSet = row.devices as Set<string>
-        const devices = Array.from(devicesSet.values()) as string[]
-        for (const deviceId of devices) {
-          const device = await getDevice(deviceId)
-          deletableDevices.push(device)
-        }
+      for (const userDevice of userDevices) {
+        const device = await getDevice(userDevice.deviceId)
+        deletableDevices.push(device)
       }
     }
   } catch (error) {

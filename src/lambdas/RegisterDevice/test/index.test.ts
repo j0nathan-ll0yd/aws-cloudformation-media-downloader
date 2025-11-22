@@ -11,12 +11,10 @@ jest.unstable_mockModule('../../../entities/Devices', () => ({
   }
 }))
 
-const userDevicesUpdateGoMock = jest.fn<() => Promise<{data: unknown}>>()
+const userDevicesCreateGoMock = jest.fn<() => Promise<{data: unknown}>>()
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: {
-    update: jest.fn(() => ({
-      add: jest.fn(() => ({go: userDevicesUpdateGoMock}))
-    }))
+    create: jest.fn(() => ({go: userDevicesCreateGoMock}))
   }
 }))
 
@@ -55,7 +53,7 @@ describe('#RegisterDevice', () => {
     event = JSON.parse(JSON.stringify(eventMock))
     getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
     devicesUpsertMock.mockResolvedValue({data: {}})
-    userDevicesUpdateGoMock.mockResolvedValue({data: {}})
+    userDevicesCreateGoMock.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'

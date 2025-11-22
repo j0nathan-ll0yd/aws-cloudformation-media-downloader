@@ -1,11 +1,15 @@
-import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for the UserDevices DynamoDB table.
+ * ElectroDB entity schema for the UserDevices relationship.
  * This entity manages the many-to-many relationship between users and devices.
- * Uses a DynamoDB Set to store multiple deviceIds per user.
+ * Each record represents a single user-device association (not a Set).
+ *
+ * Single-table design enables bidirectional queries via collections:
+ * - UserCollection (gsi1): Query all devices for a user
+ * - DeviceCollection (gsi3): Query all users for a device
  */
-export const UserDevices = createEntity(
+export const UserDevices = new Entity(
   {
     model: {
       entity: 'UserDevice',
@@ -18,24 +22,49 @@ export const UserDevices = createEntity(
         required: true,
         readOnly: true
       },
-      devices: {
-        type: 'set',
-        items: 'string',
-        required: false,
-        default: []
+      deviceId: {
+        type: 'string',
+        required: true,
+        readOnly: true
       }
     },
     indexes: {
       primary: {
         pk: {
-          field: 'userId',
+          field: 'pk',
+          composite: ['userId', 'deviceId']
+        },
+        sk: {
+          field: 'sk',
+          composite: []
+        }
+      },
+      byUser: {
+        index: 'UserCollection',
+        pk: {
+          field: 'gsi1pk',
+          composite: ['userId']
+        },
+        sk: {
+          field: 'gsi1sk',
+          composite: ['deviceId']
+        }
+      },
+      byDevice: {
+        index: 'DeviceCollection',
+        pk: {
+          field: 'gsi3pk',
+          composite: ['deviceId']
+        },
+        sk: {
+          field: 'gsi3sk',
           composite: ['userId']
         }
       }
     }
-  },
+  } as const,
   {
-    table: process.env.DynamoDBTableUserDevices,
+    table: process.env.DynamoDBTableName,
     client: documentClient
   }
 )

@@ -66,13 +66,12 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 
 async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
   logDebug('getUserIdsByDeviceId <=', deviceId)
-  const response = await UserDevices.scan.go()
+  const response = await UserDevices.query.byDevice({deviceId}).go()
   logDebug('getUserIdsByDeviceId =>', response)
   if (!response || !response.data) {
     return []
   }
-  const userDevicesWithDevice = response.data.filter((userDevice) => userDevice.devices?.includes(deviceId))
-  return userDevicesWithDevice.map((userDevice) => userDevice.userId)
+  return response.data.map((userDevice) => userDevice.userId)
 }
 
 /**

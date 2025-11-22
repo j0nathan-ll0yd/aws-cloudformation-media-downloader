@@ -1,10 +1,10 @@
-import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Devices DynamoDB table.
  * This entity manages device registrations for push notifications.
  */
-export const Devices = createEntity(
+export const Devices = new Entity(
   {
     model: {
       entity: 'Device',
@@ -41,14 +41,18 @@ export const Devices = createEntity(
     indexes: {
       primary: {
         pk: {
-          field: 'deviceId',
+          field: 'pk',
           composite: ['deviceId']
+        },
+        sk: {
+          field: 'sk',
+          composite: []
         }
       }
     }
-  },
+  } as const,
   {
-    table: process.env.DynamoDBTableDevices,
+    table: process.env.DynamoDBTableName,
     client: documentClient
   }
 )

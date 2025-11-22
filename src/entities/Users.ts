@@ -1,10 +1,10 @@
-import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Users DynamoDB table.
  * This entity manages user accounts and identity provider information.
  */
-export const Users = createEntity(
+export const Users = new Entity(
   {
     model: {
       entity: 'User',
@@ -76,14 +76,18 @@ export const Users = createEntity(
     indexes: {
       primary: {
         pk: {
-          field: 'userId',
+          field: 'pk',
           composite: ['userId']
+        },
+        sk: {
+          field: 'sk',
+          composite: []
         }
       }
     }
-  },
+  } as const,
   {
-    table: process.env.DynamoDBTableUsers,
+    table: process.env.DynamoDBTableName,
     client: documentClient
   }
 )

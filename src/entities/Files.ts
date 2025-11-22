@@ -1,10 +1,11 @@
-import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity} from 'electrodb'
+import {documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Files DynamoDB table.
  * This entity manages media file metadata and download status.
  */
-export const Files = createEntity(
+export const Files = new Entity(
   {
     model: {
       entity: 'File',
@@ -67,32 +68,40 @@ export const Files = createEntity(
     indexes: {
       primary: {
         pk: {
-          field: 'fileId',
-          composite: ['fileId']
+          field: 'pk',
+          composite: ['fileId'] as const
+        },
+        sk: {
+          field: 'sk',
+          composite: [] as const
         }
       },
       byStatus: {
-        index: 'gsi1',
+        index: 'StatusIndex',
         pk: {
-          field: 'gsi1pk',
-          composite: ['status']
+          field: 'gsi4pk',
+          composite: ['status'] as const
         },
         sk: {
-          field: 'gsi1sk',
-          composite: ['availableAt']
+          field: 'gsi4sk',
+          composite: ['availableAt'] as const
         }
       },
       byKey: {
-        index: 'gsi2',
+        index: 'KeyIndex',
         pk: {
-          field: 'gsi2pk',
-          composite: ['key']
+          field: 'gsi5pk',
+          composite: ['key'] as const
+        },
+        sk: {
+          field: 'sk',
+          composite: [] as const
         }
       }
     }
-  },
+  } as const,
   {
-    table: process.env.DynamoDBTableFiles,
+    table: process.env.DynamoDBTableName,
     client: documentClient
   }
 )

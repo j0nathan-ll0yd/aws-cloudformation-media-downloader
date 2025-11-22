@@ -6,19 +6,21 @@ import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of filesIds that are ready to be downloaded
+ * Returns an array of fileIds that are ready to be downloaded
+ * Uses StatusIndex GSI to efficiently query PendingDownload files
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
-  logDebug('Scanning for files ready to be downloaded')
-  const scanResponse = await Files.scan
+  logDebug('Querying for files ready to be downloaded')
+  const queryResponse = await Files.query
+    .byStatus({status: 'PendingDownload'})
     .where(({availableAt}, {lte}) => lte(availableAt, Date.now()))
     .where(({url}, {notExists}) => notExists(url))
     .go()
-  logDebug('getFilesToBeDownloaded =>', scanResponse)
-  if (!scanResponse || !scanResponse.data) {
+  logDebug('getFilesToBeDownloaded =>', queryResponse)
+  if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.data.map((file) => file.fileId)
+  return queryResponse.data.map((file) => file.fileId)
 }
 
 /**

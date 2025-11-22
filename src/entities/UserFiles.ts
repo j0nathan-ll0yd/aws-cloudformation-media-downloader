@@ -1,11 +1,15 @@
-import {createEntity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for the UserFiles DynamoDB table.
+ * ElectroDB entity schema for the UserFiles relationship.
  * This entity manages the many-to-many relationship between users and files.
- * Uses a DynamoDB Set to store multiple fileIds per user.
+ * Each record represents a single user-file association (not a Set).
+ *
+ * Single-table design enables bidirectional queries via collections:
+ * - UserCollection (gsi1): Query all files for a user
+ * - FileCollection (gsi2): Query all users for a file
  */
-export const UserFiles = createEntity(
+export const UserFiles = new Entity(
   {
     model: {
       entity: 'UserFile',
@@ -19,23 +23,48 @@ export const UserFiles = createEntity(
         readOnly: true
       },
       fileId: {
-        type: 'set',
-        items: 'string',
-        required: false,
-        default: []
+        type: 'string',
+        required: true,
+        readOnly: true
       }
     },
     indexes: {
       primary: {
         pk: {
-          field: 'userId',
+          field: 'pk',
+          composite: ['userId', 'fileId']
+        },
+        sk: {
+          field: 'sk',
+          composite: []
+        }
+      },
+      byUser: {
+        index: 'UserCollection',
+        pk: {
+          field: 'gsi1pk',
+          composite: ['userId']
+        },
+        sk: {
+          field: 'gsi1sk',
+          composite: ['fileId']
+        }
+      },
+      byFile: {
+        index: 'FileCollection',
+        pk: {
+          field: 'gsi2pk',
+          composite: ['fileId']
+        },
+        sk: {
+          field: 'gsi2sk',
           composite: ['userId']
         }
       }
     }
-  },
+  } as const,
   {
-    table: process.env.DynamoDBTableUserFiles,
+    table: process.env.DynamoDBTableName,
     client: documentClient
   }
 )

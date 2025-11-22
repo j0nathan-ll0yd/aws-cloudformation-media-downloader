@@ -49,9 +49,8 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = {
-      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
-      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
     }
   }
 }
@@ -62,11 +61,13 @@ resource "aws_iam_role" "S3ObjectCreatedRole" {
 }
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
+  # Query KeyIndex to find file by S3 object key
+  # Query FileCollection to find users associated with the file
   statement {
-    actions = ["dynamodb:Scan"]
+    actions = ["dynamodb:Query"]
     resources = [
-      aws_dynamodb_table.Files.arn,
-      aws_dynamodb_table.UserFiles.arn
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/KeyIndex",
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/FileCollection"
     ]
   }
   statement {

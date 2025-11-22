@@ -10,16 +10,14 @@ import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
 /**
- * Disassociates a deviceId from a User using atomic set deletion
+ * Disassociates a deviceId from a User by deleting the UserDevice record
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
  * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   logDebug('deleteUserDevice <=', {userId, deviceId})
-  const response = await UserDevices.update({userId})
-    .delete({devices: [deviceId]})
-    .go()
+  const response = await UserDevices.delete({userId, deviceId}).go()
   logDebug('deleteUserDevice =>', response)
 }
 
@@ -42,24 +40,19 @@ export async function deleteDevice(device: Device): Promise<void> {
 
 /**
  * Queries a user's device parameters from DynamoDB
+ * Returns array of UserDevice records (one per device association)
  * @param userId - The userId
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
  */
 export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice[]> {
   logDebug('getUserDevices <=', userId)
-  const response = await UserDevices.get({userId}).go()
+  const response = await UserDevices.query.byUser({userId}).go()
   logDebug('getUserDevices =>', response)
   if (!response || !response.data) {
     return []
   }
-
-  // Convert devices array to Set for compatibility with existing code
-  const userDevice = {
-    ...response.data,
-    devices: new Set(response.data.devices || [])
-  }
-  return [userDevice as DynamoDBUserDevice]
+  return response.data as DynamoDBUserDevice[]
 }
 
 /**

@@ -15,15 +15,14 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Associates a File to a User in DynamoDB using atomic set addition
+ * Associates a File to a User by creating a UserFile record
+ * Creates individual record for the user-file relationship
  * @param fileId - The unique file identifier
  * @param userId - The UUID of the user
  */
 export async function associateFileToUser(fileId: string, userId: string) {
   logDebug('associateFileToUser <=', {fileId, userId})
-  const response = await UserFiles.update({userId})
-    .add({fileId: [fileId]})
-    .go()
+  const response = await UserFiles.create({userId, fileId}).go()
   logDebug('associateFileToUser =>', response)
   return response
 }

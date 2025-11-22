@@ -4,9 +4,10 @@ resource "aws_iam_role" "LoginUserRole" {
 }
 
 data "aws_iam_policy_document" "LoginUser" {
+  # Scan base table to find user by Apple ID (no GSI for nested field)
   statement {
     actions   = ["dynamodb:Scan"]
-    resources = [aws_dynamodb_table.Users.arn]
+    resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
 }
 
@@ -64,7 +65,7 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      DynamoDBTableUsers     = aws_dynamodb_table.Users.name
+      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
       PlatformEncryptionKey  = data.sops_file.secrets.data["platform.key"]
       SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
       SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]

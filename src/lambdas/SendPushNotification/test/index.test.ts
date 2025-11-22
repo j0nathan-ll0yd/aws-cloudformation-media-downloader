@@ -4,35 +4,28 @@ import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-const getUserDevicesByUserIdResponse = {
-  Items: [
-    {
-      devices: new Set([fakeDeviceId]),
-      userId: fakeUserId
-    }
-  ],
-  Count: 1,
-  ScannedCount: 1
-}
+const getUserDevicesByUserIdResponse = [
+  {
+    deviceId: fakeDeviceId,
+    userId: fakeUserId
+  }
+]
 
 const getDeviceResponse = {
-  Items: [
-    {
-      deviceId: fakeDeviceId,
-      token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
-      systemName: 'iOS',
-      userId: fakeUserId
-    }
-  ],
-  Count: 1,
-  ScannedCount: 1
+  deviceId: fakeDeviceId,
+  token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
+  systemName: 'iOS',
+  endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
 }
 
-const userDevicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const userDevicesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
+const userDevicesQueryByUserMock = jest.fn(() => ({go: userDevicesQueryByUserGoMock}))
 const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: {
-    get: jest.fn(() => ({go: userDevicesGetMock}))
+    query: {
+      byUser: userDevicesQueryByUserMock
+    }
   }
 }))
 jest.unstable_mockModule('../../../entities/Devices', () => ({
@@ -55,15 +48,15 @@ describe('#SendPushNotification', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
   test('should send a notification for each user device', async () => {
-    userDevicesGetMock.mockResolvedValue({data: getUserDevicesByUserIdResponse.Items[0]})
-    devicesGetMock.mockResolvedValue({data: getDeviceResponse.Items[0]})
+    userDevicesQueryByUserGoMock.mockResolvedValue({data: getUserDevicesByUserIdResponse})
+    devicesGetMock.mockResolvedValue({data: getDeviceResponse})
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
   })
   test('should exit gracefully if no devices exist', async () => {
-    userDevicesGetMock.mockResolvedValue({data: undefined})
+    userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
@@ -71,18 +64,18 @@ describe('#SendPushNotification', () => {
   test('should exit if its a different notification type', async () => {
     const modifiedEvent = event
     modifiedEvent.Records[0].body = 'OtherNotification'
-    const notificationsSent = await handler(modifiedEvent, testContext)
+    const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
-    test('ElectroDB UserDevices.get returns no data', async () => {
-      userDevicesGetMock.mockResolvedValue({data: undefined})
+    test('ElectroDB UserDevices.query returns no data', async () => {
+      userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
     })
     test('ElectroDB Devices.get fails', async () => {
-      userDevicesGetMock.mockResolvedValue({data: getUserDevicesByUserIdResponse.Items[0]})
+      userDevicesQueryByUserGoMock.mockResolvedValue({data: getUserDevicesByUserIdResponse})
       devicesGetMock.mockResolvedValue(undefined)
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()

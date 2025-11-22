@@ -17,6 +17,13 @@ interface ElectroDBEntityMock<TData> {
       go: jest.Mock
       where: jest.Mock
     }
+    query: {
+      byUser?: jest.Mock
+      byFile?: jest.Mock
+      byDevice?: jest.Mock
+      byStatus?: jest.Mock
+      byKey?: jest.Mock
+    }
     create: jest.Mock
     update: jest.Mock
     delete: jest.Mock
@@ -32,6 +39,28 @@ interface ElectroDBEntityMock<TData> {
     scan: {
       go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
       where: jest.Mock
+    }
+    query: {
+      byUser?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byFile?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byDevice?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byStatus?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byKey?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
     }
     create: jest.Mock<() => Promise<{data: TData}>>
     update: {
@@ -50,16 +79,19 @@ interface ElectroDBEntityMock<TData> {
  * Supports all common ElectroDB operations:
  * - get: Entity.get({key}).go()
  * - scan: Entity.scan().go() or Entity.scan().where(...).go()
+ * - query: Entity.query.byIndex({key}).go() or Entity.query.byIndex({key}).where(...).go()
  * - create: Entity.create(item).go()
  * - update: Entity.update({key}).set/add/delete({...}).go()
  * - delete: Entity.delete({key}).go()
  *
  * @template TData The type of data this entity returns
+ * @param options Configuration options
+ * @param options.queryIndexes Array of index names to create query mocks for (e.g., ['byUser', 'byFile'])
  * @returns Object with entity mock and individual mock functions
  *
  * @example
- * // Create mock
- * const filesMock = createElectroDBEntityMock<DynamoDBFile>()
+ * // Create mock with query support
+ * const filesMock = createElectroDBEntityMock<DynamoDBFile>({queryIndexes: ['byKey', 'byStatus']})
  *
  * // Use in jest.unstable_mockModule
  * jest.unstable_mockModule('../entities/Files', () => ({
@@ -67,12 +99,14 @@ interface ElectroDBEntityMock<TData> {
  * }))
  *
  * // Setup mock behavior
- * filesMock.mocks.get.mockResolvedValue({data: {fileId: '123', status: 'Downloaded'}})
+ * filesMock.mocks.query.byKey!.go.mockResolvedValue({data: [{fileId: '123', status: 'Downloaded'}]})
  *
  * // Assert in tests
- * expect(filesMock.mocks.get).toHaveBeenCalledTimes(1)
+ * expect(filesMock.mocks.query.byKey!.go).toHaveBeenCalledTimes(1)
  */
-export function createElectroDBEntityMock<TData = unknown>(): ElectroDBEntityMock<TData> {
+export function createElectroDBEntityMock<TData = unknown>(options?: {
+  queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey'>
+}): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go()
   const getMock = jest.fn<() => Promise<{data: TData | undefined} | undefined>>()
   const get = jest.fn(() => ({go: getMock}))
@@ -83,6 +117,30 @@ export function createElectroDBEntityMock<TData = unknown>(): ElectroDBEntityMoc
   const scan = {
     go: scanGoMock,
     where: scanWhereMock
+  }
+
+  // Query operations: Entity.query.byIndex({key}).go() or Entity.query.byIndex({key}).where(...).go()
+  const queryEntity: any = {}
+  const queryMocks: any = {}
+
+  if (options?.queryIndexes) {
+    for (const indexName of options.queryIndexes) {
+      const queryGoMock = jest.fn<() => Promise<{data: TData[]} | undefined>>()
+      const queryWhereMock = jest.fn(() => ({
+        where: queryWhereMock,
+        go: queryGoMock
+      }))
+      const queryIndexMock = jest.fn(() => ({
+        where: queryWhereMock,
+        go: queryGoMock
+      }))
+
+      queryEntity[indexName] = queryIndexMock
+      queryMocks[indexName] = {
+        go: queryGoMock,
+        where: queryWhereMock
+      }
+    }
   }
 
   // Create operation: Entity.create(item).go()
@@ -109,6 +167,7 @@ export function createElectroDBEntityMock<TData = unknown>(): ElectroDBEntityMoc
     entity: {
       get,
       scan,
+      query: queryEntity,
       create,
       update,
       delete: deleteOp
@@ -119,6 +178,7 @@ export function createElectroDBEntityMock<TData = unknown>(): ElectroDBEntityMoc
         go: scanGoMock,
         where: scanWhereMock
       },
+      query: queryMocks,
       create: createGoMock,
       update: {
         go: updateGoMock,

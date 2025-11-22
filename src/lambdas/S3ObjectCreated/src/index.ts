@@ -9,16 +9,16 @@ import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns the DynamoDBFile by file name
- * @param fileName - The name of the DynamoDBFile you're searching for
+ * Returns the DynamoDBFile by S3 object key using KeyIndex GSI
+ * @param fileName - The S3 object key to search for
  * @notExported
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
-  logDebug('scan for file <=', fileName)
-  const scanResponse = await Files.scan.where(({key}, {eq}) => eq(key, fileName)).go()
-  logDebug('scan for file =>', scanResponse)
-  if (scanResponse.data && scanResponse.data.length > 0) {
-    return scanResponse.data[0] as DynamoDBFile
+  logDebug('query file by key <=', fileName)
+  const queryResponse = await Files.query.byKey({key: fileName}).go()
+  logDebug('query file by key =>', queryResponse)
+  if (queryResponse.data && queryResponse.data.length > 0) {
+    return queryResponse.data[0] as DynamoDBFile
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
@@ -26,15 +26,18 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
 
 /**
  * Returns an array of user IDs who have requested a given file
+ * Uses FileCollection GSI for efficient reverse lookup (eliminates full table scan)
  * @param file - The DynamoDBFile you want to search for
  * @notExported
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
-  logDebug('scan for users with file <=', file.fileId)
-  const scanResponse = await UserFiles.scan.go()
-  logDebug('scan for users with file =>', scanResponse)
-  const userFiles = scanResponse.data.filter((userFile: any) => userFile.fileId?.includes(file.fileId))
-  return userFiles.map((userFile: any) => userFile.userId)
+  logDebug('query users by fileId <=', file.fileId)
+  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
+  logDebug('query users by fileId =>', queryResponse)
+  if (!queryResponse.data || queryResponse.data.length === 0) {
+    return []
+  }
+  return queryResponse.data.map((userFile) => userFile.userId)
 }
 
 /**

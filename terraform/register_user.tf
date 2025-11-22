@@ -4,9 +4,14 @@ resource "aws_iam_role" "RegisterUserRole" {
 }
 
 data "aws_iam_policy_document" "RegisterUser" {
+  # Scan base table to find user by Apple ID (no GSI for nested field)
+  # PutItem on base table to create new User
   statement {
-    actions   = ["dynamodb:PutItem", "dynamodb:Scan"]
-    resources = [aws_dynamodb_table.Users.arn]
+    actions = [
+      "dynamodb:Scan",
+      "dynamodb:PutItem"
+    ]
+    resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
 }
 
@@ -64,7 +69,7 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTableUsers     = aws_dynamodb_table.Users.name
+      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
       PlatformEncryptionKey  = data.sops_file.secrets.data["platform.key"]
       SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
       SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
@@ -95,15 +100,3 @@ resource "aws_api_gateway_integration" "RegisterUserPost" {
   uri                     = aws_lambda_function.RegisterUser.invoke_arn
 }
 
-resource "aws_dynamodb_table" "Users" {
-  name           = "Users"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "userId"
-
-  attribute {
-    name = "userId"
-    type = "S"
-  }
-}

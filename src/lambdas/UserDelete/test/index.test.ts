@@ -3,14 +3,16 @@ import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
-const fakeUserDevicesResponse = {
-  Items: [
-    {
-      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
-      userId: fakeUserId
-    }
-  ]
-}
+const fakeUserDevicesResponse = [
+  {
+    deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
+    userId: fakeUserId
+  },
+  {
+    deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
+    userId: fakeUserId
+  }
+]
 const fakeDevice1 = {
   deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
   token: 'fake-token',
@@ -63,16 +65,26 @@ jest.unstable_mockModule('../../../entities/Users', () => ({
   }
 }))
 
+const userFilesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]}>>()
+const userFilesQueryByUserMock = jest.fn(() => ({go: userFilesQueryByUserGoMock}))
 const userFilesDeleteMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: {
+    query: {
+      byUser: userFilesQueryByUserMock
+    },
     delete: jest.fn(() => ({go: userFilesDeleteMock}))
   }
 }))
 
+const userDevicesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]}>>()
+const userDevicesQueryByUserMock = jest.fn(() => ({go: userDevicesQueryByUserGoMock}))
 const userDevicesDeleteMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: {
+    query: {
+      byUser: userDevicesQueryByUserMock
+    },
     delete: jest.fn(() => ({go: userDevicesDeleteMock}))
   }
 }))
@@ -104,11 +116,13 @@ describe('#UserDelete', () => {
     deleteDeviceMock.mockResolvedValue(undefined)
     devicesDeleteGoMock.mockResolvedValue({})
     usersDeleteMock.mockResolvedValue({})
+    userFilesQueryByUserGoMock.mockResolvedValue({data: []})
     userFilesDeleteMock.mockResolvedValue({})
+    userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
     userDevicesDeleteMock.mockResolvedValue({})
   })
   test('should delete all user data', async () => {
-    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
     devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
     devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
@@ -116,7 +130,7 @@ describe('#UserDelete', () => {
   })
   test('should create an issue if deletion fails', async () => {
     usersDeleteMock.mockRejectedValueOnce(new Error('Delete failed'))
-    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
     devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
     devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
@@ -129,7 +143,7 @@ describe('#UserDelete', () => {
       expect(output.statusCode).toEqual(500)
     })
     test('Devices.get fails', async () => {
-      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
       devicesGetMock.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)

@@ -43,16 +43,15 @@ export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
 }
 
 /**
- * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB using atomic set addition
+ * Store the device details associated with the user by creating a UserDevice record
+ * Creates individual record for the user-device relationship
  * @param userId - The userId
  * @param deviceId - The UUID of the device (either iOS or Android)
  * @notExported
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
   logDebug('upsertUserDevices <=', {userId, deviceId})
-  const response = await UserDevices.update({userId})
-    .add({devices: [deviceId]})
-    .go()
+  const response = await UserDevices.create({userId, deviceId}).go()
   logDebug('upsertUserDevices =>', response)
   return response
 }

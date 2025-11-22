@@ -7,11 +7,8 @@ import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock
 const fakeUserId = uuidv4()
 const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
-if (Array.isArray(queryStubReturnObject.Items)) {
-  queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
-}
 
-const userFilesMock = createElectroDBEntityMock()
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const filesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: userFilesMock.entity
@@ -29,9 +26,9 @@ describe('#ListFiles', () => {
     event = JSON.parse(JSON.stringify(eventMock))
   })
   describe('#AWSFailure', () => {
-    test('ElectroDB UserFiles.get', async () => {
+    test('ElectroDB UserFiles.query.byUser', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      userFilesMock.mocks.get.mockResolvedValue(undefined)
+      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
@@ -39,8 +36,8 @@ describe('#ListFiles', () => {
     })
     test('ElectroDB Files.get', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      const userFileData = queryStubReturnObject.Items?.[0]
-      userFilesMock.mocks.get.mockResolvedValue({data: userFileData})
+      const userFileData = queryStubReturnObject.Items || []
+      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})
       filesMock.mocks.get.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
