@@ -53,7 +53,7 @@ const config: webpack.Configuration = {
         // Include ts, tsx, js, and jsx files.
         test: /\.(ts|js)x?$/,
         exclude: /node_modules/,
-        use: ['babel-loader', 'ts-loader']
+        use: 'ts-loader'
       }
     ]
   },

@@ -525,11 +525,3 @@ The resulting output is located in `docs/source` and can open viewed by running:
 ```bash
 open docs/source/index.html
 ```
-
-### TODOS
-
-* Update OpenTofu
-  * Better handle conditional variables (like Github Personal Token)
-
-* Update Unit Tests
-  * Write a test case for the absence of a Github Personal Token

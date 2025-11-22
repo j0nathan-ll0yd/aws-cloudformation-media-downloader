@@ -1,7 +1,0 @@
-{
-  "error": {
-    "code": "custom-4XX-generic",
-    "message": "Unauthorized"
-  },
-  "requestId": "1fc9cff7-15f2-4463-95fe-d63439997fc7"
-}
