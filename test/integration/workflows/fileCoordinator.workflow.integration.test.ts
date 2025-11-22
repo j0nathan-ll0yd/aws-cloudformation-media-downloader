@@ -140,14 +140,10 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       size: 5242880
     })
 
-    const {updateItem} = await import('../../../src/lib/vendor/AWS/DynamoDB')
-    await updateItem({
-      TableName: TEST_TABLE,
-      Key: {fileId: 'downloaded-video'},
-      UpdateExpression: 'SET #url = :url',
-      ExpressionAttributeNames: {'#url': 'url'},
-      ExpressionAttributeValues: {':url': 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}
-    })
+    const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
+    await Files.update({fileId: 'downloaded-video'})
+      .set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'})
+      .go()
 
     const result = await handler(createScheduledEvent('test-event-4'), mockContext)
 

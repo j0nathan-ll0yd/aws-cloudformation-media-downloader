@@ -5,14 +5,7 @@
  */
 
 import {createDynamoDBClient} from '../../../src/lib/vendor/AWS/clients'
-import {
-  CreateTableCommand,
-  PutItemCommand,
-  GetItemCommand,
-  ScanCommand,
-  DeleteTableCommand,
-  AttributeValue
-} from '@aws-sdk/client-dynamodb'
+import {CreateTableCommand, ScanCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
 
@@ -128,60 +121,42 @@ export async function deleteUserFilesTable(): Promise<void> {
 }
 
 /**
- * Insert a file record into DynamoDB
+ * Insert a file record into DynamoDB using ElectroDB
+ * This ensures proper entity metadata is added for ElectroDB compatibility
  */
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
-  const item: Record<string, AttributeValue> = {
-    fileId: {S: file.fileId!},
-    status: {S: file.status || FileStatus.PendingMetadata}
-  }
+  const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
 
-  if (file.key) item.key = {S: file.key}
-  if (file.size !== undefined) item.size = {N: file.size.toString()}
-  if (file.availableAt) item.availableAt = {N: file.availableAt.toString()}
-  if (file.authorName) item.authorName = {S: file.authorName}
-  if (file.authorUser) item.authorUser = {S: file.authorUser}
-  if (file.title) item.title = {S: file.title}
-  if (file.description) item.description = {S: file.description}
-  if (file.publishDate) item.publishDate = {S: file.publishDate}
-  if (file.contentType) item.contentType = {S: file.contentType}
-
-  await dynamoDBClient.send(
-    new PutItemCommand({
-      TableName: getFilesTable(),
-      Item: item
-    })
-  )
+  // ElectroDB requires all fields, so provide defaults
+  await Files.create({
+    fileId: file.fileId!,
+    status: file.status || FileStatus.PendingMetadata,
+    availableAt: file.availableAt || Date.now(),
+    size: file.size || 0,
+    key: file.key || `${file.fileId}.mp4`,
+    title: file.title || `Test Video ${file.fileId}`,
+    description: file.description || 'Test video description',
+    authorName: file.authorName || 'Test Author',
+    authorUser: file.authorUser || 'testuser',
+    publishDate: file.publishDate || new Date().toISOString(),
+    contentType: file.contentType || 'video/mp4',
+    ...(file.url && {url: file.url})
+  }).go()
 }
 
 /**
- * Get a file record from DynamoDB
+ * Get a file record from DynamoDB using ElectroDB
  */
 export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
-  const response = await dynamoDBClient.send(
-    new GetItemCommand({
-      TableName: getFilesTable(),
-      Key: {fileId: {S: fileId}}
-    })
-  )
+  const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
 
-  if (!response.Item) {
+  const response = await Files.get({fileId}).go()
+
+  if (!response || !response.data) {
     return null
   }
 
-  return {
-    fileId: response.Item.fileId.S!,
-    status: response.Item.status.S as FileStatus,
-    key: response.Item.key?.S,
-    size: response.Item.size?.N ? parseInt(response.Item.size.N) : undefined,
-    availableAt: response.Item.availableAt?.N ? parseInt(response.Item.availableAt.N) : undefined,
-    authorName: response.Item.authorName?.S,
-    authorUser: response.Item.authorUser?.S,
-    title: response.Item.title?.S,
-    description: response.Item.description?.S,
-    publishDate: response.Item.publishDate?.S,
-    contentType: response.Item.contentType?.S
-  }
+  return response.data as Partial<DynamoDBFile>
 }
 
 /**

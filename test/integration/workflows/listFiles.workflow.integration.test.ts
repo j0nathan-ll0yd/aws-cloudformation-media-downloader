@@ -34,20 +34,24 @@ import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const dynamodbModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/DynamoDB')
+const userFilesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/UserFiles')
+const filesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/Files')
 
-const queryMock = jest.fn<() => Promise<{Items?: unknown[]}>>()
-const batchGetMock = jest.fn<() => Promise<{Responses?: Record<string, unknown[]>}>>()
-jest.unstable_mockModule(dynamodbModulePath, () => ({
-  query: queryMock,
-  batchGet: batchGetMock,
-  updateItem: jest.fn(),
-  scan: jest.fn()
+const userFilesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+jest.unstable_mockModule(userFilesModulePath, () => ({
+  UserFiles: {
+    get: jest.fn(() => ({go: userFilesGetMock}))
+  }
+}))
+
+const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+jest.unstable_mockModule(filesModulePath, () => ({
+  Files: {
+    get: jest.fn(() => ({go: filesGetMock}))
+  }
 }))
 
 const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
-
-type BatchGetCallArgs = [{RequestItems: Record<string, {Keys: unknown[]}>}]
 
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {
@@ -113,42 +117,43 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should query UserFiles and return Downloaded files for authenticated user', async () => {
-    // Arrange: Mock DynamoDB responses
-    // First query: getUserFilesParams returns file IDs
-    queryMock.mockResolvedValueOnce({
-      Items: [
-        {fileId: 'video-1'},
-        {fileId: 'video-2'},
-        {fileId: 'video-3'}
-      ]
+    // Arrange: Mock ElectroDB responses
+    // UserFiles.get returns file IDs
+    userFilesGetMock.mockResolvedValue({
+      data: {
+        userId: 'user-abc-123',
+        fileId: ['video-1', 'video-2', 'video-3']
+      }
     })
 
-    // BatchGet: getFilesById returns file details
-    batchGetMock.mockResolvedValueOnce({
-      Responses: {
-        [TEST_FILES_TABLE]: [
-          {
-            fileId: 'video-1',
-            status: FileStatus.Downloaded,
-            title: 'Video 1',
-            key: 'video-1.mp4',
-            size: 5242880
-          },
-          {
-            fileId: 'video-2',
-            status: FileStatus.Downloaded,
-            title: 'Video 2',
-            key: 'video-2.mp4',
-            size: 10485760
-          },
-          {
-            fileId: 'video-3',
-            status: FileStatus.PendingDownload,
-            title: 'Video 3 (not ready)',
-            key: undefined,
-            size: undefined
-          }
-        ]
+    // Files.get called for each file ID
+    filesGetMock.mockResolvedValueOnce({
+      data: {
+        fileId: 'video-1',
+        status: FileStatus.Downloaded,
+        title: 'Video 1',
+        key: 'video-1.mp4',
+        size: 5242880
+      }
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {
+        fileId: 'video-2',
+        status: FileStatus.Downloaded,
+        title: 'Video 2',
+        key: 'video-2.mp4',
+        size: 10485760
+      }
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {
+        fileId: 'video-3',
+        status: FileStatus.PendingDownload,
+        title: 'Video 3 (not ready)',
+        key: undefined,
+        size: undefined
       }
     })
 
@@ -164,16 +169,16 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents[0].fileId).toBe('video-1')
     expect(response.body.contents[1].fileId).toBe('video-2')
 
-    expect(queryMock).toHaveBeenCalledTimes(1)
-
-    expect(batchGetMock).toHaveBeenCalledTimes(1)
-    const batchGetParams = (batchGetMock.mock.calls as unknown as BatchGetCallArgs[])[0][0]
-    expect(batchGetParams.RequestItems[TEST_FILES_TABLE].Keys).toHaveLength(3)
+    expect(userFilesGetMock).toHaveBeenCalledTimes(1)
+    expect(filesGetMock).toHaveBeenCalledTimes(3)
   })
 
   test('should return empty list when user has no files', async () => {
-    queryMock.mockResolvedValueOnce({
-      Items: []
+    userFilesGetMock.mockResolvedValue({
+      data: {
+        userId: 'user-no-files',
+        fileId: []
+      }
     })
 
     const event = createListFilesEvent('user-no-files', UserStatus.Authenticated)
@@ -185,8 +190,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.keyCount).toBe(0)
     expect(response.body.contents).toHaveLength(0)
 
-    expect(queryMock).toHaveBeenCalledTimes(1)
-    expect(batchGetMock).not.toHaveBeenCalled()
+    expect(userFilesGetMock).toHaveBeenCalledTimes(1)
+    expect(filesGetMock).not.toHaveBeenCalled()
   })
 
   test('should return demo file for anonymous user without querying DynamoDB', async () => {
@@ -201,8 +206,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents).toHaveLength(1)
     expect(response.body.contents[0]).toHaveProperty('fileId')
 
-    expect(queryMock).not.toHaveBeenCalled()
-    expect(batchGetMock).not.toHaveBeenCalled()
+    expect(userFilesGetMock).not.toHaveBeenCalled()
+    expect(filesGetMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 for unauthenticated user', async () => {
@@ -212,32 +217,37 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(401)
 
-    expect(queryMock).not.toHaveBeenCalled()
-    expect(batchGetMock).not.toHaveBeenCalled()
+    expect(userFilesGetMock).not.toHaveBeenCalled()
+    expect(filesGetMock).not.toHaveBeenCalled()
   })
 
   test('should filter out non-Downloaded files (Pending, Failed, PendingDownload)', async () => {
-    // Arrange: Mock DynamoDB responses with mixed file statuses
-    queryMock.mockResolvedValueOnce({
-      Items: [
-        {fileId: 'downloaded-1'},
-        {fileId: 'downloaded-2'},
-        {fileId: 'pending-1'},
-        {fileId: 'failed-1'},
-        {fileId: 'pending-download-1'}
-      ]
+    // Arrange: Mock ElectroDB responses with mixed file statuses
+    userFilesGetMock.mockResolvedValue({
+      data: {
+        userId: 'user-mixed-files',
+        fileId: ['downloaded-1', 'downloaded-2', 'pending-1', 'failed-1', 'pending-download-1']
+      }
     })
 
-    batchGetMock.mockResolvedValueOnce({
-      Responses: {
-        [TEST_FILES_TABLE]: [
-          {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'},
-          {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'},
-          {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'},
-          {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'},
-          {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
-        ]
-      }
+    filesGetMock.mockResolvedValueOnce({
+      data: {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'}
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'}
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'}
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'}
+    })
+
+    filesGetMock.mockResolvedValueOnce({
+      data: {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
     })
 
     const event = createListFilesEvent('user-mixed-files', UserStatus.Authenticated)
@@ -257,25 +267,27 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle large batch of files efficiently', async () => {
-    // Arrange: Mock DynamoDB with 50 files
+    // Arrange: Mock ElectroDB with 50 files
     const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
-    queryMock.mockResolvedValueOnce({
-      Items: fileIds.map((fileId) => ({fileId}))
+    userFilesGetMock.mockResolvedValue({
+      data: {
+        userId: 'user-many-files',
+        fileId: fileIds
+      }
     })
 
-    const files = fileIds.map((fileId, index) => ({
-      fileId,
-      status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
-      title: `Video ${index}`,
-      key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
-      size: index % 2 === 0 ? 5242880 : undefined
-    }))
-
-    batchGetMock.mockResolvedValueOnce({
-      Responses: {
-        [TEST_FILES_TABLE]: files
-      }
+    // Mock Files.get for each file ID
+    fileIds.forEach((fileId, index) => {
+      filesGetMock.mockResolvedValueOnce({
+        data: {
+          fileId,
+          status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
+          title: `Video ${index}`,
+          key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
+          size: index % 2 === 0 ? 5242880 : undefined
+        }
+      })
     })
 
     const event = createListFilesEvent('user-many-files', UserStatus.Authenticated)
@@ -291,7 +303,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle DynamoDB errors gracefully', async () => {
-    queryMock.mockRejectedValueOnce(new Error('DynamoDB service unavailable'))
+    userFilesGetMock.mockRejectedValue(new Error('DynamoDB service unavailable'))
 
     const event = createListFilesEvent('user-error', UserStatus.Authenticated)
 
@@ -299,7 +311,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(500)
 
-    expect(queryMock).toHaveBeenCalledTimes(1)
-    expect(batchGetMock).not.toHaveBeenCalled()
+    expect(userFilesGetMock).toHaveBeenCalledTimes(1)
+    expect(filesGetMock).not.toHaveBeenCalled()
   })
 })

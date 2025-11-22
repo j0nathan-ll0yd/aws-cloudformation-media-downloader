@@ -108,7 +108,9 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
       await sendFileNotification(file, userId)
       return response(context, 200, {status: 'Dispatched'})
     } else {
-      await addFile(fileId)
+      if (!file) {
+        await addFile(fileId)
+      }
       if (!requestBody.backgroundMode) {
         await initiateFileDownload(fileId)
         return response(context, 202, {status: 'Initiated'})
