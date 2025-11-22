@@ -13,12 +13,10 @@
  */
 
 // Test configuration
-const TEST_FILES_TABLE = 'test-files-list'
-const TEST_USER_FILES_TABLE = 'test-user-files-list'
+const TEST_TABLE = 'test-list-files'
 
 // Set environment variables for Lambda
-process.env.DynamoDBTableFiles = TEST_FILES_TABLE
-process.env.DynamoDBTableUserFiles = TEST_USER_FILES_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'

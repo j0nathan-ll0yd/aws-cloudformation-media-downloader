@@ -12,12 +12,10 @@
  */
 
 // Test configuration
-const TEST_USER_DEVICES_TABLE = 'test-user-devices-push'
-const TEST_DEVICES_TABLE = 'test-devices-push'
+const TEST_TABLE = 'test-push-notification'
 
 // Set environment variables for Lambda
-process.env.DynamoDBTableUserDevices = TEST_USER_DEVICES_TABLE
-process.env.DynamoDBTableDevices = TEST_DEVICES_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
@@ -307,7 +305,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await handler(event, createMockContext())
 
     // Assert: No ElectroDB queries
-    expect(userDevicesGetMock).not.toHaveBeenCalled()
+    expect(userDevicesQueryByUserGoMock).not.toHaveBeenCalled()
     expect(devicesGetMock).not.toHaveBeenCalled()
 
     // Assert: No SNS publish

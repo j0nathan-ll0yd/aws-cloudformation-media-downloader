@@ -8,7 +8,7 @@
  */
 
 const TEST_TABLE = 'test-files-coordinator'
-process.env.DynamoDBTableFiles = TEST_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
