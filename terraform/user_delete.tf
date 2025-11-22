@@ -4,19 +4,17 @@ resource "aws_iam_role" "UserDeleteRole" {
 }
 
 data "aws_iam_policy_document" "UserDelete" {
+  # Query UserCollection to get user's files and devices
+  # GetItem/DeleteItem on base table for Users, Devices, UserFiles, UserDevices
   statement {
-    actions   = ["dynamodb:Query", "dynamodb:DeleteItem"]
-    resources = [aws_dynamodb_table.Devices.arn]
-  }
-  statement {
-    actions   = ["dynamodb:Query", "dynamodb:DeleteItem"]
-    resources = [aws_dynamodb_table.UserDevices.arn]
-  }
-  statement {
-    actions = ["dynamodb:DeleteItem"]
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:GetItem",
+      "dynamodb:DeleteItem"
+    ]
     resources = [
-      aws_dynamodb_table.UserFiles.arn,
-      aws_dynamodb_table.Users.arn
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
     ]
   }
   statement {
@@ -78,11 +76,8 @@ resource "aws_lambda_function" "UserDelete" {
 
   environment {
     variables = {
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      DynamoDBTableUserFiles   = aws_dynamodb_table.UserFiles.name
-      DynamoDBTableUsers       = aws_dynamodb_table.Users.name
-      GithubPersonalToken      = data.sops_file.secrets.data["github.issue.token"]
+      DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
+      GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
     }
   }
 }

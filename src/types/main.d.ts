@@ -58,7 +58,7 @@ interface Device extends DeviceRegistrationRequest {
 
 interface DynamoDBUserDevice {
   userId: string
-  devices: Set<string>
+  deviceId: string
 }
 
 interface DynamoDBFile {

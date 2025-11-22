@@ -16,14 +16,17 @@ data "aws_iam_policy_document" "RegisterDevice" {
       length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
     ])
   }
+  # Query UserCollection to check existing devices
+  # PutItem on base table to create UserDevice and Device records
   statement {
     actions = [
       "dynamodb:Query",
+      "dynamodb:PutItem",
       "dynamodb:UpdateItem"
     ]
     resources = [
-      aws_dynamodb_table.UserDevices.arn,
-      aws_dynamodb_table.Devices.arn
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
     ]
   }
 }
@@ -83,8 +86,7 @@ resource "aws_lambda_function" "RegisterDevice" {
     variables = {
       PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
+      DynamoDBTableName        = aws_dynamodb_table.MediaDownloader.name
     }
   }
 }
@@ -137,28 +139,3 @@ resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_dynamodb_table" "UserDevices" {
-  name           = "UserDevices"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "userId"
-
-  attribute {
-    name = "userId"
-    type = "S"
-  }
-}
-
-resource "aws_dynamodb_table" "Devices" {
-  name           = "Devices"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "deviceId"
-
-  attribute {
-    name = "deviceId"
-    type = "S"
-  }
-}

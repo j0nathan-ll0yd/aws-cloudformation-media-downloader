@@ -28,7 +28,6 @@ function isLocalStackMode(): boolean {
   return process.env.USE_LOCALSTACK === 'true'
 }
 
-
 /**
  * Get base configuration for AWS clients
  * Returns LocalStack config when in LocalStack mode, production config otherwise

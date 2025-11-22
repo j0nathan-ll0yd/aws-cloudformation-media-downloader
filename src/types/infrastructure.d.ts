@@ -48,10 +48,10 @@ export interface ArchiveFile {
 export interface StartFileUploadElement {
     output_path: string;
     source_file: string;
-    type:        Type;
+    type:        APIGatewayAuthorizerType;
 }
 
-export enum Type {
+export enum APIGatewayAuthorizerType {
     Zip = "zip",
 }
 
@@ -59,7 +59,7 @@ export interface YtDLPLayer {
     depends_on:  string[];
     output_path: string;
     source_dir:  string;
-    type:        Type;
+    type:        APIGatewayAuthorizerType;
 }
 
 export interface Aws {
@@ -74,6 +74,7 @@ export interface AwsIamPolicyDocument {
     ApiGatewayAuthorizerRolePolicy: APIGatewayAuthorizerRolePolicyElement[];
     ApiGatewayCloudwatchRole:       APIGatewayCloudwatchRole[];
     CommonLambdaLogging:            APIGatewayAuthorizerRolePolicyElement[];
+    CommonLambdaXRay:               APIGatewayAuthorizerRolePolicyElement[];
     FileCoordinator:                APIGatewayAuthorizerRolePolicyElement[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
@@ -394,9 +395,10 @@ export interface AwsAPIGatewayStage {
 }
 
 export interface AwsAPIGatewayStageProduction {
-    deployment_id: string;
-    rest_api_id:   string;
-    stage_name:    string;
+    deployment_id:        string;
+    rest_api_id:          string;
+    stage_name:           string;
+    xray_tracing_enabled: boolean;
 }
 
 export interface AwsAPIGatewayUsagePlan {
@@ -518,30 +520,49 @@ export interface AwsCloudwatchLogGroup {
 }
 
 export interface AwsDynamodbTable {
-    Devices:     Device[];
-    Files:       Device[];
-    UserDevices: Device[];
-    UserFiles:   Device[];
-    Users:       Device[];
+    MediaDownloader: MediaDownloader[];
 }
 
-export interface Device {
-    attribute:      Attribute[];
-    billing_mode:   string;
-    hash_key:       string;
-    name:           string;
-    read_capacity:  number;
-    write_capacity: number;
+export interface MediaDownloader {
+    attribute:              Attribute[];
+    billing_mode:           string;
+    global_secondary_index: GlobalSecondaryIndex[];
+    hash_key:               string;
+    name:                   string;
+    range_key:              string;
+    read_capacity:          number;
+    tags:                   MediaDownloaderTags;
+    write_capacity:         number;
 }
 
 export interface Attribute {
     name: string;
-    type: string;
+    type: AttributeType;
+}
+
+export enum AttributeType {
+    N = "N",
+    S = "S",
+}
+
+export interface GlobalSecondaryIndex {
+    hash_key:        string;
+    name:            string;
+    projection_type: string;
+    range_key?:      string;
+    read_capacity:   number;
+    write_capacity:  number;
+}
+
+export interface MediaDownloaderTags {
+    Description: string;
+    Name:        string;
 }
 
 export interface AwsIamPolicy {
     ApiGatewayAuthorizerRolePolicy: RolePolicy[];
-    CommonLambdaLogging:            CommonLambdaLogging[];
+    CommonLambdaLogging:            CommonLambda[];
+    CommonLambdaXRay:               CommonLambda[];
     FileCoordinatorRolePolicy:      RolePolicy[];
     ListFilesRolePolicy:            RolePolicy[];
     LoginUserRolePolicy:            RolePolicy[];
@@ -561,7 +582,7 @@ export interface RolePolicy {
     policy: string;
 }
 
-export interface CommonLambdaLogging {
+export interface CommonLambda {
     description: string;
     name:        string;
     policy:      string;
@@ -625,6 +646,7 @@ export interface AwsLambdaFunctionAPIGatewayAuthorizer {
     role:             string;
     runtime:          Runtime;
     source_code_hash: string;
+    tracing_config:   TracingConfig[];
     provider?:        string;
     publish?:         boolean;
     timeout?:         number;
@@ -638,21 +660,17 @@ export interface PurpleVariables {
     MultiAuthenticationPathParts?: string;
     PlatformEncryptionKey?:        string;
     ReservedClientIp?:             string;
-    DynamoDBTableFiles?:           string;
+    DynamoDBTableName?:            DynamoDBTableName;
     DefaultFileContentType?:       string;
     DefaultFileName?:              string;
     DefaultFileSize?:              number;
     DefaultFileUrl?:               string;
-    DynamoDBTableUserFiles?:       string;
-    DynamoDBTableUsers?:           string;
     SignInWithAppleAuthKey?:       string;
     SignInWithAppleConfig?:        string;
     ApnsDefaultTopic?:             string;
     ApnsKeyId?:                    string;
     ApnsSigningKey?:               string;
     ApnsTeam?:                     string;
-    DynamoDBTableDevices?:         string;
-    DynamoDBTableUserDevices?:     string;
     PlatformApplicationArn?:       string;
     PushNotificationTopicArn?:     string;
     SNSQueueUrl?:                  string;
@@ -660,8 +678,20 @@ export interface PurpleVariables {
     YtdlpBinaryPath?:              string;
 }
 
+export enum DynamoDBTableName {
+    AwsDynamodbTableMediaDownloaderName = "${aws_dynamodb_table.MediaDownloader.name}",
+}
+
 export enum Runtime {
     Nodejs22X = "nodejs22.x",
+}
+
+export interface TracingConfig {
+    mode: Mode;
+}
+
+export enum Mode {
+    Active = "Active",
 }
 
 export interface StartFileUpload {
@@ -677,6 +707,7 @@ export interface StartFileUpload {
     runtime:          Runtime;
     source_code_hash: string;
     timeout:          number;
+    tracing_config:   TracingConfig[];
 }
 
 export interface StartFileUploadEnvironment {
@@ -685,7 +716,7 @@ export interface StartFileUploadEnvironment {
 
 export interface FluffyVariables {
     Bucket:              string;
-    DynamoDBTableFiles:  string;
+    DynamoDBTableName:   DynamoDBTableName;
     GithubPersonalToken: string;
     PATH:                string;
     YtdlpBinaryPath:     string;
@@ -796,10 +827,10 @@ export interface AwsSqsQueueSendPushNotification {
     message_retention_seconds: number;
     name:                      string;
     receive_wait_time_seconds: number;
-    tags:                      Tags;
+    tags:                      SendPushNotificationTags;
 }
 
-export interface Tags {
+export interface SendPushNotificationTags {
     Environment: string;
 }
 
@@ -1041,13 +1072,13 @@ const typeMap: any = {
     "StartFileUploadElement": o([
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_file", js: "source_file", typ: "" },
-        { json: "type", js: "type", typ: r("Type") },
+        { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
     ], false),
     "YtDLPLayer": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_dir", js: "source_dir", typ: "" },
-        { json: "type", js: "type", typ: r("Type") },
+        { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
     ], false),
     "Aws": o([
         { json: "current", js: "current", typ: a(r("Current")) },
@@ -1059,6 +1090,7 @@ const typeMap: any = {
         { json: "ApiGatewayAuthorizerRolePolicy", js: "ApiGatewayAuthorizerRolePolicy", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "ApiGatewayCloudwatchRole", js: "ApiGatewayCloudwatchRole", typ: a(r("APIGatewayCloudwatchRole")) },
         { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
@@ -1332,6 +1364,7 @@ const typeMap: any = {
         { json: "deployment_id", js: "deployment_id", typ: "" },
         { json: "rest_api_id", js: "rest_api_id", typ: "" },
         { json: "stage_name", js: "stage_name", typ: "" },
+        { json: "xray_tracing_enabled", js: "xray_tracing_enabled", typ: true },
     ], false),
     "AwsAPIGatewayUsagePlan": o([
         { json: "iOSApp", js: "iOSApp", typ: a(r("AwsAPIGatewayUsagePlanIOSApp")) },
@@ -1431,27 +1464,39 @@ const typeMap: any = {
         { json: "retention_in_days", js: "retention_in_days", typ: 0 },
     ], false),
     "AwsDynamodbTable": o([
-        { json: "Devices", js: "Devices", typ: a(r("Device")) },
-        { json: "Files", js: "Files", typ: a(r("Device")) },
-        { json: "UserDevices", js: "UserDevices", typ: a(r("Device")) },
-        { json: "UserFiles", js: "UserFiles", typ: a(r("Device")) },
-        { json: "Users", js: "Users", typ: a(r("Device")) },
+        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloader")) },
     ], false),
-    "Device": o([
+    "MediaDownloader": o([
         { json: "attribute", js: "attribute", typ: a(r("Attribute")) },
         { json: "billing_mode", js: "billing_mode", typ: "" },
+        { json: "global_secondary_index", js: "global_secondary_index", typ: a(r("GlobalSecondaryIndex")) },
         { json: "hash_key", js: "hash_key", typ: "" },
         { json: "name", js: "name", typ: "" },
+        { json: "range_key", js: "range_key", typ: "" },
         { json: "read_capacity", js: "read_capacity", typ: 0 },
+        { json: "tags", js: "tags", typ: r("MediaDownloaderTags") },
         { json: "write_capacity", js: "write_capacity", typ: 0 },
     ], false),
     "Attribute": o([
         { json: "name", js: "name", typ: "" },
-        { json: "type", js: "type", typ: "" },
+        { json: "type", js: "type", typ: r("AttributeType") },
+    ], false),
+    "GlobalSecondaryIndex": o([
+        { json: "hash_key", js: "hash_key", typ: "" },
+        { json: "name", js: "name", typ: "" },
+        { json: "projection_type", js: "projection_type", typ: "" },
+        { json: "range_key", js: "range_key", typ: u(undefined, "") },
+        { json: "read_capacity", js: "read_capacity", typ: 0 },
+        { json: "write_capacity", js: "write_capacity", typ: 0 },
+    ], false),
+    "MediaDownloaderTags": o([
+        { json: "Description", js: "Description", typ: "" },
+        { json: "Name", js: "Name", typ: "" },
     ], false),
     "AwsIamPolicy": o([
         { json: "ApiGatewayAuthorizerRolePolicy", js: "ApiGatewayAuthorizerRolePolicy", typ: a(r("RolePolicy")) },
-        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("CommonLambdaLogging")) },
+        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("CommonLambda")) },
+        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("CommonLambda")) },
         { json: "FileCoordinatorRolePolicy", js: "FileCoordinatorRolePolicy", typ: a(r("RolePolicy")) },
         { json: "ListFilesRolePolicy", js: "ListFilesRolePolicy", typ: a(r("RolePolicy")) },
         { json: "LoginUserRolePolicy", js: "LoginUserRolePolicy", typ: a(r("RolePolicy")) },
@@ -1469,7 +1514,7 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
         { json: "policy", js: "policy", typ: "" },
     ], false),
-    "CommonLambdaLogging": o([
+    "CommonLambda": o([
         { json: "description", js: "description", typ: "" },
         { json: "name", js: "name", typ: "" },
         { json: "policy", js: "policy", typ: "" },
@@ -1525,6 +1570,7 @@ const typeMap: any = {
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
         { json: "provider", js: "provider", typ: u(undefined, "") },
         { json: "publish", js: "publish", typ: u(undefined, true) },
         { json: "timeout", js: "timeout", typ: u(undefined, 0) },
@@ -1536,26 +1582,25 @@ const typeMap: any = {
         { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
         { json: "PlatformEncryptionKey", js: "PlatformEncryptionKey", typ: u(undefined, "") },
         { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
-        { json: "DynamoDBTableFiles", js: "DynamoDBTableFiles", typ: u(undefined, "") },
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, r("DynamoDBTableName")) },
         { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: u(undefined, "") },
         { json: "DefaultFileName", js: "DefaultFileName", typ: u(undefined, "") },
         { json: "DefaultFileSize", js: "DefaultFileSize", typ: u(undefined, 0) },
         { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: u(undefined, "") },
-        { json: "DynamoDBTableUserFiles", js: "DynamoDBTableUserFiles", typ: u(undefined, "") },
-        { json: "DynamoDBTableUsers", js: "DynamoDBTableUsers", typ: u(undefined, "") },
         { json: "SignInWithAppleAuthKey", js: "SignInWithAppleAuthKey", typ: u(undefined, "") },
         { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
         { json: "ApnsDefaultTopic", js: "ApnsDefaultTopic", typ: u(undefined, "") },
         { json: "ApnsKeyId", js: "ApnsKeyId", typ: u(undefined, "") },
         { json: "ApnsSigningKey", js: "ApnsSigningKey", typ: u(undefined, "") },
         { json: "ApnsTeam", js: "ApnsTeam", typ: u(undefined, "") },
-        { json: "DynamoDBTableDevices", js: "DynamoDBTableDevices", typ: u(undefined, "") },
-        { json: "DynamoDBTableUserDevices", js: "DynamoDBTableUserDevices", typ: u(undefined, "") },
         { json: "PlatformApplicationArn", js: "PlatformApplicationArn", typ: u(undefined, "") },
         { json: "PushNotificationTopicArn", js: "PushNotificationTopicArn", typ: u(undefined, "") },
         { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: u(undefined, "") },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: u(undefined, "") },
         { json: "YtdlpBinaryPath", js: "YtdlpBinaryPath", typ: u(undefined, "") },
+    ], false),
+    "TracingConfig": o([
+        { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
     "StartFileUpload": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
@@ -1570,13 +1615,14 @@ const typeMap: any = {
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "timeout", js: "timeout", typ: 0 },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "StartFileUploadEnvironment": o([
         { json: "variables", js: "variables", typ: r("FluffyVariables") },
     ], false),
     "FluffyVariables": o([
         { json: "Bucket", js: "Bucket", typ: "" },
-        { json: "DynamoDBTableFiles", js: "DynamoDBTableFiles", typ: "" },
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: r("DynamoDBTableName") },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: "" },
         { json: "PATH", js: "PATH", typ: "" },
         { json: "YtdlpBinaryPath", js: "YtdlpBinaryPath", typ: "" },
@@ -1659,9 +1705,9 @@ const typeMap: any = {
         { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
         { json: "name", js: "name", typ: "" },
         { json: "receive_wait_time_seconds", js: "receive_wait_time_seconds", typ: 0 },
-        { json: "tags", js: "tags", typ: r("Tags") },
+        { json: "tags", js: "tags", typ: r("SendPushNotificationTags") },
     ], false),
-    "Tags": o([
+    "SendPushNotificationTags": o([
         { json: "Environment", js: "Environment", typ: "" },
     ], false),
     "NullResource": o([
@@ -1692,11 +1738,21 @@ const typeMap: any = {
         { json: "source", js: "source", typ: "" },
         { json: "version", js: "version", typ: "" },
     ], false),
-    "Type": [
+    "APIGatewayAuthorizerType": [
         "zip",
+    ],
+    "AttributeType": [
+        "N",
+        "S",
+    ],
+    "DynamoDBTableName": [
+        "${aws_dynamodb_table.MediaDownloader.name}",
     ],
     "Runtime": [
         "nodejs22.x",
+    ],
+    "Mode": [
+        "Active",
     ],
     "Action": [
         "lambda:InvokeFunction",

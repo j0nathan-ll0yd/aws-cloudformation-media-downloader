@@ -12,12 +12,10 @@
  */
 
 // Test configuration
-const TEST_USER_DEVICES_TABLE = 'test-user-devices-push'
-const TEST_DEVICES_TABLE = 'test-devices-push'
+const TEST_TABLE = 'test-push-notification'
 
 // Set environment variables for Lambda
-process.env.DynamoDBTableUserDevices = TEST_USER_DEVICES_TABLE
-process.env.DynamoDBTableDevices = TEST_DEVICES_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
@@ -25,6 +23,7 @@ import {SQSEvent, Context} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -32,7 +31,8 @@ import {dirname, resolve} from 'path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
-const dynamodbModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/DynamoDB')
+const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevices')
+const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 
 const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule(snsModulePath, () => ({
@@ -40,16 +40,18 @@ jest.unstable_mockModule(snsModulePath, () => ({
   publish: publishSnsEventMock
 }))
 
-const queryMock = jest.fn<() => Promise<{Items?: unknown[]}>>()
-jest.unstable_mockModule(dynamodbModulePath, () => ({
-  query: queryMock,
-  updateItem: jest.fn(),
-  scan: jest.fn()
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+jest.unstable_mockModule(userDevicesModulePath, () => ({
+  UserDevices: userDevicesMock.entity
+}))
+
+const devicesMock = createElectroDBEntityMock()
+jest.unstable_mockModule(devicesModulePath, () => ({
+  Devices: devicesMock.entity
 }))
 
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
 
-type QueryCallArgs = [{TableName: string}]
 type PublishCallArgs = [{TargetArn: string}]
 
 function createMockContext(): Context {
@@ -123,37 +125,30 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   })
 
   test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
-    // Arrange: Mock DynamoDB responses
-    // First query: getUserDevicesByUserId returns device IDs
-    queryMock.mockResolvedValueOnce({
-      Items: [
+    // Arrange: Mock ElectroDB responses
+    // First query: getUserDevicesByUserId returns array of individual UserDevice records
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: [
         {
           userId: 'user-123',
-          devices: new Set(['device-abc'])
+          deviceId: 'device-abc'
         }
       ]
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [
-        {
-          deviceId: 'device-abc',
-          endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'
-        }
-      ]
+    devicesMock.mocks.get.mockResolvedValue({
+      data: {
+        deviceId: 'device-abc',
+        endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'
+      }
     })
 
     const event = createFileNotificationEvent('user-123', 'video-123')
 
     await handler(event, createMockContext())
 
-    expect(queryMock).toHaveBeenCalledTimes(2)
-
-    const userDevicesQuery = (queryMock.mock.calls as unknown as QueryCallArgs[])[0][0]
-    expect(userDevicesQuery.TableName).toBe(TEST_USER_DEVICES_TABLE)
-
-    const devicesQuery = (queryMock.mock.calls as unknown as QueryCallArgs[])[1][0]
-    expect(devicesQuery.TableName).toBe(TEST_DEVICES_TABLE)
+    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(1)
 
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
 
@@ -162,35 +157,35 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   })
 
   test('should fan-out to multiple devices when user has multiple registered devices', async () => {
-    // Arrange: Mock DynamoDB responses
-    // First query: getUserDevicesByUserId returns multiple device IDs
-    queryMock.mockResolvedValueOnce({
-      Items: [
-        {
-          userId: 'user-456',
-          devices: new Set(['device-1', 'device-2', 'device-3'])
-        }
+    // Arrange: Mock ElectroDB responses
+    // First query: getUserDevicesByUserId returns array of individual UserDevice records
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: [
+        {userId: 'user-456', deviceId: 'device-1'},
+        {userId: 'user-456', deviceId: 'device-2'},
+        {userId: 'user-456', deviceId: 'device-3'}
       ]
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'}
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'}
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-3', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-3', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'}
     })
 
     const event = createFileNotificationEvent('user-456', 'video-456', 'Multi-Device Video')
 
     await handler(event, createMockContext())
 
-    // Assert: DynamoDB queried 4 times (1 UserDevices + 3 Devices)
-    expect(queryMock).toHaveBeenCalledTimes(4)
+    // Assert: ElectroDB queried 4 times (1 UserDevices + 3 Devices)
+    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(3)
 
     // Assert: SNS publish called 3 times (one per device)
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
@@ -204,41 +199,38 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   })
 
   test('should return early when user has no registered devices', async () => {
-    // Arrange: Mock DynamoDB to return empty devices
-    queryMock.mockResolvedValueOnce({
-      Items: []
+    // Arrange: Mock ElectroDB to return empty array (no devices)
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: []
     })
 
     const event = createFileNotificationEvent('user-no-devices', 'video-789')
 
     await handler(event, createMockContext())
 
-    // Assert: Only one DynamoDB query (UserDevices)
-    expect(queryMock).toHaveBeenCalledTimes(1)
+    // Assert: Only UserDevices queried, not Devices
+    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(devicesMock.mocks.get).not.toHaveBeenCalled()
 
     // Assert: No SNS publish (no devices to notify)
     expect(publishSnsEventMock).not.toHaveBeenCalled()
   })
 
   test('should handle invalid device gracefully and continue to next device', async () => {
-    // Arrange: Mock DynamoDB responses
-    queryMock.mockResolvedValueOnce({
-      Items: [
-        {
-          userId: 'user-789',
-          devices: new Set(['device-good', 'device-bad'])
-        }
+    // Arrange: Mock ElectroDB responses
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: [
+        {userId: 'user-789', deviceId: 'device-good'},
+        {userId: 'user-789', deviceId: 'device-bad'}
       ]
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-good', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-good', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'}
     })
 
     // Second device query fails (device not found)
-    queryMock.mockResolvedValueOnce({
-      Items: []
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce(undefined)
 
     const event = createFileNotificationEvent('user-789', 'video-error')
 
@@ -249,19 +241,19 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   })
 
   test('should process multiple SQS records in same batch', async () => {
-    // Arrange: Mock DynamoDB responses for two different users
-    queryMock.mockResolvedValueOnce({
-      Items: [{userId: 'user-1', devices: new Set(['device-user1'])}]
+    // Arrange: Mock ElectroDB responses for two different users
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
+      data: [{userId: 'user-1', deviceId: 'device-user1'}]
     })
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-user1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-user1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'}
     })
 
-    queryMock.mockResolvedValueOnce({
-      Items: [{userId: 'user-2', devices: new Set(['device-user2'])}]
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
+      data: [{userId: 'user-2', deviceId: 'device-user2'}]
     })
-    queryMock.mockResolvedValueOnce({
-      Items: [{deviceId: 'device-user2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'}]
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: {deviceId: 'device-user2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'}
     })
 
     const event1 = createFileNotificationEvent('user-1', 'video-batch-1')
@@ -272,8 +264,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     await handler(batchEvent, createMockContext())
 
-    // Assert: DynamoDB queried 4 times (2 users × 2 queries each)
-    expect(queryMock).toHaveBeenCalledTimes(4)
+    // Assert: ElectroDB queried 4 times (2 users × 2 queries each)
+    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(2)
+    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(2)
 
     // Assert: SNS published 2 times (one per user)
     expect(publishSnsEventMock).toHaveBeenCalledTimes(2)
@@ -305,8 +298,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // Act: Invoke handler
     await handler(event, createMockContext())
 
-    // Assert: No DynamoDB queries
-    expect(queryMock).not.toHaveBeenCalled()
+    // Assert: No ElectroDB queries
+    expect(userDevicesMock.mocks.query.byUser!.go).not.toHaveBeenCalled()
+    expect(devicesMock.mocks.get).not.toHaveBeenCalled()
 
     // Assert: No SNS publish
     expect(publishSnsEventMock).not.toHaveBeenCalled()

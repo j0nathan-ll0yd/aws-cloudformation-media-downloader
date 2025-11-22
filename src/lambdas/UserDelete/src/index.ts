@@ -1,7 +1,9 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {Users} from '../../../entities/Users'
+import {UserFiles} from '../../../entities/UserFiles'
+import {UserDevices} from '../../../entities/UserDevices'
+import {Devices} from '../../../entities/Devices'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers'
-import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {deleteDevice, getUserDevices} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
@@ -10,33 +12,37 @@ import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
-  const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
-  logDebug('deleteUserFiles <=', params)
-  const response = await updateItem(params)
-  logDebug('deleteUserFiles =>', response)
+  logDebug('deleteUserFiles <=', userId)
+  const userFiles = await UserFiles.query.byUser({userId}).go()
+  if (userFiles.data && userFiles.data.length > 0) {
+    const deletePromises = userFiles.data.map((userFile) => UserFiles.delete({userId: userFile.userId, fileId: userFile.fileId}).go())
+    await Promise.all(deletePromises)
+  }
+  logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
 }
 
-async function deleteUser(deviceId: string): Promise<void> {
-  const params = deleteUserParams(process.env.DynamoDBTableUsers as string, deviceId)
-  logDebug('deleteUser <=', params)
-  const response = await deleteItem(params)
+async function deleteUser(userId: string): Promise<void> {
+  logDebug('deleteUser <=', userId)
+  const response = await Users.delete({userId}).go()
   logDebug('deleteUser =>', response)
 }
 
 async function deleteUserDevices(userId: string): Promise<void> {
-  const params = deleteAllUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId)
-  logDebug('deleteUserDevices <=', params)
-  const response = await deleteItem(params)
-  logDebug('deleteUserDevices =>', response)
+  logDebug('deleteUserDevices <=', userId)
+  const userDevices = await UserDevices.query.byUser({userId}).go()
+  if (userDevices.data && userDevices.data.length > 0) {
+    const deletePromises = userDevices.data.map((userDevice) => UserDevices.delete({userId: userDevice.userId, deviceId: userDevice.deviceId}).go())
+    await Promise.all(deletePromises)
+  }
+  logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
 }
 
 async function getDevice(deviceId: string): Promise<Device> {
-  const params = getDeviceParams(process.env.DynamoDBTableDevices as string, deviceId)
-  logDebug('getDevice <=', params)
-  const response = await query(params)
-  logDebug('getDevice <=', response)
-  if (response && response.Items) {
-    return response.Items[0] as Device
+  logDebug('getDevice <=', deviceId)
+  const response = await Devices.get({deviceId}).go()
+  logDebug('getDevice =>', response)
+  if (response && response.data) {
+    return response.data as Device
   } else {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
@@ -58,17 +64,13 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   const deletableDevices: Device[] = []
   try {
-    const userDevices = await getUserDevices(process.env.DynamoDBTableUserDevices as string, userId)
+    const userDevices = await getUserDevices(userId)
     /* istanbul ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
-      for (const row of userDevices) {
-        const devicesSet = row.devices as Set<string>
-        const devices = Array.from(devicesSet.values()) as string[]
-        for (const deviceId of devices) {
-          const device = await getDevice(deviceId)
-          deletableDevices.push(device)
-        }
+      for (const userDevice of userDevices) {
+        const device = await getDevice(userDevice.deviceId)
+        deletableDevices.push(device)
       }
     }
   } catch (error) {

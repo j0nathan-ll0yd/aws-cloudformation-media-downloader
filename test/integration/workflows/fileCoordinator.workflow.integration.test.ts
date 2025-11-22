@@ -8,7 +8,7 @@
  */
 
 const TEST_TABLE = 'test-files-coordinator'
-process.env.DynamoDBTableFiles = TEST_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
@@ -55,7 +55,7 @@ function createScheduledEvent(eventId: string): ScheduledEvent {
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
   await insertFile({
     fileId,
-    status: FileStatus.PendingMetadata,
+    status: FileStatus.PendingDownload,
     availableAt,
     title: title || `Test Video ${fileId}`
   })
@@ -140,14 +140,10 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       size: 5242880
     })
 
-    const {updateItem} = await import('../../../src/lib/vendor/AWS/DynamoDB')
-    await updateItem({
-      TableName: TEST_TABLE,
-      Key: {fileId: 'downloaded-video'},
-      UpdateExpression: 'SET #url = :url',
-      ExpressionAttributeNames: {'#url': 'url'},
-      ExpressionAttributeValues: {':url': 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}
-    })
+    const {Files} = await import('../../../src/entities/Files')
+    await Files.update({fileId: 'downloaded-video'})
+      .set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'})
+      .go()
 
     const result = await handler(createScheduledEvent('test-event-4'), mockContext)
 

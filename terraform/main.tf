@@ -111,6 +111,136 @@ data "aws_iam_policy_document" "SNSAssumeRole" {
   }
 }
 
+# Single-table DynamoDB design for all entities
+# ElectroDB manages entity discrimination via pk/sk composite keys
+resource "aws_dynamodb_table" "MediaDownloader" {
+  name           = "MediaDownloader"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "pk"
+  range_key      = "sk"
+
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  # UserCollection: Query all resources by userId (files, devices)
+  # Access pattern: "Get all files and devices for a user"
+  # Used by: ListFiles, UserDelete, RegisterDevice
+  attribute {
+    name = "gsi1pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi1sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "UserCollection"
+    hash_key        = "gsi1pk"
+    range_key       = "gsi1sk"
+    projection_type = "ALL"
+    read_capacity   = 5
+    write_capacity  = 5
+  }
+
+  # FileCollection: Query all users by fileId (reverse lookup)
+  # Access pattern: "Which users need notification for this file?"
+  # Used by: S3ObjectCreated
+  attribute {
+    name = "gsi2pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi2sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "FileCollection"
+    hash_key        = "gsi2pk"
+    range_key       = "gsi2sk"
+    projection_type = "ALL"
+    read_capacity   = 5
+    write_capacity  = 5
+  }
+
+  # DeviceCollection: Query all users by deviceId (reverse lookup)
+  # Access pattern: "Which users are affected by this device?"
+  # Used by: PruneDevices
+  attribute {
+    name = "gsi3pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi3sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "DeviceCollection"
+    hash_key        = "gsi3pk"
+    range_key       = "gsi3sk"
+    projection_type = "ALL"
+    read_capacity   = 5
+    write_capacity  = 5
+  }
+
+  # StatusIndex: Query files by status, sorted by availableAt
+  # Access pattern: "Find files ready to download"
+  # Used by: FileCoordinator
+  attribute {
+    name = "gsi4pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi4sk"
+    type = "N"
+  }
+
+  global_secondary_index {
+    name            = "StatusIndex"
+    hash_key        = "gsi4pk"
+    range_key       = "gsi4sk"
+    projection_type = "ALL"
+    read_capacity   = 5
+    write_capacity  = 5
+  }
+
+  # KeyIndex: Query files by S3 object key
+  # Access pattern: "Find file by S3 event key"
+  # Used by: S3ObjectCreated
+  attribute {
+    name = "gsi5pk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "KeyIndex"
+    hash_key        = "gsi5pk"
+    projection_type = "ALL"
+    read_capacity   = 5
+    write_capacity  = 5
+  }
+
+  tags = {
+    Name        = "MediaDownloader"
+    Description = "Single-table design for Files, Users, Devices, UserFiles, UserDevices"
+  }
+}
+
 data "http" "icanhazip" {
   url = "https://ipv4.icanhazip.com/"
 }

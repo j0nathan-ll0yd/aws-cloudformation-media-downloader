@@ -46,18 +46,35 @@ const fakeGetDevicesResponse = {
 const fakeUserDevicesResponse = {
   Items: [
     {
-      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
+      devices: ['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A'],
       userId: fakeUserId
     }
   ]
 }
 
-const scanMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: scanMock,
-  deleteItem: jest.fn().mockReturnValue({}),
-  query: jest.fn(),
-  updateItem: jest.fn().mockReturnValue({})
+const devicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
+jest.unstable_mockModule('../../../entities/Devices', () => ({
+  Devices: {
+    scan: {
+      go: devicesScanGoMock
+    },
+    delete: jest.fn(() => ({go: devicesDeleteGoMock}))
+  }
+}))
+
+const userDevicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const userDevicesUpdateGoMock = jest.fn<() => Promise<unknown>>()
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
+  UserDevices: {
+    scan: {
+      go: userDevicesScanGoMock
+    },
+    update: jest.fn(() => ({
+      set: jest.fn(() => ({go: userDevicesUpdateGoMock})),
+      delete: jest.fn(() => ({go: userDevicesUpdateGoMock}))
+    }))
+  }
 }))
 
 jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
@@ -149,8 +166,8 @@ describe('#PruneDevices', () => {
   }
   const context = testContext
   test('should search for and remove disabled devices (single)', async () => {
-    scanMock.mockReturnValueOnce(fakeGetDevicesResponse)
-    scanMock.mockReturnValueOnce(fakeUserDevicesResponse)
+    devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
+    userDevicesScanGoMock.mockResolvedValue({data: fakeUserDevicesResponse.Items})
     sendMock.mockImplementationOnce(() => {
       throw getExpiredResponseForDevice(0)
     })
@@ -167,13 +184,13 @@ describe('#PruneDevices', () => {
     expect(output.statusCode).toEqual(200)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.scan.0', async () => {
-      scanMock.mockReturnValueOnce(undefined)
+    test('ElectroDB Devices.scan.go fails', async () => {
+      devicesScanGoMock.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
-    test('AWS.DynamoDB.scan.1', async () => {
-      scanMock.mockReturnValueOnce(fakeGetDevicesResponse)
-      scanMock.mockReturnValueOnce(undefined)
+    test('ElectroDB UserDevices.scan.go fails', async () => {
+      devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
+      userDevicesScanGoMock.mockResolvedValue(undefined)
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
       })
@@ -183,7 +200,7 @@ describe('#PruneDevices', () => {
   })
   describe('#APNSFailure', () => {
     test('APNS.Failure', async () => {
-      scanMock.mockReturnValue(fakeGetDevicesResponse)
+      devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       sendMock.mockImplementation(() => {
         throw undefined
       })

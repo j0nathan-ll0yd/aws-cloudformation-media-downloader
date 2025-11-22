@@ -9,18 +9,16 @@
  */
 
 const TEST_TABLE = 'test-files-webhook'
-const TEST_USER_FILES_TABLE = 'test-user-files-webhook'
 const TEST_SQS_QUEUE_URL = 'http://localhost:4566/000000000000/test-notifications'
 
-process.env.DynamoDBTableFiles = TEST_TABLE
-process.env.DynamoDBTableUserFiles = TEST_USER_FILES_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
 import {FileStatus} from '../../../src/types/enums'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
-import {createFilesTable, deleteFilesTable, createUserFilesTable, deleteUserFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -80,14 +78,12 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
 
   beforeAll(async () => {
     await createFilesTable()
-    await createUserFilesTable()
     await new Promise((resolve) => setTimeout(resolve, 1000))
     mockContext = createMockContext()
   })
 
   afterAll(async () => {
     await deleteFilesTable()
-    await deleteUserFilesTable()
   })
 
   beforeEach(async () => {
@@ -99,9 +95,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
     await deleteFilesTable()
-    await deleteUserFilesTable()
     await createFilesTable()
-    await createUserFilesTable()
     await new Promise((resolve) => setTimeout(resolve, 500))
   })
 

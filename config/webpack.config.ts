@@ -52,12 +52,20 @@ const config: webpack.Configuration = {
       {
         // Include ts, tsx, js, and jsx files.
         test: /\.(ts|js)x?$/,
-        exclude: /node_modules/,
+        exclude: [/node_modules/, /\.test\.ts$/, /\/test\//],
         use: ['babel-loader', 'ts-loader']
       }
     ]
   },
-  plugins: [new ForkTsCheckerWebpackPlugin()],
+  plugins: [
+    new ForkTsCheckerWebpackPlugin({
+      typescript: {
+        configOverwrite: {
+          exclude: ['**/*.test.ts', '**/test/**']
+        }
+      }
+    })
+  ],
   watch: false
 }
 

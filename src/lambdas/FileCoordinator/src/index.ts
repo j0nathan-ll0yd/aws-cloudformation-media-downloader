@@ -1,23 +1,26 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
-import {scanForFileParams} from '../../../util/dynamodb-helpers'
+import {Files} from '../../../entities/Files'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of filesIds that are ready to be downloaded
+ * Returns an array of fileIds that are ready to be downloaded
+ * Uses StatusIndex GSI to efficiently query PendingDownload files
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
-  const scanParams = scanForFileParams(process.env.DynamoDBTableFiles as string)
-  logDebug('getFilesToBeDownloaded <=', scanParams)
-  const scanResponse = await scan(scanParams)
-  logDebug('getFilesToBeDownloaded =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
+  logDebug('Querying for files ready to be downloaded')
+  const queryResponse = await Files.query
+    .byStatus({status: 'PendingDownload'})
+    .where(({availableAt}, {lte}) => lte(availableAt, Date.now()))
+    .where(({url}, {notExists}) => notExists(url))
+    .go()
+  logDebug('getFilesToBeDownloaded =>', queryResponse)
+  if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items.map((file) => file.fileId.toString())
+  return queryResponse.data.map((file) => file.fileId)
 }
 
 /**

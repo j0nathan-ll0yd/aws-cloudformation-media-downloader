@@ -17,7 +17,7 @@ const TEST_TABLE = 'test-files-upload'
 
 // Set environment variables for Lambda
 process.env.Bucket = TEST_BUCKET
-process.env.DynamoDBTableFiles = TEST_TABLE
+process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
