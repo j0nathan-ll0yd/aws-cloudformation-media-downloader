@@ -20,9 +20,7 @@ export default [
       '**/node_modules',
       '**/dist',
       '**/docs',
-      '**/local',
       '**/secure',
-      '**/spec',
       '**/static',
       '**/temp',
       '**/terraform',
@@ -31,7 +29,6 @@ export default [
       '**/bin',
       '**/.github',
       '**/.idea',
-      '**/.nyc_output',
       '**/.webpackCache',
       'src/types/terraform.d.ts',
       'eslint.config.mjs'

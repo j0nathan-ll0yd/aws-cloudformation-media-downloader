@@ -1,5 +1,0 @@
-name: ApiKey
-in: query
-description: Your API key
-schema:
-  type: string
