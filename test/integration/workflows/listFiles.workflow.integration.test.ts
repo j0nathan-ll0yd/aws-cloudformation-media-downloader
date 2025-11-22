@@ -25,6 +25,7 @@ import {FileStatus, UserStatus} from '../../../src/types/enums'
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
+import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -35,21 +36,14 @@ const __dirname = dirname(__filename)
 const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles')
 const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
-const userFilesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
-const userFilesQueryByUserMock = jest.fn(() => ({go: userFilesQueryByUserGoMock}))
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule(userFilesModulePath, () => ({
-  UserFiles: {
-    query: {
-      byUser: userFilesQueryByUserMock
-    }
-  }
+  UserFiles: userFilesMock.entity
 }))
 
-const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const filesMock = createElectroDBEntityMock()
 jest.unstable_mockModule(filesModulePath, () => ({
-  Files: {
-    get: jest.fn(() => ({go: filesGetMock}))
-  }
+  Files: filesMock.entity
 }))
 
 const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
@@ -120,7 +114,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   test('should query UserFiles and return Downloaded files for authenticated user', async () => {
     // Arrange: Mock ElectroDB responses
     // UserFiles.query.byUser returns array of individual UserFile records
-    userFilesQueryByUserGoMock.mockResolvedValue({
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: [
         {userId: 'user-abc-123', fileId: 'video-1'},
         {userId: 'user-abc-123', fileId: 'video-2'},
@@ -129,7 +123,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     })
 
     // Files.get called for each file ID
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {
         fileId: 'video-1',
         status: FileStatus.Downloaded,
@@ -139,7 +133,7 @@ describe('ListFiles Workflow Integration Tests', () => {
       }
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {
         fileId: 'video-2',
         status: FileStatus.Downloaded,
@@ -149,7 +143,7 @@ describe('ListFiles Workflow Integration Tests', () => {
       }
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {
         fileId: 'video-3',
         status: FileStatus.PendingDownload,
@@ -171,12 +165,12 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents[0].fileId).toBe('video-1')
     expect(response.body.contents[1].fileId).toBe('video-2')
 
-    expect(userFilesQueryByUserGoMock).toHaveBeenCalledTimes(1)
-    expect(filesGetMock).toHaveBeenCalledTimes(3)
+    expect(userFilesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(filesMock.mocks.get).toHaveBeenCalledTimes(3)
   })
 
   test('should return empty list when user has no files', async () => {
-    userFilesQueryByUserGoMock.mockResolvedValue({
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: []
     })
 
@@ -189,8 +183,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.keyCount).toBe(0)
     expect(response.body.contents).toHaveLength(0)
 
-    expect(userFilesQueryByUserGoMock).toHaveBeenCalledTimes(1)
-    expect(filesGetMock).not.toHaveBeenCalled()
+    expect(userFilesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(filesMock.mocks.get).not.toHaveBeenCalled()
   })
 
   test('should return demo file for anonymous user without querying DynamoDB', async () => {
@@ -205,8 +199,8 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents).toHaveLength(1)
     expect(response.body.contents[0]).toHaveProperty('fileId')
 
-    expect(userFilesQueryByUserGoMock).not.toHaveBeenCalled()
-    expect(filesGetMock).not.toHaveBeenCalled()
+    expect(userFilesMock.mocks.query.byUser!.go).not.toHaveBeenCalled()
+    expect(filesMock.mocks.get).not.toHaveBeenCalled()
   })
 
   test('should return 401 for unauthenticated user', async () => {
@@ -216,13 +210,13 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(401)
 
-    expect(userFilesQueryByUserGoMock).not.toHaveBeenCalled()
-    expect(filesGetMock).not.toHaveBeenCalled()
+    expect(userFilesMock.mocks.query.byUser!.go).not.toHaveBeenCalled()
+    expect(filesMock.mocks.get).not.toHaveBeenCalled()
   })
 
   test('should filter out non-Downloaded files (Pending, Failed, PendingDownload)', async () => {
     // Arrange: Mock ElectroDB responses with mixed file statuses
-    userFilesQueryByUserGoMock.mockResolvedValue({
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: [
         {userId: 'user-mixed-files', fileId: 'downloaded-1'},
         {userId: 'user-mixed-files', fileId: 'downloaded-2'},
@@ -232,23 +226,23 @@ describe('ListFiles Workflow Integration Tests', () => {
       ]
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'}
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'}
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'}
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'}
     })
 
-    filesGetMock.mockResolvedValueOnce({
+    filesMock.mocks.get.mockResolvedValueOnce({
       data: {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
     })
 
@@ -272,13 +266,13 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB with 50 files
     const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
-    userFilesQueryByUserGoMock.mockResolvedValue({
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: fileIds.map(fileId => ({userId: 'user-many-files', fileId}))
     })
 
     // Mock Files.get for each file ID
     fileIds.forEach((fileId, index) => {
-      filesGetMock.mockResolvedValueOnce({
+      filesMock.mocks.get.mockResolvedValueOnce({
         data: {
           fileId,
           status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
@@ -302,7 +296,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle DynamoDB errors gracefully', async () => {
-    userFilesQueryByUserGoMock.mockRejectedValue(new Error('DynamoDB service unavailable'))
+    userFilesMock.mocks.query.byUser!.go.mockRejectedValue(new Error('DynamoDB service unavailable'))
 
     const event = createListFilesEvent('user-error', UserStatus.Authenticated)
 
@@ -310,7 +304,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(result.statusCode).toBe(500)
 
-    expect(userFilesQueryByUserGoMock).toHaveBeenCalledTimes(1)
-    expect(filesGetMock).not.toHaveBeenCalled()
+    expect(userFilesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    expect(filesMock.mocks.get).not.toHaveBeenCalled()
   })
 })
