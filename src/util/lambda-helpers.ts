@@ -177,3 +177,21 @@ export async function putMetrics(
     logError('Failed to publish CloudWatch metrics', error)
   }
 }
+
+/**
+ * Logs incoming Lambda event as a fixture marker for CloudWatch extraction
+ * @param event - The Lambda event object (API Gateway, S3, SQS, etc.)
+ */
+export function logIncomingFixture(event: string | object): void {
+  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  logInfo(`[FIXTURE:INCOMING:${lambdaName}]`, event)
+}
+
+/**
+ * Logs outgoing Lambda response as a fixture marker for CloudWatch extraction
+ * @param response - The Lambda response object (APIGatewayProxyResult, custom response, etc.)
+ */
+export function logOutgoingFixture(response: string | object): void {
+  const lambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  logInfo(`[FIXTURE:OUTGOING:${lambdaName}]`, response)
+}

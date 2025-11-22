@@ -2,7 +2,7 @@ import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
@@ -12,13 +12,15 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as UserLogin
     validateRequest(requestBody, loginUserSchema)
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResponse = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResponse)
+    return errorResponse
   }
 
   const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
@@ -27,12 +29,18 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   const users = await getUsersByAppleDeviceIdentifier(appleUserId)
   const count = users.length
   if (count === 0) {
-    return response(context, 404, "User doesn't exist")
+    const notFoundResponse = response(context, 404, "User doesn't exist")
+    logOutgoingFixture(notFoundResponse)
+    return notFoundResponse
   } else if (count > 1) {
-    return response(context, 300, 'Duplicate user detected')
+    const duplicateResponse = response(context, 300, 'Duplicate user detected')
+    logOutgoingFixture(duplicateResponse)
+    return duplicateResponse
   }
 
   const userId = users[0].userId
   const token = await createAccessToken(userId)
-  return response(context, 200, {token})
+  const successResponse = response(context, 200, {token})
+  logOutgoingFixture(successResponse)
+  return successResponse
 })
