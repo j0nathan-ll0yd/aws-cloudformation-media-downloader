@@ -40,35 +40,37 @@ const fakeGithubIssueResponse = {
   }
 }
 
-const getUserDevicesMock = jest.fn()
+const getUserDevicesMock = jest.fn<() => Record<string, unknown>[] | undefined>()
+const deleteDeviceMock = jest.fn<() => Promise<void>>()
 jest.unstable_mockModule('../../../util/shared', () => ({
   getUserDevices: getUserDevicesMock,
-  deleteDevice: jest.fn().mockResolvedValue(undefined)
+  deleteDevice: deleteDeviceMock
 }))
 
-const devicesGetMock = jest.fn()
+const devicesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | undefined>>()
+const devicesDeleteGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
   Devices: {
     get: jest.fn(() => ({go: devicesGetMock})),
-    delete: jest.fn(() => ({go: jest.fn().mockResolvedValue({})}))
+    delete: jest.fn(() => ({go: devicesDeleteGoMock}))
   }
 }))
 
-const usersDeleteMock = jest.fn()
+const usersDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
   Users: {
     delete: jest.fn(() => ({go: usersDeleteMock}))
   }
 }))
 
-const userFilesDeleteMock = jest.fn()
+const userFilesDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
   UserFiles: {
     delete: jest.fn(() => ({go: userFilesDeleteMock}))
   }
 }))
 
-const userDevicesDeleteMock = jest.fn()
+const userDevicesDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     delete: jest.fn(() => ({go: userDevicesDeleteMock}))
@@ -99,6 +101,8 @@ describe('#UserDelete', () => {
     event.requestContext.authorizer!.principalId = fakeUserId
 
     // Set default mock return values
+    deleteDeviceMock.mockResolvedValue(undefined)
+    devicesDeleteGoMock.mockResolvedValue({})
     usersDeleteMock.mockResolvedValue({})
     userFilesDeleteMock.mockResolvedValue({})
     userDevicesDeleteMock.mockResolvedValue({})

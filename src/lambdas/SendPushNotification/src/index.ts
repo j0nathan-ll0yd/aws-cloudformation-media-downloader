@@ -8,7 +8,6 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Returns device IDs for a user
  * @param userId - The UUID of the user

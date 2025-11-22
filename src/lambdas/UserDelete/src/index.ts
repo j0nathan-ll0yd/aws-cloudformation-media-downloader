@@ -11,7 +11,6 @@ import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
   const response = await UserFiles.delete({userId}).go()

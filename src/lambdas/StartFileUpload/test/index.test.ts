@@ -1,7 +1,6 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
-import {FileStatus} from '../../../types/enums'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
 

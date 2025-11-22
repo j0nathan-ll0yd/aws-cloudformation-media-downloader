@@ -52,23 +52,28 @@ const fakeUserDevicesResponse = {
   ]
 }
 
-const devicesScanGoMock = jest.fn()
+const devicesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]} | undefined>>()
+const devicesDeleteGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
   Devices: {
     scan: {
       go: devicesScanGoMock
     },
-    delete: jest.fn(() => ({go: jest.fn().mockResolvedValue({})}))
+    delete: jest.fn(() => ({go: devicesDeleteGoMock}))
   }
 }))
 
-const userDevicesScanGoMock = jest.fn()
+const userDevicesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]} | undefined>>()
+const userDevicesUpdateGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     scan: {
       go: userDevicesScanGoMock
     },
-    update: jest.fn(() => ({set: jest.fn(() => ({go: jest.fn().mockResolvedValue({})}))}))
+    update: jest.fn(() => ({
+      set: jest.fn(() => ({go: userDevicesUpdateGoMock})),
+      delete: jest.fn(() => ({go: userDevicesUpdateGoMock}))
+    }))
   }
 }))
 

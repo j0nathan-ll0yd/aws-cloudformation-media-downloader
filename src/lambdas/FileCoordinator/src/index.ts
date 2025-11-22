@@ -5,7 +5,6 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Returns an array of filesIds that are ready to be downloaded
  */

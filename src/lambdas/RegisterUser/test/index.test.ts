@@ -10,7 +10,6 @@ jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
   verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
 }))
 
-const {default: putResponse} = await import('./fixtures/putItem-200-OK.json', {assert: {type: 'json'}})
 const usersCreateMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
   Users: {

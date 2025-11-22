@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
-import {addFileToUser} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
+import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
@@ -14,15 +14,16 @@ import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
- * Associates a File to a User in DynamoDB
+ * Associates a File to a User in DynamoDB using atomic set addition
  * @param fileId - The unique file identifier
  * @param userId - The UUID of the user
  */
 export async function associateFileToUser(fileId: string, userId: string) {
   logDebug('associateFileToUser <=', {fileId, userId})
-  const response = await addFileToUser(userId, fileId)
+  const response = await UserFiles.update({userId})
+    .add({fileId: [fileId]})
+    .go()
   logDebug('associateFileToUser =>', response)
   return response
 }

@@ -1,5 +1,4 @@
 // These are methods that are shared across multiple lambdas
-import {removeDeviceFromUser} from '../lib/vendor/ElectroDB/entities/UserDevices'
 import {Devices} from '../lib/vendor/ElectroDB/entities/Devices'
 import {UserDevices} from '../lib/vendor/ElectroDB/entities/UserDevices'
 import {Files} from '../lib/vendor/ElectroDB/entities/Files'
@@ -11,14 +10,16 @@ import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
 /**
- * Disassociates a deviceId from a User
+ * Disassociates a deviceId from a User using atomic set deletion
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
  * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   logDebug('deleteUserDevice <=', {userId, deviceId})
-  const response = await removeDeviceFromUser(userId, deviceId)
+  const response = await UserDevices.update({userId})
+    .delete({devices: [deviceId]})
+    .go()
   logDebug('deleteUserDevice =>', response)
 }
 

@@ -10,8 +10,8 @@ if (Array.isArray(queryStubReturnObject.Items)) {
   queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
 }
 
-const userFilesGetMock = jest.fn()
-const filesGetMock = jest.fn()
+const userFilesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | undefined>>()
+const filesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | undefined>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
   UserFiles: {
     get: jest.fn(() => ({
@@ -42,7 +42,7 @@ describe('#ListFiles', () => {
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
-      expect(body.keyCount).toEqual(0)
+      expect(body.body.keyCount).toEqual(0)
     })
     test('ElectroDB Files.get', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId

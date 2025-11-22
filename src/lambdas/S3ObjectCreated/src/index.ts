@@ -8,7 +8,6 @@ import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '
 import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Returns the DynamoDBFile by file name
  * @param fileName - The name of the DynamoDBFile you're searching for

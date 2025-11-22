@@ -9,7 +9,6 @@ import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Creates a new user record in DynamoDB
  * @param user - The User object you want to create

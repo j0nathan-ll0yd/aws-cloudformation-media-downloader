@@ -2,7 +2,7 @@ import {testContext} from '../../../util/jest-setup'
 import {describe, expect, test, jest} from '@jest/globals'
 const {default: eventMock} = await import('./fixtures/ScheduledEvent.json', {assert: {type: 'json'}})
 
-const filesScanGoMock = jest.fn()
+const filesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]} | undefined>>()
 const filesScanWhereMock = jest.fn(() => ({
   where: filesScanWhereMock,
   go: filesScanGoMock

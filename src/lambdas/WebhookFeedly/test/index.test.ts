@@ -4,8 +4,8 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 
-const filesGetMock = jest.fn()
-const filesCreateMock = jest.fn()
+const filesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | {data: undefined}>>()
+const filesCreateMock = jest.fn<() => Promise<{data: Record<string, unknown>}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
   Files: {
     get: jest.fn(() => ({go: filesGetMock})),
@@ -13,9 +13,12 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => (
   }
 }))
 
-const addFileToUserMock = jest.fn()
+const userFilesUpdateGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const userFilesUpdateAddMock = jest.fn(() => ({go: userFilesUpdateGoMock}))
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
-  addFileToUser: addFileToUserMock
+  UserFiles: {
+    update: jest.fn(() => ({add: userFilesUpdateAddMock}))
+  }
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
@@ -78,7 +81,7 @@ describe('#WebhookFeedly', () => {
     event.body = JSON.stringify(handleFeedlyEventResponse)
     filesGetMock.mockResolvedValue({data: undefined})
     filesCreateMock.mockResolvedValue({data: {}})
-    addFileToUserMock.mockRejectedValue(new Error('Update failed'))
+    userFilesUpdateGoMock.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })

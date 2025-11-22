@@ -2,7 +2,7 @@ import {describe, expect, test, jest} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 
-const filesScanGoMock = jest.fn()
+const filesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]}>>()
 const filesScanWhereMock = jest.fn(() => ({go: filesScanGoMock}))
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
   Files: {
@@ -13,7 +13,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => (
   }
 }))
 
-const userFilesScanGoMock = jest.fn()
+const userFilesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
   UserFiles: {
     scan: {

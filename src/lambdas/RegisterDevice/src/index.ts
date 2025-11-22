@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
-import {addDeviceToUser} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
+import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
@@ -10,7 +10,6 @@ import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, respons
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
-
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -44,14 +43,16 @@ export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
 }
 
 /**
- * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB
+ * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB using atomic set addition
  * @param userId - The userId
  * @param deviceId - The UUID of the device (either iOS or Android)
  * @notExported
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
   logDebug('upsertUserDevices <=', {userId, deviceId})
-  const response = await addDeviceToUser(userId, deviceId)
+  const response = await UserDevices.update({userId})
+    .add({devices: [deviceId]})
+    .go()
   logDebug('upsertUserDevices =>', response)
   return response
 }

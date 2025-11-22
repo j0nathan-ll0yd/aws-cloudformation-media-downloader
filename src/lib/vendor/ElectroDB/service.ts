@@ -9,12 +9,12 @@ import {Devices} from './entities/Devices'
 import {UserFiles} from './entities/UserFiles'
 import {UserDevices} from './entities/UserDevices'
 
-// Re-export entities and their helper functions
+// Re-export entities
 export {Files} from './entities/Files'
 export {Users} from './entities/Users'
 export {Devices} from './entities/Devices'
-export {UserFiles, addFileToUser, removeFileFromUser} from './entities/UserFiles'
-export {UserDevices, addDeviceToUser, removeDeviceFromUser} from './entities/UserDevices'
+export {UserFiles} from './entities/UserFiles'
+export {UserDevices} from './entities/UserDevices'
 
 // Create DynamoDB Document client
 const dynamoDBClient = createDynamoDBClient()

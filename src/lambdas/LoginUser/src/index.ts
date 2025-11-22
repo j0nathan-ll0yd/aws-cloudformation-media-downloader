@@ -7,7 +7,6 @@ import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Logs in a User via Sign in with Apple
  * @notExported

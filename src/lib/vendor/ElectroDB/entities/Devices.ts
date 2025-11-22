@@ -1,56 +1,58 @@
 import {Entity} from 'electrodb'
 import {documentClient} from '../client'
 
-
 /**
  * ElectroDB entity schema for the Devices DynamoDB table.
  * This entity manages device registrations for push notifications.
  */
-export const Devices = new Entity({
-  model: {
-    entity: 'Device',
-    version: '1',
-    service: 'MediaDownloader'
-  },
-  attributes: {
-    deviceId: {
-      type: 'string',
-      required: true,
-      readOnly: true
+export const Devices = new Entity(
+  {
+    model: {
+      entity: 'Device',
+      version: '1',
+      service: 'MediaDownloader'
     },
-    name: {
-      type: 'string',
-      required: true
+    attributes: {
+      deviceId: {
+        type: 'string',
+        required: true,
+        readOnly: true
+      },
+      name: {
+        type: 'string',
+        required: true
+      },
+      token: {
+        type: 'string',
+        required: true
+      },
+      systemVersion: {
+        type: 'string',
+        required: true
+      },
+      systemName: {
+        type: 'string',
+        required: true
+      },
+      endpointArn: {
+        type: 'string',
+        required: true
+      }
     },
-    token: {
-      type: 'string',
-      required: true
-    },
-    systemVersion: {
-      type: 'string',
-      required: true
-    },
-    systemName: {
-      type: 'string',
-      required: true
-    },
-    endpointArn: {
-      type: 'string',
-      required: true
-    }
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: 'deviceId',
-        composite: ['deviceId']
+    indexes: {
+      primary: {
+        pk: {
+          field: 'deviceId',
+          composite: ['deviceId']
+        }
       }
     }
+  },
+  {
+    table: process.env.DynamoDBTableDevices,
+    client: documentClient
   }
-}, {
-  table: process.env.DynamoDBTableDevices,
-  client: documentClient
-})
+)
 
 // Type exports for use in application code
 export type DeviceItem = ReturnType<typeof Devices.parse>

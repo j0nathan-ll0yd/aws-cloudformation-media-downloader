@@ -6,7 +6,7 @@
  */
 
 import {DynamoDBFile, User, Device, IdentityProviderApple} from '../types/main'
-import {Files, Users, Devices, UserFiles, UserDevices, addFileToUser, addDeviceToUser, removeDeviceFromUser} from '../lib/vendor/ElectroDB/service'
+import {Files, Users, Devices, UserFiles, UserDevices} from '../lib/vendor/ElectroDB/service'
 
 // ========================================
 // Files Table Operations
@@ -172,7 +172,9 @@ export async function deleteDevice(deviceId: string) {
  * Replaces: userFileParams
  */
 export async function addUserFile(userId: string, fileId: string) {
-  return addFileToUser(userId, fileId)
+  return UserFiles.update({userId})
+    .add({fileId: [fileId]})
+    .go()
 }
 
 /**
@@ -214,7 +216,9 @@ export async function deleteUserFiles(userId: string) {
  * Replaces: userDevicesParams
  */
 export async function addUserDevice(userId: string, deviceId: string) {
-  return addDeviceToUser(userId, deviceId)
+  return UserDevices.update({userId})
+    .add({devices: [deviceId]})
+    .go()
 }
 
 /**
@@ -222,7 +226,9 @@ export async function addUserDevice(userId: string, deviceId: string) {
  * Replaces: deleteSingleUserDeviceParams
  */
 export async function removeUserDevice(userId: string, deviceId: string) {
-  return removeDeviceFromUser(userId, deviceId)
+  return UserDevices.update({userId})
+    .delete({devices: [deviceId]})
+    .go()
 }
 
 /**

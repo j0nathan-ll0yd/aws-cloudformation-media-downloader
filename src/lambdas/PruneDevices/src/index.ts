@@ -11,7 +11,6 @@ import {Apns2Error} from '../../../util/errors'
 import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-
 /**
  * Returns an array of all devices
  * @notExported
