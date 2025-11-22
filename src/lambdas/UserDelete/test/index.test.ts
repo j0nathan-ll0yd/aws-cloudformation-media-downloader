@@ -40,15 +40,15 @@ const fakeGithubIssueResponse = {
   }
 }
 
-const getUserDevicesMock = jest.fn<() => Record<string, unknown>[] | undefined>()
+const getUserDevicesMock = jest.fn<() => unknown>()
 const deleteDeviceMock = jest.fn<() => Promise<void>>()
 jest.unstable_mockModule('../../../util/shared', () => ({
   getUserDevices: getUserDevicesMock,
   deleteDevice: deleteDeviceMock
 }))
 
-const devicesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | undefined>>()
-const devicesDeleteGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
   Devices: {
     get: jest.fn(() => ({go: devicesGetMock})),
@@ -56,21 +56,21 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () =>
   }
 }))
 
-const usersDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const usersDeleteMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
   Users: {
     delete: jest.fn(() => ({go: usersDeleteMock}))
   }
 }))
 
-const userFilesDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const userFilesDeleteMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
   UserFiles: {
     delete: jest.fn(() => ({go: userFilesDeleteMock}))
   }
 }))
 
-const userDevicesDeleteMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const userDevicesDeleteMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     delete: jest.fn(() => ({go: userDevicesDeleteMock}))

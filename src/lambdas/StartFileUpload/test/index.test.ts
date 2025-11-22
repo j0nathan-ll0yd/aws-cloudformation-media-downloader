@@ -16,7 +16,7 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
 }))
 
 // Mock ElectroDB Files entity
-const filesUpsertMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const filesUpsertMock = jest.fn<() => Promise<{data: unknown}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
   Files: {
     upsert: jest.fn(() => ({go: filesUpsertMock}))

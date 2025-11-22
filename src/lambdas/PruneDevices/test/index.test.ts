@@ -52,8 +52,8 @@ const fakeUserDevicesResponse = {
   ]
 }
 
-const devicesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]} | undefined>>()
-const devicesDeleteGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const devicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
   Devices: {
     scan: {
@@ -63,8 +63,8 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () =>
   }
 }))
 
-const userDevicesScanGoMock = jest.fn<() => Promise<{data: Record<string, unknown>[]} | undefined>>()
-const userDevicesUpdateGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const userDevicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const userDevicesUpdateGoMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     scan: {

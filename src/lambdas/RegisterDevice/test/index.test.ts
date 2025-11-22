@@ -4,14 +4,14 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 
-const devicesUpsertMock = jest.fn<() => Promise<{data: Record<string, unknown>}>>()
+const devicesUpsertMock = jest.fn<() => Promise<{data: unknown}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
   Devices: {
     upsert: jest.fn(() => ({go: devicesUpsertMock}))
   }
 }))
 
-const userDevicesUpdateGoMock = jest.fn<() => Promise<{data: Record<string, unknown>}>>()
+const userDevicesUpdateGoMock = jest.fn<() => Promise<{data: unknown}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     update: jest.fn(() => ({

@@ -4,8 +4,8 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 const fakeUserId = uuidv4()
 
-const filesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | {data: undefined}>>()
-const filesCreateMock = jest.fn<() => Promise<{data: Record<string, unknown>}>>()
+const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const filesCreateMock = jest.fn<() => Promise<{data: unknown}>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
   Files: {
     get: jest.fn(() => ({go: filesGetMock})),
@@ -13,7 +13,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => (
   }
 }))
 
-const userFilesUpdateGoMock = jest.fn<() => Promise<Record<string, unknown>>>()
+const userFilesUpdateGoMock = jest.fn<() => Promise<unknown>>()
 const userFilesUpdateAddMock = jest.fn(() => ({go: userFilesUpdateGoMock}))
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
   UserFiles: {
@@ -53,14 +53,14 @@ jest.unstable_mockModule('fs', () => ({
 
 // Mock S3 vendor wrapper for YouTube
 jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  headObject: jest.fn<() => Promise<{ContentLength: number}>>(),
+  headObject: jest.fn(),
   createS3Upload: jest.fn().mockReturnValue({
     on: jest.fn(),
     done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
   })
 }))
 
-const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+const invokeAsyncMock = jest.fn<() => Promise<unknown>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
   invokeAsync: invokeAsyncMock
 }))

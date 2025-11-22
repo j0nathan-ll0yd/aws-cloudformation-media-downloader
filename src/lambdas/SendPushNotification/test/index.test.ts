@@ -28,8 +28,8 @@ const getDeviceResponse = {
   ScannedCount: 1
 }
 
-const userDevicesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | {data: undefined}>>()
-const devicesGetMock = jest.fn<() => Promise<{data: Record<string, unknown>} | undefined>>()
+const userDevicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
   UserDevices: {
     get: jest.fn(() => ({go: userDevicesGetMock}))
@@ -41,7 +41,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () =>
   }
 }))
 
-const publishSnsEventMock = jest.fn<() => Record<string, unknown>>()
+const publishSnsEventMock = jest.fn<() => unknown>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
   publishSnsEvent: publishSnsEventMock
 }))
