@@ -41,10 +41,13 @@ jest.unstable_mockModule(snsModulePath, () => ({
   publish: publishSnsEventMock
 }))
 
-const userDevicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const userDevicesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
+const userDevicesQueryByUserMock = jest.fn(() => ({go: userDevicesQueryByUserGoMock}))
 jest.unstable_mockModule(userDevicesModulePath, () => ({
   UserDevices: {
-    get: jest.fn(() => ({go: userDevicesGetMock}))
+    query: {
+      byUser: userDevicesQueryByUserMock
+    }
   }
 }))
 
@@ -131,12 +134,14 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
   test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
     // Arrange: Mock ElectroDB responses
-    // First query: getUserDevicesByUserId returns device IDs
-    userDevicesGetMock.mockResolvedValue({
-      data: {
-        userId: 'user-123',
-        devices: ['device-abc']
-      }
+    // First query: getUserDevicesByUserId returns array of individual UserDevice records
+    userDevicesQueryByUserGoMock.mockResolvedValue({
+      data: [
+        {
+          userId: 'user-123',
+          deviceId: 'device-abc'
+        }
+      ]
     })
 
     devicesGetMock.mockResolvedValue({
@@ -150,7 +155,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     await handler(event, createMockContext())
 
-    expect(userDevicesGetMock).toHaveBeenCalledTimes(1)
+    expect(userDevicesQueryByUserGoMock).toHaveBeenCalledTimes(1)
     expect(devicesGetMock).toHaveBeenCalledTimes(1)
 
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
@@ -161,12 +166,13 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
   test('should fan-out to multiple devices when user has multiple registered devices', async () => {
     // Arrange: Mock ElectroDB responses
-    // First query: getUserDevicesByUserId returns multiple device IDs
-    userDevicesGetMock.mockResolvedValue({
-      data: {
-        userId: 'user-456',
-        devices: ['device-1', 'device-2', 'device-3']
-      }
+    // First query: getUserDevicesByUserId returns array of individual UserDevice records
+    userDevicesQueryByUserGoMock.mockResolvedValue({
+      data: [
+        {userId: 'user-456', deviceId: 'device-1'},
+        {userId: 'user-456', deviceId: 'device-2'},
+        {userId: 'user-456', deviceId: 'device-3'}
+      ]
     })
 
     devicesGetMock.mockResolvedValueOnce({
@@ -186,7 +192,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await handler(event, createMockContext())
 
     // Assert: ElectroDB queried 4 times (1 UserDevices + 3 Devices)
-    expect(userDevicesGetMock).toHaveBeenCalledTimes(1)
+    expect(userDevicesQueryByUserGoMock).toHaveBeenCalledTimes(1)
     expect(devicesGetMock).toHaveBeenCalledTimes(3)
 
     // Assert: SNS publish called 3 times (one per device)
@@ -201,12 +207,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   })
 
   test('should return early when user has no registered devices', async () => {
-    // Arrange: Mock ElectroDB to return empty devices
-    userDevicesGetMock.mockResolvedValue({
-      data: {
-        userId: 'user-no-devices',
-        devices: []
-      }
+    // Arrange: Mock ElectroDB to return empty array (no devices)
+    userDevicesQueryByUserGoMock.mockResolvedValue({
+      data: []
     })
 
     const event = createFileNotificationEvent('user-no-devices', 'video-789')
@@ -214,7 +217,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await handler(event, createMockContext())
 
     // Assert: Only UserDevices queried, not Devices
-    expect(userDevicesGetMock).toHaveBeenCalledTimes(1)
+    expect(userDevicesQueryByUserGoMock).toHaveBeenCalledTimes(1)
     expect(devicesGetMock).not.toHaveBeenCalled()
 
     // Assert: No SNS publish (no devices to notify)
@@ -223,11 +226,11 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
   test('should handle invalid device gracefully and continue to next device', async () => {
     // Arrange: Mock ElectroDB responses
-    userDevicesGetMock.mockResolvedValue({
-      data: {
-        userId: 'user-789',
-        devices: ['device-good', 'device-bad']
-      }
+    userDevicesQueryByUserGoMock.mockResolvedValue({
+      data: [
+        {userId: 'user-789', deviceId: 'device-good'},
+        {userId: 'user-789', deviceId: 'device-bad'}
+      ]
     })
 
     devicesGetMock.mockResolvedValueOnce({
@@ -247,15 +250,15 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
   test('should process multiple SQS records in same batch', async () => {
     // Arrange: Mock ElectroDB responses for two different users
-    userDevicesGetMock.mockResolvedValueOnce({
-      data: {userId: 'user-1', devices: ['device-user1']}
+    userDevicesQueryByUserGoMock.mockResolvedValueOnce({
+      data: [{userId: 'user-1', deviceId: 'device-user1'}]
     })
     devicesGetMock.mockResolvedValueOnce({
       data: {deviceId: 'device-user1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'}
     })
 
-    userDevicesGetMock.mockResolvedValueOnce({
-      data: {userId: 'user-2', devices: ['device-user2']}
+    userDevicesQueryByUserGoMock.mockResolvedValueOnce({
+      data: [{userId: 'user-2', deviceId: 'device-user2'}]
     })
     devicesGetMock.mockResolvedValueOnce({
       data: {deviceId: 'device-user2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'}
@@ -270,7 +273,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await handler(batchEvent, createMockContext())
 
     // Assert: ElectroDB queried 4 times (2 users × 2 queries each)
-    expect(userDevicesGetMock).toHaveBeenCalledTimes(2)
+    expect(userDevicesQueryByUserGoMock).toHaveBeenCalledTimes(2)
     expect(devicesGetMock).toHaveBeenCalledTimes(2)
 
     // Assert: SNS published 2 times (one per user)
