@@ -5,9 +5,6 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration (referenced for infrastructure validation)
-const {DynamoDBTableFiles} = process.env
-void DynamoDBTableFiles
 
 /**
  * Returns an array of filesIds that are ready to be downloaded

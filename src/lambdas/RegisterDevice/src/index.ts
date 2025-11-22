@@ -11,10 +11,6 @@ import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '.
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration
-const {DynamoDBTableDevices,DynamoDBTableUserDevices} = process.env
-void DynamoDBTableDevices
-void DynamoDBTableUserDevices
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)

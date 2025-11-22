@@ -7,9 +7,6 @@ import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../
 import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration
-const {DynamoDBTableUsers} = process.env
-void DynamoDBTableUsers
 
 /**
  * Logs in a User via Sign in with Apple

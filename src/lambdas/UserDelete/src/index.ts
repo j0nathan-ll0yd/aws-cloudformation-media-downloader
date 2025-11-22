@@ -11,10 +11,6 @@ import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration
-const {DynamoDBTableUsers,DynamoDBTableUserFiles,DynamoDBTableUserDevices,DynamoDBTableDevices} = process.env
-void DynamoDBTableUsers,DynamoDBTableUserFiles,DynamoDBTableUserDevices
-void DynamoDBTableDevices
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)

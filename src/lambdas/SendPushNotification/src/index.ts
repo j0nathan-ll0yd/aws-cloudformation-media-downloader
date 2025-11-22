@@ -8,10 +8,6 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration
-const {DynamoDBTableUserDevices,DynamoDBTableDevices} = process.env
-void DynamoDBTableUserDevices
-void DynamoDBTableDevices
 
 /**
  * Returns device IDs for a user

@@ -11,10 +11,6 @@ import {Apns2Error} from '../../../util/errors'
 import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-// ElectroDB entity table configuration
-const {DynamoDBTableDevices,DynamoDBTableUserDevices} = process.env
-void DynamoDBTableDevices
-void DynamoDBTableUserDevices
 
 /**
  * Returns an array of all devices
