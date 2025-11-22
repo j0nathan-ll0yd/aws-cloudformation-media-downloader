@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
-import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'

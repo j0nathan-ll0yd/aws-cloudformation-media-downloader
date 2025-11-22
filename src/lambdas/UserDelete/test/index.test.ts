@@ -49,7 +49,7 @@ jest.unstable_mockModule('../../../util/shared', () => ({
 
 const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
+jest.unstable_mockModule('../../../entities/Devices', () => ({
   Devices: {
     get: jest.fn(() => ({go: devicesGetMock})),
     delete: jest.fn(() => ({go: devicesDeleteGoMock}))
@@ -57,21 +57,21 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () =>
 }))
 
 const usersDeleteMock = jest.fn<() => Promise<unknown>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
+jest.unstable_mockModule('../../../entities/Users', () => ({
   Users: {
     delete: jest.fn(() => ({go: usersDeleteMock}))
   }
 }))
 
 const userFilesDeleteMock = jest.fn<() => Promise<unknown>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: {
     delete: jest.fn(() => ({go: userFilesDeleteMock}))
   }
 }))
 
 const userDevicesDeleteMock = jest.fn<() => Promise<unknown>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: {
     delete: jest.fn(() => ({go: userDevicesDeleteMock}))
   }

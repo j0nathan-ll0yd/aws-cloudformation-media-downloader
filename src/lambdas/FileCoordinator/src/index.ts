@@ -1,5 +1,5 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
+import {Files} from '../../../entities/Files'
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {initiateFileDownload} from '../../../util/shared'

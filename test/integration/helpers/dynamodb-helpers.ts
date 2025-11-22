@@ -125,7 +125,7 @@ export async function deleteUserFilesTable(): Promise<void> {
  * This ensures proper entity metadata is added for ElectroDB compatibility
  */
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
-  const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
+  const {Files} = await import('../../../src/entities/Files')
 
   // ElectroDB requires all fields, so provide defaults
   await Files.create({
@@ -148,7 +148,7 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
  * Get a file record from DynamoDB using ElectroDB
  */
 export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
-  const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
+  const {Files} = await import('../../../src/entities/Files')
 
   const response = await Files.get({fileId}).go()
 

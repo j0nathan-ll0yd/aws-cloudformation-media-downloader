@@ -1,6 +1,6 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
-import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
+import {Devices} from '../../../entities/Devices'
+import {UserDevices} from '../../../entities/UserDevices'
 import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device} from '../../../types/main'

@@ -6,7 +6,7 @@ const fakeUserId = uuidv4()
 
 const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 const filesCreateMock = jest.fn<() => Promise<{data: unknown}>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+jest.unstable_mockModule('../../../entities/Files', () => ({
   Files: {
     get: jest.fn(() => ({go: filesGetMock})),
     create: jest.fn(() => ({go: filesCreateMock}))
@@ -15,7 +15,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => (
 
 const userFilesUpdateGoMock = jest.fn<() => Promise<unknown>>()
 const userFilesUpdateAddMock = jest.fn(() => ({go: userFilesUpdateGoMock}))
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: {
     update: jest.fn(() => ({add: userFilesUpdateAddMock}))
   }

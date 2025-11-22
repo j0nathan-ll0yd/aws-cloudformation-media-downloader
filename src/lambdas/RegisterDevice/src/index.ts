@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
-import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
+import {Devices} from '../../../entities/Devices'
+import {UserDevices} from '../../../entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'

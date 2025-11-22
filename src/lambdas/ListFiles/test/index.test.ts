@@ -13,10 +13,10 @@ if (Array.isArray(queryStubReturnObject.Items)) {
 
 const userFilesMock = createElectroDBEntityMock()
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: userFilesMock.entity
 }))
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+jest.unstable_mockModule('../../../entities/Files', () => ({
   Files: filesMock.entity
 }))
 

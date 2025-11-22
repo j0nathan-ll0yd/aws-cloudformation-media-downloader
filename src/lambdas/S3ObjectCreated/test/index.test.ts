@@ -4,7 +4,7 @@ import {testContext} from '../../../util/jest-setup'
 
 const filesScanGoMock = jest.fn<() => Promise<{data: unknown}>>()
 const filesScanWhereMock = jest.fn(() => ({go: filesScanGoMock}))
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+jest.unstable_mockModule('../../../entities/Files', () => ({
   Files: {
     scan: {
       where: filesScanWhereMock,
@@ -14,7 +14,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => (
 }))
 
 const userFilesScanGoMock = jest.fn<() => Promise<{data: unknown}>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
   UserFiles: {
     scan: {
       go: userFilesScanGoMock

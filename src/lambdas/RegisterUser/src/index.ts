@@ -1,5 +1,5 @@
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Users} from '../../../lib/vendor/ElectroDB/entities/Users'
+import {Users} from '../../../entities/Users'
 import {IdentityProviderApple, User, UserRegistration} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserSchema} from '../../../util/constraints'

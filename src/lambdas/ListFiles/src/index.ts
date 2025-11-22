@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Files} from '../../../lib/vendor/ElectroDB/entities/Files'
-import {UserFiles} from '../../../lib/vendor/ElectroDB/entities/UserFiles'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'

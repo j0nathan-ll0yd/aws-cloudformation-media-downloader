@@ -32,8 +32,8 @@ import {dirname, resolve} from 'path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
-const userDevicesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/UserDevices')
-const devicesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/Devices')
+const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevices')
+const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 
 const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule(snsModulePath, () => ({

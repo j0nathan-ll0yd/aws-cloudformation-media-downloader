@@ -7,7 +7,7 @@ const filesScanWhereMock = jest.fn(() => ({
   where: filesScanWhereMock,
   go: filesScanGoMock
 }))
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Files', () => ({
+jest.unstable_mockModule('../../../entities/Files', () => ({
   Files: {
     scan: {
       where: filesScanWhereMock,

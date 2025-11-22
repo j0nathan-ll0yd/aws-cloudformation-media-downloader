@@ -1,6 +1,6 @@
 import {SQSEvent, Context} from 'aws-lambda'
-import {UserDevices} from '../../../lib/vendor/ElectroDB/entities/UserDevices'
-import {Devices} from '../../../lib/vendor/ElectroDB/entities/Devices'
+import {UserDevices} from '../../../entities/UserDevices'
+import {Devices} from '../../../entities/Devices'
 import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
 import {Device, FileNotification} from '../../../types/main'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'

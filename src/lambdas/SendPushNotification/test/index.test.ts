@@ -30,12 +30,12 @@ const getDeviceResponse = {
 
 const userDevicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: {
     get: jest.fn(() => ({go: userDevicesGetMock}))
   }
 }))
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
+jest.unstable_mockModule('../../../entities/Devices', () => ({
   Devices: {
     get: jest.fn(() => ({go: devicesGetMock}))
   }

@@ -11,7 +11,7 @@ jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
 }))
 
 const usersCreateMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
+jest.unstable_mockModule('../../../entities/Users', () => ({
   Users: {
     create: jest.fn(() => ({go: usersCreateMock})),
     scan: {go: jest.fn()}

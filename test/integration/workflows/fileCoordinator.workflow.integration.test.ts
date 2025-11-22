@@ -140,7 +140,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       size: 5242880
     })
 
-    const {Files} = await import('../../../src/lib/vendor/ElectroDB/entities/Files')
+    const {Files} = await import('../../../src/entities/Files')
     await Files.update({fileId: 'downloaded-video'})
       .set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'})
       .go()

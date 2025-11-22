@@ -1,8 +1,8 @@
 // These are methods that are shared across multiple lambdas
-import {Devices} from '../lib/vendor/ElectroDB/entities/Devices'
-import {UserDevices} from '../lib/vendor/ElectroDB/entities/UserDevices'
-import {Files} from '../lib/vendor/ElectroDB/entities/Files'
-import {Users} from '../lib/vendor/ElectroDB/entities/Users'
+import {Devices} from '../entities/Devices'
+import {UserDevices} from '../entities/UserDevices'
+import {Files} from '../entities/Files'
+import {Users} from '../entities/Users'
 import {logDebug} from './lambda-helpers'
 import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'

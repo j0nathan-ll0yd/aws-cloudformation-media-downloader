@@ -34,8 +34,8 @@ import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const userFilesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/UserFiles')
-const filesModulePath = resolve(__dirname, '../../../src/lib/vendor/ElectroDB/entities/Files')
+const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles')
+const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
 const userFilesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
 jest.unstable_mockModule(userFilesModulePath, () => ({
