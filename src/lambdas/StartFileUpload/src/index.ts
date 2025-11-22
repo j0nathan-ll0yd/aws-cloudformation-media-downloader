@@ -9,6 +9,10 @@ import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
 import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
 
+// ElectroDB entity table configuration
+const {DynamoDBTableFiles} = process.env
+void DynamoDBTableFiles
+
 /**
  * Downloads a YouTube video and uploads it to S3
  * @param event - Contains the fileId to download

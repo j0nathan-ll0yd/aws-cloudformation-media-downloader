@@ -1,4 +1,6 @@
 import {Entity} from 'electrodb'
+import {documentClient} from '../client'
+
 
 /**
  * ElectroDB entity schema for the Users DynamoDB table.
@@ -80,6 +82,9 @@ export const Users = new Entity({
       }
     }
   }
+}, {
+  table: process.env.DynamoDBTableUsers,
+  client: documentClient
 })
 
 // Type exports for use in application code

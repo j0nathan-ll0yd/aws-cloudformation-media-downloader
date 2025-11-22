@@ -1,6 +1,5 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
-import {UnexpectedError} from '../../../util/errors'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 const fakeUserId = uuidv4()
@@ -56,19 +55,15 @@ describe('#SendPushNotification', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
   test('should send a notification for each user device', async () => {
-    queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
-    queryMock.mockReturnValueOnce(getDeviceResponse)
+    userDevicesGetMock.mockResolvedValue({data: getUserDevicesByUserIdResponse.Items[0]})
+    devicesGetMock.mockResolvedValue({data: getDeviceResponse.Items[0]})
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
   })
   test('should exit gracefully if no devices exist', async () => {
-    queryMock.mockReturnValue({
-      Items: [],
-      Count: 0,
-      ScannedCount: 0
-    })
+    userDevicesGetMock.mockResolvedValue({data: undefined})
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
@@ -81,13 +76,14 @@ describe('#SendPushNotification', () => {
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
-      queryMock.mockReturnValue(undefined)
-      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
+    test('ElectroDB UserDevices.get returns no data', async () => {
+      userDevicesGetMock.mockResolvedValue({data: undefined})
+      const notificationsSent = await handler(event, testContext)
+      expect(notificationsSent).toBeUndefined()
     })
-    test('AWS.DynamoDB.DocumentClient.query.getDevice', async () => {
-      queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
-      queryMock.mockReturnValueOnce(undefined)
+    test('ElectroDB Devices.get fails', async () => {
+      userDevicesGetMock.mockResolvedValue({data: getUserDevicesByUserIdResponse.Items[0]})
+      devicesGetMock.mockResolvedValue(undefined)
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
       expect(publishSnsEventMock.mock.calls.length).toBe(0)

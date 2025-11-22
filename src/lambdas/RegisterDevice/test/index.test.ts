@@ -107,14 +107,14 @@ describe('#RegisterDevice', () => {
     })
     test('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(querySuccessResponse)
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
       listSubscriptionsByTopicMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(querySuccessResponse)
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
       listSubscriptionsByTopicMock.mockReturnValue({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)

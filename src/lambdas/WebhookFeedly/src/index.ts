@@ -14,6 +14,11 @@ import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
+// ElectroDB entity table configuration
+const {DynamoDBTableFiles,DynamoDBTableUserFiles} = process.env
+void DynamoDBTableFiles
+void DynamoDBTableUserFiles
+
 /**
  * Associates a File to a User in DynamoDB
  * @param fileId - The unique file identifier

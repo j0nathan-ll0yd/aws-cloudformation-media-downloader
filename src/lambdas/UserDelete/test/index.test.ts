@@ -11,30 +11,22 @@ const fakeUserDevicesResponse = {
     }
   ]
 }
-const fakeDeviceResponse1 = {
-  Items: [
-    {
-      deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
-      token: 'fake-token',
-      systemName: 'iOS',
-      endpointArn: 'fake-endpointArn',
-      systemVersion: '16.0.2',
-      name: 'iPhone'
-    }
-  ]
+const fakeDevice1 = {
+  deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
+  token: 'fake-token',
+  systemName: 'iOS',
+  endpointArn: 'fake-endpointArn',
+  systemVersion: '16.0.2',
+  name: 'iPhone'
 }
 
-const fakeDeviceResponse2 = {
-  Items: [
-    {
-      deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
-      token: 'fake-token',
-      systemName: 'iOS',
-      endpointArn: 'fake-endpointArn',
-      systemVersion: '16.0.2',
-      name: 'iPhone'
-    }
-  ]
+const fakeDevice2 = {
+  deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
+  token: 'fake-token',
+  systemName: 'iOS',
+  endpointArn: 'fake-endpointArn',
+  systemVersion: '16.0.2',
+  name: 'iPhone'
 }
 
 const fakeGithubIssueResponse = {
@@ -48,13 +40,39 @@ const fakeGithubIssueResponse = {
   }
 }
 
-const queryMock = jest.fn()
-const deleteItemMock = jest.fn().mockReturnValue({})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: jest.fn().mockReturnValue({}),
-  deleteItem: deleteItemMock,
-  query: queryMock,
-  scan: jest.fn()
+const getUserDevicesMock = jest.fn()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUserDevices: getUserDevicesMock,
+  deleteDevice: jest.fn().mockResolvedValue(undefined)
+}))
+
+const devicesGetMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Devices', () => ({
+  Devices: {
+    get: jest.fn(() => ({go: devicesGetMock})),
+    delete: jest.fn(() => ({go: jest.fn().mockResolvedValue({})}))
+  }
+}))
+
+const usersDeleteMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/Users', () => ({
+  Users: {
+    delete: jest.fn(() => ({go: usersDeleteMock}))
+  }
+}))
+
+const userFilesDeleteMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserFiles', () => ({
+  UserFiles: {
+    delete: jest.fn(() => ({go: userFilesDeleteMock}))
+  }
+}))
+
+const userDevicesDeleteMock = jest.fn()
+jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entities/UserDevices', () => ({
+  UserDevices: {
+    delete: jest.fn(() => ({go: userDevicesDeleteMock}))
+  }
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
@@ -79,33 +97,36 @@ describe('#UserDelete', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     event.requestContext.authorizer!.principalId = fakeUserId
+
+    // Set default mock return values
+    usersDeleteMock.mockResolvedValue({})
+    userFilesDeleteMock.mockResolvedValue({})
+    userDevicesDeleteMock.mockResolvedValue({})
   })
   test('should delete all user data', async () => {
-    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+    devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
+    devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
   })
   test('should create an issue if deletion fails', async () => {
-    deleteItemMock.mockImplementationOnce(() => {
-      throw new Error('Delete failed')
-    })
-    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
+    usersDeleteMock.mockRejectedValueOnce(new Error('Delete failed'))
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+    devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
+    devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.query.0', async () => {
-      queryMock.mockReturnValue(undefined)
+    test('getUserDevices fails', async () => {
+      getUserDevicesMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('AWS.DynamoDB.query.1', async () => {
-      queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-      queryMock.mockReturnValueOnce({})
+    test('Devices.get fails', async () => {
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse.Items)
+      devicesGetMock.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

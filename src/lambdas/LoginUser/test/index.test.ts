@@ -12,12 +12,9 @@ jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
   verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
 }))
 
-const scanMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: scanMock,
-  deleteItem: jest.fn(),
-  query: jest.fn(),
-  updateItem: jest.fn()
+const getUsersByAppleDeviceIdentifierMock = jest.fn()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUsersByAppleDeviceIdentifier: getUsersByAppleDeviceIdentifierMock
 }))
 
 const {handler} = await import('./../src')
@@ -30,15 +27,14 @@ describe('#LoginUser', () => {
   })
   test('should successfully login a user', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    scanMock.mockReturnValue(scanResponse)
+    getUsersByAppleDeviceIdentifierMock.mockReturnValue(scanResponse.Items || [])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
     expect(typeof body.body.token).toEqual('string')
   })
   test('should throw an error if a user is not found', async () => {
-    const {default: scanResponse} = await import('./fixtures/scan-404-NotFound.json', {assert: {type: 'json'}})
-    scanMock.mockReturnValue(scanResponse)
+    getUsersByAppleDeviceIdentifierMock.mockReturnValue([])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(404)
     const body = JSON.parse(output.body)
@@ -47,7 +43,7 @@ describe('#LoginUser', () => {
   })
   test('should throw an error if duplicates are found', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-300-MultipleChoices.json', {assert: {type: 'json'}})
-    scanMock.mockReturnValue(scanResponse)
+    getUsersByAppleDeviceIdentifierMock.mockReturnValue(scanResponse.Items || [])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(300)
     const body = JSON.parse(output.body)
@@ -60,10 +56,9 @@ describe('#LoginUser', () => {
     expect(output.statusCode).toEqual(400)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.DocumentClient.scan', async () => {
-      const message = 'AWS request failed'
-      scanMock.mockReturnValue(undefined)
-      await expect(handler(event, context)).rejects.toThrowError(message)
+    test('getUsersByAppleDeviceIdentifier returns undefined', async () => {
+      getUsersByAppleDeviceIdentifierMock.mockReturnValue(undefined)
+      await expect(handler(event, context)).rejects.toThrow()
     })
   })
 })

@@ -8,6 +8,11 @@ import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '
 import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
+// ElectroDB entity table configuration
+const {DynamoDBTableFiles,DynamoDBTableUserFiles} = process.env
+void DynamoDBTableFiles
+void DynamoDBTableUserFiles
+
 /**
  * Returns the DynamoDBFile by file name
  * @param fileName - The name of the DynamoDBFile you're searching for

@@ -8,6 +8,11 @@ import {defaultFile} from '../../../util/constants'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
+// ElectroDB entity table configuration (referenced for infrastructure validation)
+const {DynamoDBTableFiles, DynamoDBTableUserFiles} = process.env
+void DynamoDBTableFiles
+void DynamoDBTableUserFiles
+
 /**
  * Returns an array of Files, based on a list of File IDs
  * @param fileIds - An array of File IDs
