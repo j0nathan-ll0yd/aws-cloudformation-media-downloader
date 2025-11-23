@@ -138,6 +138,48 @@ Then, read the `build/graph.json` file. This is a code graph of the project usin
 - Types/Interfaces/Classes → PascalCase
 - File names → camelCase (our convention)
 
+### Test Naming Conventions
+
+**CRITICAL: Test descriptions MUST focus on behavior being tested, NOT implementation details.**
+
+#### Describe Blocks
+
+Always use Lambda function name with `#` prefix:
+
+```typescript
+describe('#ListFiles', () => {
+  // tests
+})
+
+describe('#RegisterDevice', () => {
+  // tests
+})
+```
+
+#### Test Descriptions
+
+**❌ WRONG** - Implementation-focused (breaks during refactoring):
+```typescript
+test('ElectroDB UserFiles.query.byUser', async () => {})
+test('ElectroDB Files.get (batch)', async () => {})
+test('AWS.DynamoDB.DocumentClient.query', async () => {})
+test('getUserDevices fails', async () => {})
+```
+
+**✅ CORRECT** - Use-case focused (survives refactoring):
+```typescript
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when batch file retrieval fails', async () => {})
+test('should return 500 error when user device retrieval fails', async () => {})
+test('should throw error when device scan fails', async () => {})
+```
+
+**Why This Matters:**
+- Implementation-focused names break when you refactor (DynamoDB → ElectroDB, single → batch)
+- Use-case focused names describe WHAT is being tested, not HOW
+- Self-documenting tests that survive code changes
+- See `docs/styleGuides/testStyleGuide.md` for complete examples
+
 ---
 
 ## 🚨 CRITICAL: AWS SDK ENCAPSULATION POLICY 🚨
