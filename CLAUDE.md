@@ -224,6 +224,251 @@ The user WILL catch it and ask you to fix it. This wastes time and breaks trust.
 
 ---
 
+## 🚨 CRITICAL: ELECTRODB MOCK HELPER POLICY 🚨
+
+**THIS IS A ZERO-TOLERANCE RULE. NO EXCEPTIONS.**
+
+### The Rule
+
+**ALWAYS use the `createElectroDBEntityMock` helper when mocking ElectroDB entities in unit tests.**
+
+NEVER create manual mocks for ElectroDB entities.
+
+### What This Means
+
+❌ **FORBIDDEN** - Manual ElectroDB mocks are BANNED:
+```typescript
+// ❌ DON'T - Manual mock construction
+const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const filesScanGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
+const filesQueryByStatusMock = jest.fn(() => ({
+  go: jest.fn()
+}))
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: {
+    get: filesGetMock,
+    scan: { go: filesScanGoMock },
+    query: { byStatus: filesQueryByStatusMock }
+  }
+}))
+```
+
+✅ **REQUIRED** - Use the centralized helper instead:
+```typescript
+// ✅ DO - Use createElectroDBEntityMock helper
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+
+// Usage in tests:
+filesMock.mocks.get.mockResolvedValue({data: fileData})
+filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: results})
+```
+
+### Why This Rule Exists
+
+1. **Consistency**: One mocking pattern across all unit tests
+2. **Type Safety**: Helper provides correct TypeScript types for all operations
+3. **Completeness**: Helper includes all ElectroDB operations (get, scan, query, create, upsert, update, delete)
+4. **Maintainability**: Changes to ElectroDB structure only require updating the helper
+5. **Correctness**: Helper enforces proper method signatures and return types
+
+### Helper Location
+
+**Mock Helper**: `test/helpers/electrodb-mock.ts`
+
+### Supported ElectroDB Operations
+
+The helper supports ALL ElectroDB entity operations:
+
+- **get**: `mocks.get.mockResolvedValue({data: item})`
+- **scan**: `mocks.scan.go.mockResolvedValue({data: items})`
+- **query**: `mocks.query.byIndexName!.go.mockResolvedValue({data: items})`
+- **create**: `mocks.create.mockResolvedValue({data: item})`
+- **upsert**: `mocks.upsert.go.mockResolvedValue({data: item})`
+- **update**: `mocks.update.go.mockResolvedValue({data: item})`
+- **delete**: `mocks.delete.mockResolvedValue(undefined)`
+
+### Helper Configuration
+
+**Query Indexes**: Specify which query indexes the entity uses:
+```typescript
+// Entity with byUser and byFile query indexes
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser', 'byFile']})
+
+// Usage:
+userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: results})
+userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: results})
+```
+
+**Available Query Indexes**:
+- `byUser` - Query by userId
+- `byFile` - Query by fileId
+- `byDevice` - Query by deviceId
+- `byStatus` - Query by status
+- `byKey` - Query by composite key
+
+### Common Patterns
+
+**Single Entity Mock**:
+```typescript
+const usersMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
+}))
+```
+
+**Multiple Entity Mocks**:
+```typescript
+const devicesMock = createElectroDBEntityMock()
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+
+jest.unstable_mockModule('../../../entities/Devices', () => ({
+  Devices: devicesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
+  UserDevices: userDevicesMock.entity
+}))
+```
+
+**Setting Mock Return Values in beforeEach**:
+```typescript
+beforeEach(() => {
+  // Reset all mocks
+  jest.clearAllMocks()
+
+  // Set default return values
+  filesMock.mocks.get.mockResolvedValue({data: undefined})
+  filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: []})
+  filesMock.mocks.create.mockResolvedValue({data: {}})
+})
+```
+
+### Method Signatures (CRITICAL)
+
+**IMPORTANT**: Some ElectroDB operations return promises directly, others use method chaining:
+
+**Direct Promise Returns** (no `.go()`):
+- `get`: Returns `Promise<{data: T | undefined} | undefined>`
+- `create`: Returns `Promise<{data: T}>`
+- `delete`: Returns `Promise<void>`
+
+**Method Chaining with `.go()`**:
+- `scan`: Returns object with `.go()` method
+- `query`: Returns object with `.go()` method
+- `upsert`: Returns object with `.go()` method
+- `update`: Returns object with `.set()`, `.add()`, `.delete()`, `.go()` methods
+
+**Examples**:
+```typescript
+// ✅ CORRECT - get returns promise directly
+filesMock.mocks.get.mockResolvedValue({data: fileData})
+
+// ❌ WRONG - get does NOT have .go()
+filesMock.mocks.get.go.mockResolvedValue({data: fileData})
+
+// ✅ CORRECT - scan uses .go()
+filesMock.mocks.scan.go.mockResolvedValue({data: items})
+
+// ✅ CORRECT - query uses .go()
+filesMock.mocks.query.byUser!.go.mockResolvedValue({data: items})
+
+// ✅ CORRECT - create returns promise directly
+filesMock.mocks.create.mockResolvedValue({data: item})
+
+// ❌ WRONG - create does NOT have .go()
+filesMock.mocks.create.go.mockResolvedValue({data: item})
+
+// ✅ CORRECT - delete returns void
+filesMock.mocks.delete.mockResolvedValue(undefined)
+
+// ❌ WRONG - delete does NOT return an object
+filesMock.mocks.delete.mockResolvedValue({})
+```
+
+### Before Writing ANY Test
+
+**MANDATORY CHECKS**:
+
+1. ✅ Am I mocking an ElectroDB entity?
+   - YES → Use `createElectroDBEntityMock`
+   - NO → Proceed with appropriate mock
+
+2. ✅ Did I import the helper?
+   - YES → Proceed
+   - NO → Add `import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'`
+
+3. ✅ Did I specify the correct query indexes?
+   - Check the entity definition to see which indexes it uses
+   - Pass them to `createElectroDBEntityMock({queryIndexes: ['byUser', 'byFile']})`
+
+4. ✅ Am I using the correct method signature?
+   - get, create, delete → NO `.go()`
+   - scan, query, upsert, update → YES `.go()`
+
+### Enforcement
+
+Before committing tests:
+```bash
+# Search for manual ElectroDB mocks in tests
+grep -r "jest.unstable_mockModule.*entities" src/lambdas/*/test/*.ts
+
+# Each result should use createElectroDBEntityMock, not manual mocks
+# Manual patterns to watch for:
+# - jest.fn() followed by ElectroDB method names
+# - Object literals with get, scan, query, create, update, delete
+```
+
+### If You Violate This Rule
+
+The user WILL catch it and ask you to refactor. This wastes time and creates inconsistency.
+
+**STOP. THINK. CHECK.** Are you mocking ElectroDB? If yes, use `createElectroDBEntityMock`.
+
+### Real-World Example
+
+**FileCoordinator Test** (src/lambdas/FileCoordinator/test/index.test.ts):
+
+❌ **WRONG** - Manual mock:
+```typescript
+const filesQueryGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
+const filesQueryWhereMock = jest.fn(() => ({
+  where: filesQueryWhereMock,
+  go: filesQueryGoMock
+}))
+const filesQueryByStatusMock = jest.fn(() => ({
+  where: filesQueryWhereMock,
+  go: filesQueryGoMock
+}))
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: {
+    query: {
+      byStatus: filesQueryByStatusMock
+    }
+  }
+}))
+```
+
+✅ **RIGHT** - Using helper:
+```typescript
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+
+// In test:
+filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
+```
+
+**Result**: Cleaner, type-safe, consistent with all other tests.
+
+---
+
 ## 🚨 DEVELOPMENT PHILOSOPHY: DO IT THE RIGHT WAY FIRST 🚨
 
 **THIS IS A CORE PROJECT PRINCIPLE. ALWAYS APPLY IT.**
