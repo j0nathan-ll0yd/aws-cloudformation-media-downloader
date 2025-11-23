@@ -4,7 +4,7 @@ import {UserFiles} from '../../../entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '../../../types/main'
 import {logDebug} from '../../../util/lambda-helpers'
-import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+import {assertIsError, createFileNotificationAttributes} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -47,7 +47,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  * @notExported
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
-  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const messageAttributes = createFileNotificationAttributes(file, userId)
   const sendMessageParams = {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,

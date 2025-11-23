@@ -14,7 +14,9 @@ jest.unstable_mockModule('../../../entities/UserFiles', () => ({
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
-  sendMessage: jest.fn()
+  sendMessage: jest.fn(),
+  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})

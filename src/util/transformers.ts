@@ -3,6 +3,7 @@ import {logError} from './lambda-helpers'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
+import {stringAttribute, numberAttribute, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
 
 export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
   return {
@@ -27,32 +28,21 @@ export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResp
   }
 }
 
-export function transformDynamoDBFileToSQSMessageBodyAttributeMap(file: DynamoDBFile, userId: string) {
+/**
+ * Creates SQS message attributes for file notifications
+ * Uses vendor wrapper helpers for clean, type-safe attribute creation
+ * @param file - File object from ElectroDB query
+ * @param userId - User ID to send notification to
+ * @returns SQS message attributes for file notification
+ */
+export function createFileNotificationAttributes(file: DynamoDBFile, userId: string): Record<string, MessageAttributeValue> {
   return {
-    fileId: {
-      DataType: 'String',
-      StringValue: file.fileId
-    },
-    key: {
-      DataType: 'String',
-      StringValue: file.key
-    },
-    publishDate: {
-      DataType: 'String',
-      StringValue: file.publishDate
-    },
-    size: {
-      DataType: 'Number',
-      StringValue: file.size.toString()
-    },
-    url: {
-      DataType: 'String',
-      StringValue: file.url
-    },
-    userId: {
-      DataType: 'String',
-      StringValue: userId
-    }
+    fileId: stringAttribute(file.fileId),
+    key: stringAttribute(file.key),
+    publishDate: stringAttribute(file.publishDate),
+    size: numberAttribute(file.size),
+    url: stringAttribute(file.url!),
+    userId: stringAttribute(userId)
   }
 }
 

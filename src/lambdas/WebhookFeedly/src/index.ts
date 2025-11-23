@@ -8,7 +8,7 @@ import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+import {createFileNotificationAttributes} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
@@ -79,7 +79,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
  * @notExported
  */
 async function sendFileNotification(file: DynamoDBFile, userId: string) {
-  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const messageAttributes = createFileNotificationAttributes(file, userId)
   const sendMessageParams = {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,

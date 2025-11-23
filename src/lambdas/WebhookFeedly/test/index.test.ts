@@ -21,7 +21,9 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
     MD5OfMessageAttributes: 'e95833d661f4007f9575877843f475ed',
     MessageId: 'e990c66f-23f6-4982-9274-a5a533ceb6dc'
   }),
-  subscribe: jest.fn()
+  subscribe: jest.fn(),
+  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
 // Mock yt-dlp-wrap to prevent YouTube module from failing

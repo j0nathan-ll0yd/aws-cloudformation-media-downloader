@@ -5,7 +5,7 @@
  */
 
 import {createDynamoDBClient} from '../../../src/lib/vendor/AWS/clients'
-import {CreateTableCommand, ScanCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
+import {CreateTableCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
 
@@ -160,32 +160,18 @@ export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | n
 }
 
 /**
- * Scan all files from DynamoDB
+ * Scan all files from DynamoDB using ElectroDB
  */
 export async function scanAllFiles(): Promise<Partial<DynamoDBFile>[]> {
-  const response = await dynamoDBClient.send(
-    new ScanCommand({
-      TableName: getMediaDownloaderTable()
-    })
-  )
+  const {Files} = await import('../../../src/entities/Files')
 
-  if (!response.Items) {
+  const response = await Files.scan.go()
+
+  if (!response || !response.data) {
     return []
   }
 
-  return response.Items.map((item) => ({
-    fileId: item.fileId.S!,
-    status: item.status.S as FileStatus,
-    key: item.key?.S,
-    size: item.size?.N ? parseInt(item.size.N) : undefined,
-    availableAt: item.availableAt?.N ? parseInt(item.availableAt.N) : undefined,
-    authorName: item.authorName?.S,
-    authorUser: item.authorUser?.S,
-    title: item.title?.S,
-    description: item.description?.S,
-    publishDate: item.publishDate?.S,
-    contentType: item.contentType?.S
-  }))
+  return response.data as Partial<DynamoDBFile>[]
 }
 
 /**
