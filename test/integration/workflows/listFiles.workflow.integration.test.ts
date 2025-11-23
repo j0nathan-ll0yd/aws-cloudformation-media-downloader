@@ -122,35 +122,32 @@ describe('ListFiles Workflow Integration Tests', () => {
       ]
     })
 
-    // Files.get called for each file ID
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {
-        fileId: 'video-1',
-        status: FileStatus.Downloaded,
-        title: 'Video 1',
-        key: 'video-1.mp4',
-        size: 5242880
-      }
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {
-        fileId: 'video-2',
-        status: FileStatus.Downloaded,
-        title: 'Video 2',
-        key: 'video-2.mp4',
-        size: 10485760
-      }
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {
-        fileId: 'video-3',
-        status: FileStatus.PendingDownload,
-        title: 'Video 3 (not ready)',
-        key: undefined,
-        size: undefined
-      }
+    // Files.get now uses BATCH get - returns array of files with unprocessed
+    filesMock.mocks.get.mockResolvedValue({
+      data: [
+        {
+          fileId: 'video-1',
+          status: FileStatus.Downloaded,
+          title: 'Video 1',
+          key: 'video-1.mp4',
+          size: 5242880
+        },
+        {
+          fileId: 'video-2',
+          status: FileStatus.Downloaded,
+          title: 'Video 2',
+          key: 'video-2.mp4',
+          size: 10485760
+        },
+        {
+          fileId: 'video-3',
+          status: FileStatus.PendingDownload,
+          title: 'Video 3 (not ready)',
+          key: undefined,
+          size: undefined
+        }
+      ],
+      unprocessed: []
     })
 
     const event = createListFilesEvent('user-abc-123', UserStatus.Authenticated)
@@ -166,7 +163,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents[1].fileId).toBe('video-2')
 
     expect(userFilesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
-    expect(filesMock.mocks.get).toHaveBeenCalledTimes(3)
+    expect(filesMock.mocks.get).toHaveBeenCalledTimes(1)
   })
 
   test('should return empty list when user has no files', async () => {
@@ -226,24 +223,16 @@ describe('ListFiles Workflow Integration Tests', () => {
       ]
     })
 
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'}
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'}
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'}
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'}
-    })
-
-    filesMock.mocks.get.mockResolvedValueOnce({
-      data: {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
+    // Files.get now uses BATCH get - returns array of all files
+    filesMock.mocks.get.mockResolvedValue({
+      data: [
+        {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'},
+        {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'},
+        {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'},
+        {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'},
+        {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
+      ],
+      unprocessed: []
     })
 
     const event = createListFilesEvent('user-mixed-files', UserStatus.Authenticated)
@@ -270,17 +259,16 @@ describe('ListFiles Workflow Integration Tests', () => {
       data: fileIds.map(fileId => ({userId: 'user-many-files', fileId}))
     })
 
-    // Mock Files.get for each file ID
-    fileIds.forEach((fileId, index) => {
-      filesMock.mocks.get.mockResolvedValueOnce({
-        data: {
-          fileId,
-          status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
-          title: `Video ${index}`,
-          key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
-          size: index % 2 === 0 ? 5242880 : undefined
-        }
-      })
+    // Files.get now uses BATCH get - returns array of all 50 files at once
+    filesMock.mocks.get.mockResolvedValue({
+      data: fileIds.map((fileId, index) => ({
+        fileId,
+        status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
+        title: `Video ${index}`,
+        key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
+        size: index % 2 === 0 ? 5242880 : undefined
+      })),
+      unprocessed: []
     })
 
     const event = createListFilesEvent('user-many-files', UserStatus.Authenticated)
