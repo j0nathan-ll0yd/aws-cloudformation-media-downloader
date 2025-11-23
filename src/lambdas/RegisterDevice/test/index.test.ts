@@ -2,20 +2,17 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
-const devicesUpsertMock = jest.fn<() => Promise<{data: unknown}>>()
+const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: {
-    upsert: jest.fn(() => ({go: devicesUpsertMock}))
-  }
+  Devices: devicesMock.entity
 }))
 
-const userDevicesCreateGoMock = jest.fn<() => Promise<{data: unknown}>>()
+const userDevicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: {
-    create: jest.fn(() => ({go: userDevicesCreateGoMock}))
-  }
+  UserDevices: userDevicesMock.entity
 }))
 
 const getUserDevicesMock = jest.fn()
@@ -52,8 +49,8 @@ describe('#RegisterDevice', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
-    devicesUpsertMock.mockResolvedValue({data: {}})
-    userDevicesCreateGoMock.mockResolvedValue({data: {}})
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    userDevicesMock.mocks.create.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'

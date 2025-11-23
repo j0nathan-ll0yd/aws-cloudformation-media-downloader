@@ -25,6 +25,7 @@ interface ElectroDBEntityMock<TData> {
       byKey?: jest.Mock
     }
     create: jest.Mock
+    upsert: jest.Mock
     update: jest.Mock
     delete: jest.Mock
   }
@@ -63,6 +64,9 @@ interface ElectroDBEntityMock<TData> {
       }
     }
     create: jest.Mock<() => Promise<{data: TData}>>
+    upsert: {
+      go: jest.Mock<() => Promise<{data: TData}>>
+    }
     update: {
       go: jest.Mock<() => Promise<{data: TData} | undefined>>
       set: jest.Mock
@@ -147,6 +151,10 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
   const createGoMock = jest.fn<() => Promise<{data: TData}>>()
   const create = jest.fn(() => ({go: createGoMock}))
 
+  // Upsert operation: Entity.upsert(item).go()
+  const upsertGoMock = jest.fn<() => Promise<{data: TData}>>()
+  const upsert = jest.fn(() => ({go: upsertGoMock}))
+
   // Update operation: Entity.update({key}).set/add/delete({...}).go()
   const updateGoMock = jest.fn<() => Promise<{data: TData} | undefined>>()
   const updateSetMock = jest.fn(() => ({go: updateGoMock}))
@@ -169,6 +177,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
       scan,
       query: queryEntity,
       create,
+      upsert,
       update,
       delete: deleteOp
     },
@@ -180,6 +189,9 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
       },
       query: queryMocks,
       create: createGoMock,
+      upsert: {
+        go: upsertGoMock
+      },
       update: {
         go: updateGoMock,
         set: updateSetMock,

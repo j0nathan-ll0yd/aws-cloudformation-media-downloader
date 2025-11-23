@@ -2,6 +2,7 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeUserDevicesResponse = [
   {
@@ -49,44 +50,24 @@ jest.unstable_mockModule('../../../util/shared', () => ({
   deleteDevice: deleteDeviceMock
 }))
 
-const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
-const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
+const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: {
-    get: jest.fn(() => ({go: devicesGetMock})),
-    delete: jest.fn(() => ({go: devicesDeleteGoMock}))
-  }
+  Devices: devicesMock.entity
 }))
 
-const usersDeleteMock = jest.fn<() => Promise<unknown>>()
+const usersMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Users', () => ({
-  Users: {
-    delete: jest.fn(() => ({go: usersDeleteMock}))
-  }
+  Users: usersMock.entity
 }))
 
-const userFilesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]}>>()
-const userFilesQueryByUserMock = jest.fn(() => ({go: userFilesQueryByUserGoMock}))
-const userFilesDeleteMock = jest.fn<() => Promise<unknown>>()
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('../../../entities/UserFiles', () => ({
-  UserFiles: {
-    query: {
-      byUser: userFilesQueryByUserMock
-    },
-    delete: jest.fn(() => ({go: userFilesDeleteMock}))
-  }
+  UserFiles: userFilesMock.entity
 }))
 
-const userDevicesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]}>>()
-const userDevicesQueryByUserMock = jest.fn(() => ({go: userDevicesQueryByUserGoMock}))
-const userDevicesDeleteMock = jest.fn<() => Promise<unknown>>()
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: {
-    query: {
-      byUser: userDevicesQueryByUserMock
-    },
-    delete: jest.fn(() => ({go: userDevicesDeleteMock}))
-  }
+  UserDevices: userDevicesMock.entity
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
@@ -114,25 +95,25 @@ describe('#UserDelete', () => {
 
     // Set default mock return values
     deleteDeviceMock.mockResolvedValue(undefined)
-    devicesDeleteGoMock.mockResolvedValue({})
-    usersDeleteMock.mockResolvedValue({})
-    userFilesQueryByUserGoMock.mockResolvedValue({data: []})
-    userFilesDeleteMock.mockResolvedValue({})
-    userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
-    userDevicesDeleteMock.mockResolvedValue({})
+    devicesMock.mocks.delete.mockResolvedValue(undefined)
+    usersMock.mocks.delete.mockResolvedValue(undefined)
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    userFilesMock.mocks.delete.mockResolvedValue(undefined)
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    userDevicesMock.mocks.delete.mockResolvedValue(undefined)
   })
   test('should delete all user data', async () => {
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
-    devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
+    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice1})
+    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
   })
   test('should create an issue if deletion fails', async () => {
-    usersDeleteMock.mockRejectedValueOnce(new Error('Delete failed'))
+    usersMock.mocks.delete.mockRejectedValueOnce(new Error('Delete failed'))
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesGetMock.mockResolvedValueOnce({data: fakeDevice1})
-    devicesGetMock.mockResolvedValueOnce({data: fakeDevice2})
+    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice1})
+    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice2})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
@@ -144,7 +125,7 @@ describe('#UserDelete', () => {
     })
     test('Devices.get fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesGetMock.mockResolvedValue(undefined)
+      devicesMock.mocks.get.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

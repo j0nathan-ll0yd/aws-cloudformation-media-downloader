@@ -2,23 +2,17 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
-const filesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
-const filesCreateMock = jest.fn<() => Promise<{data: unknown}>>()
+const filesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: {
-    get: jest.fn(() => ({go: filesGetMock})),
-    create: jest.fn(() => ({go: filesCreateMock}))
-  }
+  Files: filesMock.entity
 }))
 
-const userFilesUpdateGoMock = jest.fn<() => Promise<unknown>>()
-const userFilesUpdateAddMock = jest.fn(() => ({go: userFilesUpdateGoMock}))
+const userFilesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/UserFiles', () => ({
-  UserFiles: {
-    update: jest.fn(() => ({add: userFilesUpdateAddMock}))
-  }
+  UserFiles: userFilesMock.entity
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
@@ -79,9 +73,9 @@ describe('#WebhookFeedly', () => {
   test('should fail gracefully if the ElectroDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
-    filesGetMock.mockResolvedValue({data: undefined})
-    filesCreateMock.mockResolvedValue({data: {}})
-    userFilesUpdateGoMock.mockRejectedValue(new Error('Update failed'))
+    filesMock.mocks.get.mockResolvedValue({data: undefined})
+    filesMock.mocks.create.mockResolvedValue({data: {}})
+    userFilesMock.mocks.create.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })

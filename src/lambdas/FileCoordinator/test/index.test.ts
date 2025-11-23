@@ -1,23 +1,13 @@
 import {testContext} from '../../../util/jest-setup'
 import {describe, expect, test, jest} from '@jest/globals'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const {default: eventMock} = await import('./fixtures/ScheduledEvent.json', {assert: {type: 'json'}})
 
-const filesQueryGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
-const filesQueryWhereMock = jest.fn(() => ({
-  where: filesQueryWhereMock,
-  go: filesQueryGoMock
-}))
-const filesQueryByStatusMock = jest.fn(() => ({
-  where: filesQueryWhereMock,
-  go: filesQueryGoMock
-}))
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
 jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: {
-    query: {
-      byStatus: filesQueryByStatusMock
-    }
-  }
+  Files: filesMock.entity
 }))
+
 const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
   invokeAsync: invokeAsyncMock
@@ -30,7 +20,7 @@ describe('#FileCoordinator', () => {
   const event = JSON.parse(JSON.stringify(eventMock))
   test('should handle scheduled event (with no events)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-204-NoContent.json', {assert: {type: 'json'}})
-    filesQueryGoMock.mockResolvedValue({data: scanResponse.Items || []})
+    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -38,7 +28,7 @@ describe('#FileCoordinator', () => {
   })
   test('should handle scheduled event (with 1 event)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    filesQueryGoMock.mockResolvedValue({data: scanResponse.Items || []})
+    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -47,7 +37,7 @@ describe('#FileCoordinator', () => {
   describe('#AWSFailure', () => {
     test('ElectroDB Files.query', async () => {
       const message = 'AWS request failed'
-      filesQueryGoMock.mockResolvedValue(undefined)
+      filesMock.mocks.query.byStatus!.go.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrowError(message)
     })
   })

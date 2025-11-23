@@ -3,6 +3,7 @@ import {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '../../../util/errors'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {
   Items: [
@@ -52,29 +53,14 @@ const fakeUserDevicesResponse = {
   ]
 }
 
-const devicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
-const devicesDeleteGoMock = jest.fn<() => Promise<unknown>>()
+const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: {
-    scan: {
-      go: devicesScanGoMock
-    },
-    delete: jest.fn(() => ({go: devicesDeleteGoMock}))
-  }
+  Devices: devicesMock.entity
 }))
 
-const userDevicesScanGoMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
-const userDevicesUpdateGoMock = jest.fn<() => Promise<unknown>>()
+const userDevicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: {
-    scan: {
-      go: userDevicesScanGoMock
-    },
-    update: jest.fn(() => ({
-      set: jest.fn(() => ({go: userDevicesUpdateGoMock})),
-      delete: jest.fn(() => ({go: userDevicesUpdateGoMock}))
-    }))
-  }
+  UserDevices: userDevicesMock.entity
 }))
 
 jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
@@ -166,8 +152,8 @@ describe('#PruneDevices', () => {
   }
   const context = testContext
   test('should search for and remove disabled devices (single)', async () => {
-    devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
-    userDevicesScanGoMock.mockResolvedValue({data: fakeUserDevicesResponse.Items})
+    devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
+    userDevicesMock.mocks.scan.go.mockResolvedValue({data: fakeUserDevicesResponse.Items})
     sendMock.mockImplementationOnce(() => {
       throw getExpiredResponseForDevice(0)
     })
@@ -185,12 +171,12 @@ describe('#PruneDevices', () => {
   })
   describe('#AWSFailure', () => {
     test('ElectroDB Devices.scan.go fails', async () => {
-      devicesScanGoMock.mockResolvedValue(undefined)
+      devicesMock.mocks.scan.go.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
     test('ElectroDB UserDevices.scan.go fails', async () => {
-      devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
-      userDevicesScanGoMock.mockResolvedValue(undefined)
+      devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
+      userDevicesMock.mocks.scan.go.mockResolvedValue(undefined)
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
       })
@@ -200,7 +186,7 @@ describe('#PruneDevices', () => {
   })
   describe('#APNSFailure', () => {
     test('APNS.Failure', async () => {
-      devicesScanGoMock.mockResolvedValue({data: fakeGetDevicesResponse.Items})
+      devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       sendMock.mockImplementation(() => {
         throw undefined
       })

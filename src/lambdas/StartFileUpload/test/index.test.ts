@@ -3,6 +3,7 @@ import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
@@ -16,11 +17,9 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
 }))
 
 // Mock ElectroDB Files entity
-const filesUpsertMock = jest.fn<() => Promise<{data: unknown}>>()
+const filesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: {
-    upsert: jest.fn(() => ({go: filesUpsertMock}))
-  }
+  Files: filesMock.entity
 }))
 
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
@@ -69,7 +68,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 45
     })
-    filesUpsertMock.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -81,7 +80,7 @@ describe('#StartFileUpload', () => {
     expect(parsedBody.body.fileId).toBeDefined()
 
     // Verify Files.upsert was called twice (PendingDownload, then Downloaded)
-    expect(filesUpsertMock).toHaveBeenCalledTimes(2)
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalledTimes(2)
 
     // Verify streamVideoToS3 was called with correct parameters
     expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
@@ -114,7 +113,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 120
     })
-    filesUpsertMock.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -125,7 +124,7 @@ describe('#StartFileUpload', () => {
     expect(parsedBody.body.duration).toEqual(120)
 
     // Verify Files.upsert was called with Downloaded status
-    expect(filesUpsertMock).toHaveBeenCalled()
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle streaming errors and mark file as Failed', async () => {
@@ -150,26 +149,26 @@ describe('#StartFileUpload', () => {
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
-    filesUpsertMock.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify Files.upsert was called to set Failed status
-    expect(filesUpsertMock).toHaveBeenCalled()
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle video not found error', async () => {
     fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
-    filesUpsertMock.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify Files.upsert was called to set Failed status
-    expect(filesUpsertMock).toHaveBeenCalled()
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle missing bucket environment variable', async () => {
@@ -195,7 +194,7 @@ describe('#StartFileUpload', () => {
     } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
-    filesUpsertMock.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -209,13 +208,13 @@ describe('#StartFileUpload', () => {
 
   test('should continue even if Files.upsert fails during error handling', async () => {
     fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
-    filesUpsertMock.mockRejectedValue(new Error('Files.upsert failed'))
+    filesMock.mocks.upsert.go.mockRejectedValue(new Error('Files.upsert failed'))
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Should have attempted to upsert file despite the failure
-    expect(filesUpsertMock).toHaveBeenCalled()
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 })

@@ -2,6 +2,7 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
 const getUserDevicesByUserIdResponse = [
@@ -18,20 +19,14 @@ const getDeviceResponse = {
   endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
 }
 
-const userDevicesQueryByUserGoMock = jest.fn<() => Promise<{data: unknown[]} | undefined>>()
-const userDevicesQueryByUserMock = jest.fn(() => ({go: userDevicesQueryByUserGoMock}))
-const devicesGetMock = jest.fn<() => Promise<{data: unknown} | undefined>>()
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: {
-    query: {
-      byUser: userDevicesQueryByUserMock
-    }
-  }
+  UserDevices: userDevicesMock.entity
 }))
+
+const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: {
-    get: jest.fn(() => ({go: devicesGetMock}))
-  }
+  Devices: devicesMock.entity
 }))
 
 const publishSnsEventMock = jest.fn<() => unknown>()
@@ -48,15 +43,15 @@ describe('#SendPushNotification', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
   test('should send a notification for each user device', async () => {
-    userDevicesQueryByUserGoMock.mockResolvedValue({data: getUserDevicesByUserIdResponse})
-    devicesGetMock.mockResolvedValue({data: getDeviceResponse})
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
+    devicesMock.mocks.get.mockResolvedValue({data: getDeviceResponse})
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
   })
   test('should exit gracefully if no devices exist', async () => {
-    userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
@@ -70,13 +65,13 @@ describe('#SendPushNotification', () => {
   })
   describe('#AWSFailure', () => {
     test('ElectroDB UserDevices.query returns no data', async () => {
-      userDevicesQueryByUserGoMock.mockResolvedValue({data: []})
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
     })
     test('ElectroDB Devices.get fails', async () => {
-      userDevicesQueryByUserGoMock.mockResolvedValue({data: getUserDevicesByUserIdResponse})
-      devicesGetMock.mockResolvedValue(undefined)
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
+      devicesMock.mocks.get.mockResolvedValue(undefined)
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
       expect(publishSnsEventMock.mock.calls.length).toBe(0)
