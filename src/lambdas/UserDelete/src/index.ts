@@ -15,8 +15,11 @@ async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
   const userFiles = await UserFiles.query.byUser({userId}).go()
   if (userFiles.data && userFiles.data.length > 0) {
-    const deletePromises = userFiles.data.map((userFile) => UserFiles.delete({userId: userFile.userId, fileId: userFile.fileId}).go())
-    await Promise.all(deletePromises)
+    const deleteKeys = userFiles.data.map((userFile) => ({userId: userFile.userId, fileId: userFile.fileId}))
+    const {unprocessed} = await UserFiles.delete(deleteKeys).go({concurrency: 5})
+    if (unprocessed.length > 0) {
+      logDebug('deleteUserFiles.unprocessed =>', unprocessed)
+    }
   }
   logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
 }
@@ -31,21 +34,13 @@ async function deleteUserDevices(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
   const userDevices = await UserDevices.query.byUser({userId}).go()
   if (userDevices.data && userDevices.data.length > 0) {
-    const deletePromises = userDevices.data.map((userDevice) => UserDevices.delete({userId: userDevice.userId, deviceId: userDevice.deviceId}).go())
-    await Promise.all(deletePromises)
+    const deleteKeys = userDevices.data.map((userDevice) => ({userId: userDevice.userId, deviceId: userDevice.deviceId}))
+    const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+    if (unprocessed.length > 0) {
+      logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+    }
   }
   logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
-}
-
-async function getDevice(deviceId: string): Promise<Device> {
-  logDebug('getDevice <=', deviceId)
-  const response = await Devices.get({deviceId}).go()
-  logDebug('getDevice =>', response)
-  if (response && response.data) {
-    return response.data as Device
-  } else {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
 }
 
 /**
@@ -68,10 +63,16 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     /* istanbul ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
-      for (const userDevice of userDevices) {
-        const device = await getDevice(userDevice.deviceId)
-        deletableDevices.push(device)
+      const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
+      const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
+      logDebug('Found devices', devices.length.toString())
+      if (unprocessed.length > 0) {
+        logDebug('getDevices.unprocessed =>', unprocessed)
       }
+      if (!devices || devices.length === 0) {
+        throw new UnexpectedError(providerFailureErrorMessage)
+      }
+      deletableDevices.push(...(devices as Device[]))
     }
   } catch (error) {
     assertIsError(error)

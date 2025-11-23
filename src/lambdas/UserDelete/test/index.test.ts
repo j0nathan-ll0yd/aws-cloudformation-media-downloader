@@ -95,25 +95,24 @@ describe('#UserDelete', () => {
 
     // Set default mock return values
     deleteDeviceMock.mockResolvedValue(undefined)
+    devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
     devicesMock.mocks.delete.mockResolvedValue(undefined)
     usersMock.mocks.delete.mockResolvedValue(undefined)
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-    userFilesMock.mocks.delete.mockResolvedValue(undefined)
+    userFilesMock.mocks.delete.mockResolvedValue({unprocessed: []})
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-    userDevicesMock.mocks.delete.mockResolvedValue(undefined)
+    userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
   })
   test('should delete all user data', async () => {
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice1})
-    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice2})
+    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
   })
   test('should create an issue if deletion fails', async () => {
     usersMock.mocks.delete.mockRejectedValueOnce(new Error('Delete failed'))
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice1})
-    devicesMock.mocks.get.mockResolvedValueOnce({data: fakeDevice2})
+    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
@@ -123,9 +122,9 @@ describe('#UserDelete', () => {
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('Devices.get fails', async () => {
+    test('Devices.get (batch) fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesMock.mocks.get.mockResolvedValue(undefined)
+      devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

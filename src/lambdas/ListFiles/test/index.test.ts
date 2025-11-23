@@ -34,7 +34,7 @@ describe('#ListFiles', () => {
       const body = JSON.parse(output.body)
       expect(body.body.keyCount).toEqual(0)
     })
-    test('ElectroDB Files.get', async () => {
+    test('ElectroDB Files.get (batch)', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       const userFileData = queryStubReturnObject.Items || []
       userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})

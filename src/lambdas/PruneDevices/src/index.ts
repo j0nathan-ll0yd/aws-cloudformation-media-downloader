@@ -4,7 +4,7 @@ import {UserDevices} from '../../../entities/UserDevices'
 import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device} from '../../../types/main'
-import {deleteDevice, deleteUserDevice} from '../../../util/shared'
+import {deleteDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
@@ -94,7 +94,17 @@ export const handler = withXRay(async (event: ScheduledEvent, context: Context, 
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const values = await Promise.all([deleteDevice(device), userIds.map((userId) => deleteUserDevice(userId, deviceId))])
+        const deleteUserDevicesPromise =
+          userIds.length > 0
+            ? (async () => {
+                const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+                const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+                if (unprocessed.length > 0) {
+                  logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+                }
+              })()
+            : Promise.resolve()
+        const values = await Promise.all([deleteDevice(device), deleteUserDevicesPromise])
         logDebug('Promise.all', values)
       } catch (error) {
         assertIsError(error)

@@ -8,8 +8,8 @@ import {defaultFile} from '../../../util/constants'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of Files for a user using UserCollection GSI
- * Eliminates N+1 query pattern by querying user's files in one operation
+ * Returns an array of Files for a user using ElectroDB batch get
+ * Eliminates N+1 query pattern by using batch operations
  * @param userId - The User ID
  * @notExported
  */
@@ -22,13 +22,15 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
     return []
   }
 
-  const fileIds = userFilesResponse.data.map((userFile) => userFile.fileId)
-  const filePromises = fileIds.map((fileId) => Files.get({fileId}).go())
-  const fileResponses = await Promise.all(filePromises)
-  logDebug('getFilesByUser.files =>', fileResponses)
+  const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
+  const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
+  logDebug('getFilesByUser.files =>', files)
 
-  const files = fileResponses.filter((response) => response.data).map((response) => response.data as DynamoDBFile)
-  return files
+  if (unprocessed.length > 0) {
+    logDebug('getFilesByUser.unprocessed =>', unprocessed)
+  }
+
+  return files as DynamoDBFile[]
 }
 
 /**

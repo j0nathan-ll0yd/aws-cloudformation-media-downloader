@@ -44,21 +44,12 @@ const fakeGetDevicesResponse = {
   ScannedCount: 4
 }
 
-const fakeUserDevicesResponse = {
-  Items: [
-    {
-      devices: ['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A'],
-      userId: fakeUserId
-    }
-  ]
-}
-
 const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({
   Devices: devicesMock.entity
 }))
 
-const userDevicesMock = createElectroDBEntityMock()
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: userDevicesMock.entity
 }))
@@ -153,7 +144,8 @@ describe('#PruneDevices', () => {
   const context = testContext
   test('should search for and remove disabled devices (single)', async () => {
     devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
-    userDevicesMock.mocks.scan.go.mockResolvedValue({data: fakeUserDevicesResponse.Items})
+    userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue({data: [{userId: fakeUserId, deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A'}]})
+    userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
     sendMock.mockImplementationOnce(() => {
       throw getExpiredResponseForDevice(0)
     })
@@ -174,9 +166,9 @@ describe('#PruneDevices', () => {
       devicesMock.mocks.scan.go.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
-    test('ElectroDB UserDevices.scan.go fails', async () => {
+    test('ElectroDB UserDevices.query.byDevice fails', async () => {
       devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
-      userDevicesMock.mocks.scan.go.mockResolvedValue(undefined)
+      userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue(undefined)
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
       })

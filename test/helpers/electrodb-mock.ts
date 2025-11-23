@@ -32,11 +32,14 @@ interface ElectroDBEntityMock<TData> {
   /**
    * Individual mock functions for assertions and setup
    * @example
+   * // Single get
    * filesMock.mocks.get.mockResolvedValue({data: {fileId: '123', ...}})
+   * // Batch get
+   * filesMock.mocks.get.mockResolvedValue({data: [{fileId: '123'}, ...], unprocessed: []})
    * expect(filesMock.mocks.create).toHaveBeenCalledTimes(1)
    */
   mocks: {
-    get: jest.Mock<() => Promise<{data: TData | undefined} | undefined>>
+    get: jest.Mock<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>
     scan: {
       go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
       where: jest.Mock
@@ -73,7 +76,7 @@ interface ElectroDBEntityMock<TData> {
       add: jest.Mock
       delete: jest.Mock
     }
-    delete: jest.Mock<() => Promise<void>>
+    delete: jest.Mock<() => Promise<{unprocessed?: unknown[]} | void>>
   }
 }
 
@@ -111,8 +114,9 @@ interface ElectroDBEntityMock<TData> {
 export function createElectroDBEntityMock<TData = unknown>(options?: {
   queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey'>
 }): ElectroDBEntityMock<TData> {
-  // Get operation: Entity.get({key}).go()
-  const getMock = jest.fn<() => Promise<{data: TData | undefined} | undefined>>()
+  // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
+  // Supports both single and batch operations
+  const getMock = jest.fn<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>()
   const get = jest.fn(() => ({go: getMock}))
 
   // Scan operation: Entity.scan().go() or Entity.scan().where(...).go()
@@ -167,8 +171,9 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     go: updateGoMock
   }))
 
-  // Delete operation: Entity.delete({key}).go()
-  const deleteGoMock = jest.fn<() => Promise<void>>()
+  // Delete operation: Entity.delete({key}).go() or Entity.delete([...]).go()
+  // Supports both single (returns void) and batch (returns {unprocessed}) operations
+  const deleteGoMock = jest.fn<() => Promise<{unprocessed?: unknown[]} | void>>()
   const deleteOp = jest.fn(() => ({go: deleteGoMock}))
 
   return {
