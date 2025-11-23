@@ -162,11 +162,11 @@ describe('#PruneDevices', () => {
     expect(output.statusCode).toEqual(200)
   })
   describe('#AWSFailure', () => {
-    test('ElectroDB Devices.scan.go fails', async () => {
+    test('should throw error when device scan fails', async () => {
       devicesMock.mocks.scan.go.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
-    test('ElectroDB UserDevices.query.byDevice fails', async () => {
+    test('should continue successfully when user device query fails for disabled device', async () => {
       devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue(undefined)
       sendMock.mockImplementationOnce(() => {
@@ -177,7 +177,7 @@ describe('#PruneDevices', () => {
     })
   })
   describe('#APNSFailure', () => {
-    test('APNS.Failure', async () => {
+    test('should throw error when APNS health check returns unexpected error', async () => {
       devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       sendMock.mockImplementation(() => {
         throw undefined

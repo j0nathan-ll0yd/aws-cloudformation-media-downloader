@@ -154,7 +154,7 @@ describe('#APIGatewayAuthorizer', () => {
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
       process.env.MultiAuthenticationPathParts = 'files'
     })
-    test('AWS.ApiGateway.APIGatewayRequestAuthorizerEvent (not-multi-authentication)', async () => {
+    test('should deny access when headers are missing on non-multi-auth path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
@@ -164,7 +164,7 @@ describe('#APIGatewayAuthorizer', () => {
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
     })
-    test('AWS.ApiGateway.APIGatewayRequestAuthorizerEvent (multi-authentication)', async () => {
+    test('should allow access when headers are missing on multi-auth path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
@@ -175,16 +175,16 @@ describe('#APIGatewayAuthorizer', () => {
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(successResponseKeys))
     })
-    test('AWS.ApiGateway.getApiKeys', async () => {
+    test('should throw error when API key retrieval fails', async () => {
       getApiKeysMock.mockReturnValue(undefined)
       await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
-    test('AWS.ApiGateway.getUsagePlans', async () => {
+    test('should throw error when usage plan retrieval fails', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(undefined)
       await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
     })
-    test('AWS.ApiGateway.getUsage', async () => {
+    test('should throw error when usage retrieval fails', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(undefined)

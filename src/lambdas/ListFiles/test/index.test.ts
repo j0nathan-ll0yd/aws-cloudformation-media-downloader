@@ -26,7 +26,7 @@ describe('#ListFiles', () => {
     event = JSON.parse(JSON.stringify(eventMock))
   })
   describe('#AWSFailure', () => {
-    test('ElectroDB UserFiles.query.byUser', async () => {
+    test('should return empty list when user has no files', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
       const output = await handler(event, context)
@@ -34,7 +34,7 @@ describe('#ListFiles', () => {
       const body = JSON.parse(output.body)
       expect(body.body.keyCount).toEqual(0)
     })
-    test('ElectroDB Files.get (batch)', async () => {
+    test('should return 500 error when batch file retrieval fails', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       const userFileData = queryStubReturnObject.Items || []
       userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})

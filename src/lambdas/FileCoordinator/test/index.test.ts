@@ -35,7 +35,7 @@ describe('#FileCoordinator', () => {
     expect(invokeAsyncMock).toHaveBeenCalled()
   })
   describe('#AWSFailure', () => {
-    test('ElectroDB Files.query', async () => {
+    test('should throw error when file query fails', async () => {
       const message = 'AWS request failed'
       filesMock.mocks.query.byStatus!.go.mockResolvedValue(undefined)
       await expect(handler(event, context)).rejects.toThrowError(message)

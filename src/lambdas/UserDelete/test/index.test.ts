@@ -117,18 +117,18 @@ describe('#UserDelete', () => {
     expect(output.statusCode).toEqual(500)
   })
   describe('#AWSFailure', () => {
-    test('getUserDevices fails', async () => {
+    test('should return 500 error when user device retrieval fails', async () => {
       getUserDevicesMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('Devices.get (batch) fails', async () => {
+    test('should return 500 error when batch device retrieval fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
       devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('AWS.ApiGateway.CustomLambdaAuthorizer', async () => {
+    test('should return 500 error when user ID is missing', async () => {
       event.requestContext.authorizer!.principalId = 'unknown'
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
