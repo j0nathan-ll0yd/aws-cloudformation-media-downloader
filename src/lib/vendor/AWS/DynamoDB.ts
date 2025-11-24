@@ -1,44 +1,22 @@
-import {BatchGetCommandInput, DeleteCommandInput, DynamoDBDocument, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput} from '@aws-sdk/lib-dynamodb'
+import {DynamoDBDocument} from '@aws-sdk/lib-dynamodb'
 import {createDynamoDBClient} from './clients'
 
-// Re-export types for application code to use
-export type {BatchGetCommandInput, DeleteCommandInput, PutCommandInput, QueryCommandInput, ScanCommandInput, UpdateCommandInput}
+/**
+ * DynamoDB DocumentClient for ElectroDB entities.
+ *
+ * This wrapper provides a shared DocumentClient instance with X-Ray tracing
+ * for all ElectroDB entity operations. The DocumentClient handles marshalling
+ * and unmarshalling of DynamoDB attribute values automatically.
+ *
+ * @example
+ * import {documentClient} from '../../lib/vendor/AWS/DynamoDB'
+ *
+ * const client = DynamoDBDocument.from(dynamoDBClient)
+ */
+const dynamoDBClient = createDynamoDBClient()
 
-const client = createDynamoDBClient()
-const docClient = DynamoDBDocument.from(client)
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function updateItem(params: UpdateCommandInput) {
-  return docClient.update(params)
-}
-/* c8 ignore stop */
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function putItem(params: PutCommandInput) {
-  return docClient.put(params)
-}
-/* c8 ignore stop */
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function scan(params: ScanCommandInput) {
-  return docClient.scan(params)
-}
-/* c8 ignore stop */
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function batchGet(params: BatchGetCommandInput) {
-  return docClient.batchGet(params)
-}
-/* c8 ignore stop */
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function query(params: QueryCommandInput) {
-  return docClient.query(params)
-}
-/* c8 ignore stop */
-
-/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function deleteItem(params: DeleteCommandInput) {
-  return docClient.delete(params)
-}
-/* c8 ignore stop */
+/**
+ * Shared DynamoDB DocumentClient instance.
+ * Used by all ElectroDB entities to ensure consistent X-Ray tracing.
+ */
+export const documentClient = DynamoDBDocument.from(dynamoDBClient)

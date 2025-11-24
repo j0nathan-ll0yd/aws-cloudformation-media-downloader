@@ -2,14 +2,23 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: jest.fn(),
-  deleteItem: jest.fn().mockReturnValue({}),
-  query: queryMock,
-  updateItem: jest.fn().mockReturnValue({})
+const devicesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Devices', () => ({
+  Devices: devicesMock.entity
+}))
+
+const userDevicesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
+  UserDevices: userDevicesMock.entity
+}))
+
+const getUserDevicesMock = jest.fn()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUserDevices: getUserDevicesMock,
+  subscribeEndpointToTopic: jest.fn()
 }))
 
 const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {assert: {type: 'json'}})
@@ -39,7 +48,9 @@ describe('#RegisterDevice', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    queryMock.mockReturnValue(queryDefaultResponse)
+    getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    userDevicesMock.mocks.create.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
@@ -60,7 +71,7 @@ describe('#RegisterDevice', () => {
   })
   test('(authenticated-first) should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    queryMock.mockReturnValue(querySuccessResponse)
+    getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
@@ -95,14 +106,14 @@ describe('#RegisterDevice', () => {
     })
     test('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(querySuccessResponse)
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
       listSubscriptionsByTopicMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(querySuccessResponse)
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
       listSubscriptionsByTopicMock.mockReturnValue({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)

@@ -1,24 +1,24 @@
 // These are methods that are shared across multiple lambdas
-import {deleteDeviceParams, deleteSingleUserDeviceParams, getUserByAppleDeviceIdentifierParams, queryUserDeviceParams, updateFileMetadataParams} from './dynamodb-helpers'
+import {Devices} from '../entities/Devices'
+import {UserDevices} from '../entities/UserDevices'
+import {Files} from '../entities/Files'
+import {Users} from '../entities/Users'
 import {logDebug} from './lambda-helpers'
-import {deleteItem, query, scan, updateItem} from '../lib/vendor/AWS/DynamoDB'
 import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
-import {providerFailureErrorMessage, UnexpectedError} from './errors'
 import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
 /**
- * Disassociates a deviceId from a User
+ * Disassociates a deviceId from a User by deleting the UserDevice record
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
  * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
-  const params = deleteSingleUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId, deviceId)
-  logDebug('deleteUserDevice <=', params)
-  const response = await updateItem(params)
-  logDebug('deleteUserDevice <=', response)
+  logDebug('deleteUserDevice <=', {userId, deviceId})
+  const response = await UserDevices.delete({userId, deviceId}).go()
+  logDebug('deleteUserDevice =>', response)
 }
 
 /**
@@ -33,29 +33,26 @@ export async function deleteDevice(device: Device): Promise<void> {
   logDebug('deleteDevice.deleteEndpoint <=', removeEndpointParams)
   const removeEndpointResponse = await deleteEndpoint(removeEndpointParams)
   logDebug('deleteDevice.deleteEndpoint =>', removeEndpointResponse)
-  const removeDeviceParams = deleteDeviceParams(process.env.DynamoDBTableDevices as string, device.deviceId)
-  logDebug('deleteDevice.deleteItem <=', removeDeviceParams)
-  const removedDeviceResponse = await deleteItem(removeDeviceParams)
+  logDebug('deleteDevice.deleteItem <=', device.deviceId)
+  const removedDeviceResponse = await Devices.delete({deviceId: device.deviceId}).go()
   logDebug('deleteDevice.deleteItem =>', removedDeviceResponse)
 }
 
 /**
  * Queries a user's device parameters from DynamoDB
- * @param table - The DynamoDB table to perform the operation on
+ * Returns array of UserDevice records (one per device association)
  * @param userId - The userId
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
  */
-export async function getUserDevices(table: string, userId: string): Promise<DynamoDBUserDevice[]> {
-  const params = queryUserDeviceParams(table, userId)
-  logDebug('getUserDevices <=', params)
-  const response = await query(params)
+export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice[]> {
+  logDebug('getUserDevices <=', userId)
+  const response = await UserDevices.query.byUser({userId}).go()
   logDebug('getUserDevices =>', response)
-  if (!response || !response.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
+  if (!response || !response.data) {
+    return []
   }
-
-  return response.Items as DynamoDBUserDevice[]
+  return response.data as DynamoDBUserDevice[]
 }
 
 /**
@@ -83,10 +80,9 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
  * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
 export async function upsertFile(item: DynamoDBFile) {
-  const updateItemParams = updateFileMetadataParams(process.env.DynamoDBTableFiles as string, item)
-  logDebug('updateItem <=', updateItemParams)
-  const updateResponse = await updateItem(updateItemParams)
-  logDebug('updateItem =>', updateResponse)
+  logDebug('upsertFile <=', item)
+  const updateResponse = await Files.upsert(item).go()
+  logDebug('upsertFile =>', updateResponse)
   return updateResponse
 }
 
@@ -97,15 +93,16 @@ export async function upsertFile(item: DynamoDBFile) {
  * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
  */
 export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
-  const scanParams = getUserByAppleDeviceIdentifierParams(process.env.DynamoDBTableUsers as string, userDeviceId)
-  logDebug('getUsersByAppleDeviceIdentifier <=', scanParams)
-  const scanResponse = await scan(scanParams)
+  logDebug('getUsersByAppleDeviceIdentifier <=', userDeviceId)
+  const scanResponse = await Users.scan.go()
   logDebug('getUsersByAppleDeviceIdentifier =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
+  if (!scanResponse || !scanResponse.data) {
+    return []
   }
 
-  return scanResponse.Items as User[]
+  // Filter in memory since we can't query on nested identity provider field
+  const usersWithAppleId = scanResponse.data.filter((user: any) => user.identityProviders.userId === userDeviceId)
+  return usersWithAppleId as User[]
 }
 
 /**

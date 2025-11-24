@@ -24,11 +24,16 @@ data "aws_iam_policy_document" "SendPushNotification" {
       aws_sqs_queue.SendPushNotification.arn
     ]
   }
+  # Query UserCollection to get user's devices
+  # GetItem on base table to retrieve device details
   statement {
-    actions = ["dynamodb:Query"]
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:GetItem"
+    ]
     resources = [
-      aws_dynamodb_table.UserDevices.arn,
-      aws_dynamodb_table.Devices.arn
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
     ]
   }
   statement {
@@ -79,8 +84,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   }
   environment {
     variables = {
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
     }
   }
 }

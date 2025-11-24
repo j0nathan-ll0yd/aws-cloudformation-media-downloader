@@ -2,16 +2,17 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
-const queryMock = jest.fn()
-const updateItem = jest.fn().mockReturnValue({})
-const deleteItemMock = jest.fn().mockReturnValue({})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: updateItem,
-  deleteItem: deleteItemMock,
-  query: queryMock,
-  scan: jest.fn()
+const filesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+
+const userFilesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
@@ -20,7 +21,9 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
     MD5OfMessageAttributes: 'e95833d661f4007f9575877843f475ed',
     MessageId: 'e990c66f-23f6-4982-9274-a5a533ceb6dc'
   }),
-  subscribe: jest.fn()
+  subscribe: jest.fn(),
+  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
 // Mock yt-dlp-wrap to prevent YouTube module from failing
@@ -46,14 +49,14 @@ jest.unstable_mockModule('fs', () => ({
 
 // Mock S3 vendor wrapper for YouTube
 jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  headObject: jest.fn<() => Promise<{ContentLength: number}>>(),
+  headObject: jest.fn(),
   createS3Upload: jest.fn().mockReturnValue({
     on: jest.fn(),
     done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
   })
 }))
 
-const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
+const invokeAsyncMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
   invokeAsync: invokeAsyncMock
 }))
@@ -69,12 +72,12 @@ describe('#WebhookFeedly', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
   })
-  test('should fail gracefully if the DynamoDB update fails', async () => {
+  test('should fail gracefully if the ElectroDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
-    updateItem.mockImplementation(() => {
-      throw new Error('Update failed')
-    })
+    filesMock.mocks.get.mockResolvedValue({data: undefined})
+    filesMock.mocks.create.mockResolvedValue({data: {}})
+    userFilesMock.mocks.create.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })

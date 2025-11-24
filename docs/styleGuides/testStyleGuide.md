@@ -1,282 +1,785 @@
 # Lambda Test Style Guide
 
-This document provides quick reference for testing Lambda functions in this project. For complete patterns and detailed explanations, see the wiki.
+This document defines the testing standards and patterns for Lambda function tests.
 
-## Wiki Standards Applied
+## Testing Philosophy
 
-This project follows these wiki conventions for testing:
+### Test YOUR Code, Not Library Code
 
-- **[Jest ESM Mocking Strategy](../wiki/Testing/Jest-ESM-Mocking-Strategy.md)** - CRITICAL: Mock ALL transitive dependencies
-- **[Mock Type Annotations](../wiki/Testing/Mock-Type-Annotations.md)** - Use specific types, avoid any/unknown
-- **[Coverage Philosophy](../wiki/Testing/Coverage-Philosophy.md)** - Test YOUR code, not library code
-- **[AWS SDK Encapsulation Policy](../wiki/AWS/SDK-Encapsulation-Policy.md)** - Mock vendor wrappers, NEVER AWS SDK directly
+**Core Principle:** Integration tests should validate YOUR orchestration logic, not AWS SDK behavior.
 
-## Quick Reference
+**Wrong Focus (Testing Libraries):**
+- ❌ "Can I upload to S3?" → Testing AWS SDK
+- ❌ "Does multipart upload work?" → Testing AWS SDK
+- ❌ "Can I query DynamoDB?" → Testing AWS SDK
 
-### Testing Philosophy
+**Correct Focus (Testing YOUR Business Logic):**
+- ✅ "Does the complete download workflow succeed?" → Testing YOUR code
+- ✅ "When DynamoDB query returns files, does Lambda fan-out work?" → Testing YOUR orchestration
+- ✅ "After S3 upload, is DynamoDB updated with correct status?" → Testing YOUR state management
+- ✅ "Does error handling rollback DynamoDB when S3 fails?" → Testing YOUR error recovery
 
-**Test YOUR Code, Not Library Code**
+### Unit Tests vs Integration Tests
 
-```typescript
-// ❌ WRONG - Tests AWS SDK
-test('S3 upload works', async () => {
-  await s3Client.send(new PutObjectCommand({...}))
-})
+**Unit Tests:**
+- Mock ALL external dependencies (AWS services, external APIs)
+- Test individual function logic in isolation
+- Fast execution (milliseconds)
+- High coverage of edge cases and error paths
+- Located in: `src/*/test/index.test.ts`
 
-// ✅ CORRECT - Tests YOUR orchestration
-test('file upload updates metadata', async () => {
-  await uploadFileWithMetadata(fileId, data)
+**Integration Tests:**
+- Use real AWS services (via LocalStack)
+- Test multi-service workflows end-to-end
+- Test YOUR orchestration, state management, error handling
+- Coverage of vendor wrappers is a SIDE EFFECT, not the goal
+- Located in: `test/integration/workflows/*.workflow.integration.test.ts`
 
-  const file = await getFile(fileId)
-  expect(file.uploadedAt).toBeTruthy()
-})
+### Workflow-Based Integration Testing
+
+Prioritize integration tests by workflow complexity:
+
+**High Priority (Multi-Service Workflows):**
+- Test complete end-to-end workflows (webhook → DynamoDB → queue → Lambda → S3)
+- Test state transitions across services (pending → downloading → downloaded)
+- Test error rollback logic (S3 failure → DynamoDB update to "failed")
+- Test fan-out patterns (one Lambda invoking multiple others)
+
+**Medium Priority (Single Service + Logic):**
+- Test query filtering and pagination
+- Test presigned URL generation
+- Test conditional creates and updates
+
+**Low Priority (Simple CRUD):**
+- Don't write integration tests just for coverage
+- If the function is pure CRUD with no orchestration, unit tests are sufficient
+
+### Coverage Philosophy
+
+**Coverage Should Be a Side Effect, Not a Goal:**
+
+Unit test coverage targets YOUR application logic:
+- Lambda handlers: Aim for 80%+ coverage
+- Utility functions: Aim for 90%+ coverage
+- Vendor wrappers: Ignore in unit tests (use `/* c8 ignore */`)
+
+Integration test coverage happens naturally:
+- Vendor wrappers get exercised by workflow tests
+- Don't write integration tests to hit coverage targets
+- Don't write shallow "library behavior" tests
+
+**Success Metric:** Coverage of YOUR CODE, not library code.
+
+### Integration Test Organization
+
+Structure integration tests by workflow, not by service:
+
+```
+test/integration/
+├── workflows/                                   # Workflow-based tests
+│   ├── webhookFeedly.workflow.integration.test.ts
+│   ├── fileCoordinator.workflow.integration.test.ts
+│   ├── startFileUpload.workflow.integration.test.ts
+│   └── listFiles.workflow.integration.test.ts
+└── helpers/                                     # Test utilities
+    ├── dynamodb-helpers.ts
+    ├── s3-helpers.ts
+    └── lambda-helpers.ts
 ```
 
-See [Coverage Philosophy](../wiki/Testing/Coverage-Philosophy.md) for details.
+**Avoid:**
+- ❌ `test/integration/s3/s3.integration.test.ts` (testing AWS SDK)
+- ❌ `test/integration/dynamodb/query.integration.test.ts` (testing AWS SDK)
 
-### Jest ESM Mocking
+**Prefer:**
+- ✅ `test/integration/workflows/startFileUpload.workflow.integration.test.ts` (testing YOUR workflow)
+
+## File Structure and Organization
+
+### Import Order (STRICT)
 
 ```typescript
-// Mock vendor wrappers BEFORE importing handler
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  createS3Upload: jest.fn<() => Promise<{done: () => Promise<void>}>>()
-    .mockResolvedValue({
-      done: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    })
-}))
+// 1. Jest imports FIRST
+import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 
-// THEN import handler
-const {handler} = await import('../src')
+// 2. Test utilities
+import {testContext} from '../../../util/jest-setup'
+
+// 3. External libraries (if needed)
+import {v4 as uuidv4} from 'uuid'
+
+// 4. Type imports
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {FileStatus} from '../../../types/enums'
+
+// 5. Constants
+const fakeUserId = uuidv4()
 ```
 
-See [Jest ESM Mocking Strategy](../wiki/Testing/Jest-ESM-Mocking-Strategy.md) for complete checklist.
+### Mock Setup Pattern
 
-### Mock Type Annotations
-
-```typescript
-// ✅ GOOD - Specific types
-const mockFn = jest.fn<() => Promise<{StatusCode: number}>>()
-  .mockResolvedValue({StatusCode: 202})
-
-// ❌ BAD - Generic types
-const mockFn = jest.fn<() => Promise<unknown>>()
-
-// ❌ FORBIDDEN - Type escape hatches
-const mockFn = jest.fn() as any
-```
-
-See [Mock Type Annotations](../wiki/Testing/Mock-Type-Annotations.md) for patterns.
-
-## Project-Specific Patterns
-
-### Typical Test File Structure
+Mocks MUST be created BEFORE importing the module under test:
 
 ```typescript
-// 1. Mock vendor wrappers FIRST
+// 1. Create mock functions
+const queryMock = jest.fn()
+const updateItemMock = jest.fn()
+
+// 2. Mock modules
 jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  query: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
-  updateItem: jest.fn<() => Promise<Record<string, unknown>>>()
-    .mockResolvedValue({})
+  query: queryMock,
+  updateItem: updateItemMock,
+  deleteItem: jest.fn(),  // Inline mock for unused functions
+  scan: jest.fn()
 }))
 
-// 2. Mock CloudWatch (used by lambda-helpers)
-jest.unstable_mockModule('../../../lib/vendor/AWS/CloudWatch', () => ({
-  putMetricData: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  getStandardUnit: (unit?: string) => unit || 'None'
-}))
+// 3. Import fixtures
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 
-// 3. Import handler AFTER mocks
-const {handler} = await import('../src')
+// 4. Import handler LAST
+const {handler} = await import('./../src')
+```
 
-// 4. Import test utilities
-import {testContext} from '../../../../util/jest-setup'
-import eventMock from './fixtures/apiGatewayEvent.json'
+### AWS X-Ray Mocking
 
-// 5. Tests
+AWS X-Ray SDK creates a transitive dependency challenge in Jest ES modules. When vendor files import from `lib/vendor/AWS/clients.ts`, that file imports `aws-xray-sdk-core`, which must be mocked before Jest validates module paths.
+
+**Current Solution: Lazy Initialization**
+
+All vendor files use lazy initialization to defer client creation until first use:
+
+```typescript
+// lib/vendor/AWS/DynamoDB.ts
+let docClient: DynamoDBDocument | null = null
+function getDocClient(): DynamoDBDocument {
+  if (!docClient) {
+    const client = createDynamoDBClient()
+    docClient = DynamoDBDocument.from(client)
+  }
+  return docClient
+}
+
+export function query(params: QueryCommandInput) {
+  return getDocClient().query(params)
+}
+```
+
+This pattern:
+- Avoids module-level client instantiation
+- Prevents `aws-xray-sdk-core` from loading during Jest module validation
+- Maintains singleton pattern (client cached after first creation)
+- Works with existing test mocks without modification
+
+**setupFilesAfterEnv Configuration**
+
+The `setupFilesAfterEnv` option in `jest.config.mjs` must remain commented out:
+
+```javascript
+// setupFilesAfterEnv: [],  // KEEP COMMENTED - causes module resolution issues with X-Ray
+```
+
+Tests import `jest-setup.ts` directly for utilities, making global setup unnecessary. Enabling `setupFilesAfterEnv` causes Jest to load `jest-setup.ts` globally, interfering with module resolution for X-Ray dependencies.
+
+**Future Improvements**
+
+See `.github/ISSUE_TEMPLATE/xray-testing-improvements.md` for:
+- Alternative approaches explored
+- Jest limitations with ES modules
+- Potential solutions in future Jest versions
+- Migration considerations for test frameworks with better ESM support
+
+**Key Takeaway:** With lazy initialization in vendor files, NO additional X-Ray mocking is required in test files. The existing vendor mocks handle everything.
+
+## Test Structure
+
+### Describe Block
+
+Use the Lambda function name with # prefix:
+
+```typescript
+describe('#ListFiles', () => {
+  // tests
+})
+
+describe('#RegisterDevice', () => {
+  // tests
+})
+```
+
+### Test Setup
+
+Always use `beforeEach` for environment and mock reset:
+
+```typescript
 describe('#FunctionName', () => {
   const context = testContext
+  let event: CustomAPIGatewayRequestAuthorizerEvent
 
   beforeEach(() => {
+    // Deep clone event to prevent test interference
+    event = JSON.parse(JSON.stringify(eventMock))
+
+    // Reset mocks
     jest.clearAllMocks()
-    process.env.TABLE_NAME = 'test-table'
-  })
 
-  test('should return success', async () => {
-    const event = {...eventMock}
-    const result = await handler(event, context)
+    // Set environment variables
+    process.env.DynamoDBTableFiles = 'Files'
+    process.env.Bucket = 'test-bucket'
 
-    expect(result.statusCode).toBe(200)
+    // Set default mock responses
+    queryMock.mockReturnValue(defaultResponse)
   })
 })
 ```
 
-### Common Mock Patterns in This Project
+## Test Naming Conventions
 
-#### DynamoDB Vendor Wrapper
+### 🚨 CRITICAL: Use-Case Focused vs Implementation-Focused
+
+**Test descriptions MUST focus on the behavior being tested, NOT the implementation details.**
+
+#### ❌ BAD: Implementation-Focused Descriptions
+
+These descriptions expose internal implementation and become outdated when refactoring:
+
 ```typescript
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  query: jest.fn<() => Promise<any[]>>().mockResolvedValue([
-    {id: 'file-1', status: 'active'}
-  ]),
-  updateItem: jest.fn<() => Promise<Record<string, unknown>>>()
-    .mockResolvedValue({})
-}))
+// DON'T describe which service/method is being called
+test('ElectroDB UserFiles.query.byUser', async () => {})
+test('ElectroDB Files.get (batch)', async () => {})
+test('AWS.DynamoDB.DocumentClient.query', async () => {})
+test('AWS.SNS.createPlatformEndpoint', async () => {})
+test('getUserDevices fails', async () => {})
+test('Devices.get (batch) fails', async () => {})
+test('AWS.ApiGateway.getApiKeys', async () => {})
+test('APNS.Failure', async () => {})
 ```
 
-#### S3 Vendor Wrapper
+**Problems with implementation-focused names:**
+- Break when you refactor from DynamoDB to ElectroDB
+- Break when you switch from individual queries to batch queries
+- Don't describe what the test actually validates
+- Make it unclear what behavior is being protected
+
+#### ✅ GOOD: Use-Case Focused Descriptions
+
+These descriptions explain what scenario is being tested and what outcome is expected:
+
 ```typescript
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  createS3Upload: jest.fn<() => Promise<{done: () => Promise<void>}>>()
-    .mockResolvedValue({
-      done: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    }),
-  headObject: jest.fn<() => Promise<{ContentLength: number}>>()
-    .mockResolvedValue({ContentLength: 1024})
-}))
+// DO describe the scenario and expected behavior
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when batch file retrieval fails', async () => {})
+test('should throw error when API key retrieval fails', async () => {})
+test('should throw error when usage plan retrieval fails', async () => {})
+test('should return 500 error when user device retrieval fails', async () => {})
+test('should return 500 error when batch device retrieval fails', async () => {})
+test('should throw error when device scan fails', async () => {})
+test('should throw error when APNS health check returns unexpected error', async () => {})
 ```
 
-#### Lambda Vendor Wrapper
+**Benefits of use-case focused names:**
+- Survive refactoring (implementation can change, behavior stays the same)
+- Self-documenting (you know what's being tested without reading the code)
+- Business value focused (describes what the user experiences)
+- Easier to identify missing test coverage
+
+### Describe Block Pattern
+
+**Always use the Lambda function name with # prefix:**
+
 ```typescript
-jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
-  invokeLambda: jest.fn<() => Promise<{StatusCode: number}>>()
-    .mockResolvedValue({StatusCode: 202})
-}))
+describe('#ListFiles', () => {
+  // tests
+})
+
+describe('#RegisterDevice', () => {
+  // tests
+})
+
+describe('#WebhookFeedly', () => {
+  // tests
+})
 ```
 
-#### CloudWatch (via lambda-helpers)
+**NEVER use generic or file-based names:**
+
 ```typescript
-jest.unstable_mockModule('../../../lib/vendor/AWS/CloudWatch', () => ({
-  putMetricData: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  getStandardUnit: (unit?: string) => unit || 'None'
-}))
+// BAD - generic name
+describe('Lambda Tests', () => {})
+
+// BAD - file path
+describe('src/lambdas/ListFiles/src/index', () => {})
 ```
 
-### Test Naming Conventions
+### State-Based Test Names
 
-#### State-Based Tests
+Use parenthetical indicators for user state:
+
 ```typescript
 test('(anonymous) should list only the default file', async () => {})
-test('(authenticated) should return users files', async () => {})
-test('(authenticated-first) should create endpoint', async () => {})
+test('(authenticated) should return user files', async () => {})
+test('(unauthenticated) should return 401 error', async () => {})
+test('(authenticated-first) should create endpoint and unsubscribe from anonymous topic', async () => {})
+test('(authenticated-subsequent) should verify device already exists and return', async () => {})
 ```
 
-#### Action-Based Tests
+### Action-Based Test Names
+
+Describe what the test verifies using "should" statements:
+
 ```typescript
 test('should handle missing bucket environment variable', async () => {})
-test('should gracefully handle an empty list', async () => {})
-test('should fail gracefully if query fails', async () => {})
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when file query fails', async () => {})
+test('should continue even if DynamoDB update fails during error handling', async () => {})
 ```
 
-### Response Testing Pattern
+### Nested Describe Blocks for Error Cases
+
+Group AWS service failures under `#AWSFailure`:
+
+```typescript
+describe('#ListFiles', () => {
+  // ... happy path tests
+
+  describe('#AWSFailure', () => {
+    test('should return empty list when user has no files', async () => {})
+    test('should return 500 error when batch file retrieval fails', async () => {})
+  })
+})
+```
+
+Group external service failures (APNS, GitHub, etc.) under their own sections:
+
+```typescript
+describe('#PruneDevices', () => {
+  // ... happy path tests
+
+  describe('#AWSFailure', () => {
+    test('should throw error when device scan fails', async () => {})
+  })
+
+  describe('#APNSFailure', () => {
+    test('should throw error when APNS health check returns unexpected error', async () => {})
+  })
+})
+```
+
+## Response Testing Pattern
+
+### API Gateway Responses
+
+Parse and verify response structure:
 
 ```typescript
 const output = await handler(event, context)
 
-// Parse response body
+// Check status code
+expect(output.statusCode).toEqual(200)
+
+// Parse body
 const body = JSON.parse(output.body)
 
-// Verify status
-expect(output.statusCode).toBe(200)
+// For success responses with lambda-helpers response()
+expect(body.body.keyCount).toEqual(1)
+expect(body.body.contents[0]).toHaveProperty('authorName')
 
-// Verify CORS headers
-expect(output.headers['Access-Control-Allow-Origin']).toBe('*')
-
-// Verify body structure
-expect(body).toHaveProperty('files')
-expect(body.files).toBeInstanceOf(Array)
+// For error responses
+expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
 ```
 
-## Pre-Commit Test Checklist
+### Lambda-to-Lambda Responses
 
-Before committing test code:
-
-- [ ] All transitive dependencies mocked
-- [ ] Mocks use specific type annotations (not any/unknown)
-- [ ] NO `@aws-sdk/*` mocks (mock vendor wrappers instead)
-- [ ] Mocks declared BEFORE handler import
-- [ ] Environment variables set in `beforeEach`
-- [ ] Tests describe business logic, not library behavior
-- [ ] Test names indicate state or action
-- [ ] All tests pass locally
-
-## Common Mistakes
-
-### Mistake 1: Missing Transitive Dependency Mocks
 ```typescript
-// ❌ WRONG - Missing YouTube dependencies
-jest.unstable_mockModule('../../../lib/YouTube', () => ({
-  getVideoID: jest.fn()
+const output = await handler(event, testContext)
+
+expect(output.statusCode).toEqual(200)
+const parsedBody = JSON.parse(output.body)
+expect(parsedBody.body.status).toEqual('success')
+expect(parsedBody.body.fileSize).toEqual(82784319)
+```
+
+## Mock Verification Patterns
+
+### Call Count Verification
+
+```typescript
+expect(updateItemMock).toHaveBeenCalledTimes(2)
+expect(streamVideoToS3Mock).not.toHaveBeenCalled()
+```
+
+### Call Parameter Verification
+
+```typescript
+// Use @ts-expect-error for mock.calls type issues
+// @ts-expect-error - mock.calls type inference issue
+const firstCall = updateItemMock.mock.calls[0][0] as Record<string, unknown>
+expect(firstCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.PendingDownload})
+
+// For function call matching
+expect(streamVideoToS3Mock).toHaveBeenCalledWith(
+  expect.stringContaining('youtube.com/watch?v='),
+  expect.anything(),  // For complex objects
+  'test-bucket',
+  expect.stringMatching(/\.mp4$/)
+)
+```
+
+## Fixture Management
+
+### Loading Fixtures
+
+Always use dynamic imports with JSON assertion:
+
+```typescript
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
+```
+
+### Fixture Naming Convention
+
+Name fixtures with HTTP status codes when applicable:
+
+```
+fixtures/
+  APIGatewayEvent.json
+  query-200-OK.json
+  query-200-Empty.json
+  batchGet-200-OK.json
+  batchGet-200-Filtered.json
+  createPlatformEndpoint-200-OK.json
+  query-201-Created.json
+```
+
+## Error Testing
+
+### AWS Service Failures
+
+Group AWS failures in nested describe block with use-case focused names:
+
+```typescript
+describe('#AWSFailure', () => {
+  test('should return 500 error when user file query fails', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
+    queryMock.mockReturnValue(undefined)
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(500)
+  })
+
+  test('should return 500 error when platform endpoint creation fails', async () => {
+    createPlatformEndpointMock.mockReturnValue(undefined)
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(500)
+  })
+
+  test('should throw error when API key retrieval fails', async () => {
+    getApiKeysMock.mockReturnValue(undefined)
+    await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
+  })
+})
+```
+
+### Exception Testing
+
+Use descriptive names that explain what scenario causes the exception:
+
+```typescript
+test('should return 401 error when authentication query throws exception', async () => {
+  queryMock.mockImplementation(() => {
+    throw new Error('Database connection failed')
+  })
+  const output = await handler(event, context)
+  expect(output.statusCode).toEqual(401)
+})
+
+test('should throw error when APNS health check returns unexpected error', async () => {
+  sendMock.mockImplementation(() => {
+    throw undefined  // Simulate unexpected APNS failure
+  })
+  await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
+})
+```
+
+## Event Manipulation
+
+### Modifying Events
+
+```typescript
+// Remove headers
+delete event.headers['X-User-Id']
+delete event.headers['Authorization']
+
+// Set principal ID
+event.requestContext.authorizer!.principalId = fakeUserId
+
+// Change body
+event.body = '{}'
+
+// Non-null assertion for TypeScript
+event.requestContext.authorizer!.principalId = 'unknown'
+```
+
+### Environment Variable Testing
+
+Save and restore when testing missing env vars:
+
+```typescript
+test('should handle missing bucket environment variable', async () => {
+  const originalBucket = process.env.Bucket
+  process.env.Bucket = ''
+
+  // ... test logic
+
+  process.env.Bucket = originalBucket
+})
+```
+
+## Mock Response Patterns
+
+### Simple Mock Returns
+
+```typescript
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({
+    ResponseMetadata: {
+      RequestId: uuidv4()
+    }
+  }),
+  subscribe: jest.fn().mockReturnValue(subscribeResponse)
 }))
-// Fails: yt-dlp-wrap, child_process, fs not mocked!
-
-// ✅ CORRECT - All dependencies mocked
-jest.unstable_mockModule('yt-dlp-wrap', () => ({ default: MockYTDlpWrap }))
-jest.unstable_mockModule('child_process', () => ({ spawn: jest.fn() }))
-jest.unstable_mockModule('fs/promises', () => ({ copyFile: jest.fn() }))
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({...}))
 ```
 
-### Mistake 2: Mocking AWS SDK Directly
+### Variable Mock Returns
+
 ```typescript
-// ❌ WRONG - Violates SDK Encapsulation
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({...}))
-
-// ✅ CORRECT - Mock vendor wrapper
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({...}))
-```
-
-### Mistake 3: Generic Type Annotations
-```typescript
-// ❌ WRONG - No type safety
-const queryMock = jest.fn() as any
-
-// ✅ CORRECT - Specific types
-const queryMock = jest.fn<() => Promise<DynamoDBFile[]>>()
-  .mockResolvedValue([])
-```
-
-### Mistake 4: Testing Library Behavior
-```typescript
-// ❌ WRONG - Tests DynamoDB SDK
-test('DynamoDB query returns items', async () => {
-  const result = await dynamoDb.query({...})
-  expect(result.Items).toBeDefined()
+beforeEach(() => {
+  queryMock.mockReturnValue(defaultResponse)
+  createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
 })
 
-// ✅ CORRECT - Tests YOUR logic
-test('getUserFiles filters by status', async () => {
-  const files = await getUserFiles(userId, 'active')
-  expect(files.every(f => f.status === 'active')).toBe(true)
+test('specific test', async () => {
+  queryMock.mockReturnValue(specificResponse)  // Override for this test
+  // ... test logic
 })
 ```
 
-## Integration Tests
+## TypeScript Handling
 
-For integration testing with LocalStack, see:
-- `test/integration/README.md`
-- LocalStack commands: `npm run localstack:start`, `npm run test:integration`
+### Type Assertions in Tests
 
-Focus integration tests on:
-- ✅ Multi-service workflows
-- ✅ State transitions across services
-- ✅ Error rollback logic
-- ❌ NOT simple CRUD operations
+```typescript
+// Cast event types
+const event = eventMock as StartFileUploadParams
 
-## Coverage Targets
+// Cast response data
+const userDevice = userResponse.Items[0] as DynamoDBUserDevice
 
-- **Lambda handlers**: 80%+ coverage
-- **Utility functions**: 90%+ coverage
-- **Vendor wrappers**: Ignore in unit tests (use `/* c8 ignore */`)
+// Handle mock.calls type issues
+// @ts-expect-error - mock.calls type inference issue
+const firstCall = updateItemMock.mock.calls[0][0] as Record<string, unknown>
+```
 
-Coverage should be a **side effect** of testing business logic, not a goal.
+### Mock Type Definitions
 
-## Related Documentation
+```typescript
+// Define mock function types when needed
+const fetchVideoInfoMock = jest.fn<() => Promise<unknown>>()
+const chooseVideoFormatMock = jest.fn<() => unknown>()
+const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
+```
 
-- [Jest ESM Mocking Strategy](../wiki/Testing/Jest-ESM-Mocking-Strategy.md) - Complete mocking guide
-- [Mock Type Annotations](../wiki/Testing/Mock-Type-Annotations.md) - Type safety patterns
-- [Coverage Philosophy](../wiki/Testing/Coverage-Philosophy.md) - What to test
-- [AWS SDK Encapsulation Policy](../wiki/AWS/SDK-Encapsulation-Policy.md) - Mock wrappers, not SDK
+## Data Preparation
 
----
+### Set to Array Conversion
 
-*This style guide is a quick reference. For complete patterns, explanations, and rationale, see the linked wiki pages above.*
+When fixtures contain Sets that need array conversion:
+
+```typescript
+if (Array.isArray(queryStubReturnObject.Items)) {
+  queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
+}
+```
+
+### Deep Cloning
+
+Always deep clone events to prevent test interference:
+
+```typescript
+beforeEach(() => {
+  event = JSON.parse(JSON.stringify(eventMock))
+})
+```
+
+## Assertion Patterns
+
+### Object Key Verification
+
+```typescript
+expect(Object.keys(body.body)).toEqual(expect.arrayContaining(['keyCount', 'contents']))
+```
+
+### Property Existence
+
+```typescript
+expect(body.body.contents[0]).toHaveProperty('authorName')
+expect(body.body).toHaveProperty('endpointArn')
+```
+
+### Array Length
+
+```typescript
+expect(Array.from(body.error.message.token).length).toEqual(1)
+```
+
+### Value Type Checking
+
+```typescript
+expect(typeof body.error.message).toEqual('object')
+```
+
+### Flexible Comparisons
+
+```typescript
+expect(output.statusCode).toBeGreaterThanOrEqual(400)
+```
+
+## Test Coverage Guidelines
+
+### Required Test Cases
+
+1. **Happy path** - Normal successful execution
+2. **State variations** - Anonymous, authenticated, unauthenticated
+3. **Empty/null responses** - Handle empty arrays, undefined values
+4. **AWS service failures** - Test each AWS service mock returning undefined/error
+5. **Validation failures** - Missing required fields, invalid data
+6. **Environment issues** - Missing environment variables
+7. **Error recovery** - Continue processing despite individual failures
+
+### Test Organization
+
+- Group related tests together
+- Use descriptive test names
+- Separate AWS failure tests in nested describe block
+- Test both success and failure paths
+- Verify mock interactions, not just outputs
+
+## Coverage Pragmas for Vendor Wrappers
+
+### When to Use c8 ignore
+
+Use `/* c8 ignore start */` / `/* c8 ignore stop */` comments for pure AWS SDK wrappers that:
+1. Contain no business logic
+2. Only create a command and call `.send()`
+3. Are already tested via integration tests
+
+**Rationale:**
+- Coverage metrics should focus on code with actual logic
+- Integration tests already verify these wrappers work with LocalStack
+- Unit testing pure wrappers provides no value (tests that mocking works, not that code works)
+
+**Note:** We use c8 syntax because Jest is configured with `coverageProvider: 'v8'`
+
+### Pattern
+
+```typescript
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+export function query(params: QueryCommandInput) {
+  return docClient.query(params)
+}
+/* c8 ignore stop */
+
+/* c8 ignore start - Thin wrapper with minimal logic, tested via integration tests */
+export async function invokeAsync(functionName: string, payload: Record<string, unknown>): Promise<InvokeCommandOutput> {
+  const params: InvokeCommandInput = {
+    FunctionName: functionName,
+    InvocationType: 'Event',
+    Payload: JSON.stringify(payload)
+  }
+  return invokeLambda(params)
+}
+/* c8 ignore stop */
+```
+
+### When NOT to Use c8 ignore
+
+Do NOT use coverage pragmas for functions with:
+- Business logic or validation
+- Error transformation
+- Parameter manipulation beyond simple defaults
+- Conditional branching
+- Data transformation
+
+**Example of code that SHOULD be tested:**
+```typescript
+// Has validation logic - SHOULD be tested
+export function transformData(input: unknown): string {
+  if (typeof input === 'string') {
+    return input
+  } else if (Array.isArray(input)) {
+    return input.map(s => transformData(s)).join(', ')
+  }
+  return 'Unknown'
+}
+```
+
+### Files with Coverage Pragmas
+
+Currently excluded from coverage:
+- `src/lib/vendor/AWS/SNS.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/Lambda.ts` - Both functions (pure/thin wrappers)
+- `src/lib/vendor/AWS/DynamoDB.ts` - All 6 functions (pure wrappers)
+- `src/lib/vendor/AWS/S3.ts` - Both functions (pure/thin wrappers)
+
+## Common Patterns to Avoid
+
+1. **Don't use implementation-focused test names** - Use "should return 500 error when file query fails", NOT "ElectroDB Files.get fails"
+2. **Don't test implementation details** - Test behavior, not internal function calls
+3. **Don't use await expect().rejects.toThrow()** for API Gateway handlers - Check statusCode instead
+4. **Don't forget to reset mocks** - Use jest.clearAllMocks() in beforeEach
+5. **Don't modify shared fixtures** - Deep clone before modification
+6. **Don't skip error scenarios** - Test all failure modes
+7. **Don't mock logging functions** - Let logDebug, logInfo, logError run naturally
+8. **Don't use `unknown` when types are known** - Use specific types for mocks
+
+## Type-Safe Mocking
+
+### Use Specific Types for Mock Functions
+
+```typescript
+// BAD - using unknown
+const fetchVideoInfoMock = jest.fn<() => Promise<unknown>>()
+const chooseVideoFormatMock = jest.fn<() => unknown>()
+
+// GOOD - using specific types
+import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
+const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
+```
+
+### Mock Return Types Should Match Function Signatures
+
+```typescript
+// If the actual function returns Promise<{StatusCode: number}>
+const sendMock = jest.fn<() => Promise<{StatusCode: number}>>()
+  .mockResolvedValue({StatusCode: 202})
+```
+
+## Fixture Best Practices
+
+### Large Test Data in Fixtures
+
+```typescript
+// BAD - large inline object
+const videoInfo = {
+  id: 'test-id',
+  title: 'Test Video',
+  formats: [/* ... 50 lines of data ... */]
+}
+
+// GOOD - import from fixture
+const {default: videoInfo} = await import('./fixtures/videoInfo.json', {assert: {type: 'json'}})
+```
+
+### Reuse Fixtures Across Tests
+
+Create common fixtures that can be imported and modified as needed rather than duplicating data in multiple tests.

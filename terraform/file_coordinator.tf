@@ -8,9 +8,12 @@ data "aws_iam_policy_document" "FileCoordinator" {
     actions   = ["lambda:InvokeFunction"]
     resources = [aws_lambda_function.StartFileUpload.arn]
   }
+  # Query StatusIndex for PendingDownload files
   statement {
-    actions   = ["dynamodb:Scan"]
-    resources = [aws_dynamodb_table.Files.arn]
+    actions = ["dynamodb:Query"]
+    resources = [
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/StatusIndex"
+    ]
   }
 }
 
@@ -80,7 +83,7 @@ resource "aws_lambda_function" "FileCoordinator" {
 
   environment {
     variables = {
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
     }
   }
 }

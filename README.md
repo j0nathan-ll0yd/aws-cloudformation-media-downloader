@@ -1,5 +1,7 @@
 # Media Downloader
 
+[![codecov](https://codecov.io/gh/j0nathan-ll0yd/aws-cloudformation-media-downloader/branch/master/graph/badge.svg)](https://codecov.io/gh/j0nathan-ll0yd/aws-cloudformation-media-downloader)
+
 A media downloader designed to integrate with [it's companion iOS App](https://github.com/j0nathan-ll0yd/ios-OfflineMediaDownloader). It is [serverless](https://aws.amazon.com/serverless/), deployed with [OpenTofu](https://opentofu.org/), and built with [TypeScript](https://www.typescriptlang.org/).
 
 ## Architecture
@@ -525,11 +527,3 @@ The resulting output is located in `docs/source` and can open viewed by running:
 ```bash
 open docs/source/index.html
 ```
-
-### TODOS
-
-* Update OpenTofu
-  * Better handle conditional variables (like Github Personal Token)
-
-* Update Unit Tests
-  * Write a test case for the absence of a Github Personal Token

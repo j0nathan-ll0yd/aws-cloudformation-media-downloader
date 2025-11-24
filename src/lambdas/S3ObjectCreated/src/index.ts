@@ -1,42 +1,43 @@
 import {S3Event, Context} from 'aws-lambda'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
-import {DynamoDBFile, UserFile} from '../../../types/main'
-import {getFileByKey, getUsersByFileId} from '../../../util/dynamodb-helpers'
+import {DynamoDBFile} from '../../../types/main'
 import {logDebug} from '../../../util/lambda-helpers'
-import {assertIsError, transformDynamoDBFileToSQSMessageBodyAttributeMap} from '../../../util/transformers'
+import {assertIsError, createFileNotificationAttributes} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns the DynamoDBFile by file name
- * @param fileName - The name of the DynamoDBFile you're searching for
+ * Returns the DynamoDBFile by S3 object key using KeyIndex GSI
+ * @param fileName - The S3 object key to search for
  * @notExported
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
-  const getFileByKeyParams = getFileByKey(process.env.DynamoDBTableFiles as string, fileName)
-  logDebug('scan <=', getFileByKeyParams)
-  const getFileByKeyResponse = await scan(getFileByKeyParams)
-  logDebug('scan =>', getFileByKeyResponse)
-  if (Array.isArray(getFileByKeyResponse.Items) && getFileByKeyResponse.Items.length > 0) {
-    return getFileByKeyResponse.Items[0] as DynamoDBFile
+  logDebug('query file by key <=', fileName)
+  const queryResponse = await Files.query.byKey({key: fileName}).go()
+  logDebug('query file by key =>', queryResponse)
+  if (queryResponse.data && queryResponse.data.length > 0) {
+    return queryResponse.data[0] as DynamoDBFile
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
 }
 
 /**
- * Returns a array of users who have requested a given file
+ * Returns an array of user IDs who have requested a given file
+ * Uses FileCollection GSI for efficient reverse lookup (eliminates full table scan)
  * @param file - The DynamoDBFile you want to search for
  * @notExported
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
-  const getUsersByFileIdParams = getUsersByFileId(process.env.DynamoDBTableUserFiles as string, file.fileId)
-  logDebug('scan <=', getUsersByFileIdParams)
-  const getUsersByFileIdResponse = await scan(getUsersByFileIdParams)
-  logDebug('scan =>', getUsersByFileIdResponse)
-  const userFiles = getUsersByFileIdResponse.Items as [UserFile]
-  return userFiles.map((userDevice) => userDevice.userId)
+  logDebug('query users by fileId <=', file.fileId)
+  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
+  logDebug('query users by fileId =>', queryResponse)
+  if (!queryResponse.data || queryResponse.data.length === 0) {
+    return []
+  }
+  return queryResponse.data.map((userFile) => userFile.userId)
 }
 
 /**
@@ -46,7 +47,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  * @notExported
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
-  const messageAttributes = transformDynamoDBFileToSQSMessageBodyAttributeMap(file, userId)
+  const messageAttributes = createFileNotificationAttributes(file, userId)
   const sendMessageParams = {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
