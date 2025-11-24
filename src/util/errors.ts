@@ -75,4 +75,12 @@ export class Apns2Error extends Error {
   }
 }
 
+export class TooManyRequestsError extends CustomLambdaError {
+  constructor(message: string, statusCode = 429) {
+    super(message)
+    this.name = 'TooManyRequestsError'
+    this.statusCode = statusCode
+  }
+}
+
 export const providerFailureErrorMessage = 'AWS request failed'
