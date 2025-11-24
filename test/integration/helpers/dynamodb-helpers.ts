@@ -7,6 +7,7 @@
 import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
+import {createMockFile} from './test-data'
 
 function getMediaDownloaderTable() {
   return process.env.DynamoDBTableName || 'test-media-downloader'
@@ -117,25 +118,29 @@ export const deleteUserFilesTable = deleteMediaDownloaderTable
 
 /**
  * Insert a file record into DynamoDB using ElectroDB
+ * Uses createMockFile for consistent defaults across all tests
  * This ensures proper entity metadata is added for ElectroDB compatibility
  */
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
   const {Files} = await import('../../../src/entities/Files')
 
-  // ElectroDB requires all fields, so provide defaults
+  // Get consistent defaults from createMockFile, then apply user overrides
+  const defaults = createMockFile(file.fileId!, file.status || FileStatus.PendingMetadata, file)
+
+  // ElectroDB requires all fields - createMockFile provides them all
   await Files.create({
-    fileId: file.fileId!,
-    status: file.status || FileStatus.PendingMetadata,
-    availableAt: file.availableAt || Date.now(),
-    size: file.size || 0,
-    key: file.key || `${file.fileId}.mp4`,
-    title: file.title || `Test Video ${file.fileId}`,
-    description: file.description || 'Test video description',
-    authorName: file.authorName || 'Test Author',
-    authorUser: file.authorUser || 'testuser',
-    publishDate: file.publishDate || new Date().toISOString(),
-    contentType: file.contentType || 'video/mp4',
-    ...(file.url && {url: file.url})
+    fileId: defaults.fileId!,
+    status: defaults.status!,
+    availableAt: defaults.availableAt!,
+    size: defaults.size!,
+    key: defaults.key!,
+    title: defaults.title!,
+    description: defaults.description!,
+    authorName: defaults.authorName!,
+    authorUser: defaults.authorUser!,
+    publishDate: defaults.publishDate!,
+    contentType: defaults.contentType!,
+    ...(defaults.url && {url: defaults.url})
   }).go()
 }
 

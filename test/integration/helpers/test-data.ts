@@ -11,6 +11,7 @@ import {DynamoDBFile} from '../../../src/types/main'
 
 /**
  * Creates a mock file object with sensible defaults
+ * Provides ALL required ElectroDB fields for database operations
  * @param id - File ID (e.g., 'video-123')
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults
@@ -25,12 +26,13 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
     publishDate: new Date().toISOString(),
     description: `Test description for ${id}`,
     availableAt: Date.now(),
-    contentType: 'video/mp4'
+    contentType: 'video/mp4',
+    size: 0,
+    key: `${id}.mp4`
   }
 
   // Add Downloaded-specific fields
   if (status === FileStatus.Downloaded) {
-    base.key = `${id}.mp4`
     base.size = 5242880
     base.url = `https://example.com/${id}.mp4`
   }
