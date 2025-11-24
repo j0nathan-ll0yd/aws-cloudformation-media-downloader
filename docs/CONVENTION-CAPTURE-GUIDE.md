@@ -470,7 +470,7 @@ If 3+ are "yes", flag it. Better to flag and dismiss than miss it.
 
 ### Related Documentation
 - `docs/plans/github-wiki-organization.md` - Wiki organization strategy
-- `docs/styleGuides/` - Established style guides
+- `docs/wiki/` - All documentation and style guides
 - `CLAUDE.md` - Project instructions for Claude
 - `AGENTS.md` - Universal AI context file
 

@@ -70,7 +70,7 @@
 ## See Also
 
 - [External Resource](https://example.com) - Brief description
-- [Style Guide](../../styleGuides/lambdaStyleGuide.md) - Related style guide
+- [Lambda Patterns](../wiki/TypeScript/Lambda-Function-Patterns.md) - Related patterns
 
 ---
 

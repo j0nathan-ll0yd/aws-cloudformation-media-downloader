@@ -133,7 +133,7 @@ fi
 ## Related Patterns
 
 - [Passthrough File Pattern](./passthrough-file-pattern.md) - Technique for tool-specific compatibility files
-- [Documentation Single Source of Truth](../../styleGuides/documentationStyleGuide.md) - Broader principle applied here
+- [Documentation Patterns](../wiki/Meta/Documentation-Patterns.md) - Broader principle applied here
 
 ## Evolution History
 
