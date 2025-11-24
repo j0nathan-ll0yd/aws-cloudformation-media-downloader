@@ -158,33 +158,3 @@ export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | n
 
   return response.data as Partial<DynamoDBFile>
 }
-
-/**
- * Scan all files from DynamoDB using ElectroDB
- */
-export async function scanAllFiles(): Promise<Partial<DynamoDBFile>[]> {
-  const {Files} = await import('../../../src/entities/Files')
-
-  const response = await Files.scan.go()
-
-  if (!response || !response.data) {
-    return []
-  }
-
-  return response.data as Partial<DynamoDBFile>[]
-}
-
-/**
- * Insert multiple pending files for testing FileCoordinator
- */
-export async function insertPendingFiles(fileIds: string[]): Promise<void> {
-  await Promise.all(
-    fileIds.map((fileId) =>
-      insertFile({
-        fileId,
-        status: FileStatus.PendingMetadata,
-        title: `Test Video ${fileId}`
-      })
-    )
-  )
-}

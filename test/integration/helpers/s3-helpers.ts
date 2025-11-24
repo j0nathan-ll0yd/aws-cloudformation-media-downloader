@@ -4,25 +4,15 @@
  * Utilities for creating buckets and verifying S3 uploads in LocalStack
  */
 
-import {createS3Client} from '../../../src/lib/vendor/AWS/clients'
-import {
-  CreateBucketCommand,
-  HeadObjectCommand,
-  DeleteObjectCommand,
-  DeleteBucketCommand,
-  ListObjectsV2Command,
-  GetObjectCommand
-} from '@aws-sdk/client-s3'
+import {createBucket, deleteBucket, listObjectsV2, deleteObject as deleteS3Object, headObject, getObject} from '../lib/vendor/AWS/S3'
 import {Readable} from 'stream'
-
-const s3Client = createS3Client()
 
 /**
  * Create a test bucket in LocalStack S3
  */
 export async function createTestBucket(bucketName: string): Promise<void> {
   try {
-    await s3Client.send(new CreateBucketCommand({Bucket: bucketName}))
+    await createBucket(bucketName)
   } catch (error) {
     // Bucket might already exist
     if (!(error instanceof Error && error.name === 'BucketAlreadyOwnedByYou')) {
@@ -37,27 +27,14 @@ export async function createTestBucket(bucketName: string): Promise<void> {
 export async function deleteTestBucket(bucketName: string): Promise<void> {
   try {
     // First, delete all objects in the bucket
-    const listResponse = await s3Client.send(
-      new ListObjectsV2Command({
-        Bucket: bucketName
-      })
-    )
+    const listResponse = await listObjectsV2(bucketName)
 
     if (listResponse.Contents && listResponse.Contents.length > 0) {
-      await Promise.all(
-        listResponse.Contents.map((object) =>
-          s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: object.Key!
-            })
-          )
-        )
-      )
+      await Promise.all(listResponse.Contents.map((object) => deleteS3Object(bucketName, object.Key!)))
     }
 
     // Then delete the bucket
-    await s3Client.send(new DeleteBucketCommand({Bucket: bucketName}))
+    await deleteBucket(bucketName)
   } catch (error) {
     // Bucket might not exist
   }
@@ -68,12 +45,7 @@ export async function deleteTestBucket(bucketName: string): Promise<void> {
  */
 export async function objectExists(bucketName: string, key: string): Promise<boolean> {
   try {
-    await s3Client.send(
-      new HeadObjectCommand({
-        Bucket: bucketName,
-        Key: key
-      })
-    )
+    await headObject(bucketName, key)
     return true
   } catch (error) {
     return false
@@ -88,12 +60,7 @@ export async function getObjectMetadata(
   key: string
 ): Promise<{contentLength: number; contentType: string} | null> {
   try {
-    const response = await s3Client.send(
-      new HeadObjectCommand({
-        Bucket: bucketName,
-        Key: key
-      })
-    )
+    const response = await headObject(bucketName, key)
 
     return {
       contentLength: response.ContentLength || 0,
@@ -109,12 +76,7 @@ export async function getObjectMetadata(
  */
 export async function getObjectContent(bucketName: string, key: string): Promise<Buffer | null> {
   try {
-    const response = await s3Client.send(
-      new GetObjectCommand({
-        Bucket: bucketName,
-        Key: key
-      })
-    )
+    const response = await getObject(bucketName, key)
 
     if (!response.Body) {
       return null
@@ -139,12 +101,7 @@ export async function getObjectContent(bucketName: string, key: string): Promise
  */
 export async function deleteObject(bucketName: string, key: string): Promise<void> {
   try {
-    await s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: bucketName,
-        Key: key
-      })
-    )
+    await deleteS3Object(bucketName, key)
   } catch (error) {
     // Object might not exist
   }
@@ -154,11 +111,7 @@ export async function deleteObject(bucketName: string, key: string): Promise<voi
  * List all objects in a bucket
  */
 export async function listObjects(bucketName: string): Promise<string[]> {
-  const response = await s3Client.send(
-    new ListObjectsV2Command({
-      Bucket: bucketName
-    })
-  )
+  const response = await listObjectsV2(bucketName)
 
   if (!response.Contents) {
     return []
