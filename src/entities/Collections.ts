@@ -4,6 +4,10 @@ import {Users} from './Users'
 import {Devices} from './Devices'
 import {UserFiles} from './UserFiles'
 import {UserDevices} from './UserDevices'
+import {Sessions} from './Sessions'
+import {Accounts} from './Accounts'
+import {VerificationTokens} from './VerificationTokens'
+import {RateLimits} from './RateLimits'
 
 /**
  * MediaDownloader Service
@@ -31,6 +35,12 @@ import {UserDevices} from './UserDevices'
  *    - Access pattern: collections.deviceUsers({deviceId}).go()
  *    - Used by: PruneDevices (for cleanup)
  *
+ * 4. **userAuth** (UserAuthCollection/gsi1)
+ *    - Query: Get all sessions and accounts for a user
+ *    - Entities: Users, Sessions, Accounts
+ *    - Access pattern: collections.userAuth({userId}).go()
+ *    - Used by: Authentication flows
+ *
  * @example
  * import {collections} from '../../../entities/Collections'
  *
@@ -41,6 +51,10 @@ import {UserDevices} from './UserDevices'
  * // Get all users who need notification for a file
  * const {data} = await collections.fileUsers({fileId: 'vid123'}).go()
  * // Returns: {files: [...], userFiles: [...]}
+ *
+ * // Get all sessions and accounts for a user
+ * const {data} = await collections.userAuth({userId: 'user123'}).go()
+ * // Returns: {users: [...], sessions: [...], accounts: [...]}
  */
 export const MediaDownloaderService = createService(
   {
@@ -48,7 +62,11 @@ export const MediaDownloaderService = createService(
     users: Users,
     devices: Devices,
     userFiles: UserFiles,
-    userDevices: UserDevices
+    userDevices: UserDevices,
+    sessions: Sessions,
+    accounts: Accounts,
+    verificationTokens: VerificationTokens,
+    rateLimits: RateLimits
   },
   {
     client: documentClient,
@@ -64,6 +82,7 @@ export const MediaDownloaderService = createService(
  * - userResources: Get user's files and devices via UserCollection (gsi1)
  * - fileUsers: Get users for a file via FileCollection (gsi2)
  * - deviceUsers: Get users for a device via DeviceCollection (gsi3)
+ * - userAuth: Get user's sessions and accounts via UserAuthCollection (gsi1)
  */
 export const collections = MediaDownloaderService.collections
 

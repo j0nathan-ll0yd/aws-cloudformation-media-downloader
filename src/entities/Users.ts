@@ -34,6 +34,10 @@ export const Users = new Entity(
         type: 'string',
         required: false
       },
+      passwordHash: {
+        type: 'string',
+        required: false
+      },
       identityProviders: {
         type: 'map',
         required: true,
