@@ -2,7 +2,7 @@ import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult, Context} from 
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {verifyAccessToken} from '../../../util/secretsmanager-helpers'
+import {validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
@@ -87,23 +87,24 @@ async function fetchUsageData(keyId: string, usagePlanId: string) {
 }
 
 async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
-  const jwtRegex = /^Bearer [A-Za-z\d-_=]+\.[A-Za-z\d-_=]+\.?[A-Za-z\d-_.+/=]+$/
-  const matches = authorizationHeader.match(jwtRegex)
+  // Match Bearer token format (now session tokens instead of JWTs)
+  const bearerRegex = /^Bearer [A-Za-z\d-_=]+$/
+  const matches = authorizationHeader.match(bearerRegex)
   logDebug('getPayloadFromAuthenticationHeader.matches <=', JSON.stringify(matches))
-  if (!authorizationHeader.match(jwtRegex)) {
-    // Abandon the request, without the X-API-Key header, to produce an authorization error (403)
+  if (!authorizationHeader.match(bearerRegex)) {
+    // Abandon the request, without valid Bearer token, to produce an authorization error (403)
     return
   }
 
   const keypair = authorizationHeader.split(' ')
   const token = keypair[1]
   try {
-    logDebug('verifyAccessToken <=', token)
-    const payload = await verifyAccessToken(token)
-    logDebug('verifyAccessToken =>', payload)
+    logDebug('validateSessionToken <=', token)
+    const payload = await validateSessionToken(token)
+    logDebug('validateSessionToken =>', payload)
     return payload.userId
   } catch (err) {
-    logError('invalid JWT token <=', err)
+    logError('invalid session token <=', err)
     return
   }
 }
