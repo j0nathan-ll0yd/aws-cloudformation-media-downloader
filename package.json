@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "engines": {
     "node": "v22.18.0",
-    "npm": ">=10.9.0"
+    "pnpm": ">=10.0.0"
   },
+  "packageManager": "pnpm@10.0.0",
   "type": "module",
   "scripts": {
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
@@ -12,10 +13,10 @@
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "document-api": "./bin/document-api.sh",
-    "prebuild": "npm run generate-graph",
+    "prebuild": "pnpm run generate-graph",
     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
     "build-dependencies": "./bin/build-dependencies.sh",
-    "install-prod": "npm install --only=production",
+    "install-prod": "pnpm install --prod",
     "format": "./node_modules/.bin/prettier --write 'src/**/*.{ts,js,json}' 'config/**/*.{ts,js,json}'",
     "lint": "./node_modules/.bin/eslint -c ./eslint.config.mjs .",
     "lint-fix": "./node_modules/.bin/eslint -c ./eslint.config.mjs . --fix",
@@ -23,7 +24,7 @@
     "test:integration": "USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.integration.config.mjs",
     "test:integration:with-lifecycle": "./bin/test-integration.sh",
     "test:all": "./bin/test-all.sh",
-    "test-full": "npm run build-dependencies && npm run build && npm run test",
+    "test-full": "pnpm run build-dependencies && pnpm run build && pnpm run test",
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",

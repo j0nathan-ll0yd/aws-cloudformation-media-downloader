@@ -16,14 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Start LocalStack
         run: |
@@ -52,7 +57,7 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: npm run test:integration -- --coverage --coverageDirectory=coverage/integration
+        run: pnpm run test:integration -- --coverage --coverageDirectory=coverage/integration
         env:
           CI: true
           USE_LOCALSTACK: true
