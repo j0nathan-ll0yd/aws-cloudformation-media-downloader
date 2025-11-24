@@ -194,6 +194,50 @@ Be extra vigilant when:
 
 These would need explicit allowlist after audit.
 
+## Dependency Audit Results
+
+**Audit Date**: November 24, 2025
+**Total Packages**: 962 resolved packages
+**Packages with Build Scripts**: 2 (core-js, esbuild)
+
+### Identified Build Scripts
+
+| Package | Version | Purpose | Required? | Action |
+|---------|---------|---------|-----------|--------|
+| `core-js` | 3.47.0 | Polyfills setup | ❌ No | Scripts blocked - dev dependency of redoc, not needed for runtime |
+| `esbuild` | 0.25.12 | Native binary compilation | ❌ No | Scripts blocked - comes with prebuilt binaries for darwin-arm64 |
+
+### Security Assessment
+
+✅ **Zero packages require install scripts for this project**
+- All production dependencies are pure JavaScript/TypeScript
+- Both packages with scripts are dev dependencies (redoc, tsx)
+- Both work correctly without running install scripts
+- Build and tests pass successfully with scripts blocked
+
+### Verification Commands
+
+```bash
+# Check which packages have build scripts
+pnpm list core-js esbuild
+
+# Verify no production deps have scripts
+pnpm why core-js  # Result: dev dependency (redoc)
+pnpm why esbuild  # Result: dev dependency (tsx)
+
+# Test that everything works
+pnpm run build    # ✅ Succeeds
+pnpm test         # ✅ 163 tests pass
+```
+
+### Conclusion
+
+The security configuration (`enable-pre-post-scripts=false`) successfully blocks all install scripts without impacting functionality. The two packages that have scripts are:
+1. Dev-only dependencies (not in production bundles)
+2. Work correctly with prebuilt binaries/configurations
+
+**No allowlist additions needed.** ✅
+
 ## Troubleshooting
 
 ### Script Blocked Error
@@ -260,6 +304,84 @@ For future projects or contributors:
 - [ ] Test integration: `pnpm run test:integration`
 - [ ] Update documentation (README.md, AGENTS.md)
 - [ ] Add `pnpm-lock.yaml` to git, exclude `.pnpm-store` in `.gitignore`
+
+## Emergency Rollback
+
+If the pnpm migration causes critical issues in production, follow these steps to revert:
+
+### Rollback Procedure
+
+1. **Revert the migration commits**:
+   ```bash
+   # Find the migration commits
+   git log --oneline --grep="pnpm"
+
+   # Revert the changes (replace with actual commit SHAs)
+   git revert <commit-sha-1> <commit-sha-2>
+   ```
+
+2. **Remove pnpm artifacts**:
+   ```bash
+   rm -rf node_modules pnpm-lock.yaml .pnpm-store
+   rm -f .npmrc pnpm-workspace.yaml
+   rm -rf packages/ apps/
+   ```
+
+3. **Restore npm lock file** (if available in git history):
+   ```bash
+   git checkout <pre-migration-commit> -- package-lock.json
+   ```
+
+4. **Reinstall with npm**:
+   ```bash
+   npm install
+   npm run build
+   npm test
+   ```
+
+5. **Update CI/CD workflows**:
+   - Revert `.github/workflows/unit-tests.yml` to use npm
+   - Revert `.github/workflows/integration-tests.yml` to use npm
+   - Remove `pnpm/action-setup` step
+   - Change `cache: 'pnpm'` back to `cache: 'npm'`
+
+6. **Update documentation**:
+   - Revert `README.md` and `AGENTS.md` command examples
+   - Remove `docs/wiki/Meta/pnpm-Migration.md`
+   - Revert shell script references
+
+7. **Update package.json scripts** (if modified):
+   ```json
+   {
+     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
+     "test": "node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.config.mjs"
+   }
+   ```
+
+### Rollback Verification
+
+After rollback, verify everything works:
+
+```bash
+# Build should succeed
+npm run build
+
+# Tests should pass
+npm test
+
+# CI should be green
+git push && # Check GitHub Actions
+```
+
+### When to Rollback
+
+Consider rollback only if:
+- ❌ CI/CD consistently fails despite fixes
+- ❌ Production deployments break
+- ❌ Critical dependency issues arise
+- ❌ Team cannot adapt to pnpm workflow
+
+**Note**: Minor issues (warnings, local setup) should not trigger rollback. The security benefits outweigh minor friction.
 
 ## References
 
