@@ -16,6 +16,7 @@ import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
 import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
 import {EventBridgeClient, EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
+import {SFNClient, SFNClientConfig} from '@aws-sdk/client-sfn'
 import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
@@ -140,5 +141,16 @@ export function createAPIGatewayClient(): APIGateway {
 export function createEventBridgeClient(): EventBridgeClient {
   const config: EventBridgeClientConfig = getBaseConfig()
   const client = new EventBridgeClient(config)
+  return captureAWSClient(client)
+}
+
+/**
+ * Create a Step Functions client instance
+ * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
+ */
+export function createStepFunctionsClient(): SFNClient {
+  const config: SFNClientConfig = getBaseConfig()
+  const client = new SFNClient(config)
   return captureAWSClient(client)
 }
