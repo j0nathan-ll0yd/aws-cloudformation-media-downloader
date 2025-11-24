@@ -48,7 +48,9 @@ const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 
 const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule(sqsModulePath, () => ({
-  sendMessage: sendMessageMock
+  sendMessage: sendMessageMock,
+  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
 const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()

@@ -4,12 +4,9 @@
  * Utilities for inserting and querying test data in LocalStack DynamoDB
  */
 
-import {createDynamoDBClient} from '../../../src/lib/vendor/AWS/clients'
-import {CreateTableCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
+import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
-
-const dynamoDBClient = createDynamoDBClient()
 
 function getMediaDownloaderTable() {
   return process.env.DynamoDBTableName || 'test-media-downloader'
@@ -21,72 +18,70 @@ function getMediaDownloaderTable() {
  */
 export async function createMediaDownloaderTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getMediaDownloaderTable(),
-        KeySchema: [
-          {AttributeName: 'pk', KeyType: 'HASH'},
-          {AttributeName: 'sk', KeyType: 'RANGE'}
-        ],
-        AttributeDefinitions: [
-          {AttributeName: 'pk', AttributeType: 'S'},
-          {AttributeName: 'sk', AttributeType: 'S'},
-          {AttributeName: 'gsi1pk', AttributeType: 'S'},
-          {AttributeName: 'gsi1sk', AttributeType: 'S'},
-          {AttributeName: 'gsi2pk', AttributeType: 'S'},
-          {AttributeName: 'gsi2sk', AttributeType: 'S'},
-          {AttributeName: 'gsi3pk', AttributeType: 'S'},
-          {AttributeName: 'gsi3sk', AttributeType: 'S'},
-          {AttributeName: 'gsi4pk', AttributeType: 'S'},
-          {AttributeName: 'gsi4sk', AttributeType: 'S'},
-          {AttributeName: 'gsi5pk', AttributeType: 'S'},
-          {AttributeName: 'gsi5sk', AttributeType: 'S'}
-        ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: 'UserCollection',
-            KeySchema: [
-              {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'FileCollection',
-            KeySchema: [
-              {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'DeviceCollection',
-            KeySchema: [
-              {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'StatusIndex',
-            KeySchema: [
-              {AttributeName: 'gsi4pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'KeyIndex',
-            KeySchema: [
-              {AttributeName: 'gsi5pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          }
-        ],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
+    await createTable({
+      TableName: getMediaDownloaderTable(),
+      KeySchema: [
+        {AttributeName: 'pk', KeyType: 'HASH'},
+        {AttributeName: 'sk', KeyType: 'RANGE'}
+      ],
+      AttributeDefinitions: [
+        {AttributeName: 'pk', AttributeType: 'S'},
+        {AttributeName: 'sk', AttributeType: 'S'},
+        {AttributeName: 'gsi1pk', AttributeType: 'S'},
+        {AttributeName: 'gsi1sk', AttributeType: 'S'},
+        {AttributeName: 'gsi2pk', AttributeType: 'S'},
+        {AttributeName: 'gsi2sk', AttributeType: 'S'},
+        {AttributeName: 'gsi3pk', AttributeType: 'S'},
+        {AttributeName: 'gsi3sk', AttributeType: 'S'},
+        {AttributeName: 'gsi4pk', AttributeType: 'S'},
+        {AttributeName: 'gsi4sk', AttributeType: 'S'},
+        {AttributeName: 'gsi5pk', AttributeType: 'S'},
+        {AttributeName: 'gsi5sk', AttributeType: 'S'}
+      ],
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: 'UserCollection',
+          KeySchema: [
+            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'FileCollection',
+          KeySchema: [
+            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'DeviceCollection',
+          KeySchema: [
+            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'StatusIndex',
+          KeySchema: [
+            {AttributeName: 'gsi4pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'KeyIndex',
+          KeySchema: [
+            {AttributeName: 'gsi5pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        }
+      ],
+      BillingMode: 'PAY_PER_REQUEST'
+    })
   } catch (error) {
     if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
       throw error
@@ -99,7 +94,7 @@ export async function createMediaDownloaderTable(): Promise<void> {
  */
 export async function deleteMediaDownloaderTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getMediaDownloaderTable()}))
+    await deleteTable(getMediaDownloaderTable())
   } catch (error) {
     // Table might not exist
   }
