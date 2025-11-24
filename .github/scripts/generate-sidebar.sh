@@ -4,6 +4,7 @@
 # Creates _Sidebar.md for GitHub Wiki navigation
 
 set -euo pipefail
+shopt -s nullglob  # Allow glob patterns to expand to empty list if no matches
 
 # Configuration
 WIKI_DIR="${WIKI_DIR:-wiki}"
@@ -37,7 +38,7 @@ process_directory() {
     local parent_path="$3"
 
     # Get all markdown files in current directory
-    for file in "$dir"/*.md 2>/dev/null; do
+    for file in "$dir"/*.md; do
         if [ ! -f "$file" ]; then
             continue
         fi
@@ -76,7 +77,7 @@ process_directory() {
     done
 
     # Process subdirectories
-    for subdir in "$dir"/*/ 2>/dev/null; do
+    for subdir in "$dir"/*/; do
         if [ ! -d "$subdir" ]; then
             continue
         fi
@@ -159,7 +160,7 @@ EOF
     done
 
     # Process each category directory
-    for dir in "$WIKI_DIR"/*/ 2>/dev/null; do
+    for dir in "$WIKI_DIR"/*/; do
         if [ ! -d "$dir" ]; then
             continue
         fi
@@ -193,7 +194,7 @@ EOF
         echo "" >> "$SIDEBAR_FILE"
 
         # Process files in category
-        for file in "$dir"/*.md 2>/dev/null; do
+        for file in "$dir"/*.md; do
             if [ ! -f "$file" ]; then
                 continue
             fi
@@ -204,7 +205,7 @@ EOF
         done
 
         # Process subdirectories if any
-        for subdir in "$dir"/*/ 2>/dev/null; do
+        for subdir in "$dir"/*/; do
             if [ ! -d "$subdir" ]; then
                 continue
             fi
@@ -212,7 +213,7 @@ EOF
             local subdirname=$(basename "$subdir")
             echo "  - **$(get_page_title "$subdirname")**" >> "$SIDEBAR_FILE"
 
-            for file in "$subdir"/*.md 2>/dev/null; do
+            for file in "$subdir"/*.md; do
                 if [ ! -f "$file" ]; then
                     continue
                 fi
