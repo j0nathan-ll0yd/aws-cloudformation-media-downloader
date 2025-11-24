@@ -8,7 +8,7 @@ This directory contains integration tests that verify multi-service workflows us
 
 Unlike unit tests which mock AWS services, integration tests execute complete end-to-end workflows against LocalStack. The goal is to test YOUR code's orchestration, state management, and error handling—not to verify that S3 uploads work or DynamoDB queries succeed.
 
-**Testing Philosophy:** See [`docs/styleGuides/testStyleGuide.md`](../../docs/styleGuides/testStyleGuide.md) for comprehensive testing philosophy and patterns.
+**Testing Philosophy:** See [`docs/wiki/Testing/Coverage-Philosophy.md`](../../docs/wiki/Testing/Coverage-Philosophy.md) and [`docs/wiki/Integration/LocalStack-Testing.md`](../../docs/wiki/Integration/LocalStack-Testing.md) for comprehensive testing philosophy and patterns.
 
 ## Running Integration Tests
 
