@@ -60,9 +60,31 @@ export const Files = new Entity(
         required: true
       },
       status: {
-        type: ['PendingMetadata', 'PendingDownload', 'Downloaded', 'Failed'] as const,
+        type: ['PendingMetadata', 'PendingDownload', 'Scheduled', 'Downloaded', 'Failed'] as const,
         required: true,
         default: 'PendingMetadata'
+      },
+      retryAfter: {
+        type: 'number',
+        required: false
+      },
+      retryCount: {
+        type: 'number',
+        required: false,
+        default: 0
+      },
+      maxRetries: {
+        type: 'number',
+        required: false,
+        default: 5
+      },
+      lastError: {
+        type: 'string',
+        required: false
+      },
+      scheduledPublishTime: {
+        type: 'number',
+        required: false
       }
     },
     indexes: {

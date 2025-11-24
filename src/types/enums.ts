@@ -7,6 +7,7 @@ export enum UserStatus {
 export enum FileStatus {
   PendingMetadata = 'PendingMetadata',
   PendingDownload = 'PendingDownload',
+  Scheduled = 'Scheduled',
   Downloaded = 'Downloaded',
   Failed = 'Failed'
 }

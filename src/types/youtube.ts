@@ -13,6 +13,9 @@ export interface YtDlpVideoInfo {
   upload_date?: string
   view_count?: number
   filesize?: number
+  release_timestamp?: number
+  is_live?: boolean
+  live_status?: string
 }
 
 export interface YtDlpFormat {
