@@ -56,7 +56,7 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
   })
 }))
 
-const invokeAsyncMock = jest.fn<() => Promise<unknown>>()
+const invokeAsyncMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
   invokeAsync: invokeAsyncMock
 }))
