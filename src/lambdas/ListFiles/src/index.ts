@@ -1,48 +1,36 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {batchGet, query} from '../../../lib/vendor/AWS/DynamoDB'
-import {getBatchFilesParams, getUserFilesParams} from '../../../util/dynamodb-helpers'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of Files, based on a list of File IDs
- * @param fileIds - An array of File IDs
- * @notExported
- */
-async function getFilesById(fileIds: string[]): Promise<DynamoDBFile[]> {
-  const fileParams = getBatchFilesParams(process.env.DynamoDBTableFiles as string, fileIds)
-  logDebug('getFilesById <=', fileParams)
-  const fileResponse = await batchGet(fileParams)
-  logDebug('getFilesById =>', fileResponse)
-  if (!fileResponse || !fileResponse.Responses) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  const table = process.env.DynamoDBTableFiles as string
-  return fileResponse.Responses[table] as DynamoDBFile[]
-}
-
-/**
- * Searches for a User record via their Apple Device ID
+ * Returns an array of Files for a user using ElectroDB batch get
+ * Eliminates N+1 query pattern by using batch operations
  * @param userId - The User ID
  * @notExported
  */
-async function getFileIdsByUser(userId: string): Promise<string[]> {
-  const userFileParams = getUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
-  logDebug('getFileIdsByUser <=', userFileParams)
-  const userFilesResponse = await query(userFileParams)
-  logDebug('getFileIdsByUser =>', userFilesResponse)
-  if (!userFilesResponse || !userFilesResponse.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  if (userFilesResponse.Items.length === 0) {
+async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
+  logDebug('getFilesByUser <=', userId)
+  const userFilesResponse = await UserFiles.query.byUser({userId}).go()
+  logDebug('getFilesByUser.userFiles =>', userFilesResponse)
+
+  if (!userFilesResponse || !userFilesResponse.data || userFilesResponse.data.length === 0) {
     return []
   }
-  const userFiles = userFilesResponse.Items as DynamoDBFile[]
-  return userFiles.map((file) => file.fileId)
+
+  const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
+  const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
+  logDebug('getFilesByUser.files =>', files)
+
+  if (unprocessed.length > 0) {
+    logDebug('getFilesByUser.unprocessed =>', unprocessed)
+  }
+
+  return files as DynamoDBFile[]
 }
 
 /**
@@ -66,11 +54,8 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     return response(context, 200, myResponse)
   }
   try {
-    const fileIds = await getFileIdsByUser(userId as string)
-    if (fileIds.length > 0) {
-      const files = await getFilesById(fileIds)
-      myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
-    }
+    const files = await getFilesByUser(userId as string)
+    myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)
   } catch (error) {

@@ -1,40 +1,35 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
-import {UnexpectedError} from '../../../util/errors'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-const getUserDevicesByUserIdResponse = {
-  Items: [
-    {
-      devices: new Set([fakeDeviceId]),
-      userId: fakeUserId
-    }
-  ],
-  Count: 1,
-  ScannedCount: 1
-}
+const getUserDevicesByUserIdResponse = [
+  {
+    deviceId: fakeDeviceId,
+    userId: fakeUserId
+  }
+]
 
 const getDeviceResponse = {
-  Items: [
-    {
-      deviceId: fakeDeviceId,
-      token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
-      systemName: 'iOS',
-      userId: fakeUserId
-    }
-  ],
-  Count: 1,
-  ScannedCount: 1
+  deviceId: fakeDeviceId,
+  token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
+  systemName: 'iOS',
+  endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
 }
 
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  query: queryMock
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
+  UserDevices: userDevicesMock.entity
 }))
 
-const publishSnsEventMock = jest.fn()
+const devicesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Devices', () => ({
+  Devices: devicesMock.entity
+}))
+
+const publishSnsEventMock = jest.fn<() => unknown>()
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
   publishSnsEvent: publishSnsEventMock
 }))
@@ -48,19 +43,15 @@ describe('#SendPushNotification', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
   test('should send a notification for each user device', async () => {
-    queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
-    queryMock.mockReturnValueOnce(getDeviceResponse)
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
+    devicesMock.mocks.get.mockResolvedValue({data: getDeviceResponse})
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
   })
   test('should exit gracefully if no devices exist', async () => {
-    queryMock.mockReturnValue({
-      Items: [],
-      Count: 0,
-      ScannedCount: 0
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
@@ -68,18 +59,19 @@ describe('#SendPushNotification', () => {
   test('should exit if its a different notification type', async () => {
     const modifiedEvent = event
     modifiedEvent.Records[0].body = 'OtherNotification'
-    const notificationsSent = await handler(modifiedEvent, testContext)
+    const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.DocumentClient.query.getUserDevicesByUserId', async () => {
-      queryMock.mockReturnValue(undefined)
-      await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
+    test('ElectroDB UserDevices.query returns no data', async () => {
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+      const notificationsSent = await handler(event, testContext)
+      expect(notificationsSent).toBeUndefined()
     })
-    test('AWS.DynamoDB.DocumentClient.query.getDevice', async () => {
-      queryMock.mockReturnValueOnce(getUserDevicesByUserIdResponse)
-      queryMock.mockReturnValueOnce(undefined)
+    test('ElectroDB Devices.get fails', async () => {
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
+      devicesMock.mocks.get.mockResolvedValue(undefined)
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()
       expect(publishSnsEventMock.mock.calls.length).toBe(0)

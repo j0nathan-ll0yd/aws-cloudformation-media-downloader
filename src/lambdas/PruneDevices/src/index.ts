@@ -1,10 +1,10 @@
 import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
+import {Devices} from '../../../entities/Devices'
+import {UserDevices} from '../../../entities/UserDevices'
 import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {scan} from '../../../lib/vendor/AWS/DynamoDB'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {ApplePushNotificationResponse, Device, DynamoDBUserDevice} from '../../../types/main'
-import {getUsersByDeviceId} from '../../../util/dynamodb-helpers'
-import {deleteDevice, deleteUserDevice} from '../../../util/shared'
+import {ApplePushNotificationResponse, Device} from '../../../types/main'
+import {deleteDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
@@ -12,17 +12,17 @@ import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Returns an array of filesIds that are ready to be downloaded
+ * Returns an array of all devices
  * @notExported
  */
 async function getDevices(): Promise<Device[]> {
   logDebug('getDevices <=')
-  const scanResponse = await scan({TableName: process.env.DynamoDBTableDevices as string})
+  const scanResponse = await Devices.scan.go()
   logDebug('getDevices =>', scanResponse)
-  if (!scanResponse || !scanResponse.Items) {
+  if (!scanResponse || !scanResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return scanResponse.Items as Device[]
+  return scanResponse.data as Device[]
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -65,15 +65,13 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 }
 
 async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
-  const params = getUsersByDeviceId(process.env.DynamoDBTableUserDevices as string, deviceId)
-  logDebug('getUserIdsByDeviceId <=', params)
-  const response = await scan(params)
-  logDebug('getUserIdsByDeviceId <=', response)
-  if (!response || !response.Items) {
-    throw new UnexpectedError(providerFailureErrorMessage)
+  logDebug('getUserIdsByDeviceId <=', deviceId)
+  const response = await UserDevices.query.byDevice({deviceId}).go()
+  logDebug('getUserIdsByDeviceId =>', response)
+  if (!response || !response.data) {
+    return []
   }
-  const userDevices = response.Items as DynamoDBUserDevice[]
-  return userDevices.map((userDevice) => userDevice.userId)
+  return response.data.map((userDevice) => userDevice.userId)
 }
 
 /**
@@ -96,7 +94,17 @@ export const handler = withXRay(async (event: ScheduledEvent, context: Context, 
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const values = await Promise.all([deleteDevice(device), userIds.map((userId) => deleteUserDevice(userId, deviceId))])
+        const deleteUserDevicesPromise =
+          userIds.length > 0
+            ? (async () => {
+                const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+                const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+                if (unprocessed.length > 0) {
+                  logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+                }
+              })()
+            : Promise.resolve()
+        const values = await Promise.all([deleteDevice(device), deleteUserDevicesPromise])
         logDebug('Promise.all', values)
       } catch (error) {
         assertIsError(error)

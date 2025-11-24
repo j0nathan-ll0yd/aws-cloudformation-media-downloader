@@ -7,11 +7,7 @@ declare global {
       DefaultFileName: string
       DefaultFileUrl: string
       DefaultFileContentType: string
-      DynamoDBTableDevices: string
-      DynamoDBTableUsers: string
-      DynamoDBTableFiles: string
-      DynamoDBTableUserFiles: string
-      DynamoDBTableUserDevices: string
+      DynamoDBTableName: string
       PlatformEncryptionKey: string
       GithubPersonalToken: string
       MultiAuthenticationPathParts: string

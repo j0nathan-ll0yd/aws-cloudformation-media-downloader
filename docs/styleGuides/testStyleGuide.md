@@ -235,27 +235,134 @@ describe('#FunctionName', () => {
 
 ## Test Naming Conventions
 
+### 🚨 CRITICAL: Use-Case Focused vs Implementation-Focused
+
+**Test descriptions MUST focus on the behavior being tested, NOT the implementation details.**
+
+#### ❌ BAD: Implementation-Focused Descriptions
+
+These descriptions expose internal implementation and become outdated when refactoring:
+
+```typescript
+// DON'T describe which service/method is being called
+test('ElectroDB UserFiles.query.byUser', async () => {})
+test('ElectroDB Files.get (batch)', async () => {})
+test('AWS.DynamoDB.DocumentClient.query', async () => {})
+test('AWS.SNS.createPlatformEndpoint', async () => {})
+test('getUserDevices fails', async () => {})
+test('Devices.get (batch) fails', async () => {})
+test('AWS.ApiGateway.getApiKeys', async () => {})
+test('APNS.Failure', async () => {})
+```
+
+**Problems with implementation-focused names:**
+- Break when you refactor from DynamoDB to ElectroDB
+- Break when you switch from individual queries to batch queries
+- Don't describe what the test actually validates
+- Make it unclear what behavior is being protected
+
+#### ✅ GOOD: Use-Case Focused Descriptions
+
+These descriptions explain what scenario is being tested and what outcome is expected:
+
+```typescript
+// DO describe the scenario and expected behavior
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when batch file retrieval fails', async () => {})
+test('should throw error when API key retrieval fails', async () => {})
+test('should throw error when usage plan retrieval fails', async () => {})
+test('should return 500 error when user device retrieval fails', async () => {})
+test('should return 500 error when batch device retrieval fails', async () => {})
+test('should throw error when device scan fails', async () => {})
+test('should throw error when APNS health check returns unexpected error', async () => {})
+```
+
+**Benefits of use-case focused names:**
+- Survive refactoring (implementation can change, behavior stays the same)
+- Self-documenting (you know what's being tested without reading the code)
+- Business value focused (describes what the user experiences)
+- Easier to identify missing test coverage
+
+### Describe Block Pattern
+
+**Always use the Lambda function name with # prefix:**
+
+```typescript
+describe('#ListFiles', () => {
+  // tests
+})
+
+describe('#RegisterDevice', () => {
+  // tests
+})
+
+describe('#WebhookFeedly', () => {
+  // tests
+})
+```
+
+**NEVER use generic or file-based names:**
+
+```typescript
+// BAD - generic name
+describe('Lambda Tests', () => {})
+
+// BAD - file path
+describe('src/lambdas/ListFiles/src/index', () => {})
+```
+
 ### State-Based Test Names
 
 Use parenthetical indicators for user state:
 
 ```typescript
 test('(anonymous) should list only the default file', async () => {})
-test('(authenticated) should return users files', async () => {})
-test('(unauthenticated) should throw an error as token is invalid', async () => {})
-test('(authenticated-first) should create endpoint and unsubscribe', async () => {})
-test('(authenticated-subsequent) should create endpoint and return', async () => {})
+test('(authenticated) should return user files', async () => {})
+test('(unauthenticated) should return 401 error', async () => {})
+test('(authenticated-first) should create endpoint and unsubscribe from anonymous topic', async () => {})
+test('(authenticated-subsequent) should verify device already exists and return', async () => {})
 ```
 
 ### Action-Based Test Names
 
-Describe what the test verifies:
+Describe what the test verifies using "should" statements:
 
 ```typescript
 test('should handle missing bucket environment variable', async () => {})
-test('should gracefully handle an empty list', async () => {})
-test('should fail gracefully if query fails', async () => {})
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when file query fails', async () => {})
 test('should continue even if DynamoDB update fails during error handling', async () => {})
+```
+
+### Nested Describe Blocks for Error Cases
+
+Group AWS service failures under `#AWSFailure`:
+
+```typescript
+describe('#ListFiles', () => {
+  // ... happy path tests
+
+  describe('#AWSFailure', () => {
+    test('should return empty list when user has no files', async () => {})
+    test('should return 500 error when batch file retrieval fails', async () => {})
+  })
+})
+```
+
+Group external service failures (APNS, GitHub, etc.) under their own sections:
+
+```typescript
+describe('#PruneDevices', () => {
+  // ... happy path tests
+
+  describe('#AWSFailure', () => {
+    test('should throw error when device scan fails', async () => {})
+  })
+
+  describe('#APNSFailure', () => {
+    test('should throw error when APNS health check returns unexpected error', async () => {})
+  })
+})
 ```
 
 ## Response Testing Pattern
@@ -348,34 +455,48 @@ fixtures/
 
 ### AWS Service Failures
 
-Group AWS failures in nested describe block:
+Group AWS failures in nested describe block with use-case focused names:
 
 ```typescript
 describe('#AWSFailure', () => {
-  test('AWS.DynamoDB.DocumentClient.query', async () => {
+  test('should return 500 error when user file query fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     queryMock.mockReturnValue(undefined)
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
 
-  test('AWS.SNS.createPlatformEndpoint', async () => {
+  test('should return 500 error when platform endpoint creation fails', async () => {
     createPlatformEndpointMock.mockReturnValue(undefined)
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
+  })
+
+  test('should throw error when API key retrieval fails', async () => {
+    getApiKeysMock.mockReturnValue(undefined)
+    await expect(handler(event, testContext)).rejects.toThrow(UnexpectedError)
   })
 })
 ```
 
 ### Exception Testing
 
+Use descriptive names that explain what scenario causes the exception:
+
 ```typescript
-test('should fail gracefully if query fails', async () => {
+test('should return 401 error when authentication query throws exception', async () => {
   queryMock.mockImplementation(() => {
-    throw new Error()
+    throw new Error('Database connection failed')
   })
   const output = await handler(event, context)
   expect(output.statusCode).toEqual(401)
+})
+
+test('should throw error when APNS health check returns unexpected error', async () => {
+  sendMock.mockImplementation(() => {
+    throw undefined  // Simulate unexpected APNS failure
+  })
+  await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
 })
 ```
 
@@ -611,13 +732,14 @@ Currently excluded from coverage:
 
 ## Common Patterns to Avoid
 
-1. **Don't test implementation details** - Test behavior, not internal function calls
-2. **Don't use await expect().rejects.toThrow()** for API Gateway handlers - Check statusCode instead
-3. **Don't forget to reset mocks** - Use jest.clearAllMocks() in beforeEach
-4. **Don't modify shared fixtures** - Deep clone before modification
-5. **Don't skip error scenarios** - Test all failure modes
-6. **Don't mock logging functions** - Let logDebug, logInfo, logError run naturally
-7. **Don't use `unknown` when types are known** - Use specific types for mocks
+1. **Don't use implementation-focused test names** - Use "should return 500 error when file query fails", NOT "ElectroDB Files.get fails"
+2. **Don't test implementation details** - Test behavior, not internal function calls
+3. **Don't use await expect().rejects.toThrow()** for API Gateway handlers - Check statusCode instead
+4. **Don't forget to reset mocks** - Use jest.clearAllMocks() in beforeEach
+5. **Don't modify shared fixtures** - Deep clone before modification
+6. **Don't skip error scenarios** - Test all failure modes
+7. **Don't mock logging functions** - Let logDebug, logInfo, logError run naturally
+8. **Don't use `unknown` when types are known** - Use specific types for mocks
 
 ## Type-Safe Mocking
 

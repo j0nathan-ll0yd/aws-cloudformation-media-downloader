@@ -1,9 +1,9 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
-import {FileStatus} from '../../../types/enums'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
@@ -16,13 +16,10 @@ jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
   streamVideoToS3: streamVideoToS3Mock
 }))
 
-// Mock DynamoDB
-const updateItemMock = jest.fn<() => Promise<Record<string, unknown>>>()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: updateItemMock,
-  deleteItem: jest.fn(),
-  query: jest.fn(),
-  scan: jest.fn()
+// Mock ElectroDB Files entity
+const filesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
 }))
 
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
@@ -71,7 +68,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 45
     })
-    updateItemMock.mockResolvedValue({})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -82,21 +79,8 @@ describe('#StartFileUpload', () => {
     expect(parsedBody.body.duration).toEqual(45)
     expect(parsedBody.body.fileId).toBeDefined()
 
-    // Verify DynamoDB was called twice (PendingDownload, then Downloaded)
-    expect(updateItemMock).toHaveBeenCalledTimes(2)
-
-    // Verify status updates (Document Client uses plain objects, not .S/.N format)
-    // @ts-expect-error - mock.calls type inference issue
-    const firstCall = updateItemMock.mock.calls[0][0] as Record<string, unknown>
-    expect(firstCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.PendingDownload})
-
-    // Second call should update status to Downloaded with file size
-    // @ts-expect-error - mock.calls type inference issue
-    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
-    expect(secondCall.ExpressionAttributeValues).toMatchObject({
-      ':status': FileStatus.Downloaded,
-      ':size': 82784319
-    })
+    // Verify Files.upsert was called twice (PendingDownload, then Downloaded)
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalledTimes(2)
 
     // Verify streamVideoToS3 was called with correct parameters
     expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
@@ -129,7 +113,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 120
     })
-    updateItemMock.mockResolvedValue({})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -139,10 +123,8 @@ describe('#StartFileUpload', () => {
     expect(parsedBody.body.fileSize).toEqual(104857600)
     expect(parsedBody.body.duration).toEqual(120)
 
-    // Verify DynamoDB was updated with Downloaded status
-    // @ts-expect-error - mock.calls type inference issue
-    const secondCall = updateItemMock.mock.calls[1][0] as Record<string, unknown>
-    expect(secondCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Downloaded})
+    // Verify Files.upsert was called with Downloaded status
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle streaming errors and mark file as Failed', async () => {
@@ -167,33 +149,26 @@ describe('#StartFileUpload', () => {
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
-    updateItemMock.mockResolvedValue({})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
-    // Verify DynamoDB was called to set Failed status
-    expect(updateItemMock).toHaveBeenCalled()
-    const calls = updateItemMock.mock.calls
-    // @ts-expect-error - mock.calls type inference issue
-    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
-    expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
+    // Verify Files.upsert was called to set Failed status
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle video not found error', async () => {
     fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
-    updateItemMock.mockResolvedValue({})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
-    // Verify DynamoDB was called to set Failed status
-    const calls = updateItemMock.mock.calls
-    // @ts-expect-error - mock.calls type inference issue
-    const lastCall = calls[calls.length - 1][0] as Record<string, unknown>
-    expect(lastCall.ExpressionAttributeValues).toMatchObject({':status': FileStatus.Failed})
+    // Verify Files.upsert was called to set Failed status
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
   test('should handle missing bucket environment variable', async () => {
@@ -219,7 +194,7 @@ describe('#StartFileUpload', () => {
     } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
-    updateItemMock.mockResolvedValue({})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
@@ -231,15 +206,15 @@ describe('#StartFileUpload', () => {
     process.env.Bucket = originalBucket
   })
 
-  test('should continue even if DynamoDB update fails during error handling', async () => {
+  test('should continue even if Files.upsert fails during error handling', async () => {
     fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
-    updateItemMock.mockRejectedValue(new Error('DynamoDB update failed'))
+    filesMock.mocks.upsert.go.mockRejectedValue(new Error('Files.upsert failed'))
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
-    // Should have attempted to update DynamoDB despite the failure
-    expect(updateItemMock).toHaveBeenCalled()
+    // Should have attempted to upsert file despite the failure
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 })

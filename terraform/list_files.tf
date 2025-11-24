@@ -4,14 +4,17 @@ resource "aws_iam_role" "ListFilesRole" {
 }
 
 data "aws_iam_policy_document" "ListFiles" {
+  # Query UserCollection to get user's file associations
+  # Query and BatchGet base table to retrieve file details
   statement {
     actions = [
       "dynamodb:Query",
-      "dynamodb:BatchGetItem"
+      "dynamodb:BatchGetItem",
+      "dynamodb:GetItem"
     ]
     resources = [
-      aws_dynamodb_table.Files.arn,
-      aws_dynamodb_table.UserFiles.arn
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
     ]
   }
 }
@@ -70,8 +73,7 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = {
-      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
+      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
       DefaultFileSize        = 436743
       DefaultFileName        = aws_s3_object.DefaultFile.key
       DefaultFileUrl         = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
@@ -102,19 +104,6 @@ resource "aws_api_gateway_integration" "ListFilesGet" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.ListFiles.invoke_arn
-}
-
-resource "aws_dynamodb_table" "UserFiles" {
-  name           = "UserFiles"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "userId"
-
-  attribute {
-    name = "userId"
-    type = "S"
-  }
 }
 
 data "local_file" "DefaultFile" {
