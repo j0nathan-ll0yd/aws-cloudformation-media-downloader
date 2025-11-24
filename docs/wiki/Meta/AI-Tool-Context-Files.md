@@ -130,7 +130,7 @@ Gemini Code Assist looks for GEMINI.md. Use a passthrough:
 
 This project uses AGENTS.md as the single source of truth for AI coding assistant context.
 
-Please see [AGENTS.md](./AGENTS.md) for comprehensive project documentation and guidelines.
+Please see AGENTS.md in the repository root for comprehensive project documentation and guidelines.
 ```
 
 ### Why Passthroughs?
@@ -207,8 +207,8 @@ cp path/to/template/AGENTS.md ./AGENTS.md
 
 ## Wiki Conventions to Follow
 **BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
-- [Naming Conventions](docs/wiki/Conventions/Naming-Conventions.md)
-- [Git Workflow](docs/wiki/Conventions/Git-Workflow.md)
+- [Naming Conventions](../Conventions/Naming-Conventions.md)
+- [Git Workflow](../Conventions/Git-Workflow.md)
 - [Add relevant patterns for YOUR project]
 
 ## Critical Project-Specific Rules
@@ -235,7 +235,7 @@ cp path/to/template/AGENTS.md ./AGENTS.md
 
 This project uses AGENTS.md as the single source of truth.
 
-Please see [AGENTS.md](./AGENTS.md) for documentation.
+Please see AGENTS.md for documentation.
 ```
 
 ### Step 4: Initialize Convention Tracking
@@ -282,7 +282,7 @@ cat > GEMINI.md << 'EOF'
 
 This project uses AGENTS.md as the single source of truth.
 
-Please see [AGENTS.md](./AGENTS.md) for documentation.
+Please see AGENTS.md for documentation.
 EOF
 ```
 
@@ -298,7 +298,7 @@ echo "@AGENTS.md" > CLAUDE.md
 
 cat > GEMINI.md << 'EOF'
 # See AGENTS.md
-Please see [AGENTS.md](./AGENTS.md) for documentation.
+Please see AGENTS.md for documentation.
 EOF
 ```
 

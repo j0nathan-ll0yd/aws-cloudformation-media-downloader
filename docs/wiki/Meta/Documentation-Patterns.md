@@ -58,7 +58,7 @@ Passthrough Files (CLAUDE.md, GEMINI.md)
 
 This project uses AGENTS.md as the single source of truth for AI coding assistant context.
 
-Please see [AGENTS.md](./AGENTS.md) for comprehensive project documentation and guidelines.
+Please see AGENTS.md in the repository root for comprehensive project documentation and guidelines.
 ```
 
 **How it works**:
@@ -73,10 +73,10 @@ Please see [AGENTS.md](./AGENTS.md) for comprehensive project documentation and 
 ```markdown
 # [Topic] Documentation
 
-For comprehensive documentation on [topic], see the wiki:
+For comprehensive documentation on testing patterns, see the wiki:
 
-- [Pattern Name](docs/wiki/Category/Pattern.md)
-- [Another Pattern](docs/wiki/Category/Another-Pattern.md)
+- [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md)
+- [Lazy Initialization Pattern](../Testing/Lazy-Initialization-Pattern.md)
 
 This keeps documentation centralized and avoids duplication.
 ```
@@ -150,8 +150,8 @@ Benefits:
 [When this pattern doesn't apply]
 
 ## Related Patterns
-- [Link to related convention 1]
-- [Link to related convention 2]
+- Link to related convention 1 (e.g., Error Handling)
+- Link to related convention 2 (e.g., Testing Patterns)
 ```
 
 ### Why This Template?
@@ -188,7 +188,7 @@ function validateCredentials(username: string, password: string) {
 
 This project follows strict AWS SDK encapsulation rules.
 
-See [SDK Encapsulation Policy](../wiki/AWS/SDK-Encapsulation-Policy.md) for complete details.
+See [SDK Encapsulation Policy](../AWS/SDK-Encapsulation-Policy.md) for complete details.
 
 ## Project-Specific Examples
 
@@ -205,13 +205,13 @@ See [SDK Encapsulation Policy](../wiki/AWS/SDK-Encapsulation-Policy.md) for comp
 **BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
 
 ### Core Conventions
-- [Git Workflow](docs/wiki/Conventions/Git-Workflow.md) - NO AI attribution
-- [Naming](docs/wiki/Conventions/Naming-Conventions.md) - camelCase rules
+- [Git Workflow](../Conventions/Git-Workflow.md) - NO AI attribution
+- [Naming](../Conventions/Naming-Conventions.md) - camelCase rules
 
 ### Language-Specific
-- [Lambda](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- [Testing](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
-- [AWS SDK](docs/wiki/AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
+- [Lambda](../TypeScript/Lambda-Function-Patterns.md)
+- [Testing](../Testing/Jest-ESM-Mocking-Strategy.md)
+- [AWS SDK](../AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
 ```
 
 ## Multi-Project Documentation
@@ -303,7 +303,7 @@ git submodule update --remote
 ```markdown
 # From Conventions/Git-Workflow.md
 
-See also [Naming Conventions](Naming-Conventions.md)
+See also [Naming Conventions](../Conventions/Naming-Conventions.md)
 See also [Lambda Patterns](../TypeScript/Lambda-Function-Patterns.md)
 ```
 
@@ -392,7 +392,7 @@ Track evolution in each wiki page:
 
 This guide has moved to the wiki.
 
-See [New Guide](wiki/Category/Guide.md) for current documentation.
+See [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) for current documentation.
 ```
 
 ### Deprecation Pattern
@@ -402,7 +402,7 @@ See [New Guide](wiki/Category/Guide.md) for current documentation.
 
 ⚠️ **DEPRECATED**: This pattern is no longer recommended.
 
-Use [New Pattern](../Category/New-Pattern.md) instead.
+Use [Error Handling Pattern](../TypeScript/Error-Handling.md) instead.
 
 ## Migration Guide
 [How to migrate from old to new pattern...]
@@ -433,10 +433,12 @@ Use [New Pattern](../Category/New-Pattern.md) instead.
 #!/bin/bash
 # Check for broken wiki links
 
-find docs/wiki -name "*.md" -exec grep -l '\[.*\](.*\.md)' {} \; | while read file; do
-  # Extract links and verify target exists
-  grep -o '\[.*\](.*\.md)' "$file" | while read link; do
-    target=$(echo "$link" | sed 's/.*(\(.*\))/\1/')
+# Find markdown files with links
+find docs/wiki -name "*.md" | while read file; do
+  # Extract and verify each link
+  # Using double quotes to prevent pattern interpretation
+  grep -o '\[[^]]*\]([^)]*\.md)' "$file" 2>/dev/null | while read link; do
+    target=$(echo "$link" | sed 's/.*(\([^)]*\))/\1/')
     if [ ! -f "docs/wiki/$target" ]; then
       echo "Broken link in $file: $target"
     fi

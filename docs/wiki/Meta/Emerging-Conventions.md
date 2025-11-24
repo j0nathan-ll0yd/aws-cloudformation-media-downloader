@@ -186,7 +186,7 @@ When a convention is promoted to a wiki page, update the entry:
 [... existing content ...]
 
 **Status**: Documented
-**Wiki Page**: [Category/Page-Name.md](../Category/Page-Name.md)
+**Wiki Page**: `../Category/Page-Name.md` (example path)
 **Promoted**: [Date]
 ```
 

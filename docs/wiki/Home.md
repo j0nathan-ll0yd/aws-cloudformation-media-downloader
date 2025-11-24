@@ -80,7 +80,7 @@ Meta-documentation about the documentation system itself:
 ### 🚨 Zero-Tolerance Rules
 These patterns have **ZERO exceptions**:
 - [AWS SDK Encapsulation](AWS/SDK-Encapsulation-Policy.md) - NEVER import AWS SDK directly
-- [No AI Attribution](Conventions/Git-Workflow.md#no-ai-references) - NEVER include AI references in commits
+- [No AI Attribution](Conventions/Git-Workflow.md) - NEVER include AI references in commits
 - [Git as Source of Truth](Conventions/Code-Comments.md) - NEVER explain removed code in comments
 
 ### 📈 Convention Evolution
@@ -122,7 +122,7 @@ This wiki is stored in the main repository under `docs/wiki/`:
 ## Contributing
 
 To add or update conventions:
-1. Follow the [page template](Meta/Documentation-Patterns.md#page-template)
+1. Follow the [page template](Meta/Documentation-Patterns.md)
 2. Include clear examples (✅ Correct / ❌ Incorrect)
 3. Explain rationale and benefits
 4. Add enforcement mechanisms where possible

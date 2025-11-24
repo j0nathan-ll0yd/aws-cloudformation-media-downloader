@@ -259,7 +259,7 @@ All exceptions should be documented with comments explaining why.
 
 ## Related Patterns
 
-- [Import Organization](../Import-Organization.md) - How to organize and name imports
+- [Import Organization](Import-Organization.md) - How to organize and name imports
 - [File Organization](../Infrastructure/File-Organization.md) - How to structure and name files
 - [Git Workflow](Git-Workflow.md) - Commit message naming conventions
 - [Variable Naming](../Bash/Variable-Naming.md) - Bash-specific naming rules
