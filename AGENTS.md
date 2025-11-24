@@ -97,8 +97,9 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 2. **Feedly webhook** uses query-based authentication (custom authorizer)
 3. **APNS certificates** required for iOS push notifications (p12 format)
 4. **YouTube downloads** require cookie authentication due to bot detection
-5. **LocalStack integration** for local AWS testing via vendor wrappers
-6. **Webpack externals** must be updated when adding AWS SDK packages
+5. **Scheduled video handling** provides self-healing retry for temporarily unavailable videos
+6. **LocalStack integration** for local AWS testing via vendor wrappers
+7. **Webpack externals** must be updated when adding AWS SDK packages
 
 ## ElectroDB Architecture
 
