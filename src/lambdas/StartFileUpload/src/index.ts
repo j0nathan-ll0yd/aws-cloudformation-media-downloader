@@ -8,6 +8,9 @@ import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} fro
 import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
 import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
+import {classifyVideoError} from '../../../util/video-error-classifier'
+import {Files} from '../../../entities/Files'
+import {YtDlpVideoInfo} from '../../../types/youtube'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -91,25 +94,96 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   } catch (error) {
     assertIsError(error)
 
-    try {
-      await upsertFile({
-        fileId,
-        status: FileStatus.Failed
-      } as DynamoDBFile)
-    } catch (updateError) {
-      assertIsError(updateError)
-      logDebug('upsertFile error =>', updateError.message)
-    }
-
-    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
+    let videoInfo: Partial<YtDlpVideoInfo> | undefined
 
     if (error instanceof CookieExpirationError) {
       await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
       await createCookieExpirationIssue(fileId, fileUrl, error)
+      try {
+        await upsertFile({
+          fileId,
+          status: FileStatus.Failed
+        } as DynamoDBFile)
+      } catch (updateError) {
+        assertIsError(updateError)
+        logDebug('upsertFile error =>', updateError.message)
+      }
       return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }
 
-    await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
+    try {
+      logDebug('Attempting to fetch video metadata for error classification')
+      videoInfo = await fetchVideoInfo(fileUrl)
+    } catch (metadataError) {
+      logDebug('Could not fetch video metadata for classification', metadataError)
+    }
+
+    const classification = classifyVideoError(error, videoInfo)
+    logInfo('Error classification', {
+      category: classification.category,
+      retryable: classification.retryable,
+      retryAfter: classification.retryAfter,
+      reason: classification.reason
+    })
+
+    if (classification.retryable && classification.retryAfter) {
+      const existingFileResult = await Files.get({fileId}).go()
+      const existingFile = existingFileResult?.data
+      const retryCount = (existingFile?.retryCount || 0) + 1
+      const maxRetries = existingFile?.maxRetries || 5
+
+      if (retryCount > maxRetries) {
+        logInfo(`Max retries (${maxRetries}) exceeded for fileId: ${fileId}`)
+        try {
+          await Files.update({fileId})
+            .set({
+              status: FileStatus.Failed,
+              lastError: `Max retries exceeded: ${classification.reason}`,
+              retryCount
+            })
+            .go()
+        } catch (updateError) {
+          assertIsError(updateError)
+          logDebug('Files.update error =>', updateError.message)
+        }
+        await putMetric('MaxRetriesExceeded', 1, undefined, [{Name: 'VideoId', Value: fileId}])
+        await createVideoDownloadFailureIssue(fileId, fileUrl, error, `Max retries exceeded: ${classification.reason}`)
+      } else {
+        logInfo(`Scheduling retry for fileId: ${fileId}`, {
+          retryCount,
+          retryAfter: new Date(classification.retryAfter * 1000).toISOString()
+        })
+        try {
+          await Files.update({fileId})
+            .set({
+              status: FileStatus.Scheduled,
+              retryAfter: classification.retryAfter,
+              retryCount,
+              lastError: classification.reason,
+              scheduledPublishTime: videoInfo?.release_timestamp
+            })
+            .go()
+        } catch (updateError) {
+          assertIsError(updateError)
+          logDebug('Files.update error =>', updateError.message)
+        }
+        await putMetric('VideoScheduledForRetry', 1, undefined, [{Name: 'Category', Value: classification.category}])
+      }
+    } else {
+      try {
+        await upsertFile({
+          fileId,
+          status: FileStatus.Failed,
+          lastError: classification.reason
+        } as DynamoDBFile)
+      } catch (updateError) {
+        assertIsError(updateError)
+        logDebug('upsertFile error =>', updateError.message)
+      }
+      await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
+    }
+
+    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
     return lambdaErrorResponse(context, error)
   }
 })

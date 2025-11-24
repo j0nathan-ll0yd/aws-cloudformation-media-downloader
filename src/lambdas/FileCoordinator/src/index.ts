@@ -7,20 +7,33 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of fileIds that are ready to be downloaded
- * Uses StatusIndex GSI to efficiently query PendingDownload files
+ * Uses StatusIndex GSI to efficiently query PendingDownload and Scheduled files
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   logDebug('Querying for files ready to be downloaded')
-  const queryResponse = await Files.query
+  const now = Math.floor(Date.now() / 1000)
+
+  const pendingResponse = await Files.query
     .byStatus({status: 'PendingDownload'})
     .where(({availableAt}, {lte}) => lte(availableAt, Date.now()))
     .where(({url}, {notExists}) => notExists(url))
     .go()
-  logDebug('getFilesToBeDownloaded =>', queryResponse)
-  if (!queryResponse || !queryResponse.data) {
+  logDebug('getPendingFiles =>', pendingResponse)
+
+  const scheduledResponse = await Files.query
+    .byStatus({status: 'Scheduled'})
+    .where(({retryAfter}, {lte}) => lte(retryAfter, now))
+    .go()
+  logDebug('getScheduledFiles =>', scheduledResponse)
+
+  if (!pendingResponse || !pendingResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return queryResponse.data.map((file) => file.fileId)
+
+  const pendingFileIds = pendingResponse.data.map((file) => file.fileId)
+  const scheduledFileIds = scheduledResponse?.data ? scheduledResponse.data.map((file) => file.fileId) : []
+
+  return [...pendingFileIds, ...scheduledFileIds]
 }
 
 /**

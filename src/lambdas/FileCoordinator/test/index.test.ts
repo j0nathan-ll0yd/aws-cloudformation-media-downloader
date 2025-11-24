@@ -25,14 +25,41 @@ describe('#FileCoordinator', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
+    expect(filesMock.mocks.query.byStatus!.go).toHaveBeenCalledTimes(2)
   })
   test('should handle scheduled event (with 1 event)', async () => {
     const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
+    filesMock.mocks.query.byStatus!.go.mockResolvedValueOnce({data: scanResponse.Items || []}).mockResolvedValueOnce({data: []})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalled()
+    expect(filesMock.mocks.query.byStatus!.go).toHaveBeenCalledTimes(2)
+  })
+
+  test('should handle scheduled files ready for retry', async () => {
+    const now = Math.floor(Date.now() / 1000)
+    const scheduledFiles = [
+      {fileId: 'scheduled-1', status: 'Scheduled', retryAfter: now - 100},
+      {fileId: 'scheduled-2', status: 'Scheduled', retryAfter: now - 50}
+    ]
+    filesMock.mocks.query.byStatus!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce({data: scheduledFiles})
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(200)
+    expect(invokeAsyncMock).toHaveBeenCalledTimes(2)
+    expect(filesMock.mocks.query.byStatus!.go).toHaveBeenCalledTimes(2)
+  })
+
+  test('should handle both pending and scheduled files', async () => {
+    const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
+    const now = Math.floor(Date.now() / 1000)
+    const scheduledFiles = [{fileId: 'scheduled-1', status: 'Scheduled', retryAfter: now - 100}]
+    filesMock.mocks.query.byStatus!.go.mockResolvedValueOnce({data: scanResponse.Items || []}).mockResolvedValueOnce({data: scheduledFiles})
+    invokeAsyncMock.mockResolvedValue({StatusCode: 202})
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(200)
+    expect(invokeAsyncMock).toHaveBeenCalledTimes(2)
   })
   describe('#AWSFailure', () => {
     test('should throw error when file query fails', async () => {

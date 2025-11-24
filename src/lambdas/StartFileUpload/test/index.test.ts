@@ -4,6 +4,21 @@ import {StartFileUploadParams} from '../../../types/main'
 import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {VideoErrorClassification} from '../../../util/video-error-classifier'
+
+// Mock video error classifier
+const classifyVideoErrorMock = jest.fn<() => VideoErrorClassification>()
+jest.unstable_mockModule('../../../util/video-error-classifier', () => ({
+  classifyVideoError: classifyVideoErrorMock
+}))
+
+// Mock GitHub helpers
+const createVideoDownloadFailureIssueMock = jest.fn<() => Promise<void>>()
+const createCookieExpirationIssueMock = jest.fn<() => Promise<void>>()
+jest.unstable_mockModule('../../../util/github-helpers', () => ({
+  createVideoDownloadFailureIssue: createVideoDownloadFailureIssueMock,
+  createCookieExpirationIssue: createCookieExpirationIssueMock
+}))
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
@@ -209,12 +224,100 @@ describe('#StartFileUpload', () => {
   test('should continue even if Files.upsert fails during error handling', async () => {
     fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
     filesMock.mocks.upsert.go.mockRejectedValue(new Error('Files.upsert failed'))
+    classifyVideoErrorMock.mockReturnValue({
+      category: 'permanent',
+      retryable: false,
+      reason: 'Video fetch failed'
+    })
 
     const output = await handler(event, context)
 
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Should have attempted to upsert file despite the failure
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
+  })
+
+  test('should schedule retry for scheduled video', async () => {
+    const futureTimestamp = Math.floor(Date.now() / 1000) + 86400
+    const mockVideoInfo = {
+      id: 'scheduled-video-id',
+      title: 'Scheduled Video',
+      thumbnail: 'https://example.com/thumbnail.jpg',
+      duration: 300,
+      release_timestamp: futureTimestamp
+    } as YtDlpVideoInfo
+
+    fetchVideoInfoMock.mockRejectedValueOnce(new Error('Video unavailable')).mockResolvedValueOnce(mockVideoInfo)
+    filesMock.mocks.get.mockResolvedValue({data: {fileId: 'scheduled-video-id', retryCount: 0, maxRetries: 5}})
+    filesMock.mocks.update.go.mockResolvedValue({data: {}})
+
+    classifyVideoErrorMock.mockReturnValue({
+      category: 'scheduled',
+      retryable: true,
+      retryAfter: futureTimestamp + 300,
+      reason: `Scheduled for ${new Date(futureTimestamp * 1000).toISOString()}`
+    })
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    expect(filesMock.mocks.update.go).toHaveBeenCalled()
+    expect(classifyVideoErrorMock).toHaveBeenCalled()
+    expect(createVideoDownloadFailureIssueMock).not.toHaveBeenCalled()
+  })
+
+  test('should mark as failed when max retries exceeded', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Transient error'))
+    filesMock.mocks.get.mockResolvedValue({data: {fileId: 'retry-exhausted-id', retryCount: 5, maxRetries: 5}})
+    filesMock.mocks.update.go.mockResolvedValue({data: {}})
+
+    classifyVideoErrorMock.mockReturnValue({
+      category: 'transient',
+      retryable: true,
+      retryAfter: Math.floor(Date.now() / 1000) + 300,
+      reason: 'Transient network error'
+    })
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    expect(filesMock.mocks.update.go).toHaveBeenCalled()
+    expect(createVideoDownloadFailureIssueMock).toHaveBeenCalled()
+  })
+
+  test('should not create GitHub issue for retryable errors', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Network timeout'))
+    filesMock.mocks.get.mockResolvedValue({data: {fileId: 'network-error-id', retryCount: 0, maxRetries: 5}})
+    filesMock.mocks.update.go.mockResolvedValue({data: {}})
+
+    classifyVideoErrorMock.mockReturnValue({
+      category: 'transient',
+      retryable: true,
+      retryAfter: Math.floor(Date.now() / 1000) + 300,
+      reason: 'Transient network error'
+    })
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    expect(createVideoDownloadFailureIssueMock).not.toHaveBeenCalled()
+  })
+
+  test('should create GitHub issue for permanent errors', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Video is private'))
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+
+    classifyVideoErrorMock.mockReturnValue({
+      category: 'permanent',
+      retryable: false,
+      reason: 'Video is private'
+    })
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    expect(createVideoDownloadFailureIssueMock).toHaveBeenCalled()
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 })
