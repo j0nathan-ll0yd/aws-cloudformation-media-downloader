@@ -141,6 +141,50 @@ const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {a
 const {handler} = await import('./../src')
 ```
 
+### ElectroDB Entity Mocking
+
+**CRITICAL**: Always use the `createElectroDBEntityMock` helper for mocking ElectroDB entities.
+
+```typescript
+// 1. Import the helper
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+// 2. Create entity mocks with appropriate query indexes
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser', 'byFile']})
+const usersMock = createElectroDBEntityMock()
+
+// 3. Mock the entity modules
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
+}))
+
+// 4. Import handler AFTER mocking
+const {handler} = await import('../src')
+
+// 5. Set return values in tests
+beforeEach(() => {
+  // Direct promise returns (no .go())
+  filesMock.mocks.get.mockResolvedValue({data: testFile})
+  filesMock.mocks.create.mockResolvedValue({data: newFile})
+
+  // Method chaining with .go()
+  filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: [file1, file2]})
+  userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
+})
+```
+
+**Key Rules**:
+- NEVER create manual mocks for ElectroDB entities
+- Always specify the correct query indexes when creating mocks
+- Remember which operations use `.go()` (scan, query, upsert, update) vs direct promises (get, create, delete)
+
 ### AWS X-Ray Mocking
 
 AWS X-Ray SDK creates a transitive dependency challenge in Jest ES modules. When vendor files import from `lib/vendor/AWS/clients.ts`, that file imports `aws-xray-sdk-core`, which must be mocked before Jest validates module paths.

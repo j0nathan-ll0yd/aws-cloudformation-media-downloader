@@ -22,20 +22,25 @@ Lambda functions follow a strict organizational pattern:
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {S3Event, SQSEvent, ScheduledEvent} from 'aws-lambda'
 
-// 2. Vendor library imports (lib/vendor/*)
-import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+// 2. ElectroDB entity imports (entities/*)
+import {Files} from '../../../entities/Files'
+import {Users} from '../../../entities/Users'
+import {collections} from '../../../entities/Collections'
 
-// 3. Type imports (types/*)
+// 3. Vendor library imports (lib/vendor/*)
+import {sendMessage} from '../../../lib/vendor/AWS/SQS'
+import {createS3Upload} from '../../../lib/vendor/AWS/S3'
+
+// 4. Type imports (types/*)
 import type {DynamoDBFile, UserProfile} from '../../../types/main'
 import type {FileStatus, UserStatus} from '../../../types/enums'
 
-// 4. Utility imports (util/*)
+// 5. Utility imports (util/*)
 import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {UnexpectedError} from '../../../util/errors'
 import {validateRequest} from '../../../util/apigateway-helpers'
 
-// 5. NEVER import AWS SDK directly
+// 6. NEVER import AWS SDK directly
 // Use vendor wrappers instead
 ```
 
@@ -350,25 +355,29 @@ See [SDK Encapsulation Policy](../AWS/SDK-Encapsulation-Policy.md) for complete 
 
 ## Common Patterns
 
-### Database Query
+### Database Query with ElectroDB
 
 ```typescript
-import {query} from '../../../lib/vendor/AWS/DynamoDB'
-
-const TableName = process.env.TABLE_NAME!
+import {UserFiles} from '../../../entities/UserFiles'
+import {Files} from '../../../entities/Files'
 
 async function getUserFiles(userId: string) {
-  logDebug('query <=', {TableName, userId})
+  logDebug('getUserFiles <=', {userId})
 
-  const result = await query(
-    TableName,
-    'userId',
-    userId
-  )
+  // Query user's file relationships
+  const userFilesResponse = await UserFiles.query.byUser({userId}).go()
 
-  logDebug('query =>', {itemCount: result.length})
+  if (!userFilesResponse.data || userFilesResponse.data.length === 0) {
+    return []
+  }
 
-  return result
+  // Batch get the actual files
+  const fileKeys = userFilesResponse.data.map(uf => ({fileId: uf.fileId}))
+  const {data: files} = await Files.get(fileKeys).go({concurrency: 5})
+
+  logDebug('getUserFiles =>', {fileCount: files.length})
+
+  return files
 }
 ```
 

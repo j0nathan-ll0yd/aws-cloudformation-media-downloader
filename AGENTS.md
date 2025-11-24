@@ -55,7 +55,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 - **Storage**: Amazon S3
 - **API**: AWS API Gateway with custom authorizer
 - **Notifications**: Apple Push Notification Service (APNS)
-- **Database**: DynamoDB
+- **Database**: DynamoDB with ElectroDB ORM (single-table design)
 - **Monitoring**: CloudWatch, X-Ray (optional)
 
 ### Project Structure
@@ -63,11 +63,22 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 .
 ├── terraform/             # AWS Infrastructure definitions (OpenTofu)
 ├── src/
+│   ├── entities/          # ElectroDB entity definitions (single-table design)
+│   │   ├── Collections.ts # Service combining entities for JOIN-like queries
+│   │   ├── Files.ts       # File entity
+│   │   ├── Users.ts       # User entity
+│   │   ├── Devices.ts     # Device entity
+│   │   ├── UserFiles.ts   # User-File relationships
+│   │   └── UserDevices.ts # User-Device relationships
 │   └── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │       └── [lambda-name]/
 │           ├── src/index.ts         # Lambda handler
 │           └── test/index.test.ts  # Unit tests
 ├── lib/vendor/            # 3rd party API wrappers & AWS SDK encapsulation
+│   ├── AWS/               # AWS SDK vendor wrappers
+│   └── ElectroDB/         # ElectroDB configuration & service
+├── test/helpers/          # Test utilities
+│   └── electrodb-mock.ts  # ElectroDB mock helper for unit tests
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
@@ -85,6 +96,27 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 4. **YouTube downloads** require cookie authentication due to bot detection
 5. **LocalStack integration** for local AWS testing via vendor wrappers
 6. **Webpack externals** must be updated when adding AWS SDK packages
+
+## ElectroDB Architecture
+
+**CRITICAL**: This project uses ElectroDB as the DynamoDB ORM for type-safe, maintainable database operations.
+
+### Key ElectroDB Features
+- **Single-table design**: All entities in one DynamoDB table with optimized GSIs
+- **Type-safe queries**: Full TypeScript type inference for all operations
+- **Collections**: JOIN-like queries across entity boundaries (see `src/entities/Collections.ts`)
+- **Batch operations**: Efficient bulk reads/writes with automatic chunking
+
+### Entity Relationships
+- **Users** ↔ **Files**: Many-to-many via UserFiles entity
+- **Users** ↔ **Devices**: Many-to-many via UserDevices entity
+- **Collections.userResources**: Query all files & devices for a user in one call
+- **Collections.fileUsers**: Get all users associated with a file (for notifications)
+
+### Testing with ElectroDB
+- **ALWAYS** use `test/helpers/electrodb-mock.ts` for mocking entities
+- **NEVER** create manual mocks for ElectroDB entities
+- See test style guide for detailed mocking patterns
 
 ## Wiki Conventions to Follow
 
@@ -152,7 +184,7 @@ npm run document-source         # Generate TSDoc documentation
 ### AWS Services
 - **Lambda**: Event-driven compute (all business logic)
 - **S3**: Media storage with transfer acceleration
-- **DynamoDB**: Application state and metadata
+- **DynamoDB**: Single-table design via ElectroDB ORM for all entities
 - **API Gateway**: REST endpoints with custom authorizer
 - **SNS**: Push notification delivery
 - **CloudWatch**: Logging and metrics

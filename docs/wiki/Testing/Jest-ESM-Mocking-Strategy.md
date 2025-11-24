@@ -225,11 +225,22 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({
     .mockResolvedValue({StatusCode: 202})
 }))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  query: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
-  updateItem: jest.fn<() => Promise<Record<string, unknown>>>()
-    .mockResolvedValue({})
+// 3a. ElectroDB entities (use the mock helper!)
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
 }))
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
+}))
+
+// Usage in tests:
+filesMock.mocks.get.mockResolvedValue({data: fileData})
+userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
 
 // 4. CloudWatch vendor wrapper (used by util/lambda-helpers)
 jest.unstable_mockModule('../../../lib/vendor/AWS/CloudWatch', () => ({
@@ -242,6 +253,56 @@ const {handler} = await import('../src')
 
 // Now tests can run without module-level execution failures
 ```
+
+## ElectroDB Entity Mocking
+
+**CRITICAL**: Always use the `createElectroDBEntityMock` helper for mocking ElectroDB entities.
+
+### Why Use the Helper?
+
+1. **Type Safety**: Provides correct TypeScript types for all operations
+2. **Consistency**: One mocking pattern across all tests
+3. **Completeness**: Includes all ElectroDB operations (get, scan, query, create, upsert, update, delete)
+4. **Maintainability**: Changes to ElectroDB only require updating the helper
+
+### Example Usage
+
+```typescript
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+// Create mocks for each entity
+const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
+const usersMock = createElectroDBEntityMock()
+const collectionsMock = createElectroDBEntityMock()
+
+// Mock the entity modules
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
+}))
+jest.unstable_mockModule('../../../entities/Collections', () => ({
+  collections: collectionsMock.entity
+}))
+
+// In your tests, set return values
+beforeEach(() => {
+  filesMock.mocks.get.mockResolvedValue({data: testFile})
+  filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: [testFile]})
+  usersMock.mocks.create.mockResolvedValue({data: testUser})
+})
+```
+
+### Available Operations
+
+- **get**: `mocks.get.mockResolvedValue({data: item})`
+- **scan**: `mocks.scan.go.mockResolvedValue({data: items})`
+- **query**: `mocks.query.byIndexName!.go.mockResolvedValue({data: items})`
+- **create**: `mocks.create.mockResolvedValue({data: item})`
+- **upsert**: `mocks.upsert.go.mockResolvedValue({data: item})`
+- **update**: `mocks.update.go.mockResolvedValue({data: item})`
+- **delete**: `mocks.delete.mockResolvedValue(undefined)`
 
 ## Common Mistakes
 
