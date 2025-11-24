@@ -116,8 +116,8 @@ validate_wiki() {
     broken_links=0
 
     find "$WIKI_DIR" -type f -name "*.md" | while read -r file; do
-        # Extract all markdown links
-        grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null | grep -o '([^)]*)' | tr -d '()' | while read -r link; do
+        # Extract all markdown links (allow grep to return no matches without failing)
+        (grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null || true) | (grep -o '([^)]*)' || true) | tr -d '()' | while read -r link; do
             # Skip external links
             if [[ "$link" =~ ^https?:// ]] || [[ "$link" =~ ^# ]]; then
                 continue
@@ -134,7 +134,7 @@ validate_wiki() {
                     ((broken_links++))
                 fi
             fi
-        done
+        done || true  # while read returns 1 on EOF, don't fail the script
     done
 
     if [ $broken_links -eq 0 ]; then
