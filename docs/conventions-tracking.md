@@ -4,6 +4,40 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-24
+
+1. **EventBridge Event-Driven Architecture** (Pattern)
+   - **What**: Use AWS EventBridge custom event bus with schema registry for decoupled event-driven workflows
+   - **Why**: Visual debugging, event replay, type-safe contracts, parallel consumers without code changes
+   - **Detected**: During EventBridge and functionless architecture migration
+   - **Target**: docs/wiki/Infrastructure/Event-Driven-Architecture.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
+2. **Step Functions for Orchestration** (Pattern)
+   - **What**: Replace orchestration Lambda functions with Step Functions state machines for visual debugging and built-in retry
+   - **Why**: No cold starts for orchestration, visual workflow graphs, DynamoDB direct integration, automatic retry with exponential backoff
+   - **Detected**: During FileCoordinator → Step Functions migration
+   - **Target**: docs/wiki/Infrastructure/Step-Functions-Workflow.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
+3. **Event Schema Registry with Type Generation** (Convention)
+   - **What**: Define OpenAPI 3.0 schemas in EventBridge Schema Registry, generate TypeScript types for type-safe event publishing
+   - **Why**: API contracts as code, breaking change detection, auto-generated types prevent runtime errors
+   - **Detected**: During schema registry implementation
+   - **Target**: docs/EVENTBRIDGE_MIGRATION.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+
+4. **Event Replay for Production Debugging** (Methodology)
+   - **What**: Use EventBridge Archive (90-day retention) to replay production events for debugging issues
+   - **Why**: "Can't reproduce in dev" problem solved, load testing with real data, incident reconstruction
+   - **Detected**: During event archive setup
+   - **Target**: docs/EVENTBRIDGE_MIGRATION.md, bin/eventbridge-replay.sh
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
 ### Detected: 2025-11-22
 
 1. **AGENTS.md Filename Standard** (Convention)
