@@ -20,6 +20,7 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-api-gateway': '@aws-sdk/client-api-gateway',
     '@aws-sdk/client-cloudwatch': '@aws-sdk/client-cloudwatch',
     '@aws-sdk/client-dynamodb': '@aws-sdk/client-dynamodb',
+    '@aws-sdk/client-eventbridge': '@aws-sdk/client-eventbridge',
     '@aws-sdk/client-lambda': '@aws-sdk/client-lambda',
     '@aws-sdk/client-s3': '@aws-sdk/client-s3',
     '@aws-sdk/client-secrets-manager': '@aws-sdk/client-secrets-manager',

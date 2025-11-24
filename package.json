@@ -41,6 +41,7 @@
     "@aws-sdk/client-api-gateway": "^3.716.0",
     "@aws-sdk/client-cloudwatch": "^3.932.0",
     "@aws-sdk/client-dynamodb": "^3.716.0",
+    "@aws-sdk/client-eventbridge": "^3.716.0",
     "@aws-sdk/client-lambda": "^3.930.0",
     "@aws-sdk/client-s3": "^3.717.0",
     "@aws-sdk/client-secrets-manager": "^3.716.0",

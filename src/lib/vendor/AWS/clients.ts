@@ -15,6 +15,7 @@ import {SQSClient, SQSClientConfig} from '@aws-sdk/client-sqs'
 import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
 import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
+import {EventBridgeClient, EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
 import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
@@ -128,5 +129,16 @@ export function createCloudWatchClient(): CloudWatchClient {
 export function createAPIGatewayClient(): APIGateway {
   const config: APIGatewayClientConfig = getBaseConfig()
   const client = new APIGateway(config)
+  return captureAWSClient(client)
+}
+
+/**
+ * Create an EventBridge client instance
+ * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Wrapped with X-Ray instrumentation when enabled
+ */
+export function createEventBridgeClient(): EventBridgeClient {
+  const config: EventBridgeClientConfig = getBaseConfig()
+  const client = new EventBridgeClient(config)
   return captureAWSClient(client)
 }
