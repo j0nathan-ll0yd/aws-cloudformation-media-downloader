@@ -12,10 +12,10 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
-import {ScheduledEvent} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
+import {createMockScheduledEvent} from '../helpers/test-data'
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
 
@@ -37,20 +37,6 @@ jest.unstable_mockModule(lambdaModulePath, () => ({
 }))
 
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
-
-function createScheduledEvent(eventId: string): ScheduledEvent {
-  return {
-    id: eventId,
-    version: '0',
-    account: '123456789012',
-    'detail-type': 'Scheduled Event' as const,
-    source: 'aws.events',
-    time: new Date().toISOString(),
-    region: 'us-west-2',
-    resources: ['arn:aws:events:us-west-2:123456789012:rule/FileCoordinatorSchedule'],
-    detail: {}
-  }
-}
 
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
   await insertFile({
@@ -90,7 +76,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
     await Promise.all(fileIds.map((fileId) => insertPendingFile(fileId, now - 1000)))
 
-    const result = await handler(createScheduledEvent('test-event-1'), mockContext)
+    const result = await handler(createMockScheduledEvent('test-event-1'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
@@ -102,7 +88,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
   })
 
   test('should handle empty queue gracefully', async () => {
-    const result = await handler(createScheduledEvent('test-event-2'), mockContext)
+    const result = await handler(createMockScheduledEvent('test-event-2'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
@@ -115,7 +101,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     await insertPendingFile('future-video', now + 86400000, 'Future Video')
     await insertPendingFile('now-video', now, 'Now Video')
 
-    const result = await handler(createScheduledEvent('test-event-3'), mockContext)
+    const result = await handler(createMockScheduledEvent('test-event-3'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
@@ -145,7 +131,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       .set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'})
       .go()
 
-    const result = await handler(createScheduledEvent('test-event-4'), mockContext)
+    const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
@@ -160,7 +146,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
     await Promise.all(fileIds.map((fileId) => insertPendingFile(fileId, now - 1000)))
 
-    const [result1, result2] = await Promise.all([handler(createScheduledEvent('test-event-5a'), mockContext), handler(createScheduledEvent('test-event-5b'), mockContext)])
+    const [result1, result2] = await Promise.all([handler(createMockScheduledEvent('test-event-5a'), mockContext), handler(createMockScheduledEvent('test-event-5b'), mockContext)])
 
     expect(result1.statusCode).toBe(200)
     expect(result2.statusCode).toBe(200)

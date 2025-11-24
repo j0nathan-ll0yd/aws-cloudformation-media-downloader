@@ -26,6 +26,7 @@ import {FileStatus, UserStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -116,36 +117,18 @@ describe('ListFiles Workflow Integration Tests', () => {
     // UserFiles.query.byUser returns array of individual UserFile records
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: [
-        {userId: 'user-abc-123', fileId: 'video-1'},
-        {userId: 'user-abc-123', fileId: 'video-2'},
-        {userId: 'user-abc-123', fileId: 'video-3'}
+        createMockUserFile('user-abc-123', 'video-1'),
+        createMockUserFile('user-abc-123', 'video-2'),
+        createMockUserFile('user-abc-123', 'video-3')
       ]
     })
 
     // Files.get now uses BATCH get - returns array of files with unprocessed
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        {
-          fileId: 'video-1',
-          status: FileStatus.Downloaded,
-          title: 'Video 1',
-          key: 'video-1.mp4',
-          size: 5242880
-        },
-        {
-          fileId: 'video-2',
-          status: FileStatus.Downloaded,
-          title: 'Video 2',
-          key: 'video-2.mp4',
-          size: 10485760
-        },
-        {
-          fileId: 'video-3',
-          status: FileStatus.PendingDownload,
-          title: 'Video 3 (not ready)',
-          key: undefined,
-          size: undefined
-        }
+        createMockFile('video-1', FileStatus.Downloaded, {title: 'Video 1'}),
+        createMockFile('video-2', FileStatus.Downloaded, {title: 'Video 2', size: 10485760}),
+        createMockFile('video-3', FileStatus.PendingDownload, {title: 'Video 3 (not ready)'})
       ],
       unprocessed: []
     })
@@ -215,22 +198,22 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB responses with mixed file statuses
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: [
-        {userId: 'user-mixed-files', fileId: 'downloaded-1'},
-        {userId: 'user-mixed-files', fileId: 'downloaded-2'},
-        {userId: 'user-mixed-files', fileId: 'pending-1'},
-        {userId: 'user-mixed-files', fileId: 'failed-1'},
-        {userId: 'user-mixed-files', fileId: 'pending-download-1'}
+        createMockUserFile('user-mixed-files', 'downloaded-1'),
+        createMockUserFile('user-mixed-files', 'downloaded-2'),
+        createMockUserFile('user-mixed-files', 'pending-1'),
+        createMockUserFile('user-mixed-files', 'failed-1'),
+        createMockUserFile('user-mixed-files', 'pending-download-1')
       ]
     })
 
     // Files.get now uses BATCH get - returns array of all files
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        {fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1', key: 'downloaded-1.mp4'},
-        {fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2', key: 'downloaded-2.mp4'},
-        {fileId: 'pending-1', status: FileStatus.PendingMetadata, title: 'Pending 1'},
-        {fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'},
-        {fileId: 'pending-download-1', status: FileStatus.PendingDownload, title: 'Pending Download 1'}
+        createMockFile('downloaded-1', FileStatus.Downloaded, {title: 'Downloaded 1'}),
+        createMockFile('downloaded-2', FileStatus.Downloaded, {title: 'Downloaded 2'}),
+        createMockFile('pending-1', FileStatus.PendingMetadata, {title: 'Pending 1'}),
+        createMockFile('failed-1', FileStatus.Failed, {title: 'Failed 1'}),
+        createMockFile('pending-download-1', FileStatus.PendingDownload, {title: 'Pending Download 1'})
       ],
       unprocessed: []
     })
@@ -256,18 +239,14 @@ describe('ListFiles Workflow Integration Tests', () => {
     const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: fileIds.map(fileId => ({userId: 'user-many-files', fileId}))
+      data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))
     })
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) => ({
-        fileId,
-        status: index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
-        title: `Video ${index}`,
-        key: index % 2 === 0 ? `${fileId}.mp4` : undefined,
-        size: index % 2 === 0 ? 5242880 : undefined
-      })),
+      data: fileIds.map((fileId, index) =>
+        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})
+      ),
       unprocessed: []
     })
 
