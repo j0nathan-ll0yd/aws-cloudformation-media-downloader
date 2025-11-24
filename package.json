@@ -8,10 +8,11 @@
   "type": "module",
   "scripts": {
     "check-types": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
-    "codegraph-typescript": "npx tsx ./bin/codegraph.ts > ./build/graph.json",
+    "generate-graph": "ts-node scripts/generateDependencyGraph.ts",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "document-api": "./bin/document-api.sh",
+    "prebuild": "npm run generate-graph",
     "build": "node --loader ts-node/esm ./node_modules/.bin/webpack-cli --config ./config/webpack.config.ts",
     "build-dependencies": "./bin/build-dependencies.sh",
     "install-prod": "npm install --only=production",

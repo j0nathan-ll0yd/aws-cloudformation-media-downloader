@@ -89,7 +89,11 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ## Critical Project-Specific Rules
 
-1. **Read build/graph.json** for file relationships and dependencies
+1. **Use build/graph.json for dependency analysis**:
+   - Auto-generated before every build
+   - Shows file-level imports and transitive dependencies
+   - **CRITICAL for Jest tests**: Use `transitiveDependencies` to find all mocks needed
+   - Example: `cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'`
 2. **Feedly webhook** uses query-based authentication (custom authorizer)
 3. **APNS certificates** required for iOS push notifications (p12 format)
 4. **YouTube downloads** require cookie authentication due to bot detection
