@@ -82,8 +82,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
-│   ├── wiki/              # Centralized convention documentation
-│   ├── styleGuides/       # Language-specific guides
+│   ├── wiki/              # All documentation and style guides
 │   └── conventions-tracking.md  # Project-specific conventions
 └── build/graph.json       # Code graph (ts-morph) - READ THIS
 ```
@@ -127,18 +126,17 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 - **Naming**: [docs/wiki/Conventions/Naming-Conventions.md](docs/wiki/Conventions/Naming-Conventions.md) - camelCase, PascalCase rules
 - **Comments**: [docs/wiki/Conventions/Code-Comments.md](docs/wiki/Conventions/Code-Comments.md) - Git as source of truth
 
-### Language-Specific Patterns
-- **Lambda**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- **Testing**: [docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
-- **AWS SDK**: [docs/wiki/AWS/SDK-Encapsulation-Policy.md](docs/wiki/AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
-- **Bash**: [docs/wiki/Bash/Variable-Naming.md](docs/wiki/Bash/Variable-Naming.md)
-- **OpenTofu**: [docs/wiki/Infrastructure/Resource-Naming.md](docs/wiki/Infrastructure/Resource-Naming.md)
+### TypeScript & Testing
+- **Lambda Patterns**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
+- **Jest Mocking**: [docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
+- **Mock Types**: [docs/wiki/Testing/Mock-Type-Annotations.md](docs/wiki/Testing/Mock-Type-Annotations.md)
+- **Coverage Philosophy**: [docs/wiki/Testing/Coverage-Philosophy.md](docs/wiki/Testing/Coverage-Philosophy.md)
+- **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
 
-### Quick Reference Style Guides
-- Lambda code: `docs/styleGuides/lambdaStyleGuide.md`
-- Test code: `docs/styleGuides/testStyleGuide.md`
-- Bash scripts: `docs/styleGuides/bashStyleGuide.md`
-- OpenTofu: `docs/styleGuides/tofuStyleGuide.md`
+### AWS & Infrastructure
+- **SDK Encapsulation**: [docs/wiki/AWS/SDK-Encapsulation-Policy.md](docs/wiki/AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
+- **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
+- **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
 ## Development Workflow
 
