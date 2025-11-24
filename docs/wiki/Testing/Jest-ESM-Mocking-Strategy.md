@@ -254,6 +254,104 @@ const {handler} = await import('../src')
 // Now tests can run without module-level execution failures
 ```
 
+## Fixture Management
+
+### Loading JSON Fixtures
+
+Always use dynamic imports with JSON assertion for fixtures:
+
+```typescript
+// ✅ CORRECT - Dynamic import with JSON assertion
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {default: queryResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
+
+// ❌ WRONG - Static import (breaks Jest ESM)
+import eventMock from './fixtures/APIGatewayEvent.json'
+
+// ❌ WRONG - Missing JSON assertion
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json')
+```
+
+### Fixture Organization
+
+```
+test/
+├── fixtures/
+│   ├── APIGatewayEvent.json        # API Gateway event mocks
+│   ├── query-200-OK.json           # DynamoDB query responses
+│   ├── S3Event.json                # S3 event notifications
+│   └── user-data.json              # Test user data
+└── index.test.ts
+```
+
+### Cloning Fixtures
+
+Always deep clone fixtures to prevent test pollution:
+
+```typescript
+let event: CustomAPIGatewayRequestAuthorizerEvent
+
+beforeEach(() => {
+  // Deep clone to prevent test pollution
+  event = JSON.parse(JSON.stringify(eventMock))
+})
+```
+
+## Test Naming: Use-Case Focused vs Implementation-Focused
+
+**CRITICAL**: Test descriptions MUST focus on the behavior being tested, NOT the implementation details.
+
+### ❌ BAD: Implementation-Focused Descriptions
+
+These descriptions expose internal implementation and become outdated when refactoring:
+
+```typescript
+// DON'T describe which service/method is being called
+test('ElectroDB UserFiles.query.byUser', async () => {})
+test('ElectroDB Files.get (batch)', async () => {})
+test('AWS.DynamoDB.DocumentClient.query', async () => {})
+test('getUserDevices fails', async () => {})
+```
+
+**Problems**:
+- Break when you refactor from DynamoDB to ElectroDB
+- Break when you change from single to batch operations
+- Don't explain what scenario is being tested
+- Couple tests to implementation details
+
+### ✅ GOOD: Use-Case Focused Descriptions
+
+These descriptions explain what scenario is being tested and what outcome is expected:
+
+```typescript
+// DO describe the scenario and expected behavior
+test('should return empty list when user has no files', async () => {})
+test('should return 500 error when batch file retrieval fails', async () => {})
+test('should throw error when API key retrieval fails', async () => {})
+test('should throw error when usage plan retrieval fails', async () => {})
+test('should return 500 error when user device retrieval fails', async () => {})
+```
+
+**Benefits**:
+- Survive refactoring (DynamoDB → ElectroDB doesn't change test name)
+- Self-documenting (explain what is being tested)
+- Focus on behavior, not implementation
+- Tests remain valid even when implementation changes
+
+### Key Principle
+
+**Test WHAT your code does, not HOW it does it.**
+
+Your test names should describe:
+- The scenario being tested
+- The expected outcome
+- The error condition (if testing failures)
+
+They should NOT describe:
+- Which library/SDK is used
+- Which specific method is called
+- Internal implementation details
+
 ## ElectroDB Entity Mocking
 
 **CRITICAL**: Always use the `createElectroDBEntityMock` helper for mocking ElectroDB entities.

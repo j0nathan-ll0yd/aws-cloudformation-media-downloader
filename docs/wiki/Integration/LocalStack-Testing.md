@@ -55,6 +55,47 @@ process.env.LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 process.env.AWS_REGION = 'us-east-1'
 ```
 
+## Module Mocking (Jest ESM Path Resolution)
+
+Jest's `unstable_mockModule` has path resolution issues with relative imports from `test/integration/setup.ts` context.
+
+### ❌ DON'T: Relative paths fail
+
+```typescript
+jest.unstable_mockModule('../../../src/lib/vendor/AWS/Lambda', () => ({
+  invokeLambda: mockFn
+}))
+// Error: Cannot find module
+```
+
+### ❌ DON'T: Hardcoded absolute paths
+
+```typescript
+jest.unstable_mockModule('/Users/you/project/src/lib/vendor/AWS/Lambda', () => ({
+  invokeLambda: mockFn
+}))
+// Breaks on other machines
+```
+
+### ✅ DO: Compute path from test file location
+
+```typescript
+import {fileURLToPath} from 'url'
+import {dirname, resolve} from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
+
+const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule(lambdaModulePath, () => ({
+  invokeLambda: invokeLambdaMock,
+  invokeAsync: invokeLambdaMock
+}))
+```
+
+**Why**: Resolves path at runtime relative to test file, works on any machine.
+
 ## Test Patterns
 
 ### Basic Test Structure
