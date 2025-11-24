@@ -115,9 +115,13 @@ validate_wiki() {
     echo "  - Checking for broken internal links..."
     broken_links=0
 
-    find "$WIKI_DIR" -type f -name "*.md" | while read -r file; do
+    # Use process substitution to avoid subshell and preserve broken_links counter
+    while IFS= read -r file; do
         # Extract all markdown links (allow grep to return no matches without failing)
-        (grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null || true) | (grep -o '([^)]*)' || true) | tr -d '()' | while read -r link; do
+        while IFS= read -r link; do
+            # Skip empty lines
+            [[ -z "$link" ]] && continue
+
             # Skip external links
             if [[ "$link" =~ ^https?:// ]] || [[ "$link" =~ ^# ]]; then
                 continue
@@ -134,8 +138,8 @@ validate_wiki() {
                     ((broken_links++))
                 fi
             fi
-        done || true  # while read returns 1 on EOF, don't fail the script
-    done
+        done < <((grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null || true) | (grep -o '([^)]*)' || true) | tr -d '()')
+    done < <(find "$WIKI_DIR" -type f -name "*.md")
 
     if [ $broken_links -eq 0 ]; then
         echo "  ✅ No broken links found"
