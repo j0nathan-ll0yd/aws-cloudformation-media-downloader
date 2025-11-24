@@ -7,6 +7,9 @@ on:
       - main
     paths:
       - 'docs/wiki/**'
+      - '.github/scripts/sync-wiki.sh'
+      - '.github/scripts/generate-sidebar.sh'
+      - '.github/workflows/sync-wiki.yml'
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
