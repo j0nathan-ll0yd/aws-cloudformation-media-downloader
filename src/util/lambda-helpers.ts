@@ -177,3 +177,67 @@ export async function putMetrics(
     logError('Failed to publish CloudWatch metrics', error)
   }
 }
+
+/**
+ * Sanitize data for test fixtures by removing PII and sensitive information
+ * @param data - Data to sanitize
+ * @returns Sanitized data safe for test fixtures
+ */
+function sanitizeForTest(data: any): any {
+  if (!data || typeof data !== 'object') {
+    return data
+  }
+
+  const sanitized = Array.isArray(data) ? [...data] : {...data}
+
+  // Remove sensitive fields
+  const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
+
+  for (const key in sanitized) {
+    if (sensitiveFields.includes(key)) {
+      sanitized[key] = '[REDACTED]'
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeForTest(sanitized[key])
+    }
+  }
+
+  return sanitized
+}
+
+/**
+ * Log incoming request for fixture extraction from CloudWatch
+ * Marks production requests for automated fixture generation
+ * @param event - Lambda event (API Gateway request)
+ * @param fixtureType - Type identifier for the fixture (e.g., 'feedly-webhook', 'list-files')
+ */
+export function logIncomingFixture(event: any, fixtureType: string): void {
+  if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
+    console.log(
+      JSON.stringify({
+        __FIXTURE_MARKER__: 'INCOMING',
+        fixtureType,
+        timestamp: Date.now(),
+        data: sanitizeForTest(event)
+      })
+    )
+  }
+}
+
+/**
+ * Log outgoing response for fixture extraction from CloudWatch
+ * Marks production responses for automated fixture generation
+ * @param response - Lambda response
+ * @param fixtureType - Type identifier for the fixture (e.g., 'feedly-webhook', 'list-files')
+ */
+export function logOutgoingFixture(response: any, fixtureType: string): void {
+  if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
+    console.log(
+      JSON.stringify({
+        __FIXTURE_MARKER__: 'OUTGOING',
+        fixtureType,
+        timestamp: Date.now(),
+        data: sanitizeForTest(response)
+      })
+    )
+  }
+}

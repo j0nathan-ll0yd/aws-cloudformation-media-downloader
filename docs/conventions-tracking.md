@@ -4,6 +4,32 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-24
+
+1. **Production Fixture Extraction** (Methodology)
+   - **What**: Automated capture of production API requests/responses from CloudWatch logs for test fixtures
+   - **Why**: Tests reflect real-world usage patterns, not assumptions; captures edge cases automatically
+   - **Detected**: During fixture automation implementation
+   - **Target**: docs/wiki/Testing/Fixture-Extraction.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
+2. **ElectroDB Integration Testing Patterns** (Methodology)
+   - **What**: Comprehensive patterns for testing ElectroDB entities and Collections with LocalStack
+   - **Why**: Single-table design with JOIN-like queries requires specific testing approach; validates GSI configurations
+   - **Detected**: During fixture automation implementation
+   - **Target**: docs/wiki/Testing/ElectroDB-Testing-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
+3. **Fixture Logging Functions** (Pattern)
+   - **What**: `logIncomingFixture()` and `logOutgoingFixture()` functions in lambda-helpers.ts for marking production data
+   - **Why**: Enables automated fixture extraction from CloudWatch; PII sanitization built-in
+   - **Detected**: During fixture automation implementation
+   - **Target**: Already documented in lambda-helpers.ts with JSDoc
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+
 ### Detected: 2025-11-22
 
 1. **AGENTS.md Filename Standard** (Convention)

@@ -604,3 +604,53 @@ describe('FileProcessor Integration', () => {
   })
 })
 ```
+
+## ElectroDB Integration Testing
+
+This project uses ElectroDB as the DynamoDB ORM for type-safe, single-table design. See [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) for comprehensive guidance.
+
+### Quick Start
+
+```typescript
+import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
+import {collections} from '../../../src/entities/Collections'
+import {Users} from '../../../src/entities/Users'
+import {Files} from '../../../src/entities/Files'
+
+describe('ElectroDB Integration', () => {
+  beforeAll(async () => {
+    await setupLocalStackTable()  // Creates MediaDownloader table with GSIs
+  }, 30000)
+
+  afterAll(async () => {
+    await cleanupLocalStackTable()
+  })
+
+  test('should query user resources using Collections', async () => {
+    // Create entities
+    await Users.create({userId: 'user-1', appleDeviceIdentifier: 'apple-123'}).go()
+    await Files.create({fileId: 'file-1', status: 'Downloaded', /* ... */}).go()
+
+    // Query using Collection (JOIN-like)
+    const result = await collections.userResources({userId: 'user-1'}).go()
+
+    expect(result.data.Users).toHaveLength(1)
+    expect(result.data.Files).toHaveLength(1)
+  }, 30000)
+})
+```
+
+### Key Patterns
+
+- **Table Setup**: `setupLocalStackTable()` creates table with all GSIs
+- **Collections**: Test JOIN-like queries across entities
+- **Batch Operations**: Validate multi-item operations
+- **Query Patterns**: Verify GSI configurations work correctly
+
+See [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) for detailed examples and best practices.
+
+## References
+
+- [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md)
+- [Fixture Extraction](../Testing/Fixture-Extraction.md)
+- [Coverage Philosophy](../Testing/Coverage-Philosophy.md)
