@@ -55,7 +55,7 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: pnpm run test:integration -- --coverage --coverageDirectory=coverage/integration
+        run: pnpm run test:integration --coverage --coverageDirectory=coverage/integration
         env:
           CI: true
           USE_LOCALSTACK: true
