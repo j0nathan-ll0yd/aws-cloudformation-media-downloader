@@ -138,8 +138,8 @@ validate_wiki() {
                     ((broken_links++))
                 fi
             fi
-        done < <((grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null || true) | (grep -o '([^)]*)' || true) | tr -d '()')
-    done < <(find "$WIKI_DIR" -type f -name "*.md")
+        done < <((grep -o '\[.*\]([^)]*)'  "$file" 2>/dev/null || true) | (grep -o '([^)]*)' || true) | tr -d '()') || true
+    done < <(find "$WIKI_DIR" -type f -name "*.md") || true
 
     if [ $broken_links -eq 0 ]; then
         echo "  ✅ No broken links found"
