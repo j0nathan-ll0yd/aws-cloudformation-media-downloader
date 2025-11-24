@@ -76,9 +76,7 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
  * })
  * ```
  */
-export function withXRay<TEvent = any, TResult = any>(
-  handler: (event: TEvent, context: Context, metadata: {traceId: string}) => Promise<TResult>
-) {
+export function withXRay<TEvent = any, TResult = any>(handler: (event: TEvent, context: Context, metadata: {traceId: string}) => Promise<TResult>) {
   return async (event: TEvent, context: Context): Promise<TResult> => {
     const xray = getXRayClient()
     const segment = xray.getSegment()

@@ -2,19 +2,19 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 const fakeUserId = uuidv4()
 const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
-if (Array.isArray(queryStubReturnObject.Items)) {
-  queryStubReturnObject.Items[0].fileId = Array.from(new Set(queryStubReturnObject.Items[0].fileId))
-}
 
-const batchGetMock = jest.fn()
-const queryMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  batchGet: batchGetMock,
-  query: queryMock
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const filesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
 }))
 
 const {handler} = await import('./../src')
@@ -24,22 +24,21 @@ describe('#ListFiles', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    process.env.DynamoDBTableFiles = 'Files'
-    process.env.DynamoDBTableUserFiles = 'UserFiles'
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.DocumentClient.query', async () => {
+    test('should return empty list when user has no files', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(undefined)
+      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
       const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
+      expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
-      expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
+      expect(body.body.keyCount).toEqual(0)
     })
-    test('AWS.DynamoDB.DocumentClient.batchGet', async () => {
+    test('should return 500 error when batch file retrieval fails', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      queryMock.mockReturnValue(queryStubReturnObject)
-      batchGetMock.mockReturnValue(undefined)
+      const userFileData = queryStubReturnObject.Items || []
+      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})
+      filesMock.mocks.get.mockResolvedValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)

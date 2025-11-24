@@ -3,7 +3,7 @@ name: Integration Tests
 on:
   push:
     branches:
-      - master
+      - '**'
   pull_request:
     branches:
       - master
@@ -52,10 +52,19 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: npm run test:integration -- --coverage --coverageDirectory=coverage/integration
         env:
           CI: true
           USE_LOCALSTACK: true
+
+      - name: Upload integration test coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/integration/lcov.info
+          flags: integration
+          name: integration-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
 
       - name: Upload test results
         if: always()

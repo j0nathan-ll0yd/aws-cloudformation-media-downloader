@@ -2,39 +2,34 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
-const fakeUserDevicesResponse = {
-  Items: [
-    {
-      devices: new Set(['67C431DE-37D2-4BBA-9055-E9D2766517E1', 'C51C57D9-8898-4584-94D8-81D49B21EB2A']),
-      userId: fakeUserId
-    }
-  ]
-}
-const fakeDeviceResponse1 = {
-  Items: [
-    {
-      deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
-      token: 'fake-token',
-      systemName: 'iOS',
-      endpointArn: 'fake-endpointArn',
-      systemVersion: '16.0.2',
-      name: 'iPhone'
-    }
-  ]
+const fakeUserDevicesResponse = [
+  {
+    deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
+    userId: fakeUserId
+  },
+  {
+    deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
+    userId: fakeUserId
+  }
+]
+const fakeDevice1 = {
+  deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
+  token: 'fake-token',
+  systemName: 'iOS',
+  endpointArn: 'fake-endpointArn',
+  systemVersion: '16.0.2',
+  name: 'iPhone'
 }
 
-const fakeDeviceResponse2 = {
-  Items: [
-    {
-      deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
-      token: 'fake-token',
-      systemName: 'iOS',
-      endpointArn: 'fake-endpointArn',
-      systemVersion: '16.0.2',
-      name: 'iPhone'
-    }
-  ]
+const fakeDevice2 = {
+  deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
+  token: 'fake-token',
+  systemName: 'iOS',
+  endpointArn: 'fake-endpointArn',
+  systemVersion: '16.0.2',
+  name: 'iPhone'
 }
 
 const fakeGithubIssueResponse = {
@@ -48,13 +43,31 @@ const fakeGithubIssueResponse = {
   }
 }
 
-const queryMock = jest.fn()
-const deleteItemMock = jest.fn().mockReturnValue({})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  updateItem: jest.fn().mockReturnValue({}),
-  deleteItem: deleteItemMock,
-  query: queryMock,
-  scan: jest.fn()
+const getUserDevicesMock = jest.fn<() => unknown>()
+const deleteDeviceMock = jest.fn<() => Promise<void>>()
+jest.unstable_mockModule('../../../util/shared', () => ({
+  getUserDevices: getUserDevicesMock,
+  deleteDevice: deleteDeviceMock
+}))
+
+const devicesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Devices', () => ({
+  Devices: devicesMock.entity
+}))
+
+const usersMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
+}))
+
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
+}))
+
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({
+  UserDevices: userDevicesMock.entity
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
@@ -79,37 +92,43 @@ describe('#UserDelete', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     event.requestContext.authorizer!.principalId = fakeUserId
+
+    // Set default mock return values
+    deleteDeviceMock.mockResolvedValue(undefined)
+    devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
+    devicesMock.mocks.delete.mockResolvedValue(undefined)
+    usersMock.mocks.delete.mockResolvedValue(undefined)
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    userFilesMock.mocks.delete.mockResolvedValue({unprocessed: []})
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
   })
   test('should delete all user data', async () => {
-    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
   })
   test('should create an issue if deletion fails', async () => {
-    deleteItemMock.mockImplementationOnce(() => {
-      throw new Error('Delete failed')
-    })
-    queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse1)
-    queryMock.mockReturnValueOnce(fakeDeviceResponse2)
+    usersMock.mocks.delete.mockRejectedValueOnce(new Error('Delete failed'))
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
   describe('#AWSFailure', () => {
-    test('AWS.DynamoDB.query.0', async () => {
-      queryMock.mockReturnValue(undefined)
+    test('should return 500 error when user device retrieval fails', async () => {
+      getUserDevicesMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('AWS.DynamoDB.query.1', async () => {
-      queryMock.mockReturnValueOnce(fakeUserDevicesResponse)
-      queryMock.mockReturnValueOnce({})
+    test('should return 500 error when batch device retrieval fails', async () => {
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+      devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('AWS.ApiGateway.CustomLambdaAuthorizer', async () => {
+    test('should return 500 error when user ID is missing', async () => {
       event.requestContext.authorizer!.principalId = 'unknown'
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)

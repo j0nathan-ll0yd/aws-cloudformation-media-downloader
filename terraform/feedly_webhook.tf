@@ -12,9 +12,15 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     actions   = ["lambda:InvokeFunction"]
     resources = [aws_lambda_function.StartFileUpload.arn]
   }
+  # PutItem/UpdateItem on base table for Files and UserFiles
+  # GetItem to check existing files
   statement {
-    actions   = ["dynamodb:UpdateItem", "dynamodb:Query"]
-    resources = [aws_dynamodb_table.Files.arn, aws_dynamodb_table.UserFiles.arn]
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:GetItem"
+    ]
+    resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
 }
 
@@ -71,10 +77,9 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTableFiles     = aws_dynamodb_table.Files.name
-      DynamoDBTableUserFiles = aws_dynamodb_table.UserFiles.name
-      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      YtdlpBinaryPath        = "/opt/bin/yt-dlp_linux"
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      YtdlpBinaryPath   = "/opt/bin/yt-dlp_linux"
     }
   }
 }
@@ -103,23 +108,11 @@ resource "aws_api_gateway_integration" "WebhookFeedlyPost" {
   uri                     = aws_lambda_function.WebhookFeedly.invoke_arn
 }
 
-resource "aws_dynamodb_table" "Files" {
-  name           = "Files"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "fileId"
-
-  attribute {
-    name = "fileId"
-    type = "S"
-  }
-}
-
 data "aws_iam_policy_document" "MultipartUpload" {
+  # UpdateItem on base table to update File metadata during upload
   statement {
     actions   = ["dynamodb:UpdateItem"]
-    resources = [aws_dynamodb_table.Files.arn]
+    resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
   statement {
     actions = [
@@ -263,7 +256,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   environment {
     variables = {
       Bucket              = aws_s3_bucket.Files.id
-      DynamoDBTableFiles  = aws_dynamodb_table.Files.name
+      DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
       YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
       PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]

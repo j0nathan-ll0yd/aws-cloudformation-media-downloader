@@ -1,5 +1,6 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import {fakeJWT, testContext} from '../../../util/jest-setup'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
 const {default: verifyAppleResponse} = await import('./fixtures/verifyAppleToken-200-OK.json', {assert: {type: 'json'}})
@@ -10,13 +11,9 @@ jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
   verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
 }))
 
-const {default: putResponse} = await import('./fixtures/putItem-200-OK.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  scan: jest.fn(),
-  deleteItem: jest.fn(),
-  query: jest.fn(),
-  putItem: jest.fn().mockReturnValue(putResponse),
-  updateItem: jest.fn()
+const usersMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
 }))
 
 const {default: getUsersByAppleDeviceIdentifierResponse} = await import('./fixtures/getUsersByAppleDeviceIdentifier-200-OK.json', {assert: {type: 'json'}})

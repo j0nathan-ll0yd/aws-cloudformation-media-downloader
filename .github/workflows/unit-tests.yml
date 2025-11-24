@@ -45,6 +45,15 @@ jobs:
       run: npm run build
 
     - name: Run unit tests
-      run: npm run test
+      run: npm test -- --coverage --coverageDirectory=coverage/unit
       env:
         CI: true
+
+    - name: Upload unit test coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage/unit/lcov.info
+        flags: unit
+        name: unit-tests
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true

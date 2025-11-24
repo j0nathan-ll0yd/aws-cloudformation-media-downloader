@@ -4,48 +4,86 @@
  * Utilities for inserting and querying test data in LocalStack DynamoDB
  */
 
-import {createDynamoDBClient} from '../../../src/lib/vendor/AWS/clients'
-import {
-  CreateTableCommand,
-  PutItemCommand,
-  GetItemCommand,
-  ScanCommand,
-  DeleteTableCommand,
-  AttributeValue
-} from '@aws-sdk/client-dynamodb'
+import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
+import {createMockFile} from './test-data'
 
-const dynamoDBClient = createDynamoDBClient()
-
-// Table names from environment
-function getFilesTable() {
-  return process.env.DynamoDBTableFiles || 'test-files'
-}
-
-function getUsersTable() {
-  return process.env.DynamoDBTableUsers || 'test-users'
-}
-
-function getUserFilesTable() {
-  return process.env.DynamoDBTableUserFiles || 'test-user-files'
+function getMediaDownloaderTable() {
+  return process.env.DynamoDBTableName || 'test-media-downloader'
 }
 
 /**
- * Create test Files table in LocalStack
+ * Create MediaDownloader table in LocalStack with single-table design
+ * Matches production Terraform configuration with pk/sk and 5 GSIs
  */
-export async function createFilesTable(): Promise<void> {
+export async function createMediaDownloaderTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getFilesTable(),
-        KeySchema: [{AttributeName: 'fileId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'fileId', AttributeType: 'S'}],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
+    await createTable({
+      TableName: getMediaDownloaderTable(),
+      KeySchema: [
+        {AttributeName: 'pk', KeyType: 'HASH'},
+        {AttributeName: 'sk', KeyType: 'RANGE'}
+      ],
+      AttributeDefinitions: [
+        {AttributeName: 'pk', AttributeType: 'S'},
+        {AttributeName: 'sk', AttributeType: 'S'},
+        {AttributeName: 'gsi1pk', AttributeType: 'S'},
+        {AttributeName: 'gsi1sk', AttributeType: 'S'},
+        {AttributeName: 'gsi2pk', AttributeType: 'S'},
+        {AttributeName: 'gsi2sk', AttributeType: 'S'},
+        {AttributeName: 'gsi3pk', AttributeType: 'S'},
+        {AttributeName: 'gsi3sk', AttributeType: 'S'},
+        {AttributeName: 'gsi4pk', AttributeType: 'S'},
+        {AttributeName: 'gsi4sk', AttributeType: 'S'},
+        {AttributeName: 'gsi5pk', AttributeType: 'S'},
+        {AttributeName: 'gsi5sk', AttributeType: 'S'}
+      ],
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: 'UserCollection',
+          KeySchema: [
+            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'FileCollection',
+          KeySchema: [
+            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'DeviceCollection',
+          KeySchema: [
+            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'StatusIndex',
+          KeySchema: [
+            {AttributeName: 'gsi4pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'KeyIndex',
+          KeySchema: [
+            {AttributeName: 'gsi5pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        }
+      ],
+      BillingMode: 'PAY_PER_REQUEST'
+    })
   } catch (error) {
-    // Table might already exist
     if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
       throw error
     }
@@ -53,177 +91,70 @@ export async function createFilesTable(): Promise<void> {
 }
 
 /**
- * Create test Users table in LocalStack
+ * Delete MediaDownloader table from LocalStack
  */
-export async function createUsersTable(): Promise<void> {
+export async function deleteMediaDownloaderTable(): Promise<void> {
   try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getUsersTable(),
-        KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
-  } catch (error) {
-    // Table might already exist
-    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
-      throw error
-    }
-  }
-}
-
-/**
- * Create test UserFiles table in LocalStack
- */
-export async function createUserFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(
-      new CreateTableCommand({
-        TableName: getUserFilesTable(),
-        KeySchema: [{AttributeName: 'userId', KeyType: 'HASH'}],
-        AttributeDefinitions: [{AttributeName: 'userId', AttributeType: 'S'}],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
-  } catch (error) {
-    // Table might already exist
-    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
-      throw error
-    }
-  }
-}
-
-/**
- * Delete test Files table from LocalStack
- */
-export async function deleteFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getFilesTable()}))
+    await deleteTable(getMediaDownloaderTable())
   } catch (error) {
     // Table might not exist
   }
 }
 
 /**
- * Delete test Users table from LocalStack
+ * Legacy aliases for backward compatibility - these call the new single-table functions
+ * @deprecated Use createMediaDownloaderTable instead
  */
-export async function deleteUsersTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUsersTable()}))
-  } catch (error) {
-    // Table might not exist
-  }
-}
+export const createFilesTable = createMediaDownloaderTable
+export const createUsersTable = createMediaDownloaderTable
+export const createUserFilesTable = createMediaDownloaderTable
 
 /**
- * Delete test UserFiles table from LocalStack
+ * @deprecated Use deleteMediaDownloaderTable instead
  */
-export async function deleteUserFilesTable(): Promise<void> {
-  try {
-    await dynamoDBClient.send(new DeleteTableCommand({TableName: getUserFilesTable()}))
-  } catch (error) {
-    // Table might not exist
-  }
-}
+export const deleteFilesTable = deleteMediaDownloaderTable
+export const deleteUsersTable = deleteMediaDownloaderTable
+export const deleteUserFilesTable = deleteMediaDownloaderTable
 
 /**
- * Insert a file record into DynamoDB
+ * Insert a file record into DynamoDB using ElectroDB
+ * Uses createMockFile for consistent defaults across all tests
+ * This ensures proper entity metadata is added for ElectroDB compatibility
  */
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
-  const item: Record<string, AttributeValue> = {
-    fileId: {S: file.fileId!},
-    status: {S: file.status || FileStatus.PendingMetadata}
-  }
+  const {Files} = await import('../../../src/entities/Files')
 
-  if (file.key) item.key = {S: file.key}
-  if (file.size !== undefined) item.size = {N: file.size.toString()}
-  if (file.availableAt) item.availableAt = {N: file.availableAt.toString()}
-  if (file.authorName) item.authorName = {S: file.authorName}
-  if (file.authorUser) item.authorUser = {S: file.authorUser}
-  if (file.title) item.title = {S: file.title}
-  if (file.description) item.description = {S: file.description}
-  if (file.publishDate) item.publishDate = {S: file.publishDate}
-  if (file.contentType) item.contentType = {S: file.contentType}
+  // Get consistent defaults from createMockFile, then apply user overrides
+  const defaults = createMockFile(file.fileId!, file.status || FileStatus.PendingMetadata, file)
 
-  await dynamoDBClient.send(
-    new PutItemCommand({
-      TableName: getFilesTable(),
-      Item: item
-    })
-  )
+  // ElectroDB requires all fields - createMockFile provides them all
+  await Files.create({
+    fileId: defaults.fileId!,
+    status: defaults.status!,
+    availableAt: defaults.availableAt!,
+    size: defaults.size!,
+    key: defaults.key!,
+    title: defaults.title!,
+    description: defaults.description!,
+    authorName: defaults.authorName!,
+    authorUser: defaults.authorUser!,
+    publishDate: defaults.publishDate!,
+    contentType: defaults.contentType!,
+    ...(defaults.url && {url: defaults.url})
+  }).go()
 }
 
 /**
- * Get a file record from DynamoDB
+ * Get a file record from DynamoDB using ElectroDB
  */
 export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
-  const response = await dynamoDBClient.send(
-    new GetItemCommand({
-      TableName: getFilesTable(),
-      Key: {fileId: {S: fileId}}
-    })
-  )
+  const {Files} = await import('../../../src/entities/Files')
 
-  if (!response.Item) {
+  const response = await Files.get({fileId}).go()
+
+  if (!response || !response.data) {
     return null
   }
 
-  return {
-    fileId: response.Item.fileId.S!,
-    status: response.Item.status.S as FileStatus,
-    key: response.Item.key?.S,
-    size: response.Item.size?.N ? parseInt(response.Item.size.N) : undefined,
-    availableAt: response.Item.availableAt?.N ? parseInt(response.Item.availableAt.N) : undefined,
-    authorName: response.Item.authorName?.S,
-    authorUser: response.Item.authorUser?.S,
-    title: response.Item.title?.S,
-    description: response.Item.description?.S,
-    publishDate: response.Item.publishDate?.S,
-    contentType: response.Item.contentType?.S
-  }
-}
-
-/**
- * Scan all files from DynamoDB
- */
-export async function scanAllFiles(): Promise<Partial<DynamoDBFile>[]> {
-  const response = await dynamoDBClient.send(
-    new ScanCommand({
-      TableName: getFilesTable()
-    })
-  )
-
-  if (!response.Items) {
-    return []
-  }
-
-  return response.Items.map((item) => ({
-    fileId: item.fileId.S!,
-    status: item.status.S as FileStatus,
-    key: item.key?.S,
-    size: item.size?.N ? parseInt(item.size.N) : undefined,
-    availableAt: item.availableAt?.N ? parseInt(item.availableAt.N) : undefined,
-    authorName: item.authorName?.S,
-    authorUser: item.authorUser?.S,
-    title: item.title?.S,
-    description: item.description?.S,
-    publishDate: item.publishDate?.S,
-    contentType: item.contentType?.S
-  }))
-}
-
-/**
- * Insert multiple pending files for testing FileCoordinator
- */
-export async function insertPendingFiles(fileIds: string[]): Promise<void> {
-  await Promise.all(
-    fileIds.map((fileId) =>
-      insertFile({
-        fileId,
-        status: FileStatus.PendingMetadata,
-        title: `Test Video ${fileId}`
-      })
-    )
-  )
+  return response.data as Partial<DynamoDBFile>
 }

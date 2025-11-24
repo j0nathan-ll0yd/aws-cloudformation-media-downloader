@@ -1,7 +1,9 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {Users} from '../../../entities/Users'
+import {UserFiles} from '../../../entities/UserFiles'
+import {UserDevices} from '../../../entities/UserDevices'
+import {Devices} from '../../../entities/Devices'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
-import {deleteAllUserDeviceParams, deleteUserFilesParams, deleteUserParams, getDeviceParams} from '../../../util/dynamodb-helpers'
-import {deleteItem, query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {deleteDevice, getUserDevices} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
@@ -10,36 +12,35 @@ import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
-  const params = deleteUserFilesParams(process.env.DynamoDBTableUserFiles as string, userId)
-  logDebug('deleteUserFiles <=', params)
-  const response = await updateItem(params)
-  logDebug('deleteUserFiles =>', response)
+  logDebug('deleteUserFiles <=', userId)
+  const userFiles = await UserFiles.query.byUser({userId}).go()
+  if (userFiles.data && userFiles.data.length > 0) {
+    const deleteKeys = userFiles.data.map((userFile) => ({userId: userFile.userId, fileId: userFile.fileId}))
+    const {unprocessed} = await UserFiles.delete(deleteKeys).go({concurrency: 5})
+    if (unprocessed.length > 0) {
+      logDebug('deleteUserFiles.unprocessed =>', unprocessed)
+    }
+  }
+  logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
 }
 
-async function deleteUser(deviceId: string): Promise<void> {
-  const params = deleteUserParams(process.env.DynamoDBTableUsers as string, deviceId)
-  logDebug('deleteUser <=', params)
-  const response = await deleteItem(params)
+async function deleteUser(userId: string): Promise<void> {
+  logDebug('deleteUser <=', userId)
+  const response = await Users.delete({userId}).go()
   logDebug('deleteUser =>', response)
 }
 
 async function deleteUserDevices(userId: string): Promise<void> {
-  const params = deleteAllUserDeviceParams(process.env.DynamoDBTableUserDevices as string, userId)
-  logDebug('deleteUserDevices <=', params)
-  const response = await deleteItem(params)
-  logDebug('deleteUserDevices =>', response)
-}
-
-async function getDevice(deviceId: string): Promise<Device> {
-  const params = getDeviceParams(process.env.DynamoDBTableDevices as string, deviceId)
-  logDebug('getDevice <=', params)
-  const response = await query(params)
-  logDebug('getDevice <=', response)
-  if (response && response.Items) {
-    return response.Items[0] as Device
-  } else {
-    throw new UnexpectedError(providerFailureErrorMessage)
+  logDebug('deleteUserDevices <=', userId)
+  const userDevices = await UserDevices.query.byUser({userId}).go()
+  if (userDevices.data && userDevices.data.length > 0) {
+    const deleteKeys = userDevices.data.map((userDevice) => ({userId: userDevice.userId, deviceId: userDevice.deviceId}))
+    const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+    if (unprocessed.length > 0) {
+      logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+    }
   }
+  logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
 }
 
 /**
@@ -58,18 +59,20 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   const deletableDevices: Device[] = []
   try {
-    const userDevices = await getUserDevices(process.env.DynamoDBTableUserDevices as string, userId)
+    const userDevices = await getUserDevices(userId)
     /* istanbul ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
-      for (const row of userDevices) {
-        const devicesSet = row.devices as Set<string>
-        const devices = Array.from(devicesSet.values()) as string[]
-        for (const deviceId of devices) {
-          const device = await getDevice(deviceId)
-          deletableDevices.push(device)
-        }
+      const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
+      const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
+      logDebug('Found devices', devices.length.toString())
+      if (unprocessed.length > 0) {
+        logDebug('getDevices.unprocessed =>', unprocessed)
       }
+      if (!devices || devices.length === 0) {
+        throw new UnexpectedError(providerFailureErrorMessage)
+      }
+      deletableDevices.push(...(devices as Device[]))
     }
   } catch (error) {
     assertIsError(error)

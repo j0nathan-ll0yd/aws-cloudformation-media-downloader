@@ -4,13 +4,19 @@ resource "aws_iam_role" "PruneDevicesRole" {
 }
 
 data "aws_iam_policy_document" "PruneDevices" {
+  # Query DeviceCollection to find users by device
+  # Scan base table for all devices, GetItem/DeleteItem on base table
   statement {
-    actions   = ["dynamodb:Scan", "dynamodb:DeleteItem"]
-    resources = [aws_dynamodb_table.Devices.arn]
-  }
-  statement {
-    actions   = ["dynamodb:Scan", "dynamodb:UpdateItem"]
-    resources = [aws_dynamodb_table.UserDevices.arn]
+    actions = [
+      "dynamodb:Scan",
+      "dynamodb:Query",
+      "dynamodb:GetItem",
+      "dynamodb:DeleteItem"
+    ]
+    resources = [
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/DeviceCollection"
+    ]
   }
   statement {
     actions   = ["sns:DeleteEndpoint"]
@@ -85,12 +91,11 @@ resource "aws_lambda_function" "PruneDevices" {
 
   environment {
     variables = {
-      DynamoDBTableDevices     = aws_dynamodb_table.Devices.name
-      DynamoDBTableUserDevices = aws_dynamodb_table.UserDevices.name
-      ApnsSigningKey           = data.sops_file.secrets.data["apns.staging.signingKey"]
-      ApnsTeam                 = data.sops_file.secrets.data["apns.staging.team"]
-      ApnsKeyId                = data.sops_file.secrets.data["apns.staging.keyId"]
-      ApnsDefaultTopic         = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
+      ApnsSigningKey    = data.sops_file.secrets.data["apns.staging.signingKey"]
+      ApnsTeam          = data.sops_file.secrets.data["apns.staging.team"]
+      ApnsKeyId         = data.sops_file.secrets.data["apns.staging.keyId"]
+      ApnsDefaultTopic  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
     }
   }
 }

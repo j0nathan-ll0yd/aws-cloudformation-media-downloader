@@ -1,0 +1,61 @@
+# Codecov configuration
+# Docs: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  # Overall project coverage status
+  status:
+    project:
+      default:
+        target: 80%           # Goal: 80% coverage
+        threshold: 1%         # Allow 1% degradation
+        if_ci_failed: error   # Fail if CI failed
+
+    # Coverage on changed lines in PR
+    patch:
+      default:
+        target: 80%           # New code should be well-tested
+        if_ci_failed: error
+
+  # Round coverage percentage to 2 decimal places
+  precision: 2
+
+  # Coverage calculation method
+  round: down
+  range: 70..100
+
+# Flag-based coverage tracking
+flags:
+  unit:
+    paths:
+      - src/lambdas/        # Lambda handlers
+      - util/               # Shared utilities
+    carryforward: true      # Use previous coverage if flag missing
+
+  integration:
+    paths:
+      - lib/vendor/AWS/     # Vendor wrappers (primary target)
+    carryforward: true
+
+# PR comment configuration
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default         # Update existing comment
+  require_changes: false    # Always comment
+  require_base: true        # Require base commit coverage
+  require_head: true        # Require head commit coverage
+
+# Ignore patterns (don't count toward coverage)
+ignore:
+  - "config/"               # Build configuration
+  - "bin/"                  # Scripts
+  - "build/"                # Build output
+  - "dist/"                 # Distribution files
+  - "terraform/"            # Infrastructure code
+  - "pipeline/"             # CI/CD tests
+  - "**/*.test.ts"          # Test files themselves
+  - "**/*.integration.test.ts"
+  - "test/"                 # Test infrastructure
+
+# GitHub integration
+github_checks:
+  annotations: true         # Show coverage annotations in PR files
