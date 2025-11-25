@@ -222,64 +222,130 @@ Remove old implementation.
 ### Phase 2: Parallel Implementation
 
 ```typescript
-// lib/vendor/AWS/DynamoDB.ts (old)
-export async function getItem(table: string, key: object) {
-  return dynamoClient.send(new GetCommand({
-    TableName: table,
-    Key: key
+// Old DynamoDB SDK approach (before migration)
+import {DynamoDBClient, GetItemCommand} from '@aws-sdk/client-dynamodb'
+
+export async function getFile(fileId: string) {
+  return dynamoClient.send(new GetItemCommand({
+    TableName: process.env.DynamoDBTableName,
+    Key: {fileId: {S: fileId}}
   }))
 }
 
-// lib/vendor/ElectroDB/index.ts (new)
+// src/entities/Files.ts (new ElectroDB approach)
 import {Entity} from 'electrodb'
+import {documentClient} from '../lib/vendor/ElectroDB/entity'
 
-export const UserEntity = new Entity({
+export const Files = new Entity({
   model: {
-    entity: 'user',
-    service: 'app'
+    entity: 'File',
+    version: '1',
+    service: 'MediaDownloader'
   },
   attributes: {
-    userId: {type: 'string'}
+    fileId: {type: 'string', required: true, readOnly: true},
+    status: {type: ['PendingMetadata', 'PendingDownload', 'Downloaded', 'Failed'] as const},
+    // ... other attributes
+  },
+  indexes: {
+    primary: {
+      pk: {field: 'pk', composite: ['fileId']},
+      sk: {field: 'sk', composite: []}
+    },
+    byStatus: {
+      index: 'StatusIndex',
+      pk: {field: 'gsi4pk', composite: ['status']},
+      sk: {field: 'gsi4sk', composite: ['availableAt']}
+    }
   }
+}, {
+  table: process.env.DynamoDBTableName,
+  client: documentClient
 })
 ```
 
 ### Phase 3: Incremental Migration
 
 ```typescript
-// Start with read operations
-export async function getUser(userId: string) {
-  if (process.env.USE_ELECTRODB === 'true') {
-    return UserEntity.get({userId}).go()
-  } else {
-    return getItem('Users', {userId})
+// src/lambdas/ListFiles/src/index.ts - Using ElectroDB patterns
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
+
+// Start with read operations using ElectroDB
+async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
+  // Query using ElectroDB's type-safe query builder
+  const userFilesResponse = await UserFiles.query.byUser({userId}).go()
+
+  if (!userFilesResponse?.data?.length) {
+    return []
   }
+
+  // Batch get files using ElectroDB
+  const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
+  const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
+
+  if (unprocessed.length > 0) {
+    logDebug('Unprocessed files', unprocessed)
+  }
+
+  return files as DynamoDBFile[]
 }
 
-// Then write operations
-export async function createUser(user: User) {
-  if (process.env.USE_ELECTRODB === 'true') {
-    return UserEntity.put(user).go()
-  } else {
-    return putItem('Users', user)
-  }
+// Write operations using ElectroDB upsert
+async function upsertDevice(device: Device) {
+  return Devices.upsert({
+    deviceId: device.deviceId,
+    endpointArn: device.endpointArn,
+    token: device.token,
+    name: device.name,
+    systemVersion: device.systemVersion,
+    systemName: device.systemName
+  }).go()
 }
 ```
 
 ### Phase 4: Validation
 
 ```typescript
-// test/migration.test.ts
-describe('ElectroDB Migration', () => {
-  it('should return same data structure', async () => {
-    const oldUser = await getItemOld('Users', {userId: '123'})
-    const newUser = await UserEntity.get({userId: '123'}).go()
+// src/lambdas/ListFiles/test/index.test.ts
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
-    expect(newUser.data).toMatchObject(oldUser.Item)
+describe('ElectroDB Entity Testing', () => {
+  // Create mocks with proper query indexes
+  const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+  const filesMock = createElectroDBEntityMock()
+
+  // Mock the entities
+  jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+    UserFiles: userFilesMock.entity
+  }))
+  jest.unstable_mockModule('../../../entities/Files', () => ({
+    Files: filesMock.entity
+  }))
+
+  it('should handle batch get operations', async () => {
+    const mockFiles = [{fileId: '123', status: 'Downloaded'}]
+    filesMock.mocks.get.mockResolvedValue({
+      data: mockFiles,
+      unprocessed: []
+    })
+
+    const {handler} = await import('../src')
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+    expect(filesMock.mocks.get).toHaveBeenCalledWith(
+      expect.arrayContaining([{fileId: expect.any(String)}])
+    )
   })
 
-  it('should handle errors consistently', async () => {
-    // Test error handling parity
+  it('should handle query operations', async () => {
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: [{userId: 'user123', fileId: 'file456'}]
+    })
+
+    const result = await UserFiles.query.byUser({userId: 'user123'}).go()
+    expect(result.data).toHaveLength(1)
   })
 })
 ```

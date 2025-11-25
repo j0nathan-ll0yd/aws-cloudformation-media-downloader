@@ -32,63 +32,58 @@ Ensure X-Ray captures error information.
 ### Implementation
 
 ```typescript
-// lib/vendor/AWS/XRay.ts
+// src/lib/vendor/AWS/XRay.ts
 
-import * as AWSXRay from 'aws-xray-sdk-core'
-import {Context} from 'aws-lambda'
+import AWSXRay from 'aws-xray-sdk-core'
+import type {Context} from 'aws-lambda'
 
-export interface XRayContext {
-  traceId: string
-  segment?: any
+let xrayClient: typeof AWSXRay | undefined
+
+/**
+ * Gets the X-Ray client instance using lazy initialization
+ * This prevents aws-xray-sdk-core from loading during Jest module validation
+ */
+function getXRayClient(): typeof AWSXRay {
+  if (!xrayClient) {
+    xrayClient = AWSXRay
+  }
+  return xrayClient
 }
 
 /**
- * X-Ray decorator for Lambda functions
- * Automatically captures Lambda execution and errors
+ * Check if X-Ray tracing is enabled
+ * X-Ray is disabled for LocalStack (unsupported) and when ENABLE_XRAY=false
  */
-export function withXRay<TEvent, TResult>(
-  handler: (event: TEvent, context: Context, xray: XRayContext) => Promise<TResult>
+function isXRayEnabled(): boolean {
+  return process.env.ENABLE_XRAY !== 'false' && process.env.USE_LOCALSTACK !== 'true'
+}
+
+/**
+ * Higher-order function that wraps Lambda handlers with X-Ray tracing
+ * Extracts trace ID from X-Ray segment or falls back to AWS request ID
+ */
+export function withXRay<TEvent = any, TResult = any>(
+  handler: (event: TEvent, context: Context, metadata: {traceId: string}) => Promise<TResult>
 ) {
   return async (event: TEvent, context: Context): Promise<TResult> => {
-    // X-Ray disabled in test environments
-    if (process.env.ENABLE_XRAY !== 'true' || process.env.NODE_ENV === 'test') {
-      return handler(event, context, {traceId: 'test-trace-id'})
-    }
-    
-    const segment = AWSXRay.getSegment()
-    const traceId = segment?.trace_id || process.env._X_AMZN_TRACE_ID || 'unknown'
-    
-    try {
-      // Add metadata to segment
-      segment?.addAnnotation('functionName', context.functionName)
-      segment?.addAnnotation('functionVersion', context.functionVersion)
-      
-      const result = await handler(event, context, {traceId, segment})
-      
-      // Mark success
-      segment?.addMetadata('result', {
-        statusCode: (result as any).statusCode || 200
-      })
-      
-      return result
-    } catch (error) {
-      // Capture error
-      segment?.addError(error as Error)
-      segment?.addAnnotation('error', (error as Error).message)
-      
-      throw error
-    }
+    const xray = getXRayClient()
+    const segment = xray.getSegment()
+    const traceId = (segment as any)?.trace_id || context.awsRequestId
+
+    return handler(event, context, {traceId})
   }
 }
 
 /**
- * Capture AWS SDK clients for X-Ray tracing
+ * Wrap an AWS SDK v3 client with X-Ray instrumentation
+ * Returns the client unchanged if X-Ray is disabled
  */
-export function captureAWSClient<T>(client: T): T {
-  if (process.env.ENABLE_XRAY === 'true' && process.env.NODE_ENV !== 'test') {
-    return AWSXRay.captureAWSv3Client(client as any) as T
+export function captureAWSClient<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
+  if (!isXRayEnabled()) {
+    return client
   }
-  return client
+  const xray = getXRayClient()
+  return xray.captureAWSv3Client(client)
 }
 
 /**
@@ -120,38 +115,45 @@ export async function captureAsyncFunc<T>(
 
 ## Examples
 
-### ✅ Correct - Lambda with X-Ray
+### ✅ Correct - Lambda with X-Ray (from ListFiles)
 
 ```typescript
-// src/lambdas/ProcessFile/src/index.ts
+// src/lambdas/ListFiles/src/index.ts
 
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {logInfo, logError} from '../../../util/lambda-helpers'
-import {createS3Upload} from '../../../lib/vendor/AWS/S3'
+import {lambdaErrorResponse, response, logInfo, logDebug} from '../../../util/lambda-helpers'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
-  logInfo('Processing file', {
-    context: 'handler',
-    traceId,  // Include trace ID in logs
-    fileId: event.fileId
-  })
-  
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+  logInfo('event <=', event)  // Logs are automatically correlated with X-Ray trace
+
   try {
-    // Business logic
-    const result = await processFile(event.fileId, traceId)
-    
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result)
-    }
+    // Query operations are automatically traced via captureAWSClient
+    const userFilesResponse = await UserFiles.query.byUser({userId}).go()
+    logDebug('getFilesByUser.userFiles =>', userFilesResponse)
+
+    // Batch operations also traced
+    const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
+    const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
+
+    return response(context, 200, {contents: files, keyCount: files.length})
   } catch (error) {
-    logError(error, {
-      context: 'handler',
-      traceId,
-      fileId: event.fileId
-    })
-    
-    return {
+    // Error automatically captured in X-Ray
+    return lambdaErrorResponse(context, error)
+  }
+})
+```
+
+### ✅ Correct - Adding Custom Subsegments (from RegisterDevice)
+
+```typescript
+// src/lambdas/RegisterDevice/src/index.ts
+
+import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
+import {createPlatformEndpoint} from '../../../lib/vendor/AWS/SNS'
+
+export const handler = withXRay(async (event, context, {traceId: _traceId}) => {
       statusCode: 500,
       body: JSON.stringify({error: 'Processing failed'})
     }

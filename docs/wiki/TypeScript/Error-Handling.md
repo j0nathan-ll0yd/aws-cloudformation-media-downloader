@@ -25,51 +25,57 @@ Event-driven Lambdas (SNS, SQS, EventBridge) should throw errors to trigger auto
 
 ## Examples
 
-### ✅ Correct - API Gateway Error Handling
+### ✅ Correct - API Gateway Error Handling (from ListFiles)
 
 ```typescript
-// src/lambdas/ApiFunction/src/index.ts
-import {prepareLambdaResponse, logError} from '../../../util/lambda-helpers'
+// src/lambdas/ListFiles/src/index.ts
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {lambdaErrorResponse, response, getUserDetailsFromEvent, logInfo, generateUnauthorizedError} from '../../../util/lambda-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {UserStatus} from '../../../types/enums'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+  logInfo('event <=', event)
+  const {userId, userStatus} = getUserDetailsFromEvent(event)
+
+  // Return 401 for unauthenticated users
+  if (userStatus == UserStatus.Unauthenticated) {
+    return lambdaErrorResponse(context, generateUnauthorizedError())
+  }
+
   try {
-    // Business logic
-    const result = await processRequest(event)
-    
-    return prepareLambdaResponse({
-      statusCode: 200,
-      body: result
-    })
+    const files = await getFilesByUser(userId as string)
+    // Return 200 with data
+    return response(context, 200, {contents: files, keyCount: files.length})
   } catch (error) {
-    logError(error, {context: 'handler', traceId})
-    
     // Return error response, don't throw
-    return prepareLambdaResponse({
-      statusCode: 500,
-      body: {error: 'Internal server error'}
-    })
+    return lambdaErrorResponse(context, error)
   }
 })
 ```
 
-### ✅ Correct - Event-Driven Error Handling
+### ✅ Correct - Event-Driven Error Handling (S3ObjectCreated pattern)
 
 ```typescript
-// src/lambdas/EventProcessor/src/index.ts
-import {logError} from '../../../util/lambda-helpers'
+// src/lambdas/S3ObjectCreated/src/index.ts
+import {logError, logInfo} from '../../../util/lambda-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {S3Event, Context} from 'aws-lambda'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
+export const handler = withXRay(async (event: S3Event, context: Context, {traceId: _traceId}) => {
+  logInfo('S3ObjectCreated triggered', event)
+
   try {
-    // Process event
-    await processEvent(event)
-    
+    // Process S3 event
+    for (const record of event.Records) {
+      await processS3Record(record)
+    }
+
     // Success - return normally
     return {statusCode: 200}
   } catch (error) {
-    logError(error, {context: 'handler', traceId})
-    
+    logError('Failed to process S3 event', error)
+
     // Throw to trigger retry/DLQ
     throw error
   }
@@ -110,23 +116,31 @@ export const handler = async (event, context) => {
 
 ## Input Validation Errors
 
-### API Gateway: Return 400 Bad Request
+### API Gateway: Return 400 Bad Request (from RegisterDevice)
 
 ```typescript
-import {validateInput} from '../../../util/constraints'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
+import {registerDeviceSchema} from '../../../util/constraints'
+import {lambdaErrorResponse, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
-  // Validate inputs
-  const errors = validateInput(event, constraints)
-  if (errors) {
-    return prepareLambdaResponse({
-      statusCode: 400,
-      body: {error: 'Invalid input', details: errors}
-    })
+export const handler = withXRay(async (event, context, {traceId: _traceId}) => {
+  let requestBody
+  try {
+    verifyPlatformConfiguration()
+    requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
+    validateRequest(requestBody, registerDeviceSchema)
+  } catch (error) {
+    // Validation errors return 400 via lambdaErrorResponse
+    return lambdaErrorResponse(context, error)
   }
-  
-  // Continue with valid input
-  // ...
+
+  try {
+    // Continue with valid input
+    const device = await registerDevice(requestBody)
+    return response(context, 200, {endpointArn: device.endpointArn})
+  } catch (error) {
+    return lambdaErrorResponse(context, error)
+  }
 })
 ```
 
@@ -151,50 +165,39 @@ export const handler = withXRay(async (event, context, {traceId}) => {
 
 ## HTTP Status Codes
 
-Use appropriate status codes for different error types:
+Use the `response` helper from lambda-helpers with appropriate status codes:
 
 ```typescript
-// 400 - Bad Request (client error)
-return prepareLambdaResponse({
-  statusCode: 400,
-  body: {error: 'Invalid request parameters'}
-})
+import {response} from '../../../util/lambda-helpers'
+import {UnauthorizedError, NotFoundError} from '../../../util/errors'
 
-// 401 - Unauthorized
-return prepareLambdaResponse({
-  statusCode: 401,
-  body: {error: 'Authentication required'}
-})
+// 200 - Success with data
+return response(context, 200, {contents: files, keyCount: files.length})
+
+// 201 - Created
+return response(context, 201, {endpointArn: device.endpointArn})
+
+// 400 - Bad Request (via lambdaErrorResponse with validation error)
+throw new BadRequestError('Invalid request parameters')
+// lambdaErrorResponse will convert to 400 response
+
+// 401 - Unauthorized (using generateUnauthorizedError)
+return lambdaErrorResponse(context, generateUnauthorizedError())
 
 // 403 - Forbidden
-return prepareLambdaResponse({
-  statusCode: 403,
-  body: {error: 'Access denied'}
-})
+throw new ForbiddenError('Access denied')
 
 // 404 - Not Found
-return prepareLambdaResponse({
-  statusCode: 404,
-  body: {error: 'Resource not found'}
-})
+throw new NotFoundError('Resource not found')
 
 // 409 - Conflict
-return prepareLambdaResponse({
-  statusCode: 409,
-  body: {error: 'Resource already exists'}
-})
+throw new ConflictError('Resource already exists')
 
-// 500 - Internal Server Error
-return prepareLambdaResponse({
-  statusCode: 500,
-  body: {error: 'Internal server error'}
-})
+// 500 - Internal Server Error (default for unknown errors)
+return lambdaErrorResponse(context, error)
 
 // 503 - Service Unavailable
-return prepareLambdaResponse({
-  statusCode: 503,
-  body: {error: 'Service temporarily unavailable'}
-})
+throw new ServiceUnavailableError('requires configuration')
 ```
 
 ## Error Logging

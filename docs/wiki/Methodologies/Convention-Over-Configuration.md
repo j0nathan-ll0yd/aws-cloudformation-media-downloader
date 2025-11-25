@@ -32,29 +32,29 @@ When configuration is necessary, document why the convention doesn't work.
 ### ✅ Correct - Using Convention for Lambda Handlers
 
 ```typescript
-// src/lambdas/ProcessFile/src/index.ts
+// src/lambdas/ListFiles/src/index.ts
 
 // Standard Lambda pattern - no configuration needed
-import {prepareLambdaResponse, logError} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, response, logInfo, getUserDetailsFromEvent} from '../../../util/lambda-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {Files} from '../../../entities/Files'
+import {UserFiles} from '../../../entities/UserFiles'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
+export const handler = withXRay(async (event, context, {traceId: _traceId}) => {
+  logInfo('event <=', event)  // Standard logging pattern
+
   try {
-    // Business logic
-    const result = await processFile(event)
+    // Standard user extraction from event
+    const {userId, userStatus} = getUserDetailsFromEvent(event)
+
+    // Business logic using ElectroDB entities
+    const files = await getFilesByUser(userId)
 
     // Standard success response
-    return prepareLambdaResponse({
-      statusCode: 200,
-      body: result
-    })
+    return response(context, 200, {contents: files, keyCount: files.length})
   } catch (error) {
     // Standard error handling for API Gateway
-    logError(error, {context: 'handler', traceId})
-    return prepareLambdaResponse({
-      statusCode: 500,
-      body: {error: 'Internal server error'}
-    })
+    return lambdaErrorResponse(context, error)
   }
 })
 ```
@@ -76,27 +76,41 @@ No configuration needed - the structure itself is the convention.
 ### ✅ Correct - Standard Test Pattern
 
 ```typescript
-// test/index.test.ts
+// src/lambdas/ListFiles/test/index.test.ts
 
-// Convention: Mock all vendor dependencies
-jest.mock('../../../../lib/vendor/AWS/S3')
-jest.mock('../../../../lib/vendor/AWS/DynamoDB')
+// Convention: Use ElectroDB mock helper
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
-// Convention: Import after mocks
-import {handler} from '../src/index'
-import * as S3 from '../../../../lib/vendor/AWS/S3'
+// Convention: Create mocks with query indexes
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const filesMock = createElectroDBEntityMock()
 
-// Convention: Type mocks correctly
-const mockS3 = S3 as jest.Mocked<typeof S3>
+// Convention: Mock with jest.unstable_mockModule for ES modules
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({
+  UserFiles: userFilesMock.entity
+}))
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+
+// Convention: Import handler after mocks
+const {handler} = await import('./../src')
+
+// Convention: Import fixtures from JSON
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Convention: Standard test structure
-describe('ProcessFile Lambda', () => {
+describe('#ListFiles', () => {
+  const context = testContext
+
   beforeEach(() => {
-    jest.clearAllMocks()
+    event = JSON.parse(JSON.stringify(eventMock))
   })
 
-  it('should process file successfully', async () => {
-    // Standard test pattern
+  test('should return empty list when user has no files', async () => {
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(200)
   })
 })
 ```

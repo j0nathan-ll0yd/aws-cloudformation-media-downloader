@@ -61,17 +61,22 @@ fields @timestamp, @duration, @message
 | sort @timestamp desc
 ```
 
-3. **Check X-Ray Traces**:
+3. **Check X-Ray Traces** (using withXRay wrapper):
 ```typescript
-// Look for longest segments
-const traces = await xray.getTracesBySamples({
-  filter: 'duration > 10',
-  timeRange: 'last-hour'
-})
+// All Lambda handlers use withXRay for automatic tracing
+export const handler = withXRay(async (event, context, {traceId}) => {
+  logInfo('event <=', event)
+  // traceId is automatically extracted from X-Ray segment
 
-// Identify bottlenecks
-traces.forEach(trace => {
-  console.log(`Segment: ${trace.segment}, Duration: ${trace.duration}`)
+  // Add custom subsegment for specific operation
+  const segment = getSegment()
+  const subsegment = segment?.addNewSubsegment('database-operation')
+
+  try {
+    await performDatabaseOperation()
+  } finally {
+    subsegment?.close()
+  }
 })
 ```
 
