@@ -5,23 +5,32 @@
  */
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals'
-import {
-  validateSessionToken,
-  createUserSession,
-  revokeSession,
-  revokeAllUserSessions,
-  refreshSession
-} from './better-auth-helpers'
-import {Sessions} from '../entities/Sessions'
 import {UnauthorizedError} from './errors'
-import {mockElectroDBEntity} from '../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '../../test/helpers/electrodb-mock'
+
+// Create entity mocks
+const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 
 // Mock Sessions entity
-jest.mock('../entities/Sessions')
+jest.unstable_mockModule('../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+
+// Import after mocking
+const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} =
+  await import('./better-auth-helpers')
+const {Sessions} = await import('../entities/Sessions')
 
 describe('Better Auth Helpers', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    // Clear all mock call history
+    sessionsMock.mocks.scan.go.mockClear()
+    sessionsMock.mocks.scan.where.mockClear()
+    sessionsMock.mocks.create.mockClear()
+    sessionsMock.mocks.update.go.mockClear()
+    sessionsMock.mocks.update.set.mockClear()
+    sessionsMock.mocks.delete.mockClear()
+    if (sessionsMock.mocks.query.byUser) {
+      sessionsMock.mocks.query.byUser.go.mockClear()
+    }
   })
 
   describe('validateSessionToken', () => {
@@ -36,18 +45,12 @@ describe('Better Auth Helpers', () => {
       }
 
       // Mock scan operation
-      const mockScan = {
-        where: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: [mockSession]})
-      }
-      ;(Sessions.scan as any) = mockScan
+      sessionsMock.mocks.scan.where.mockReturnThis()
+      sessionsMock.mocks.scan.go.mockResolvedValue({data: [mockSession]})
 
       // Mock update operation
-      const mockUpdate = {
-        set: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: mockSession})
-      }
-      ;(Sessions.update as any) = jest.fn().mockReturnValue(mockUpdate)
+      sessionsMock.mocks.update.set.mockReturnThis()
+      sessionsMock.mocks.update.go.mockResolvedValue({data: mockSession})
 
       const result = await validateSessionToken('valid-token')
 
@@ -62,11 +65,8 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should throw UnauthorizedError for non-existent session', async () => {
-      const mockScan = {
-        where: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: []})
-      }
-      ;(Sessions.scan as any) = mockScan
+      sessionsMock.mocks.scan.where.mockReturnThis()
+      sessionsMock.mocks.scan.go.mockResolvedValue({data: []})
 
       await expect(validateSessionToken('invalid-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('invalid-token')).rejects.toThrow('Invalid session token')
@@ -82,11 +82,8 @@ describe('Better Auth Helpers', () => {
         updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1000
       }
 
-      const mockScan = {
-        where: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: [mockSession]})
-      }
-      ;(Sessions.scan as any) = mockScan
+      sessionsMock.mocks.scan.where.mockReturnThis()
+      sessionsMock.mocks.scan.go.mockResolvedValue({data: [mockSession]})
 
       await expect(validateSessionToken('expired-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('expired-token')).rejects.toThrow('Session expired')
@@ -107,7 +104,7 @@ describe('Better Auth Helpers', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Sessions, 'create', mockSession)
+      sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
       const result = await createUserSession('user-123', 'device-123', '1.2.3.4', 'Mozilla/5.0')
 
@@ -137,7 +134,7 @@ describe('Better Auth Helpers', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Sessions, 'create', mockSession)
+      sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
       const result = await createUserSession('user-456')
 
@@ -160,7 +157,7 @@ describe('Better Auth Helpers', () => {
 
   describe('revokeSession', () => {
     it('should revoke a session by ID', async () => {
-      mockElectroDBEntity(Sessions, 'delete', {})
+      sessionsMock.mocks.delete.mockResolvedValue(undefined)
 
       await revokeSession('session-123')
 
@@ -177,14 +174,12 @@ describe('Better Auth Helpers', () => {
       ]
 
       // Mock query operation
-      const mockQuery = {
-        byUser: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: mockSessions})
+      if (sessionsMock.mocks.query.byUser) {
+        sessionsMock.mocks.query.byUser.go.mockResolvedValue({data: mockSessions})
       }
-      ;(Sessions.query as any) = mockQuery
 
       // Mock delete operation
-      mockElectroDBEntity(Sessions, 'delete', {})
+      sessionsMock.mocks.delete.mockResolvedValue(undefined)
 
       await revokeAllUserSessions('user-123')
 
@@ -201,11 +196,8 @@ describe('Better Auth Helpers', () => {
       const originalExpiration = Date.now() + 10 * 24 * 60 * 60 * 1000 // 10 days
       const newExpiration = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
 
-      const mockUpdate = {
-        set: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: {}})
-      }
-      ;(Sessions.update as any) = jest.fn().mockReturnValue(mockUpdate)
+      sessionsMock.mocks.update.set.mockReturnThis()
+      sessionsMock.mocks.update.go.mockResolvedValue({data: {}})
 
       const result = await refreshSession('session-123')
 
@@ -213,7 +205,7 @@ describe('Better Auth Helpers', () => {
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
       expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
-      expect(mockUpdate.set).toHaveBeenCalledWith(
+      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(
         expect.objectContaining({
           expiresAt: expect.any(Number),
           updatedAt: expect.any(Number)

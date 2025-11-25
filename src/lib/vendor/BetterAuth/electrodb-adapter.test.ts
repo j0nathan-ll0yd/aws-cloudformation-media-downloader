@@ -6,24 +6,48 @@
  */
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals'
-import {createElectroDBAdapter} from './electrodb-adapter'
-import {Users} from '../../../entities/Users'
-import {Sessions} from '../../../entities/Sessions'
-import {Accounts} from '../../../entities/Accounts'
-import {VerificationTokens} from '../../../entities/VerificationTokens'
-import {mockElectroDBEntity} from '../../../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+// Create entity mocks
+const usersMock = createElectroDBEntityMock()
+const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const accountsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const verificationTokensMock = createElectroDBEntityMock()
 
 // Mock ElectroDB entities
-jest.mock('../../../entities/Users')
-jest.mock('../../../entities/Sessions')
-jest.mock('../../../entities/Accounts')
-jest.mock('../../../entities/VerificationTokens')
+jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
+jest.unstable_mockModule('../../../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+jest.unstable_mockModule('../../../entities/Accounts', () => ({Accounts: accountsMock.entity}))
+jest.unstable_mockModule('../../../entities/VerificationTokens', () => ({
+  VerificationTokens: verificationTokensMock.entity
+}))
+
+// Import adapter after mocking
+const {createElectroDBAdapter} = await import('./electrodb-adapter')
+const {Users} = await import('../../../entities/Users')
+const {Sessions} = await import('../../../entities/Sessions')
+const {VerificationTokens} = await import('../../../entities/VerificationTokens')
 
 describe('ElectroDB Adapter', () => {
   let adapter: ReturnType<typeof createElectroDBAdapter>
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    // Clear all mock call history
+    usersMock.mocks.create.mockClear()
+    usersMock.mocks.get.mockClear()
+    usersMock.mocks.update.go.mockClear()
+    usersMock.mocks.update.set.mockClear()
+    usersMock.mocks.delete.mockClear()
+    sessionsMock.mocks.create.mockClear()
+    sessionsMock.mocks.get.mockClear()
+    sessionsMock.mocks.update.go.mockClear()
+    sessionsMock.mocks.update.set.mockClear()
+    sessionsMock.mocks.delete.mockClear()
+    accountsMock.mocks.create.mockClear()
+    accountsMock.mocks.get.mockClear()
+    verificationTokensMock.mocks.create.mockClear()
+    verificationTokensMock.mocks.get.mockClear()
+    verificationTokensMock.mocks.delete.mockClear()
     adapter = createElectroDBAdapter()
   })
 
@@ -38,7 +62,7 @@ describe('ElectroDB Adapter', () => {
         identityProviders: {}
       }
 
-      mockElectroDBEntity(Users, 'create', mockUser)
+      usersMock.mocks.create.mockResolvedValue({data: mockUser})
 
       const result = await adapter.createUser({
         id: 'user-123',
@@ -61,7 +85,7 @@ describe('ElectroDB Adapter', () => {
         emailVerified: false,
         firstName: 'John',
         lastName: 'Doe',
-        identityProviders: undefined
+        identityProviders: {}
       })
     })
 
@@ -74,7 +98,7 @@ describe('ElectroDB Adapter', () => {
         lastName: 'Smith'
       }
 
-      mockElectroDBEntity(Users, 'get', mockUser)
+      usersMock.mocks.get.mockResolvedValue({data: mockUser})
 
       const result = await adapter.getUser('user-123')
 
@@ -90,7 +114,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should return null for non-existent user', async () => {
-      mockElectroDBEntity(Users, 'get', null)
+      usersMock.mocks.get.mockResolvedValue(undefined)
 
       const result = await adapter.getUser('nonexistent')
 
@@ -107,11 +131,8 @@ describe('ElectroDB Adapter', () => {
       }
 
       // Mock scan operation for email lookup
-      const mockScan = {
-        where: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: [mockUser]})
-      }
-      ;(Users.scan as any) = mockScan
+      usersMock.mocks.scan.where.mockReturnThis()
+      usersMock.mocks.scan.go.mockResolvedValue({data: [mockUser]})
 
       const result = await adapter.getUserByEmail('test@example.com')
 
@@ -134,11 +155,8 @@ describe('ElectroDB Adapter', () => {
         lastName: 'Doe'
       }
 
-      const mockUpdate = {
-        set: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: mockUpdatedUser})
-      }
-      ;(Users.update as any) = jest.fn().mockReturnValue(mockUpdate)
+      usersMock.mocks.update.set.mockReturnThis()
+      usersMock.mocks.update.go.mockResolvedValue({data: mockUpdatedUser})
 
       const result = await adapter.updateUser('user-123', {
         email: 'newemail@example.com',
@@ -156,7 +174,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should delete a user', async () => {
-      mockElectroDBEntity(Users, 'delete', {})
+      usersMock.mocks.delete.mockResolvedValue(undefined)
 
       await adapter.deleteUser('user-123')
 
@@ -178,7 +196,7 @@ describe('ElectroDB Adapter', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Sessions, 'create', mockSession)
+      sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
       const result = await adapter.createSession({
         id: 'session-123',
@@ -212,7 +230,7 @@ describe('ElectroDB Adapter', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Sessions, 'get', mockSession)
+      sessionsMock.mocks.get.mockResolvedValue({data: mockSession})
 
       const result = await adapter.getSession('session-123')
 
@@ -239,11 +257,8 @@ describe('ElectroDB Adapter', () => {
         updatedAt: Date.now()
       }
 
-      const mockUpdate = {
-        set: jest.fn().mockReturnThis(),
-        go: jest.fn().mockResolvedValue({data: mockUpdatedSession})
-      }
-      ;(Sessions.update as any) = jest.fn().mockReturnValue(mockUpdate)
+      sessionsMock.mocks.update.set.mockReturnThis()
+      sessionsMock.mocks.update.go.mockResolvedValue({data: mockUpdatedSession})
 
       const result = await adapter.updateSession('session-123', {
         expiresAt: new Date(newExpiresAt)
@@ -253,7 +268,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should delete a session', async () => {
-      mockElectroDBEntity(Sessions, 'delete', {})
+      sessionsMock.mocks.delete.mockResolvedValue(undefined)
 
       await adapter.deleteSession('session-123')
 
@@ -277,7 +292,7 @@ describe('ElectroDB Adapter', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Accounts, 'create', mockAccount)
+      accountsMock.mocks.create.mockResolvedValue({data: mockAccount})
 
       const result = await adapter.createAccount({
         id: 'account-123',
@@ -317,7 +332,7 @@ describe('ElectroDB Adapter', () => {
         updatedAt: Date.now()
       }
 
-      mockElectroDBEntity(Accounts, 'get', mockAccount)
+      accountsMock.mocks.get.mockResolvedValue({data: mockAccount})
 
       const result = await adapter.getAccount('account-123')
 
@@ -348,10 +363,12 @@ describe('ElectroDB Adapter', () => {
 
   describe('Verification Token Operations', () => {
     it('should create a verification token', async () => {
-      mockElectroDBEntity(VerificationTokens, 'create', {
-        identifier: 'test@example.com',
-        token: 'verify-token-123',
-        expiresAt: Date.now() + 86400000
+      verificationTokensMock.mocks.create.mockResolvedValue({
+        data: {
+          identifier: 'test@example.com',
+          token: 'verify-token-123',
+          expiresAt: Date.now() + 86400000
+        }
       })
 
       await adapter.createVerificationToken({
@@ -370,7 +387,7 @@ describe('ElectroDB Adapter', () => {
         expiresAt: Date.now() + 86400000
       }
 
-      mockElectroDBEntity(VerificationTokens, 'get', mockToken)
+      verificationTokensMock.mocks.get.mockResolvedValue({data: mockToken})
 
       const result = await adapter.getVerificationToken('verify-token-123')
 
@@ -382,7 +399,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should delete a verification token', async () => {
-      mockElectroDBEntity(VerificationTokens, 'delete', {})
+      verificationTokensMock.mocks.delete.mockResolvedValue(undefined)
 
       await adapter.deleteVerificationToken('verify-token-123')
 

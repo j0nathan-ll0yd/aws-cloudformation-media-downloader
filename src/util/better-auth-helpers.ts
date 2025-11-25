@@ -5,7 +5,6 @@
  * These helpers bridge Better Auth's framework with our serverless architecture.
  */
 
-import {auth} from '../lib/vendor/BetterAuth/config'
 import {Sessions} from '../entities/Sessions'
 import {logDebug, logError} from './lambda-helpers'
 import {UnauthorizedError} from './errors'

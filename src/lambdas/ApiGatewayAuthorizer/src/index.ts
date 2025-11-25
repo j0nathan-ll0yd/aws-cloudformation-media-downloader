@@ -87,8 +87,8 @@ async function fetchUsageData(keyId: string, usagePlanId: string) {
 }
 
 async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
-  // Match Bearer token format (now session tokens instead of JWTs)
-  const bearerRegex = /^Bearer [A-Za-z\d-_=]+$/
+  // Match Bearer token format (session tokens or JWTs during migration)
+  const bearerRegex = /^Bearer [A-Za-z\d-_=.]+$/
   const matches = authorizationHeader.match(bearerRegex)
   logDebug('getPayloadFromAuthenticationHeader.matches <=', JSON.stringify(matches))
   if (!authorizationHeader.match(bearerRegex)) {
