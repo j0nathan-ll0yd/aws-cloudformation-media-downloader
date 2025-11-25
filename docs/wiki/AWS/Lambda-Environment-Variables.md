@@ -53,12 +53,12 @@ resource "aws_lambda_function" "ListFiles" {
 
 ## Common Variables
 
-- `DynamoDBTableName` - DynamoDB table
+- `DynamoDBTableName` - DynamoDB table (set in OpenTofu)
 - `PlatformApplicationArn` - SNS platform app
 - `PushNotificationTopicArn` - SNS topic
 - `FeedlyQueueUrl` - SQS queue
-- `EnableXRay` - X-Ray tracing
-- `UseLocalstack` - LocalStack testing
+- `EnableXRay` - X-Ray tracing (read as ENABLE_XRAY in code)
+- `UseLocalstack` - LocalStack testing (read as USE_LOCALSTACK in code)
 
 ## Related Patterns
 

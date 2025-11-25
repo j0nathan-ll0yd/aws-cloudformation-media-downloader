@@ -55,7 +55,7 @@ All AWS SDK clients use vendor wrappers that automatically detect LocalStack:
 ```typescript
 // lib/vendor/AWS/DynamoDB.ts
 function getDynamoDbClient(): DynamoDBClient {
-  if (process.env.UseLocalstack === 'true') {
+  if (process.env.USE_LOCALSTACK === 'true') {
     return new DynamoDBClient({
       endpoint: 'http://localhost:4566',
       region: 'us-west-2'

@@ -22,7 +22,7 @@ export function withXRay<TEvent = any, TResult = any>(
 }
 
 export function captureAWSClient<T>(client: T): T {
-  if (process.env.EnableXRay === 'false' || process.env.UseLocalstack === 'true') {
+  if (process.env.ENABLE_XRAY === 'false' || process.env.USE_LOCALSTACK === 'true') {
     return client
   }
   return AWSXRay.captureAWSv3Client(client)

@@ -40,7 +40,7 @@ let client: S3Client | null = null
 function getS3Client(): S3Client {
   if (!client) {
     client = captureAWSClient(new S3Client({
-      ...(process.env.UseLocalstack === 'true' && {
+      ...(process.env.USE_LOCALSTACK === 'true' && {
         endpoint: 'http://localhost:4566'
       })
     }))
