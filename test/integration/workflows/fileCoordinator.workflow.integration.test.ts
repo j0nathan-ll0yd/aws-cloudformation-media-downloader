@@ -127,9 +127,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     })
 
     const {Files} = await import('../../../src/entities/Files')
-    await Files.update({fileId: 'downloaded-video'})
-      .set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'})
-      .go()
+    await Files.update({fileId: 'downloaded-video'}).set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}).go()
 
     const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 

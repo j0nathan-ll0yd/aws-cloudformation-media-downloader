@@ -157,10 +157,6 @@ interface AppleTokenResponse {
   token_type: string // The type of access token. It will always be bearer.
 }
 
-interface ServerVerifiedToken extends JWTPayload {
-  userId: string
-}
-
 interface SignInWithAppleVerifiedToken extends JWTPayload {
   iss: string // https://appleid.apple.com
   aud: string // lifegames.OfflineMediaDownloader

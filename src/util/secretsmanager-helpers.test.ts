@@ -1,6 +1,6 @@
 import {describe, expect, test, jest} from '@jest/globals'
 import {AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig} from 'axios'
-import {ServerVerifiedToken, SignInWithAppleVerifiedToken} from '../types/main'
+import {SignInWithAppleVerifiedToken} from '../types/main'
 import {UnauthorizedError} from './errors'
 import {fakePrivateKey, fakePublicKey} from './jest-setup'
 import * as jose from 'jose'
@@ -60,7 +60,7 @@ jest.unstable_mockModule('jwks-rsa', () => ({
 const signWithAppleConfigString = '{"client_id":"lifegames.OfflineMediaDownloader","team_id":"XXXXXX","redirect_uri":"","key_id":"XXXXXX","scope":"email name"}'
 const signInWithAppleAuthKeyString = fakePrivateKey
 
-const {createAccessToken, getApnsSigningKey, getAppleClientSecret, validateAuthCodeForToken, verifyAccessToken, verifyAppleToken} = await import('./secretsmanager-helpers')
+const {getApnsSigningKey, getAppleClientSecret, validateAuthCodeForToken, verifyAppleToken} = await import('./secretsmanager-helpers')
 
 describe('#Util:SecretsManager', () => {
   test('should getAppleClientSecret', async () => {
@@ -80,30 +80,6 @@ describe('#Util:SecretsManager', () => {
     })
     const data = await validateAuthCodeForToken('test')
     expect(Object.keys(data)).toEqual(expect.arrayContaining(Object.keys(fakeTokenResponse)))
-  })
-  test('should createAccessToken', async () => {
-    const secretString = 'randomly-generated-secret-id'
-    process.env.PlatformEncryptionKey = secretString
-    const userId = '1234'
-    const token = await createAccessToken(userId)
-    const {payload} = await jose.jwtVerify(token, new TextEncoder().encode(secretString))
-    const jwtPayload = payload as ServerVerifiedToken
-    const expectedKeys = ['userId', 'iat', 'exp']
-    expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
-    expect(jwtPayload.userId).toEqual(userId)
-  })
-  test('should verifyAccessToken successfully', async () => {
-    process.env.PlatformEncryptionKey = 'PrivateEncryptionKey'
-    const userId = '1234'
-    const token = await createAccessToken(userId)
-    const jwtPayload = await verifyAccessToken(token)
-    const expectedKeys = ['userId', 'iat', 'exp']
-    expect(Object.keys(jwtPayload)).toEqual(expect.arrayContaining(expectedKeys))
-    expect(jwtPayload['userId']).toEqual(userId)
-  })
-  test('should verifyAccessToken unsuccessfully', async () => {
-    const token = 'invalid-token'
-    await expect(verifyAccessToken(token)).rejects.toThrow(Error)
   })
   test('should verifyAppleToken successfully', async () => {
     getSigningKeyMock.mockReturnValue({publicKey: fakePublicKey})

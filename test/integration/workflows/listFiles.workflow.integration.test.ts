@@ -52,7 +52,7 @@ const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: null,
-    headers: userId && userStatus === UserStatus.Authenticated ? {'Authorization': 'Bearer test-token'} : userStatus === UserStatus.Unauthenticated ? {'Authorization': 'Bearer invalid-token'} : {},
+    headers: userId && userStatus === UserStatus.Authenticated ? {Authorization: 'Bearer test-token'} : userStatus === UserStatus.Unauthenticated ? {Authorization: 'Bearer invalid-token'} : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
     isBase64Encoded: false,
@@ -116,11 +116,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB responses
     // UserFiles.query.byUser returns array of individual UserFile records
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        createMockUserFile('user-abc-123', 'video-1'),
-        createMockUserFile('user-abc-123', 'video-2'),
-        createMockUserFile('user-abc-123', 'video-3')
-      ]
+      data: [createMockUserFile('user-abc-123', 'video-1'), createMockUserFile('user-abc-123', 'video-2'), createMockUserFile('user-abc-123', 'video-3')]
     })
 
     // Files.get now uses BATCH get - returns array of files with unprocessed
@@ -244,9 +240,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) =>
-        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})
-      ),
+      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})),
       unprocessed: []
     })
 

@@ -15,8 +15,7 @@ const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
-const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} =
-  await import('./better-auth-helpers')
+const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} = await import('./better-auth-helpers')
 const {Sessions} = await import('../entities/Sessions')
 
 describe('Better Auth Helpers', () => {

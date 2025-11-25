@@ -8,7 +8,6 @@ declare global {
       DefaultFileUrl: string
       DefaultFileContentType: string
       DynamoDBTableName: string
-      PlatformEncryptionKey: string
       GithubPersonalToken: string
       MultiAuthenticationPathParts: string
       ReservedClientIp: string

@@ -70,7 +70,6 @@ resource "aws_lambda_function" "RegisterUser" {
   environment {
     variables = {
       DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
-      PlatformEncryptionKey  = data.sops_file.secrets.data["platform.key"]
       SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
       SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
     }

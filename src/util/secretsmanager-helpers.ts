@@ -2,7 +2,7 @@ import axios, {AxiosRequestConfig} from 'axios'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
 import jwksClient from 'jwks-rsa'
-import {AppleTokenResponse, ServerVerifiedToken, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
+import {AppleTokenResponse, SignInWithAppleConfig, SignInWithAppleVerifiedToken} from '../types/main'
 import {logDebug, logError, logInfo} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
 let APPLE_CONFIG: SignInWithAppleConfig
@@ -27,15 +27,6 @@ export async function getAppleConfig(): Promise<SignInWithAppleConfig> {
  */
 export async function getApplePrivateKey(): Promise<string> {
   return process.env.SignInWithAppleAuthKey
-}
-
-/**
- * Retrieves the private key for user-based login via Secrets Manager or cache.
- * @returns string - The private key file
- * @notExported
- */
-export async function getServerPrivateKey(): Promise<string> {
-  return process.env.PlatformEncryptionKey
 }
 
 /**
@@ -135,35 +126,6 @@ export async function verifyAppleToken(token: string): Promise<SignInWithAppleVe
     const message = 'Invalid token'
     logError(`jwt.verify <= ${message}`)
     throw new UnauthorizedError(message)
-  }
-}
-
-/**
- * Creates an access token using server encryption key for user-login.
- * @param userId - The userId to tokenize.
- * @returns string - A JSON Web Token (JWT)
- */
-export async function createAccessToken(userId: string): Promise<string> {
-  const secret = await getServerPrivateKey()
-  return await new jose.SignJWT({userId}).setProtectedHeader({alg: 'HS256'}).setIssuedAt().setExpirationTime('5m').sign(new TextEncoder().encode(secret))
-}
-
-/**
- * Verifies an access token using server encryption key (user-login).
- * @param token - A JSON Web Token (JWT)
- * @returns ServerVerifiedToken - A verified token for user login.
- * @notExported
- */
-export async function verifyAccessToken(token: string): Promise<ServerVerifiedToken> {
-  const secret = await getServerPrivateKey()
-  try {
-    const {payload} = await jose.jwtVerify(token, new TextEncoder().encode(secret))
-    const jwtPayload = payload as ServerVerifiedToken
-    logDebug('verifyAccessToken.jwtPayload <=', jwtPayload)
-    return jwtPayload
-  } catch (err) {
-    logError(`verifyAccessToken <= ${err}`)
-    throw err
   }
 }
 

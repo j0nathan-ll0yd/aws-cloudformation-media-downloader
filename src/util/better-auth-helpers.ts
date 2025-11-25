@@ -41,9 +41,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
   try {
     // Query sessions by token to find matching session
     // Note: This requires token to be indexed or we scan
-    const result = await Sessions.scan
-      .where(({token: tokenAttr}, {eq}) => eq(tokenAttr, token))
-      .go()
+    const result = await Sessions.scan.where(({token: tokenAttr}, {eq}) => eq(tokenAttr, token)).go()
 
     if (!result.data || result.data.length === 0) {
       logError('validateSessionToken: session not found')
@@ -62,9 +60,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
     }
 
     // Update last active timestamp
-    await Sessions.update({sessionId: session.sessionId})
-      .set({updatedAt: Date.now()})
-      .go()
+    await Sessions.update({sessionId: session.sessionId}).set({updatedAt: Date.now()}).go()
 
     logDebug('validateSessionToken: session valid', {
       userId: session.userId,
@@ -97,12 +93,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * @example
  * const {token, expiresAt} = await createUserSession(userId, deviceId, ipAddress, userAgent)
  */
-export async function createUserSession(
-  userId: string,
-  deviceId?: string,
-  ipAddress?: string,
-  userAgent?: string
-): Promise<{token: string; expiresAt: number; sessionId: string}> {
+export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<{token: string; expiresAt: number; sessionId: string}> {
   logDebug('createUserSession: creating session', {userId, deviceId})
 
   // Generate a secure random token (Better Auth would normally handle this)
@@ -183,9 +174,7 @@ export async function refreshSession(sessionId: string): Promise<{expiresAt: num
 
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
 
-  await Sessions.update({sessionId})
-    .set({expiresAt, updatedAt: Date.now()})
-    .go()
+  await Sessions.update({sessionId}).set({expiresAt, updatedAt: Date.now()}).go()
 
   logDebug('refreshSession: session refreshed', {expiresAt})
 

@@ -27,11 +27,7 @@ import {FileStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createMockVideoInfo,
-  createMockVideoFormat,
-  createMockStreamVideoToS3WithRealUpload
-} from '../helpers/mock-youtube'
+import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload} from '../helpers/mock-youtube'
 import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
 
 import {fileURLToPath} from 'url'
@@ -66,7 +62,7 @@ jest.unstable_mockModule(githubHelpersModulePath, () => ({
 }))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
-let handler = module.handler
+const handler = module.handler
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   let mockContext: any
@@ -114,5 +110,4 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     expect(s3Metadata!.contentLength).toBe(5242880)
     expect(s3Metadata!.contentType).toBe('video/mp4')
   }, 30000)
-
 })

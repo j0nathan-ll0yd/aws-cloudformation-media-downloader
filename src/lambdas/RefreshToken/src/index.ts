@@ -16,9 +16,8 @@
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {logDebug, logError, logInfo, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
 import {validateSessionToken, refreshSession} from '../../../util/better-auth-helpers'
-import {UnauthorizedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
@@ -31,76 +30,50 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param _context - Lambda context (unused)
  * @returns API Gateway proxy result with refreshed session info
  */
-export const handler = withXRay(
-  async (
-    event: APIGatewayProxyEvent,
-    _context: Context,
-    {traceId: _traceId}
-  ): Promise<APIGatewayProxyResult> => {
-    logInfo('RefreshToken: event <=', event)
+export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+  logInfo('RefreshToken: event <=', event)
 
-    try {
-      // Extract and validate Authorization header
-      const authHeader = event.headers?.Authorization || event.headers?.authorization
-      if (!authHeader) {
-        logError('RefreshToken: missing Authorization header')
-        return {
-          statusCode: 401,
-          body: JSON.stringify({error: 'Missing Authorization header'})
-        }
-      }
-
-      // Extract token from Bearer format
-      const tokenMatch = authHeader.match(/^Bearer (.+)$/)
-      if (!tokenMatch) {
-        logError('RefreshToken: invalid Authorization header format')
-        return {
-          statusCode: 401,
-          body: JSON.stringify({error: 'Invalid Authorization header format'})
-        }
-      }
-
-      const token = tokenMatch[1]
-
-      // Validate the session token
-      logDebug('RefreshToken: validating session token')
-      const sessionPayload = await validateSessionToken(token)
-
-      // Refresh the session (extend expiration)
-      logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
-      const {expiresAt} = await refreshSession(sessionPayload.sessionId)
-
-      // Return success with updated session info
-      const response = {
-        token, // Same token, just extended expiration
-        expiresAt,
-        sessionId: sessionPayload.sessionId,
-        userId: sessionPayload.userId
-      }
-
-      logInfo('RefreshToken: session refreshed successfully', {
-        sessionId: sessionPayload.sessionId,
-        expiresAt
-      })
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify(response)
-      }
-    } catch (error) {
-      if (error instanceof UnauthorizedError) {
-        logError('RefreshToken: unauthorized', {error: error.message})
-        return {
-          statusCode: 401,
-          body: JSON.stringify({error: error.message})
-        }
-      }
-
-      logError('RefreshToken: unexpected error', {error})
-      return {
-        statusCode: 500,
-        body: JSON.stringify({error: 'Internal server error'})
-      }
+  try {
+    // Extract and validate Authorization header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization
+    if (!authHeader) {
+      logError('RefreshToken: missing Authorization header')
+      return response(context, 401, {error: 'Missing Authorization header'})
     }
+
+    // Extract token from Bearer format
+    const tokenMatch = authHeader.match(/^Bearer (.+)$/)
+    if (!tokenMatch) {
+      logError('RefreshToken: invalid Authorization header format')
+      return response(context, 401, {error: 'Invalid Authorization header format'})
+    }
+
+    const token = tokenMatch[1]
+
+    // Validate the session token
+    logDebug('RefreshToken: validating session token')
+    const sessionPayload = await validateSessionToken(token)
+
+    // Refresh the session (extend expiration)
+    logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
+    const {expiresAt} = await refreshSession(sessionPayload.sessionId)
+
+    // Return success with updated session info
+    const responseData = {
+      token, // Same token, just extended expiration
+      expiresAt,
+      sessionId: sessionPayload.sessionId,
+      userId: sessionPayload.userId
+    }
+
+    logInfo('RefreshToken: session refreshed successfully', {
+      sessionId: sessionPayload.sessionId,
+      expiresAt
+    })
+
+    return response(context, 200, responseData)
+  } catch (error) {
+    logError('RefreshToken: error', {error})
+    return lambdaErrorResponse(context, error)
   }
-)
+})

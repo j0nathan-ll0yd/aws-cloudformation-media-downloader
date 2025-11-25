@@ -136,6 +136,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent, _context: Context, {traceId: _traceId}): Promise<CustomAuthorizerResult> => {
   logInfo('event <=', event)
   const queryStringParameters = event.queryStringParameters
