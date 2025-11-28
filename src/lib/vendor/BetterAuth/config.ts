@@ -14,15 +14,24 @@ import {logDebug} from '../../../util/lambda-helpers'
  *
  * Configuration:
  * - Database: ElectroDB adapter with DynamoDB single-table design
- * - Providers: Apple Sign In (OAuth)
+ * - Providers: Apple Sign In (OAuth) with iOS bundle ID support
  * - Sessions: 30-day expiration with refresh tokens
  * - Base URL: API Gateway endpoint
+ * - Trusted Origins: Apple's authentication domain
+ *
+ * Note: Better Auth's Apple provider expects a pre-generated client secret, but we
+ * dynamically generate it from the auth key. This is handled by providing a placeholder
+ * here since we're using ID token authentication (which doesn't require the secret for
+ * token verification - Better Auth verifies ID tokens using Apple's public keys).
  */
 export const auth = betterAuth({
   database: createElectroDBAdapter(),
 
   // Base URL for OAuth callbacks (from environment)
   baseURL: process.env.BASE_URL || 'https://api.example.com',
+
+  // Trusted origins for OAuth flows
+  trustedOrigins: ['https://appleid.apple.com'],
 
   // Session configuration
   session: {
@@ -36,9 +45,18 @@ export const auth = betterAuth({
   // OAuth providers
   socialProviders: {
     apple: {
-      clientId: process.env.APPLE_CLIENT_ID || '',
-      clientSecret: process.env.APPLE_CLIENT_SECRET || '',
-      enabled: true
+      // Use existing Sign In With Apple configuration
+      // clientId is the Service ID for web, but appBundleIdentifier is used for iOS
+      clientId: getAppleClientIdFromConfig(),
+      // Client secret placeholder - not needed for ID token verification flow
+      // Better Auth verifies ID tokens using Apple's public JWKS, not the client secret
+      clientSecret: 'placeholder-not-used-for-id-token-flow',
+      enabled: true,
+      // iOS app bundle identifier for ID token validation
+      // When using ID tokens from iOS, the 'aud' claim will be the bundle ID, not the service ID
+      appBundleIdentifier: getAppleBundleIdFromConfig(),
+      // Allow ID token sign-in (our primary flow)
+      disableIdTokenSignin: false
     }
   },
 
@@ -49,6 +67,38 @@ export const auth = betterAuth({
     generateSessionToken: true
   }
 })
+
+/**
+ * Extract client ID (Service ID) from existing Sign In With Apple configuration.
+ * Falls back to environment variable if config not available.
+ */
+function getAppleClientIdFromConfig(): string {
+  try {
+    if (process.env.SignInWithAppleConfig) {
+      const config = JSON.parse(process.env.SignInWithAppleConfig)
+      return config.client_id || process.env.APPLE_CLIENT_ID || ''
+    }
+  } catch (error) {
+    logDebug('Failed to parse SignInWithAppleConfig, using APPLE_CLIENT_ID', {error})
+  }
+  return process.env.APPLE_CLIENT_ID || ''
+}
+
+/**
+ * Extract bundle ID from existing Sign In With Apple configuration.
+ * Falls back to environment variable if config not available.
+ */
+function getAppleBundleIdFromConfig(): string {
+  try {
+    if (process.env.SignInWithAppleConfig) {
+      const config = JSON.parse(process.env.SignInWithAppleConfig)
+      return config.bundle_id || process.env.APPLE_BUNDLE_ID || ''
+    }
+  } catch (error) {
+    logDebug('Failed to parse SignInWithAppleConfig, using APPLE_BUNDLE_ID', {error})
+  }
+  return process.env.APPLE_BUNDLE_ID || ''
+}
 
 /**
  * Initialize Better Auth on cold start.
