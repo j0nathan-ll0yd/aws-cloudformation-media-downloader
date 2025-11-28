@@ -2,21 +2,12 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import type {MockedFunction} from 'jest-mock'
 import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import type {SignInSocialParams} from '../../../types/better-auth'
 import {v4 as uuidv4} from 'uuid'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock Better Auth API
-interface SignInSocialParams {
-  headers: Record<string, string>
-  body: {
-    provider: string
-    idToken: {
-      token: string
-    }
-  }
-}
-
 const signInSocialMock = jest.fn() as MockedFunction<(params: SignInSocialParams) => Promise<any>>
 
 jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({

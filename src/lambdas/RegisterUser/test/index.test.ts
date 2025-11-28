@@ -2,19 +2,10 @@ import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import type {MockedFunction} from 'jest-mock'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import type {SignInSocialParams} from '../../../types/better-auth'
 import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API
-interface SignInSocialParams {
-  headers: Record<string, string>
-  body: {
-    provider: string
-    idToken: {
-      token: string
-    }
-  }
-}
-
 const signInSocialMock = jest.fn() as MockedFunction<(params: SignInSocialParams) => Promise<any>>
 
 jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
