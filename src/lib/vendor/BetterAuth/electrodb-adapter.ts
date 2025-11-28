@@ -483,3 +483,18 @@ export function createElectroDBAdapter() {
 
   return adapter
 }
+
+/**
+ * Exported transformer functions for testing
+ * These allow integration tests to validate transformation logic against real DynamoDB
+ */
+export {
+  transformUserFromAuth,
+  transformSessionFromAuth,
+  transformAccountFromAuth,
+  transformUserToAuth,
+  transformSessionToAuth,
+  transformAccountToAuth,
+  transformUserUpdateFromAuth,
+  transformSessionUpdateFromAuth
+}

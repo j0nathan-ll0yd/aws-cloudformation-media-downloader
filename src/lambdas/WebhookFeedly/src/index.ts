@@ -101,7 +101,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
-  logIncomingFixture(event, 'WebhookFeedly')
+  logIncomingFixture(event)
 
   let requestBody
   try {
@@ -129,11 +129,11 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
         result = response(context, 202, {status: 'Accepted'})
       }
     }
-    logOutgoingFixture(result, 'WebhookFeedly')
+    logOutgoingFixture(result)
     return result
   } catch (error) {
     const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult, 'WebhookFeedly')
+    logOutgoingFixture(errorResult)
     return errorResult
   }
 })

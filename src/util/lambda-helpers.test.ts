@@ -57,6 +57,48 @@ describe('lambda-helpers', () => {
 
       expect(consoleLogSpy).not.toHaveBeenCalled()
     })
+
+    it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
+
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
+
+      logIncomingFixture(mockEvent)
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('ListFiles')
+    })
+
+    it('should use manual override when provided', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
+
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
+
+      logIncomingFixture(mockEvent, 'CustomName')
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('CustomName')
+    })
+
+    it('should fallback to UnknownLambda when no name available', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      delete process.env.AWS_LAMBDA_FUNCTION_NAME
+
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
+
+      logIncomingFixture(mockEvent)
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('UnknownLambda')
+    })
   })
 
   describe('logOutgoingFixture', () => {
@@ -89,6 +131,48 @@ describe('lambda-helpers', () => {
       logOutgoingFixture(mockResponse, 'test-fixture')
 
       expect(consoleLogSpy).not.toHaveBeenCalled()
+    })
+
+    it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
+
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
+
+      logOutgoingFixture(mockResponse)
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('WebhookFeedly')
+    })
+
+    it('should use manual override when provided', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
+
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
+
+      logOutgoingFixture(mockResponse, 'CustomName')
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('CustomName')
+    })
+
+    it('should fallback to UnknownLambda when no name available', async () => {
+      process.env.ENABLE_FIXTURE_LOGGING = 'true'
+      delete process.env.AWS_LAMBDA_FUNCTION_NAME
+
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
+
+      logOutgoingFixture(mockResponse)
+
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
+      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggedData.fixtureType).toBe('UnknownLambda')
     })
   })
 

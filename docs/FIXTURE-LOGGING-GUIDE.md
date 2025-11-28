@@ -30,22 +30,38 @@ Lambda functions automatically log fixtures when the helper functions are used:
 import { logIncomingFixture, logOutgoingFixture } from '../../../util/lambda-helpers'
 
 export const handler = async (event, context) => {
-  // Log incoming request (use actual Lambda name)
-  logIncomingFixture(event, 'ListFiles')
+  // Log incoming request (auto-detects Lambda name from environment)
+  logIncomingFixture(event)
 
   // ... process request ...
 
-  // Log outgoing response
+  // Log outgoing response (auto-detects Lambda name from environment)
   const response = { statusCode: 200, body: JSON.stringify(data) }
-  logOutgoingFixture(response, 'ListFiles')
+  logOutgoingFixture(response)
 
   return response
 }
 ```
 
+### Automatic Name Detection
+
+The fixture logging functions **automatically detect the Lambda function name** from the `AWS_LAMBDA_FUNCTION_NAME` environment variable (set by AWS Lambda runtime). This eliminates the need to manually specify the fixture type.
+
+**Recommended approach** (automatic detection):
+```typescript
+logIncomingFixture(event)        // Uses AWS_LAMBDA_FUNCTION_NAME
+logOutgoingFixture(response)     // Uses AWS_LAMBDA_FUNCTION_NAME
+```
+
+**Manual override** (for special cases like Better Auth or custom scenarios):
+```typescript
+logIncomingFixture(event, 'CustomFixtureName')
+logOutgoingFixture(response, 'CustomFixtureName')
+```
+
 ### Naming Convention
 
-Always use the actual Lambda function name (PascalCase) for the fixture type:
+When manually specifying names, always use PascalCase to match Lambda function names:
 - ✅ `'ListFiles'` (matches Lambda name)
 - ❌ `'list-files'` (kebab-case)
 

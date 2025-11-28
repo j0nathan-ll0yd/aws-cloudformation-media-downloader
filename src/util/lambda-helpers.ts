@@ -208,15 +208,26 @@ function sanitizeForTest(data: any): any {
 /**
  * Log incoming request for fixture extraction from CloudWatch
  * Marks production requests for automated fixture generation
+ *
+ * Automatically detects the Lambda function name from AWS_LAMBDA_FUNCTION_NAME
+ * environment variable (set by AWS Lambda runtime).
+ *
  * @param event - Lambda event (API Gateway request)
- * @param fixtureType - Type identifier for the fixture (e.g., 'feedly-webhook', 'list-files')
+ * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
+ * @example
+ * // Automatic detection (recommended)
+ * logIncomingFixture(event)  // Uses AWS_LAMBDA_FUNCTION_NAME
+ *
+ * // Manual override (for Better Auth or custom scenarios)
+ * logIncomingFixture(event, 'CustomFixtureName')
  */
-export function logIncomingFixture(event: any, fixtureType: string): void {
+export function logIncomingFixture(event: any, fixtureType?: string): void {
   if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
+    const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
     console.log(
       JSON.stringify({
         __FIXTURE_MARKER__: 'INCOMING',
-        fixtureType,
+        fixtureType: detectedType,
         timestamp: Date.now(),
         data: sanitizeForTest(event)
       })
@@ -227,15 +238,26 @@ export function logIncomingFixture(event: any, fixtureType: string): void {
 /**
  * Log outgoing response for fixture extraction from CloudWatch
  * Marks production responses for automated fixture generation
+ *
+ * Automatically detects the Lambda function name from AWS_LAMBDA_FUNCTION_NAME
+ * environment variable (set by AWS Lambda runtime).
+ *
  * @param response - Lambda response
- * @param fixtureType - Type identifier for the fixture (e.g., 'feedly-webhook', 'list-files')
+ * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
+ * @example
+ * // Automatic detection (recommended)
+ * logOutgoingFixture(response)  // Uses AWS_LAMBDA_FUNCTION_NAME
+ *
+ * // Manual override (for Better Auth or custom scenarios)
+ * logOutgoingFixture(response, 'CustomFixtureName')
  */
-export function logOutgoingFixture(response: any, fixtureType: string): void {
+export function logOutgoingFixture(response: any, fixtureType?: string): void {
   if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
+    const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
     console.log(
       JSON.stringify({
         __FIXTURE_MARKER__: 'OUTGOING',
-        fixtureType,
+        fixtureType: detectedType,
         timestamp: Date.now(),
         data: sanitizeForTest(response)
       })
