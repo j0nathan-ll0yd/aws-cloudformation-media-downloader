@@ -27,8 +27,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate dependency graph
+        run: pnpm run generate-graph
+
       - name: Check dependency rules
         run: pnpm run deps:check
+
+      - name: Validate GraphRAG is current
+        run: |
+          pnpm run graphrag:extract
+          if ! git diff --quiet graphrag/knowledge-graph.json; then
+            echo "❌ GraphRAG knowledge-graph.json is out of date!"
+            echo "Run 'pnpm run graphrag:extract' locally and commit the changes."
+            git diff graphrag/knowledge-graph.json
+            exit 1
+          fi
+          echo "✓ GraphRAG is up to date"
 
       - name: Generate dependency report
         if: failure()

@@ -2,26 +2,34 @@
 /**
  * GraphRAG extraction for Lambda chains and entity relationships
  * Builds a knowledge graph from the codebase for multi-hop reasoning
+ *
+ * This script dynamically discovers:
+ * - Lambdas from src/lambdas/ directory
+ * - Entity relationships from src/entities/ directory
+ * - Service dependencies from build/graph.json transitive dependencies
+ *
+ * Semantic metadata (triggers, purposes) is read from graphrag/metadata.json
  */
 
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
 
 interface Node {
   id: string;
   type: 'Lambda' | 'Entity' | 'Service' | 'External';
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
 }
 
 interface Edge {
   source: string;
   target: string;
   relationship: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 interface KnowledgeGraph {
@@ -31,7 +39,149 @@ interface KnowledgeGraph {
     created: string;
     version: string;
     description: string;
+    sources: {
+      lambdas: string;
+      dependencies: string;
+      metadata: string;
+    };
   };
+}
+
+interface DependencyGraph {
+  metadata: {generated: string; projectRoot: string; totalFiles: number};
+  files: Record<string, {file: string; imports: string[]}>;
+  transitiveDependencies: Record<string, string[]>;
+}
+
+interface LambdaMetadata {
+  trigger: string;
+  purpose: string;
+}
+
+interface ServiceMetadata {
+  name: string;
+  type: string;
+  vendorPath?: string | null;
+  description?: string;
+}
+
+interface Metadata {
+  lambdas: Record<string, LambdaMetadata>;
+  externalServices: ServiceMetadata[];
+  awsServices: ServiceMetadata[];
+  entityRelationships: Array<{from: string; to: string; type: string}>;
+  lambdaInvocations: Array<{from: string; to: string; via: string}>;
+  serviceToServiceEdges: Array<{from: string; to: string; relationship: string; event?: string}>;
+}
+
+/**
+ * Discover Lambda names from src/lambdas/ directory
+ */
+async function discoverLambdas(): Promise<string[]> {
+  const lambdasDir = path.join(projectRoot, 'src', 'lambdas');
+  const entries = await fs.readdir(lambdasDir, {withFileTypes: true});
+  return entries.filter((e) => e.isDirectory()).map((e) => e.name);
+}
+
+/**
+ * Discover Entity names from src/entities/ directory
+ */
+async function discoverEntities(): Promise<string[]> {
+  const entitiesDir = path.join(projectRoot, 'src', 'entities');
+  const entries = await fs.readdir(entitiesDir);
+  return entries
+    .filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts')
+    .map((e) => e.replace('.ts', ''));
+}
+
+/**
+ * Load the dependency graph from build/graph.json
+ */
+async function loadDependencyGraph(): Promise<DependencyGraph> {
+  const graphPath = path.join(projectRoot, 'build', 'graph.json');
+  const content = await fs.readFile(graphPath, 'utf-8');
+  return JSON.parse(content);
+}
+
+/**
+ * Load semantic metadata from graphrag/metadata.json
+ */
+async function loadMetadata(): Promise<Metadata> {
+  const metadataPath = path.join(__dirname, 'metadata.json');
+  const content = await fs.readFile(metadataPath, 'utf-8');
+  return JSON.parse(content);
+}
+
+/**
+ * Extract AWS services used by a Lambda from its transitive dependencies
+ */
+function extractAwsServices(deps: string[], awsServices: ServiceMetadata[]): string[] {
+  const services: Set<string> = new Set();
+
+  for (const dep of deps) {
+    // Match src/lib/vendor/AWS/* patterns
+    const awsMatch = dep.match(/src\/lib\/vendor\/AWS\/(\w+)/);
+    if (awsMatch) {
+      const vendorName = awsMatch[1];
+      // Find the service name from metadata
+      const service = awsServices.find((s) => s.vendorPath === `AWS/${vendorName}`);
+      if (service) {
+        services.add(service.name);
+      }
+    }
+  }
+
+  return Array.from(services);
+}
+
+/**
+ * Extract external services used by a Lambda from its transitive dependencies
+ */
+function extractExternalServices(deps: string[], externalServices: ServiceMetadata[]): string[] {
+  const services: Set<string> = new Set();
+
+  for (const dep of deps) {
+    // Match src/lib/vendor/* patterns (non-AWS)
+    const vendorMatch = dep.match(/src\/lib\/vendor\/(\w+)/);
+    if (vendorMatch && vendorMatch[1] !== 'AWS' && vendorMatch[1] !== 'ElectroDB') {
+      const vendorName = vendorMatch[1];
+      const service = externalServices.find((s) => s.name.toLowerCase() === vendorName.toLowerCase());
+      if (service) {
+        services.add(service.name);
+      }
+    }
+
+    // Match src/types/vendor/* patterns (for Feedly, etc.)
+    const typeVendorMatch = dep.match(/src\/types\/vendor\/\w+\/(\w+)/);
+    if (typeVendorMatch) {
+      const vendorName = typeVendorMatch[1];
+      const service = externalServices.find((s) => s.name.toLowerCase() === vendorName.toLowerCase());
+      if (service) {
+        services.add(service.name);
+      }
+    }
+  }
+
+  return Array.from(services);
+}
+
+/**
+ * Extract entities used by a Lambda from its transitive dependencies
+ */
+function extractEntities(deps: string[], knownEntities: string[]): string[] {
+  const entities: Set<string> = new Set();
+
+  for (const dep of deps) {
+    const entityMatch = dep.match(/src\/entities\/(\w+)/);
+    if (entityMatch) {
+      const entityName = entityMatch[1];
+      if (knownEntities.includes(entityName)) {
+        entities.add(entityName);
+      }
+    }
+  }
+
+  return Array.from(entities);
 }
 
 /**
@@ -41,226 +191,147 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // 1. Add Lambda nodes (must match src/lambdas/ directories)
-  const lambdas = [
-    { name: 'ApiGatewayAuthorizer', trigger: 'API Gateway', purpose: 'Authorize API requests' },
-    { name: 'CloudfrontMiddleware', trigger: 'CloudFront', purpose: 'Edge processing' },
-    { name: 'FileCoordinator', trigger: 'S3 Event', purpose: 'Orchestrate file processing' },
-    { name: 'ListFiles', trigger: 'API Gateway', purpose: 'List user files' },
-    { name: 'LogClientEvent', trigger: 'API Gateway', purpose: 'Log client events' },
-    { name: 'LoginUser', trigger: 'API Gateway', purpose: 'Authenticate user' },
-    { name: 'PruneDevices', trigger: 'CloudWatch Events', purpose: 'Clean inactive devices' },
-    { name: 'RefreshToken', trigger: 'API Gateway', purpose: 'Refresh auth token' },
-    { name: 'RegisterDevice', trigger: 'API Gateway', purpose: 'Register device for push' },
-    { name: 'RegisterUser', trigger: 'API Gateway', purpose: 'Register new user' },
-    { name: 'S3ObjectCreated', trigger: 'S3 Event', purpose: 'Handle S3 uploads' },
-    { name: 'SendPushNotification', trigger: 'Lambda Invoke', purpose: 'Send push notification' },
-    { name: 'StartFileUpload', trigger: 'API Gateway', purpose: 'Initiate file upload' },
-    { name: 'UserDelete', trigger: 'API Gateway', purpose: 'Delete user cascade' },
-    { name: 'UserSubscribe', trigger: 'API Gateway', purpose: 'Manage user subscriptions' },
-    { name: 'WebhookFeedly', trigger: 'API Gateway', purpose: 'Process Feedly articles' },
-  ];
+  // Load all data sources
+  const [lambdaNames, entityNames, depGraph, metadata] = await Promise.all([discoverLambdas(), discoverEntities(), loadDependencyGraph(), loadMetadata()]);
 
-  for (const lambda of lambdas) {
+  console.log(`  Discovered ${lambdaNames.length} Lambdas`);
+  console.log(`  Discovered ${entityNames.length} Entities`);
+
+  // 1. Add Lambda nodes
+  for (const name of lambdaNames) {
+    const lambdaMeta = metadata.lambdas[name] || {trigger: 'Unknown', purpose: 'Unknown'};
     nodes.push({
-      id: `lambda:${lambda.name}`,
+      id: `lambda:${name}`,
       type: 'Lambda',
-      properties: lambda,
+      properties: {
+        name,
+        trigger: lambdaMeta.trigger,
+        purpose: lambdaMeta.purpose
+      }
     });
   }
 
   // 2. Add Entity nodes
-  const entities = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices'];
-  for (const entity of entities) {
+  for (const name of entityNames) {
     nodes.push({
-      id: `entity:${entity}`,
+      id: `entity:${name}`,
       type: 'Entity',
-      properties: { name: entity },
+      properties: {name}
     });
   }
 
-  // 3. Add Service nodes
-  const services = [
-    { name: 'DynamoDB', type: 'database' },
-    { name: 'S3', type: 'storage' },
-    { name: 'SNS', type: 'notification' },
-    { name: 'API Gateway', type: 'api' },
-    { name: 'Step Functions', type: 'orchestration' },
-    { name: 'CloudWatch', type: 'monitoring' },
-    { name: 'CloudFront', type: 'cdn' },
-  ];
-
-  for (const service of services) {
+  // 3. Add AWS Service nodes
+  for (const service of metadata.awsServices) {
     nodes.push({
       id: `service:${service.name}`,
       type: 'Service',
-      properties: service,
+      properties: {name: service.name, type: service.type}
     });
   }
 
-  // 4. Add External service nodes
-  const external = ['Feedly', 'YouTube', 'APNS', 'Sign In With Apple', 'GitHub'];
-  for (const ext of external) {
+  // 4. Add External Service nodes
+  for (const service of metadata.externalServices) {
     nodes.push({
-      id: `external:${ext}`,
+      id: `external:${service.name}`,
       type: 'External',
-      properties: { name: ext },
+      properties: {name: service.name, type: service.type, description: service.description}
     });
   }
 
-  // 5. Define Lambda → Service edges
-  const lambdaServices: Record<string, string[]> = {
-    ApiGatewayAuthorizer: ['DynamoDB', 'API Gateway'],
-    CloudfrontMiddleware: ['CloudFront'],
-    FileCoordinator: ['DynamoDB', 'S3', 'Step Functions'],
-    ListFiles: ['DynamoDB', 'API Gateway'],
-    LogClientEvent: ['CloudWatch', 'API Gateway'],
-    LoginUser: ['DynamoDB', 'API Gateway', 'Sign In With Apple'],
-    PruneDevices: ['DynamoDB', 'SNS', 'CloudWatch'],
-    RefreshToken: ['DynamoDB', 'API Gateway'],
-    RegisterDevice: ['DynamoDB', 'SNS', 'API Gateway'],
-    RegisterUser: ['DynamoDB', 'API Gateway', 'Sign In With Apple'],
-    S3ObjectCreated: ['DynamoDB', 'S3'],
-    SendPushNotification: ['SNS', 'APNS'],
-    StartFileUpload: ['DynamoDB', 'S3', 'API Gateway'],
-    UserDelete: ['DynamoDB', 'S3', 'API Gateway'],
-    UserSubscribe: ['DynamoDB', 'SNS', 'API Gateway'],
-    WebhookFeedly: ['DynamoDB', 'S3', 'API Gateway', 'Feedly', 'YouTube'],
-  };
+  // 5. Add Lambda → Service/External edges (derived from dependency graph)
+  for (const lambdaName of lambdaNames) {
+    const entryPoint = `src/lambdas/${lambdaName}/src/index.ts`;
+    const deps = depGraph.transitiveDependencies[entryPoint] || [];
 
-  for (const [lambda, services] of Object.entries(lambdaServices)) {
-    for (const service of services) {
-      const targetType = external.includes(service) ? 'external' : 'service';
+    // AWS Services
+    const awsServices = extractAwsServices(deps, metadata.awsServices);
+    for (const serviceName of awsServices) {
       edges.push({
-        source: `lambda:${lambda}`,
-        target: `${targetType}:${service}`,
-        relationship: 'uses',
+        source: `lambda:${lambdaName}`,
+        target: `service:${serviceName}`,
+        relationship: 'uses'
       });
+    }
+
+    // External Services
+    const extServices = extractExternalServices(deps, metadata.externalServices);
+    for (const serviceName of extServices) {
+      edges.push({
+        source: `lambda:${lambdaName}`,
+        target: `external:${serviceName}`,
+        relationship: 'uses'
+      });
+    }
+
+    // Entities
+    const entities = extractEntities(deps, entityNames);
+    for (const entityName of entities) {
+      edges.push({
+        source: `lambda:${lambdaName}`,
+        target: `entity:${entityName}`,
+        relationship: 'accesses'
+      });
+    }
+
+    // Add trigger service edge based on metadata
+    const lambdaMeta = metadata.lambdas[lambdaName];
+    if (lambdaMeta) {
+      const triggerService = metadata.awsServices.find((s) => s.name === lambdaMeta.trigger);
+      if (triggerService) {
+        edges.push({
+          source: `service:${triggerService.name}`,
+          target: `lambda:${lambdaName}`,
+          relationship: 'triggers'
+        });
+      }
     }
   }
 
-  // 6. Define Lambda → Lambda edges (invocations)
-  // FileCoordinator invokes StartFileUpload via Lambda invokeAsync
-  edges.push({
-    source: 'lambda:FileCoordinator',
-    target: 'lambda:StartFileUpload',
-    relationship: 'invokes',
-    properties: { via: 'Lambda invokeAsync' },
-  });
-
-  // S3ObjectCreated sends to SQS which triggers SendPushNotification
-  edges.push({
-    source: 'lambda:S3ObjectCreated',
-    target: 'lambda:SendPushNotification',
-    relationship: 'triggers',
-    properties: { via: 'SQS' },
-  });
-
-  // 7. Define Lambda → Entity edges
-  const lambdaEntities: Record<string, string[]> = {
-    ApiGatewayAuthorizer: ['Users'],
-    FileCoordinator: ['Files'],
-    ListFiles: ['Users', 'UserFiles', 'Files'],
-    LoginUser: ['Users'],
-    PruneDevices: ['Devices', 'UserDevices'],
-    RefreshToken: ['Users'],
-    RegisterDevice: ['Users', 'Devices', 'UserDevices'],
-    RegisterUser: ['Users'],
-    S3ObjectCreated: ['Files', 'UserFiles'],
-    StartFileUpload: ['Users', 'Files', 'UserFiles'],
-    UserDelete: ['Users', 'UserFiles', 'UserDevices', 'Files', 'Devices'],
-    UserSubscribe: ['Users', 'UserDevices'],
-    WebhookFeedly: ['Files'],
-  };
-
-  for (const [lambda, entities] of Object.entries(lambdaEntities)) {
-    for (const entity of entities) {
-      edges.push({
-        source: `lambda:${lambda}`,
-        target: `entity:${entity}`,
-        relationship: 'accesses',
-      });
-    }
+  // 6. Add Lambda → Lambda invocation edges (from metadata)
+  for (const invocation of metadata.lambdaInvocations) {
+    edges.push({
+      source: `lambda:${invocation.from}`,
+      target: `lambda:${invocation.to}`,
+      relationship: 'invokes',
+      properties: {via: invocation.via}
+    });
   }
 
-  // 8. Define Entity → Entity relationships
-  edges.push({
-    source: 'entity:Users',
-    target: 'entity:UserFiles',
-    relationship: 'has_many',
-  });
+  // 7. Add Entity → Entity relationship edges (from metadata)
+  for (const rel of metadata.entityRelationships) {
+    edges.push({
+      source: `entity:${rel.from}`,
+      target: `entity:${rel.to}`,
+      relationship: rel.type
+    });
+  }
 
-  edges.push({
-    source: 'entity:Users',
-    target: 'entity:UserDevices',
-    relationship: 'has_many',
-  });
+  // 8. Add Service → Service edges (from metadata)
+  for (const edge of metadata.serviceToServiceEdges) {
+    const props: Record<string, unknown> = {};
+    if (edge.event) props.event = edge.event;
 
-  edges.push({
-    source: 'entity:Files',
-    target: 'entity:UserFiles',
-    relationship: 'has_many',
-  });
-
-  edges.push({
-    source: 'entity:Devices',
-    target: 'entity:UserDevices',
-    relationship: 'has_many',
-  });
-
-  edges.push({
-    source: 'entity:UserFiles',
-    target: 'entity:Users',
-    relationship: 'belongs_to',
-  });
-
-  edges.push({
-    source: 'entity:UserFiles',
-    target: 'entity:Files',
-    relationship: 'belongs_to',
-  });
-
-  edges.push({
-    source: 'entity:UserDevices',
-    target: 'entity:Users',
-    relationship: 'belongs_to',
-  });
-
-  edges.push({
-    source: 'entity:UserDevices',
-    target: 'entity:Devices',
-    relationship: 'belongs_to',
-  });
-
-  // 9. Service → Service edges
-  edges.push({
-    source: 'service:API Gateway',
-    target: 'service:Lambda',
-    relationship: 'triggers',
-  });
-
-  edges.push({
-    source: 'service:S3',
-    target: 'service:Lambda',
-    relationship: 'triggers',
-    properties: { event: 's3:ObjectCreated' },
-  });
-
-  edges.push({
-    source: 'service:CloudWatch',
-    target: 'service:Lambda',
-    relationship: 'triggers',
-    properties: { event: 'scheduled' },
-  });
+    edges.push({
+      source: `service:${edge.from}`,
+      target: `service:${edge.to}`,
+      relationship: edge.relationship,
+      ...(Object.keys(props).length > 0 && {properties: props})
+    });
+  }
 
   return {
     nodes,
     edges,
     metadata: {
       created: new Date().toISOString(),
-      version: '1.0.0',
-      description: 'Media Downloader Lambda chains and entity relationships',
-    },
+      version: '2.0.0',
+      description: 'Media Downloader Lambda chains and entity relationships (auto-generated)',
+      sources: {
+        lambdas: 'src/lambdas/',
+        dependencies: 'build/graph.json',
+        metadata: 'graphrag/metadata.json'
+      }
+    }
   };
 }
 
@@ -281,8 +352,9 @@ function analyzeGraph(graph: KnowledgeGraph) {
   const stats = {
     nodeTypes: {} as Record<string, number>,
     relationshipTypes: {} as Record<string, number>,
-    mostConnected: [] as Array<{ node: string; connections: number }>,
+    mostConnected: [] as Array<{node: string; connections: number}>,
     lambdaChains: [] as string[][],
+    missingMetadata: [] as string[]
   };
 
   // Count node types
@@ -305,7 +377,7 @@ function analyzeGraph(graph: KnowledgeGraph) {
   stats.mostConnected = Object.entries(connections)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
-    .map(([node, count]) => ({ node, connections: count }));
+    .map(([node, count]) => ({node, connections: count}));
 
   // Find Lambda chains
   const findChains = (start: string, visited: Set<string> = new Set()): string[][] => {
@@ -338,6 +410,13 @@ function analyzeGraph(graph: KnowledgeGraph) {
     }
   }
 
+  // Find Lambdas missing metadata
+  for (const node of graph.nodes) {
+    if (node.type === 'Lambda' && node.properties.trigger === 'Unknown') {
+      stats.missingMetadata.push(node.properties.name as string);
+    }
+  }
+
   return stats;
 }
 
@@ -354,15 +433,25 @@ async function main() {
     const stats = analyzeGraph(graph);
     console.log('Node Types:', stats.nodeTypes);
     console.log('Relationship Types:', stats.relationshipTypes);
+
     console.log('\nMost Connected Nodes:');
     stats.mostConnected.forEach((item) => {
       console.log(`  ${item.node}: ${item.connections} connections`);
     });
 
-    console.log('\nLambda Invocation Chains:');
-    stats.lambdaChains.forEach((chain) => {
-      console.log('  ' + chain.join(' → '));
-    });
+    if (stats.lambdaChains.length > 0) {
+      console.log('\nLambda Invocation Chains:');
+      stats.lambdaChains.forEach((chain) => {
+        console.log('  ' + chain.join(' → '));
+      });
+    }
+
+    if (stats.missingMetadata.length > 0) {
+      console.log('\n⚠️  Lambdas missing metadata in graphrag/metadata.json:');
+      stats.missingMetadata.forEach((name) => {
+        console.log(`  - ${name}`);
+      });
+    }
   } catch (error) {
     console.error('Error extracting knowledge graph:', error);
     process.exit(1);
@@ -374,4 +463,4 @@ if (import.meta.url === `file://${__filename}`) {
   main();
 }
 
-export { KnowledgeGraph, Node, Edge };
+export {KnowledgeGraph, Node, Edge};
