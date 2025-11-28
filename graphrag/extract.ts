@@ -41,19 +41,24 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // 1. Add Lambda nodes
+  // 1. Add Lambda nodes (must match src/lambdas/ directories)
   const lambdas = [
+    { name: 'ApiGatewayAuthorizer', trigger: 'API Gateway', purpose: 'Authorize API requests' },
+    { name: 'CloudfrontMiddleware', trigger: 'CloudFront', purpose: 'Edge processing' },
+    { name: 'FileCoordinator', trigger: 'S3 Event', purpose: 'Orchestrate file processing' },
     { name: 'ListFiles', trigger: 'API Gateway', purpose: 'List user files' },
+    { name: 'LogClientEvent', trigger: 'API Gateway', purpose: 'Log client events' },
     { name: 'LoginUser', trigger: 'API Gateway', purpose: 'Authenticate user' },
+    { name: 'PruneDevices', trigger: 'CloudWatch Events', purpose: 'Clean inactive devices' },
+    { name: 'RefreshToken', trigger: 'API Gateway', purpose: 'Refresh auth token' },
     { name: 'RegisterDevice', trigger: 'API Gateway', purpose: 'Register device for push' },
-    { name: 'StartFileUpload', trigger: 'API Gateway', purpose: 'Initiate upload' },
-    { name: 'WebhookFeedly', trigger: 'API Gateway', purpose: 'Process Feedly articles' },
-    { name: 'FileCoordinator', trigger: 'S3 Event', purpose: 'Orchestrate processing' },
-    { name: 'DownloadMedia', trigger: 'Step Functions', purpose: 'Download media' },
-    { name: 'CreateThumbnail', trigger: 'Step Functions', purpose: 'Generate thumbnail' },
-    { name: 'SendPushNotification', trigger: 'Lambda Invoke', purpose: 'Send push' },
-    { name: 'PruneDevices', trigger: 'CloudWatch Events', purpose: 'Clean devices' },
+    { name: 'RegisterUser', trigger: 'API Gateway', purpose: 'Register new user' },
+    { name: 'S3ObjectCreated', trigger: 'S3 Event', purpose: 'Handle S3 uploads' },
+    { name: 'SendPushNotification', trigger: 'Lambda Invoke', purpose: 'Send push notification' },
+    { name: 'StartFileUpload', trigger: 'API Gateway', purpose: 'Initiate file upload' },
     { name: 'UserDelete', trigger: 'API Gateway', purpose: 'Delete user cascade' },
+    { name: 'UserSubscribe', trigger: 'API Gateway', purpose: 'Manage user subscriptions' },
+    { name: 'WebhookFeedly', trigger: 'API Gateway', purpose: 'Process Feedly articles' },
   ];
 
   for (const lambda of lambdas) {
@@ -82,6 +87,7 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     { name: 'API Gateway', type: 'api' },
     { name: 'Step Functions', type: 'orchestration' },
     { name: 'CloudWatch', type: 'monitoring' },
+    { name: 'CloudFront', type: 'cdn' },
   ];
 
   for (const service of services) {
@@ -104,17 +110,22 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
 
   // 5. Define Lambda → Service edges
   const lambdaServices: Record<string, string[]> = {
+    ApiGatewayAuthorizer: ['DynamoDB', 'API Gateway'],
+    CloudfrontMiddleware: ['CloudFront'],
+    FileCoordinator: ['DynamoDB', 'S3', 'Step Functions'],
     ListFiles: ['DynamoDB', 'API Gateway'],
+    LogClientEvent: ['CloudWatch', 'API Gateway'],
     LoginUser: ['DynamoDB', 'API Gateway', 'Sign In With Apple'],
-    RegisterDevice: ['DynamoDB', 'SNS', 'API Gateway'],
-    StartFileUpload: ['DynamoDB', 'S3', 'API Gateway'],
-    WebhookFeedly: ['DynamoDB', 'S3', 'API Gateway', 'Feedly', 'YouTube'],
-    FileCoordinator: ['DynamoDB', 'Step Functions', 'S3'],
-    DownloadMedia: ['S3', 'YouTube'],
-    CreateThumbnail: ['S3'],
-    SendPushNotification: ['SNS', 'APNS'],
     PruneDevices: ['DynamoDB', 'SNS', 'CloudWatch'],
+    RefreshToken: ['DynamoDB', 'API Gateway'],
+    RegisterDevice: ['DynamoDB', 'SNS', 'API Gateway'],
+    RegisterUser: ['DynamoDB', 'API Gateway', 'Sign In With Apple'],
+    S3ObjectCreated: ['DynamoDB', 'S3'],
+    SendPushNotification: ['SNS', 'APNS'],
+    StartFileUpload: ['DynamoDB', 'S3', 'API Gateway'],
     UserDelete: ['DynamoDB', 'S3', 'API Gateway'],
+    UserSubscribe: ['DynamoDB', 'SNS', 'API Gateway'],
+    WebhookFeedly: ['DynamoDB', 'S3', 'API Gateway', 'Feedly', 'YouTube'],
   };
 
   for (const [lambda, services] of Object.entries(lambdaServices)) {
@@ -129,44 +140,37 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
   }
 
   // 6. Define Lambda → Lambda edges (invocations)
+  // FileCoordinator invokes StartFileUpload via Lambda invokeAsync
   edges.push({
     source: 'lambda:FileCoordinator',
-    target: 'lambda:DownloadMedia',
+    target: 'lambda:StartFileUpload',
     relationship: 'invokes',
-    properties: { via: 'Step Functions' },
+    properties: { via: 'Lambda invokeAsync' },
   });
 
+  // S3ObjectCreated sends to SQS which triggers SendPushNotification
   edges.push({
-    source: 'lambda:FileCoordinator',
-    target: 'lambda:CreateThumbnail',
-    relationship: 'invokes',
-    properties: { via: 'Step Functions' },
-  });
-
-  edges.push({
-    source: 'lambda:DownloadMedia',
+    source: 'lambda:S3ObjectCreated',
     target: 'lambda:SendPushNotification',
-    relationship: 'invokes',
-    properties: { trigger: 'on_success' },
-  });
-
-  edges.push({
-    source: 'lambda:CreateThumbnail',
-    target: 'lambda:SendPushNotification',
-    relationship: 'invokes',
-    properties: { trigger: 'on_complete' },
+    relationship: 'triggers',
+    properties: { via: 'SQS' },
   });
 
   // 7. Define Lambda → Entity edges
   const lambdaEntities: Record<string, string[]> = {
+    ApiGatewayAuthorizer: ['Users'],
+    FileCoordinator: ['Files'],
     ListFiles: ['Users', 'UserFiles', 'Files'],
     LoginUser: ['Users'],
-    RegisterDevice: ['Users', 'Devices', 'UserDevices'],
-    StartFileUpload: ['Users', 'Files', 'UserFiles'],
-    WebhookFeedly: ['Files'],
-    FileCoordinator: ['Files'],
     PruneDevices: ['Devices', 'UserDevices'],
+    RefreshToken: ['Users'],
+    RegisterDevice: ['Users', 'Devices', 'UserDevices'],
+    RegisterUser: ['Users'],
+    S3ObjectCreated: ['Files', 'UserFiles'],
+    StartFileUpload: ['Users', 'Files', 'UserFiles'],
     UserDelete: ['Users', 'UserFiles', 'UserDevices', 'Files', 'Devices'],
+    UserSubscribe: ['Users', 'UserDevices'],
+    WebhookFeedly: ['Files'],
   };
 
   for (const [lambda, entities] of Object.entries(lambdaEntities)) {

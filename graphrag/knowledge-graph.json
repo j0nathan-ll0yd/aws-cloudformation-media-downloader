@@ -1,12 +1,48 @@
 {
   "nodes": [
     {
+      "id": "lambda:ApiGatewayAuthorizer",
+      "type": "Lambda",
+      "properties": {
+        "name": "ApiGatewayAuthorizer",
+        "trigger": "API Gateway",
+        "purpose": "Authorize API requests"
+      }
+    },
+    {
+      "id": "lambda:CloudfrontMiddleware",
+      "type": "Lambda",
+      "properties": {
+        "name": "CloudfrontMiddleware",
+        "trigger": "CloudFront",
+        "purpose": "Edge processing"
+      }
+    },
+    {
+      "id": "lambda:FileCoordinator",
+      "type": "Lambda",
+      "properties": {
+        "name": "FileCoordinator",
+        "trigger": "S3 Event",
+        "purpose": "Orchestrate file processing"
+      }
+    },
+    {
       "id": "lambda:ListFiles",
       "type": "Lambda",
       "properties": {
         "name": "ListFiles",
         "trigger": "API Gateway",
         "purpose": "List user files"
+      }
+    },
+    {
+      "id": "lambda:LogClientEvent",
+      "type": "Lambda",
+      "properties": {
+        "name": "LogClientEvent",
+        "trigger": "API Gateway",
+        "purpose": "Log client events"
       }
     },
     {
@@ -19,6 +55,24 @@
       }
     },
     {
+      "id": "lambda:PruneDevices",
+      "type": "Lambda",
+      "properties": {
+        "name": "PruneDevices",
+        "trigger": "CloudWatch Events",
+        "purpose": "Clean inactive devices"
+      }
+    },
+    {
+      "id": "lambda:RefreshToken",
+      "type": "Lambda",
+      "properties": {
+        "name": "RefreshToken",
+        "trigger": "API Gateway",
+        "purpose": "Refresh auth token"
+      }
+    },
+    {
       "id": "lambda:RegisterDevice",
       "type": "Lambda",
       "properties": {
@@ -28,48 +82,21 @@
       }
     },
     {
-      "id": "lambda:StartFileUpload",
+      "id": "lambda:RegisterUser",
       "type": "Lambda",
       "properties": {
-        "name": "StartFileUpload",
+        "name": "RegisterUser",
         "trigger": "API Gateway",
-        "purpose": "Initiate upload"
+        "purpose": "Register new user"
       }
     },
     {
-      "id": "lambda:WebhookFeedly",
+      "id": "lambda:S3ObjectCreated",
       "type": "Lambda",
       "properties": {
-        "name": "WebhookFeedly",
-        "trigger": "API Gateway",
-        "purpose": "Process Feedly articles"
-      }
-    },
-    {
-      "id": "lambda:FileCoordinator",
-      "type": "Lambda",
-      "properties": {
-        "name": "FileCoordinator",
+        "name": "S3ObjectCreated",
         "trigger": "S3 Event",
-        "purpose": "Orchestrate processing"
-      }
-    },
-    {
-      "id": "lambda:DownloadMedia",
-      "type": "Lambda",
-      "properties": {
-        "name": "DownloadMedia",
-        "trigger": "Step Functions",
-        "purpose": "Download media"
-      }
-    },
-    {
-      "id": "lambda:CreateThumbnail",
-      "type": "Lambda",
-      "properties": {
-        "name": "CreateThumbnail",
-        "trigger": "Step Functions",
-        "purpose": "Generate thumbnail"
+        "purpose": "Handle S3 uploads"
       }
     },
     {
@@ -78,16 +105,16 @@
       "properties": {
         "name": "SendPushNotification",
         "trigger": "Lambda Invoke",
-        "purpose": "Send push"
+        "purpose": "Send push notification"
       }
     },
     {
-      "id": "lambda:PruneDevices",
+      "id": "lambda:StartFileUpload",
       "type": "Lambda",
       "properties": {
-        "name": "PruneDevices",
-        "trigger": "CloudWatch Events",
-        "purpose": "Clean devices"
+        "name": "StartFileUpload",
+        "trigger": "API Gateway",
+        "purpose": "Initiate file upload"
       }
     },
     {
@@ -97,6 +124,24 @@
         "name": "UserDelete",
         "trigger": "API Gateway",
         "purpose": "Delete user cascade"
+      }
+    },
+    {
+      "id": "lambda:UserSubscribe",
+      "type": "Lambda",
+      "properties": {
+        "name": "UserSubscribe",
+        "trigger": "API Gateway",
+        "purpose": "Manage user subscriptions"
+      }
+    },
+    {
+      "id": "lambda:WebhookFeedly",
+      "type": "Lambda",
+      "properties": {
+        "name": "WebhookFeedly",
+        "trigger": "API Gateway",
+        "purpose": "Process Feedly articles"
       }
     },
     {
@@ -183,6 +228,14 @@
       }
     },
     {
+      "id": "service:CloudFront",
+      "type": "Service",
+      "properties": {
+        "name": "CloudFront",
+        "type": "cdn"
+      }
+    },
+    {
       "id": "external:Feedly",
       "type": "External",
       "properties": {
@@ -220,12 +273,52 @@
   ],
   "edges": [
     {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:CloudfrontMiddleware",
+      "target": "service:CloudFront",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:FileCoordinator",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:FileCoordinator",
+      "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:FileCoordinator",
+      "target": "service:Step Functions",
+      "relationship": "uses"
+    },
+    {
       "source": "lambda:ListFiles",
       "target": "service:DynamoDB",
       "relationship": "uses"
     },
     {
       "source": "lambda:ListFiles",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:LogClientEvent",
+      "target": "service:CloudWatch",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:LogClientEvent",
       "target": "service:API Gateway",
       "relationship": "uses"
     },
@@ -245,6 +338,31 @@
       "relationship": "uses"
     },
     {
+      "source": "lambda:PruneDevices",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:PruneDevices",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:PruneDevices",
+      "target": "service:CloudWatch",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
       "source": "lambda:RegisterDevice",
       "target": "service:DynamoDB",
       "relationship": "uses"
@@ -260,6 +378,41 @@
       "relationship": "uses"
     },
     {
+      "source": "lambda:RegisterUser",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:RegisterUser",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:RegisterUser",
+      "target": "external:Sign In With Apple",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:S3ObjectCreated",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:S3ObjectCreated",
+      "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:SendPushNotification",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:SendPushNotification",
+      "target": "external:APNS",
+      "relationship": "uses"
+    },
+    {
       "source": "lambda:StartFileUpload",
       "target": "service:DynamoDB",
       "relationship": "uses"
@@ -271,6 +424,36 @@
     },
     {
       "source": "lambda:StartFileUpload",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "service:S3",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "service:API Gateway",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "service:DynamoDB",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "service:SNS",
+      "relationship": "uses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
       "target": "service:API Gateway",
       "relationship": "uses"
     },
@@ -301,105 +484,29 @@
     },
     {
       "source": "lambda:FileCoordinator",
-      "target": "service:DynamoDB",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "service:Step Functions",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:DownloadMedia",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:DownloadMedia",
-      "target": "external:YouTube",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:CreateThumbnail",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "external:APNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "service:DynamoDB",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "service:CloudWatch",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "service:DynamoDB",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "service:S3",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "service:API Gateway",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "lambda:DownloadMedia",
+      "target": "lambda:StartFileUpload",
       "relationship": "invokes",
       "properties": {
-        "via": "Step Functions"
+        "via": "Lambda invokeAsync"
       }
     },
     {
-      "source": "lambda:FileCoordinator",
-      "target": "lambda:CreateThumbnail",
-      "relationship": "invokes",
-      "properties": {
-        "via": "Step Functions"
-      }
-    },
-    {
-      "source": "lambda:DownloadMedia",
+      "source": "lambda:S3ObjectCreated",
       "target": "lambda:SendPushNotification",
-      "relationship": "invokes",
+      "relationship": "triggers",
       "properties": {
-        "trigger": "on_success"
+        "via": "SQS"
       }
     },
     {
-      "source": "lambda:CreateThumbnail",
-      "target": "lambda:SendPushNotification",
-      "relationship": "invokes",
-      "properties": {
-        "trigger": "on_complete"
-      }
+      "source": "lambda:ApiGatewayAuthorizer",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:FileCoordinator",
+      "target": "entity:Files",
+      "relationship": "accesses"
     },
     {
       "source": "lambda:ListFiles",
@@ -422,6 +529,21 @@
       "relationship": "accesses"
     },
     {
+      "source": "lambda:PruneDevices",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:PruneDevices",
+      "target": "entity:UserDevices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:RefreshToken",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
       "source": "lambda:RegisterDevice",
       "target": "entity:Users",
       "relationship": "accesses"
@@ -437,6 +559,21 @@
       "relationship": "accesses"
     },
     {
+      "source": "lambda:RegisterUser",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:S3ObjectCreated",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:S3ObjectCreated",
+      "target": "entity:UserFiles",
+      "relationship": "accesses"
+    },
+    {
       "source": "lambda:StartFileUpload",
       "target": "entity:Users",
       "relationship": "accesses"
@@ -449,51 +586,46 @@
     {
       "source": "lambda:StartFileUpload",
       "target": "entity:UserFiles",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "entity:UserFiles",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "entity:UserDevices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "entity:Files",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserDelete",
+      "target": "entity:Devices",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:Users",
+      "relationship": "accesses"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "entity:UserDevices",
       "relationship": "accesses"
     },
     {
       "source": "lambda:WebhookFeedly",
       "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Users",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:UserFiles",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Devices",
       "relationship": "accesses"
     },
     {
@@ -559,7 +691,7 @@
     }
   ],
   "metadata": {
-    "created": "2025-11-28T05:51:18.285Z",
+    "created": "2025-11-28T22:50:36.085Z",
     "version": "1.0.0",
     "description": "Media Downloader Lambda chains and entity relationships"
   }
