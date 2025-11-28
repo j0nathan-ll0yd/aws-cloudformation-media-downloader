@@ -222,17 +222,15 @@ function sanitizeForTest(data: any): any {
  * logIncomingFixture(event, 'CustomFixtureName')
  */
 export function logIncomingFixture(event: any, fixtureType?: string): void {
-  if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
-    const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-    console.log(
-      JSON.stringify({
-        __FIXTURE_MARKER__: 'INCOMING',
-        fixtureType: detectedType,
-        timestamp: Date.now(),
-        data: sanitizeForTest(event)
-      })
-    )
-  }
+  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  console.log(
+    JSON.stringify({
+      __FIXTURE_MARKER__: 'INCOMING',
+      fixtureType: detectedType,
+      timestamp: Date.now(),
+      data: sanitizeForTest(event)
+    })
+  )
 }
 
 /**
@@ -252,15 +250,13 @@ export function logIncomingFixture(event: any, fixtureType?: string): void {
  * logOutgoingFixture(response, 'CustomFixtureName')
  */
 export function logOutgoingFixture(response: any, fixtureType?: string): void {
-  if (process.env.ENABLE_FIXTURE_LOGGING === 'true') {
-    const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-    console.log(
-      JSON.stringify({
-        __FIXTURE_MARKER__: 'OUTGOING',
-        fixtureType: detectedType,
-        timestamp: Date.now(),
-        data: sanitizeForTest(response)
-      })
-    )
-  }
+  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  console.log(
+    JSON.stringify({
+      __FIXTURE_MARKER__: 'OUTGOING',
+      fixtureType: detectedType,
+      timestamp: Date.now(),
+      data: sanitizeForTest(response)
+    })
+  )
 }

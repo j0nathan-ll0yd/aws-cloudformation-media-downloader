@@ -9,15 +9,15 @@ DAYS_BACK=${1:-7}
 OUTPUT_DIR=${2:-test/fixtures/raw}
 START_TIME=$(($(date +%s) - (DAYS_BACK * 86400)))000
 
-# Lambda functions to extract fixtures from
+# Lambda functions to extract fixtures from (only instrumented Lambdas)
 LAMBDA_FUNCTIONS=(
   "WebhookFeedly"
   "ListFiles"
-  "RegisterDevice"
   "LoginUser"
-  "StartFileUpload"
-  "SendPushNotification"
-  "BetterAuth"  # If Better Auth runs as a Lambda
+  "RefreshToken"
+  "RegisterDevice"
+  "UserDelete"
+  "UserSubscribe"
 )
 
 # Create output directory

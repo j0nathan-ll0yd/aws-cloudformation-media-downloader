@@ -16,7 +16,7 @@
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {logDebug, logError, logInfo, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
+import {logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
 import {validateSessionToken, refreshSession} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -31,21 +31,25 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @returns API Gateway proxy result with refreshed session info
  */
 export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('RefreshToken: event <=', event)
+  logIncomingFixture(event)
 
   try {
     // Extract and validate Authorization header
     const authHeader = event.headers?.Authorization || event.headers?.authorization
     if (!authHeader) {
       logError('RefreshToken: missing Authorization header')
-      return response(context, 401, {error: 'Missing Authorization header'})
+      const errorResult = response(context, 401, {error: 'Missing Authorization header'})
+      logOutgoingFixture(errorResult)
+      return errorResult
     }
 
     // Extract token from Bearer format
     const tokenMatch = authHeader.match(/^Bearer (.+)$/)
     if (!tokenMatch) {
       logError('RefreshToken: invalid Authorization header format')
-      return response(context, 401, {error: 'Invalid Authorization header format'})
+      const errorResult = response(context, 401, {error: 'Invalid Authorization header format'})
+      logOutgoingFixture(errorResult)
+      return errorResult
     }
 
     const token = tokenMatch[1]
@@ -71,9 +75,13 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
       expiresAt
     })
 
-    return response(context, 200, responseData)
+    const successResult = response(context, 200, responseData)
+    logOutgoingFixture(successResult)
+    return successResult
   } catch (error) {
     logError('RefreshToken: error', {error})
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
 })

@@ -14,7 +14,7 @@ import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {auth} from '../../../lib/vendor/BetterAuth/config'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -35,7 +35,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('LoginUser (Better Auth): event <=', event)
+  logIncomingFixture(event)
   let requestBody: UserLogin
 
   try {
@@ -87,14 +87,17 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     })
 
     // 3. Return session token (Better Auth format)
-    return response(context, 200, {
+    const successResult = response(context, 200, {
       token: result.token,
       expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
       sessionId: result.session?.id,
       userId: result.user?.id
     })
+    logOutgoingFixture(successResult)
+    return successResult
   } catch (error) {
-    logInfo('LoginUser: error', {error})
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
 })

@@ -15,9 +15,7 @@ describe('lambda-helpers', () => {
   })
 
   describe('logIncomingFixture', () => {
-    it('should log fixture when ENABLE_FIXTURE_LOGGING is true', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
-
+    it('should log incoming fixture with manual type', async () => {
       const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
         httpMethod: 'POST',
@@ -36,30 +34,7 @@ describe('lambda-helpers', () => {
       expect(loggedData.timestamp).toBeDefined()
     })
 
-    it('should not log when ENABLE_FIXTURE_LOGGING is false', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'false'
-
-      const {logIncomingFixture} = await import('./lambda-helpers')
-      const mockEvent = {httpMethod: 'POST'}
-
-      logIncomingFixture(mockEvent, 'test-fixture')
-
-      expect(consoleLogSpy).not.toHaveBeenCalled()
-    })
-
-    it('should not log when ENABLE_FIXTURE_LOGGING is undefined', async () => {
-      delete process.env.ENABLE_FIXTURE_LOGGING
-
-      const {logIncomingFixture} = await import('./lambda-helpers')
-      const mockEvent = {httpMethod: 'POST'}
-
-      logIncomingFixture(mockEvent, 'test-fixture')
-
-      expect(consoleLogSpy).not.toHaveBeenCalled()
-    })
-
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
       const {logIncomingFixture} = await import('./lambda-helpers')
@@ -73,7 +48,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should use manual override when provided', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
       const {logIncomingFixture} = await import('./lambda-helpers')
@@ -87,7 +61,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should fallback to UnknownLambda when no name available', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
       const {logIncomingFixture} = await import('./lambda-helpers')
@@ -102,9 +75,7 @@ describe('lambda-helpers', () => {
   })
 
   describe('logOutgoingFixture', () => {
-    it('should log fixture when ENABLE_FIXTURE_LOGGING is true', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
-
+    it('should log outgoing fixture with manual type', async () => {
       const {logOutgoingFixture} = await import('./lambda-helpers')
       const mockResponse = {
         statusCode: 200,
@@ -122,19 +93,7 @@ describe('lambda-helpers', () => {
       expect(loggedData.timestamp).toBeDefined()
     })
 
-    it('should not log when ENABLE_FIXTURE_LOGGING is false', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'false'
-
-      const {logOutgoingFixture} = await import('./lambda-helpers')
-      const mockResponse = {statusCode: 200}
-
-      logOutgoingFixture(mockResponse, 'test-fixture')
-
-      expect(consoleLogSpy).not.toHaveBeenCalled()
-    })
-
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
       const {logOutgoingFixture} = await import('./lambda-helpers')
@@ -148,7 +107,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should use manual override when provided', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
       const {logOutgoingFixture} = await import('./lambda-helpers')
@@ -162,7 +120,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should fallback to UnknownLambda when no name available', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
       const {logOutgoingFixture} = await import('./lambda-helpers')
@@ -178,8 +135,6 @@ describe('lambda-helpers', () => {
 
   describe('sanitization', () => {
     it('should redact sensitive fields', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
-
       const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
         authorization: 'Bearer secret',
@@ -206,8 +161,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle nested objects', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
-
       const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
         headers: {
@@ -232,8 +185,6 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle arrays', async () => {
-      process.env.ENABLE_FIXTURE_LOGGING = 'true'
-
       const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
         items: [
