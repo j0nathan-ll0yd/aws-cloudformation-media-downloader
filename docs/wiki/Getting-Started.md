@@ -67,16 +67,16 @@ For tool compatibility:
 ```markdown
 # See AGENTS.md
 This project uses AGENTS.md as the single source of truth.
-Please see [AGENTS.md](./AGENTS.md) for documentation.
+Please see AGENTS.md for documentation.
 ```
 
 ### Step 3: Reference Wiki Pages
 From your AGENTS.md or documentation:
 ```markdown
 ## Conventions to Follow
-- [Naming](docs/wiki/Conventions/Naming-Conventions.md)
-- [AWS SDK](docs/wiki/AWS/SDK-Encapsulation-Policy.md)
-- [Testing](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
+- [Naming](Conventions/Naming-Conventions.md)
+- [AWS SDK](AWS/SDK-Encapsulation-Policy.md)
+- [Testing](Testing/Jest-ESM-Mocking-Strategy.md)
 ```
 
 ### Step 4: Track Project Conventions
@@ -148,7 +148,7 @@ Each wiki page follows a standard template:
 ```
 User: "How should I handle AWS SDK imports?"
 
-AI: Per [AWS SDK Encapsulation Policy](docs/wiki/AWS/SDK-Encapsulation-Policy.md),
+AI: Per [AWS SDK Encapsulation Policy](AWS/SDK-Encapsulation-Policy.md),
 NEVER import AWS SDK directly. Use vendor wrappers in lib/vendor/AWS/.
 
 This is a zero-tolerance rule to maintain encapsulation and testability.

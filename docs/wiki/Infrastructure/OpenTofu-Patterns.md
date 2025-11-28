@@ -1,13 +1,16 @@
 # OpenTofu Infrastructure Patterns
 
-This document defines the coding standards and patterns for OpenTofu infrastructure code in this project.
+## Quick Reference
+- **When to use**: Writing OpenTofu/Terraform infrastructure code
+- **Enforcement**: Required - consistent infrastructure patterns
+- **Impact if violated**: MEDIUM - Inconsistent infrastructure, maintainability issues
 
 ## File Organization
 
 ### Resource Grouping
 
 Group related resources in dedicated files:
-- `feedly_webhook.tf` - Feedly webhook Lambda and API Gateway integration
+- `feedly_webhook.tf` - Feedly webhook Lambda and API Gateway
 - `api_gateway.tf` - API Gateway configuration
 - `s3.tf` - S3 buckets and policies
 - `dynamodb.tf` - DynamoDB tables
@@ -30,9 +33,7 @@ resource "aws_iam_role" "WebhookFeedlyRole" {
 
 ## Comments
 
-### Inline Comments
-
-Use comments to explain WHY, not WHAT:
+### Explain WHY, Not WHAT
 
 ```hcl
 # GOOD - explains business reason
@@ -46,28 +47,21 @@ retention_in_days = 14
 
 ### Prohibited Comments
 
-**NEVER include comments explaining removed resources or deprecated infrastructure:**
+**NEVER include comments explaining removed resources or deprecated infrastructure**:
 
 ```hcl
 # ❌ BAD - explaining what was removed
-# Multipart upload Step Function removed - now using direct streaming to S3
-# Previous architecture: StartFileUpload -> UploadPart (loop) -> CompleteFileUpload
-# New architecture: StartFileUpload (streams directly to S3 via yt-dlp)
-
-# ❌ BAD - referencing deleted documentation
-# See Phase 3a implementation in docs/DELETED-FILE.md
+# Multipart upload Step Function removed - now using direct streaming
 
 # ✅ GOOD - no comments needed, use git history
 # (Just define current infrastructure)
 ```
 
-**Why**: Git history (`git log`, `git show`) is the authoritative source for understanding infrastructure changes.
-
 ## Environment Variables
 
 ### Lambda Environment Variables
 
-Always use CamelCase for environment variable names to match TypeScript ProcessEnv interface:
+Always use CamelCase to match TypeScript ProcessEnv interface:
 
 ```hcl
 environment {
@@ -79,7 +73,7 @@ environment {
 }
 ```
 
-Match these exactly to `src/types/global.d.ts`:
+Match exactly to `src/types/global.d.ts`:
 
 ```typescript
 interface ProcessEnv {
@@ -145,21 +139,8 @@ resource "aws_iam_policy" "FunctionNamePolicy" {
     Statement = [
       {
         Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:Query",
-          "dynamodb:Scan"
-        ]
+        Action = ["dynamodb:GetItem", "dynamodb:PutItem"]
         Resource = aws_dynamodb_table.Files.arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
-        ]
-        Resource = "${aws_s3_bucket.MediaFiles.arn}/*"
       }
     ]
   })
@@ -201,16 +182,6 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     type = "S"
   }
 
-  attribute {
-    name = "gsi1pk"
-    type = "S"
-  }
-
-  attribute {
-    name = "gsi1sk"
-    type = "S"
-  }
-
   global_secondary_index {
     name            = "gsi1"
     hash_key        = "gsi1pk"
@@ -245,64 +216,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "MediaFilesEncrypt
     }
   }
 }
-
-resource "aws_s3_bucket_public_access_block" "MediaFilesPublicAccessBlock" {
-  bucket = aws_s3_bucket.MediaFiles.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-```
-
-## API Gateway
-
-### REST API with Custom Authorizer
-
-```hcl
-resource "aws_api_gateway_rest_api" "MediaDownloaderAPI" {
-  name        = "MediaDownloaderAPI"
-  description = "API for media downloader service"
-}
-
-resource "aws_api_gateway_authorizer" "QueryAuthorizer" {
-  name                   = "QueryAuthorizer"
-  rest_api_id           = aws_api_gateway_rest_api.MediaDownloaderAPI.id
-  authorizer_uri        = aws_lambda_function.ApiGatewayAuthorizer.invoke_arn
-  type                  = "REQUEST"
-  identity_source       = "method.request.querystring.apiKey"
-  authorizer_result_ttl_in_seconds = 300
-}
-
-resource "aws_api_gateway_method" "GetFiles" {
-  rest_api_id   = aws_api_gateway_rest_api.MediaDownloaderAPI.id
-  resource_id   = aws_api_gateway_resource.Files.id
-  http_method   = "GET"
-  authorization = "CUSTOM"
-  authorizer_id = aws_api_gateway_authorizer.QueryAuthorizer.id
-}
-```
-
-## Outputs
-
-### Export Important Values
-
-```hcl
-output "api_gateway_url" {
-  value       = aws_api_gateway_deployment.MediaDownloaderDeployment.invoke_url
-  description = "API Gateway base URL"
-}
-
-output "s3_bucket_name" {
-  value       = aws_s3_bucket.MediaFiles.bucket
-  description = "S3 bucket for media files"
-}
-
-output "dynamodb_table_name" {
-  value       = aws_dynamodb_table.MediaDownloader.name
-  description = "DynamoDB table name"
-}
 ```
 
 ## Best Practices
@@ -310,66 +223,26 @@ output "dynamodb_table_name" {
 ### DO
 
 - ✅ Group related resources in logical files
-- ✅ Use descriptive resource names in PascalCase
-- ✅ Reference other resources using interpolation
-- ✅ Use data sources for existing resources
+- ✅ Use PascalCase for resource names
+- ✅ Reference resources using interpolation
 - ✅ Keep environment variable names consistent with TypeScript
-- ✅ Use `depends_on` for explicit ordering when needed
-- ✅ Use PAY_PER_REQUEST billing for DynamoDB in serverless architectures
+- ✅ Use PAY_PER_REQUEST for DynamoDB in serverless
 - ✅ Enable versioning and encryption on S3 buckets
-- ✅ Set CloudWatch log retention to control costs
+- ✅ Set CloudWatch log retention
 
 ### DON'T
 
 - ❌ Hardcode values that can be referenced
-- ❌ Create circular dependencies
-- ❌ Use deprecated resource types
 - ❌ Explain removed resources in comments (use git history)
-- ❌ Reference non-existent documentation files
-- ❌ Use provisioned capacity for DynamoDB in serverless (use PAY_PER_REQUEST)
+- ❌ Use provisioned capacity for DynamoDB in serverless
 - ❌ Leave S3 buckets publicly accessible
-- ❌ Keep CloudWatch logs forever (set retention)
+- ❌ Keep CloudWatch logs forever
 
-## Common Patterns
+## Related Patterns
 
-### Data Archive for Lambda
+- [Naming Conventions](../Conventions/Naming-Conventions.md) - PascalCase for resources
+- [Code Comments](../Conventions/Code-Comments.md) - Git as source of truth
 
-```hcl
-data "archive_file" "FunctionName" {
-  type        = "zip"
-  source_file = "${path.module}/../build/lambdas/FunctionName/index.js"
-  output_path = "${path.module}/../build/lambdas/FunctionName.zip"
-}
-```
+---
 
-### Account ID Reference
-
-```hcl
-data "aws_caller_identity" "current" {}
-
-# Use in resource names
-bucket = "my-bucket-${data.aws_caller_identity.current.account_id}"
-```
-
-### Secrets Management with SOPS
-
-```hcl
-data "sops_file" "secrets" {
-  source_file = "../secrets.enc.yaml"
-}
-
-# Access secrets in resources
-environment {
-  variables = {
-    ApiKey = data.sops_file.secrets.data["api.key"]
-  }
-}
-```
-
-## Documentation
-
-Infrastructure documentation belongs in:
-- **README.md** - High-level architecture overview
-- **AGENTS.md** - Project context and patterns
-- **Git history** - Historical changes and reasoning
-- **NOT in comments** - Don't duplicate what git already tracks
+*Infrastructure documentation belongs in README.md, AGENTS.md, and Git history - not in comments.*
