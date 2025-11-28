@@ -37,14 +37,17 @@ These instructions will get you a copy of the project up and running on your loc
 # Ensure the correct version of NodeJS (via NVM)
 nvm use lts/jod
 
+# Install pnpm globally
+npm install -g pnpm
+
 # Install dependencies
-npm install
+pnpm install
 
 # Build the AWS Lambda functions (using webpack)
-npm run build
+pnpm run build
 
 # Run the tests to ensure everything is working
-npm run test
+pnpm run test
 
 # Use OpenTofu to deploy the infrastructure
 cd terraform
@@ -52,8 +55,8 @@ tofu init
 tofu apply
 
 # Once complete, verify the application works remotely
-npm run test-remote-list
-npm run test-remote-hook
+pnpm run test-remote-list
+pnpm run test-remote-hook
 ```
 
 ## Quick Start
@@ -63,17 +66,18 @@ npm run test-remote-hook
 brew install act awscli jq nvm quicktype opentofu terraform-docs
 nvm install lts/jod
 nvm use lts/jod
+npm install -g pnpm
 aws configure
 
 # Install Node dependencies and deploy project
-npm install
-npm run build-dependencies
-npm run build
-npm run test
-npm run deploy
+pnpm install
+pnpm run build-dependencies
+pnpm run build
+pnpm run test
+pnpm run deploy
 
 # Confirm everything is working as expected
-npm run test-remote-list
+pnpm run test-remote-list
 ```
 
 

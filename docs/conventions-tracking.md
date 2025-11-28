@@ -4,6 +4,17 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-24
+
+1. **pnpm Lifecycle Script Protection** (Security Rule)
+   - **What**: All lifecycle scripts disabled by default in `.npmrc`; packages requiring scripts must be explicitly allowlisted after audit
+   - **Why**: Defense against AI-targeted typosquatting and supply chain attacks that exploit LLM-assisted development
+   - **Detected**: During npm to pnpm migration for security hardening
+   - **Target**: Already documented in docs/wiki/Meta/pnpm-Migration.md
+   - **Priority**: CRITICAL
+   - **Status**: ✅ Documented
+   - **Enforcement**: Zero-tolerance (all scripts blocked by default)
+
 ### Detected: 2025-11-22
 
 1. **AGENTS.md Filename Standard** (Convention)

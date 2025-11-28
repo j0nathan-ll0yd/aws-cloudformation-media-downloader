@@ -2,7 +2,7 @@
 
 # test-integration.sh
 # Runs integration tests against LocalStack
-# Usage: npm run test:integration or ./bin/test-integration.sh
+# Usage: pnpm run test:integration or ./bin/test-integration.sh
 
 set -e  # Exit on error
 
@@ -116,8 +116,8 @@ if [ "$start_localstack" = true ]; then
     echo -e "${RED}LocalStack health check failed${NC}"
     echo ""
     echo "Troubleshooting:"
-    echo "  1. Check LocalStack logs: npm run localstack:logs"
-    echo "  2. Restart LocalStack: npm run localstack:stop && npm run localstack:start"
+    echo "  1. Check LocalStack logs: pnpm run localstack:logs"
+    echo "  2. Restart LocalStack: pnpm run localstack:stop && pnpm run localstack:start"
     echo "  3. Check Docker resources (memory, CPU)"
     exit 1
   fi
@@ -128,7 +128,7 @@ else
   # Verify LocalStack is running
   if ! docker ps | grep -q "aws-media-downloader-localstack"; then
     echo -e "${RED}Error: LocalStack is not running${NC}"
-    echo "Start LocalStack with: npm run localstack:start"
+    echo "Start LocalStack with: pnpm run localstack:start"
     exit 1
   fi
 
@@ -169,8 +169,8 @@ if [ "$cleanup_after" = true ]; then
   echo ""
 else
   echo -e "${BLUE}ℹ️  LocalStack is still running${NC}"
-  echo "To stop: npm run localstack:stop"
-  echo "To view logs: npm run localstack:logs"
+  echo "To stop: pnpm run localstack:stop"
+  echo "To view logs: pnpm run localstack:logs"
   echo ""
 fi
 
@@ -186,12 +186,12 @@ if [ $test_exit_code -eq 0 ]; then
   echo "Next steps:"
   echo "  • Review test coverage"
   echo "  • Add more integration tests as needed"
-  echo "  • Run unit tests: npm test"
+  echo "  • Run unit tests: pnpm test"
 else
   echo "Troubleshooting:"
-  echo "  • Check LocalStack logs: npm run localstack:logs"
+  echo "  • Check LocalStack logs: pnpm run localstack:logs"
   echo "  • Review test output above"
-  echo "  • Verify LocalStack services are healthy: npm run localstack:health"
+  echo "  • Verify LocalStack services are healthy: pnpm run localstack:health"
 fi
 
 echo ""
