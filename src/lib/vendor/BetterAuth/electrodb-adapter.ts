@@ -33,6 +33,27 @@ import {v4 as uuidv4} from 'uuid'
 import {logDebug, logError} from '../../../util/lambda-helpers'
 
 /**
+ * Splits a full name into first and last name parts.
+ * Handles edge cases like empty strings and single names.
+ *
+ * @param fullName - The full name to split (e.g., "John Doe Smith")
+ * @returns Object with firstName and lastName
+ *
+ * @example
+ * splitFullName("John Doe") // {firstName: "John", lastName: "Doe"}
+ * splitFullName("John") // {firstName: "John", lastName: ""}
+ * splitFullName("") // {firstName: "", lastName: ""}
+ * splitFullName("John Doe Smith") // {firstName: "John", lastName: "Doe Smith"}
+ */
+export function splitFullName(fullName?: string): {firstName: string; lastName: string} {
+  const parts = (fullName || '').split(' ')
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ') || ''
+  }
+}
+
+/**
  * Transforms ElectroDB user entity to Better Auth user format
  */
 function transformUserToAuth(electroUser: any) {
@@ -83,6 +104,81 @@ function transformAccountToAuth(electroAccount: any) {
 }
 
 /**
+ * Transforms Better Auth user format to ElectroDB user entity
+ */
+function transformUserFromAuth(authUser: any) {
+  const {firstName, lastName} = splitFullName(authUser.name)
+  return {
+    userId: authUser.id || uuidv4(),
+    email: authUser.email,
+    emailVerified: authUser.emailVerified || false,
+    firstName,
+    lastName,
+    identityProviders: authUser.identityProviders || {}
+  }
+}
+
+/**
+ * Transforms Better Auth user update to ElectroDB update fields
+ */
+function transformUserUpdateFromAuth(authUpdate: any) {
+  const updates: any = {}
+  if (authUpdate.email) updates.email = authUpdate.email
+  if (authUpdate.emailVerified !== undefined) updates.emailVerified = authUpdate.emailVerified
+  if (authUpdate.name) {
+    const {firstName, lastName} = splitFullName(authUpdate.name)
+    updates.firstName = firstName
+    updates.lastName = lastName
+  }
+  return updates
+}
+
+/**
+ * Transforms Better Auth session format to ElectroDB session entity
+ */
+function transformSessionFromAuth(authSession: any) {
+  return {
+    sessionId: authSession.id || uuidv4(),
+    userId: authSession.userId,
+    expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
+    token: authSession.token || uuidv4(),
+    ipAddress: authSession.ipAddress,
+    userAgent: authSession.userAgent,
+    deviceId: authSession.deviceId
+  }
+}
+
+/**
+ * Transforms Better Auth session update to ElectroDB update fields
+ */
+function transformSessionUpdateFromAuth(authUpdate: any) {
+  const updates: any = {}
+  if (authUpdate.expiresAt) updates.expiresAt = authUpdate.expiresAt.getTime()
+  if (authUpdate.token) updates.token = authUpdate.token
+  if (authUpdate.ipAddress) updates.ipAddress = authUpdate.ipAddress
+  if (authUpdate.userAgent) updates.userAgent = authUpdate.userAgent
+  return updates
+}
+
+/**
+ * Transforms Better Auth account format to ElectroDB account entity
+ */
+function transformAccountFromAuth(authAccount: any) {
+  return {
+    accountId: authAccount.id || uuidv4(),
+    userId: authAccount.userId,
+    providerId: authAccount.providerId,
+    providerAccountId: authAccount.providerAccountId,
+    accessToken: authAccount.accessToken,
+    refreshToken: authAccount.refreshToken,
+    expiresAt: authAccount.expiresAt,
+    scope: authAccount.scope,
+    tokenType: authAccount.tokenType,
+    idToken: authAccount.idToken
+  }
+}
+
+/**
  * Creates a Better Auth adapter for ElectroDB/DynamoDB.
  *
  * This adapter implements Better Auth's expected interface and maps operations
@@ -110,15 +206,8 @@ export function createElectroDBAdapter(): any {
     async createUser(data) {
       logDebug('ElectroDB Adapter: createUser', {data})
 
-      const userId = data.id || uuidv4()
-      const result = await Users.create({
-        userId,
-        email: data.email,
-        emailVerified: data.emailVerified || false,
-        firstName: data.name?.split(' ')[0] || '',
-        lastName: data.name?.split(' ').slice(1).join(' ') || '',
-        identityProviders: data.identityProviders || {}
-      }).go()
+      const userData = transformUserFromAuth(data)
+      const result = await Users.create(userData).go()
 
       return transformUserToAuth(result.data)
     },
@@ -157,15 +246,7 @@ export function createElectroDBAdapter(): any {
     async updateUser(userId, data) {
       logDebug('ElectroDB Adapter: updateUser', {userId, data})
 
-      const updates: any = {}
-      if (data.email) updates.email = data.email
-      if (data.emailVerified !== undefined) updates.emailVerified = data.emailVerified
-      if (data.name) {
-        const nameParts = data.name.split(' ')
-        updates.firstName = nameParts[0] || ''
-        updates.lastName = nameParts.slice(1).join(' ') || ''
-      }
-
+      const updates = transformUserUpdateFromAuth(data)
       const result = await Users.update({userId}).set(updates).go()
 
       return transformUserToAuth(result.data)
@@ -184,16 +265,8 @@ export function createElectroDBAdapter(): any {
     async createSession(data) {
       logDebug('ElectroDB Adapter: createSession', {data})
 
-      const sessionId = data.id || uuidv4()
-      const result = await Sessions.create({
-        sessionId,
-        userId: data.userId,
-        expiresAt: data.expiresAt ? data.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days default
-        token: data.token || uuidv4(),
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
-        deviceId: data.deviceId
-      }).go()
+      const sessionData = transformSessionFromAuth(data)
+      const result = await Sessions.create(sessionData).go()
 
       return transformSessionToAuth(result.data)
     },
@@ -215,12 +288,7 @@ export function createElectroDBAdapter(): any {
     async updateSession(sessionId, data) {
       logDebug('ElectroDB Adapter: updateSession', {sessionId, data})
 
-      const updates: any = {}
-      if (data.expiresAt) updates.expiresAt = data.expiresAt.getTime()
-      if (data.token) updates.token = data.token
-      if (data.ipAddress) updates.ipAddress = data.ipAddress
-      if (data.userAgent) updates.userAgent = data.userAgent
-
+      const updates = transformSessionUpdateFromAuth(data)
       const result = await Sessions.update({sessionId}).set(updates).go()
 
       return transformSessionToAuth(result.data)
@@ -239,19 +307,8 @@ export function createElectroDBAdapter(): any {
     async createAccount(data) {
       logDebug('ElectroDB Adapter: createAccount', {data})
 
-      const accountId = data.id || uuidv4()
-      const result = await Accounts.create({
-        accountId,
-        userId: data.userId,
-        providerId: data.providerId,
-        providerAccountId: data.providerAccountId,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresAt: data.expiresAt,
-        scope: data.scope,
-        tokenType: data.tokenType,
-        idToken: data.idToken
-      }).go()
+      const accountData = transformAccountFromAuth(data)
+      const result = await Accounts.create(accountData).go()
 
       return transformAccountToAuth(result.data)
     },
