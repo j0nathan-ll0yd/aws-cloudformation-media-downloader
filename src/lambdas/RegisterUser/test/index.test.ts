@@ -1,19 +1,13 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import type {MockedFunction} from 'jest-mock'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
-import type {SignInSocialParams} from '../../../types/better-auth'
+import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API
-const signInSocialMock = jest.fn() as MockedFunction<(params: SignInSocialParams) => Promise<any>>
-
+const authMock = createBetterAuthMock()
 jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
-  auth: {
-    api: {
-      signInSocial: signInSocialMock
-    }
-  }
+  auth: authMock.auth
 }))
 
 // Mock Users entity for name updates
@@ -31,7 +25,7 @@ describe('#RegisterUser', () => {
 
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    signInSocialMock.mockReset()
+    authMock.mocks.signInSocial.mockReset()
     usersMock.mocks.update.set.mockClear()
     usersMock.mocks.update.go.mockClear()
   })
@@ -43,7 +37,7 @@ describe('#RegisterUser', () => {
     const token = uuidv4()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
-    signInSocialMock.mockResolvedValue({
+    authMock.mocks.signInSocial.mockResolvedValue({
       user: {
         id: userId,
         email: 'newuser@example.com',
@@ -71,7 +65,7 @@ describe('#RegisterUser', () => {
     expect(typeof body.body.userId).toEqual('string')
 
     // Verify Better Auth API was called with correct parameters (using idToken, not accessToken)
-    expect(signInSocialMock).toHaveBeenCalledWith(
+    expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
           provider: 'apple',
@@ -96,7 +90,7 @@ describe('#RegisterUser', () => {
     const token = uuidv4()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
-    signInSocialMock.mockResolvedValue({
+    authMock.mocks.signInSocial.mockResolvedValue({
       user: {
         id: userId,
         email: 'existinguser@example.com',
@@ -129,12 +123,12 @@ describe('#RegisterUser', () => {
     expect(output.statusCode).toEqual(400)
 
     // Better Auth API should not be called if request validation fails
-    expect(signInSocialMock).not.toHaveBeenCalled()
+    expect(authMock.mocks.signInSocial).not.toHaveBeenCalled()
   })
 
   test('should handle Better Auth errors gracefully', async () => {
     // Mock Better Auth throwing an error
-    signInSocialMock.mockRejectedValue({
+    authMock.mocks.signInSocial.mockRejectedValue({
       status: 500,
       message: 'Internal server error'
     })

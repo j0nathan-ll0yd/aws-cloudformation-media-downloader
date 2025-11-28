@@ -1,21 +1,15 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import type {MockedFunction} from 'jest-mock'
 import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import type {SignInSocialParams} from '../../../types/better-auth'
+import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock Better Auth API
-const signInSocialMock = jest.fn() as MockedFunction<(params: SignInSocialParams) => Promise<any>>
-
+const authMock = createBetterAuthMock()
 jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
-  auth: {
-    api: {
-      signInSocial: signInSocialMock
-    }
-  }
+  auth: authMock.auth
 }))
 
 const {handler} = await import('./../src')
@@ -26,7 +20,7 @@ describe('#LoginUser', () => {
 
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    signInSocialMock.mockReset()
+    authMock.mocks.signInSocial.mockReset()
   })
 
   test('should successfully login a user via Better Auth', async () => {
@@ -36,7 +30,7 @@ describe('#LoginUser', () => {
     const token = uuidv4()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
-    signInSocialMock.mockResolvedValue({
+    authMock.mocks.signInSocial.mockResolvedValue({
       user: {
         id: userId,
         email: 'test@example.com',
@@ -60,7 +54,7 @@ describe('#LoginUser', () => {
     expect(typeof body.body.userId).toEqual('string')
 
     // Verify Better Auth API was called with correct parameters (using idToken only)
-    expect(signInSocialMock).toHaveBeenCalledWith(
+    expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
           provider: 'apple',
@@ -74,7 +68,7 @@ describe('#LoginUser', () => {
 
   test('should handle Better Auth error when user not found', async () => {
     // Mock Better Auth throwing an error for non-existent user
-    signInSocialMock.mockRejectedValue({
+    authMock.mocks.signInSocial.mockRejectedValue({
       status: 404,
       message: 'User not found'
     })
@@ -88,7 +82,7 @@ describe('#LoginUser', () => {
 
   test('should handle Better Auth error for invalid token', async () => {
     // Mock Better Auth throwing an error for invalid ID token
-    signInSocialMock.mockRejectedValue({
+    authMock.mocks.signInSocial.mockRejectedValue({
       status: 401,
       message: 'Invalid ID token'
     })
@@ -106,12 +100,12 @@ describe('#LoginUser', () => {
     expect(output.statusCode).toEqual(400)
 
     // Better Auth API should not be called if request validation fails
-    expect(signInSocialMock).not.toHaveBeenCalled()
+    expect(authMock.mocks.signInSocial).not.toHaveBeenCalled()
   })
 
   describe('#AWSFailure', () => {
     test('should handle Better Auth API failures gracefully', async () => {
-      signInSocialMock.mockRejectedValue(new Error('DynamoDB connection failed'))
+      authMock.mocks.signInSocial.mockRejectedValue(new Error('DynamoDB connection failed'))
 
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
