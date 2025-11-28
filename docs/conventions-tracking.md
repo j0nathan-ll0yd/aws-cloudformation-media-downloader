@@ -4,6 +4,26 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-28
+
+1. **Production Fixture Logging** (Testing Pattern)
+   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for automated test fixture generation
+   - **Why**: Transform testing from assumptions to production truth; weekly CloudWatch extraction keeps fixtures current
+   - **Detected**: During fixture automation implementation
+   - **Target**: docs/wiki/Testing/Fixture-Extraction.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: Optional (enable with ENABLE_FIXTURE_LOGGING=true)
+
+2. **ElectroDB Collections Testing** (Testing Pattern)
+   - **What**: Test Collections (JOIN-like queries) with LocalStack to validate single-table design
+   - **Why**: Ensures GSI queries work correctly across entity boundaries; validates userResources, fileUsers, deviceUsers, userSessions, userAccounts
+   - **Detected**: During ElectroDB integration testing implementation
+   - **Target**: docs/wiki/Testing/ElectroDB-Testing-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Required for Collections changes
+
 ### Detected: 2025-11-24
 
 1. **pnpm Lifecycle Script Protection** (Security Rule)
