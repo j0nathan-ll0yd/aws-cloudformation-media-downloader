@@ -133,7 +133,16 @@ describe('ElectroDB Adapter', () => {
         emailVerified: false,
         firstName: 'John',
         lastName: 'Doe',
-        identityProviders: {}
+        identityProviders: {
+          userId: '',
+          email: '',
+          emailVerified: false,
+          isPrivateEmail: false,
+          accessToken: '',
+          refreshToken: '',
+          tokenType: '',
+          expiresAt: 0
+        }
       })
     })
 
@@ -308,25 +317,25 @@ describe('ElectroDB Adapter', () => {
         id: 'account-123',
         userId: 'user-123',
         providerId: 'apple',
-        providerAccountId: 'apple-user-123',
+        accountId: 'apple-user-123',  // Better Auth uses 'accountId'
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
         expiresAt: mockAccount.expiresAt,
         scope: 'email profile',
         tokenType: 'Bearer'
-      })
+      } as any)
 
       expect(result).toEqual({
         id: 'account-123',
         userId: 'user-123',
+        accountId: 'apple-user-123',  // Better Auth uses 'accountId'
         providerId: 'apple',
-        providerAccountId: 'apple-user-123',
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
         expiresAt: mockAccount.expiresAt,
         scope: 'email profile',
         tokenType: 'Bearer',
-        idToken: undefined,
+        idToken: null,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date)
       })
@@ -350,14 +359,14 @@ describe('ElectroDB Adapter', () => {
       expect(result).toEqual({
         id: 'account-123',
         userId: 'user-123',
+        accountId: 'google-user-123',  // Better Auth uses 'accountId'
         providerId: 'google',
-        providerAccountId: 'google-user-123',
-        accessToken: undefined,
-        refreshToken: undefined,
-        expiresAt: undefined,
-        scope: undefined,
-        tokenType: undefined,
-        idToken: undefined,
+        accessToken: null,
+        refreshToken: null,
+        expiresAt: null,
+        scope: null,
+        tokenType: null,
+        idToken: null,
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date)
       })
