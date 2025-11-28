@@ -10,87 +10,85 @@
 ```
 terraform/
 ├── main.tf                    # Provider configuration
-├── variables.tf               # Input variables
-├── outputs.tf                 # Output values
-├── versions.tf                # Version constraints
-├── ApiGateway.tf             # API Gateway resources
-├── CloudWatch.tf             # Monitoring and logging
-├── DynamoDB.tf               # Database tables
-├── IAM.tf                    # IAM roles and policies
-├── Lambda*.tf                # Lambda functions
-├── S3.tf                     # S3 buckets
-├── SNS.tf                    # SNS topics
-└── SQS.tf                    # SQS queues
+├── api_gateway.tf             # API Gateway resources
+├── api_gateway_authorizer.tf  # Custom authorizer
+├── configuration_apns.tf      # APNS configuration
+├── file_bucket.tf             # S3 bucket resources
+├── file_coordinator.tf        # File coordinator Lambda
+├── list_files.tf              # List files Lambda
+├── register_device.tf         # Register device Lambda
+├── register_user.tf           # Register user Lambda
+├── feedly_webhook.tf          # Feedly webhook Lambda
+├── send_push_notification.tf  # Push notification Lambda
+└── *.tf                       # Other function-specific files
 ```
 
 ## File Organization Rules
 
-1. **Group by AWS service** - All resources for a service in one file
-2. **Separate Lambda files** - Each Lambda gets `Lambda[FunctionName].tf`
-3. **Include related resources** - Lambda file contains function, role, and policy
+1. **One file per Lambda function** - Each Lambda gets its own snake_case file
+2. **Include related resources** - Lambda file contains function, role, and policy
+3. **Service-specific files** - Shared resources get descriptive snake_case names
 
 ## Service Files
 
 ```hcl
-# DynamoDB.tf - All DynamoDB resources
-resource "aws_dynamodb_table" "main" { }
-
-# S3.tf - All S3 resources
+# file_bucket.tf - S3 bucket and related resources
 resource "aws_s3_bucket" "media_files" { }
 resource "aws_s3_bucket_versioning" "media_files_versioning" { }
 
-# SNS.tf - All SNS resources
-resource "aws_sns_topic" "push_notifications" { }
+# api_gateway.tf - API Gateway configuration
+resource "aws_api_gateway_rest_api" "main" { }
+resource "aws_api_gateway_deployment" "main" { }
+
+# configuration_apns.tf - APNS platform configuration
 resource "aws_sns_platform_application" "apns" { }
 ```
 
 ## Lambda Files
 
-Each Lambda function gets its own file with all related resources:
+Each Lambda function gets its own snake_case file with all related resources:
 
 ```hcl
-# LambdaProcessFile.tf
+# list_files.tf
 
-resource "aws_lambda_function" "ProcessFile" {
-  function_name = "ProcessFile"
-  role         = aws_iam_role.ProcessFileRole.arn
+resource "aws_lambda_function" "ListFiles" {
+  function_name = "ListFiles"
+  role         = aws_iam_role.ListFilesRole.arn
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.main.name
-      BucketName       = aws_s3_bucket.media_files.id
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
     }
   }
 }
 
-resource "aws_iam_role" "ProcessFileRole" {
-  name = "ProcessFileRole"
+resource "aws_iam_role" "ListFilesRole" {
+  name = "ListFilesRole"
   # Role configuration
 }
 
-resource "aws_iam_role_policy" "ProcessFilePolicy" {
-  name = "ProcessFilePolicy"
-  role = aws_iam_role.ProcessFileRole.id
+resource "aws_iam_role_policy" "ListFilesPolicy" {
+  name = "ListFilesPolicy"
+  role = aws_iam_role.ListFilesRole.id
   # Policy configuration
 }
 ```
 
 ## File Naming Convention
 
-- **Lambda files**: `Lambda[FunctionName].tf`
-  - `LambdaListFiles.tf`
-  - `LambdaProcessFile.tf`
-  - `LambdaRegisterDevice.tf`
+- **Lambda files**: snake_case function name
+  - `list_files.tf`
+  - `register_device.tf`
+  - `file_coordinator.tf`
+  - `feedly_webhook.tf`
 
-- **Service files**: PascalCase service name
-  - `ApiGateway.tf`
-  - `DynamoDB.tf`
-  - `CloudWatch.tf`
+- **Service/Shared files**: snake_case descriptive name
+  - `api_gateway.tf`
+  - `file_bucket.tf`
+  - `configuration_apns.tf`
 
-- **Core files**: Lowercase
+- **Core files**: lowercase
   - `main.tf`
-  - `variables.tf`
-  - `outputs.tf`
 
 ## Related Patterns
 
@@ -99,4 +97,4 @@ resource "aws_iam_role_policy" "ProcessFilePolicy" {
 
 ---
 
-*Organize infrastructure by AWS service. Each Lambda gets its own file with related IAM resources.*
+*Use snake_case for all terraform files. Each Lambda gets its own file with related IAM resources.*
