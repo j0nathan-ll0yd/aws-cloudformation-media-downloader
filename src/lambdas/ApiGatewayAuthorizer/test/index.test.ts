@@ -26,9 +26,9 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
-const verifyAccessTokenMock = jest.fn()
-jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  verifyAccessToken: verifyAccessTokenMock
+const validateSessionTokenMock = jest.fn() as any
+jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
+  validateSessionToken: validateSessionTokenMock
 }))
 
 const {handler} = await import('./../src')
@@ -66,12 +66,17 @@ describe('#APIGatewayAuthorizer', () => {
       event = JSON.parse(JSON.stringify(eventMock))
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
       process.env.MultiAuthenticationPathParts = 'files'
+      validateSessionTokenMock.mockReset()
     })
     test('should handle a valid Authorization header', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
+      validateSessionTokenMock.mockResolvedValue({
+        userId: fakeUserId,
+        sessionId: 'session-123',
+        expiresAt: Date.now() + 3600000
+      })
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual(fakeUserId)
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
@@ -82,7 +87,11 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
+      validateSessionTokenMock.mockResolvedValue({
+        userId: fakeUserId,
+        sessionId: 'session-123',
+        expiresAt: Date.now() + 3600000
+      })
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
@@ -102,9 +111,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      verifyAccessTokenMock.mockReturnValue({userId: fakeUserId}).mockImplementation(() => {
-        throw new Error('TokenExpiredError: jwt expired')
-      })
+      validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
       event.resource = event.path = '/files'
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
@@ -115,9 +122,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      verifyAccessTokenMock.mockReturnValue({userId: fakeUserId}).mockImplementation(() => {
-        throw new Error('TokenExpiredError: jwt expired')
-      })
+      validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
       event.resource = event.path = '/any-path-not-multi-auth'
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
@@ -131,7 +136,11 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      verifyAccessTokenMock.mockReturnValue({userId: fakeUserId})
+      validateSessionTokenMock.mockResolvedValue({
+        userId: fakeUserId,
+        sessionId: 'session-123',
+        expiresAt: Date.now() + 3600000
+      })
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')

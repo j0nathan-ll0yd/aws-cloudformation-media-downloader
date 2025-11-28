@@ -20,7 +20,7 @@ const config = {
   // Run both unit and integration tests as separate projects
   // Using absolute paths to ensure correct resolution
   projects: [
-    join(__dirname, 'jest.config.mjs'),           // Unit tests
+    join(__dirname, 'jest.config.mjs'), // Unit tests
     join(__dirname, 'jest.integration.config.mjs') // Integration tests
   ],
 
@@ -34,15 +34,10 @@ const config = {
   coverageProvider: 'v8',
 
   // Coverage reporters
-  coverageReporters: [
-    'text',        // Console output
-    'text-summary', // Summary in console
-    'html',        // HTML report in coverage/
-    'lcov'         // For CI/CD tools
-  ],
+  coverageReporters: ['text', 'text-summary', 'html', 'lcov'],
 
   // Longer timeout for integration tests (LocalStack operations can be slower)
-  testTimeout: 30000,
+  testTimeout: 30000
 
   // Optional: Set coverage thresholds
   // coverageThreshold: {

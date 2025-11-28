@@ -4,6 +4,9 @@ import {Users} from './Users'
 import {Devices} from './Devices'
 import {UserFiles} from './UserFiles'
 import {UserDevices} from './UserDevices'
+import {Sessions} from './Sessions'
+import {Accounts} from './Accounts'
+import {VerificationTokens} from './VerificationTokens'
 
 /**
  * MediaDownloader Service
@@ -31,6 +34,18 @@ import {UserDevices} from './UserDevices'
  *    - Access pattern: collections.deviceUsers({deviceId}).go()
  *    - Used by: PruneDevices (for cleanup)
  *
+ * 4. **userSessions** (SessionCollection/gsi1)
+ *    - Query: Get all sessions for a user
+ *    - Entities: Sessions
+ *    - Access pattern: collections.userSessions({userId}).go()
+ *    - Used by: LoginUser, RefreshToken, Logout
+ *
+ * 5. **userAccounts** (AccountCollection/gsi1)
+ *    - Query: Get all OAuth accounts for a user
+ *    - Entities: Accounts
+ *    - Access pattern: collections.userAccounts({userId}).go()
+ *    - Used by: Better Auth adapter for account linking
+ *
  * @example
  * import {collections} from '../../../entities/Collections'
  *
@@ -41,6 +56,10 @@ import {UserDevices} from './UserDevices'
  * // Get all users who need notification for a file
  * const {data} = await collections.fileUsers({fileId: 'vid123'}).go()
  * // Returns: {files: [...], userFiles: [...]}
+ *
+ * // Get all active sessions for a user
+ * const {data} = await collections.userSessions({userId: 'user123'}).go()
+ * // Returns: {sessions: [...]}
  */
 export const MediaDownloaderService = createService(
   {
@@ -48,7 +67,10 @@ export const MediaDownloaderService = createService(
     users: Users,
     devices: Devices,
     userFiles: UserFiles,
-    userDevices: UserDevices
+    userDevices: UserDevices,
+    sessions: Sessions,
+    accounts: Accounts,
+    verificationTokens: VerificationTokens
   },
   {
     client: documentClient,

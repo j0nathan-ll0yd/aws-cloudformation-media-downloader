@@ -89,6 +89,6 @@
     "domainName": "qf5xkt9ejh.execute-api.us-west-2.amazonaws.com",
     "apiId": "qf5xkt9ejh"
   },
-  "body": "{\"authorizationCode\":\"c8bde6ac392634684b2fd948c5415931d.0.mryv.LdPB2q-JKypSkEuyN1D7Og\"}",
+  "body": "{\"idToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature\"}",
   "isBase64Encoded": false
 }

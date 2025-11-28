@@ -1,38 +1,100 @@
+/**
+ * LoginUser Lambda (Better Auth Version)
+ *
+ * Logs in an existing user via Sign in with Apple using Better Auth OAuth.
+ * Fully delegates OAuth verification and session creation to Better Auth.
+ *
+ * Flow:
+ * 1. Receive ID token directly from iOS app (Apple SDK provides this)
+ * 2. Use Better Auth to verify and sign in with ID token
+ * 3. Better Auth handles user lookup, session creation, and account linking
+ */
+
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserSchema} from '../../../util/constraints'
 import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
-import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
+import {auth} from '../../../lib/vendor/BetterAuth/config'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Logs in a User via Sign in with Apple
+ * Logs in a User via Sign in with Apple using Better Auth.
+ *
+ * Flow:
+ * 1. Receive ID token directly from iOS app
+ * 2. Use Better Auth's OAuth sign-in with ID token
+ * 3. Better Auth verifies token, finds user, creates session
+ * 4. Return session token with expiration
+ *
+ * Error cases:
+ * - 401: Invalid ID token
+ * - 404: User not found (need to register first)
+ * - 500: Other errors
+ *
  * @notExported
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
-  let requestBody
+  logInfo('LoginUser (Better Auth): event <=', event)
+  let requestBody: UserLogin
+
   try {
+    // 1. Validate request body
     requestBody = getPayloadFromEvent(event) as UserLogin
     validateRequest(requestBody, loginUserSchema)
+
+    // 2. Sign in using Better Auth with ID token from iOS app
+    // Better Auth handles:
+    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
+    // - User lookup by Apple ID
+    // - Session creation with device tracking
+    // - Account linking if needed
+    const ipAddress = event.requestContext?.identity?.sourceIp
+    const userAgent = event.headers?.['User-Agent'] || ''
+
+    const rawResult = await auth.api.signInSocial({
+      headers: {
+        'user-agent': userAgent,
+        'x-forwarded-for': ipAddress || ''
+      },
+      body: {
+        provider: 'apple',
+        idToken: {
+          token: requestBody.idToken
+          // No accessToken needed - we only have the ID token from iOS
+        }
+      }
+    })
+
+    // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
+    // Since we're using ID token authentication, we expect a token response
+    if ('url' in rawResult && rawResult.url) {
+      throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
+    }
+
+    // Type narrow to token response
+    const result = rawResult as {
+      redirect: boolean
+      token: string
+      url: undefined
+      user: {id: string; createdAt: Date; email: string; name: string}
+      session?: {id: string; expiresAt: number}
+    }
+
+    logInfo('LoginUser: Better Auth sign-in successful', {
+      userId: result.user?.id,
+      sessionToken: result.token ? 'present' : 'missing'
+    })
+
+    // 3. Return session token (Better Auth format)
+    return response(context, 200, {
+      token: result.token,
+      expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
+      sessionId: result.session?.id,
+      userId: result.user?.id
+    })
   } catch (error) {
+    logInfo('LoginUser: error', {error})
     return lambdaErrorResponse(context, error)
   }
-
-  const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
-  const verifiedToken = await verifyAppleToken(appleToken.id_token)
-  const appleUserId = verifiedToken.sub
-  const users = await getUsersByAppleDeviceIdentifier(appleUserId)
-  const count = users.length
-  if (count === 0) {
-    return response(context, 404, "User doesn't exist")
-  } else if (count > 1) {
-    return response(context, 300, 'Duplicate user detected')
-  }
-
-  const userId = users[0].userId
-  const token = await createAccessToken(userId)
-  return response(context, 200, {token})
 })

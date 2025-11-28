@@ -4,6 +4,18 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-27
+
+1. **No Try-Catch for Required Environment Variables** (Rule)
+   - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
+   - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
+   - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
+   - **Detected**: During Better Auth configuration cleanup
+   - **Target**: docs/wiki/Conventions/Environment-Variables.md
+   - **Priority**: CRITICAL
+   - **Status**: ⏳ Pending documentation
+   - **Enforcement**: Infrastructure tests verify all env vars are present
+
 ### Detected: 2025-11-24
 
 1. **pnpm Lifecycle Script Protection** (Security Rule)
@@ -67,13 +79,44 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Priority**: HIGH
    - **Status**: ✅ Documented
 
+### Detected: 2025-11-25
+
+7. **Lambda Response Helper Usage** (Convention)
+   - **What**: Always use the `response` function from lambda-helpers for Lambda responses, never return raw API Gateway response objects
+   - **Why**: Ensures consistent response formatting and error handling across all Lambda functions
+   - **Detected**: During Better Auth integration when reviewing RefreshToken Lambda
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ⏳ Pending wiki page update
+   - **Example**: Use `return response(context, 200, data)` not `return {statusCode: 200, body: JSON.stringify(data)}`
+
+8. **ElectroDB Test Mocking Standard** (Rule)
+   - **What**: ALWAYS use the `createElectroDBEntityMock()` helper from test/helpers/electrodb-mock.ts for mocking ElectroDB entities in tests
+   - **Why**: Ensures consistent mocking patterns, proper type safety, and simplified mock setup across all ElectroDB-related tests
+   - **Detected**: During Better Auth test migration when fixing mock patterns
+   - **Target**: docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md
+   - **Priority**: CRITICAL
+   - **Status**: ⏳ Pending wiki page update
+   - **Example**: Use `const usersMock = createElectroDBEntityMock()` not manual mock creation
+   - **Enforcement**: Zero-tolerance - all ElectroDB entity mocks must use this helper
+
 ## ✅ Recently Documented
 
 _No entries yet - conventions will appear here after being documented in the wiki._
 
 ## 💭 Proposed Conventions
 
-_No proposals yet - use this section for conventions under discussion that haven't been adopted._
+### Device ID Tracking in Auth Flows
+
+**What**: Login and Registration requests should include deviceId in request payload
+**Why**: Better Auth session tracking includes deviceId for device-specific session management
+**Current Status**: deviceId is always `undefined` in LoginUser and RegisterUser Lambdas
+**Implementation Note**: iOS app needs to be updated to send deviceId in auth requests
+**Code References**:
+- LoginUser: `src/lambdas/LoginUser/src/index.ts:77`
+- RegisterUser: `src/lambdas/RegisterUser/src/index.ts:161`
+
+_Note: This is not blocking functionality but would improve session tracking capabilities._
 
 ## 🗄️ Archived Conventions
 
@@ -110,6 +153,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-11-22
-- **Total Conventions**: 6 detected, 3 documented, 3 pending
+- **Last Updated**: 2025-11-25
+- **Total Conventions**: 8 detected, 3 documented, 5 pending
 - **Convention Capture System**: Active

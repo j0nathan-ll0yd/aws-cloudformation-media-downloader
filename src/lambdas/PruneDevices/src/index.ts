@@ -8,7 +8,6 @@ import {deleteDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
-import {getApnsSigningKey} from '../../../util/secretsmanager-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
@@ -32,12 +31,11 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
-  const signingKey = await getApnsSigningKey()
   const client = new ApnsClient({
-    team: process.env.ApnsTeam as string,
-    keyId: process.env.ApnsKeyId as string,
-    signingKey,
-    defaultTopic: process.env.ApnsDefaultTopic as string,
+    team: process.env.ApnsTeam,
+    keyId: process.env.ApnsKeyId,
+    signingKey: process.env.ApnsSigningKey,
+    defaultTopic: process.env.ApnsDefaultTopic,
     host: 'api.sandbox.push.apple.com'
   })
   const healthCheckNotification = new Notification(token, {

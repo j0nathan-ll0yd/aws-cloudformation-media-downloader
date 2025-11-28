@@ -88,6 +88,6 @@
     "domainName": "lhpq0s2uk8.execute-api.us-west-2.amazonaws.com",
     "apiId": "lhpq0s2uk8"
   },
-  "body": "{\"firstName\":\"Jonathan\",\"lastName\":\"Lloyd\",\"authorizationCode\":\"c3d8a300a16154492b2774c3dea391a2a.0.rryv.3ptfvBBqztSZGB71w0VfUA\"}",
+  "body": "{\"firstName\":\"Jonathan\",\"lastName\":\"Lloyd\",\"idToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature\"}",
   "isBase64Encoded": false
 }

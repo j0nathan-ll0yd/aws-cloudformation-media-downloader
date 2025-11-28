@@ -657,15 +657,14 @@ export interface APIGatewayAuthorizerEnvironment {
 }
 
 export interface PurpleVariables {
-    MultiAuthenticationPathParts?: string;
-    PlatformEncryptionKey?:        string;
-    ReservedClientIp?:             string;
     DynamoDBTableName?:            DynamoDBTableName;
+    MultiAuthenticationPathParts?: string;
+    ReservedClientIp?:             string;
     DefaultFileContentType?:       string;
     DefaultFileName?:              string;
     DefaultFileSize?:              number;
     DefaultFileUrl?:               string;
-    SignInWithAppleAuthKey?:       string;
+    ApplicationUrl?:               string;
     SignInWithAppleConfig?:        string;
     ApnsDefaultTopic?:             string;
     ApnsKeyId?:                    string;
@@ -1579,15 +1578,14 @@ const typeMap: any = {
         { json: "variables", js: "variables", typ: r("PurpleVariables") },
     ], false),
     "PurpleVariables": o([
-        { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
-        { json: "PlatformEncryptionKey", js: "PlatformEncryptionKey", typ: u(undefined, "") },
-        { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, r("DynamoDBTableName")) },
+        { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
+        { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
         { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: u(undefined, "") },
         { json: "DefaultFileName", js: "DefaultFileName", typ: u(undefined, "") },
         { json: "DefaultFileSize", js: "DefaultFileSize", typ: u(undefined, 0) },
         { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: u(undefined, "") },
-        { json: "SignInWithAppleAuthKey", js: "SignInWithAppleAuthKey", typ: u(undefined, "") },
+        { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
         { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
         { json: "ApnsDefaultTopic", js: "ApnsDefaultTopic", typ: u(undefined, "") },
         { json: "ApnsKeyId", js: "ApnsKeyId", typ: u(undefined, "") },

@@ -133,11 +133,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
 
     const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((call) => call[0].TargetArn)
-    expect(targetArns).toEqual([
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'
-    ])
+    expect(targetArns).toEqual(['arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'])
   })
 
   test('should return early when user has no registered devices', async () => {

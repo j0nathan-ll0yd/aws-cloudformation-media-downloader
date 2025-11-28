@@ -1,32 +1,8 @@
-import {AppleTokenResponse, ClientFile, DynamoDBFile, FileNotification, IdentityProviderApple, SignInWithAppleVerifiedToken, User} from '../types/main'
+import {ClientFile, DynamoDBFile, FileNotification} from '../types/main'
 import {logError} from './lambda-helpers'
-import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
 import {stringAttribute, numberAttribute, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
-
-export function createUserFromToken(verifiedToken: SignInWithAppleVerifiedToken, firstName: string, lastName: string): User {
-  return {
-    userId: uuidv4(),
-    email: verifiedToken.email,
-    emailVerified: verifiedToken.email_verified,
-    firstName,
-    lastName
-  }
-}
-
-export function createIdentityProviderAppleFromTokens(appleToken: AppleTokenResponse, verifiedToken: SignInWithAppleVerifiedToken): IdentityProviderApple {
-  return {
-    accessToken: appleToken.access_token,
-    refreshToken: appleToken.refresh_token,
-    tokenType: appleToken.token_type,
-    expiresAt: new Date(Date.now() + appleToken.expires_in).getTime(),
-    userId: verifiedToken.sub,
-    email: verifiedToken.email,
-    emailVerified: verifiedToken.email_verified,
-    isPrivateEmail: verifiedToken.is_private_email !== undefined ? verifiedToken.is_private_email : false
-  }
-}
 
 /**
  * Creates SQS message attributes for file notifications

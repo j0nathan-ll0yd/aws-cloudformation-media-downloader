@@ -55,10 +55,7 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
 /**
  * Get object metadata from S3
  */
-export async function getObjectMetadata(
-  bucketName: string,
-  key: string
-): Promise<{contentLength: number; contentType: string} | null> {
+export async function getObjectMetadata(bucketName: string, key: string): Promise<{contentLength: number; contentType: string} | null> {
   try {
     const response = await headObject(bucketName, key)
 

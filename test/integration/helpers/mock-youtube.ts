@@ -96,7 +96,7 @@ export function createMockStreamResult(sizeInBytes: number): {
 } {
   return {
     fileSize: sizeInBytes,
-    s3Url: `s3://test-bucket/test-video.mp4`,
+    s3Url: 's3://test-bucket/test-video.mp4',
     duration: 1500 // 1.5 seconds
   }
 }
@@ -119,9 +119,7 @@ export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
  * Create mock implementation of streamVideoToS3 that actually uploads to S3
  * This is used for REAL S3 uploads in integration tests
  */
-export function createMockStreamVideoToS3WithRealUpload(
-  createS3Upload: (bucket: string, key: string, body: any, contentType?: string) => any
-) {
+export function createMockStreamVideoToS3WithRealUpload(createS3Upload: (bucket: string, key: string, body: any, contentType?: string) => any) {
   return jest.fn(async (_uri: string, bucket: string, key: string) => {
     // Create mock video stream
     const videoStream = createMockVideoStream(5242880) // 5MB

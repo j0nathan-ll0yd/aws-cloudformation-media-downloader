@@ -1,20 +1,15 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import {fakeJWT, testContext} from '../../../util/jest-setup'
+import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
+import {v4 as uuidv4} from 'uuid'
 
-const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
-const {default: verifyAppleResponse} = await import('./fixtures/verifyAppleToken-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  createAccessToken: jest.fn().mockReturnValue(fakeJWT),
-  validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse),
-  verifyAppleToken: jest.fn().mockReturnValue(verifyAppleResponse)
-}))
-
-const getUsersByAppleDeviceIdentifierMock = jest.fn()
-jest.unstable_mockModule('../../../util/shared', () => ({
-  getUsersByAppleDeviceIdentifier: getUsersByAppleDeviceIdentifierMock
+// Mock Better Auth API
+const authMock = createBetterAuthMock()
+jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
+  auth: authMock.auth
 }))
 
 const {handler} = await import('./../src')
@@ -22,43 +17,101 @@ const {handler} = await import('./../src')
 describe('#LoginUser', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
+
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
+    authMock.mocks.signInSocial.mockReset()
   })
-  test('should successfully login a user', async () => {
-    const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    getUsersByAppleDeviceIdentifierMock.mockReturnValue(scanResponse.Items || [])
+
+  test('should successfully login a user via Better Auth', async () => {
+    // Mock Better Auth sign-in response
+    const userId = uuidv4()
+    const sessionId = uuidv4()
+    const token = uuidv4()
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+
+    authMock.mocks.signInSocial.mockResolvedValue({
+      user: {
+        id: userId,
+        email: 'test@example.com',
+        name: 'Test User',
+        createdAt: new Date(Date.now() - 86400000).toISOString() // Created yesterday
+      },
+      session: {
+        id: sessionId,
+        expiresAt
+      },
+      token
+    })
+
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
+
     const body = JSON.parse(output.body)
     expect(typeof body.body.token).toEqual('string')
+    expect(typeof body.body.expiresAt).toEqual('number')
+    expect(typeof body.body.sessionId).toEqual('string')
+    expect(typeof body.body.userId).toEqual('string')
+
+    // Verify Better Auth API was called with correct parameters (using idToken only)
+    expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          provider: 'apple',
+          idToken: expect.objectContaining({
+            token: expect.any(String)
+          })
+        })
+      })
+    )
   })
-  test('should throw an error if a user is not found', async () => {
-    getUsersByAppleDeviceIdentifierMock.mockReturnValue([])
+
+  test('should handle Better Auth error when user not found', async () => {
+    // Mock Better Auth throwing an error for non-existent user
+    authMock.mocks.signInSocial.mockRejectedValue({
+      status: 404,
+      message: 'User not found'
+    })
+
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(404)
+    expect(output.statusCode).toEqual(500)
+
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-4XX-generic')
-    expect(body.error.message).toEqual("User doesn't exist")
+    expect(body.error.code).toEqual('custom-5XX-generic')
   })
-  test('should throw an error if duplicates are found', async () => {
-    const {default: scanResponse} = await import('./fixtures/scan-300-MultipleChoices.json', {assert: {type: 'json'}})
-    getUsersByAppleDeviceIdentifierMock.mockReturnValue(scanResponse.Items || [])
+
+  test('should handle Better Auth error for invalid token', async () => {
+    // Mock Better Auth throwing an error for invalid ID token
+    authMock.mocks.signInSocial.mockRejectedValue({
+      status: 401,
+      message: 'Invalid ID token'
+    })
+
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(300)
+    expect(output.statusCode).toEqual(500)
+
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-3XX-generic')
-    expect(body.error.message).toEqual('Duplicate user detected')
+    expect(body.error.code).toEqual('custom-5XX-generic')
   })
+
   test('should reject an invalid request', async () => {
     event.body = 'not-JSON'
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
+
+    // Better Auth API should not be called if request validation fails
+    expect(authMock.mocks.signInSocial).not.toHaveBeenCalled()
   })
+
   describe('#AWSFailure', () => {
-    test('getUsersByAppleDeviceIdentifier returns undefined', async () => {
-      getUsersByAppleDeviceIdentifierMock.mockReturnValue(undefined)
-      await expect(handler(event, context)).rejects.toThrow()
+    test('should handle Better Auth API failures gracefully', async () => {
+      authMock.mocks.signInSocial.mockRejectedValue(new Error('DynamoDB connection failed'))
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+
+      const body = JSON.parse(output.body)
+      expect(body.error.code).toEqual('custom-5XX-generic')
     })
   })
 })

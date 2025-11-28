@@ -1,23 +1,25 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      ApnsDefaultTopic: string
+      ApnsKeyId: string
       ApnsSigningKey: string
+      ApnsTeam: string
+      ApplicationUrl: string
       Bucket: string
       DefaultFileSize: string
       DefaultFileName: string
       DefaultFileUrl: string
       DefaultFileContentType: string
       DynamoDBTableName: string
-      PlatformEncryptionKey: string
       GithubPersonalToken: string
       MultiAuthenticationPathParts: string
-      ReservedClientIp: string
-      SignInWithAppleConfig: string
-      SignInWithAppleAuthKey: string
-      SNSQueueUrl: string
-      StateMachineArn: string
       PlatformApplicationArn: string
       PushNotificationTopicArn: string
+      ReservedClientIp: string
+      SignInWithAppleConfig: string
+      SNSQueueUrl: string
+      StateMachineArn: string
       YtdlpBinaryPath: string
     }
   }

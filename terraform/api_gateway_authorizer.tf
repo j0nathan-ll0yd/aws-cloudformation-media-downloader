@@ -72,7 +72,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = {
-      PlatformEncryptionKey = data.sops_file.secrets.data["platform.key"]
+      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
       MultiAuthenticationPathParts = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part,

@@ -15,13 +15,13 @@ export const userSubscribeSchema = Joi.object({
 })
 
 export const registerUserSchema = Joi.object({
-  authorizationCode: Joi.string().required(),
+  idToken: Joi.string().required(),
   firstName: Joi.string().required(),
   lastName: Joi.string().required()
 })
 
 export const loginUserSchema = Joi.object({
-  authorizationCode: Joi.string().required()
+  idToken: Joi.string().required()
 })
 
 // Helper function to validate data against a schema

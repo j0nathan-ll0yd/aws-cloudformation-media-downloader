@@ -111,9 +111,7 @@ interface ElectroDBEntityMock<TData> {
  * // Assert in tests
  * expect(filesMock.mocks.query.byKey!.go).toHaveBeenCalledTimes(1)
  */
-export function createElectroDBEntityMock<TData = unknown>(options?: {
-  queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey'>
-}): ElectroDBEntityMock<TData> {
+export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey'>}): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
   // Supports both single and batch operations
   const getMock = jest.fn<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>()

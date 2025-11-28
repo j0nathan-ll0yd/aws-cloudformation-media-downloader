@@ -5,16 +5,7 @@
  * This wrapper exists to maintain the AWS SDK Encapsulation Policy even in test code.
  */
 
-import {
-  CreateBucketCommand,
-  HeadObjectCommand,
-  DeleteObjectCommand,
-  DeleteBucketCommand,
-  ListObjectsV2Command,
-  GetObjectCommand,
-  HeadObjectCommandOutput,
-  GetObjectCommandOutput
-} from '@aws-sdk/client-s3'
+import {CreateBucketCommand, HeadObjectCommand, DeleteObjectCommand, DeleteBucketCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommandOutput, GetObjectCommandOutput} from '@aws-sdk/client-s3'
 import {createS3Client} from '../../../../../src/lib/vendor/AWS/clients'
 
 const s3Client = createS3Client()

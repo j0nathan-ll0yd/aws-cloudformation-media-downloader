@@ -1,61 +1,129 @@
+/**
+ * RegisterUser Lambda (Better Auth Version)
+ *
+ * Registers a new user or logs in existing user via Sign in with Apple using Better Auth OAuth.
+ * Fully delegates OAuth verification, user creation, and session creation to Better Auth.
+ *
+ * Flow:
+ * 1. Receive ID token directly from iOS app (Apple SDK provides this)
+ * 2. Use Better Auth to verify and sign in/register with ID token
+ * 3. Better Auth handles user creation, OAuth account linking, and session creation
+ * 4. Update user with first/last name from iOS app (Apple doesn't include name in ID token)
+ *
+ * Note: Apple's ID token doesn't contain first/last name for privacy reasons.
+ * The iOS app sends this separately from ASAuthorizationAppleIDCredential.fullName.
+ * This is only populated on first sign-in, so we cache it for new user registration.
+ */
+
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Users} from '../../../entities/Users'
-import {IdentityProviderApple, User, UserRegistration} from '../../../types/main'
+import {UserRegistration} from '../../../types/main'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {createAccessToken, validateAuthCodeForToken, verifyAppleToken} from '../../../util/secretsmanager-helpers'
-import {createIdentityProviderAppleFromTokens, createUserFromToken} from '../../../util/transformers'
-import {getUsersByAppleDeviceIdentifier} from '../../../util/shared'
+import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
+import {auth} from '../../../lib/vendor/BetterAuth/config'
+import {Users} from '../../../entities/Users'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
- * Creates a new user record in DynamoDB
- * @param user - The User object you want to create
- * @param identityProviderApple - The identity provider details for Apple
- * @notExported
- */
-async function createUser(user: User, identityProviderApple: IdentityProviderApple) {
-  logDebug('createUser <=', {user, identityProviderApple})
-  const response = await Users.create({
-    userId: user.userId,
-    email: identityProviderApple.email,
-    firstName: user.firstName || '',
-    lastName: user.lastName,
-    emailVerified: identityProviderApple.emailVerified,
-    identityProviders: identityProviderApple
-  }).go()
-  logDebug('createUser =>', response)
-  return response
-}
-
-/**
- * Registers a User, or retrieves existing User via Sign in with Apple
- * - NOTE: All User details are sourced from the identity token
+ * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
+ *
+ * Flow:
+ * 1. Receive ID token directly from iOS app
+ * 2. Use Better Auth's OAuth sign-in/registration with ID token
+ * 3. Better Auth verifies token, creates/finds user, links account, creates session
+ * 4. Update user with first/last name if this is a new registration
+ * 5. Return session token with expiration
+ *
+ * Error cases:
+ * - 401: Invalid ID token
+ * - 500: Other errors
+ *
  * @notExported
  */
 export const handler = withXRay(async (event: APIGatewayEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
-  let requestBody
+  logInfo('RegisterUser (Better Auth): event <=', event)
+  let requestBody: UserRegistration
+
   try {
+    // 1. Validate request
     requestBody = getPayloadFromEvent(event) as UserRegistration
     validateRequest(requestBody, registerUserSchema)
-    const appleToken = await validateAuthCodeForToken(requestBody.authorizationCode)
-    const verifiedToken = await verifyAppleToken(appleToken.id_token)
-    const appleUserId = verifiedToken.sub
-    const users = await getUsersByAppleDeviceIdentifier(appleUserId)
-    let token: string
-    if (users.length === 1) {
-      const userId = users[0].userId
-      token = await createAccessToken(userId)
-    } else {
-      const user = createUserFromToken(verifiedToken, requestBody.firstName as string, requestBody.lastName as string)
-      const identityProviderApple = createIdentityProviderAppleFromTokens(appleToken, verifiedToken)
-      await createUser(user, identityProviderApple)
-      token = await createAccessToken(user.userId)
+
+    // 2. Sign in/Register using Better Auth with ID token from iOS app
+    // Better Auth handles:
+    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
+    // - User lookup by Apple ID (or creation if new)
+    // - OAuth account linking (Accounts entity)
+    // - Session creation with device tracking
+    // - Email verification status from Apple
+    const ipAddress = event.requestContext?.identity?.sourceIp
+    const userAgent = event.headers?.['User-Agent'] || ''
+
+    const rawResult = await auth.api.signInSocial({
+      headers: {
+        'user-agent': userAgent,
+        'x-forwarded-for': ipAddress || ''
+      },
+      body: {
+        provider: 'apple',
+        idToken: {
+          token: requestBody.idToken
+          // No accessToken needed - we only have the ID token from iOS
+        }
+      }
+    })
+
+    // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
+    // Since we're using ID token authentication, we expect a token response
+    if ('url' in rawResult && rawResult.url) {
+      throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
     }
-    return response(context, 200, {token})
+
+    // Type narrow to token response
+    const result = rawResult as {
+      redirect: boolean
+      token: string
+      url: undefined
+      user: {id: string; createdAt: Date; email: string; name: string}
+      session?: {id: string; expiresAt: number}
+    }
+
+    // 3. Check if this is a new user and update with name from iOS app
+    // Apple's ID token doesn't include first/last name for privacy reasons
+    // The iOS app provides this from ASAuthorizationAppleIDCredential.fullName
+    // (only populated on first sign-in)
+    const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
+
+    if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
+      await Users.update({userId: result.user.id})
+        .set({
+          firstName: requestBody.firstName || '',
+          lastName: requestBody.lastName || ''
+        })
+        .go()
+
+      logInfo('RegisterUser: Updated new user with name from iOS app', {
+        userId: result.user.id,
+        hasFirstName: !!requestBody.firstName,
+        hasLastName: !!requestBody.lastName
+      })
+    }
+
+    logInfo('RegisterUser: Better Auth sign-in/registration successful', {
+      userId: result.user?.id,
+      sessionToken: result.token ? 'present' : 'missing',
+      isNewUser
+    })
+
+    // 4. Return session token (Better Auth format)
+    return response(context, 200, {
+      token: result.token,
+      expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
+      sessionId: result.session?.id,
+      userId: result.user?.id
+    })
   } catch (error) {
+    logInfo('RegisterUser: error', {error})
     return lambdaErrorResponse(context, error)
   }
 })
