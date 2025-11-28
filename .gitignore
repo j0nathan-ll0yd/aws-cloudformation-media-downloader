@@ -25,4 +25,3 @@ layers/yt-dlp/bin/yt-dlp_linux
 
 # pnpm
 .pnpm-store
-terraform/plan.tfplan

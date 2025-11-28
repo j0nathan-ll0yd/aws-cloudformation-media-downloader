@@ -4,6 +4,18 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-27
+
+1. **No Try-Catch for Required Environment Variables** (Rule)
+   - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
+   - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
+   - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
+   - **Detected**: During Better Auth configuration cleanup
+   - **Target**: docs/wiki/Conventions/Environment-Variables.md
+   - **Priority**: CRITICAL
+   - **Status**: ⏳ Pending documentation
+   - **Enforcement**: Infrastructure tests verify all env vars are present
+
 ### Detected: 2025-11-24
 
 1. **pnpm Lifecycle Script Protection** (Security Rule)

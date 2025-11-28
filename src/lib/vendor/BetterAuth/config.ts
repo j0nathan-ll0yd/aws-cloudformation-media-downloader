@@ -28,7 +28,7 @@ export const auth = betterAuth({
   database: createElectroDBAdapter(),
 
   // Base URL for OAuth callbacks (from environment)
-  baseURL: process.env.BASE_URL,
+  baseURL: process.env.BaseUrl,
 
   // Trusted origins for OAuth flows
   trustedOrigins: ['https://appleid.apple.com'],
@@ -69,35 +69,19 @@ export const auth = betterAuth({
 })
 
 /**
- * Extract client ID (Service ID) from existing Sign In With Apple configuration.
- * Falls back to environment variable if config not available.
+ * Extract client ID (Service ID) from Sign In With Apple configuration.
  */
 function getAppleClientIdFromConfig(): string {
-  try {
-    if (process.env.SignInWithAppleConfig) {
-      const config = JSON.parse(process.env.SignInWithAppleConfig)
-      return config.client_id || process.env.APPLE_CLIENT_ID
-    }
-  } catch (error) {
-    logDebug('Failed to parse SignInWithAppleConfig, using APPLE_CLIENT_ID', {error})
-  }
-  return process.env.APPLE_CLIENT_ID
+  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  return config.client_id
 }
 
 /**
- * Extract bundle ID from existing Sign In With Apple configuration.
- * Falls back to environment variable if config not available.
+ * Extract bundle ID from Sign In With Apple configuration.
  */
 function getAppleBundleIdFromConfig(): string {
-  try {
-    if (process.env.SignInWithAppleConfig) {
-      const config = JSON.parse(process.env.SignInWithAppleConfig)
-      return config.bundle_id || process.env.APPLE_BUNDLE_ID
-    }
-  } catch (error) {
-    logDebug('Failed to parse SignInWithAppleConfig, using APPLE_BUNDLE_ID', {error})
-  }
-  return process.env.APPLE_BUNDLE_ID
+  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  return config.bundle_id
 }
 
 /**
@@ -106,8 +90,7 @@ function getAppleBundleIdFromConfig(): string {
  */
 export async function initializeBetterAuth() {
   logDebug('Better Auth initialized', {
-    baseURL: process.env.BASE_URL,
-    hasAppleConfig: !!(process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET)
+    baseURL: process.env.BaseUrl
   })
 }
 
