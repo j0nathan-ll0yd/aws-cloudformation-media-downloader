@@ -38,21 +38,17 @@ clean_wiki() {
 copy_files() {
     echo "📁 Copying files from source to wiki..."
 
-    # Copy all markdown files preserving directory structure
+    # GitHub Wiki requires flat file structure - all files at root
+    # Copy all markdown files, flattening directory structure
     if [ -d "$SOURCE_DIR" ]; then
-        # Use rsync if available, otherwise use cp
-        if command -v rsync &> /dev/null; then
-            rsync -av --delete \
-                --exclude='.git' \
-                --exclude='*.backup' \
-                --exclude='*.tmp' \
-                "$SOURCE_DIR/" "$WIKI_DIR/"
-        else
-            cp -r "$SOURCE_DIR"/* "$WIKI_DIR/" 2>/dev/null || true
-        fi
+        # Find all .md files and copy to wiki root
+        find "$SOURCE_DIR" -type f -name "*.md" | while IFS= read -r file; do
+            basename_file=$(basename "$file")
+            cp "$file" "$WIKI_DIR/$basename_file"
+        done
     fi
 
-    echo "✅ Files copied successfully"
+    echo "✅ Files copied successfully (flattened to root)"
 }
 
 # Function to transform links for wiki format
