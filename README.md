@@ -8,6 +8,53 @@ A media downloader designed to integrate with [it's companion iOS App](https://g
 
 View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/aws-cloudformation-media-downloader) (via GitDiagram)
 
+## Technologies
+
+### Core Stack
+- **Runtime**: Node.js 22.x (AWS Lambda)
+- **Language**: TypeScript with strict type checking
+- **Infrastructure as Code**: OpenTofu (Terraform fork)
+- **Package Manager**: pnpm (with security hardening)
+
+### Authentication & Authorization
+- **Better Auth 1.4.3**: Modern authentication framework with session management
+- **First-in-class ElectroDB Adapter**: Custom DynamoDB adapter for Better Auth
+- **Apple Sign In**: OAuth provider with ID token flow (eliminates 200-500ms latency)
+- **Session-based Auth**: 30-day sessions with automatic refresh
+- **Custom Authorizer**: Query-based API tokens for Feedly integration
+
+### Database & ORM
+- **DynamoDB**: AWS NoSQL database with single-table design
+- **ElectroDB**: Type-safe ORM with optimized GSI queries
+- **Entities**: Users, Sessions, Accounts, VerificationTokens, Files, Devices
+- **Collections**: JOIN-like queries across entity boundaries
+
+### AWS Services
+- **Lambda**: Serverless compute (all business logic)
+- **S3**: Media storage with transfer acceleration
+- **API Gateway**: REST endpoints with custom authorizer
+- **SNS**: Apple Push Notification Service (APNS) delivery
+- **CloudWatch**: Logging, metrics, and fixture extraction
+- **X-Ray**: Distributed tracing (optional)
+
+### Development & Testing
+- **Jest**: Unit testing with ESM support
+- **LocalStack**: Local AWS service emulation for integration tests
+- **Webpack**: Lambda function bundling with externals optimization
+- **TSDoc**: API documentation generation
+- **Fixture Logging**: Production request/response capture for test generation
+
+### Media Processing
+- **yt-dlp**: YouTube video downloading (auto-updated weekly)
+- **FFmpeg**: Video processing and conversion
+- **Cookie Authentication**: Bypass YouTube bot detection
+
+### Notable Features
+- **First ElectroDB adapter for Better Auth** (potential npm package)
+- **Automated fixture extraction from CloudWatch** for test generation
+- **pnpm lifecycle script protection** against supply chain attacks
+- **Convention capture system** for institutional knowledge preservation
+
 ## Background
 
 When [YouTube Premium](https://en.wikipedia.org/wiki/YouTube_Premium) was released they announced "exclusive original content, access to audio-only versions of videos and offline playback on your mobile device." I wasn't interested in the content, but I was excited about offline playback due to poor connectivity when commuting via the [MUNI](https://www.sfmta.com/). _Buuuuuuut_, there was a monthly fee of $11.99.
@@ -16,10 +63,12 @@ So, [as an engineer](https://www.linkedin.com/in/lifegames), I used this opportu
 
 The end result is a generic backend infrastructure that could support any number of features or Apps. This repository is the source code, OpenTofu templates, deployment scripts, documentation and tests that power the App's backend. This includes:
 
-* The ability to download videos and have them stored to an S3 bucket.
-* The ability to view downloaded videos (via API).
-* The ability to register for and dispatch push notifications to the mobile App.
-* It also has a custom authorizer Lambda function that supports query-based API tokens. This was needed for integration with Feedly.
+* **Authentication**: Better Auth integration with Apple Sign In (ID token flow) and session management
+* **Media Downloads**: Download videos and store them to an S3 bucket
+* **API Access**: View downloaded videos via authenticated REST API
+* **Push Notifications**: Register for and dispatch push notifications to the iOS App
+* **Custom Authorization**: Custom authorizer Lambda supporting query-based API tokens (Feedly integration)
+* **Database**: DynamoDB single-table design with ElectroDB ORM for type-safe queries
 
 I share this for any engineer to be able to build a basic backend and iOS App for a future pet project.
 

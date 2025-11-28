@@ -339,9 +339,8 @@ export function createElectroDBAdapter() {
       logDebug('ElectroDB Adapter: getUserByEmail', {email})
 
       try {
-        // Since we don't have a GSI for email lookup yet, we'll need to scan
-        // TODO: Add email GSI for better performance
-        const result = await Users.scan.where(({email: emailAttr}, {eq}) => eq(emailAttr, email)).go()
+        // Use byEmail GSI for efficient lookup
+        const result = await Users.query.byEmail({email}).go()
 
         if (!result.data || result.data.length === 0) return null
 

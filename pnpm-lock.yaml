@@ -57,7 +57,7 @@ importers:
         specifier: ^1.12.0
         version: 1.13.2
       better-auth:
-        specifier: ^1.4.1
+        specifier: ^1.4.3
         version: 1.4.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       electrodb:
         specifier: ^3.5.0

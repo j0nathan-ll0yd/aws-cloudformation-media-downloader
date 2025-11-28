@@ -61,11 +61,13 @@ Files.delete({fileId}).go()
 Entity-specific indexes available via `queryIndexes` parameter:
 
 **Files**: `['byStatus', 'byUser', 'byKey']`
-**Users**: `['byUser', 'byDevice']`
+**Users**: `['byEmail']` *(Better Auth - email lookup)*
 **UserFiles**: `['byUser', 'byFile']`
 **UserDevices**: `['byUser', 'byDevice']`
-**Sessions**: `['byUser']`  *(Better Auth)*
-**Accounts**: `['byUser']`  *(Better Auth)*
+**Devices**: `['byDevice']`
+**Sessions**: `['byUser', 'byDevice']` *(Better Auth)*
+**Accounts**: `['byUser', 'byProvider']` *(Better Auth)*
+**VerificationTokens**: `['byIdentifier']` *(Better Auth)*
 
 ## Integration Testing (LocalStack)
 
@@ -193,6 +195,302 @@ test('userAccounts - OAuth account linking', async () => {
   // Validate
   expect(result.data.Accounts).toHaveLength(1)
   expect(result.data.Accounts[0].provider).toBe('apple')
+})
+```
+
+### Better Auth Entity Testing
+
+#### Session Entity CRUD
+
+```typescript
+import {Sessions} from '../../../src/entities/Sessions'
+
+test('create and retrieve session', async () => {
+  // Create session
+  const sessionData = {
+    sessionId: 'sess-123',
+    userId: 'user-1',
+    token: 'hashed-token',
+    expiresAt: Date.now() + 86400000,  // 24 hours
+    ipAddress: '192.168.1.1',
+    userAgent: 'Mozilla/5.0...',
+    deviceId: 'device-1'
+  }
+
+  await Sessions.create(sessionData).go()
+
+  // Retrieve by sessionId
+  const result = await Sessions.get({sessionId: 'sess-123'}).go()
+
+  expect(result.data.userId).toBe('user-1')
+  expect(result.data.token).toBe('hashed-token')
+  expect(result.data.createdAt).toBeDefined()
+  expect(result.data.updatedAt).toBeDefined()
+})
+
+test('query sessions by user', async () => {
+  // Create multiple sessions for user
+  await Sessions.create({
+    sessionId: 'sess-1',
+    userId: 'user-1',
+    token: 'token-1',
+    expiresAt: Date.now() + 86400000
+  }).go()
+
+  await Sessions.create({
+    sessionId: 'sess-2',
+    userId: 'user-1',
+    token: 'token-2',
+    expiresAt: Date.now() + 172800000  // 48 hours
+  }).go()
+
+  // Query all sessions for user
+  const result = await Sessions.query.byUser({userId: 'user-1'}).go()
+
+  expect(result.data).toHaveLength(2)
+  expect(result.data[0].userId).toBe('user-1')
+})
+
+test('query sessions by device', async () => {
+  // Create sessions for same device
+  await Sessions.create({
+    sessionId: 'sess-1',
+    userId: 'user-1',
+    deviceId: 'device-1',
+    token: 'token-1',
+    expiresAt: Date.now() + 86400000
+  }).go()
+
+  // Query sessions by device
+  const result = await Sessions.query.byDevice({deviceId: 'device-1'}).go()
+
+  expect(result.data).toHaveLength(1)
+  expect(result.data[0].deviceId).toBe('device-1')
+})
+```
+
+#### Account Entity OAuth Testing
+
+```typescript
+import {Accounts} from '../../../src/entities/Accounts'
+
+test('create OAuth account', async () => {
+  const accountData = {
+    accountId: 'acc-123',
+    userId: 'user-1',
+    providerId: 'apple',
+    providerAccountId: 'apple-user-123',
+    accessToken: 'access-token',
+    refreshToken: 'refresh-token',
+    expiresAt: Date.now() + 3600000,  // 1 hour
+    scope: 'email name',
+    tokenType: 'Bearer',
+    idToken: 'id-token'
+  }
+
+  await Accounts.create(accountData).go()
+
+  // Retrieve account
+  const result = await Accounts.get({accountId: 'acc-123'}).go()
+
+  expect(result.data.providerId).toBe('apple')
+  expect(result.data.providerAccountId).toBe('apple-user-123')
+})
+
+test('query accounts by user', async () => {
+  // User with multiple OAuth providers
+  await Accounts.create({
+    accountId: 'acc-apple',
+    userId: 'user-1',
+    providerId: 'apple',
+    providerAccountId: 'apple-123'
+  }).go()
+
+  await Accounts.create({
+    accountId: 'acc-google',
+    userId: 'user-1',
+    providerId: 'google',
+    providerAccountId: 'google-123'
+  }).go()
+
+  // Query all accounts for user
+  const result = await Accounts.query.byUser({userId: 'user-1'}).go()
+
+  expect(result.data).toHaveLength(2)
+  expect(result.data.map(a => a.providerId)).toContain('apple')
+  expect(result.data.map(a => a.providerId)).toContain('google')
+})
+
+test('query account by provider', async () => {
+  await Accounts.create({
+    accountId: 'acc-1',
+    userId: 'user-1',
+    providerId: 'apple',
+    providerAccountId: 'apple-user-123'
+  }).go()
+
+  // Lookup by provider + provider account ID
+  const result = await Accounts.query.byProvider({
+    providerId: 'apple',
+    providerAccountId: 'apple-user-123'
+  }).go()
+
+  expect(result.data).toHaveLength(1)
+  expect(result.data[0].userId).toBe('user-1')
+})
+```
+
+#### User Entity with Email Index
+
+```typescript
+import {Users} from '../../../src/entities/Users'
+
+test('create user and query by email', async () => {
+  // Create user
+  await Users.create({
+    userId: 'user-1',
+    email: 'test@example.com',
+    emailVerified: true,
+    firstName: 'John',
+    lastName: 'Doe',
+    identityProviders: {
+      userId: 'apple-123',
+      email: 'test@example.com',
+      emailVerified: true,
+      isPrivateEmail: false,
+      accessToken: 'token',
+      refreshToken: 'refresh',
+      tokenType: 'Bearer',
+      expiresAt: Date.now() + 3600000
+    }
+  }).go()
+
+  // Query by email (uses gsi3 byEmail index)
+  const result = await Users.query.byEmail({email: 'test@example.com'}).go()
+
+  expect(result.data).toHaveLength(1)
+  expect(result.data[0].userId).toBe('user-1')
+  expect(result.data[0].firstName).toBe('John')
+})
+
+test('email lookup returns empty for non-existent', async () => {
+  const result = await Users.query.byEmail({email: 'nonexistent@example.com'}).go()
+
+  expect(result.data).toHaveLength(0)
+})
+```
+
+#### VerificationToken Entity
+
+```typescript
+import {VerificationTokens} from '../../../src/entities/VerificationTokens'
+
+test('create and retrieve verification token', async () => {
+  const tokenData = {
+    token: 'verify-token-123',
+    identifier: 'test@example.com',
+    expiresAt: Date.now() + 3600000  // 1 hour
+  }
+
+  await VerificationTokens.create(tokenData).go()
+
+  // Retrieve token
+  const result = await VerificationTokens.get({token: 'verify-token-123'}).go()
+
+  expect(result.data.identifier).toBe('test@example.com')
+  expect(result.data.expiresAt).toBeGreaterThan(Date.now())
+})
+
+test('delete verification token after use', async () => {
+  await VerificationTokens.create({
+    token: 'temp-token',
+    identifier: 'user@example.com',
+    expiresAt: Date.now() + 3600000
+  }).go()
+
+  // Delete token
+  await VerificationTokens.delete({token: 'temp-token'}).go()
+
+  // Verify deletion
+  const result = await VerificationTokens.get({token: 'temp-token'}).go()
+  expect(result.data).toBeUndefined()
+})
+```
+
+#### Complete Auth Flow Integration Test
+
+```typescript
+test('complete auth flow - register to session', async () => {
+  // 1. Create user
+  await Users.create({
+    userId: 'user-1',
+    email: 'newuser@example.com',
+    emailVerified: false,
+    firstName: 'Jane',
+    lastName: 'Smith',
+    identityProviders: {...}
+  }).go()
+
+  // 2. Create OAuth account
+  await Accounts.create({
+    accountId: 'acc-1',
+    userId: 'user-1',
+    providerId: 'apple',
+    providerAccountId: 'apple-new-user'
+  }).go()
+
+  // 3. Create session
+  await Sessions.create({
+    sessionId: 'sess-1',
+    userId: 'user-1',
+    token: 'session-token',
+    expiresAt: Date.now() + 86400000
+  }).go()
+
+  // 4. Verify complete setup via Collections
+  const userResources = await collections.userSessions({userId: 'user-1'}).go()
+
+  expect(userResources.data.Users).toHaveLength(1)
+  expect(userResources.data.Sessions).toHaveLength(1)
+
+  const userAccounts = await collections.userAccounts({userId: 'user-1'}).go()
+
+  expect(userAccounts.data.Accounts).toHaveLength(1)
+  expect(userAccounts.data.Accounts[0].providerId).toBe('apple')
+})
+```
+
+#### Session Expiration Testing
+
+```typescript
+test('filter expired sessions', async () => {
+  const now = Date.now()
+
+  // Create expired session
+  await Sessions.create({
+    sessionId: 'sess-expired',
+    userId: 'user-1',
+    token: 'token-expired',
+    expiresAt: now - 1000  // Already expired
+  }).go()
+
+  // Create active session
+  await Sessions.create({
+    sessionId: 'sess-active',
+    userId: 'user-1',
+    token: 'token-active',
+    expiresAt: now + 86400000  // Future
+  }).go()
+
+  // Query all sessions
+  const allSessions = await Sessions.query.byUser({userId: 'user-1'}).go()
+
+  // Filter to active only
+  const activeSessions = allSessions.data.filter(s => s.expiresAt > now)
+
+  expect(allSessions.data).toHaveLength(2)
+  expect(activeSessions).toHaveLength(1)
+  expect(activeSessions[0].sessionId).toBe('sess-active')
 })
 ```
 
@@ -334,17 +632,27 @@ test('update non-existent - throws error', async () => {
 
 ### Sessions (Better Auth)
 - **Primary**: `{sessionId}`
-- **Indexes**: byUser
-- **Attributes**: userId, token, expiresAt, createdAt
+- **Indexes**: byUser (gsi1), byDevice (gsi2)
+- **Attributes**: userId, deviceId, token, expiresAt, ipAddress, userAgent, createdAt, updatedAt
+- **Purpose**: Manage active user sessions with device tracking
 
 ### Accounts (Better Auth)
 - **Primary**: `{accountId}`
-- **Indexes**: byUser
-- **Attributes**: userId, provider, providerAccountId, accessToken, refreshToken
+- **Indexes**: byUser (gsi1), byProvider (gsi2)
+- **Attributes**: userId, providerId, providerAccountId, accessToken, refreshToken, expiresAt, scope, tokenType, idToken
+- **Purpose**: Link users to OAuth providers (Apple, Google, etc.)
 
 ### VerificationTokens (Better Auth)
-- **Primary**: `{identifier, token}`
-- **Attributes**: expiresAt, createdAt
+- **Primary**: `{token}`
+- **Indexes**: byIdentifier (gsi1)
+- **Attributes**: identifier, expiresAt
+- **Purpose**: Email verification and password reset tokens
+
+### Users (Better Auth)
+- **Primary**: `{userId}`
+- **Indexes**: byEmail (gsi3)
+- **Attributes**: email, emailVerified, firstName, lastName, identityProviders
+- **Purpose**: Core user account data
 
 ## Best Practices
 

@@ -9,7 +9,7 @@ import {describe, it, expect, jest, beforeEach} from '@jest/globals'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 // Create entity mocks
-const usersMock = createElectroDBEntityMock()
+const usersMock = createElectroDBEntityMock({queryIndexes: ['byEmail']})
 const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const accountsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const verificationTokensMock = createElectroDBEntityMock()
@@ -182,9 +182,8 @@ describe('ElectroDB Adapter', () => {
         lastName: ''
       })
 
-      // Mock scan operation for email lookup
-      usersMock.mocks.scan.where.mockReturnThis()
-      usersMock.mocks.scan.go.mockResolvedValue({data: [mockUser]})
+      // Mock query.byEmail operation for efficient email lookup
+      usersMock.mocks.query.byEmail!.go.mockResolvedValue({data: [mockUser]})
 
       const result = await adapter.getUserByEmail('test@example.com')
 

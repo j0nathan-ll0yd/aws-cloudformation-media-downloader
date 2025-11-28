@@ -83,6 +83,17 @@ export const Users = new Entity(
           field: 'sk',
           composite: []
         }
+      },
+      byEmail: {
+        index: 'gsi3',
+        pk: {
+          field: 'gsi3pk',
+          composite: ['email']
+        },
+        sk: {
+          field: 'gsi3sk',
+          composite: []
+        }
       }
     }
   } as const,

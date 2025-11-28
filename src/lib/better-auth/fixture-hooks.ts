@@ -5,7 +5,6 @@
  */
 
 import { logIncomingFixture, logOutgoingFixture } from '../../util/lambda-helpers'
-import type { Hook } from 'better-auth'
 
 /**
  * Extract endpoint name from path for fixture naming
@@ -29,12 +28,12 @@ function getFixtureName(path: string): string {
 /**
  * Before hook that logs incoming requests for fixture extraction
  */
-export const logIncomingRequestHook: Hook = {
-  matcher: (ctx) => {
+export const logIncomingRequestHook = {
+  matcher: (_ctx: any) => {
     // Only log in production when fixture logging is enabled
     return process.env.ENABLE_FIXTURE_LOGGING === 'true'
   },
-  handler: async (ctx) => {
+  handler: async (ctx: any) => {
     const fixtureName = getFixtureName(ctx.path)
 
     // Create a request-like object similar to API Gateway events
@@ -59,12 +58,12 @@ export const logIncomingRequestHook: Hook = {
 /**
  * After hook that logs outgoing responses for fixture extraction
  */
-export const logOutgoingResponseHook: Hook = {
-  matcher: (ctx) => {
+export const logOutgoingResponseHook = {
+  matcher: (_ctx: any) => {
     // Only log in production when fixture logging is enabled
     return process.env.ENABLE_FIXTURE_LOGGING === 'true'
   },
-  handler: async (ctx) => {
+  handler: async (ctx: any) => {
     const fixtureName = getFixtureName(ctx.path)
 
     // Create a response-like object similar to API Gateway responses
