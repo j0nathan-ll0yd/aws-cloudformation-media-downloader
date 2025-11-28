@@ -7,7 +7,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../typ
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {createFileNotificationAttributes} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
@@ -101,6 +101,8 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
+  logIncomingFixture(event, 'webhook-feedly')
+
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event) as Webhook
@@ -112,21 +114,26 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     }
     await associateFileToUser(fileId, userId)
     const file = await getFile(fileId)
+    let result: APIGatewayProxyResult
     if (file && file.status == FileStatus.Downloaded) {
       await sendFileNotification(file, userId)
-      return response(context, 200, {status: 'Dispatched'})
+      result = response(context, 200, {status: 'Dispatched'})
     } else {
       if (!file) {
         await addFile(fileId)
       }
       if (!requestBody.backgroundMode) {
         await initiateFileDownload(fileId)
-        return response(context, 202, {status: 'Initiated'})
+        result = response(context, 202, {status: 'Initiated'})
       } else {
-        return response(context, 202, {status: 'Accepted'})
+        result = response(context, 202, {status: 'Accepted'})
       }
     }
+    logOutgoingFixture(result, 'webhook-feedly')
+    return result
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult, 'webhook-feedly')
+    return errorResult
   }
 })

@@ -4,9 +4,29 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-28
+
+1. **Production Fixture Logging** (Testing Pattern)
+   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for automated test fixture generation
+   - **Why**: Transform testing from assumptions to production truth; weekly CloudWatch extraction keeps fixtures current
+   - **Detected**: During fixture automation implementation
+   - **Target**: docs/wiki/Testing/Fixture-Extraction.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: Optional (enable with ENABLE_FIXTURE_LOGGING=true)
+
+2. **ElectroDB Collections Testing** (Testing Pattern)
+   - **What**: Test Collections (JOIN-like queries) with LocalStack to validate single-table design
+   - **Why**: Ensures GSI queries work correctly across entity boundaries; validates userResources, fileUsers, deviceUsers, userSessions, userAccounts
+   - **Detected**: During ElectroDB integration testing implementation
+   - **Target**: docs/wiki/Testing/ElectroDB-Testing-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Required for Collections changes
+
 ### Detected: 2025-11-27
 
-1. **No Try-Catch for Required Environment Variables** (Rule)
+3. **No Try-Catch for Required Environment Variables** (Rule)
    - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
    - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
    - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
@@ -153,6 +173,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-11-25
-- **Total Conventions**: 8 detected, 3 documented, 5 pending
+- **Last Updated**: 2025-11-28
+- **Total Conventions**: 10 detected, 5 documented, 5 pending
 - **Convention Capture System**: Active
