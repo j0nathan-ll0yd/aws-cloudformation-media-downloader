@@ -7,8 +7,8 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 ### Detected: 2025-11-28
 
 1. **Production Fixture Logging** (Testing Pattern)
-   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for automated test fixture generation
-   - **Why**: Transform testing from assumptions to production truth; weekly CloudWatch extraction keeps fixtures current
+   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for test fixture generation
+   - **Why**: Transform testing from assumptions to production truth; CloudWatch extraction enables regular fixture updates
    - **Detected**: During fixture automation implementation
    - **Target**: docs/wiki/Testing/Fixture-Extraction.md
    - **Priority**: MEDIUM

@@ -9,15 +9,25 @@
  * - Complete authentication flows
  */
 
+// CRITICAL: Set environment variables BEFORE any imports that use them
+// ES modules evaluate imports before file code runs, but we can set env vars
+// before the dynamic imports below are resolved
+const TEST_TABLE = 'MediaDownloader'
+process.env.DynamoDBTableName = TEST_TABLE
+process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-east-1'
+
 import {describe, it, expect, beforeAll, afterAll, afterEach} from '@jest/globals'
 import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
-import {Users} from '../../../src/entities/Users'
-import {Sessions} from '../../../src/entities/Sessions'
-import {Accounts} from '../../../src/entities/Accounts'
-import {VerificationTokens} from '../../../src/entities/VerificationTokens'
-import {MediaDownloaderService} from '../../../src/entities/Collections'
-import {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} from '../../helpers/better-auth-test-data'
-import {
+
+// Dynamic imports to ensure env vars are set before entity instantiation
+const {Users} = await import('../../../src/entities/Users')
+const {Sessions} = await import('../../../src/entities/Sessions')
+const {Accounts} = await import('../../../src/entities/Accounts')
+const {VerificationTokens} = await import('../../../src/entities/VerificationTokens')
+const {MediaDownloaderService} = await import('../../../src/entities/Collections')
+const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import('../../helpers/better-auth-test-data')
+const {
   transformUserFromAuth,
   transformSessionFromAuth,
   transformAccountFromAuth,
@@ -25,7 +35,7 @@ import {
   transformSessionToAuth,
   transformAccountToAuth,
   splitFullName
-} from '../../../src/lib/vendor/BetterAuth/electrodb-adapter'
+} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
 // Type helper for ElectroDB service collections
 // ElectroDB generates collections dynamically, so we need to help TypeScript

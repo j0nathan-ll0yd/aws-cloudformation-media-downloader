@@ -28,7 +28,7 @@ logOutgoingFixture(response, 'webhook-feedly')
 - Controlled by `ENABLE_FIXTURE_LOGGING` environment variable
 - Automatic redaction: tokens, passwords, device IDs, apiKeys, secrets
 - Structured markers for CloudWatch extraction (`__FIXTURE_MARKER__`)
-- 15 comprehensive unit tests with 100% coverage
+- 12 comprehensive unit tests covering all sanitization scenarios
 
 ### 2. Extraction Pipeline
 
@@ -47,20 +47,20 @@ pnpm run process-fixtures      # Deduplicate and format
 - Supports 6 Lambda functions out of the box
 - Cost: ~$5.50/year CloudWatch queries
 
-### 3. GitHub Actions Automation
+### 3. GitHub Actions Automation (Planned)
 
-**File**: `.github/workflows/extract-fixtures.yml`
+**Status**: Infrastructure ready, workflow pending
 
-Weekly automated fixture updates:
-- Runs every Sunday at 2am UTC
-- Extracts from production CloudWatch
-- Creates PR with updated fixtures
-- Requires manual review before merge
-- pnpm-compatible (uses pnpm/action-setup@v4)
+The extraction pipeline supports automation via GitHub Actions:
+- Manual extraction available via `pnpm run extract-fixtures`
+- Workflow can be added to `.github/workflows/extract-fixtures.yml`
+- Would run on schedule (e.g., weekly) with CloudWatch queries
+- Creates PR with updated fixtures for manual review
+- pnpm-compatible infrastructure ready
 
 ### 4. ElectroDB Integration Tests
 
-**Files**: `test/integration/helpers/electrodb-localstack.ts`, `ELECTRODB_TEST_EXAMPLE.md`
+**Files**: `test/integration/helpers/electrodb-localstack.ts`, `test/integration/workflows/betterAuth.entities.integration.test.ts`
 
 LocalStack-based integration testing:
 - `setupLocalStackTable()` - Creates table with all GSIs
@@ -81,14 +81,22 @@ LocalStack-based integration testing:
 - `docs/wiki/Testing/Fixture-Extraction.md` - Complete extraction guide
 - `docs/wiki/Testing/ElectroDB-Testing-Patterns.md` - Testing patterns with Better Auth
 - `docs/wiki/Integration/LocalStack-Testing.md` - Updated with ElectroDB section
-- `ELECTRODB_TEST_EXAMPLE.md` - Copy-paste ready integration test template
+- `docs/wiki/Authentication/Better-Auth-Architecture.md` - Better Auth integration guide
+- `docs/wiki/Authentication/ElectroDB-Adapter-Design.md` - Adapter implementation details
 - `FIXTURE_AUTOMATION_SUMMARY.md` - This document
 
 ### 6. Example Implementations
 
-**Files**: `src/lambdas/WebhookFeedly/src/index.ts`, `src/lambdas/ListFiles/src/index.ts`
+**Files**: All 7 API Gateway Lambda handlers now instrumented with fixture logging:
+- `src/lambdas/ListFiles/src/index.ts`
+- `src/lambdas/LoginUser/src/index.ts`
+- `src/lambdas/RefreshToken/src/index.ts`
+- `src/lambdas/RegisterDevice/src/index.ts`
+- `src/lambdas/UserDelete/src/index.ts`
+- `src/lambdas/UserSubscribe/src/index.ts`
+- `src/lambdas/WebhookFeedly/src/index.ts`
 
-Real-world examples showing fixture logging in production Lambda handlers with proper error handling.
+All handlers use automatic Lambda name detection via `AWS_LAMBDA_FUNCTION_NAME`.
 
 ## Quick Start Guide
 
@@ -112,16 +120,16 @@ pnpm run process-fixtures
 ### Create ElectroDB Integration Test
 
 ```bash
-# 1. Create directory
-mkdir -p test/integration/electrodb
+# 1. See existing examples in test/integration/workflows/
+# Reference: betterAuth.entities.integration.test.ts
 
-# 2. Copy template from ELECTRODB_TEST_EXAMPLE.md
-
-# 3. Run tests
+# 2. Run tests
 pnpm run localstack:start
 pnpm run test:integration
 pnpm run localstack:stop
 ```
+
+See `docs/wiki/Testing/ElectroDB-Testing-Patterns.md` for comprehensive testing patterns.
 
 ## Architecture Overview
 
@@ -183,7 +191,7 @@ Recursive processing handles nested objects/arrays.
 - ✅ No performance impact (async console.log)
 - ✅ CloudWatch costs: ~$5.50/year
 - ✅ Manual PR review before merging fixtures
-- ✅ PII sanitization tested with 15 unit tests
+- ✅ PII sanitization tested with 12 unit tests
 
 ## Benefits Delivered
 
@@ -205,7 +213,7 @@ Recursive processing handles nested objects/arrays.
 
 ### Operational Excellence
 
-✅ **Automated Pipeline**: Weekly fixture updates via GitHub Actions
+✅ **Automation Ready**: Infrastructure supports scheduled fixture extraction
 ✅ **Manual Control**: PR review before fixture changes merge
 ✅ **Cost Efficient**: ~$5.50/year CloudWatch costs
 ✅ **pnpm Compatible**: Works with pnpm v10 lifecycle script protection
@@ -225,13 +233,13 @@ Recursive processing handles nested objects/arrays.
 ## Success Metrics
 
 Implementation complete:
-- [x] Weekly fixture extraction PR automated
-- [x] Fixture logging in 2 reference Lambdas (WebhookFeedly, ListFiles)
+- [x] Fixture extraction pipeline implemented (manual + automation-ready)
+- [x] Fixture logging in all 7 API Gateway Lambdas
 - [x] ElectroDB integration test template ready
 - [x] Single-table GSI patterns validated
 - [x] Complete documentation published
 - [x] Example implementations live
-- [x] PII sanitization proven (15 tests)
+- [x] PII sanitization proven (12 tests)
 - [x] pnpm v10 compatible
 
 ## Future Enhancements
@@ -247,10 +255,11 @@ Implementation complete:
 
 ### Unit Tests
 
-- 15 tests for fixture logging functions (`lambda-helpers.test.ts`)
+- 12 tests for fixture logging functions (`lambda-helpers.test.ts`)
 - PII sanitization validation
 - Environment variable control
 - Nested object handling
+- Auto-detection of Lambda names
 - Mock-based, fast execution
 
 ### Integration Tests
@@ -291,27 +300,35 @@ Ready to create (template provided):
 - **[Fixture Extraction Guide](docs/wiki/Testing/Fixture-Extraction.md)** - Complete usage guide
 - **[ElectroDB Testing Patterns](docs/wiki/Testing/ElectroDB-Testing-Patterns.md)** - Unit + integration patterns
 - **[LocalStack Testing](docs/wiki/Integration/LocalStack-Testing.md)** - Updated with ElectroDB
-- **[Integration Test Template](ELECTRODB_TEST_EXAMPLE.md)** - Copy-paste ready test
+- **[Integration Test Example](test/integration/workflows/betterAuth.entities.integration.test.ts)** - Working integration test
 - **[This Summary](FIXTURE_AUTOMATION_SUMMARY.md)** - Implementation overview
 
-## Weekly Workflow
+## Extraction Workflow
 
-1. **Sunday 2am UTC**: GitHub Actions triggers
-2. **CloudWatch Query**: Extract fixtures from last 7 days
-3. **Processing**: Deduplicate (90% similarity) and sanitize PII
-4. **PR Creation**: Automated PR with fixture updates
-5. **Manual Review**: Team reviews fixture changes for sensitive data
-6. **Merge**: Fixtures become part of test suite
+**Manual Process** (currently available):
+1. **Run extraction**: `pnpm run extract-fixtures` (queries last 7 days)
+2. **Process fixtures**: `pnpm run process-fixtures` (deduplicate, sanitize)
+3. **Review changes**: `git diff test/fixtures/api-contracts/`
+4. **Commit**: Review and commit fixture updates
 
-## Supported Lambdas
+**Automation Ready** (infrastructure supports):
+- GitHub Actions workflow can be added for scheduled extraction
+- Would run weekly with automatic PR creation
+- Manual review before merge ensures no sensitive data leakage
 
-Current fixture extraction configured:
-- WebhookFeedly
+## Instrumented Lambdas
+
+All 7 API Gateway Lambdas have fixture logging:
 - ListFiles
-- RegisterDevice
 - LoginUser
-- StartFileUpload
-- SendPushNotification
+- RefreshToken
+- RegisterDevice
+- UserDelete
+- UserSubscribe
+- WebhookFeedly
+
+**Extraction script configured for** (in `bin/extract-fixtures.sh`):
+- WebhookFeedly, ListFiles, RegisterDevice, LoginUser, StartFileUpload, SendPushNotification
 
 **Add more**: Edit `LAMBDA_FUNCTIONS` array in `bin/extract-fixtures.sh`
 

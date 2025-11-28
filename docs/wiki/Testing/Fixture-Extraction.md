@@ -63,18 +63,24 @@ pnpm run process-fixtures
 
 **Output**: `test/fixtures/api-contracts/{LambdaName}/incoming.json`, `outgoing.json`
 
-## GitHub Actions Automation
+## GitHub Actions Automation (Planned)
 
-`.github/workflows/extract-fixtures.yml` runs weekly (Sunday 2am UTC):
+The extraction pipeline is automation-ready. A workflow can be added at `.github/workflows/extract-fixtures.yml`:
 
 ```yaml
+# Example workflow configuration
 on:
   schedule:
     - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:      # Manual trigger
 ```
 
-**Process**:
+**Current Process** (manual):
+1. Run `pnpm run extract-fixtures` locally
+2. Run `pnpm run process-fixtures` to deduplicate
+3. Review and commit fixture updates
+
+**Automated Process** (when workflow is added):
 1. Extract fixtures from CloudWatch
 2. Deduplicate by structural similarity (90% threshold)
 3. Create PR with updated fixtures
@@ -98,15 +104,19 @@ on:
 {userId: "user-1", status: "Failed", error: "Network timeout"}
 ```
 
-## Supported Lambdas
+## Instrumented Lambdas
 
-Current fixture extraction (configured in `bin/extract-fixtures.sh`):
-- WebhookFeedly
+All 7 API Gateway Lambdas have fixture logging enabled:
 - ListFiles
-- RegisterDevice
 - LoginUser
-- StartFileUpload
-- SendPushNotification
+- RefreshToken
+- RegisterDevice
+- UserDelete
+- UserSubscribe
+- WebhookFeedly
+
+**Extraction script configured for** (in `bin/extract-fixtures.sh`):
+- WebhookFeedly, ListFiles, RegisterDevice, LoginUser, StartFileUpload, SendPushNotification
 
 **Add more**: Edit `LAMBDA_FUNCTIONS` array in `bin/extract-fixtures.sh`
 
