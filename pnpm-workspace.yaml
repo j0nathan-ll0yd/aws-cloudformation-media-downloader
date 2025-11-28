@@ -1,0 +1,6 @@
+# pnpm workspace configuration
+# This file enables future monorepo architecture
+# Currently unused but positions project for growth
+packages:
+  - 'packages/*'
+  - 'apps/*'
