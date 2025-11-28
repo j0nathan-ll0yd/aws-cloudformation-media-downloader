@@ -69,9 +69,8 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = {
-      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
-      SignInWithAppleConfig  = data.sops_file.secrets.data["signInWithApple.config"]
-      SignInWithAppleAuthKey = data.sops_file.secrets.data["signInWithApple.authKey"]
+      DynamoDBTableName     = aws_dynamodb_table.MediaDownloader.name
+      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
     }
   }
 }

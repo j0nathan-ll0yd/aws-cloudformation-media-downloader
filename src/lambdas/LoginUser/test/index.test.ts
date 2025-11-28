@@ -4,13 +4,7 @@ import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 import {v4 as uuidv4} from 'uuid'
 
-const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
-
-// Mock Apple authorization code exchange (still needed before Better Auth call)
-jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse)
-}))
 
 // Mock Better Auth API
 interface SignInSocialParams {
@@ -19,7 +13,6 @@ interface SignInSocialParams {
     provider: string
     idToken: {
       token: string
-      accessToken?: string
     }
   }
 }
@@ -75,14 +68,13 @@ describe('#LoginUser', () => {
     expect(typeof body.body.sessionId).toEqual('string')
     expect(typeof body.body.userId).toEqual('string')
 
-    // Verify Better Auth API was called with correct parameters
+    // Verify Better Auth API was called with correct parameters (using idToken only)
     expect(signInSocialMock).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
           provider: 'apple',
           idToken: expect.objectContaining({
-            token: expect.any(String),
-            accessToken: expect.any(String)
+            token: expect.any(String)
           })
         })
       })

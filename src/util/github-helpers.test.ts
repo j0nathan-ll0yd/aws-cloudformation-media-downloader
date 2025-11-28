@@ -23,11 +23,6 @@ jest.unstable_mockModule('@octokit/rest', () => ({
   Octokit: jest.fn().mockImplementation(() => new MockOctokit())
 }))
 
-// Mock Secrets Manager helper
-jest.unstable_mockModule('./secretsmanager-helpers', () => ({
-  getGithubPersonalToken: jest.fn<() => Promise<string>>().mockResolvedValue('fake-github-token')
-}))
-
 // Mock template helpers
 jest.unstable_mockModule('./template-helpers', () => ({
   renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {

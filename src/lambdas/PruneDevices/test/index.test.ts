@@ -4,6 +4,13 @@ import {fakePrivateKey, testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '../../../util/errors'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+
+// Set APNS env vars for ApnsClient
+process.env.ApnsSigningKey = fakePrivateKey
+process.env.ApnsTeam = 'XXXXXX'
+process.env.ApnsKeyId = 'XXXXXX'
+process.env.ApnsDefaultTopic = 'lifegames.OfflineMediaDownloader'
+
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {
   Items: [
@@ -52,10 +59,6 @@ jest.unstable_mockModule('../../../entities/Devices', () => ({
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
 jest.unstable_mockModule('../../../entities/UserDevices', () => ({
   UserDevices: userDevicesMock.entity
-}))
-
-jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  getApnsSigningKey: jest.fn().mockReturnValue(fakePrivateKey)
 }))
 
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({

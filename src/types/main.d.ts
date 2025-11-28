@@ -111,14 +111,14 @@ interface ClientFile {
 }
 
 interface UserRegistration {
-  authorizationCode: string
+  idToken: string
   email: string
   firstName?: string
   lastName?: string
 }
 
 interface UserLogin {
-  authorizationCode: string
+  idToken: string
 }
 
 interface UserSubscribe {
@@ -139,36 +139,6 @@ interface IdentityProvider {
   refreshToken: string
   tokenType: string
   expiresAt: number
-}
-
-interface IdentityProviderApple extends IdentityProvider {
-  userId: string
-  email: string
-  emailVerified: boolean
-  isPrivateEmail: boolean
-}
-
-// https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse
-interface AppleTokenResponse {
-  access_token: string // A token used to access allowed data.
-  expires_in: number // The amount of time, in seconds, before the access token expires.
-  id_token: string // A JSON Web Token that contains the user’s identity information.
-  refresh_token: string // The refresh token used to regenerate new access tokens.
-  token_type: string // The type of access token. It will always be bearer.
-}
-
-interface SignInWithAppleVerifiedToken extends JWTPayload {
-  iss: string // https://appleid.apple.com
-  aud: string // lifegames.OfflineMediaDownloader
-  exp: number // 1590096639
-  iat: number // 1590096039
-  sub: string // 000185.7720315570fc49d99a265f9af4b46879.2034
-  at_hash: string // ztF31A59ZQ66PpC1D57ydg
-  email: string // 28ncci33a3@privaterelay.appleid.com
-  email_verified: boolean
-  is_private_email: boolean
-  auth_time: number
-  nonce_supported: boolean
 }
 
 // Types specifically for Cloudfront

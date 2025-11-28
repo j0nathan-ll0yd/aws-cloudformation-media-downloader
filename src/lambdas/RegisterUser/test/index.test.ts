@@ -1,14 +1,8 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
 import type {MockedFunction} from 'jest-mock'
 import {testContext} from '../../../util/jest-setup'
+import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 import {v4 as uuidv4} from 'uuid'
-
-const {default: validateAuthResponse} = await import('./fixtures/validateAuthCodeForToken-200-OK.json', {assert: {type: 'json'}})
-
-// Mock Apple authorization code exchange (still needed before Better Auth call)
-jest.unstable_mockModule('../../../util/secretsmanager-helpers', () => ({
-  validateAuthCodeForToken: jest.fn().mockReturnValue(validateAuthResponse)
-}))
 
 // Mock Better Auth API
 interface SignInSocialParams {
@@ -17,7 +11,6 @@ interface SignInSocialParams {
     provider: string
     idToken: {
       token: string
-      accessToken?: string
     }
   }
 }
@@ -32,6 +25,12 @@ jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
   }
 }))
 
+// Mock Users entity for name updates
+const usersMock = createElectroDBEntityMock()
+jest.unstable_mockModule('../../../entities/Users', () => ({
+  Users: usersMock.entity
+}))
+
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
@@ -42,9 +41,11 @@ describe('#RegisterUser', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     signInSocialMock.mockReset()
+    usersMock.mocks.update.set.mockClear()
+    usersMock.mocks.update.go.mockClear()
   })
 
-  test('should successfully register a new user via Better Auth', async () => {
+  test('should successfully register a new user via Better Auth and update name', async () => {
     // Mock Better Auth creating a new user
     const userId = uuidv4()
     const sessionId = uuidv4()
@@ -65,6 +66,10 @@ describe('#RegisterUser', () => {
       token
     })
 
+    // Mock the user name update
+    usersMock.mocks.update.set.mockReturnThis()
+    usersMock.mocks.update.go.mockResolvedValue({data: {}})
+
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
 
@@ -74,21 +79,26 @@ describe('#RegisterUser', () => {
     expect(typeof body.body.sessionId).toEqual('string')
     expect(typeof body.body.userId).toEqual('string')
 
-    // Verify Better Auth API was called with correct parameters
+    // Verify Better Auth API was called with correct parameters (using idToken, not accessToken)
     expect(signInSocialMock).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
           provider: 'apple',
           idToken: expect.objectContaining({
-            token: expect.any(String),
-            accessToken: expect.any(String)
+            token: expect.any(String)
           })
         })
       })
     )
+
+    // Verify name was updated for new user
+    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({
+      firstName: 'Jonathan',
+      lastName: 'Lloyd'
+    })
   })
 
-  test('should successfully login an existing user via Better Auth', async () => {
+  test('should successfully login an existing user via Better Auth without updating name', async () => {
     // Mock Better Auth finding and logging in existing user
     const userId = uuidv4()
     const sessionId = uuidv4()
@@ -117,6 +127,9 @@ describe('#RegisterUser', () => {
     expect(typeof body.body.expiresAt).toEqual('number')
     expect(typeof body.body.sessionId).toEqual('string')
     expect(typeof body.body.userId).toEqual('string')
+
+    // Verify name was NOT updated for existing user
+    expect(usersMock.mocks.update.set).not.toHaveBeenCalled()
   })
 
   test('should handle an invalid payload', async () => {
