@@ -7,7 +7,8 @@ set -euo pipefail
 shopt -s nullglob  # Allow glob patterns to expand to empty list if no matches
 
 # Configuration
-WIKI_DIR="${WIKI_DIR:-wiki}"
+SOURCE_DIR="${SOURCE_DIR:-docs/wiki}"  # Read structure from source
+WIKI_DIR="${WIKI_DIR:-wiki}"           # Write sidebar to wiki
 SIDEBAR_FILE="$WIKI_DIR/_Sidebar.md"
 
 echo "📋 Generating sidebar navigation..."
@@ -16,7 +17,11 @@ echo "Wiki directory: $WIKI_DIR"
 echo "Output file: $SIDEBAR_FILE"
 echo ""
 
-# Check if wiki directory exists
+# Check if directories exist
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo "❌ Error: Source directory $SOURCE_DIR does not exist"
+    exit 1
+fi
 if [ ! -d "$WIKI_DIR" ]; then
     echo "❌ Error: Wiki directory $WIKI_DIR does not exist"
     exit 1
@@ -141,7 +146,7 @@ EOF
     echo "" >> "$SIDEBAR_FILE"
 
     # Process root level files (except Home and Getting-Started which are already added)
-    for file in "$WIKI_DIR"/*.md; do
+    for file in "$SOURCE_DIR"/*.md; do
         if [ ! -f "$file" ]; then
             continue
         fi
@@ -159,8 +164,8 @@ EOF
         echo "- [$title]($basename)" >> "$SIDEBAR_FILE"
     done
 
-    # Process each category directory
-    for dir in "$WIKI_DIR"/*/; do
+    # Process each category directory from source
+    for dir in "$SOURCE_DIR"/*/; do
         if [ ! -d "$dir" ]; then
             continue
         fi

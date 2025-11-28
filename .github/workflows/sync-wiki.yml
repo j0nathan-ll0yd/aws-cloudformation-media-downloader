@@ -67,6 +67,7 @@ jobs:
         run: |
           echo "📋 Generating sidebar navigation..."
 
+          export SOURCE_DIR="main/docs/wiki"
           export WIKI_DIR="wiki"
           bash main/.github/scripts/generate-sidebar.sh
 
