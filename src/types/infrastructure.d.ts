@@ -664,7 +664,7 @@ export interface PurpleVariables {
     DefaultFileName?:              string;
     DefaultFileSize?:              number;
     DefaultFileUrl?:               string;
-    BaseUrl?:                      string;
+    ApplicationUrl?:               string;
     SignInWithAppleConfig?:        string;
     ApnsDefaultTopic?:             string;
     ApnsKeyId?:                    string;
@@ -1585,7 +1585,7 @@ const typeMap: any = {
         { json: "DefaultFileName", js: "DefaultFileName", typ: u(undefined, "") },
         { json: "DefaultFileSize", js: "DefaultFileSize", typ: u(undefined, 0) },
         { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: u(undefined, "") },
-        { json: "BaseUrl", js: "BaseUrl", typ: u(undefined, "") },
+        { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
         { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
         { json: "ApnsDefaultTopic", js: "ApnsDefaultTopic", typ: u(undefined, "") },
         { json: "ApnsKeyId", js: "ApnsKeyId", typ: u(undefined, "") },

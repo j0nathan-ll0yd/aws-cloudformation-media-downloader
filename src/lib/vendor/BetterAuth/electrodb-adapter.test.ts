@@ -28,6 +28,61 @@ const {Users} = await import('../../../entities/Users')
 const {Sessions} = await import('../../../entities/Sessions')
 const {VerificationTokens} = await import('../../../entities/VerificationTokens')
 
+/**
+ * Helper to create mock user objects with sensible defaults
+ */
+function createMockUser(overrides?: any) {
+  return {
+    userId: 'user-123',
+    email: 'test@example.com',
+    emailVerified: false,
+    firstName: 'John',
+    lastName: 'Doe',
+    identityProviders: {},
+    ...overrides
+  }
+}
+
+/**
+ * Helper to create mock session objects with sensible defaults
+ */
+function createMockSession(overrides?: any) {
+  const now = Date.now()
+  return {
+    sessionId: 'session-123',
+    userId: 'user-123',
+    expiresAt: now + 30 * 24 * 60 * 60 * 1000,
+    token: 'token-abc',
+    ipAddress: '1.2.3.4',
+    userAgent: 'Mozilla/5.0',
+    deviceId: 'device-123',
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  }
+}
+
+/**
+ * Helper to create mock account objects with sensible defaults
+ */
+function createMockAccount(overrides?: any) {
+  const now = Date.now()
+  return {
+    accountId: 'account-123',
+    userId: 'user-123',
+    providerId: 'apple',
+    providerAccountId: 'apple-user-123',
+    accessToken: 'access-token',
+    refreshToken: 'refresh-token',
+    expiresAt: now + 3600000,
+    scope: 'email profile',
+    tokenType: 'Bearer',
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  }
+}
+
 describe('ElectroDB Adapter', () => {
   let adapter: ReturnType<typeof createElectroDBAdapter>
 
@@ -53,14 +108,7 @@ describe('ElectroDB Adapter', () => {
 
   describe('User Operations', () => {
     it('should create a new user', async () => {
-      const mockUser = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        emailVerified: false,
-        firstName: 'John',
-        lastName: 'Doe',
-        identityProviders: {}
-      }
+      const mockUser = createMockUser()
 
       usersMock.mocks.create.mockResolvedValue({data: mockUser})
 
@@ -90,13 +138,11 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get a user by ID', async () => {
-      const mockUser = {
-        userId: 'user-123',
-        email: 'test@example.com',
+      const mockUser = createMockUser({
         emailVerified: true,
         firstName: 'Jane',
         lastName: 'Smith'
-      }
+      })
 
       usersMock.mocks.get.mockResolvedValue({data: mockUser})
 
@@ -122,13 +168,10 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get user by email', async () => {
-      const mockUser = {
-        userId: 'user-123',
-        email: 'test@example.com',
+      const mockUser = createMockUser({
         emailVerified: true,
-        firstName: 'John',
         lastName: ''
-      }
+      })
 
       // Mock scan operation for email lookup
       usersMock.mocks.scan.where.mockReturnThis()
@@ -147,13 +190,10 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should update a user', async () => {
-      const mockUpdatedUser = {
-        userId: 'user-123',
+      const mockUpdatedUser = createMockUser({
         email: 'newemail@example.com',
-        emailVerified: true,
-        firstName: 'John',
-        lastName: 'Doe'
-      }
+        emailVerified: true
+      })
 
       usersMock.mocks.update.set.mockReturnThis()
       usersMock.mocks.update.go.mockResolvedValue({data: mockUpdatedUser})
@@ -184,17 +224,7 @@ describe('ElectroDB Adapter', () => {
 
   describe('Session Operations', () => {
     it('should create a new session', async () => {
-      const mockSession = {
-        sessionId: 'session-123',
-        userId: 'user-123',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        token: 'token-abc',
-        ipAddress: '1.2.3.4',
-        userAgent: 'Mozilla/5.0',
-        deviceId: 'device-123',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+      const mockSession = createMockSession()
 
       sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
@@ -221,14 +251,11 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get a session by ID', async () => {
-      const mockSession = {
-        sessionId: 'session-123',
-        userId: 'user-123',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        token: 'token-abc',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+      const mockSession = createMockSession({
+        ipAddress: undefined,
+        userAgent: undefined,
+        deviceId: undefined
+      })
 
       sessionsMock.mocks.get.mockResolvedValue({data: mockSession})
 
@@ -248,14 +275,9 @@ describe('ElectroDB Adapter', () => {
 
     it('should update a session', async () => {
       const newExpiresAt = Date.now() + 60 * 24 * 60 * 60 * 1000
-      const mockUpdatedSession = {
-        sessionId: 'session-123',
-        userId: 'user-123',
-        expiresAt: newExpiresAt,
-        token: 'token-abc',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+      const mockUpdatedSession = createMockSession({
+        expiresAt: newExpiresAt
+      })
 
       sessionsMock.mocks.update.set.mockReturnThis()
       sessionsMock.mocks.update.go.mockResolvedValue({data: mockUpdatedSession})
@@ -278,19 +300,7 @@ describe('ElectroDB Adapter', () => {
 
   describe('Account Operations', () => {
     it('should create a new OAuth account', async () => {
-      const mockAccount = {
-        accountId: 'account-123',
-        userId: 'user-123',
-        providerId: 'apple',
-        providerAccountId: 'apple-user-123',
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresAt: Date.now() + 3600000,
-        scope: 'email profile',
-        tokenType: 'Bearer',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+      const mockAccount = createMockAccount()
 
       accountsMock.mocks.create.mockResolvedValue({data: mockAccount})
 
@@ -323,14 +333,15 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get an account by ID', async () => {
-      const mockAccount = {
-        accountId: 'account-123',
-        userId: 'user-123',
+      const mockAccount = createMockAccount({
         providerId: 'google',
         providerAccountId: 'google-user-123',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+        accessToken: undefined,
+        refreshToken: undefined,
+        expiresAt: undefined,
+        scope: undefined,
+        tokenType: undefined
+      })
 
       accountsMock.mocks.get.mockResolvedValue({data: mockAccount})
 

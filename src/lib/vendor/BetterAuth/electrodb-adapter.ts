@@ -33,6 +33,56 @@ import {v4 as uuidv4} from 'uuid'
 import {logDebug, logError} from '../../../util/lambda-helpers'
 
 /**
+ * Transforms ElectroDB user entity to Better Auth user format
+ */
+function transformUserToAuth(electroUser: any) {
+  return {
+    id: electroUser.userId,
+    email: electroUser.email,
+    emailVerified: electroUser.emailVerified,
+    name: `${electroUser.firstName} ${electroUser.lastName}`.trim(),
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  }
+}
+
+/**
+ * Transforms ElectroDB session entity to Better Auth session format
+ */
+function transformSessionToAuth(electroSession: any) {
+  return {
+    id: electroSession.sessionId,
+    userId: electroSession.userId,
+    expiresAt: new Date(electroSession.expiresAt),
+    token: electroSession.token,
+    ipAddress: electroSession.ipAddress,
+    userAgent: electroSession.userAgent,
+    createdAt: new Date(electroSession.createdAt),
+    updatedAt: new Date(electroSession.updatedAt)
+  }
+}
+
+/**
+ * Transforms ElectroDB account entity to Better Auth account format
+ */
+function transformAccountToAuth(electroAccount: any) {
+  return {
+    id: electroAccount.accountId,
+    userId: electroAccount.userId,
+    providerId: electroAccount.providerId,
+    providerAccountId: electroAccount.providerAccountId,
+    accessToken: electroAccount.accessToken,
+    refreshToken: electroAccount.refreshToken,
+    expiresAt: electroAccount.expiresAt,
+    scope: electroAccount.scope,
+    tokenType: electroAccount.tokenType,
+    idToken: electroAccount.idToken,
+    createdAt: new Date(electroAccount.createdAt),
+    updatedAt: new Date(electroAccount.updatedAt)
+  }
+}
+
+/**
  * Creates a Better Auth adapter for ElectroDB/DynamoDB.
  *
  * This adapter implements Better Auth's expected interface and maps operations
@@ -70,14 +120,7 @@ export function createElectroDBAdapter(): any {
         identityProviders: data.identityProviders || {}
       }).go()
 
-      return {
-        id: result.data.userId,
-        email: result.data.email,
-        emailVerified: result.data.emailVerified,
-        name: `${result.data.firstName} ${result.data.lastName}`.trim(),
-        createdAt: new Date(Date.now()),
-        updatedAt: new Date(Date.now())
-      }
+      return transformUserToAuth(result.data)
     },
 
     async getUser(userId) {
@@ -87,14 +130,7 @@ export function createElectroDBAdapter(): any {
         const result = await Users.get({userId}).go()
         if (!result.data) return null
 
-        return {
-          id: result.data.userId,
-          email: result.data.email,
-          emailVerified: result.data.emailVerified,
-          name: `${result.data.firstName} ${result.data.lastName}`.trim(),
-          createdAt: new Date(Date.now()),
-          updatedAt: new Date(Date.now())
-        }
+        return transformUserToAuth(result.data)
       } catch (error) {
         logError('ElectroDB Adapter: getUser failed', {userId, error})
         return null
@@ -111,15 +147,7 @@ export function createElectroDBAdapter(): any {
 
         if (!result.data || result.data.length === 0) return null
 
-        const user = result.data[0]
-        return {
-          id: user.userId,
-          email: user.email,
-          emailVerified: user.emailVerified,
-          name: `${user.firstName} ${user.lastName}`.trim(),
-          createdAt: new Date(Date.now()),
-          updatedAt: new Date(Date.now())
-        }
+        return transformUserToAuth(result.data[0])
       } catch (error) {
         logError('ElectroDB Adapter: getUserByEmail failed', {email, error})
         return null
@@ -140,14 +168,7 @@ export function createElectroDBAdapter(): any {
 
       const result = await Users.update({userId}).set(updates).go()
 
-      return {
-        id: result.data.userId,
-        email: result.data.email,
-        emailVerified: result.data.emailVerified,
-        name: `${result.data.firstName} ${result.data.lastName}`.trim(),
-        createdAt: new Date(Date.now()),
-        updatedAt: new Date(Date.now())
-      }
+      return transformUserToAuth(result.data)
     },
 
     async deleteUser(userId) {
@@ -174,16 +195,7 @@ export function createElectroDBAdapter(): any {
         deviceId: data.deviceId
       }).go()
 
-      return {
-        id: result.data.sessionId,
-        userId: result.data.userId,
-        expiresAt: new Date(result.data.expiresAt),
-        token: result.data.token,
-        ipAddress: result.data.ipAddress,
-        userAgent: result.data.userAgent,
-        createdAt: new Date(result.data.createdAt),
-        updatedAt: new Date(result.data.updatedAt)
-      }
+      return transformSessionToAuth(result.data)
     },
 
     async getSession(sessionId) {
@@ -193,16 +205,7 @@ export function createElectroDBAdapter(): any {
         const result = await Sessions.get({sessionId}).go()
         if (!result.data) return null
 
-        return {
-          id: result.data.sessionId,
-          userId: result.data.userId,
-          expiresAt: new Date(result.data.expiresAt),
-          token: result.data.token,
-          ipAddress: result.data.ipAddress,
-          userAgent: result.data.userAgent,
-          createdAt: new Date(result.data.createdAt),
-          updatedAt: new Date(result.data.updatedAt)
-        }
+        return transformSessionToAuth(result.data)
       } catch (error) {
         logError('ElectroDB Adapter: getSession failed', {sessionId, error})
         return null
@@ -220,16 +223,7 @@ export function createElectroDBAdapter(): any {
 
       const result = await Sessions.update({sessionId}).set(updates).go()
 
-      return {
-        id: result.data.sessionId,
-        userId: result.data.userId,
-        expiresAt: new Date(result.data.expiresAt),
-        token: result.data.token,
-        ipAddress: result.data.ipAddress,
-        userAgent: result.data.userAgent,
-        createdAt: new Date(result.data.createdAt),
-        updatedAt: new Date(result.data.updatedAt)
-      }
+      return transformSessionToAuth(result.data)
     },
 
     async deleteSession(sessionId) {
@@ -259,20 +253,7 @@ export function createElectroDBAdapter(): any {
         idToken: data.idToken
       }).go()
 
-      return {
-        id: result.data.accountId,
-        userId: result.data.userId,
-        providerId: result.data.providerId,
-        providerAccountId: result.data.providerAccountId,
-        accessToken: result.data.accessToken,
-        refreshToken: result.data.refreshToken,
-        expiresAt: result.data.expiresAt,
-        scope: result.data.scope,
-        tokenType: result.data.tokenType,
-        idToken: result.data.idToken,
-        createdAt: new Date(result.data.createdAt),
-        updatedAt: new Date(result.data.updatedAt)
-      }
+      return transformAccountToAuth(result.data)
     },
 
     async getAccount(accountId) {
@@ -282,20 +263,7 @@ export function createElectroDBAdapter(): any {
         const result = await Accounts.get({accountId}).go()
         if (!result.data) return null
 
-        return {
-          id: result.data.accountId,
-          userId: result.data.userId,
-          providerId: result.data.providerId,
-          providerAccountId: result.data.providerAccountId,
-          accessToken: result.data.accessToken,
-          refreshToken: result.data.refreshToken,
-          expiresAt: result.data.expiresAt,
-          scope: result.data.scope,
-          tokenType: result.data.tokenType,
-          idToken: result.data.idToken,
-          createdAt: new Date(result.data.createdAt),
-          updatedAt: new Date(result.data.updatedAt)
-        }
+        return transformAccountToAuth(result.data)
       } catch (error) {
         logError('ElectroDB Adapter: getAccount failed', {accountId, error})
         return null

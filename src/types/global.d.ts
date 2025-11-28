@@ -5,7 +5,7 @@ declare global {
       ApnsKeyId: string
       ApnsSigningKey: string
       ApnsTeam: string
-      BaseUrl: string
+      ApplicationUrl: string
       Bucket: string
       DefaultFileSize: string
       DefaultFileName: string

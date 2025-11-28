@@ -28,7 +28,7 @@ export const auth = betterAuth({
   database: createElectroDBAdapter(),
 
   // Base URL for OAuth callbacks (from environment)
-  baseURL: process.env.BaseUrl,
+  baseURL: process.env.ApplicationUrl,
 
   // Trusted origins for OAuth flows
   trustedOrigins: ['https://appleid.apple.com'],
@@ -90,7 +90,7 @@ function getAppleBundleIdFromConfig(): string {
  */
 export async function initializeBetterAuth() {
   logDebug('Better Auth initialized', {
-    baseURL: process.env.BaseUrl
+    applicationUrl: process.env.ApplicationUrl
   })
 }
 
