@@ -87,6 +87,170 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 └── build/graph.json       # Code graph (ts-morph) - READ THIS
 ```
 
+## System Architecture
+
+### Lambda Data Flow
+
+```mermaid
+graph TD
+    %% External Triggers
+    API[API Gateway] --> ListFiles[ListFiles Lambda]
+    API --> LoginUser[LoginUser Lambda]
+    API --> RegisterDevice[RegisterDevice Lambda]
+    API --> StartFileUpload[StartFileUpload Lambda]
+
+    Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
+
+    %% S3 Triggers
+    S3Upload[S3 Upload Event] --> FileCoordinator[FileCoordinator Lambda]
+
+    %% Internal Processing
+    FileCoordinator --> DownloadMedia[DownloadMedia Lambda]
+    FileCoordinator --> CreateThumbnail[CreateThumbnail Lambda]
+
+    %% Notifications
+    DownloadMedia --> SendPushNotification[SendPushNotification Lambda]
+    CreateThumbnail --> SendPushNotification
+
+    %% User Management
+    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
+    UserRequest[User Request] --> UserDelete[UserDelete Lambda]
+
+    %% Data Stores
+    ListFiles --> DDB[(DynamoDB)]
+    LoginUser --> DDB
+    RegisterDevice --> DDB
+    WebhookFeedly --> DDB
+    FileCoordinator --> DDB
+    UserDelete --> DDB
+    PruneDevices --> DDB
+
+    DownloadMedia --> S3Storage[(S3 Storage)]
+    CreateThumbnail --> S3Storage
+
+    SendPushNotification --> APNS[Apple Push Service]
+```
+
+### Entity Relationship Model
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_FILES : has
+    USERS ||--o{ USER_DEVICES : owns
+    FILES ||--o{ USER_FILES : shared_with
+    DEVICES ||--o{ USER_DEVICES : registered_to
+
+    USERS {
+        string userId PK
+        string email
+        string status
+        timestamp createdAt
+    }
+
+    FILES {
+        string fileId PK
+        string fileName
+        string url
+        string status
+        number size
+        timestamp createdAt
+    }
+
+    DEVICES {
+        string deviceId PK
+        string deviceToken
+        string platform
+        timestamp lastActive
+    }
+
+    USER_FILES {
+        string userId FK
+        string fileId FK
+        timestamp createdAt
+    }
+
+    USER_DEVICES {
+        string userId FK
+        string deviceId FK
+        timestamp createdAt
+    }
+```
+
+### Service Interaction Map
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        API Gateway                          │
+│                    (Custom Authorizer)                      │
+└────────────┬────────────────────────────────────┬───────────┘
+             │                                    │
+             ▼                                    ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│   Lambda Functions  │              │   External Services │
+├─────────────────────┤              ├─────────────────────┤
+│ • ListFiles         │              │ • Feedly API        │
+│ • LoginUser         │              │ • YouTube (yt-dlp)  │
+│ • RegisterDevice    │              │ • APNS              │
+│ • StartFileUpload   │              │ • Sign In w/ Apple  │
+│ • WebhookFeedly     │              │ • GitHub API        │
+└──────────┬──────────┘              └─────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     AWS Services Layer                      │
+├─────────────────────┬───────────────┬──────────────────────┤
+│    DynamoDB         │      S3       │    CloudWatch        │
+│  (ElectroDB ORM)    │  (Media Files)│   (Logs/Metrics)     │
+└─────────────────────┴───────────────┴──────────────────────┘
+```
+
+### Dependency Analysis with graph.json
+
+The `build/graph.json` file contains comprehensive dependency information. Key queries:
+
+```bash
+# Get all dependencies for a Lambda function
+cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/index.ts"]'
+
+# Find all files that import a specific module
+cat build/graph.json | jq '.graph | to_entries[] | select(.value.imports[] | contains("entities/Files")) | .key'
+
+# List all Lambda entry points
+cat build/graph.json | jq '.graph | keys[] | select(contains("src/lambdas") and contains("/src/index.ts"))'
+
+# Find circular dependencies (if any)
+cat build/graph.json | jq '.circularDependencies'
+
+# Get import count for complexity analysis
+cat build/graph.json | jq '.graph | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
+```
+
+### Lambda Trigger Patterns
+
+| Lambda | Trigger Type | Source | Purpose |
+|--------|-------------|--------|---------|
+| ListFiles | API Gateway | GET /files | List user's available files |
+| LoginUser | API Gateway | POST /auth/login | Authenticate user |
+| RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
+| StartFileUpload | API Gateway | POST /files/upload | Initiate file upload |
+| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles |
+| FileCoordinator | S3 Event | s3:ObjectCreated | Orchestrate file processing |
+| DownloadMedia | Step Functions | FileCoordinator | Download media from URL |
+| CreateThumbnail | Step Functions | FileCoordinator | Generate thumbnail |
+| SendPushNotification | Lambda Invoke | Various | Send APNS notifications |
+| PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
+| UserDelete | API Gateway | DELETE /users | Delete user and cascade |
+
+### Data Access Patterns
+
+| Pattern | Entity | Access Method | Index Used |
+|---------|--------|--------------|------------|
+| User's files | UserFiles → Files | Query by userId | GSI1 |
+| User's devices | UserDevices → Devices | Query by userId | GSI1 |
+| File's users | UserFiles | Query by fileId | GSI2 |
+| Device lookup | Devices | Get by deviceId | Primary |
+| User resources | Collections.userResources | Batch query | GSI1 |
+
 ## Critical Project-Specific Rules
 
 1. **Use build/graph.json for dependency analysis**:
