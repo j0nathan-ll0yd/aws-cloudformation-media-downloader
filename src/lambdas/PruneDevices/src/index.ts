@@ -32,10 +32,10 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   const client = new ApnsClient({
-    team: process.env.ApnsTeam as string,
-    keyId: process.env.ApnsKeyId as string,
-    signingKey: process.env.ApnsSigningKey as string,
-    defaultTopic: process.env.ApnsDefaultTopic as string,
+    team: process.env.ApnsTeam,
+    keyId: process.env.ApnsKeyId,
+    signingKey: process.env.ApnsSigningKey,
+    defaultTopic: process.env.ApnsDefaultTopic,
     host: 'api.sandbox.push.apple.com'
   })
   const healthCheckNotification = new Notification(token, {
