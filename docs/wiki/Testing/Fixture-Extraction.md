@@ -2,7 +2,7 @@
 
 ## Quick Reference
 - **When to use**: Automated test fixture generation from production
-- **Enforcement**: Optional (enable with ENABLE_FIXTURE_LOGGING)
+- **Enforcement**: Always enabled (logs to CloudWatch, extract when needed)
 - **Impact if violated**: LOW - Manual fixture maintenance
 
 ## Overview
@@ -21,16 +21,9 @@ Production Lambda → CloudWatch Logs → extract-fixtures.sh → process-fixtur
 3. **Processing**: Deduplicate, sanitize PII, format for tests
 4. **PR creation**: Automated PR with fixture updates for review
 
-## Enable Fixture Logging
+## Fixture Logging Implementation
 
-### 1. Lambda Configuration
-
-Add to Lambda environment variables:
-```bash
-ENABLE_FIXTURE_LOGGING=true
-```
-
-### 2. Lambda Implementation
+Fixture logging is always enabled in instrumented Lambdas. Add logging calls to capture requests/responses:
 
 ```typescript
 import {logIncomingFixture, logOutgoingFixture} from '../../../util/lambda-helpers'
@@ -135,7 +128,6 @@ Automatically redacted fields:
 Recursive processing handles nested objects/arrays.
 
 ### Production Safety
-- ✅ Opt-in via environment variable
 - ✅ No performance impact (async logging)
 - ✅ CloudWatch costs: ~$5.50/year
 - ✅ Manual PR review before merging
@@ -152,7 +144,7 @@ Recursive processing handles nested objects/arrays.
 
 ### No Fixtures Extracted
 
-1. Verify `ENABLE_FIXTURE_LOGGING=true` in Lambda
+1. Verify Lambda has `logIncomingFixture`/`logOutgoingFixture` calls
 2. Check Lambda was invoked in time window
 3. Verify CloudWatch log group exists
 4. Check log retention (default 30 days)

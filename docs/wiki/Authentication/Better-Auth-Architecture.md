@@ -258,7 +258,6 @@ Required environment variables for Better Auth:
 - `ApplicationUrl`: Base URL for OAuth callbacks (e.g., `https://api.example.com`)
 - `SignInWithAppleConfig`: JSON with `{client_id, bundle_id}`
 - `DynamoDBTableName`: Name of DynamoDB table
-- `ENABLE_FIXTURE_LOGGING`: Enable fixture logging hooks (optional)
 
 ### Error Handling
 

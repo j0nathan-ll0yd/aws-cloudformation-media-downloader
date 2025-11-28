@@ -4,11 +4,11 @@ import {CreateTableCommand, DynamoDBClient} from '@aws-sdk/client-dynamodb'
  * Setup MediaDownloader DynamoDB table in LocalStack
  * Creates table with all required GSIs for ElectroDB entities
  *
- * Table Design:
- * - Primary Key: PK (HASH), SK (RANGE)
- * - GSI1: GSI1PK (HASH), GSI1SK (RANGE) - UserCollection (userResources)
- * - GSI2: GSI2PK (HASH), GSI2SK (RANGE) - FileCollection (fileUsers)
- * - GSI3: GSI3PK (HASH), GSI3SK (RANGE) - DeviceCollection (deviceUsers)
+ * Table Design (lowercase to match ElectroDB entity field names):
+ * - Primary Key: pk (HASH), sk (RANGE)
+ * - gsi1: gsi1pk (HASH), gsi1sk (RANGE) - UserCollection (userResources)
+ * - gsi2: gsi2pk (HASH), gsi2sk (RANGE) - FileCollection (fileUsers)
+ * - gsi3: gsi3pk (HASH), gsi3sk (RANGE) - DeviceCollection (deviceUsers)
  *
  * @returns Promise that resolves when table is created
  */
@@ -29,41 +29,41 @@ export async function setupLocalStackTable(): Promise<void> {
       new CreateTableCommand({
         TableName: tableName,
         AttributeDefinitions: [
-          {AttributeName: 'PK', AttributeType: 'S'},
-          {AttributeName: 'SK', AttributeType: 'S'},
-          {AttributeName: 'GSI1PK', AttributeType: 'S'},
-          {AttributeName: 'GSI1SK', AttributeType: 'S'},
-          {AttributeName: 'GSI2PK', AttributeType: 'S'},
-          {AttributeName: 'GSI2SK', AttributeType: 'S'},
-          {AttributeName: 'GSI3PK', AttributeType: 'S'},
-          {AttributeName: 'GSI3SK', AttributeType: 'S'}
+          {AttributeName: 'pk', AttributeType: 'S'},
+          {AttributeName: 'sk', AttributeType: 'S'},
+          {AttributeName: 'gsi1pk', AttributeType: 'S'},
+          {AttributeName: 'gsi1sk', AttributeType: 'S'},
+          {AttributeName: 'gsi2pk', AttributeType: 'S'},
+          {AttributeName: 'gsi2sk', AttributeType: 'S'},
+          {AttributeName: 'gsi3pk', AttributeType: 'S'},
+          {AttributeName: 'gsi3sk', AttributeType: 'S'}
         ],
         KeySchema: [
-          {AttributeName: 'PK', KeyType: 'HASH'},
-          {AttributeName: 'SK', KeyType: 'RANGE'}
+          {AttributeName: 'pk', KeyType: 'HASH'},
+          {AttributeName: 'sk', KeyType: 'RANGE'}
         ],
         GlobalSecondaryIndexes: [
           {
             IndexName: 'gsi1',
             KeySchema: [
-              {AttributeName: 'GSI1PK', KeyType: 'HASH'},
-              {AttributeName: 'GSI1SK', KeyType: 'RANGE'}
+              {AttributeName: 'gsi1pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
             ],
             Projection: {ProjectionType: 'ALL'}
           },
           {
             IndexName: 'gsi2',
             KeySchema: [
-              {AttributeName: 'GSI2PK', KeyType: 'HASH'},
-              {AttributeName: 'GSI2SK', KeyType: 'RANGE'}
+              {AttributeName: 'gsi2pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
             ],
             Projection: {ProjectionType: 'ALL'}
           },
           {
             IndexName: 'gsi3',
             KeySchema: [
-              {AttributeName: 'GSI3PK', KeyType: 'HASH'},
-              {AttributeName: 'GSI3SK', KeyType: 'RANGE'}
+              {AttributeName: 'gsi3pk', KeyType: 'HASH'},
+              {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
             ],
             Projection: {ProjectionType: 'ALL'}
           }

@@ -238,17 +238,22 @@ function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpda
 /**
  * Transforms Better Auth session format to ElectroDB session create data
  * Converts null to undefined for ElectroDB compatibility
+ * Note: deviceId is conditionally included to support sparse GSI indexing
  */
 function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; deviceId?: string}): ElectroSessionCreate {
-  return {
+  const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
     userId: authSession.userId!,  // Required by Better Auth
     expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
     token: authSession.token || uuidv4(),
     ipAddress: authSession.ipAddress ?? undefined,
-    userAgent: authSession.userAgent ?? undefined,
-    deviceId: authSession.deviceId  // Custom field for our app
+    userAgent: authSession.userAgent ?? undefined
   }
+  // Only include deviceId if provided - enables sparse GSI indexing
+  if (authSession.deviceId) {
+    result.deviceId = authSession.deviceId
+  }
+  return result
 }
 
 /**

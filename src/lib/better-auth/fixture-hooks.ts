@@ -27,12 +27,10 @@ function getFixtureName(path: string): string {
 
 /**
  * Before hook that logs incoming requests for fixture extraction
+ * Always logs - fixtures are extracted from CloudWatch as needed
  */
 export const logIncomingRequestHook = {
-  matcher: (_ctx: any) => {
-    // Only log in production when fixture logging is enabled
-    return process.env.ENABLE_FIXTURE_LOGGING === 'true'
-  },
+  matcher: () => true,
   handler: async (ctx: any) => {
     const fixtureName = getFixtureName(ctx.path)
 
@@ -57,12 +55,10 @@ export const logIncomingRequestHook = {
 
 /**
  * After hook that logs outgoing responses for fixture extraction
+ * Always logs - fixtures are extracted from CloudWatch as needed
  */
 export const logOutgoingResponseHook = {
-  matcher: (_ctx: any) => {
-    // Only log in production when fixture logging is enabled
-    return process.env.ENABLE_FIXTURE_LOGGING === 'true'
-  },
+  matcher: () => true,
   handler: async (ctx: any) => {
     const fixtureName = getFixtureName(ctx.path)
 

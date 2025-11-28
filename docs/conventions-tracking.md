@@ -13,7 +13,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Target**: docs/wiki/Testing/Fixture-Extraction.md
    - **Priority**: MEDIUM
    - **Status**: ✅ Documented
-   - **Enforcement**: Optional (enable with ENABLE_FIXTURE_LOGGING=true)
+   - **Enforcement**: Always enabled (logs to CloudWatch, extract when needed)
 
 2. **ElectroDB Collections Testing** (Testing Pattern)
    - **What**: Test Collections (JOIN-like queries) with LocalStack to validate single-table design

@@ -25,7 +25,7 @@ logOutgoingFixture(response, 'webhook-feedly')
 ```
 
 **Features**:
-- Controlled by `ENABLE_FIXTURE_LOGGING` environment variable
+- Always enabled (logs to CloudWatch, extract when needed)
 - Automatic redaction: tokens, passwords, device IDs, apiKeys, secrets
 - Structured markers for CloudWatch extraction (`__FIXTURE_MARKER__`)
 - 12 comprehensive unit tests covering all sanitization scenarios
@@ -100,21 +100,18 @@ All handlers use automatic Lambda name detection via `AWS_LAMBDA_FUNCTION_NAME`.
 
 ## Quick Start Guide
 
-### Enable Fixture Logging
+### Extract Fixtures
+
+Fixture logging is always enabled in instrumented Lambdas. Extract when needed:
 
 ```bash
-# 1. Enable in Lambda environment
-aws lambda update-function-configuration \
-  --function-name WebhookFeedly \
-  --environment "Variables={ENABLE_FIXTURE_LOGGING=true,...}"
+# 1. Wait for production traffic (Lambda must be invoked)
 
-# 2. Wait for production traffic
-
-# 3. Extract fixtures locally
+# 2. Extract fixtures locally
 pnpm run extract-fixtures
 pnpm run process-fixtures
 
-# 4. Fixtures appear in test/fixtures/api-contracts/
+# 3. Fixtures appear in test/fixtures/api-contracts/
 ```
 
 ### Create ElectroDB Integration Test
@@ -187,7 +184,6 @@ Recursive processing handles nested objects/arrays.
 
 ### Production Safety
 
-- ✅ Opt-in via environment variable (ENABLE_FIXTURE_LOGGING)
 - ✅ No performance impact (async console.log)
 - ✅ CloudWatch costs: ~$5.50/year
 - ✅ Manual PR review before merging fixtures
@@ -257,7 +253,6 @@ Implementation complete:
 
 - 12 tests for fixture logging functions (`lambda-helpers.test.ts`)
 - PII sanitization validation
-- Environment variable control
 - Nested object handling
 - Auto-detection of Lambda names
 - Mock-based, fast execution
@@ -276,7 +271,7 @@ Ready to create (template provided):
 
 ### No Fixtures Extracted
 
-1. Check `ENABLE_FIXTURE_LOGGING=true` in Lambda
+1. Verify Lambda has `logIncomingFixture`/`logOutgoingFixture` calls
 2. Verify Lambda was invoked in time window
 3. Check CloudWatch log retention (default 30 days)
 4. Verify log group exists: `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/`

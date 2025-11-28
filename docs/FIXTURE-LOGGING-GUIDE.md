@@ -10,18 +10,6 @@ The fixture logging system allows you to:
 3. Process and deduplicate fixtures for use in tests
 4. Track API contract changes over time
 
-## Configuration
-
-### Environment Variables
-
-Set these environment variables to enable fixture logging:
-
-```bash
-ENABLE_FIXTURE_LOGGING=true  # Enable fixture logging
-AWS_ACCOUNT_ID=123456789012  # AWS account ID (optional, for context)
-STAGE=prod                    # Deployment stage (optional)
-```
-
 ## Lambda Functions
 
 Lambda functions automatically log fixtures when the helper functions are used:
@@ -228,7 +216,7 @@ The processing script deduplicates fixtures by structural similarity:
 
 ### No fixtures appearing in CloudWatch
 
-1. Check `ENABLE_FIXTURE_LOGGING=true` is set
+1. Verify Lambda has `logIncomingFixture`/`logOutgoingFixture` calls
 2. Verify Lambda has CloudWatch write permissions
 3. Check log group exists: `/aws/lambda/{LambdaName}`
 
@@ -241,13 +229,11 @@ The processing script deduplicates fixtures by structural similarity:
 ### Better Auth fixtures not logging
 
 1. Verify hooks are added to Better Auth config
-2. Check `process.env.ENABLE_FIXTURE_LOGGING` is accessible
-3. Ensure Better Auth is running in an environment with CloudWatch access
+2. Ensure Better Auth is running in an environment with CloudWatch access
 
 ## Best Practices
 
-1. **Enable in production only temporarily** - Fixture logging adds overhead
-2. **Review sanitization** - Always check that sensitive data is redacted
-3. **Regular extraction** - Run extraction weekly to catch API changes
-4. **Deduplicate fixtures** - Avoid test bloat with similar fixtures
-5. **Version control fixtures** - Track API contract changes over time
+1. **Review sanitization** - Always check that sensitive data is redacted
+2. **Regular extraction** - Run extraction weekly to catch API changes
+3. **Deduplicate fixtures** - Avoid test bloat with similar fixtures
+4. **Version control fixtures** - Track API contract changes over time
