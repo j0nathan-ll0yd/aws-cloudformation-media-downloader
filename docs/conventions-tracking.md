@@ -4,6 +4,38 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-28
+
+1. **Production Fixture Logging** (Testing Pattern)
+   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for test fixture generation
+   - **Why**: Transform testing from assumptions to production truth; CloudWatch extraction enables regular fixture updates
+   - **Detected**: During fixture automation implementation
+   - **Target**: docs/wiki/Testing/Fixture-Extraction.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: Always enabled (logs to CloudWatch, extract when needed)
+
+2. **ElectroDB Collections Testing** (Testing Pattern)
+   - **What**: Test Collections (JOIN-like queries) with LocalStack to validate single-table design
+   - **Why**: Ensures GSI queries work correctly across entity boundaries; validates userResources, fileUsers, deviceUsers, userSessions, userAccounts
+   - **Detected**: During ElectroDB integration testing implementation
+   - **Target**: docs/wiki/Testing/ElectroDB-Testing-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Required for Collections changes
+
+### Detected: 2025-11-27
+
+3. **No Try-Catch for Required Environment Variables** (Rule)
+   - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
+   - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
+   - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
+   - **Detected**: During Better Auth configuration cleanup
+   - **Target**: docs/wiki/Conventions/Environment-Variables.md
+   - **Priority**: CRITICAL
+   - **Status**: ⏳ Pending documentation
+   - **Enforcement**: Infrastructure tests verify all env vars are present
+
 ### Detected: 2025-11-24
 
 1. **pnpm Lifecycle Script Protection** (Security Rule)
@@ -156,5 +188,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-28
-- **Total Conventions**: 13 detected, 9 documented, 4 pending
+- **Total Conventions**: 16 detected, 11 documented, 5 pending
 - **Convention Capture System**: Active

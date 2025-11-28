@@ -112,6 +112,47 @@ aws --endpoint-url=http://localhost:4566 lambda create-function \
   --runtime nodejs22.x
 ```
 
+## ElectroDB Integration Testing
+
+### Setup Helper
+
+```typescript
+import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
+
+beforeAll(async () => {
+  await setupLocalStackTable()
+})
+
+afterAll(async () => {
+  await cleanupLocalStackTable()
+})
+```
+
+**Creates**: MediaDownloader table with all GSIs (gsi1/userResources, gsi2/fileUsers, gsi3/deviceUsers)
+
+### Testing Collections
+
+```typescript
+import {collections} from '../../../src/entities/Collections'
+
+test('userResources collection', async () => {
+  // Create test data
+  await Users.create({userId: 'user-1', appleDeviceIdentifier: 'apple-1'}).go()
+  await Files.create({fileId: 'file-1', status: 'Downloaded', url: 'https://...'}).go()
+  await UserFiles.create({userId: 'user-1', fileId: 'file-1'}).go()
+
+  // Query collection (JOIN-like operation)
+  const result = await collections.userResources({userId: 'user-1'}).go()
+
+  // Validate single-table design
+  expect(result.data.Users).toHaveLength(1)
+  expect(result.data.Files).toHaveLength(1)
+  expect(result.data.UserFiles).toHaveLength(1)
+})
+```
+
+**See**: [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) for comprehensive examples
+
 ## Common Issues
 
 | Issue | Solution |

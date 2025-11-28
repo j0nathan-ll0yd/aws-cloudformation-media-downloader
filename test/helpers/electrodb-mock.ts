@@ -23,6 +23,9 @@ interface ElectroDBEntityMock<TData> {
       byDevice?: jest.Mock
       byStatus?: jest.Mock
       byKey?: jest.Mock
+      byEmail?: jest.Mock
+      byProvider?: jest.Mock
+      byIdentifier?: jest.Mock
     }
     create: jest.Mock
     upsert: jest.Mock
@@ -62,6 +65,18 @@ interface ElectroDBEntityMock<TData> {
         where: jest.Mock
       }
       byKey?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byEmail?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byProvider?: {
+        go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
+        where: jest.Mock
+      }
+      byIdentifier?: {
         go: jest.Mock<() => Promise<{data: TData[]} | undefined>>
         where: jest.Mock
       }
@@ -111,7 +126,7 @@ interface ElectroDBEntityMock<TData> {
  * // Assert in tests
  * expect(filesMock.mocks.query.byKey!.go).toHaveBeenCalledTimes(1)
  */
-export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey'>}): ElectroDBEntityMock<TData> {
+export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey' | 'byEmail' | 'byProvider' | 'byIdentifier'>}): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
   // Supports both single and batch operations
   const getMock = jest.fn<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>()

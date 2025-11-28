@@ -33,6 +33,9 @@
     "localstack:health": "curl -s http://localhost:4566/_localstack/health | jq",
     "update-cookies": "./bin/update-youtube-cookies.sh",
     "update-yt-dlp": "./bin/update-yt-dlp.sh",
+    "extract-fixtures": "./bin/extract-fixtures.sh",
+    "extract-fixtures:production": "./bin/extract-production-fixtures.sh",
+    "process-fixtures": "node bin/process-fixtures.js",
     "plan": "eval export $(cat .env) && cd terraform && tofu plan",
     "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve"
   },
@@ -54,7 +57,7 @@
     "apns2": "^12.0.0",
     "aws-xray-sdk-core": "^3.11.0",
     "axios": "^1.12.0",
-    "better-auth": "^1.4.1",
+    "better-auth": "^1.4.3",
     "electrodb": "^3.5.0",
     "joi": "^17.13.3",
     "jose": "^5.9.6",
