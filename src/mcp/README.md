@@ -12,7 +12,24 @@ pnpm install
 chmod +x src/mcp/server.ts
 ```
 
-## Configuration for Claude Desktop
+## Configuration
+
+### Claude Code (CLI)
+
+Add this to your project's `.claude/settings.local.json`:
+
+```json
+{
+  "mcpServers": {
+    "media-downloader": {
+      "command": "node",
+      "args": ["--loader", "ts-node/esm", "src/mcp/server.ts"]
+    }
+  }
+}
+```
+
+### Claude Desktop
 
 Add this to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
