@@ -124,16 +124,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'query_entities':
-        return await handleElectroDBQuery(args);
+        return await handleElectroDBQuery(args as {entity?: string; query: string});
 
       case 'query_lambda':
-        return await handleLambdaQuery(args);
+        return await handleLambdaQuery(args as {lambda?: string; query: string});
 
       case 'query_infrastructure':
-        return await handleInfrastructureQuery(args);
+        return await handleInfrastructureQuery(args as {resource?: string; query: string});
 
       case 'query_dependencies':
-        return await handleDependencyQuery(args);
+        return await handleDependencyQuery(args as {file?: string; query: string});
 
       default:
         throw new Error(`Unknown tool: ${name}`);

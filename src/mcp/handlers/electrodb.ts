@@ -1,188 +1,100 @@
 /**
- * ElectroDB query handler for MCP server
- * Provides schema information and entity relationships
+ * ElectroDB entity query handler for MCP server
+ * Provides entity schemas and relationships
+ *
+ * Data is dynamically loaded from:
+ * - src/entities/ directory (Entity discovery)
+ * - graphrag/metadata.json (relationships)
  */
 
-export async function handleElectroDBQuery(args: any) {
-  const { entity, query } = args;
+import {getEntityInfo, getLambdaConfigs} from './data-loader.js';
 
-  // Entity schemas
-  const schemas = {
-    Users: {
-      attributes: {
-        userId: 'string (PK)',
-        email: 'string',
-        status: 'enum (active, suspended, deleted)',
-        createdAt: 'timestamp',
-        updatedAt: 'timestamp',
-      },
-      indexes: {
-        primary: { pk: 'userId', sk: 'USER' },
-        GSI1: { pk: 'email', sk: 'USER' },
-      },
-    },
-    Files: {
-      attributes: {
-        fileId: 'string (PK)',
-        fileName: 'string',
-        url: 'string',
-        status: 'enum (pending, downloading, downloaded, failed)',
-        size: 'number',
-        mimeType: 'string',
-        createdAt: 'timestamp',
-        updatedAt: 'timestamp',
-      },
-      indexes: {
-        primary: { pk: 'fileId', sk: 'FILE' },
-        GSI1: { pk: 'status', sk: 'createdAt' },
-      },
-    },
-    Devices: {
-      attributes: {
-        deviceId: 'string (PK)',
-        deviceToken: 'string',
-        platform: 'enum (ios, android)',
-        lastActive: 'timestamp',
-        createdAt: 'timestamp',
-      },
-      indexes: {
-        primary: { pk: 'deviceId', sk: 'DEVICE' },
-        GSI1: { pk: 'deviceToken', sk: 'DEVICE' },
-      },
-    },
-    UserFiles: {
-      attributes: {
-        userId: 'string (FK)',
-        fileId: 'string (FK)',
-        createdAt: 'timestamp',
-        accessLevel: 'enum (owner, viewer)',
-      },
-      indexes: {
-        primary: { pk: 'userId#fileId', sk: 'USERFILE' },
-        GSI1: { pk: 'userId', sk: 'fileId' },
-        GSI2: { pk: 'fileId', sk: 'userId' },
-      },
-    },
-    UserDevices: {
-      attributes: {
-        userId: 'string (FK)',
-        deviceId: 'string (FK)',
-        createdAt: 'timestamp',
-        isPrimary: 'boolean',
-      },
-      indexes: {
-        primary: { pk: 'userId#deviceId', sk: 'USERDEVICE' },
-        GSI1: { pk: 'userId', sk: 'deviceId' },
-        GSI2: { pk: 'deviceId', sk: 'userId' },
-      },
-    },
-  };
+// Re-export with old name for backwards compatibility
+export {handleEntityQuery as handleElectroDBQuery};
 
-  // Entity relationships
-  const relationships = {
-    Users: {
-      has: ['UserFiles (one-to-many)', 'UserDevices (one-to-many)'],
-      relatedTo: ['Files (many-to-many via UserFiles)', 'Devices (many-to-many via UserDevices)'],
-    },
-    Files: {
-      has: ['UserFiles (one-to-many)'],
-      relatedTo: ['Users (many-to-many via UserFiles)'],
-    },
-    Devices: {
-      has: ['UserDevices (one-to-many)'],
-      relatedTo: ['Users (many-to-many via UserDevices)'],
-    },
-    UserFiles: {
-      belongsTo: ['Users', 'Files'],
-      type: 'Junction table for Users ↔ Files relationship',
-    },
-    UserDevices: {
-      belongsTo: ['Users', 'Devices'],
-      type: 'Junction table for Users ↔ Devices relationship',
-    },
-  };
+export async function handleEntityQuery(args: {entity?: string; query: string}) {
+  const {entity, query} = args;
 
-  // Collection queries
-  const collections = {
-    userResources: {
-      description: 'Get all files and devices for a user',
-      entities: ['UserFiles', 'UserDevices', 'Files', 'Devices'],
-      query: 'Collections.userResources({ userId }).go()',
-      returns: '{ files: File[], devices: Device[] }',
-    },
-    fileUsers: {
-      description: 'Get all users with access to a file',
-      entities: ['UserFiles', 'Users'],
-      query: 'Collections.fileUsers({ fileId }).go()',
-      returns: 'User[]',
-    },
-    deviceUser: {
-      description: 'Get user for a specific device',
-      entities: ['UserDevices', 'Users'],
-      query: 'Collections.deviceUser({ deviceId }).go()',
-      returns: 'User | null',
-    },
-  };
+  const {entities, relationships} = await getEntityInfo();
 
   switch (query) {
+    case 'list':
+      return {
+        entities,
+        count: entities.length
+      };
+
     case 'schema':
-      if (entity && schemas[entity as keyof typeof schemas]) {
+      if (entity) {
+        if (!entities.includes(entity)) {
+          return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`};
+        }
         return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(schemas[entity as keyof typeof schemas], null, 2),
-            },
-          ],
+          entity,
+          note: 'Schema is defined in src/entities/' + entity + '.ts',
+          suggestion: 'Read the entity file for full schema details'
         };
       }
+      // Return all entity names with their file locations
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(schemas, null, 2),
-          },
-        ],
+        entities: entities.map((e) => ({
+          name: e,
+          file: `src/entities/${e}.ts`
+        }))
       };
 
-    case 'relationships':
-      if (entity && relationships[entity as keyof typeof relationships]) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(relationships[entity as keyof typeof relationships], null, 2),
-            },
-          ],
-        };
+    case 'relationships': {
+      if (entity) {
+        // Filter relationships for this entity
+        const related = relationships.filter((r) => r.from === entity || r.to === entity);
+        return {entity, relationships: related};
       }
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(relationships, null, 2),
-          },
-        ],
-      };
+      return {relationships};
+    }
 
-    case 'collections':
+    case 'collections': {
+      // Collections are defined in src/entities/Collections.ts
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(collections, null, 2),
-          },
-        ],
+        file: 'src/entities/Collections.ts',
+        description: 'Service combining entities for JOIN-like queries',
+        collections: [
+          {name: 'userResources', description: 'Query all files & devices for a user'},
+          {name: 'fileUsers', description: 'Get all users associated with a file'},
+          {name: 'deviceUsers', description: 'Get all users for a device'},
+          {name: 'userSessions', description: 'Get all sessions for a user'},
+          {name: 'userAccounts', description: 'Get all accounts for a user'}
+        ]
+      };
+    }
+
+    case 'usage': {
+      // Show which Lambdas use which entities
+      const lambdaConfigs = await getLambdaConfigs();
+      const usage: Record<string, string[]> = {};
+
+      for (const e of entities) {
+        usage[e] = [];
+        for (const [lambdaName, config] of Object.entries(lambdaConfigs)) {
+          if (config.entities.includes(e)) {
+            usage[e].push(lambdaName);
+          }
+        }
+      }
+
+      return {entityUsage: usage};
+    }
+
+    case 'all':
+      return {
+        entities,
+        relationships,
+        collectionsFile: 'src/entities/Collections.ts'
       };
 
     default:
       return {
-        content: [
-          {
-            type: 'text',
-            text: `Unknown query type: ${query}. Available: schema, relationships, collections`,
-          },
-        ],
+        error: `Unknown query: ${query}`,
+        availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']
       };
   }
 }

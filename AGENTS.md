@@ -94,39 +94,42 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ```mermaid
 graph TD
     %% External Triggers
-    API[API Gateway] --> ListFiles[ListFiles Lambda]
-    API --> LoginUser[LoginUser Lambda]
-    API --> RegisterDevice[RegisterDevice Lambda]
-    API --> StartFileUpload[StartFileUpload Lambda]
+    API[API Gateway] --> Authorizer[ApiGatewayAuthorizer]
+    Authorizer --> ListFiles[ListFiles Lambda]
+    Authorizer --> LoginUser[LoginUser Lambda]
+    Authorizer --> RegisterDevice[RegisterDevice Lambda]
+    Authorizer --> RegisterUser[RegisterUser Lambda]
+    Authorizer --> RefreshToken[RefreshToken Lambda]
+    Authorizer --> UserDelete[UserDelete Lambda]
+    Authorizer --> UserSubscribe[UserSubscribe Lambda]
 
     Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
 
+    %% Scheduled Tasks
+    Schedule[CloudWatch Schedule] --> FileCoordinator[FileCoordinator Lambda]
+    Schedule --> PruneDevices[PruneDevices Lambda]
+
+    %% Lambda Invocations
+    FileCoordinator --> StartFileUpload[StartFileUpload Lambda]
+
     %% S3 Triggers
-    S3Upload[S3 Upload Event] --> FileCoordinator[FileCoordinator Lambda]
-
-    %% Internal Processing
-    FileCoordinator --> DownloadMedia[DownloadMedia Lambda]
-    FileCoordinator --> CreateThumbnail[CreateThumbnail Lambda]
-
-    %% Notifications
-    DownloadMedia --> SendPushNotification[SendPushNotification Lambda]
-    CreateThumbnail --> SendPushNotification
-
-    %% User Management
-    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
-    UserRequest[User Request] --> UserDelete[UserDelete Lambda]
+    S3Upload[S3 Upload Event] --> S3ObjectCreated[S3ObjectCreated Lambda]
+    S3ObjectCreated --> SQS[SQS Queue]
+    SQS --> SendPushNotification[SendPushNotification Lambda]
 
     %% Data Stores
     ListFiles --> DDB[(DynamoDB)]
     LoginUser --> DDB
     RegisterDevice --> DDB
+    RegisterUser --> DDB
     WebhookFeedly --> DDB
     FileCoordinator --> DDB
     UserDelete --> DDB
     PruneDevices --> DDB
+    S3ObjectCreated --> DDB
 
-    DownloadMedia --> S3Storage[(S3 Storage)]
-    CreateThumbnail --> S3Storage
+    StartFileUpload --> S3Storage[(S3 Storage)]
+    WebhookFeedly --> S3Storage
 
     SendPushNotification --> APNS[Apple Push Service]
 ```
@@ -225,21 +228,47 @@ cat build/graph.json | jq '.circularDependencies'
 cat build/graph.json | jq '.graph | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
 ```
 
+### Keeping MCP & GraphRAG in Sync
+
+The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources for accuracy:
+
+| Data Source | Purpose | Auto-Updated |
+|-------------|---------|--------------|
+| `src/lambdas/` | Lambda discovery | ✓ Filesystem scan |
+| `src/entities/` | Entity discovery | ✓ Filesystem scan |
+| `build/graph.json` | Dependencies | ✓ Generated before build |
+| `graphrag/metadata.json` | Semantic info | ✗ Manual updates required |
+
+**When adding/removing Lambdas or Entities:**
+1. The MCP handlers and GraphRAG auto-discover from filesystem
+2. Update `graphrag/metadata.json` with trigger types and purposes
+3. Run `pnpm run graphrag:extract` to regenerate the knowledge graph
+4. CI will fail if `knowledge-graph.json` is out of date
+
+**When changing Lambda invocation chains:**
+1. Update `graphrag/metadata.json` `lambdaInvocations` array
+2. Run `pnpm run graphrag:extract`
+
 ### Lambda Trigger Patterns
 
 | Lambda | Trigger Type | Source | Purpose |
 |--------|-------------|--------|---------|
+| ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
+| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
+| FileCoordinator | CloudWatch Events | Scheduled | Orchestrate pending file downloads |
 | ListFiles | API Gateway | GET /files | List user's available files |
+| LogClientEvent | API Gateway | POST /events | Log client-side events |
 | LoginUser | API Gateway | POST /auth/login | Authenticate user |
-| RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
-| StartFileUpload | API Gateway | POST /files/upload | Initiate file upload |
-| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles |
-| FileCoordinator | S3 Event | s3:ObjectCreated | Orchestrate file processing |
-| DownloadMedia | Step Functions | FileCoordinator | Download media from URL |
-| CreateThumbnail | Step Functions | FileCoordinator | Generate thumbnail |
-| SendPushNotification | Lambda Invoke | Various | Send APNS notifications |
 | PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
+| RefreshToken | API Gateway | POST /auth/refresh | Refresh authentication token |
+| RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
+| RegisterUser | API Gateway | POST /auth/register | Register new user |
+| S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
+| SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
+| StartFileUpload | Lambda Invoke | FileCoordinator | Initiate file download from YouTube |
 | UserDelete | API Gateway | DELETE /users | Delete user and cascade |
+| UserSubscribe | API Gateway | POST /subscriptions | Manage user topic subscriptions |
+| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles |
 
 ### Data Access Patterns
 
