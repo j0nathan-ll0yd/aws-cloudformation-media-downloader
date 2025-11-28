@@ -7,7 +7,7 @@
 
 ## The graph.json File
 
-The `build/graph.json` file is automatically generated before every build and contains comprehensive dependency analysis:
+The `build/graph.json` file is automatically generated before builds and tests, ensuring fresh dependency analysis:
 
 ```json
 {
@@ -87,9 +87,13 @@ cat build/graph.json | jq '.transitiveDependencies["path/to/your/file.ts"]' | gr
 ## Graph Generation
 
 The graph is generated automatically:
-- **Before builds**: `npm run build` triggers `npm run generate-graph`
-- **Manual generation**: `npm run generate-graph`
+- **Before builds**: `pnpm run build` runs `generate-graph` first
+- **Before tests**: `pnpm test` runs `generate-graph` first
+- **Before integration tests**: `pnpm test:integration` runs `generate-graph` first
+- **Manual generation**: `pnpm run generate-graph`
 - **Script location**: `scripts/generateDependencyGraph.ts`
+
+**Note**: Lifecycle scripts are disabled for security (`enable-pre-post-scripts=false` in `.npmrc`), so scripts explicitly run `generate-graph` rather than using `prebuild`/`pretest` hooks.
 
 ## Best Practices
 
