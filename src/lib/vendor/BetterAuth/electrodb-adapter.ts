@@ -238,17 +238,22 @@ function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpda
 /**
  * Transforms Better Auth session format to ElectroDB session create data
  * Converts null to undefined for ElectroDB compatibility
+ * Note: deviceId is conditionally included to support sparse GSI indexing
  */
 function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; deviceId?: string}): ElectroSessionCreate {
-  return {
+  const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
     userId: authSession.userId!,  // Required by Better Auth
     expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
     token: authSession.token || uuidv4(),
     ipAddress: authSession.ipAddress ?? undefined,
-    userAgent: authSession.userAgent ?? undefined,
-    deviceId: authSession.deviceId  // Custom field for our app
+    userAgent: authSession.userAgent ?? undefined
   }
+  // Only include deviceId if provided - enables sparse GSI indexing
+  if (authSession.deviceId) {
+    result.deviceId = authSession.deviceId
+  }
+  return result
 }
 
 /**
@@ -339,9 +344,8 @@ export function createElectroDBAdapter() {
       logDebug('ElectroDB Adapter: getUserByEmail', {email})
 
       try {
-        // Since we don't have a GSI for email lookup yet, we'll need to scan
-        // TODO: Add email GSI for better performance
-        const result = await Users.scan.where(({email: emailAttr}, {eq}) => eq(emailAttr, email)).go()
+        // Use byEmail GSI for efficient lookup
+        const result = await Users.query.byEmail({email}).go()
 
         if (!result.data || result.data.length === 0) return null
 
@@ -483,4 +487,19 @@ export function createElectroDBAdapter() {
   }
 
   return adapter
+}
+
+/**
+ * Exported transformer functions for testing
+ * These allow integration tests to validate transformation logic against real DynamoDB
+ */
+export {
+  transformUserFromAuth,
+  transformSessionFromAuth,
+  transformAccountFromAuth,
+  transformUserToAuth,
+  transformSessionToAuth,
+  transformAccountToAuth,
+  transformUserUpdateFromAuth,
+  transformSessionUpdateFromAuth
 }

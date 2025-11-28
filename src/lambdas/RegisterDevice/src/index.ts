@@ -6,7 +6,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationReques
 import {UserStatus} from '../../../types/enums'
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceSchema} from '../../../util/constraints'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logOutgoingFixture, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
@@ -103,14 +103,16 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * @notExported
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
+  logIncomingFixture(event)
   let requestBody
   try {
     verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
     validateRequest(requestBody, registerDeviceSchema)
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
   try {
     const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
@@ -127,14 +129,18 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
       // Determine if the user already exists
       const userDevices = await getUserDevices(userId)
       if (userDevices.length === 1) {
-        return response(context, 200, {endpointArn: device.endpointArn})
+        const successResult = response(context, 200, {endpointArn: device.endpointArn})
+        logOutgoingFixture(successResult)
+        return successResult
       } else {
         // Confirm the subscription, and unsubscribe
         const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
         await unsubscribeEndpointToTopic(subscriptionArn)
-        return response(context, 201, {
+        const createdResult = response(context, 201, {
           endpointArn: platformEndpoint.EndpointArn
         })
+        logOutgoingFixture(createdResult)
+        return createdResult
       }
     } else if (userStatus === UserStatus.Anonymous) {
       // If the user hasn't registered; add them to the unregistered topic
@@ -143,8 +149,12 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
       // If the user is unauthenticated, then need to authenticate
       throw new UnauthorizedError('Unauthenticated -- please login')
     }
-    return response(context, 200, {endpointArn: device.endpointArn})
+    const successResult = response(context, 200, {endpointArn: device.endpointArn})
+    logOutgoingFixture(successResult)
+    return successResult
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
 })

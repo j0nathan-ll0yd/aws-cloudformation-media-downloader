@@ -7,9 +7,10 @@
 
 import {describe, it, expect, jest, beforeEach} from '@jest/globals'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {createMockUser, createMockSession, createMockAccount} from '../../../../test/helpers/better-auth-test-data'
 
 // Create entity mocks
-const usersMock = createElectroDBEntityMock()
+const usersMock = createElectroDBEntityMock({queryIndexes: ['byEmail']})
 const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const accountsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const verificationTokensMock = createElectroDBEntityMock()
@@ -27,61 +28,6 @@ const {createElectroDBAdapter} = await import('./electrodb-adapter')
 const {Users} = await import('../../../entities/Users')
 const {Sessions} = await import('../../../entities/Sessions')
 const {VerificationTokens} = await import('../../../entities/VerificationTokens')
-
-/**
- * Helper to create mock user objects with sensible defaults
- */
-function createMockUser(overrides?: any) {
-  return {
-    userId: 'user-123',
-    email: 'test@example.com',
-    emailVerified: false,
-    firstName: 'John',
-    lastName: 'Doe',
-    identityProviders: {},
-    ...overrides
-  }
-}
-
-/**
- * Helper to create mock session objects with sensible defaults
- */
-function createMockSession(overrides?: any) {
-  const now = Date.now()
-  return {
-    sessionId: 'session-123',
-    userId: 'user-123',
-    expiresAt: now + 30 * 24 * 60 * 60 * 1000,
-    token: 'token-abc',
-    ipAddress: '1.2.3.4',
-    userAgent: 'Mozilla/5.0',
-    deviceId: 'device-123',
-    createdAt: now,
-    updatedAt: now,
-    ...overrides
-  }
-}
-
-/**
- * Helper to create mock account objects with sensible defaults
- */
-function createMockAccount(overrides?: any) {
-  const now = Date.now()
-  return {
-    accountId: 'account-123',
-    userId: 'user-123',
-    providerId: 'apple',
-    providerAccountId: 'apple-user-123',
-    accessToken: 'access-token',
-    refreshToken: 'refresh-token',
-    expiresAt: now + 3600000,
-    scope: 'email profile',
-    tokenType: 'Bearer',
-    createdAt: now,
-    updatedAt: now,
-    ...overrides
-  }
-}
 
 describe('ElectroDB Adapter', () => {
   let adapter: ReturnType<typeof createElectroDBAdapter>
@@ -182,9 +128,8 @@ describe('ElectroDB Adapter', () => {
         lastName: ''
       })
 
-      // Mock scan operation for email lookup
-      usersMock.mocks.scan.where.mockReturnThis()
-      usersMock.mocks.scan.go.mockResolvedValue({data: [mockUser]})
+      // Mock query.byEmail operation for efficient email lookup
+      usersMock.mocks.query.byEmail!.go.mockResolvedValue({data: [mockUser]})
 
       const result = await adapter.getUserByEmail('test@example.com')
 

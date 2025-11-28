@@ -177,3 +177,86 @@ export async function putMetrics(
     logError('Failed to publish CloudWatch metrics', error)
   }
 }
+
+/**
+ * Sanitize data for test fixtures by removing sensitive fields
+ * Recursively processes objects and arrays to redact PII and credentials
+ * @param data - Data to sanitize
+ * @returns Sanitized copy of data with sensitive fields redacted
+ */
+function sanitizeForTest(data: any): any {
+  if (!data || typeof data !== 'object') {
+    return data
+  }
+
+  const sanitized = Array.isArray(data) ? [...data] : {...data}
+
+  // Remove sensitive fields
+  const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
+
+  for (const key in sanitized) {
+    if (sensitiveFields.includes(key)) {
+      sanitized[key] = '[REDACTED]'
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeForTest(sanitized[key])
+    }
+  }
+
+  return sanitized
+}
+
+/**
+ * Log incoming request for fixture extraction from CloudWatch
+ * Marks production requests for automated fixture generation
+ *
+ * Automatically detects the Lambda function name from AWS_LAMBDA_FUNCTION_NAME
+ * environment variable (set by AWS Lambda runtime).
+ *
+ * @param event - Lambda event (API Gateway request)
+ * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
+ * @example
+ * // Automatic detection (recommended)
+ * logIncomingFixture(event)  // Uses AWS_LAMBDA_FUNCTION_NAME
+ *
+ * // Manual override (for Better Auth or custom scenarios)
+ * logIncomingFixture(event, 'CustomFixtureName')
+ */
+export function logIncomingFixture(event: any, fixtureType?: string): void {
+  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  console.log(
+    JSON.stringify({
+      __FIXTURE_MARKER__: 'INCOMING',
+      fixtureType: detectedType,
+      timestamp: Date.now(),
+      data: sanitizeForTest(event)
+    })
+  )
+}
+
+/**
+ * Log outgoing response for fixture extraction from CloudWatch
+ * Marks production responses for automated fixture generation
+ *
+ * Automatically detects the Lambda function name from AWS_LAMBDA_FUNCTION_NAME
+ * environment variable (set by AWS Lambda runtime).
+ *
+ * @param response - Lambda response
+ * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
+ * @example
+ * // Automatic detection (recommended)
+ * logOutgoingFixture(response)  // Uses AWS_LAMBDA_FUNCTION_NAME
+ *
+ * // Manual override (for Better Auth or custom scenarios)
+ * logOutgoingFixture(response, 'CustomFixtureName')
+ */
+export function logOutgoingFixture(response: any, fixtureType?: string): void {
+  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  console.log(
+    JSON.stringify({
+      __FIXTURE_MARKER__: 'OUTGOING',
+      fixtureType: detectedType,
+      timestamp: Date.now(),
+      data: sanitizeForTest(response)
+    })
+  )
+}

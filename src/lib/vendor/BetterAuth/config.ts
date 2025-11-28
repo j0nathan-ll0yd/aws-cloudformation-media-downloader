@@ -54,17 +54,14 @@ export const auth = betterAuth({
       enabled: true,
       // iOS app bundle identifier for ID token validation
       // When using ID tokens from iOS, the 'aud' claim will be the bundle ID, not the service ID
-      appBundleIdentifier: getAppleBundleIdFromConfig(),
-      // Allow ID token sign-in (our primary flow)
-      disableIdTokenSignin: false
+      appBundleIdentifier: getAppleBundleIdFromConfig()
     }
   },
 
   // Advanced options
   advanced: {
     // Generate session tokens instead of cookies for mobile apps
-    useSecureCookies: false,
-    generateSessionToken: true
+    useSecureCookies: false
   }
 })
 

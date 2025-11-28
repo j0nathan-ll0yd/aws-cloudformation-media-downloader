@@ -36,7 +36,7 @@ function getBaseConfig() {
   if (isLocalStackMode()) {
     return {
       endpoint: LOCALSTACK_ENDPOINT,
-      region: 'us-west-2',
+      region: AWS_REGION,
       credentials: {
         accessKeyId: 'test',
         secretAccessKey: 'test'

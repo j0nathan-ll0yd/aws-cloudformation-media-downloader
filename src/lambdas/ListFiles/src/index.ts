@@ -1,7 +1,7 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
-import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
@@ -43,22 +43,35 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
+  logIncomingFixture(event)
+
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
+
   if (userStatus == UserStatus.Unauthenticated) {
-    return lambdaErrorResponse(context, generateUnauthorizedError())
+    const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
+
   if (userStatus == UserStatus.Anonymous) {
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
-    return response(context, 200, myResponse)
+    const result = response(context, 200, myResponse)
+    logOutgoingFixture(result)
+    return result
   }
+
   try {
     const files = await getFilesByUser(userId as string)
     myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     myResponse.keyCount = myResponse.contents.length
-    return response(context, 200, myResponse)
+    const result = response(context, 200, myResponse)
+    logOutgoingFixture(result)
+    return result
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
 })
