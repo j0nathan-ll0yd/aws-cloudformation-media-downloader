@@ -1,5 +1,4 @@
 import {jest} from '@jest/globals'
-import type {MockedFunction} from 'jest-mock'
 import type {SignInSocialParams} from '../../src/types/better-auth'
 
 /**
@@ -15,7 +14,7 @@ interface BetterAuthMock {
    */
   auth: {
     api: {
-      signInSocial: MockedFunction<(params: SignInSocialParams) => Promise<any>>
+      signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<any>>
     }
   }
   /**
@@ -31,7 +30,7 @@ interface BetterAuthMock {
    * }))
    */
   mocks: {
-    signInSocial: MockedFunction<(params: SignInSocialParams) => Promise<any>>
+    signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<any>>
   }
 }
 
@@ -63,7 +62,7 @@ interface BetterAuthMock {
  * ```
  */
 export function createBetterAuthMock(): BetterAuthMock {
-  const signInSocialMock = jest.fn() as MockedFunction<(params: SignInSocialParams) => Promise<any>>
+  const signInSocialMock = jest.fn<(params: SignInSocialParams) => Promise<any>>()
 
   return {
     auth: {
