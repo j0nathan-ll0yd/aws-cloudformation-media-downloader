@@ -15,11 +15,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version-file: '.nvmrc'
-        cache: 'npm'
+        cache: 'pnpm'
 
     - name: Set up Homebrew
       id: set-up-homebrew
@@ -30,7 +33,7 @@ jobs:
       run: brew install hcl2json
 
     - name: Install dependencies
-      run: npm ci --ignore-scripts
+      run: pnpm install --frozen-lockfile
 
     - name: Setup directories
       id: setup
@@ -38,14 +41,14 @@ jobs:
 
     - name: Build dependencies
       id: build-dependencies
-      run: npm run build-dependencies
+      run: pnpm run build-dependencies
 
     - name: Webpack Build
       id: build
-      run: npm run build
+      run: pnpm run build
 
     - name: Run unit tests
-      run: npm test -- --coverage --coverageDirectory=coverage/unit
+      run: pnpm test --coverage --coverageDirectory=coverage/unit
       env:
         CI: true
 

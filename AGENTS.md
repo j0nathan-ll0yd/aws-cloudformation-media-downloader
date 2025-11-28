@@ -94,11 +94,16 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
    - Shows file-level imports and transitive dependencies
    - **CRITICAL for Jest tests**: Use `transitiveDependencies` to find all mocks needed
    - Example: `cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'`
-2. **Feedly webhook** uses query-based authentication (custom authorizer)
-3. **APNS certificates** required for iOS push notifications (p12 format)
-4. **YouTube downloads** require cookie authentication due to bot detection
-5. **LocalStack integration** for local AWS testing via vendor wrappers
-6. **Webpack externals** must be updated when adding AWS SDK packages
+2. **pnpm lifecycle script protection** (security hardening):
+   - All lifecycle scripts disabled by default in `.npmrc`
+   - Protects against AI-targeted typosquatting and supply chain attacks
+   - Scripts blocked during installation - must explicitly allowlist packages
+   - If package requires install scripts, audit code first then add to `.npmrc`
+3. **Feedly webhook** uses query-based authentication (custom authorizer)
+4. **APNS certificates** required for iOS push notifications (p12 format)
+5. **YouTube downloads** require cookie authentication due to bot detection
+6. **LocalStack integration** for local AWS testing via vendor wrappers
+7. **Webpack externals** must be updated when adding AWS SDK packages
 
 ## ElectroDB Architecture
 
@@ -146,29 +151,29 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Essential Commands
 ```bash
-npm run build          # Build Lambda functions with webpack
-npm run test           # Run unit tests
-npm run deploy         # Deploy infrastructure with OpenTofu
-npm run format         # Auto-format with Prettier (250 char lines)
+pnpm run build          # Build Lambda functions with webpack
+pnpm run test           # Run unit tests
+pnpm run deploy         # Deploy infrastructure with OpenTofu
+pnpm run format         # Auto-format with Prettier (250 char lines)
 
 # Integration testing
-npm run localstack:start        # Start LocalStack
-npm run test:integration        # Run integration tests
-npm run test:integration:full   # Full suite with lifecycle
+pnpm run localstack:start        # Start LocalStack
+pnpm run test:integration        # Run integration tests
+pnpm run test:integration:full   # Full suite with lifecycle
 
 # Remote testing
-npm run test-remote-list        # Test file listing
-npm run test-remote-hook        # Test Feedly webhook
-npm run test-remote-registerDevice  # Test device registration
+pnpm run test-remote-list        # Test file listing
+pnpm run test-remote-hook        # Test Feedly webhook
+pnpm run test-remote-registerDevice  # Test device registration
 
 # Documentation
-npm run document-source         # Generate TSDoc documentation
+pnpm run document-source         # Generate TSDoc documentation
 ```
 
 ### Pre-Commit Checklist
-1. Run `npm run format` - Auto-format code
-2. Run `npm run build` - Verify TypeScript compilation
-3. Run `npm test` - Ensure all tests pass
+1. Run `pnpm run format` - Auto-format code
+2. Run `pnpm run build` - Verify TypeScript compilation
+3. Run `pnpm test` - Ensure all tests pass
 4. Verify NO AI references in commit message
 5. Stage changes: `git add -A`
 6. Commit with clean message: `git commit -m "type: description"`
