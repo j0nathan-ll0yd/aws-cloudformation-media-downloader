@@ -134,6 +134,23 @@ const TableName = process.env.TABLE_NAME!;
 const BUCKET_NAME = process.env.BUCKET_NAME!;
 ```
 
+### Lambda Function Directories
+Lambda function directories use PascalCase to match AWS resource naming:
+```bash
+# ✅ Correct - PascalCase for Lambda directories
+src/lambdas/ListFiles/
+src/lambdas/WebhookFeedly/
+src/lambdas/RegisterDevice/
+src/lambdas/ApiGatewayAuthorizer/
+
+# ❌ Incorrect - Don't use other styles
+src/lambdas/list-files/        # kebab-case
+src/lambdas/list_files/        # snake_case
+src/lambdas/listFiles/         # camelCase
+```
+
+**Why PascalCase**: Matches the Lambda function name in AWS, making it easy to correlate code with infrastructure.
+
 ### Acronyms and Initialisms
 Treat acronyms as words:
 ```typescript
