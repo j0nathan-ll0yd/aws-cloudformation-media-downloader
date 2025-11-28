@@ -35,6 +35,7 @@
     "update-cookies": "./bin/update-youtube-cookies.sh",
     "update-yt-dlp": "./bin/update-yt-dlp.sh",
     "extract-fixtures": "./bin/extract-fixtures.sh",
+    "extract-fixtures:production": "./bin/extract-production-fixtures.sh",
     "process-fixtures": "node bin/process-fixtures.js",
     "plan": "eval export $(cat .env) && cd terraform && tofu plan",
     "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve"

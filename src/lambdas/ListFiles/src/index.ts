@@ -43,14 +43,14 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
  */
 export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
-  logIncomingFixture(event, 'list-files')
+  logIncomingFixture(event, 'ListFiles')
 
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
 
   if (userStatus == UserStatus.Unauthenticated) {
     const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())
-    logOutgoingFixture(errorResult, 'list-files')
+    logOutgoingFixture(errorResult, 'ListFiles')
     return errorResult
   }
 
@@ -58,7 +58,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
     const result = response(context, 200, myResponse)
-    logOutgoingFixture(result, 'list-files')
+    logOutgoingFixture(result, 'ListFiles')
     return result
   }
 
@@ -67,11 +67,11 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
     myResponse.keyCount = myResponse.contents.length
     const result = response(context, 200, myResponse)
-    logOutgoingFixture(result, 'list-files')
+    logOutgoingFixture(result, 'ListFiles')
     return result
   } catch (error) {
     const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult, 'list-files')
+    logOutgoingFixture(errorResult, 'ListFiles')
     return errorResult
   }
 })

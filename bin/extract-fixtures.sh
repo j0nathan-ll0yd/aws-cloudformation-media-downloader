@@ -17,6 +17,7 @@ LAMBDA_FUNCTIONS=(
   "LoginUser"
   "StartFileUpload"
   "SendPushNotification"
+  "BetterAuth"  # If Better Auth runs as a Lambda
 )
 
 # Create output directory

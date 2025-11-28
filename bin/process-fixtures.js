@@ -78,6 +78,7 @@ function deduplicateFixtures(fixtures, similarityThreshold = 0.9) {
  */
 async function processFixtureFile(inputPath, outputDir) {
   const filename = path.basename(inputPath)
+  // Extract Lambda/service name (handles both regular Lambdas and BetterAuth)
   const lambdaName = filename.split('-')[0]
 
   console.log(`Processing ${filename}...`)
