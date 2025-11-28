@@ -22,7 +22,7 @@ Core development conventions that apply universally:
 TypeScript-specific patterns and best practices:
 
 - [Lambda Function Patterns](TypeScript/Lambda-Function-Patterns.md) - Handler organization
-- [Error Handling](TypeScript/Error-Handling.md) - API Gateway vs event-driven
+- [Error Handling](TypeScript/TypeScript-Error-Handling.md) - API Gateway vs event-driven
 - [Type Definitions](TypeScript/Type-Definitions.md) - Where to put types
 - [Module Best Practices](TypeScript/Module-Best-Practices.md) - Export patterns
 
@@ -49,7 +49,7 @@ Shell scripting conventions:
 - [Variable Naming](Bash/Variable-Naming.md) - snake_case vs UPPER_CASE
 - [Directory Resolution](Bash/Directory-Resolution.md) - BASH_SOURCE patterns
 - [User Output Formatting](Bash/User-Output-Formatting.md) - Colors and feedback
-- [Error Handling](Bash/Error-Handling.md) - set -e, exit codes
+- [Error Handling](Bash/Bash-Error-Handling.md) - set -e, exit codes
 
 ### 🏗️ Infrastructure
 Infrastructure as Code patterns:

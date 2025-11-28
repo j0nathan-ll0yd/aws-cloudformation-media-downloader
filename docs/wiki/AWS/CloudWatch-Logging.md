@@ -70,7 +70,7 @@ fields @timestamp, @message, @duration
 
 - [X-Ray Integration](X-Ray-Integration.md) - Tracing with trace IDs
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - Handler patterns
-- [Error Handling](../TypeScript/Error-Handling.md) - Error logging
+- [Error Handling](../TypeScript/TypeScript-Error-Handling.md) - Error logging
 
 ---
 

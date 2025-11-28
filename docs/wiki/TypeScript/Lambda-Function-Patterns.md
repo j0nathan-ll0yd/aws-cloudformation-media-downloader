@@ -131,7 +131,7 @@ test('processes file', async () => {
 ## Related Patterns
 
 - [X-Ray Integration](../AWS/X-Ray-Integration.md)
-- [Error Handling](Error-Handling.md)
+- [Error Handling](TypeScript-Error-Handling.md)
 - [Jest ESM Mocking](../Testing/Jest-ESM-Mocking-Strategy.md)
 
 ---

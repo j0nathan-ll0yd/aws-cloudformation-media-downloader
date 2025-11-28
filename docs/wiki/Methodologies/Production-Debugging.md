@@ -104,7 +104,7 @@ aws cloudwatch get-metric-statistics \
 
 - [CloudWatch Logging](../AWS/CloudWatch-Logging.md) - Logging setup
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing details
-- [Error Handling](../TypeScript/Error-Handling.md) - Error patterns
+- [Error Handling](../TypeScript/TypeScript-Error-Handling.md) - Error patterns
 
 ---
 

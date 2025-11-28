@@ -201,7 +201,8 @@ EOF
 
             local basename=$(basename "$file" .md)
             local title=$(get_page_title "$file")
-            echo "- [$title]($dirname/$basename)" >> "$SIDEBAR_FILE"
+            # GitHub Wiki has flat namespace - use basename only
+            echo "- [$title]($basename)" >> "$SIDEBAR_FILE"
         done
 
         # Process subdirectories if any
@@ -220,7 +221,8 @@ EOF
 
                 local basename=$(basename "$file" .md)
                 local title=$(get_page_title "$file")
-                echo "    - [$title]($dirname/$subdirname/$basename)" >> "$SIDEBAR_FILE"
+                # GitHub Wiki has flat namespace - use basename only
+                echo "    - [$title]($basename)" >> "$SIDEBAR_FILE"
             done
         done
     done

@@ -93,7 +93,7 @@ echo -e "${GREEN}✓${NC} S3 bucket: ${BLUE}${bucket_name}${NC}"
 
 ## Related Patterns
 
-- [Error Handling](Error-Handling.md)
+- [Error Handling](Bash-Error-Handling.md)
 - [Script Patterns](Script-Patterns.md)
 
 ---

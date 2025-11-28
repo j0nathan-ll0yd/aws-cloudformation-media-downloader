@@ -109,7 +109,7 @@ done
 
 ## Related Patterns
 
-- [Error Handling](Error-Handling.md)
+- [Error Handling](Bash-Error-Handling.md)
 - [Directory Resolution](Directory-Resolution.md)
 - [Variable Naming](Variable-Naming.md)
 

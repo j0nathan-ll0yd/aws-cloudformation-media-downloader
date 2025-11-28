@@ -129,7 +129,7 @@ PR reviewed          push to master     Search enabled
 /**
  * Validates user credentials
  *
- * See: docs/wiki/TypeScript/Error-Handling.md
+ * See: docs/wiki/TypeScript/TypeScript-Error-Handling.md
  */
 function validateCredentials(username: string, password: string) {
   // Implementation

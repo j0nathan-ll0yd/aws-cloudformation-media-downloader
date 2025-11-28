@@ -72,11 +72,13 @@ transform_links() {
         # Transform links
         # 1. Remove docs/wiki/ prefix from links
         # 2. Remove .md extension for wiki links
-        # 3. Handle relative paths
+        # 3. Handle relative paths (../)
+        # 4. Remove all directory prefixes (GitHub Wiki has flat namespace)
         sed -E \
             -e 's|\]\(docs/wiki/|\]\(|g' \
             -e 's|\]\(\.\./|\]\(|g' \
             -e 's|\.md\)|)|g' \
+            -e 's|\]\(([^)]*)/([^/)]+)\)|\]\(\2\)|g' \
             "$file" > "$temp_file"
 
         # Replace original file
