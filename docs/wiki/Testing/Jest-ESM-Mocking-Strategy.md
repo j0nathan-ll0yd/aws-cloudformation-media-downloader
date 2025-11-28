@@ -72,13 +72,38 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
 }))
 ```
 
-### ElectroDB Mock Helper
+### ElectroDB Mock Helper (CRITICAL)
+
+**Zero-tolerance rule**: ALWAYS use `createElectroDBEntityMock()` from `test/helpers/electrodb-mock.ts` for mocking ElectroDB entities.
+
 ```typescript
-// Always use the helper for ElectroDB
-jest.unstable_mockModule('../../../entities/Files', () =>
-  createElectroDBMock('Files')
-)
+import {createElectroDBEntityMock} from '../../../test/helpers/electrodb-mock'
+import type {DynamoDBFile} from '../../../types/main'
+
+// Create mock before mocking module
+const filesMock = createElectroDBEntityMock<DynamoDBFile>()
+
+// Mock the entity module
+jest.unstable_mockModule('../../../entities/Files', () => ({
+  Files: filesMock.entity
+}))
+
+// Later in tests - use the mocks for assertions
+filesMock.mocks.get.mockResolvedValue({
+  data: {fileId: '123', status: 'Downloaded'}
+})
+
+expect(filesMock.mocks.create).toHaveBeenCalledWith({
+  fileId: '123',
+  // ... other properties
+})
 ```
+
+**Benefits**:
+- Type-safe mocks with full TypeScript inference
+- Consistent mock structure across all tests
+- Simplified setup with pre-configured query patterns
+- Supports all ElectroDB operations (get, create, update, query, etc.)
 
 ## Testing Checklist
 

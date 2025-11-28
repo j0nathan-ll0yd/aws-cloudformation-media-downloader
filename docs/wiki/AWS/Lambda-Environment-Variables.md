@@ -28,6 +28,26 @@ const tableName = process.env.DynamoDBTableName || 'default-table'
 const tableName = process.env.DynamoDBTableName as string
 ```
 
+## No Try-Catch for Required Variables (CRITICAL)
+
+**Zero-tolerance rule**: NEVER wrap required environment variable access in try-catch blocks with fallback values.
+
+```typescript
+// ❌ WRONG - Silent failures hide configuration errors
+try {
+  const config = JSON.parse(process.env.SignInWithAppleConfig)
+} catch {
+  return { clientId: 'fallback', teamId: 'fallback' }
+}
+
+// ✅ CORRECT - Let it fail if misconfigured
+const config = JSON.parse(process.env.SignInWithAppleConfig)
+```
+
+**Why**: Infrastructure tests enforce that all required environment variables are properly configured. Silent failures in production hide critical configuration errors that should fail fast and loud.
+
+**Enforcement**: Unit tests verify all environment variables are present and valid. Production deployment validation catches missing variables before runtime.
+
 ## Unit Test Verification
 
 ```typescript

@@ -48,18 +48,29 @@ export const handler = withXRay(async (event, context, {traceId}) => {
 })
 ```
 
-## Response Format
+## Response Format (REQUIRED)
+
+**Mandatory**: ALWAYS use the `response` and `lambdaErrorResponse` helper functions from `lambda-helpers.ts`. Never return raw API Gateway response objects.
 
 ```typescript
-// Success response
+// ✅ CORRECT - Use response helper
 return response(context, 200, {
   data: result,
   requestId: context.awsRequestId
 })
 
-// Error response
+// ✅ CORRECT - Use error response helper
 return lambdaErrorResponse(context, error)
+
+// ❌ WRONG - Never return raw objects
+return {
+  statusCode: 200,
+  body: JSON.stringify(data),
+  headers: {'Content-Type': 'application/json'}
+}
 ```
+
+**Why**: Ensures consistent response formatting, headers, and error handling across all Lambda functions.
 
 ## Common Patterns
 
