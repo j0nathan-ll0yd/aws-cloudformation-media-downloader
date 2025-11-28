@@ -1,10 +1,13 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      APPLE_BUNDLE_ID: string
+      APPLE_CLIENT_ID: string
       ApnsDefaultTopic: string
       ApnsKeyId: string
       ApnsSigningKey: string
       ApnsTeam: string
+      BASE_URL: string
       Bucket: string
       DefaultFileSize: string
       DefaultFileName: string

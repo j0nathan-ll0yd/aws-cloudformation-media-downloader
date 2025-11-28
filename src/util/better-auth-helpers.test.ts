@@ -18,6 +18,32 @@ jest.unstable_mockModule('../entities/Sessions', () => ({Sessions: sessionsMock.
 const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} = await import('./better-auth-helpers')
 const {Sessions} = await import('../entities/Sessions')
 
+/**
+ * Helper to create mock session objects with sensible defaults
+ */
+function createMockSession(overrides?: {
+  sessionId?: string
+  userId?: string
+  token?: string
+  expiresAt?: number
+  deviceId?: string
+  ipAddress?: string
+  userAgent?: string
+  createdAt?: number
+  updatedAt?: number
+}) {
+  const now = Date.now()
+  return {
+    sessionId: 'session-123',
+    userId: 'user-123',
+    token: 'valid-token',
+    expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days future
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  }
+}
+
 describe('Better Auth Helpers', () => {
   beforeEach(() => {
     // Clear all mock call history
@@ -34,14 +60,7 @@ describe('Better Auth Helpers', () => {
 
   describe('validateSessionToken', () => {
     it('should validate a valid session token', async () => {
-      const mockSession = {
-        sessionId: 'session-123',
-        userId: 'user-123',
-        token: 'valid-token',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days future
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+      const mockSession = createMockSession()
 
       // Mock scan operation
       sessionsMock.mocks.scan.where.mockReturnThis()
@@ -72,14 +91,13 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should throw UnauthorizedError for expired session', async () => {
-      const mockSession = {
-        sessionId: 'session-123',
-        userId: 'user-123',
+      const now = Date.now()
+      const mockSession = createMockSession({
         token: 'expired-token',
-        expiresAt: Date.now() - 1000, // Expired 1 second ago
-        createdAt: Date.now() - 31 * 24 * 60 * 60 * 1000,
-        updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1000
-      }
+        expiresAt: now - 1000, // Expired 1 second ago
+        createdAt: now - 31 * 24 * 60 * 60 * 1000,
+        updatedAt: now - 31 * 24 * 60 * 60 * 1000
+      })
 
       sessionsMock.mocks.scan.where.mockReturnThis()
       sessionsMock.mocks.scan.go.mockResolvedValue({data: [mockSession]})
@@ -91,17 +109,13 @@ describe('Better Auth Helpers', () => {
 
   describe('createUserSession', () => {
     it('should create a new session with device tracking', async () => {
-      const mockSession = {
+      const mockSession = createMockSession({
         sessionId: 'session-new',
-        userId: 'user-123',
         token: 'new-token',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
         deviceId: 'device-123',
         ipAddress: '1.2.3.4',
-        userAgent: 'Mozilla/5.0',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+        userAgent: 'Mozilla/5.0'
+      })
 
       sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
@@ -124,14 +138,11 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should create session without optional parameters', async () => {
-      const mockSession = {
+      const mockSession = createMockSession({
         sessionId: 'session-minimal',
         userId: 'user-456',
-        token: 'minimal-token',
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+        token: 'minimal-token'
+      })
 
       sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 

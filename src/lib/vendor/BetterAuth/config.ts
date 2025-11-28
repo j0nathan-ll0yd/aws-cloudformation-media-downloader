@@ -28,7 +28,7 @@ export const auth = betterAuth({
   database: createElectroDBAdapter(),
 
   // Base URL for OAuth callbacks (from environment)
-  baseURL: process.env.BASE_URL || 'https://api.example.com',
+  baseURL: process.env.BASE_URL,
 
   // Trusted origins for OAuth flows
   trustedOrigins: ['https://appleid.apple.com'],
@@ -76,12 +76,12 @@ function getAppleClientIdFromConfig(): string {
   try {
     if (process.env.SignInWithAppleConfig) {
       const config = JSON.parse(process.env.SignInWithAppleConfig)
-      return config.client_id || process.env.APPLE_CLIENT_ID || ''
+      return config.client_id || process.env.APPLE_CLIENT_ID
     }
   } catch (error) {
     logDebug('Failed to parse SignInWithAppleConfig, using APPLE_CLIENT_ID', {error})
   }
-  return process.env.APPLE_CLIENT_ID || ''
+  return process.env.APPLE_CLIENT_ID
 }
 
 /**
@@ -92,12 +92,12 @@ function getAppleBundleIdFromConfig(): string {
   try {
     if (process.env.SignInWithAppleConfig) {
       const config = JSON.parse(process.env.SignInWithAppleConfig)
-      return config.bundle_id || process.env.APPLE_BUNDLE_ID || ''
+      return config.bundle_id || process.env.APPLE_BUNDLE_ID
     }
   } catch (error) {
     logDebug('Failed to parse SignInWithAppleConfig, using APPLE_BUNDLE_ID', {error})
   }
-  return process.env.APPLE_BUNDLE_ID || ''
+  return process.env.APPLE_BUNDLE_ID
 }
 
 /**

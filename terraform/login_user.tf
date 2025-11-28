@@ -65,6 +65,7 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
+      BASE_URL              = aws_api_gateway_stage.Production.invoke_url
       DynamoDBTableName     = aws_dynamodb_table.MediaDownloader.name
       SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
     }
