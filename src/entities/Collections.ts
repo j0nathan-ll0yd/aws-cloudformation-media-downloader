@@ -19,47 +19,34 @@ import {VerificationTokens} from './VerificationTokens'
  * 1. **userResources** (UserCollection/gsi1)
  *    - Query: Get all files and devices for a user
  *    - Entities: Users, UserFiles, UserDevices
- *    - Access pattern: collections.userResources({userId}).go()
+ *    - Access pattern: collections.userResources(userId).go()
  *    - Used by: ListFiles, UserDelete, RegisterDevice
  *
  * 2. **fileUsers** (FileCollection/gsi2)
  *    - Query: Get all users associated with a file
  *    - Entities: Files, UserFiles
- *    - Access pattern: collections.fileUsers({fileId}).go()
+ *    - Access pattern: collections.fileUsers(fileId).go()
  *    - Used by: S3ObjectCreated (for push notifications)
  *
  * 3. **deviceUsers** (DeviceCollection/gsi3)
  *    - Query: Get all users associated with a device
  *    - Entities: Devices, UserDevices
- *    - Access pattern: collections.deviceUsers({deviceId}).go()
+ *    - Access pattern: collections.deviceUsers(deviceId).go()
  *    - Used by: PruneDevices (for cleanup)
  *
  * 4. **userSessions** (SessionCollection/gsi1)
  *    - Query: Get all sessions for a user
  *    - Entities: Sessions
- *    - Access pattern: collections.userSessions({userId}).go()
+ *    - Access pattern: collections.userSessions(userId).go()
  *    - Used by: LoginUser, RefreshToken, Logout
  *
  * 5. **userAccounts** (AccountCollection/gsi1)
  *    - Query: Get all OAuth accounts for a user
  *    - Entities: Accounts
- *    - Access pattern: collections.userAccounts({userId}).go()
+ *    - Access pattern: collections.userAccounts(userId).go()
  *    - Used by: Better Auth adapter for account linking
  *
- * @example
- * import {collections} from '../../../entities/Collections'
- *
- * // Get all files for a user (eliminates N+1 queries)
- * const {data} = await collections.userResources({userId: 'user123'}).go()
- * // Returns: {users: [...], userFiles: [...], userDevices: [...]}
- *
- * // Get all users who need notification for a file
- * const {data} = await collections.fileUsers({fileId: 'vid123'}).go()
- * // Returns: {files: [...], userFiles: [...]}
- *
- * // Get all active sessions for a user
- * const {data} = await collections.userSessions({userId: 'user123'}).go()
- * // Returns: {sessions: [...]}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#collections-testing-join-operations | Collections Usage Examples}
  */
 export const MediaDownloaderService = createService(
   {

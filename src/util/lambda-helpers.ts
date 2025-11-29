@@ -233,12 +233,8 @@ function sanitizeForTest(data: unknown): unknown {
  *
  * @param event - Lambda event (API Gateway request)
  * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
- * @example
- * // Automatic detection (recommended)
- * logIncomingFixture(event)  // Uses AWS_LAMBDA_FUNCTION_NAME
  *
- * // Manual override (for Better Auth or custom scenarios)
- * logIncomingFixture(event, 'CustomFixtureName')
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
@@ -261,12 +257,8 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
  *
  * @param response - Lambda response
  * @param fixtureType - Optional type identifier (auto-detected from Lambda name if not provided)
- * @example
- * // Automatic detection (recommended)
- * logOutgoingFixture(response)  // Uses AWS_LAMBDA_FUNCTION_NAME
  *
- * // Manual override (for Better Auth or custom scenarios)
- * logOutgoingFixture(response, 'CustomFixtureName')
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'

@@ -126,11 +126,7 @@ export type ExtendedAccount = Account & {
  * @param fullName - The full name to split (e.g., "John Doe Smith")
  * @returns Object with firstName and lastName
  *
- * @example
- * splitFullName("John Doe") // {firstName: "John", lastName: "Doe"}
- * splitFullName("John") // {firstName: "John", lastName: ""}
- * splitFullName("") // {firstName: "", lastName: ""}
- * splitFullName("John Doe Smith") // {firstName: "John", lastName: "Doe Smith"}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Adapter-Design#name-splitting-utility | Name Splitting Examples}
  */
 export function splitFullName(fullName?: string): {firstName: string; lastName: string} {
   const parts = (fullName || '').split(' ')
@@ -300,14 +296,7 @@ function transformAccountFromAuth(authAccount: Partial<ExtendedAccount> & {id?: 
  *
  * @returns Better Auth adapter instance
  *
- * @example
- * import {betterAuth} from 'better-auth'
- * import {createElectroDBAdapter} from './electrodb-adapter'
- *
- * const auth = betterAuth({
- *   database: createElectroDBAdapter(),
- *   // ... other config
- * })
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Adapter-Design#adapter-interface | ElectroDB Adapter Usage}
  */
 export function createElectroDBAdapter() {
   const adapter = {

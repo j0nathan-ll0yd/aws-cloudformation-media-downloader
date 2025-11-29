@@ -4,15 +4,8 @@
  * Refreshes a user session by extending the expiration time.
  * This allows users to stay logged in without re-authenticating.
  *
- * Request:
- * - Method: POST
- * - Headers: Authorization: Bearer <session-token>
- * - Body: {}
- *
- * Response:
- * - 200: {token: string, expiresAt: number, sessionId: string}
- * - 401: Unauthorized (invalid or expired session)
- * - 500: Internal server error
+ * Request: POST with Authorization Bearer header, empty body
+ * Response: 200 with token, expiresAt, sessionId; 401 for invalid session; 500 for errors
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'

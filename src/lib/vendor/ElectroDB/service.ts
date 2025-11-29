@@ -38,24 +38,7 @@ export {documentClient}
  * @param config - Service configuration (client, table name)
  * @returns Configured ElectroDB service instance with full type inference
  *
- * @example
- * import {createService, documentClient} from '../../lib/vendor/ElectroDB/service'
- * import {Files} from './Files'
- * import {Users} from './Users'
- *
- * export const MediaDownloaderService = createService(
- *   {
- *     files: Files,
- *     users: Users
- *   },
- *   {
- *     client: documentClient,
- *     table: process.env.DynamoDBTableName
- *   }
- * )
- *
- * // Access collections for JOIN queries
- * export const collections = MediaDownloaderService.collections
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#collections-testing-join-operations | ElectroDB Service Usage}
  */
 export function createService<E extends EntityMapConstraint>(entities: E, config: {client: DynamoDBDocumentClient; table?: string}) {
   return new Service(entities, config)

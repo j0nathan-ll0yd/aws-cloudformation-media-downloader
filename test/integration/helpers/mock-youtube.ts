@@ -117,8 +117,8 @@ export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
 
 /**
  * S3 Upload interface for integration testing.
- * Uses Promise<unknown> for done() to be compatible with @aws-sdk/lib-storage Upload class
- * which returns Promise<CompleteMultipartUploadCommandOutput>.
+ * Uses Promise for done() to be compatible with AWS SDK lib-storage Upload class
+ * which returns CompleteMultipartUploadCommandOutput.
  */
 export interface S3UploadHandle {
   done: () => Promise<unknown>

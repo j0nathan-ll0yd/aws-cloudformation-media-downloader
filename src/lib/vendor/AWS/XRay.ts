@@ -18,13 +18,7 @@ function getXRayClient(): typeof AWSXRay {
  * Gets the current X-Ray segment for the Lambda invocation
  * Returns undefined if X-Ray tracing is not active
  *
- * @example
- * ```typescript
- * const segment = getSegment()
- * const subsegment = segment?.addNewSubsegment('custom-operation')
- * // ... perform operation
- * subsegment?.close()
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#custom-subsegments | X-Ray Custom Subsegments}
  */
 export function getSegment() {
   const xray = getXRayClient()
@@ -47,11 +41,7 @@ function isXRayEnabled(): boolean {
  * @param client - AWS SDK v3 client to wrap
  * @returns X-Ray instrumented client or original client
  *
- * @example
- * ```typescript
- * const s3Client = new S3Client({region: 'us-west-2'})
- * const instrumentedClient = captureAWSClient(s3Client)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#aws-sdk-integration | X-Ray AWS SDK Integration}
  */
 export function captureAWSClient<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
   if (!isXRayEnabled()) {
@@ -68,13 +58,7 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
  * @param handler - Lambda handler function that receives event, context, and metadata
  * @returns Wrapped handler compatible with AWS Lambda runtime
  *
- * @example
- * ```typescript
- * export const handler = withXRay(async (event, context, {traceId}) => {
- *   logInfo('Processing request', {traceId})
- *   // ... handler logic
- * })
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#lambda-usage | X-Ray Lambda Usage}
  */
 export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>) {
   return async (event: TEvent, context: Context): Promise<TResult> => {

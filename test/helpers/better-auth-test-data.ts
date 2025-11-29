@@ -81,17 +81,6 @@ export type MockVerificationTokenData = {
  *
  * @param overrides - Partial user data to override defaults
  * @returns Complete user object ready for ElectroDB entity operations
- *
- * @example
- * // Minimal override
- * const user = createMockUser({userId: 'custom-id'})
- *
- * // Multiple overrides
- * const user = createMockUser({
- *   userId: 'user-123',
- *   email: 'custom@example.com',
- *   emailVerified: true
- * })
  */
 export function createMockUser(overrides?: Partial<MockUserData>): MockUserData {
   const now = Date.now()
@@ -122,16 +111,6 @@ export function createMockUser(overrides?: Partial<MockUserData>): MockUserData 
  *
  * @param overrides - Partial session data to override defaults
  * @returns Complete session object ready for ElectroDB entity operations
- *
- * @example
- * // Default session expires in 30 days
- * const session = createMockSession({userId: 'user-123'})
- *
- * // Custom expiration
- * const session = createMockSession({
- *   sessionId: 'session-abc',
- *   expiresAt: Date.now() + 86400000  // 1 day
- * })
  */
 export function createMockSession(overrides?: Partial<MockSessionData>): MockSessionData {
   const now = Date.now()
@@ -154,20 +133,6 @@ export function createMockSession(overrides?: Partial<MockSessionData>): MockSes
  *
  * @param overrides - Partial account data to override defaults
  * @returns Complete account object ready for ElectroDB entity operations
- *
- * @example
- * // Apple account
- * const account = createMockAccount({
- *   providerId: 'apple',
- *   providerAccountId: 'apple-user-123'
- * })
- *
- * // Google account with custom tokens
- * const account = createMockAccount({
- *   providerId: 'google',
- *   accessToken: 'custom-token',
- *   scope: 'email profile openid'
- * })
  */
 export function createMockAccount(overrides?: Partial<MockAccountData>): MockAccountData {
   const now = Date.now()
@@ -192,18 +157,6 @@ export function createMockAccount(overrides?: Partial<MockAccountData>): MockAcc
  *
  * @param overrides - Partial token data to override defaults
  * @returns Complete verification token object ready for ElectroDB entity operations
- *
- * @example
- * // Email verification token
- * const token = createMockVerificationToken({
- *   identifier: 'user@example.com',
- *   token: 'verify-abc123'
- * })
- *
- * // Custom expiration (24 hours)
- * const token = createMockVerificationToken({
- *   expiresAt: Date.now() + 86400000
- * })
  */
 export function createMockVerificationToken(overrides?: Partial<MockVerificationTokenData>): MockVerificationTokenData {
   return {

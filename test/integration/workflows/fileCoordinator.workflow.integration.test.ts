@@ -2,7 +2,7 @@
  * FileCoordinator Workflow Integration Tests
  *
  * Tests the file coordination workflow against LocalStack:
- * 1. Scan DynamoDB for files ready to download (availableAt <= now AND no url)
+ * 1. Scan DynamoDB for files ready to download (availableAt is past due AND no url)
  * 2. Fan-out: Invoke StartFileUpload Lambda for each pending file
  * 3. Handle empty queue gracefully
  */
