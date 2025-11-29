@@ -1,0 +1,71 @@
+{
+  "typescript": {
+    "lineWidth": 250,
+    "indentWidth": 2,
+    "useTabs": false,
+    "semiColons": "asi",
+    "quoteStyle": "preferSingle",
+    "quoteProps": "asNeeded",
+    "newLineKind": "lf",
+    "useBraces": "whenNotSingleLine",
+    "bracePosition": "sameLineUnlessHanging",
+    "singleBodyPosition": "maintain",
+    "nextControlFlowPosition": "sameLine",
+    "trailingCommas": "never",
+    "operatorPosition": "maintain",
+    "preferHanging": false,
+    "preferSingleLine": false,
+    "arrowFunction.useParentheses": "force",
+    "binaryExpression.linePerExpression": false,
+    "memberExpression.linePerExpression": true,
+    "callExpression.preferSingleLine": false,
+    "objectExpression.preferSingleLine": false,
+    "objectPattern.preferSingleLine": false,
+    "arrayExpression.preferSingleLine": false,
+    "arrayPattern.preferSingleLine": false,
+    "tupleType.preferSingleLine": false,
+    "typeLiteral.preferSingleLine": false,
+    "parameters.preferSingleLine": false,
+    "arguments.preferSingleLine": false,
+    "typeParameters.preferSingleLine": false,
+    "typeArguments.preferSingleLine": false,
+    "exportDeclaration.preferSingleLine": false,
+    "importDeclaration.preferSingleLine": false,
+    "variableStatement.preferSingleLine": false,
+    "ignoreNodeCommentText": "dprint-ignore",
+    "ignoreFileCommentText": "dprint-ignore-file"
+  },
+  "json": {
+    "lineWidth": 250,
+    "indentWidth": 2,
+    "useTabs": false,
+    "newLineKind": "lf",
+    "trailingCommas": "never"
+  },
+  "markdown": {
+    "lineWidth": 250
+  },
+  "excludes": [
+    "**/node_modules",
+    "**/*-lock.json",
+    "**/dist",
+    "**/build",
+    "**/coverage",
+    "**/.webpackCache",
+    "**/terraform",
+    "**/bin",
+    "**/static",
+    "**/secure",
+    "**/temp",
+    "**/docs/terraform.md",
+    "**/.github",
+    "**/.idea",
+    "src/types/infrastructure.d.ts",
+    "src/types/terraform.d.ts"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.93.0.wasm",
+    "https://plugins.dprint.dev/json-0.19.3.wasm",
+    "https://plugins.dprint.dev/markdown-0.17.2.wasm"
+  ]
+}
