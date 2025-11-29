@@ -134,6 +134,11 @@ const config = {
   // The test environment that will be used for testing
   testEnvironment: 'node',
 
+  // Force Jest to exit after all tests complete
+  // Required because AWS SDK and X-Ray SDK maintain internal connections/contexts
+  // that don't properly clean up in a Jest test environment
+  forceExit: true,
+
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
 

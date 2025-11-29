@@ -25,6 +25,10 @@ const config = {
   // Use Node environment for Lambda-like execution
   testEnvironment: 'node',
 
+  // Force Jest to exit after all tests complete
+  // Required because AWS SDK maintains internal connections that don't properly clean up
+  forceExit: true,
+
   // Only match integration test files
   testMatch: ['**/test/integration/**/*.integration.test.ts'],
 
