@@ -9,7 +9,7 @@ import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-hel
 import {feedlyEventSchema} from '../../../util/constraints'
 import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {createFileNotificationAttributes} from '../../../util/transformers'
-import {FileStatus} from '../../../types/enums'
+import {FileStatus, ResponseStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
@@ -117,16 +117,16 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     let result: APIGatewayProxyResult
     if (file && file.status == FileStatus.Downloaded) {
       await sendFileNotification(file, userId)
-      result = response(context, 200, {status: 'Dispatched'})
+      result = response(context, 200, {status: ResponseStatus.Dispatched})
     } else {
       if (!file) {
         await addFile(fileId)
       }
       if (!requestBody.backgroundMode) {
         await initiateFileDownload(fileId)
-        result = response(context, 202, {status: 'Initiated'})
+        result = response(context, 202, {status: ResponseStatus.Initiated})
       } else {
-        result = response(context, 202, {status: 'Accepted'})
+        result = response(context, 202, {status: ResponseStatus.Accepted})
       }
     }
     logOutgoingFixture(result)

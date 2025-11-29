@@ -181,7 +181,7 @@ describe('lambda-helpers', () => {
       expect(loggedData.data.headers.Authorization).toBe('[REDACTED]')
       expect(loggedData.data.headers['Content-Type']).toBe('application/json')
       expect(loggedData.data.body.user.password).toBe('[REDACTED]')
-      expect(loggedData.data.body.user.email).toBe('test@example.com')
+      expect(loggedData.data.body.user.email).toBe('[REDACTED]') // email is now redacted for PII protection
     })
 
     it('should handle arrays', async () => {

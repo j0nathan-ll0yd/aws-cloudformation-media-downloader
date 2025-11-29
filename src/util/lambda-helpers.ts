@@ -100,7 +100,7 @@ export function logInfo(message: string, stringOrObject?: string | object): void
 }
 
 export function logDebug(message: string, stringOrObject?: string | object): void {
-  console.log(message, stringOrObject ? stringify(stringOrObject) : '')
+  console.debug(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
 export function logError(message: string, stringOrObject?: string | object | unknown): void {
@@ -210,8 +210,23 @@ function sanitizeForTest(data: unknown): unknown {
 
   const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
-  // Remove sensitive fields
-  const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
+  // Remove sensitive fields - expanded list for comprehensive PII protection
+  const sensitiveFields = [
+    // Auth headers
+    'Authorization', 'authorization',
+    // Tokens
+    'token', 'Token', 'deviceToken', 'DeviceToken', 'refreshToken', 'RefreshToken', 'accessToken', 'AccessToken',
+    // Passwords
+    'password', 'Password',
+    // API keys
+    'apiKey', 'ApiKey',
+    // Secrets
+    'secret', 'Secret', 'privateKey', 'PrivateKey',
+    // Identity
+    'appleDeviceIdentifier', 'email', 'Email', 'phoneNumber', 'PhoneNumber', 'phone',
+    // Security
+    'certificate', 'Certificate', 'ssn', 'SSN', 'creditCard', 'CreditCard'
+  ]
 
   for (const key in sanitized) {
     if (sensitiveFields.includes(key)) {

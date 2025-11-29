@@ -109,6 +109,50 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## ✅ Recently Documented
 
+### Documented: 2025-11-28 (Code Quality Improvements)
+
+1. **ResponseStatus Enum for API Responses** (Convention)
+   - **What**: Use `ResponseStatus` enum for all API response status values instead of magic strings
+   - **Why**: Type safety, consistency, and easier refactoring
+   - **Documented**: src/types/enums.ts
+   - **Priority**: MEDIUM
+   - **Enforcement**: Prefer enum over string literals
+
+2. **Environment Variable Validation** (Pattern)
+   - **What**: Use `getRequiredEnv()` / `getRequiredEnvNumber()` from `util/env-validation.ts` for environment variables
+   - **Why**: Fail fast at cold start with clear error messages instead of cryptic runtime failures
+   - **Documented**: src/util/env-validation.ts
+   - **Priority**: HIGH
+   - **Enforcement**: Required for new Lambda functions
+
+3. **Batch Operation Retry Logic** (Pattern)
+   - **What**: Use `retryUnprocessed()` / `retryUnprocessedDelete()` from `util/retry.ts` for DynamoDB batch operations
+   - **Why**: DynamoDB batch operations may return unprocessed items; retry with exponential backoff prevents data loss
+   - **Documented**: src/util/retry.ts
+   - **Priority**: HIGH
+   - **Enforcement**: Required for batch get/delete operations
+
+4. **Paginated Scan Operations** (Pattern)
+   - **What**: Use `scanAllPages()` from `util/pagination.ts` for DynamoDB scan operations
+   - **Why**: DynamoDB scans are limited to 1MB per request; pagination prevents silent data truncation
+   - **Documented**: src/util/pagination.ts
+   - **Priority**: HIGH
+   - **Enforcement**: Required for all scan operations
+
+5. **Promise.allSettled for Cascade Operations** (Pattern)
+   - **What**: Use `Promise.allSettled()` instead of `Promise.all()` for cascade deletion and multi-resource operations
+   - **Why**: Prevents partial state from orphaning data; allows handling individual failures gracefully
+   - **Documented**: src/lambdas/UserDelete/src/index.ts, src/lambdas/PruneDevices/src/index.ts
+   - **Priority**: HIGH
+   - **Enforcement**: Required for cascade operations
+
+6. **Cascade Deletion Order** (Rule)
+   - **What**: Delete child entities BEFORE parent entities in cascade operations
+   - **Why**: Prevents orphaned references if parent deletion succeeds but child deletion fails
+   - **Documented**: src/lambdas/UserDelete/src/index.ts
+   - **Priority**: CRITICAL
+   - **Enforcement**: Zero-tolerance for incorrect cascade order
+
 ### Documented: 2025-11-28
 
 1. **ElectroDB Test Mocking Standard** (Rule)
@@ -192,5 +236,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-28
-- **Total Conventions**: 17 detected, 17 documented, 0 pending
+- **Total Conventions**: 23 detected, 23 documented, 0 pending
 - **Convention Capture System**: Active

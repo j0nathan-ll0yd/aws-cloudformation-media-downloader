@@ -1,11 +1,12 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
-import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
 import {defaultFile} from '../../../util/constants'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {retryUnprocessed} from '../../../util/retry'
 
 /**
  * Returns an array of Files for a user using ElectroDB batch get
@@ -23,11 +24,11 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
   }
 
   const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
-  const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
+  const {data: files, unprocessed} = await retryUnprocessed(() => Files.get(fileKeys).go({concurrency: 5}))
   logDebug('getFilesByUser.files =>', files)
 
   if (unprocessed.length > 0) {
-    logDebug('getFilesByUser.unprocessed =>', unprocessed)
+    logError('getFilesByUser: failed to fetch all items after retries', unprocessed)
   }
 
   return files as DynamoDBFile[]
