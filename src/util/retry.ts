@@ -19,7 +19,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * Retries a batch operation that may return unprocessed items
  * Uses exponential backoff between retries
- * @param operation - Async function that returns {data, unprocessed}
+ * @param operation - Async function that returns (data, unprocessed)
  * @param config - Optional retry configuration
  * @returns Final result with any remaining unprocessed items after all retries
  */

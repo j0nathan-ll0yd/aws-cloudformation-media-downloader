@@ -15,7 +15,7 @@ import {CreateTableCommand, DynamoDBClient} from '@aws-sdk/client-dynamodb'
 export async function setupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
-    region: process.env.AWS_REGION || 'us-east-1',
+    region: process.env.AWS_REGION || 'us-west-2',
     credentials: {
       accessKeyId: 'test',
       secretAccessKey: 'test'
@@ -91,7 +91,7 @@ export async function setupLocalStackTable(): Promise<void> {
 export async function cleanupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
-    region: process.env.AWS_REGION || 'us-east-1',
+    region: process.env.AWS_REGION || 'us-west-2',
     credentials: {
       accessKeyId: 'test',
       secretAccessKey: 'test'

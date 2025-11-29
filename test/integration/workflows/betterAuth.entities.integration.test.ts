@@ -15,7 +15,7 @@
 const TEST_TABLE = 'MediaDownloader'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
-process.env.AWS_REGION = 'us-east-1'
+process.env.AWS_REGION = 'us-west-2'
 
 import {describe, it, expect, beforeAll, afterAll, afterEach} from '@jest/globals'
 import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'

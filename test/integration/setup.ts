@@ -15,9 +15,9 @@ process.env.USE_LOCALSTACK = 'true'
 
 /**
  * Set AWS region for LocalStack
- * LocalStack uses us-east-1 by default
+ * Match production region (us-west-2) for consistency
  */
-process.env.AWS_REGION = 'us-east-1'
+process.env.AWS_REGION = 'us-west-2'
 
 /**
  * Configure test timeout
