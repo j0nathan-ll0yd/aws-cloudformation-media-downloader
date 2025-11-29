@@ -4,7 +4,25 @@
  * This enables extraction of Better Auth fixtures from CloudWatch logs
  */
 
-import { logIncomingFixture, logOutgoingFixture } from '../../util/lambda-helpers'
+import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
+
+/**
+ * Better Auth hook context type
+ * Represents the context passed to before/after hooks
+ */
+interface BetterAuthHookContext {
+  path: string
+  request?: {method?: string}
+  headers?: Record<string, string>
+  body?: unknown
+  query?: Record<string, string>
+  requestId?: string
+  response?: {
+    status?: number
+    headers?: Record<string, string>
+    body?: unknown
+  }
+}
 
 /**
  * Extract endpoint name from path for fixture naming
@@ -21,7 +39,7 @@ function getFixtureName(path: string): string {
   // Convert kebab-case to PascalCase
   return cleanPath
     .split(/[-/]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('')
 }
 
@@ -31,7 +49,7 @@ function getFixtureName(path: string): string {
  */
 export const logIncomingRequestHook = {
   matcher: () => true,
-  handler: async (ctx: any) => {
+  handler: async (ctx: BetterAuthHookContext) => {
     const fixtureName = getFixtureName(ctx.path)
 
     // Create a request-like object similar to API Gateway events
@@ -59,7 +77,7 @@ export const logIncomingRequestHook = {
  */
 export const logOutgoingResponseHook = {
   matcher: () => true,
-  handler: async (ctx: any) => {
+  handler: async (ctx: BetterAuthHookContext) => {
     const fixtureName = getFixtureName(ctx.path)
 
     // Create a response-like object similar to API Gateway responses

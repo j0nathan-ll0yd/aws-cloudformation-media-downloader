@@ -30,7 +30,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param _context - Lambda context (unused)
  * @returns API Gateway proxy result with refreshed session info
  */
-export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logIncomingFixture(event)
 
   try {

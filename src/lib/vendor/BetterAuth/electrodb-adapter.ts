@@ -76,7 +76,7 @@ type ElectroUserCreate = {
   emailVerified: boolean
   firstName: string
   lastName: string
-  identityProviders: IdentityProvidersData  // ElectroDB requires all fields
+  identityProviders: IdentityProvidersData // ElectroDB requires all fields
 }
 
 type ElectroSessionCreate = {
@@ -113,7 +113,7 @@ type ElectroSessionUpdate = Partial<Pick<ElectroSessionCreate, 'expiresAt' | 'to
  * Extended Account type that includes OAuth token metadata we store in ElectroDB
  * Better Auth's base Account type doesn't include these fields, but we persist them
  */
-type ExtendedAccount = Account & {
+export type ExtendedAccount = Account & {
   scope?: string | null
   tokenType?: string | null
   expiresAt?: number | null
@@ -180,7 +180,7 @@ function transformAccountToAuth(electroAccount: ElectroAccountItem): ExtendedAcc
   return {
     id: electroAccount.accountId,
     userId: electroAccount.userId,
-    accountId: electroAccount.providerAccountId,  // Better Auth uses 'accountId', we store as 'providerAccountId'
+    accountId: electroAccount.providerAccountId, // Better Auth uses 'accountId', we store as 'providerAccountId'
     providerId: electroAccount.providerId,
     accessToken: electroAccount.accessToken ?? null,
     refreshToken: electroAccount.refreshToken ?? null,
@@ -212,11 +212,11 @@ function transformUserFromAuth(authUser: Partial<User> & {id?: string}): Electro
 
   return {
     userId: authUser.id || uuidv4(),
-    email: authUser.email!,  // Required by Better Auth
+    email: authUser.email!, // Required by Better Auth
     emailVerified: authUser.emailVerified ?? false,
     firstName,
     lastName,
-    identityProviders  // Provide complete object with required fields
+    identityProviders // Provide complete object with required fields
   }
 }
 
@@ -243,7 +243,7 @@ function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpda
 function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; deviceId?: string}): ElectroSessionCreate {
   const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
-    userId: authSession.userId!,  // Required by Better Auth
+    userId: authSession.userId!, // Required by Better Auth
     expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
     token: authSession.token || uuidv4(),
     ipAddress: authSession.ipAddress ?? undefined,
@@ -280,9 +280,9 @@ function transformSessionUpdateFromAuth(authUpdate: Partial<Session>): ElectroSe
 function transformAccountFromAuth(authAccount: Partial<ExtendedAccount> & {id?: string}): ElectroAccountCreate {
   return {
     accountId: authAccount.id || uuidv4(),
-    userId: authAccount.userId!,  // Required by Better Auth
-    providerId: authAccount.providerId!,  // Required by Better Auth
-    providerAccountId: authAccount.accountId || '',  // Better Auth uses 'accountId', we store as 'providerAccountId'
+    userId: authAccount.userId!, // Required by Better Auth
+    providerId: authAccount.providerId!, // Required by Better Auth
+    providerAccountId: authAccount.accountId || '', // Better Auth uses 'accountId', we store as 'providerAccountId'
     accessToken: authAccount.accessToken ?? undefined,
     refreshToken: authAccount.refreshToken ?? undefined,
     expiresAt: authAccount.expiresAt ?? undefined,
@@ -493,13 +493,4 @@ export function createElectroDBAdapter() {
  * Exported transformer functions for testing
  * These allow integration tests to validate transformation logic against real DynamoDB
  */
-export {
-  transformUserFromAuth,
-  transformSessionFromAuth,
-  transformAccountFromAuth,
-  transformUserToAuth,
-  transformSessionToAuth,
-  transformAccountToAuth,
-  transformUserUpdateFromAuth,
-  transformSessionUpdateFromAuth
-}
+export {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth, transformUserToAuth, transformSessionToAuth, transformAccountToAuth, transformUserUpdateFromAuth, transformSessionUpdateFromAuth}

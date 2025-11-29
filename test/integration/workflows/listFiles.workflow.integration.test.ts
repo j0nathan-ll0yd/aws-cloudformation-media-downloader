@@ -20,7 +20,9 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
+import type {DynamoDBFile} from '../../../src/types/main'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
@@ -89,7 +91,7 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
 }
 
 describe('ListFiles Workflow Integration Tests', () => {
-  let mockContext: any
+  let mockContext: Context
 
   beforeAll(async () => {
     // Create LocalStack infrastructure
@@ -226,7 +228,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents[0].status).toBe(FileStatus.Downloaded)
     expect(response.body.contents[1].status).toBe(FileStatus.Downloaded)
 
-    const fileIds = response.body.contents.map((file: any) => file.fileId).sort()
+    const fileIds = response.body.contents.map((file: Partial<DynamoDBFile>) => file.fileId).sort()
     expect(fileIds).toEqual(['downloaded-1', 'downloaded-2'])
   })
 
@@ -253,7 +255,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: any) => file.status === FileStatus.Downloaded)).toBe(true)
+    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {

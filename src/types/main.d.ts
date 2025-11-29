@@ -11,7 +11,6 @@ import {
   APIGatewayProxyEventStageVariables
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
-import {JWTPayload} from 'jose'
 
 interface Metadata {
   videoId: string

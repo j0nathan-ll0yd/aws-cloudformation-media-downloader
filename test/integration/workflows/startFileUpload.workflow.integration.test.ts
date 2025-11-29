@@ -21,14 +21,18 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload} from '../helpers/mock-youtube'
+import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload, S3UploadFunction} from '../helpers/mock-youtube'
 import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
+
+// Type assertion for createS3Upload to match S3UploadFunction signature
+const s3UploadFn = createS3Upload as S3UploadFunction
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -53,7 +57,7 @@ const mockFormat = createMockVideoFormat({
 jest.unstable_mockModule(youtubeModulePath, () => ({
   fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
-  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(createS3Upload)
+  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
 
 jest.unstable_mockModule(githubHelpersModulePath, () => ({
@@ -65,7 +69,7 @@ const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler
 
 describe('StartFileUpload Workflow Integration Tests', () => {
-  let mockContext: any
+  let mockContext: Context
 
   beforeAll(async () => {
     await createTestBucket(TEST_BUCKET)

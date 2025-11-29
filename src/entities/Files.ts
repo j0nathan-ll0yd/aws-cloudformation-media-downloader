@@ -1,5 +1,4 @@
-import {Entity} from 'electrodb'
-import {documentClient} from '../lib/vendor/ElectroDB/entity'
+import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the Files DynamoDB table.

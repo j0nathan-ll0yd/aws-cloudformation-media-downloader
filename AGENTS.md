@@ -2,45 +2,23 @@
 
 ## Convention Capture System
 
-**CRITICAL**: This project uses an automated system to capture emergent conventions during development. This ensures institutional memory persists across sessions and projects.
+**CRITICAL**: This project captures emergent conventions during development. Read `docs/conventions-tracking.md` at session start.
 
-### At Start of EVERY Session:
-1. Read `docs/conventions-tracking.md` to understand current project conventions
-2. Review universal detection patterns (see below)
-3. Activate convention detection mode
-
-### During Work - Monitor for Signals:
+### Detection Signals:
 - 🚨 **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
-- ⚠️ **HIGH**: "MUST", "REQUIRED", "ALWAYS", corrections like "Actually, it's X not Y"
-- 📋 **MEDIUM**: "Prefer X over Y", repeated decisions (2+ times)
-- 💡 **LOW**: Suggestions to monitor
+- ⚠️ **HIGH**: "MUST", "REQUIRED", "ALWAYS"
+- 📋 **MEDIUM**: "Prefer X over Y", repeated decisions
 
-### Flag Convention Format:
-```
-🔔 **CONVENTION DETECTED**
+### When Convention Detected:
+1. Update `docs/conventions-tracking.md` with the new convention
+2. Document in appropriate wiki page under `docs/wiki/`
+3. Mark as documented in tracking file
 
-**Name**: [Convention Name]
-**Type**: [Rule/Pattern/Methodology/Convention]
-**What**: [One-sentence description]
-**Why**: [Brief rationale]
-**Priority**: [Critical/High/Medium/Low]
+### Reference:
+- **Active Conventions**: `docs/conventions-tracking.md`
+- **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
 
-Document now? [Y/N]
-```
-
-### At End of Session:
-1. Generate session summary using template: `docs/templates/session-summary-template.md`
-2. Save to: `docs/sessions/YYYY-MM-DD-topic.md`
-3. Update `docs/conventions-tracking.md` with newly detected conventions
-4. List pending documentation tasks
-
-### Reference Implementation:
-- **System Guide**: `docs/CONVENTION-CAPTURE-GUIDE.md` - Complete methodology
-- **Detection Patterns**: `docs/convention-detection-patterns.md` - Signal reference
-- **Templates**: `docs/templates/` - Convention & session summary templates
-- **Wiki**: `docs/wiki/Meta/Convention-Capture-System.md` - Public documentation
-
-**Key Principle**: Better to flag and dismiss than miss a convention. Zero conventions lost to conversation history.
+**Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.
 
 ---
 
@@ -151,6 +129,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Essential Commands
 ```bash
+pnpm run precheck       # TypeScript type checking and lint (run before commits)
 pnpm run build          # Build Lambda functions with webpack
 pnpm run test           # Run unit tests
 pnpm run deploy         # Deploy infrastructure with OpenTofu
@@ -159,7 +138,7 @@ pnpm run format         # Auto-format with Prettier (250 char lines)
 # Integration testing
 pnpm run localstack:start        # Start LocalStack
 pnpm run test:integration        # Run integration tests
-pnpm run test:integration:full   # Full suite with lifecycle
+pnpm run test:integration:with-lifecycle   # Full suite with lifecycle
 
 # Remote testing
 pnpm run test-remote-list        # Test file listing
@@ -171,13 +150,14 @@ pnpm run document-source         # Generate TSDoc documentation
 ```
 
 ### Pre-Commit Checklist
-1. Run `pnpm run format` - Auto-format code
-2. Run `pnpm run build` - Verify TypeScript compilation
-3. Run `pnpm test` - Ensure all tests pass
-4. Verify NO AI references in commit message
-5. Stage changes: `git add -A`
-6. Commit with clean message: `git commit -m "type: description"`
-7. **NEVER push automatically** - Wait for user request
+1. Run `pnpm run precheck` - TypeScript type checking and lint
+2. Run `pnpm run format` - Auto-format code
+3. Run `pnpm run build` - Compile with webpack
+4. Run `pnpm test` - Ensure all tests pass
+5. Verify NO AI references in commit message
+6. Stage changes: `git add -A`
+7. Commit with clean message: `git commit -m "type: description"`
+8. **NEVER push automatically** - Wait for user request
 
 ## Integration Points
 

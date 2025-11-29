@@ -14,7 +14,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logIncomingFixture(event)
   let requestBody
   try {

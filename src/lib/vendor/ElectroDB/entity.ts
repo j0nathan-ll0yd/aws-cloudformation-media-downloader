@@ -12,6 +12,7 @@
  * Entity constructor directly with 'as const' assertions for proper type inference.
  */
 import {Entity} from 'electrodb'
+import type {EntityItem} from 'electrodb'
 import {documentClient} from '../AWS/DynamoDB'
 
 /**
@@ -43,3 +44,4 @@ export {documentClient}
  * })
  */
 export {Entity}
+export type {EntityItem}

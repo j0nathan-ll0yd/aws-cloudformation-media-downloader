@@ -102,7 +102,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logIncomingFixture(event)
   let requestBody
   try {
@@ -121,7 +121,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     const {userId, userStatus} = getUserDetailsFromEvent(event)
     // Store the device details, regardless of user status
     await upsertDevice(device)
-    /* istanbul ignore else */
+    /* c8 ignore else */
     if (userStatus === UserStatus.Authenticated && userId) {
       // Extract the userId and associate them
       // Store the device details associated with the user

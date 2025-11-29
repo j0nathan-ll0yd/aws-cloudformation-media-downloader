@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.0.0",
   "type": "module",
   "scripts": {
+    "precheck": "pnpm run check-types && pnpm run lint",
     "check-types": "tsc --project ./tsconfig.json",
     "generate-graph": "ts-node scripts/generateDependencyGraph.ts",
     "document-source": "./bin/document-source.sh",
@@ -27,6 +28,7 @@
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
+    "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "localstack:start": "docker compose -f docker-compose.localstack.yml up -d",
     "localstack:stop": "docker compose -f docker-compose.localstack.yml down",
     "localstack:logs": "docker compose -f docker-compose.localstack.yml logs -f localstack",
@@ -46,8 +48,6 @@
     "@aws-sdk/client-dynamodb": "^3.716.0",
     "@aws-sdk/client-lambda": "^3.930.0",
     "@aws-sdk/client-s3": "^3.717.0",
-    "@aws-sdk/client-secrets-manager": "^3.716.0",
-    "@aws-sdk/client-sfn": "^3.716.0",
     "@aws-sdk/client-sns": "^3.716.0",
     "@aws-sdk/client-sqs": "^3.716.0",
     "@aws-sdk/lib-dynamodb": "^3.716.0",
@@ -61,7 +61,6 @@
     "electrodb": "^3.5.0",
     "joi": "^17.13.3",
     "jose": "^5.9.6",
-    "jwks-rsa": "^3.1.0",
     "uuid": "^11.0.3",
     "yt-dlp-wrap": "^2.3.12",
     "ytdl-core": "^4.11.5"

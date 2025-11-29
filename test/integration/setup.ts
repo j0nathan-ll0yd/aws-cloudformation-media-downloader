@@ -42,7 +42,7 @@ async function waitForLocalStack(): Promise<void> {
         console.log('LocalStack is ready:', JSON.stringify(health, null, 2))
         return
       }
-    } catch (error) {
+    } catch {
       // LocalStack not ready yet, continue retrying
     }
 

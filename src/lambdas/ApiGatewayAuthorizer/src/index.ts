@@ -1,4 +1,4 @@
-import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult, Context} from 'aws-lambda'
+import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
@@ -136,8 +136,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent, _context: Context, {traceId: _traceId}): Promise<CustomAuthorizerResult> => {
+export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> => {
   logInfo('event <=', event)
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {

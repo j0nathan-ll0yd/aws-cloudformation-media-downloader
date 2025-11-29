@@ -22,8 +22,6 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-dynamodb': '@aws-sdk/client-dynamodb',
     '@aws-sdk/client-lambda': '@aws-sdk/client-lambda',
     '@aws-sdk/client-s3': '@aws-sdk/client-s3',
-    '@aws-sdk/client-secrets-manager': '@aws-sdk/client-secrets-manager',
-    '@aws-sdk/client-sfn': '@aws-sdk/client-sfn',
     '@aws-sdk/client-sns': '@aws-sdk/client-sns',
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',

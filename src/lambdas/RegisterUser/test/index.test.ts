@@ -1,4 +1,5 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
@@ -20,7 +21,7 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 const {handler} = await import('./../src')
 
 describe('#RegisterUser', () => {
-  let event: any
+  let event: APIGatewayEvent
   const context = testContext
 
   beforeEach(() => {

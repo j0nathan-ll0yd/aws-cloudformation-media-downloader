@@ -63,7 +63,7 @@ export function verifyPlatformConfiguration(): void {
 export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
   const defaultStatusCode = 500
   logError('lambdaErrorResponse', JSON.stringify(error))
-  /* istanbul ignore else */
+  /* c8 ignore else */
   if (error instanceof CustomLambdaError) {
     return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
   } else if (error instanceof Error) {
@@ -99,7 +99,7 @@ export function generateUnauthorizedError() {
 export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
   let principalId = 'unknown'
   // This should always be present, via the API Gateway
-  /* istanbul ignore else */
+  /* c8 ignore else */
   if (event.requestContext.authorizer && event.requestContext.authorizer.principalId) {
     principalId = event.requestContext.authorizer.principalId
   }
@@ -184,12 +184,16 @@ export async function putMetrics(
  * @param data - Data to sanitize
  * @returns Sanitized copy of data with sensitive fields redacted
  */
-function sanitizeForTest(data: any): any {
+function sanitizeForTest(data: unknown): unknown {
   if (!data || typeof data !== 'object') {
     return data
   }
 
-  const sanitized = Array.isArray(data) ? [...data] : {...data}
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForTest(item))
+  }
+
+  const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
   // Remove sensitive fields
   const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
@@ -221,7 +225,7 @@ function sanitizeForTest(data: any): any {
  * // Manual override (for Better Auth or custom scenarios)
  * logIncomingFixture(event, 'CustomFixtureName')
  */
-export function logIncomingFixture(event: any, fixtureType?: string): void {
+export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
     JSON.stringify({
@@ -249,7 +253,7 @@ export function logIncomingFixture(event: any, fixtureType?: string): void {
  * // Manual override (for Better Auth or custom scenarios)
  * logOutgoingFixture(response, 'CustomFixtureName')
  */
-export function logOutgoingFixture(response: any, fixtureType?: string): void {
+export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
     JSON.stringify({
