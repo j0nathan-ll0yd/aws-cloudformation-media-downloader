@@ -126,12 +126,14 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Enforcement**: Required for new Lambda functions
 
 7. **Lazy Evaluation for Environment Variables** (Pattern)
-   - **What**: Call `getRequiredEnv()` inside functions, not at module level; convert module-level constants to getter functions when they use env vars
-   - **Why**: Avoids test failures from env validation running at import time before mocks are set up; simplifies testing by eliminating env-validation mock boilerplate
-   - **Example**: `export function getDefaultFile() { return { url: getRequiredEnv('DefaultFileUrl') } }` NOT `export const defaultFile = { url: getRequiredEnv('DefaultFileUrl') }`
+   - **What**: Call `getRequiredEnv()` inside functions, not at module level
+   - **Why**: Avoids test failures from env validation running at import time before mocks are set up
+   - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent webpack tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
+   - **Example for functions**: `function getConfig() { return getRequiredEnv('Config') }` (lazy)
+   - **Example for constants**: Set `process.env.DefaultFileUrl = 'value'` before import, NOT mock env-validation
    - **Documented**: src/util/constants.ts, src/lib/vendor/YouTube.ts
    - **Priority**: HIGH
-   - **Enforcement**: Required for testable code
+   - **Enforcement**: Prefer lazy evaluation; use env vars in tests for module-level constants
 
 3. **Batch Operation Retry Logic** (Pattern)
    - **What**: Use `retryUnprocessed()` / `retryUnprocessedDelete()` from `util/retry.ts` for DynamoDB batch operations
