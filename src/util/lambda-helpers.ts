@@ -3,6 +3,7 @@ import {putMetricData, getStandardUnit} from '../lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
 import {UserStatus} from '../types/enums'
+import {getOptionalEnv} from './env-validation'
 
 export function unknownErrorToString(unknownVariable: unknown): string {
   if (typeof unknownVariable === 'string') {
@@ -68,7 +69,7 @@ export function response(context: Context, statusCode: number, body?: string | o
 
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
-  const platformApplicationArn = process.env.PlatformApplicationArn
+  const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
   logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')

@@ -11,6 +11,7 @@ import {Apns2Error} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 import {scanAllPages} from '../../../util/pagination'
 import {retryUnprocessedDelete} from '../../../util/retry'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * Result of the PruneDevices operation
@@ -49,10 +50,10 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   const client = new ApnsClient({
-    team: process.env.ApnsTeam,
-    keyId: process.env.ApnsKeyId,
-    signingKey: process.env.ApnsSigningKey,
-    defaultTopic: process.env.ApnsDefaultTopic,
+    team: getRequiredEnv('ApnsTeam'),
+    keyId: getRequiredEnv('ApnsKeyId'),
+    signingKey: getRequiredEnv('ApnsSigningKey'),
+    defaultTopic: getRequiredEnv('ApnsDefaultTopic'),
     host: 'api.sandbox.push.apple.com'
   })
   const healthCheckNotification = new Notification(token, {

@@ -10,6 +10,7 @@ import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixtu
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -19,7 +20,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 async function createPlatformEndpointFromToken(token: string) {
   // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
   const params = {
-    PlatformApplicationArn: process.env.PlatformApplicationArn as string,
+    PlatformApplicationArn: getRequiredEnv('PlatformApplicationArn'),
     Token: token
   }
   logDebug('createPlatformEndpoint <=', params)
@@ -116,7 +117,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   try {
     const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-    const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
+    const pushNotificationTopicArn = getRequiredEnv('PushNotificationTopicArn')
     const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
     const {userId, userStatus} = getUserDetailsFromEvent(event)
     // Store the device details, regardless of user status

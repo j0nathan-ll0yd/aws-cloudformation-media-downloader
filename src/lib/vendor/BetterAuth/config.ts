@@ -8,6 +8,7 @@
 import {betterAuth} from 'better-auth'
 import {createElectroDBAdapter} from './electrodb-adapter'
 import {logDebug} from '../../../util/lambda-helpers'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * Better Auth instance configured for MediaDownloader service.
@@ -28,7 +29,7 @@ export const auth = betterAuth({
   database: createElectroDBAdapter(),
 
   // Base URL for OAuth callbacks (from environment)
-  baseURL: process.env.ApplicationUrl,
+  baseURL: getRequiredEnv('ApplicationUrl'),
 
   // Trusted origins for OAuth flows
   trustedOrigins: ['https://appleid.apple.com'],
@@ -69,7 +70,7 @@ export const auth = betterAuth({
  * Extract client ID (Service ID) from Sign In With Apple configuration.
  */
 function getAppleClientIdFromConfig(): string {
-  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  const config = JSON.parse(getRequiredEnv('SignInWithAppleConfig'))
   return config.client_id
 }
 
@@ -77,7 +78,7 @@ function getAppleClientIdFromConfig(): string {
  * Extract bundle ID from Sign In With Apple configuration.
  */
 function getAppleBundleIdFromConfig(): string {
-  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  const config = JSON.parse(getRequiredEnv('SignInWithAppleConfig'))
   return config.bundle_id
 }
 
@@ -87,7 +88,7 @@ function getAppleBundleIdFromConfig(): string {
  */
 export async function initializeBetterAuth() {
   logDebug('Better Auth initialized', {
-    applicationUrl: process.env.ApplicationUrl
+    applicationUrl: getRequiredEnv('ApplicationUrl')
   })
 }
 

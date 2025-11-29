@@ -13,6 +13,7 @@ import {FileStatus, ResponseStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * Associates a File to a User by creating a UserFile record
@@ -83,7 +84,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
   const sendMessageParams = {
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
-    QueueUrl: process.env.SNSQueueUrl
+    QueueUrl: getRequiredEnv('SNSQueueUrl')
   } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)

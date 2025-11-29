@@ -6,8 +6,7 @@ import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
 import {UnexpectedError, CookieExpirationError} from '../../util/errors'
 import {assertIsError} from '../../util/transformers'
 import {headObject, createS3Upload} from '../vendor/AWS/S3'
-
-const ytdlpBinaryPath = process.env.YtdlpBinaryPath as string
+import {getRequiredEnv} from '../../util/env-validation'
 
 /**
  * Check if an error message indicates cookie expiration or bot detection
@@ -27,6 +26,7 @@ function isCookieExpirationError(errorMessage: string): boolean {
  * @returns Video information including formats and metadata
  */
 export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
+  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
   try {
@@ -174,6 +174,7 @@ export async function streamVideoToS3(
   s3Url: string
   duration: number
 }> {
+  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: ytdlpBinaryPath})
 
   try {
