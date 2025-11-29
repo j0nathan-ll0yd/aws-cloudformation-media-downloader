@@ -1,9 +1,24 @@
 import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {putMetricData, getStandardUnit} from '../lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {unknownErrorToString} from './transformers'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
 import {UserStatus} from '../types/enums'
+
+export function unknownErrorToString(unknownVariable: unknown): string {
+  if (typeof unknownVariable === 'string') {
+    return unknownVariable
+  } else if (Array.isArray(unknownVariable)) {
+    return unknownVariable
+      .map(function (s) {
+        return unknownErrorToString(s)
+      })
+      .join(', ')
+  } else if (typeof unknownVariable === 'object') {
+    return JSON.stringify(unknownVariable)
+  } else {
+    return 'Unknown error'
+  }
+}
 
 export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'

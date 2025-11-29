@@ -1,0 +1,71 @@
+name: Dependency Check
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  dependency-check:
+    name: Validate Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate dependency graph
+        run: pnpm run generate-graph
+
+      - name: Check dependency rules
+        run: pnpm run deps:check
+
+      - name: Validate GraphRAG is current
+        run: |
+          pnpm run graphrag:extract
+          if ! git diff --quiet graphrag/knowledge-graph.json; then
+            echo "❌ GraphRAG knowledge-graph.json is out of date!"
+            echo "Run 'pnpm run graphrag:extract' locally and commit the changes."
+            git diff graphrag/knowledge-graph.json
+            exit 1
+          fi
+          echo "✓ GraphRAG is up to date"
+
+      - name: Generate dependency report
+        if: failure()
+        run: |
+          pnpm run deps:report || true
+          echo "Dependency violations found. See job summary for details."
+
+      - name: Upload dependency report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: dependency-report.html
+
+      - name: Comment on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Dependency Check Failed**\n\nArchitectural violations were detected. Please review the dependency report artifact for details.\n\nCommon issues:\n- Circular dependencies\n- Cross-Lambda imports\n- Direct AWS SDK imports (use vendor wrappers)\n- Entity cross-dependencies'
+            })

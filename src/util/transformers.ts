@@ -4,6 +4,9 @@ import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
 import {stringAttribute, numberAttribute, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
 
+// Re-export for backwards compatibility
+export {unknownErrorToString} from './lambda-helpers'
+
 /**
  * Creates SQS message attributes for file notifications
  * Uses vendor wrapper helpers for clean, type-safe attribute creation
@@ -19,22 +22,6 @@ export function createFileNotificationAttributes(file: DynamoDBFile, userId: str
     size: numberAttribute(file.size),
     url: stringAttribute(file.url!),
     userId: stringAttribute(userId)
-  }
-}
-
-export function unknownErrorToString(unknownVariable: unknown): string {
-  if (typeof unknownVariable === 'string') {
-    return unknownVariable
-  } else if (Array.isArray(unknownVariable)) {
-    return unknownVariable
-      .map(function (s) {
-        return unknownErrorToString(s)
-      })
-      .join(', ')
-  } else if (typeof unknownVariable === 'object') {
-    return JSON.stringify(unknownVariable)
-  } else {
-    return 'Unknown error'
   }
 }
 
