@@ -19,9 +19,24 @@ const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSess
 const {Sessions} = await import('../entities/Sessions')
 
 /**
+ * Mock session data overrides for testing
+ */
+interface MockSessionOverrides {
+  sessionId?: string
+  userId?: string
+  token?: string
+  expiresAt?: number
+  deviceId?: string
+  ipAddress?: string
+  userAgent?: string
+  createdAt?: number
+  updatedAt?: number
+}
+
+/**
  * Helper to create mock session objects with sensible defaults
  */
-function createMockSession(overrides?: {sessionId?: string; userId?: string; token?: string; expiresAt?: number; deviceId?: string; ipAddress?: string; userAgent?: string; createdAt?: number; updatedAt?: number}) {
+function createMockSession(overrides?: MockSessionOverrides) {
   const now = Date.now()
   return {
     sessionId: 'session-123',
