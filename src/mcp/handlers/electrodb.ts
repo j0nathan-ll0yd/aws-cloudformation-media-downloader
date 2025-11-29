@@ -7,33 +7,33 @@
  * - graphrag/metadata.json (relationships)
  */
 
-import {getEntityInfo, getLambdaConfigs} from './data-loader.js';
+import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 
 // Re-export with old name for backwards compatibility
-export {handleEntityQuery as handleElectroDBQuery};
+export {handleEntityQuery as handleElectroDBQuery}
 
 export async function handleEntityQuery(args: {entity?: string; query: string}) {
-  const {entity, query} = args;
+  const {entity, query} = args
 
-  const {entities, relationships} = await getEntityInfo();
+  const {entities, relationships} = await getEntityInfo()
 
   switch (query) {
     case 'list':
       return {
         entities,
         count: entities.length
-      };
+      }
 
     case 'schema':
       if (entity) {
         if (!entities.includes(entity)) {
-          return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`};
+          return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`}
         }
         return {
           entity,
           note: 'Schema is defined in src/entities/' + entity + '.ts',
           suggestion: 'Read the entity file for full schema details'
-        };
+        }
       }
       // Return all entity names with their file locations
       return {
@@ -41,15 +41,15 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
           name: e,
           file: `src/entities/${e}.ts`
         }))
-      };
+      }
 
     case 'relationships': {
       if (entity) {
         // Filter relationships for this entity
-        const related = relationships.filter((r) => r.from === entity || r.to === entity);
-        return {entity, relationships: related};
+        const related = relationships.filter((r) => r.from === entity || r.to === entity)
+        return {entity, relationships: related}
       }
-      return {relationships};
+      return {relationships}
     }
 
     case 'collections': {
@@ -64,24 +64,24 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
           {name: 'userSessions', description: 'Get all sessions for a user'},
           {name: 'userAccounts', description: 'Get all accounts for a user'}
         ]
-      };
+      }
     }
 
     case 'usage': {
       // Show which Lambdas use which entities
-      const lambdaConfigs = await getLambdaConfigs();
-      const usage: Record<string, string[]> = {};
+      const lambdaConfigs = await getLambdaConfigs()
+      const usage: Record<string, string[]> = {}
 
       for (const e of entities) {
-        usage[e] = [];
+        usage[e] = []
         for (const [lambdaName, config] of Object.entries(lambdaConfigs)) {
           if (config.entities.includes(e)) {
-            usage[e].push(lambdaName);
+            usage[e].push(lambdaName)
           }
         }
       }
 
-      return {entityUsage: usage};
+      return {entityUsage: usage}
     }
 
     case 'all':
@@ -89,12 +89,12 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
         entities,
         relationships,
         collectionsFile: 'src/entities/Collections.ts'
-      };
+      }
 
     default:
       return {
         error: `Unknown query: ${query}`,
         availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']
-      };
+      }
   }
 }

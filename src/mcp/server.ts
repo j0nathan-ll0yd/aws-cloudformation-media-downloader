@@ -8,28 +8,25 @@
  * - Dependency graph analysis
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { handleElectroDBQuery } from './handlers/electrodb.js';
-import { handleLambdaQuery } from './handlers/lambda.js';
-import { handleInfrastructureQuery } from './handlers/infrastructure.js';
+import {Server} from '@modelcontextprotocol/sdk/server/index.js'
+import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js'
+import {CallToolRequestSchema, ListToolsRequestSchema} from '@modelcontextprotocol/sdk/types.js'
+import {handleElectroDBQuery} from './handlers/electrodb.js'
+import {handleLambdaQuery} from './handlers/lambda.js'
+import {handleInfrastructureQuery} from './handlers/infrastructure.js'
 
 // Create server instance
 const server = new Server(
   {
     name: 'media-downloader-mcp',
-    version: '1.0.0',
+    version: '1.0.0'
   },
   {
     capabilities: {
-      tools: {},
-    },
+      tools: {}
+    }
   }
-);
+)
 
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -44,16 +41,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             entity: {
               type: 'string',
               description: 'Entity name (Users, Files, Devices, UserFiles, UserDevices)',
-              enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices'],
+              enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices']
             },
             query: {
               type: 'string',
               description: 'Query type (schema, relationships, collections)',
-              enum: ['schema', 'relationships', 'collections'],
-            },
+              enum: ['schema', 'relationships', 'collections']
+            }
           },
-          required: ['query'],
-        },
+          required: ['query']
+        }
       },
       {
         name: 'query_lambda',
@@ -63,16 +60,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             lambda: {
               type: 'string',
-              description: 'Lambda function name',
+              description: 'Lambda function name'
             },
             query: {
               type: 'string',
               description: 'Query type (config, dependencies, triggers, env)',
-              enum: ['config', 'dependencies', 'triggers', 'env', 'list'],
-            },
+              enum: ['config', 'dependencies', 'triggers', 'env', 'list']
+            }
           },
-          required: ['query'],
-        },
+          required: ['query']
+        }
       },
       {
         name: 'query_infrastructure',
@@ -83,16 +80,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             resource: {
               type: 'string',
               description: 'Resource type (s3, dynamodb, apigateway, sns)',
-              enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all'],
+              enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']
             },
             query: {
               type: 'string',
               description: 'Query type (config, usage, dependencies)',
-              enum: ['config', 'usage', 'dependencies'],
-            },
+              enum: ['config', 'usage', 'dependencies']
+            }
           },
-          required: ['resource', 'query'],
-        },
+          required: ['resource', 'query']
+        }
       },
       {
         name: 'query_dependencies',
@@ -102,178 +99,187 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             file: {
               type: 'string',
-              description: 'File path to analyze',
+              description: 'File path to analyze'
             },
             query: {
               type: 'string',
               description: 'Query type (imports, dependents, transitive, circular)',
-              enum: ['imports', 'dependents', 'transitive', 'circular'],
-            },
+              enum: ['imports', 'dependents', 'transitive', 'circular']
+            }
           },
-          required: ['query'],
-        },
-      },
-    ],
-  };
-});
+          required: ['query']
+        }
+      }
+    ]
+  }
+})
 
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const {name, arguments: args} = request.params
 
   try {
     switch (name) {
       case 'query_entities':
-        return await handleElectroDBQuery(args as {entity?: string; query: string});
+        return await handleElectroDBQuery(args as {entity?: string; query: string})
 
       case 'query_lambda':
-        return await handleLambdaQuery(args as {lambda?: string; query: string});
+        return await handleLambdaQuery(args as {lambda?: string; query: string})
 
       case 'query_infrastructure':
-        return await handleInfrastructureQuery(args as {resource?: string; query: string});
+        return await handleInfrastructureQuery(args as {resource?: string; query: string})
 
       case 'query_dependencies':
-        return await handleDependencyQuery(args as {file?: string; query: string});
+        return await handleDependencyQuery(args as {file?: string; query: string})
 
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        throw new Error(`Unknown tool: ${name}`)
     }
   } catch (error) {
     return {
       content: [
         {
           type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-    };
+          text: `Error: ${error instanceof Error ? error.message : String(error)}`
+        }
+      ]
+    }
   }
-});
+})
+
+interface GraphFileData {
+  imports?: string[]
+}
+
+interface GraphData {
+  graph: Record<string, GraphFileData>
+  transitiveDependencies: Record<string, string[]>
+  circularDependencies?: string[][]
+}
 
 /**
  * Handle dependency graph queries
  */
-async function handleDependencyQuery(args: any) {
-  const fs = await import('fs/promises');
-  const path = await import('path');
+async function handleDependencyQuery(args: {file?: string; query: string}) {
+  const fs = await import('fs/promises')
+  const path = await import('path')
 
-  const graphPath = path.join(process.cwd(), 'build', 'graph.json');
-  const graphData = JSON.parse(await fs.readFile(graphPath, 'utf-8'));
+  const graphPath = path.join(process.cwd(), 'build', 'graph.json')
+  const graphData: GraphData = JSON.parse(await fs.readFile(graphPath, 'utf-8'))
 
-  const { file, query } = args;
+  const {file, query} = args
 
   switch (query) {
-    case 'imports':
+    case 'imports': {
       if (!file) {
         return {
           content: [
             {
               type: 'text',
-              text: 'File path required for imports query',
-            },
-          ],
-        };
+              text: 'File path required for imports query'
+            }
+          ]
+        }
       }
-      const imports = graphData.graph[file]?.imports || [];
+      const imports = graphData.graph[file]?.imports || []
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ file, imports }, null, 2),
-          },
-        ],
-      };
+            text: JSON.stringify({file, imports}, null, 2)
+          }
+        ]
+      }
+    }
 
-    case 'transitive':
+    case 'transitive': {
       if (!file) {
         return {
           content: [
             {
               type: 'text',
-              text: 'File path required for transitive dependencies query',
-            },
-          ],
-        };
+              text: 'File path required for transitive dependencies query'
+            }
+          ]
+        }
       }
-      const transitive = graphData.transitiveDependencies[file] || [];
+      const transitive = graphData.transitiveDependencies[file] || []
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ file, transitiveDependencies: transitive }, null, 2),
-          },
-        ],
-      };
+            text: JSON.stringify({file, transitiveDependencies: transitive}, null, 2)
+          }
+        ]
+      }
+    }
 
     case 'circular':
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              { circularDependencies: graphData.circularDependencies || [] },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+            text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)
+          }
+        ]
+      }
 
-    case 'dependents':
+    case 'dependents': {
       if (!file) {
         // List all files with their dependent counts
-        const dependents: Record<string, string[]> = {};
-        for (const [sourceFile, data] of Object.entries(graphData.graph as Record<string, any>)) {
+        const dependents: Record<string, string[]> = {}
+        for (const [sourceFile, data] of Object.entries(graphData.graph)) {
           for (const importedFile of data.imports || []) {
             if (!dependents[importedFile]) {
-              dependents[importedFile] = [];
+              dependents[importedFile] = []
             }
-            dependents[importedFile].push(sourceFile);
+            dependents[importedFile].push(sourceFile)
           }
         }
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(dependents, null, 2),
-            },
-          ],
-        };
+              text: JSON.stringify(dependents, null, 2)
+            }
+          ]
+        }
       } else {
         // Find who imports this specific file
-        const dependents = [];
-        for (const [sourceFile, data] of Object.entries(graphData.graph as Record<string, any>)) {
+        const dependents: string[] = []
+        for (const [sourceFile, data] of Object.entries(graphData.graph)) {
           if (data.imports?.includes(file)) {
-            dependents.push(sourceFile);
+            dependents.push(sourceFile)
           }
         }
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ file, dependents }, null, 2),
-            },
-          ],
-        };
+              text: JSON.stringify({file, dependents}, null, 2)
+            }
+          ]
+        }
       }
+    }
 
     default:
       return {
         content: [
           {
             type: 'text',
-            text: `Unknown query type: ${query}`,
-          },
-        ],
-      };
+            text: `Unknown query type: ${query}`
+          }
+        ]
+      }
   }
 }
 
 // Start the server
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('MCP Server running on stdio');
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+  console.error('MCP Server running on stdio')
 }
 
-main().catch(console.error);
+main().catch(console.error)
