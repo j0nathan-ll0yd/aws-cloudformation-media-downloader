@@ -42,10 +42,10 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
    - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
    - **Detected**: During Better Auth configuration cleanup
-   - **Target**: docs/wiki/Conventions/Environment-Variables.md
+   - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
    - **Priority**: CRITICAL
-   - **Status**: ⏳ Pending documentation
-   - **Enforcement**: Infrastructure tests verify all env vars are present
+   - **Status**: ✅ Documented
+   - **Enforcement**: Zero-tolerance (infrastructure tests verify all env vars are present)
 
 ### Detected: 2025-11-24
 
@@ -64,17 +64,17 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **What**: Use `AGENTS.md` (plural) as the filename for AI coding assistant context files
    - **Why**: Industry standard supported by OpenAI Codex, GitHub Copilot, Google Gemini, Cursor, and 20+ AI tools
    - **Detected**: During GitHub Wiki organization planning
-   - **Target**: docs/wiki/Meta/AI-Tool-Context-Files.md
+   - **Documented**: docs/wiki/Meta/AI-Tool-Context-Files.md
    - **Priority**: HIGH
-   - **Status**: ⏳ Pending wiki page creation
+   - **Status**: ✅ Documented
 
 2. **Passthrough File Pattern** (Pattern)
    - **What**: Tool-specific files (CLAUDE.md, GEMINI.md) contain only a reference to the universal source (AGENTS.md)
    - **Why**: Maintains backwards compatibility while having single source of truth
    - **Detected**: During AI tool compatibility analysis
-   - **Target**: docs/wiki/Meta/AI-Tool-Context-Files.md
+   - **Documented**: docs/wiki/Meta/AI-Tool-Context-Files.md
    - **Priority**: MEDIUM
-   - **Status**: ⏳ Pending wiki page creation
+   - **Status**: ✅ Documented
 
 
 4. **Zero AI References in Commits** (Rule)
@@ -111,14 +111,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ### Documented: 2025-11-28
 
-1. **No Try-Catch for Required Environment Variables** (Rule)
-   - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
-   - **Why**: Infrastructure tests enforce that all required environment variables are properly configured
-   - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
-   - **Priority**: CRITICAL
-   - **Enforcement**: Zero-tolerance
-
-2. **ElectroDB Test Mocking Standard** (Rule)
+1. **ElectroDB Test Mocking Standard** (Rule)
    - **What**: ALWAYS use the `createElectroDBEntityMock()` helper for mocking ElectroDB entities
    - **Why**: Ensures consistent mocking patterns and proper type safety
    - **Documented**: docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md
@@ -199,5 +192,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-28
-- **Total Conventions**: 17 detected, 12 documented, 5 pending
+- **Total Conventions**: 17 detected, 17 documented, 0 pending
 - **Convention Capture System**: Active
