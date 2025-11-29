@@ -34,11 +34,11 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> =\> \{
   logIncomingFixture(event)
   let requestBody: UserLogin
 
-  try {
+  try \{
     // 1. Validate request body
     requestBody = getPayloadFromEvent(event) as UserLogin
     validateRequest(requestBody, loginUserSchema)
@@ -52,52 +52,52 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     const ipAddress = event.requestContext?.identity?.sourceIp
     const userAgent = event.headers?.['User-Agent'] || ''
 
-    const rawResult = await auth.api.signInSocial({
-      headers: {
+    const rawResult = await auth.api.signInSocial(\{
+      headers: \{
         'user-agent': userAgent,
         'x-forwarded-for': ipAddress || ''
-      },
-      body: {
+      \},
+      body: \{
         provider: 'apple',
-        idToken: {
+        idToken: \{
           token: requestBody.idToken
           // No accessToken needed - we only have the ID token from iOS
-        }
-      }
-    })
+        \}
+      \}
+    \})
 
     // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
     // Since we're using ID token authentication, we expect a token response
-    if ('url' in rawResult && rawResult.url) {
+    if ('url' in rawResult && rawResult.url) \{
       throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
-    }
+    \}
 
     // Type narrow to token response
-    const result = rawResult as {
+    const result = rawResult as \{
       redirect: boolean
       token: string
       url: undefined
-      user: {id: string; createdAt: Date; email: string; name: string}
-      session?: {id: string; expiresAt: number}
-    }
+      user: \{id: string; createdAt: Date; email: string; name: string\}
+      session?: \{id: string; expiresAt: number\}
+    \}
 
-    logInfo('LoginUser: Better Auth sign-in successful', {
+    logInfo('LoginUser: Better Auth sign-in successful', \{
       userId: result.user?.id,
       sessionToken: result.token ? 'present' : 'missing'
-    })
+    \})
 
     // 3. Return session token (Better Auth format)
-    const successResult = response(context, 200, {
+    const successResult = response(context, 200, \{
       token: result.token,
       expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
       sessionId: result.session?.id,
       userId: result.user?.id
-    })
+    \})
     logOutgoingFixture(successResult)
     return successResult
-  } catch (error) {
+  \} catch (error) \{
     const errorResult = lambdaErrorResponse(context, error)
     logOutgoingFixture(errorResult)
     return errorResult
-  }
-})
+  \}
+\})

@@ -14,23 +14,23 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> =\> \{
   logIncomingFixture(event)
   let requestBody
-  try {
+  try \{
     verifyPlatformConfiguration()
     requestBody = getPayloadFromEvent(event) as UserSubscribe
     validateRequest(requestBody, userSubscribeSchema)
-  } catch (error) {
+  \} catch (error) \{
     const errorResult = lambdaErrorResponse(context, error)
     logOutgoingFixture(errorResult)
     return errorResult
-  }
+  \}
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
-  const successResult = response(context, 201, {
+  const successResult = response(context, 201, \{
     subscriptionArn: subscribeResponse.SubscriptionArn
-  })
+  \})
   logOutgoingFixture(successResult)
   return successResult
-})
+\})
