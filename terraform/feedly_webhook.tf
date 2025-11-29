@@ -79,7 +79,6 @@ resource "aws_lambda_function" "WebhookFeedly" {
     variables = {
       DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
       SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
-      YtdlpBinaryPath   = "/opt/bin/yt-dlp_linux"
     }
   }
 }

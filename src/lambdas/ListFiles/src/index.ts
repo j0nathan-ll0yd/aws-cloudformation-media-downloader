@@ -4,7 +4,7 @@ import {UserFiles} from '../../../entities/UserFiles'
 import {generateUnauthorizedError, getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {FileStatus, UserStatus} from '../../../types/enums'
-import {getDefaultFile} from '../../../util/constants'
+import {defaultFile} from '../../../util/constants'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 import {retryUnprocessed} from '../../../util/retry'
 
@@ -56,7 +56,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
 
   if (userStatus == UserStatus.Anonymous) {
-    myResponse.contents = [getDefaultFile()]
+    myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
     const result = response(context, 200, myResponse)
     logOutgoingFixture(result)

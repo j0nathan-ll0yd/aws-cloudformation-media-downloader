@@ -15,7 +15,11 @@ const excludedSourceVariables = {
   t: 1,
   http_proxy: 1,
   https_proxy: 1,
-  PATH: 1 // System PATH for Lambda runtime and custom binaries
+  PATH: 1, // System PATH for Lambda runtime and custom binaries
+  // Library false positives (Zod literals, HTTP headers, etc.)
+  Exclusive: 1, // Zod validation literal
+  Connection: 1, // HTTP header
+  Upgrade: 1 // HTTP header
 }
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
@@ -49,16 +53,41 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   // You need to use the build version here to see dependent environment variables
   const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
-  let environmentVariablesSource: string[]
+  let environmentVariablesSource: string[] = []
+
+  // Match direct process.env access patterns
   const matches = functionSource.match(sourceCodeRegex)
   logDebug(`functionSource.match(${sourceCodeRegex})`, JSON.stringify(matches))
   if (matches && matches.length > 0) {
-    environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
-    logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
-    return environmentVariablesSource
-  } else {
-    return []
+    const extracted = matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice))
+    environmentVariablesSource.push(...extracted)
   }
+
+  // Also match minified getRequiredEnv/getOptionalEnv patterns
+  // After minification, these become patterns like:
+  // - X("EnvVarName") where X is a single-letter minified function name
+  // - yn("EnvVarName") where yn is a 2-3 letter minified function name
+  // - }("EnvVarName") for IIFE patterns (immediately invoked function expressions)
+  // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
+  const envValidationRegex = /(?:\b[a-zA-Z_$][a-zA-Z0-9_$]{0,2}|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
+  const envValidationMatches = functionSource.match(envValidationRegex)
+  logDebug(`functionSource.match(envValidationRegex)`, JSON.stringify(envValidationMatches))
+  if (envValidationMatches && envValidationMatches.length > 0) {
+    const extracted = envValidationMatches.map((match: string) => {
+      // Extract the variable name from patterns like X("VarName") or }("VarName")
+      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
+      return varMatch ? varMatch[1] : ''
+    })
+      .filter(Boolean)
+      // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
+      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v))
+    environmentVariablesSource.push(...extracted)
+  }
+
+  // Deduplicate and filter
+  environmentVariablesSource = filterSourceVariables([...new Set(environmentVariablesSource)])
+  logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
+  return environmentVariablesSource
 }
 
 describe('#Infrastructure', () => {
