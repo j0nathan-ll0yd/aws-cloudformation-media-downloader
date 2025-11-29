@@ -5,23 +5,23 @@ import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors
 import {validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
-  return {
-    context: {},
-    policyDocument: {
+const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) =\> \{
+  return \{
+    context: \{\},
+    policyDocument: \{
       Statement: [
-        {
+        \{
           Action: 'execute-api:Invoke',
           Effect: effect,
           Resource: resource
-        }
+        \}
       ],
       Version: '2012-10-17'
-    },
+    \},
     principalId,
     usageIdentifierKey
-  } as CustomAuthorizerResult
-}
+  \} as CustomAuthorizerResult
+\}
 
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
   const policy = generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
@@ -39,44 +39,44 @@ export function generateDeny(principalId: string, resource: string, usageIdentif
  * Returns an array of ApiKeys for API Gateway
  * @notExported
  */
-async function fetchApiKeys(): Promise<ApiKey[]> {
-  const params = {includeValues: true}
+async function fetchApiKeys(): Promise<ApiKey[]> \{
+  const params = \{includeValues: true\}
   logDebug('fetchApiKeys <=', params)
   const response = await getApiKeys(params)
-  logDebug('fetchApiKeys =>', response)
-  if (!response || !response.items) {
+  logDebug('fetchApiKeys =\>', response)
+  if (!response || !response.items) \{
     throw new UnexpectedError(providerFailureErrorMessage)
-  }
+  \}
   return response.items
-}
+\}
 
 /**
  * Returns an array of UsagePlans for a given APIKey
  * @notExported
  */
-async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
-  const params = {keyId}
+async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> \{
+  const params = \{keyId\}
   logDebug('fetchUsagePlans <=', params)
   const response = await getUsagePlans(params)
-  logDebug('fetchUsagePlans =>', response)
-  if (!response || !response.items) {
+  logDebug('fetchUsagePlans =\>', response)
+  if (!response || !response.items) \{
     throw new UnexpectedError(providerFailureErrorMessage)
-  }
+  \}
   return response.items
-}
+\}
 
 /**
  * Returns an array, by day, of Usage for a given APIKey and UsagePlan
  * @notExported
  */
-async function fetchUsageData(keyId: string, usagePlanId: string) {
+async function fetchUsageData(keyId: string, usagePlanId: string) \{
   const usageDate = new Date().toISOString().split('T')[0]
-  const params = {
+  const params = \{
     endDate: usageDate,
     keyId,
     startDate: usageDate,
     usagePlanId
-  }
+  \}
   logDebug('getUsage <=', params)
   const response = await getUsage(params)
   logDebug('getUsage =>', response)

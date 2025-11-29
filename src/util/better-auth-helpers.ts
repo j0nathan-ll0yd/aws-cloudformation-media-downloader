@@ -25,48 +25,48 @@ export interface SessionPayload {
  * @returns Session payload with userId and sessionId
  * @throws UnauthorizedError if token is invalid or expired
  */
-export async function validateSessionToken(token: string): Promise<SessionPayload> {
+export async function validateSessionToken(token: string): Promise<SessionPayload> \{
   logDebug('validateSessionToken: validating token')
 
-  try {
+  try \{
     // Note: Using scan instead of index lookup - consider adding token GSI if this becomes a bottleneck
-    const result = await Sessions.scan.where(({token: tokenAttr}, {eq}) => eq(tokenAttr, token)).go()
+    const result = await Sessions.scan.where((\{token: tokenAttr\}, \{eq\}) =\> eq(tokenAttr, token)).go()
 
-    if (!result.data || result.data.length === 0) {
+    if (!result.data || result.data.length === 0) \{
       logError('validateSessionToken: session not found')
       throw new UnauthorizedError('Invalid session token')
-    }
+    \}
 
     const session = result.data[0]
 
-    if (session.expiresAt < Date.now()) {
-      logError('validateSessionToken: session expired', {
+    if (session.expiresAt < Date.now()) \{
+      logError('validateSessionToken: session expired', \{
         expiresAt: session.expiresAt,
         now: Date.now()
-      })
+      \})
       throw new UnauthorizedError('Session expired')
-    }
+    \}
 
-    await Sessions.update({sessionId: session.sessionId}).set({updatedAt: Date.now()}).go()
+    await Sessions.update(\{sessionId: session.sessionId\}).set(\{updatedAt: Date.now()\}).go()
 
-    logDebug('validateSessionToken: session valid', {
+    logDebug('validateSessionToken: session valid', \{
       userId: session.userId,
       sessionId: session.sessionId
-    })
+    \})
 
-    return {
+    return \{
       userId: session.userId,
       sessionId: session.sessionId,
       expiresAt: session.expiresAt
-    }
-  } catch (error) {
-    if (error instanceof UnauthorizedError) {
+    \}
+  \} catch (error) \{
+    if (error instanceof UnauthorizedError) \{
       throw error
-    }
-    logError('validateSessionToken: validation failed', {error})
+    \}
+    logError('validateSessionToken: validation failed', \{error\})
     throw new UnauthorizedError('Token validation failed')
-  }
-}
+  \}
+\}
 
 /**
  * Creates a new session for a user after successful authentication.
@@ -77,7 +77,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * @param userAgent - Optional user agent for device identification
  * @returns Session token and expiration
  */
-export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<{token: string; expiresAt: number; sessionId: string}> {
+export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<\{token: string; expiresAt: number; sessionId: string\}> \{
   logDebug('createUserSession: creating session', {userId, deviceId})
 
   // Manual token generation since we're using ElectroDB adapter instead of Better Auth's built-in session management
