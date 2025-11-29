@@ -26,29 +26,29 @@ export const loginUserSchema = Joi.object({
 
 // Helper function to validate data against a schema
 export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
-  const options = {
+  const options = \{
     abortEarly: false,
     allowUnknown: true,
-    errors: {
-      wrap: {
+    errors: \{
+      wrap: \{
         label: ''
-      }
-    }
-  }
+      \}
+    \}
+  \}
 
-  const {error} = schema.validate(data, options)
-  if (error) {
-    const errorHash: {[key: string]: [string]} = {}
-    error.details.map((detail) => {
+  const {error\} = schema.validate(data, options)
+  if (error) \{
+    const errorHash: \{[key: string]: [string]\} = \{\}
+    error.details.map((detail) =\> \{
       logInfo('Error detail', detail)
       const label = detail.context?.label ?? 'unknown'
-      if (!errorHash[label]) {
+      if (!errorHash[label]) \{
         errorHash[label] = [detail.message]
-      } else {
+      \} else \{
         errorHash[label].push(detail.message)
-      }
-    })
-    return {errors: errorHash}
-  }
+      \}
+    \})
+    return \{errors: errorHash\}
+  \}
   return null
 }

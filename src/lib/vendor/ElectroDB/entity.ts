@@ -28,20 +28,20 @@ export {documentClient}
  * for proper TypeScript inference of custom indexes.
  *
  * @example
- * import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
+ * import \{Entity, documentClient\} from '../lib/vendor/ElectroDB/entity'
  *
- * export const Files = new Entity({
- *   model: {
+ * export const Files = new Entity(\{
+ *   model: \{
  *     entity: 'File',
  *     version: '1',
  *     service: 'MediaDownloader'
- *   },
- *   attributes: { ... },
- *   indexes: { ... }
- * } as const, {  // <-- 'as const' is REQUIRED for type safety
+ *   \},
+ *   attributes: \{ ... \},
+ *   indexes: \{ ... \}
+ * \} as const, \{  // <-- 'as const' is REQUIRED for type safety
  *   table: process.env.DynamoDBTableName,
  *   client: documentClient
- * })
+ * \})
  */
 export {Entity}
 export type {EntityItem}

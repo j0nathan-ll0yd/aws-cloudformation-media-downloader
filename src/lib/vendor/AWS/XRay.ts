@@ -49,11 +49,11 @@ function isXRayEnabled(): boolean {
  *
  * @example
  * ```typescript
- * const s3Client = new S3Client({region: 'us-west-2'})
+ * const s3Client = new S3Client(\{region: 'us-west-2'\})
  * const instrumentedClient = captureAWSClient(s3Client)
  * ```
  */
-export function captureAWSClient<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
+export function captureAWSClient<T extends \{middlewareStack: \{remove: unknown; use: unknown\}; config: unknown\}>(client: T): T {
   if (!isXRayEnabled()) {
     return client
   }
@@ -70,19 +70,19 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
  *
  * @example
  * ```typescript
- * export const handler = withXRay(async (event, context, {traceId}) => {
- *   logInfo('Processing request', {traceId})
+ * export const handler = withXRay(async (event, context, \{traceId\}) =\> \{
+ *   logInfo('Processing request', \{traceId\})
  *   // ... handler logic
- * })
+ * \})
  * ```
  */
-export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>) {
+export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: TEvent, context: Context, metadata?: \{traceId: string\}) =\> Promise<TResult>) {
   return async (event: TEvent, context: Context): Promise<TResult> => {
     const xray = getXRayClient()
     const segment = xray.getSegment()
     // X-Ray segment has trace_id property but it's not in the type definitions
-    const traceId = (segment as {trace_id?: string} | undefined)?.trace_id || context.awsRequestId
+    const traceId = (segment as \{trace_id?: string\} | undefined)?.trace_id || context.awsRequestId
 
-    return handler(event, context, {traceId})
+    return handler(event, context, \{traceId\})
   }
 }

@@ -46,10 +46,10 @@ export function response(context: Context, statusCode: number, body?: string | o
       statusCode
     } as APIGatewayProxyResult
   } else if (body) {
-    const rawBody = {
+    const rawBody = \{
       body,
       requestId: context.awsRequestId
-    }
+    \}
     logDebug('response ==', rawBody)
     return {
       body: JSON.stringify(rawBody),
@@ -111,7 +111,7 @@ export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
 }
 
-export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
+export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails \{
   let principalId = 'unknown'
   // This should always be present, via the API Gateway
   /* c8 ignore else */
@@ -132,8 +132,8 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
   logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
   logDebug('getUserDetailsFromEvent.authHeader', authHeader)
   logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
-  return {userId, userStatus} as UserEventDetails
-}
+  return \{userId, userStatus\} as UserEventDetails
+\}
 
 /**
  * Publish a custom CloudWatch metric
@@ -142,24 +142,24 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
  * @param unit - Unit of measurement (Seconds, Bytes, Count, etc.)
  * @param dimensions - Optional dimensions for filtering/grouping
  */
-export async function putMetric(metricName: string, value: number, unit?: string, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
+export async function putMetric(metricName: string, value: number, unit?: string, dimensions: \{Name: string; Value: string\}[] = []): Promise<void> \{
   try {
-    await putMetricData({
+    await putMetricData(\{
       Namespace: 'MediaDownloader',
       MetricData: [
-        {
+        \{
           MetricName: metricName,
           Value: value,
           Unit: getStandardUnit(unit),
           Timestamp: new Date(),
           Dimensions: dimensions
-        }
+        \}
       ]
-    })
-    logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
+    \})
+    logDebug(`Published metric: ${metricName}`, \{value, unit: unit || 'Count', dimensions\})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
-    logError('Failed to publish CloudWatch metric', {metricName, error})
+    logError('Failed to publish CloudWatch metric', \{metricName, error\})
   }
 }
 
@@ -168,25 +168,25 @@ export async function putMetric(metricName: string, value: number, unit?: string
  * @param metrics - Array of metrics to publish
  */
 export async function putMetrics(
-  metrics: Array<{
+  metrics: Array<\{
     name: string
     value: number
     unit?: string
-    dimensions?: {Name: string; Value: string}[]
-  }>
-): Promise<void> {
+    dimensions?: \{Name: string; Value: string\}[]
+  \}>
+): Promise<void> \{
   try {
-    await putMetricData({
+    await putMetricData(\{
       Namespace: 'MediaDownloader',
-      MetricData: metrics.map((m) => ({
+      MetricData: metrics.map((m) =\> (\{
         MetricName: m.name,
         Value: m.value,
         Unit: getStandardUnit(m.unit),
         Timestamp: new Date(),
         Dimensions: m.dimensions || []
-      }))
-    })
-    logDebug(`Published ${metrics.length} metrics`, {metrics: metrics.map((m) => m.name)})
+      \}))
+    \})
+    logDebug(`Published $\{metrics.length\} metrics`, \{metrics: metrics.map((m) =\> m.name)\})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
     logError('Failed to publish CloudWatch metrics', error)
@@ -208,7 +208,7 @@ function sanitizeForTest(data: unknown): unknown {
     return data.map((item) => sanitizeForTest(item))
   }
 
-  const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
+  const sanitized: Record<string, unknown> = \{...(data as Record<string, unknown>)\}
 
   // Remove sensitive fields
   const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
@@ -243,12 +243,12 @@ function sanitizeForTest(data: unknown): unknown {
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
-    JSON.stringify({
+    JSON.stringify(\{
       __FIXTURE_MARKER__: 'INCOMING',
       fixtureType: detectedType,
       timestamp: Date.now(),
       data: sanitizeForTest(event)
-    })
+    \})
   )
 }
 
@@ -271,11 +271,11 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
-    JSON.stringify({
+    JSON.stringify(\{
       __FIXTURE_MARKER__: 'OUTGOING',
       fixtureType: detectedType,
       timestamp: Date.now(),
       data: sanitizeForTest(response)
-    })
+    \})
   )
 }

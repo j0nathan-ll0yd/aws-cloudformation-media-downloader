@@ -14,52 +14,52 @@ export {unknownErrorToString} from './lambda-helpers'
  * @param userId - User ID to send notification to
  * @returns SQS message attributes for file notification
  */
-export function createFileNotificationAttributes(file: DynamoDBFile, userId: string): Record<string, MessageAttributeValue> {
-  return {
+export function createFileNotificationAttributes(file: DynamoDBFile, userId: string): Record<string, MessageAttributeValue> \{
+  return \{
     fileId: stringAttribute(file.fileId),
     key: stringAttribute(file.key),
     publishDate: stringAttribute(file.publishDate),
     size: numberAttribute(file.size),
     url: stringAttribute(file.url!),
     userId: stringAttribute(userId)
-  }
-}
+  \}
+\}
 
-export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
+export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput \{
   const keys: (keyof typeof file)[] = ['fileId', 'key', 'publishDate', 'size', 'url']
-  keys.forEach((key) => {
-    if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {
-      throw new UnexpectedError(`Missing required value in FileNotification: ${key}`)
-    }
-  })
+  keys.forEach((key) =\> \{
+    if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') \{
+      throw new UnexpectedError(`Missing required value in FileNotification: $\{key\}`)
+    \}
+  \})
 
-  const clientFile: ClientFile = {
+  const clientFile: ClientFile = \{
     fileId: file.fileId.stringValue!,
     key: file.key.stringValue!,
     publishDate: file.publishDate.stringValue!,
     size: parseInt(file.size.stringValue!, 0),
     url: file.url.stringValue!
-  }
+  \}
 
-  return {
-    Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({
-        aps: {'content-available': 1},
+  return \{
+    Message: JSON.stringify(\{
+      APNS_SANDBOX: JSON.stringify(\{
+        aps: \{'content-available': 1\},
         file: clientFile
-      }),
+      \}),
       default: 'Default message'
-    }),
-    MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {
+    \}),
+    MessageAttributes: \{
+      'AWS.SNS.MOBILE.APNS.PRIORITY': \{DataType: 'String', StringValue: '5'\},
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': \{
         DataType: 'String',
         StringValue: 'background'
-      }
-    },
+      \}
+    \},
     MessageStructure: 'json',
     TargetArn: targetArn
-  }
-}
+  \}
+\}
 
 export function assertIsError(error: unknown): asserts error is Error {
   logError('error', error)

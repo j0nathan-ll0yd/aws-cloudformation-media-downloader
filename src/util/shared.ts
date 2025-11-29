@@ -14,10 +14,10 @@ import {invokeAsync} from '../lib/vendor/AWS/Lambda'
  * Disassociates a deviceId from a User by deleting the UserDevice record
  * @param userId - The UUID of the User
  * @param deviceId - The UUID of the Device
- * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
+ * @see PruneDevices Lambda handler
  */
-export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
-  logDebug('deleteUserDevice <=', {userId, deviceId})
+export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> \{
+  logDebug('deleteUserDevice <=', \{userId, deviceId\})
   const response = await UserDevices.delete({userId, deviceId}).go()
   logDebug('deleteUserDevice =>', response)
 }
@@ -26,11 +26,11 @@ export async function deleteUserDevice(userId: string, deviceId: string): Promis
  * Removes a Device from DynamoDB.
  * This includes deleting the associated endpoint from SNS.
  * @param device - The Device object from DynamoDB
- * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
- * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
+ * @see PruneDevices Lambda handler
+ * @see UserDelete Lambda handler
  */
-export async function deleteDevice(device: Device): Promise<void> {
-  const removeEndpointParams = {EndpointArn: device.endpointArn}
+export async function deleteDevice(device: Device): Promise<void> \{
+  const removeEndpointParams = \{EndpointArn: device.endpointArn\}
   logDebug('deleteDevice.deleteEndpoint <=', removeEndpointParams)
   const removeEndpointResponse = await deleteEndpoint(removeEndpointParams)
   logDebug('deleteDevice.deleteEndpoint =>', removeEndpointResponse)
@@ -43,8 +43,8 @@ export async function deleteDevice(device: Device): Promise<void> {
  * Queries a user's device parameters from DynamoDB
  * Returns array of UserDevice records (one per device association)
  * @param userId - The userId
- * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
- * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
+ * @see UserDelete Lambda handler
+ * @see RegisterDevice Lambda handler
  */
 export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice[]> {
   logDebug('getUserDevices <=', userId)
@@ -60,15 +60,15 @@ export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice
  * Subscribes an endpoint (a client device) to an SNS topic
  * @param endpointArn - The EndpointArn of a mobile app and device
  * @param topicArn - The ARN of the topic you want to subscribe to
- * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
- * @see {@link lambdas/UserSubscribe/src!#handler | UserSubscribe }
+ * @see RegisterDevice Lambda handler
+ * @see UserSubscribe Lambda handler
  */
-export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  const subscribeParams = {
+export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) \{
+  const subscribeParams = \{
     Endpoint: endpointArn,
     Protocol: 'application',
     TopicArn: topicArn
-  }
+  \}
   logDebug('subscribe <=', subscribeParams)
   const subscribeResponse = await subscribe(subscribeParams)
   logDebug('subscribe =>', subscribeResponse)
@@ -78,7 +78,7 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
 /**
  * Upsert a File object in DynamoDB
  * @param item - The DynamoDB item to be added
- * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
+ * @see StartFileUpload Lambda handler
  */
 export async function upsertFile(item: DynamoDBFile) {
   logDebug('upsertFile <=', item)
@@ -90,8 +90,8 @@ export async function upsertFile(item: DynamoDBFile) {
 /**
  * Searches for a User record via their Apple Device ID
  * @param userDeviceId - The subject registered claim that identifies the principal user.
- * @see {@link lambdas/RegisterUser/src!#handler | RegisterUser }
- * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
+ * @see RegisterUser Lambda handler
+ * @see LoginUser Lambda handler
  */
 export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
   logDebug('getUsersByAppleDeviceIdentifier <=', userDeviceId)
@@ -111,24 +111,24 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
  * Initiates a file download by invoking the StartFileUpload Lambda
  * Uses asynchronous invocation (Event type) to avoid blocking
  * @param fileId - The YouTube video ID to download
- * @see {@link lambdas/FileCoordinator/src!#handler | FileCoordinator }
- * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
+ * @see FileCoordinator Lambda handler
+ * @see WebhookFeedly Lambda handler
  */
 export async function initiateFileDownload(fileId: string) {
   logDebug('initiateFileDownload <=', fileId)
 
   const result = await invokeAsync('StartFileUpload', {fileId})
 
-  logDebug('initiateFileDownload =>', {
+  logDebug('initiateFileDownload =>', \{
     StatusCode: result.StatusCode,
     fileId
-  })
+  \})
 }
 
 /**
  * Makes an HTTP request via Axios
- * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
+ * @param options - The request configuration from axios
+ * @see UploadPart Lambda handler
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
   logDebug('axios <= ', options)

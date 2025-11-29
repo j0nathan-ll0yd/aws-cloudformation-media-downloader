@@ -32,34 +32,34 @@ function isLocalStackMode(): boolean {
  * Get base configuration for AWS clients
  * Returns LocalStack config when in LocalStack mode, production config otherwise
  */
-function getBaseConfig() {
-  if (isLocalStackMode()) {
-    return {
+function getBaseConfig() \{
+  if (isLocalStackMode()) \{
+    return \{
       endpoint: LOCALSTACK_ENDPOINT,
       region: AWS_REGION,
-      credentials: {
+      credentials: \{
         accessKeyId: 'test',
         secretAccessKey: 'test'
-      }
-    }
-  }
+      \}
+    \}
+  \}
 
-  return {
+  return \{
     region: AWS_REGION
-  }
-}
+  \}
+\}
 
 /**
  * Create an S3 client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
  * Wrapped with X-Ray instrumentation when enabled
  */
-export function createS3Client(): S3Client {
-  const config: S3ClientConfig = {
+export function createS3Client(): S3Client \{
+  const config: S3ClientConfig = \{
     ...getBaseConfig(),
     // forcePathStyle required for LocalStack S3
     forcePathStyle: isLocalStackMode()
-  }
+  \}
 
   const client = new S3Client(config)
   return captureAWSClient(client)

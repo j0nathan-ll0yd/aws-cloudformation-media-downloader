@@ -21,29 +21,29 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param fileId - The unique file identifier
  * @param userId - The UUID of the user
  */
-export async function associateFileToUser(fileId: string, userId: string) {
-  logDebug('associateFileToUser <=', {fileId, userId})
-  try {
-    const response = await UserFiles.create({userId, fileId}).go()
-    logDebug('associateFileToUser =>', response)
+export async function associateFileToUser(fileId: string, userId: string) \{
+  logDebug('associateFileToUser <=', \{fileId, userId\})
+  try \{
+    const response = await UserFiles.create(\{userId, fileId\}).go()
+    logDebug('associateFileToUser =\>', response)
     return response
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('The conditional request failed')) {
-      logDebug('associateFileToUser => already exists (idempotent)')
+  \} catch (error) \{
+    if (error instanceof Error && error.message.includes('The conditional request failed')) \{
+      logDebug('associateFileToUser =\> already exists (idempotent)')
       return
-    }
+    \}
     throw error
-  }
-}
+  \}
+\}
 
 /**
  * Adds a base File (just fileId) to DynamoDB
  * @param fileId - The unique file identifier
  * @notExported
  */
-async function addFile(fileId: string) {
+async function addFile(fileId: string) \{
   logDebug('addFile <=', fileId)
-  const response = await Files.create({
+  const response = await Files.create(\{
     fileId,
     availableAt: Date.now(),
     size: 0,
@@ -55,10 +55,10 @@ async function addFile(fileId: string) {
     key: fileId,
     contentType: '',
     title: ''
-  }).go()
-  logDebug('addFile =>', response)
+  \}).go()
+  logDebug('addFile =\>', response)
   return response
-}
+\}
 
 /**
  * Retrieves a File from DynamoDB (if it exists)
@@ -78,18 +78,18 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
  * @param userId - The UUID of the user
  * @notExported
  */
-async function sendFileNotification(file: DynamoDBFile, userId: string) {
+async function sendFileNotification(file: DynamoDBFile, userId: string) \{
   const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
+  const sendMessageParams = \{
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  \} as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
-  logDebug('sendMessage =>', sendMessageResponse)
+  logDebug('sendMessage =\>', sendMessageResponse)
   return sendMessageResponse
-}
+\}
 
 /**
  * Receives a webhook to download a file from Feedly.
@@ -99,41 +99,41 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> =\> \{
   logInfo('event <=', event)
   logIncomingFixture(event)
 
   let requestBody
-  try {
+  try \{
     requestBody = getPayloadFromEvent(event) as Webhook
     validateRequest(requestBody, feedlyEventSchema)
     const fileId = getVideoID(requestBody.articleURL)
-    const {userId} = getUserDetailsFromEvent(event)
-    if (!userId) {
+    const \{userId\} = getUserDetailsFromEvent(event)
+    if (!userId) \{
       throw new UnexpectedError(providerFailureErrorMessage)
-    }
+    \}
     await associateFileToUser(fileId, userId)
     const file = await getFile(fileId)
     let result: APIGatewayProxyResult
-    if (file && file.status == FileStatus.Downloaded) {
+    if (file && file.status == FileStatus.Downloaded) \{
       await sendFileNotification(file, userId)
-      result = response(context, 200, {status: 'Dispatched'})
-    } else {
-      if (!file) {
+      result = response(context, 200, \{status: 'Dispatched'\})
+    \} else \{
+      if (!file) \{
         await addFile(fileId)
-      }
-      if (!requestBody.backgroundMode) {
+      \}
+      if (!requestBody.backgroundMode) \{
         await initiateFileDownload(fileId)
-        result = response(context, 202, {status: 'Initiated'})
-      } else {
-        result = response(context, 202, {status: 'Accepted'})
-      }
-    }
+        result = response(context, 202, \{status: 'Initiated'\})
+      \} else \{
+        result = response(context, 202, \{status: 'Accepted'\})
+      \}
+    \}
     logOutgoingFixture(result)
     return result
-  } catch (error) {
+  \} catch (error) \{
     const errorResult = lambdaErrorResponse(context, error)
     logOutgoingFixture(errorResult)
     return errorResult
-  }
-})
+  \}
+\})
