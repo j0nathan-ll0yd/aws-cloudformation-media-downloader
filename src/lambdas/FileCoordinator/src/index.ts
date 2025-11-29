@@ -4,6 +4,7 @@ import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {FileStatus} from '../../../types/enums'
 
 /**
  * Returns an array of fileIds that are ready to be downloaded
@@ -12,7 +13,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   logDebug('Querying for files ready to be downloaded')
   const queryResponse = await Files.query
-    .byStatus({status: 'PendingDownload'})
+    .byStatus({status: FileStatus.PendingDownload})
     .where(({availableAt}, {lte}) => lte(availableAt, Date.now()))
     .where(({url}, {notExists}) => notExists(url))
     .go()

@@ -1,13 +1,14 @@
 import {Context} from 'aws-lambda'
 import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
 import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
-import {FileStatus} from '../../../types/enums'
+import {FileStatus, ResponseStatus} from '../../../types/enums'
 import {logDebug, logInfo, putMetric, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
-import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
+import {CookieExpirationError, UnexpectedError} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
 import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
 import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -37,11 +38,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     logDebug('chooseVideoFormat =>', selectedFormat)
 
     const fileName = `${videoInfo.id}.${selectedFormat.ext}`
-    const bucket = process.env.Bucket as string
-
-    if (!bucket) {
-      throw new UnexpectedError(providerFailureErrorMessage)
-    }
+    const bucket = getRequiredEnv('Bucket')
 
     const dynamoItem: DynamoDBFile = {
       fileId: videoInfo.id,
@@ -84,7 +81,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
     return response(context, 200, {
       fileId: videoInfo.id,
-      status: 'success',
+      status: ResponseStatus.Success,
       fileSize: uploadResult.fileSize,
       duration: uploadResult.duration
     })

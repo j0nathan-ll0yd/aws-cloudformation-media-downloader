@@ -4,6 +4,7 @@ import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../l
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {getRequiredEnv, getOptionalEnv} from '../../../util/env-validation'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
@@ -118,7 +119,10 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
   if (!event.headers) {
     return false
   }
-  const reservedIp = process.env.ReservedClientIp as string
+  const reservedIp = getOptionalEnv('ReservedClientIp', '')
+  if (!reservedIp) {
+    return false
+  }
   const userAgent = event.headers['User-Agent']
   const clientIp = event.requestContext.identity.sourceIp
   logDebug('reservedIp <=', reservedIp)
@@ -169,7 +173,7 @@ export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent):
 
   let principalId = 'unknown'
   const pathPart = event.path.substring(1)
-  const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
+  const multiAuthenticationPathsString = getRequiredEnv('MultiAuthenticationPathParts')
   const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
   if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
     const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)

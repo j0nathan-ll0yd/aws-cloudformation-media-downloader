@@ -2,13 +2,16 @@ import {ScheduledEvent} from 'aws-lambda'
 import {Devices} from '../../../entities/Devices'
 import {UserDevices} from '../../../entities/UserDevices'
 import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device} from '../../../types/main'
 import {deleteDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
 import {ApnsClient, Notification, PushType, Priority} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {scanAllPages} from '../../../util/pagination'
+import {retryUnprocessedDelete} from '../../../util/retry'
+import {getRequiredEnv} from '../../../util/env-validation'
 
 /**
  * Result of the PruneDevices operation
@@ -20,17 +23,23 @@ export interface PruneDevicesResult {
 }
 
 /**
- * Returns an array of all devices
+ * Returns an array of all devices using paginated scan
  * @notExported
  */
 async function getDevices(): Promise<Device[]> {
   logDebug('getDevices <=')
-  const scanResponse = await Devices.scan.go()
-  logDebug('getDevices =>', scanResponse)
-  if (!scanResponse || !scanResponse.data) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
-  return scanResponse.data as Device[]
+  const devices = await scanAllPages<Device>(async (cursor) => {
+    const scanResponse = await Devices.scan.go({cursor})
+    if (!scanResponse) {
+      throw new UnexpectedError('Device scan failed')
+    }
+    return {
+      data: (scanResponse.data || []) as Device[],
+      cursor: scanResponse.cursor ?? null
+    }
+  })
+  logDebug('getDevices =>', {count: devices.length})
+  return devices
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -41,10 +50,10 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   const client = new ApnsClient({
-    team: process.env.ApnsTeam,
-    keyId: process.env.ApnsKeyId,
-    signingKey: process.env.ApnsSigningKey,
-    defaultTopic: process.env.ApnsDefaultTopic,
+    team: getRequiredEnv('ApnsTeam'),
+    keyId: getRequiredEnv('ApnsKeyId'),
+    signingKey: getRequiredEnv('ApnsSigningKey'),
+    defaultTopic: getRequiredEnv('ApnsDefaultTopic'),
     host: 'api.sandbox.push.apple.com'
   })
   const healthCheckNotification = new Notification(token, {
@@ -114,14 +123,18 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
           userIds.length > 0
             ? (async () => {
                 const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-                const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+                const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
                 if (unprocessed.length > 0) {
-                  logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+                  logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
                 }
               })()
             : Promise.resolve()
-        const values = await Promise.all([deleteDevice(device), deleteUserDevicesPromise])
-        logDebug('Promise.all', values)
+        const results = await Promise.allSettled([deleteDevice(device), deleteUserDevicesPromise])
+        logDebug('Promise.allSettled', results)
+        const failures = results.filter((r) => r.status === 'rejected')
+        if (failures.length > 0) {
+          throw new Error(`Partial failure during device cleanup: ${JSON.stringify(failures)}`)
+        }
         result.devicesPruned++
       } catch (error) {
         assertIsError(error)

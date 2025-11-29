@@ -2,6 +2,7 @@ import {Octokit} from '@octokit/rest'
 import {logDebug, logError, logInfo} from './lambda-helpers'
 import {Device} from '../types/main'
 import {renderGithubIssueTemplate} from './template-helpers'
+import {getRequiredEnv} from './env-validation'
 
 const owner = 'j0nathan-ll0yd'
 const repo = 'aws-cloudformation-media-downloader'
@@ -9,7 +10,7 @@ const repo = 'aws-cloudformation-media-downloader'
 async function getOctokitInstance() {
   // Constrained to only reading/writing issues
   return new Octokit({
-    auth: process.env.GithubPersonalToken,
+    auth: getRequiredEnv('GithubPersonalToken'),
     baseUrl: 'https://api.github.com',
     userAgent: `${repo}-production`,
     timeZone: 'America/Los_Angeles',

@@ -34,7 +34,7 @@ const config: webpack.Configuration = {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
   },
   output: {
-    libraryTarget: 'umd',
+    libraryTarget: 'commonjs2',
     path: path.resolve(__dirname, './../build/lambdas'),
     filename: '[name].js'
   },

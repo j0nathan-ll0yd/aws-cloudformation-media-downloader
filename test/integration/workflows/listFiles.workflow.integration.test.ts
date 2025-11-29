@@ -19,6 +19,12 @@ const TEST_TABLE = 'test-list-files'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
+// DefaultFile env vars required by constants.ts (loaded when importing ListFiles handler)
+process.env.DefaultFileSize = '1024'
+process.env.DefaultFileName = 'test-default-file.mp4'
+process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
+process.env.DefaultFileContentType = 'video/mp4'
+
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'

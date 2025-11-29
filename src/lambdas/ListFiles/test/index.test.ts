@@ -4,6 +4,12 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
+// Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
+process.env.DefaultFileSize = '1024'
+process.env.DefaultFileName = 'test-default-file.mp4'
+process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
+process.env.DefaultFileContentType = 'video/mp4'
+
 const fakeUserId = uuidv4()
 const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
