@@ -96,7 +96,7 @@ export async function createMediaDownloaderTable(): Promise<void> {
 export async function deleteMediaDownloaderTable(): Promise<void> {
   try {
     await deleteTable(getMediaDownloaderTable())
-  } catch (error) {
+  } catch {
     // Table might not exist
   }
 }

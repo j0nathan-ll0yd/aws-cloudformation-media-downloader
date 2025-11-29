@@ -141,8 +141,9 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndex
   }
 
   // Query operations: Entity.query.byIndex({key}).go() or Entity.query.byIndex({key}).where(...).go()
-  const queryEntity: any = {}
-  const queryMocks: any = {}
+  type QueryIndexName = 'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey' | 'byEmail' | 'byProvider' | 'byIdentifier'
+  const queryEntity: Partial<Record<QueryIndexName, jest.Mock>> = {}
+  const queryMocks: Partial<Record<QueryIndexName, {go: jest.Mock; where: jest.Mock}>> = {}
 
   if (options?.queryIndexes) {
     for (const indexName of options.queryIndexes) {
@@ -205,7 +206,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndex
         go: scanGoMock,
         where: scanWhereMock
       },
-      query: queryMocks,
+      query: queryMocks as ElectroDBEntityMock<TData>['mocks']['query'],
       create: createGoMock,
       upsert: {
         go: upsertGoMock

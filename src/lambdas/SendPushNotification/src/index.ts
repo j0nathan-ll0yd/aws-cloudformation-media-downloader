@@ -1,4 +1,4 @@
-import {SQSEvent, Context} from 'aws-lambda'
+import {SQSEvent} from 'aws-lambda'
 import {UserDevices} from '../../../entities/UserDevices'
 import {Devices} from '../../../entities/Devices'
 import {publishSnsEvent, PublishInput} from '../../../lib/vendor/AWS/SNS'
@@ -43,7 +43,7 @@ async function getDevice(deviceId: string): Promise<Device> {
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: SQSEvent, _context: Context, {traceId: _traceId}): Promise<void> => {
+export const handler = withXRay(async (event: SQSEvent): Promise<void> => {
   logDebug('event', event)
   for (const record of event.Records) {
     const notificationType = record.body

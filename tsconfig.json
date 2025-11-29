@@ -13,7 +13,8 @@
 		"noImplicitThis": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"skipLibCheck": true
 	},
 	"include": ["src/**/*"],
 	"exclude": [

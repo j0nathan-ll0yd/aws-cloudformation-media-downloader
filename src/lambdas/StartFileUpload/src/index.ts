@@ -15,7 +15,7 @@ import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
  * @param context - AWS Lambda context
  * @notExported
  */
-export const handler = withXRay(async (event: StartFileUploadParams, context: Context, {traceId: _traceId}) => {
+export const handler = withXRay(async (event: StartFileUploadParams, context: Context) => {
   logInfo('event <=', event)
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`

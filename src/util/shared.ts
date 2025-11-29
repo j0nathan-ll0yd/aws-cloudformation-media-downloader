@@ -3,6 +3,7 @@ import {Devices} from '../entities/Devices'
 import {UserDevices} from '../entities/UserDevices'
 import {Files} from '../entities/Files'
 import {Users} from '../entities/Users'
+import type {EntityItem} from '../lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
 import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
 import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
@@ -101,7 +102,8 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   }
 
   // Filter in memory since we can't query on nested identity provider field
-  const usersWithAppleId = scanResponse.data.filter((user: any) => user.identityProviders.userId === userDeviceId)
+  type UserEntity = EntityItem<typeof Users>
+  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) => user.identityProviders?.userId === userDeviceId)
   return usersWithAppleId as User[]
 }
 

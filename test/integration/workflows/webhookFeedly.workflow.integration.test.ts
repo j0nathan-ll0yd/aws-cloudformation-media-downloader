@@ -16,6 +16,7 @@ process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 import {createFilesTable, deleteFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
@@ -76,7 +77,7 @@ function createWebhookEvent(articleURL: string, backgroundMode: boolean, userId:
 }
 
 describe('WebhookFeedly Workflow Integration Tests', () => {
-  let mockContext: any
+  let mockContext: Context
 
   beforeAll(async () => {
     await createFilesTable()

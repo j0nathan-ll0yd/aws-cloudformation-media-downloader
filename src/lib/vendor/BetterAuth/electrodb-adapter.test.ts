@@ -8,6 +8,7 @@
 import {describe, it, expect, jest, beforeEach} from '@jest/globals'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 import {createMockUser, createMockSession, createMockAccount} from '../../../../test/helpers/better-auth-test-data'
+import type {ExtendedAccount} from './electrodb-adapter'
 
 // Create entity mocks
 const usersMock = createElectroDBEntityMock({queryIndexes: ['byEmail']})
@@ -28,6 +29,9 @@ const {createElectroDBAdapter} = await import('./electrodb-adapter')
 const {Users} = await import('../../../entities/Users')
 const {Sessions} = await import('../../../entities/Sessions')
 const {VerificationTokens} = await import('../../../entities/VerificationTokens')
+
+// Type for createAccount test data - matches adapter's createAccount signature
+type CreateAccountInput = Partial<ExtendedAccount> & {id?: string}
 
 describe('ElectroDB Adapter', () => {
   let adapter: ReturnType<typeof createElectroDBAdapter>
@@ -262,18 +266,18 @@ describe('ElectroDB Adapter', () => {
         id: 'account-123',
         userId: 'user-123',
         providerId: 'apple',
-        accountId: 'apple-user-123',  // Better Auth uses 'accountId'
+        accountId: 'apple-user-123', // Better Auth uses 'accountId'
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
         expiresAt: mockAccount.expiresAt,
         scope: 'email profile',
         tokenType: 'Bearer'
-      } as any)
+      } as CreateAccountInput)
 
       expect(result).toEqual({
         id: 'account-123',
         userId: 'user-123',
-        accountId: 'apple-user-123',  // Better Auth uses 'accountId'
+        accountId: 'apple-user-123', // Better Auth uses 'accountId'
         providerId: 'apple',
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
@@ -304,7 +308,7 @@ describe('ElectroDB Adapter', () => {
       expect(result).toEqual({
         id: 'account-123',
         userId: 'user-123',
-        accountId: 'google-user-123',  // Better Auth uses 'accountId'
+        accountId: 'google-user-123', // Better Auth uses 'accountId'
         providerId: 'google',
         accessToken: null,
         refreshToken: null,

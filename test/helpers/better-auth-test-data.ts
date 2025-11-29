@@ -138,7 +138,7 @@ export function createMockSession(overrides?: Partial<MockSessionData>): MockSes
   return {
     sessionId: 'session-123',
     userId: 'user-123',
-    expiresAt: now + 30 * 24 * 60 * 60 * 1000,  // 30 days default
+    expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days default
     token: 'token-abc',
     ipAddress: '1.2.3.4',
     userAgent: 'Mozilla/5.0',
@@ -178,7 +178,7 @@ export function createMockAccount(overrides?: Partial<MockAccountData>): MockAcc
     providerAccountId: 'apple-user-123',
     accessToken: 'access-token',
     refreshToken: 'refresh-token',
-    expiresAt: now + 3600000,  // 1 hour default
+    expiresAt: now + 3600000, // 1 hour default
     scope: 'email profile',
     tokenType: 'Bearer',
     createdAt: now,
@@ -209,7 +209,7 @@ export function createMockVerificationToken(overrides?: Partial<MockVerification
   return {
     identifier: 'test@example.com',
     token: 'verify-token-123',
-    expiresAt: Date.now() + 86400000,  // 24 hours default
+    expiresAt: Date.now() + 86400000, // 24 hours default
     ...overrides
   }
 }
@@ -241,8 +241,15 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
  * Tests that optional fields are handled correctly
  */
 export function createMinimalSession(overrides?: Partial<MockSessionData>): MockSessionData {
-  const {ipAddress, userAgent, deviceId, ...required} = createMockSession(overrides)
-  return required as MockSessionData
+  const full = createMockSession(overrides)
+  return {
+    sessionId: full.sessionId,
+    userId: full.userId,
+    expiresAt: full.expiresAt,
+    token: full.token,
+    createdAt: full.createdAt,
+    updatedAt: full.updatedAt
+  }
 }
 
 /**

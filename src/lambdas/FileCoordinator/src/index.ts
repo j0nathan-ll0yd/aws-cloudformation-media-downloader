@@ -28,7 +28,7 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
  * @param event - An AWS ScheduledEvent; happening every X minutes
  * @param context - An AWS Context object
  */
-export const handler = withXRay(async (event: ScheduledEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logInfo('event', event)
   const files = await getFileIdsToBeDownloaded()
   const downloads: Promise<void>[] = []

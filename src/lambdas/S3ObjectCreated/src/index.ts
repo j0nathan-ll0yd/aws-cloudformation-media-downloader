@@ -1,4 +1,4 @@
-import {S3Event, Context} from 'aws-lambda'
+import {S3Event} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
@@ -61,7 +61,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: S3Event, _context: Context, {traceId: _traceId}): Promise<void> => {
+export const handler = withXRay(async (event: S3Event): Promise<void> => {
   logDebug('event', event)
   try {
     const record = event.Records[0]

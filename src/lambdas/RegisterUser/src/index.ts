@@ -40,7 +40,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(async (event: APIGatewayEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logInfo('RegisterUser (Better Auth): event <=', event)
   let requestBody: UserRegistration
 

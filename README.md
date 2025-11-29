@@ -375,7 +375,7 @@ brew install docker jq
 npm run localstack:start
 
 # Run integration tests
-npm run test:integration:full
+npm run test:integration:with-lifecycle
 
 # Stop LocalStack when done
 npm run localstack:stop
@@ -388,7 +388,7 @@ npm run localstack:stop
 - `npm run localstack:logs` - Stream LocalStack logs
 - `npm run localstack:health` - Check LocalStack service health
 - `npm run test:integration` - Run integration tests (assumes LocalStack is running)
-- `npm run test:integration:full` - Full integration test suite with LocalStack lifecycle management
+- `npm run test:integration:with-lifecycle` - Full integration test suite with LocalStack lifecycle management
 
 **Test Organization:**
 
