@@ -2,7 +2,7 @@
 
 # update-yt-dlp.sh
 # Checks for latest yt-dlp version and optionally updates VERSION file
-# Usage: npm run update-yt-dlp [check|update]
+# Usage: pnpm run update-yt-dlp [check|update]
 
 set -e
 
@@ -58,7 +58,7 @@ echo ""
 
 if [ "$MODE" == "check" ]; then
     echo "Run with 'update' argument to update VERSION file:"
-    echo "  npm run update-yt-dlp update"
+    echo "  pnpm run update-yt-dlp update"
     exit 0
 fi
 
@@ -71,7 +71,7 @@ if [ "$MODE" == "update" ]; then
     echo ""
     echo "Next steps:"
     echo "  1. Review the change: git diff ${VERSION_FILE}"
-    echo "  2. Run Terraform to download binary: npm run plan"
+    echo "  2. Run Terraform to download binary: pnpm run plan"
     echo "  3. Commit the change: git add ${VERSION_FILE}"
     echo "     git commit -m \"chore(deps): update yt-dlp to ${LATEST_VERSION}\""
     exit 0

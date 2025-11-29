@@ -2,7 +2,7 @@
 
 # update-youtube-cookies.sh
 # Extracts YouTube cookies from Chrome and prepares them for Lambda layer
-# Usage: npm run update-cookies
+# Usage: pnpm run update-cookies
 
 set -e  # Exit on error
 
@@ -73,7 +73,7 @@ echo ""
 echo -e "${GREEN}Success!${NC} Cookies are ready for deployment"
 echo ""
 echo "Next steps:"
-echo "  1. npm run build"
-echo "  2. npm run deploy"
+echo "  1. pnpm run build"
+echo "  2. pnpm run deploy"
 echo ""
 echo -e "${YELLOW}Note: Cookies should be refreshed periodically (every 30-60 days)${NC}"
