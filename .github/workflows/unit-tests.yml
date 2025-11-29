@@ -59,15 +59,15 @@ jobs:
         echo "Validating documented scripts..."
         MISSING_SCRIPTS=""
 
-        # Check AGENTS.md for pnpm run commands
-        for script in $(grep -oE 'pnpm run [a-z:-]+' AGENTS.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
+        # Check AGENTS.md for pnpm run commands (supports camelCase like registerDevice)
+        for script in $(grep -oE 'pnpm run [a-zA-Z:-]+' AGENTS.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
           if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
             MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
           fi
         done
 
-        # Check README.md for pnpm run commands
-        for script in $(grep -oE 'pnpm run [a-z:-]+' README.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
+        # Check README.md for pnpm/npm run commands (supports camelCase like registerDevice)
+        for script in $(grep -oE '(pnpm|npm) run [a-zA-Z:-]+' README.md 2>/dev/null | sed 's/.*run //' | sort -u); do
           if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
             MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
           fi
