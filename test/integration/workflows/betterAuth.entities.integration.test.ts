@@ -29,12 +29,21 @@ const {MediaDownloaderService} = await import('../../../src/entities/Collections
 const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import('../../helpers/better-auth-test-data')
 const {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth, transformUserToAuth, transformSessionToAuth, transformAccountToAuth, splitFullName} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
-// Type helper for ElectroDB service collections
-// ElectroDB generates collections dynamically, so we need to help TypeScript
-type CollectionResult<T> = {data: T[]}
+// Type helpers for ElectroDB service collections
+// ElectroDB collections return an object with entity-named arrays, not a flat array
+interface UserSessionsData {
+  Users: Array<{userId: string; [key: string]: unknown}>
+  Sessions: Array<{sessionId: string; [key: string]: unknown}>
+}
+
+interface UserAccountsData {
+  Users: Array<{userId: string; [key: string]: unknown}>
+  Accounts: Array<{accountId: string; providerId: string; [key: string]: unknown}>
+}
+
 type ServiceCollections = {
-  userSessions: (params: {userId: string}) => {go: () => Promise<CollectionResult<unknown>>}
-  userAccounts: (params: {userId: string}) => {go: () => Promise<CollectionResult<unknown>>}
+  userSessions: (params: {userId: string}) => {go: () => Promise<{data: UserSessionsData}>}
+  userAccounts: (params: {userId: string}) => {go: () => Promise<{data: UserAccountsData}>}
 }
 
 const collections = MediaDownloaderService.collections as unknown as ServiceCollections

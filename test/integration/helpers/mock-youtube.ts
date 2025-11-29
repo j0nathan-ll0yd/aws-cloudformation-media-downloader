@@ -126,9 +126,13 @@ interface S3UploadHandle {
 
 /**
  * Create mock implementation of streamVideoToS3 that actually uploads to S3
- * This is used for REAL S3 uploads in integration tests
+ * This is used for REAL S3 uploads in integration tests.
+ *
+ * NOTE: Uses function type with ...args: unknown[] to accept any S3 upload function
+ * that returns a handle with a done() method. This allows it to work with the real
+ * createS3Upload from S3.ts which has additional optional parameters.
  */
-export function createMockStreamVideoToS3WithRealUpload(createS3Upload: (bucket: string, key: string, body: Readable | Buffer, contentType?: string, options?: unknown) => S3UploadHandle) {
+export function createMockStreamVideoToS3WithRealUpload(createS3Upload: (bucket: string, key: string, body: Readable | Buffer, contentType?: string, ...args: unknown[]) => S3UploadHandle) {
   return jest.fn(async (_uri: string, bucket: string, key: string) => {
     // Create mock video stream
     const videoStream = createMockVideoStream(5242880) // 5MB
