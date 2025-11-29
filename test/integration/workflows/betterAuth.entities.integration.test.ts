@@ -31,9 +31,10 @@ const {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth
 
 // Type helper for ElectroDB service collections
 // ElectroDB generates collections dynamically, so we need to help TypeScript
+type CollectionResult<T> = {data: T[]}
 type ServiceCollections = {
-  userSessions: (params: {userId: string}) => {go: () => Promise<any>}
-  userAccounts: (params: {userId: string}) => {go: () => Promise<any>}
+  userSessions: (params: {userId: string}) => {go: () => Promise<CollectionResult<unknown>>}
+  userAccounts: (params: {userId: string}) => {go: () => Promise<CollectionResult<unknown>>}
 }
 
 const collections = MediaDownloaderService.collections as unknown as ServiceCollections
@@ -711,8 +712,8 @@ describe('Better Auth Entities Integration Tests', () => {
         userId: 'user-null-test',
         expiresAt: new Date(Date.now() + 86400000),
         token: 'null-test-token',
-        ipAddress: null as any, // Better Auth uses null
-        userAgent: null as any
+        ipAddress: null as string | null, // Better Auth uses null
+        userAgent: null as string | null
       }
 
       // Transform to ElectroDB format

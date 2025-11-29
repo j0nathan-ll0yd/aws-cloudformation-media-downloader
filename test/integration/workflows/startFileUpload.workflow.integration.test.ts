@@ -21,6 +21,7 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 
 // Test helpers
@@ -65,7 +66,7 @@ const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler
 
 describe('StartFileUpload Workflow Integration Tests', () => {
-  let mockContext: any
+  let mockContext: Context
 
   beforeAll(async () => {
     await createTestBucket(TEST_BUCKET)

@@ -12,6 +12,7 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
@@ -48,7 +49,7 @@ async function insertPendingFile(fileId: string, availableAt: number, title?: st
 }
 
 describe('FileCoordinator Workflow Integration Tests', () => {
-  let mockContext: any
+  let mockContext: Context
 
   beforeAll(async () => {
     await createFilesTable()

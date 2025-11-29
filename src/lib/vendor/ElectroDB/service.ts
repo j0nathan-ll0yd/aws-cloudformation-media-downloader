@@ -6,8 +6,16 @@
  *
  * Follows the same pattern as AWS SDK encapsulation in lib/vendor/AWS/*.
  */
-import {Service} from 'electrodb'
+import {Service, Entity} from 'electrodb'
+import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
 import {documentClient} from '../AWS/DynamoDB'
+
+/**
+ * Entity map type for createService.
+ * Uses ElectroDB's Entity type with loosened generic constraints.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EntityMap = Record<string, Entity<any, any, any, any>>
 
 /**
  * Re-export documentClient for service configuration.
@@ -45,7 +53,7 @@ export {documentClient}
  * // Access collections for JOIN queries
  * export const collections = MediaDownloaderService.collections
  */
-export function createService(entities: any, config: {client: any; table?: string}) {
+export function createService(entities: EntityMap, config: {client: DynamoDBDocumentClient; table?: string}) {
   return new Service(entities, config)
 }
 
