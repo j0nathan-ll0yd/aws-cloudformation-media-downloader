@@ -13,16 +13,16 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param fileName - The S3 object key to search for
  * @notExported
  */
-async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
+async function getFileByFilename(fileName: string): Promise<DynamoDBFile> \{
   logDebug('query file by key <=', fileName)
-  const queryResponse = await Files.query.byKey({key: fileName}).go()
-  logDebug('query file by key =>', queryResponse)
-  if (queryResponse.data && queryResponse.data.length > 0) {
+  const queryResponse = await Files.query.byKey(\{key: fileName\}).go()
+  logDebug('query file by key =\>', queryResponse)
+  if (queryResponse.data && queryResponse.data.length \> 0) \{
     return queryResponse.data[0] as DynamoDBFile
-  } else {
+  \} else \{
     throw new UnexpectedError('Unable to locate file')
-  }
-}
+  \}
+\}
 
 /**
  * Returns an array of user IDs who have requested a given file
@@ -30,15 +30,15 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
  * @param file - The DynamoDBFile you want to search for
  * @notExported
  */
-async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
+async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> \{
   logDebug('query users by fileId <=', file.fileId)
-  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
-  logDebug('query users by fileId =>', queryResponse)
-  if (!queryResponse.data || queryResponse.data.length === 0) {
+  const queryResponse = await UserFiles.query.byFile(\{fileId: file.fileId\}).go()
+  logDebug('query users by fileId =\>', queryResponse)
+  if (!queryResponse.data || queryResponse.data.length === 0) \{
     return []
-  }
-  return queryResponse.data.map((userFile) => userFile.userId)
-}
+  \}
+  return queryResponse.data.map((userFile) =\> userFile.userId)
+\}
 
 /**
  * Returns a promise to send a DynamoDBFile to a user
@@ -46,32 +46,32 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  * @param userId - The UUID of the user
  * @notExported
  */
-function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
+function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) \{
   const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
+  const sendMessageParams = \{
     MessageBody: 'FileNotification',
     MessageAttributes: messageAttributes,
     QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  \} as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
-}
+\}
 
 /**
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: S3Event): Promise<void> => {
+export const handler = withXRay(async (event: S3Event): Promise<void> =\> \{
   logDebug('event', event)
-  try {
+  try \{
     const record = event.Records[0]
-    const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
+    const fileName = decodeURIComponent(record.s3.object.key).replace(/\\+/g, ' ')
     const file = await getFileByFilename(fileName)
     const userIds = await getUsersOfFile(file)
-    const notifications = userIds.map((userId) => dispatchFileNotificationToUser(file, userId))
+    const notifications = userIds.map((userId) =\> dispatchFileNotificationToUser(file, userId))
     await Promise.all(notifications)
-  } catch (error) {
+  \} catch (error) \{
     assertIsError(error)
     throw new UnexpectedError(error.message)
-  }
-})
+  \}
+\})
