@@ -116,17 +116,19 @@ export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
 }
 
 /**
- * S3 Upload interface for integration testing
+ * S3 Upload interface for integration testing.
+ * Uses Promise<unknown> for done() to be compatible with @aws-sdk/lib-storage Upload class
+ * which returns Promise<CompleteMultipartUploadCommandOutput>.
  */
 interface S3UploadHandle {
-  done: () => Promise<void>
+  done: () => Promise<unknown>
 }
 
 /**
  * Create mock implementation of streamVideoToS3 that actually uploads to S3
  * This is used for REAL S3 uploads in integration tests
  */
-export function createMockStreamVideoToS3WithRealUpload(createS3Upload: (bucket: string, key: string, body: Readable, contentType?: string) => S3UploadHandle) {
+export function createMockStreamVideoToS3WithRealUpload(createS3Upload: (bucket: string, key: string, body: Readable | Buffer, contentType?: string, options?: unknown) => S3UploadHandle) {
   return jest.fn(async (_uri: string, bucket: string, key: string) => {
     // Create mock video stream
     const videoStream = createMockVideoStream(5242880) // 5MB

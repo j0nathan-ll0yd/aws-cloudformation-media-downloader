@@ -11,11 +11,11 @@ import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
 import {documentClient} from '../AWS/DynamoDB'
 
 /**
- * Entity map type for createService.
+ * Entity map type constraint for createService.
  * Uses ElectroDB's Entity type with loosened generic constraints.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type EntityMap = Record<string, Entity<any, any, any, any>>
+type EntityMapConstraint = Record<string, Entity<any, any, any, any>>
 
 /**
  * Re-export documentClient for service configuration.
@@ -30,9 +30,13 @@ export {documentClient}
  * through collections. This is the ONLY way services should be created -
  * never import Service from 'electrodb' directly.
  *
+ * NOTE: This function is generic to preserve TypeScript type inference for
+ * collections. The entity types are passed through to the Service constructor,
+ * allowing ElectroDB to infer collection types correctly.
+ *
  * @param entities - Map of entity names to entity instances
  * @param config - Service configuration (client, table name)
- * @returns Configured ElectroDB service instance
+ * @returns Configured ElectroDB service instance with full type inference
  *
  * @example
  * import {createService, documentClient} from '../../lib/vendor/ElectroDB/service'
@@ -53,7 +57,7 @@ export {documentClient}
  * // Access collections for JOIN queries
  * export const collections = MediaDownloaderService.collections
  */
-export function createService(entities: EntityMap, config: {client: DynamoDBDocumentClient; table?: string}) {
+export function createService<E extends EntityMapConstraint>(entities: E, config: {client: DynamoDBDocumentClient; table?: string}) {
   return new Service(entities, config)
 }
 
