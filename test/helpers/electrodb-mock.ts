@@ -92,7 +92,7 @@ interface ElectroDBEntityMock<TData> {
  * @param options - Configuration options with queryIndexes array
  * @returns Object with entity mock and individual mock functions
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#electrodb-entity-mocking | ElectroDB Entity Mocking}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#electrodb-mock-helper-critical | ElectroDB Mock Helper}
  */
 export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey' | 'byEmail' | 'byProvider' | 'byIdentifier'>}): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
