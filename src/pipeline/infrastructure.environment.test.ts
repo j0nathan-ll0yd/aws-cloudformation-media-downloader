@@ -71,13 +71,14 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
   const envValidationRegex = /(?:\b[a-zA-Z_$][a-zA-Z0-9_$]{0,2}|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
   const envValidationMatches = functionSource.match(envValidationRegex)
-  logDebug(`functionSource.match(envValidationRegex)`, JSON.stringify(envValidationMatches))
+  logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {
-    const extracted = envValidationMatches.map((match: string) => {
-      // Extract the variable name from patterns like X("VarName") or }("VarName")
-      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
-      return varMatch ? varMatch[1] : ''
-    })
+    const extracted = envValidationMatches
+      .map((match: string) => {
+        // Extract the variable name from patterns like X("VarName") or }("VarName")
+        const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
+        return varMatch ? varMatch[1] : ''
+      })
       .filter(Boolean)
       // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
       .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v))
