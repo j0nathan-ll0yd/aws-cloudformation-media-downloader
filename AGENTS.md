@@ -137,12 +137,11 @@ pnpm run format         # Auto-format with Prettier (250 char lines)
 # Integration testing
 pnpm run localstack:start        # Start LocalStack
 pnpm run test:integration        # Run integration tests
-pnpm run test:integration:full   # Full suite with lifecycle
+pnpm run test:integration:with-lifecycle   # Full suite with lifecycle
 
 # Remote testing
 pnpm run test-remote-list        # Test file listing
 pnpm run test-remote-hook        # Test Feedly webhook
-pnpm run test-remote-registerDevice  # Test device registration
 
 # Documentation
 pnpm run document-source         # Generate TSDoc documentation
