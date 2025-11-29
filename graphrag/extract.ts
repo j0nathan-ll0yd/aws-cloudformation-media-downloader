@@ -36,7 +36,6 @@ interface KnowledgeGraph {
   nodes: Node[];
   edges: Edge[];
   metadata: {
-    created: string;
     version: string;
     description: string;
     sources: {
@@ -323,7 +322,6 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     nodes,
     edges,
     metadata: {
-      created: new Date().toISOString(),
       version: '2.0.0',
       description: 'Media Downloader Lambda chains and entity relationships (auto-generated)',
       sources: {

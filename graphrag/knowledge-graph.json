@@ -704,7 +704,6 @@
     }
   ],
   "metadata": {
-    "created": "2025-11-28T23:41:10.189Z",
     "version": "2.0.0",
     "description": "Media Downloader Lambda chains and entity relationships (auto-generated)",
     "sources": {
