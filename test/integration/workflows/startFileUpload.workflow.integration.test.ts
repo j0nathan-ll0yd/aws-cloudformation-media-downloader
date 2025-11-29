@@ -28,8 +28,11 @@ import {FileStatus} from '../../../src/types/enums'
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload} from '../helpers/mock-youtube'
+import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload, S3UploadFunction} from '../helpers/mock-youtube'
 import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
+
+// Type assertion for createS3Upload to match S3UploadFunction signature
+const s3UploadFn = createS3Upload as S3UploadFunction
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -54,7 +57,7 @@ const mockFormat = createMockVideoFormat({
 jest.unstable_mockModule(youtubeModulePath, () => ({
   fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
-  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(createS3Upload)
+  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
 
 jest.unstable_mockModule(githubHelpersModulePath, () => ({
