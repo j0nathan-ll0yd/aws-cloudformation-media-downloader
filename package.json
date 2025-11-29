@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.0.0",
   "type": "module",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "precheck": "pnpm run check-types && pnpm run lint",
     "check-types": "tsc --project ./tsconfig.json",
     "generate-graph": "ts-node scripts/generateDependencyGraph.ts",
