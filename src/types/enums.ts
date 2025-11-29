@@ -15,5 +15,5 @@ export enum ResponseStatus {
   Dispatched = 'Dispatched',
   Initiated = 'Initiated',
   Accepted = 'Accepted',
-  Success = 'success'
+  Success = 'Success'
 }
