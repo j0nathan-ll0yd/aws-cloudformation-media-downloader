@@ -11,6 +11,15 @@ import {Apns2Error} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
+ * Result of the PruneDevices operation
+ */
+export interface PruneDevicesResult {
+  devicesChecked: number
+  devicesPruned: number
+  errors: string[]
+}
+
+/**
  * Returns an array of all devices
  * @notExported
  */
@@ -80,11 +89,20 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * {@label PRUNE_DEVICES_HANDLER}
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
+ * @returns PruneDevicesResult with counts of devices checked, pruned, and any errors
  * @notExported
  */
-export const handler = withXRay(async (event: ScheduledEvent): Promise<void> => {
+export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevicesResult> => {
   logInfo('event <=', event)
+  const result: PruneDevicesResult = {
+    devicesChecked: 0,
+    devicesPruned: 0,
+    errors: []
+  }
+
   const devices = await getDevices()
+  result.devicesChecked = devices.length
+
   for (const device of devices) {
     const deviceId = device.deviceId
     logInfo('Verifying device', deviceId)
@@ -104,12 +122,17 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<void> => 
             : Promise.resolve()
         const values = await Promise.all([deleteDevice(device), deleteUserDevicesPromise])
         logDebug('Promise.all', values)
+        result.devicesPruned++
       } catch (error) {
         assertIsError(error)
-        logError(`Failed to properly remove device ${deviceId}`, error.message)
+        const errorMessage = `Failed to properly remove device ${deviceId}: ${error.message}`
+        logError(errorMessage)
+        result.errors.push(errorMessage)
         // TODO: Trigger severe alarm with device details and requestId so it can be manually deleted later
       }
     }
   }
-  logInfo('PruneDevices completed')
+
+  logInfo('PruneDevices completed', result)
+  return result
 })

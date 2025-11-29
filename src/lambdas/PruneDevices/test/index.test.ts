@@ -161,7 +161,10 @@ describe('#PruneDevices', () => {
     sendMock.mockImplementationOnce(() => {
       return getSuccessfulResponseForDevice(3)
     })
-    await expect(handler(event, context)).resolves.toBeUndefined()
+    const result = await handler(event, context)
+    expect(result.devicesChecked).toBe(4)
+    expect(result.devicesPruned).toBe(1)
+    expect(result.errors).toHaveLength(0)
   })
   describe('#AWSFailure', () => {
     test('should throw error when device scan fails', async () => {
@@ -174,7 +177,19 @@ describe('#PruneDevices', () => {
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
       })
-      await expect(handler(event, context)).resolves.toBeUndefined()
+      sendMock.mockImplementationOnce(() => {
+        return getSuccessfulResponseForDevice(1)
+      })
+      sendMock.mockImplementationOnce(() => {
+        return getSuccessfulResponseForDevice(2)
+      })
+      sendMock.mockImplementationOnce(() => {
+        return getSuccessfulResponseForDevice(3)
+      })
+      const result = await handler(event, context)
+      expect(result.devicesChecked).toBe(4)
+      expect(result.devicesPruned).toBe(1)
+      expect(result.errors).toHaveLength(0)
     })
   })
   describe('#APNSFailure', () => {
