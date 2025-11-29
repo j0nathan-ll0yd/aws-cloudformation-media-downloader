@@ -26,11 +26,7 @@ interface BetterAuthHookContext {
 
 /**
  * Extract endpoint name from path for fixture naming
- * Examples:
- *   /auth/sign-in -> SignIn
- *   /auth/sign-up -> SignUp
- *   /auth/sign-out -> SignOut
- *   /auth/forgot-password -> ForgotPassword
+ * Converts paths like /auth/sign-in to PascalCase names like SignIn
  */
 function getFixtureName(path: string): string {
   // Remove leading slash and 'auth/' prefix if present
@@ -97,16 +93,7 @@ export const logOutgoingResponseHook = {
  * Combined fixture logging hooks for Better Auth
  * Add these to your Better Auth configuration
  *
- * @example
- * ```typescript
- * import { betterAuth } from 'better-auth'
- * import { fixtureLoggingHooks } from './lib/better-auth/fixture-hooks'
- *
- * export const auth = betterAuth({
- *   // ... other config
- *   hooks: fixtureLoggingHooks
- * })
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Better Auth Fixture Integration}
  */
 export const fixtureLoggingHooks = {
   before: [logIncomingRequestHook],

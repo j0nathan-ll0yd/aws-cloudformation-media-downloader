@@ -3,14 +3,11 @@ import {jest} from '@jest/globals'
 /**
  * ElectroDB Entity Mock Structure
  * Provides type-safe mocks for all common ElectroDB operations
+ *
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy | Jest ESM Mocking Strategy}
  */
 interface ElectroDBEntityMock<TData> {
-  /**
-   * The entity object to pass to jest.unstable_mockModule
-   * @example
-   * const filesMock = createElectroDBEntityMock<DynamoDBFile>()
-   * jest.unstable_mockModule('path/to/Files', () => ({ Files: filesMock.entity }))
-   */
+  /** The entity object to pass to jest.unstable_mockModule */
   entity: {
     get: jest.Mock
     scan: {
@@ -32,15 +29,7 @@ interface ElectroDBEntityMock<TData> {
     update: jest.Mock
     delete: jest.Mock
   }
-  /**
-   * Individual mock functions for assertions and setup
-   * @example
-   * // Single get
-   * filesMock.mocks.get.mockResolvedValue({data: {fileId: '123', ...}})
-   * // Batch get
-   * filesMock.mocks.get.mockResolvedValue({data: [{fileId: '123'}, ...], unprocessed: []})
-   * expect(filesMock.mocks.create).toHaveBeenCalledTimes(1)
-   */
+  /** Individual mock functions for assertions and setup */
   mocks: {
     get: jest.Mock<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>
     scan: {
@@ -98,33 +87,12 @@ interface ElectroDBEntityMock<TData> {
 /**
  * Creates a complete mock for an ElectroDB entity
  *
- * Supports all common ElectroDB operations:
- * - get: Entity.get({key}).go()
- * - scan: Entity.scan().go() or Entity.scan().where(...).go()
- * - query: Entity.query.byIndex({key}).go() or Entity.query.byIndex({key}).where(...).go()
- * - create: Entity.create(item).go()
- * - update: Entity.update({key}).set/add/delete({...}).go()
- * - delete: Entity.delete({key}).go()
+ * Supports all common ElectroDB operations: get, scan, query, create, update, delete
  *
- * @template TData The type of data this entity returns
- * @param options Configuration options
- * @param options.queryIndexes Array of index names to create query mocks for (e.g., ['byUser', 'byFile'])
+ * @param options - Configuration options with queryIndexes array
  * @returns Object with entity mock and individual mock functions
  *
- * @example
- * // Create mock with query support
- * const filesMock = createElectroDBEntityMock<DynamoDBFile>({queryIndexes: ['byKey', 'byStatus']})
- *
- * // Use in jest.unstable_mockModule
- * jest.unstable_mockModule('../entities/Files', () => ({
- *   Files: filesMock.entity
- * }))
- *
- * // Setup mock behavior
- * filesMock.mocks.query.byKey!.go.mockResolvedValue({data: [{fileId: '123', status: 'Downloaded'}]})
- *
- * // Assert in tests
- * expect(filesMock.mocks.query.byKey!.go).toHaveBeenCalledTimes(1)
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#electrodb-entity-mocking | ElectroDB Entity Mocking}
  */
 export function createElectroDBEntityMock<TData = unknown>(options?: {queryIndexes?: Array<'byUser' | 'byFile' | 'byDevice' | 'byStatus' | 'byKey' | 'byEmail' | 'byProvider' | 'byIdentifier'>}): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()

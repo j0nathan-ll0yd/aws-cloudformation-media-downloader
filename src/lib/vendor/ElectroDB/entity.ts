@@ -27,21 +27,7 @@ export {documentClient}
  * IMPORTANT: Entities MUST be created with 'as const' assertion on the schema
  * for proper TypeScript inference of custom indexes.
  *
- * @example
- * import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
- *
- * export const Files = new Entity({
- *   model: {
- *     entity: 'File',
- *     version: '1',
- *     service: 'MediaDownloader'
- *   },
- *   attributes: { ... },
- *   indexes: { ... }
- * } as const, {  // <-- 'as const' is REQUIRED for type safety
- *   table: process.env.DynamoDBTableName,
- *   client: documentClient
- * })
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#entity-reference | ElectroDB Entity Usage}
  */
 export {Entity}
 export type {EntityItem}

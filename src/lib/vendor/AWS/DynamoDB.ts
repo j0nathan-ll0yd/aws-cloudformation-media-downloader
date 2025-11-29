@@ -8,10 +8,7 @@ import {createDynamoDBClient} from './clients'
  * for all ElectroDB entity operations. The DocumentClient handles marshalling
  * and unmarshalling of DynamoDB attribute values automatically.
  *
- * @example
- * import {documentClient} from '../../lib/vendor/AWS/DynamoDB'
- *
- * const client = DynamoDBDocument.from(dynamoDBClient)
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#localstack-setup | DynamoDB DocumentClient Usage}
  */
 const dynamoDBClient = createDynamoDBClient()
 

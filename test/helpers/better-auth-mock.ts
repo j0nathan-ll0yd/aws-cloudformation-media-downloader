@@ -4,31 +4,17 @@ import type {SignInSocialParams, SignInSocialResult} from '../../src/types/bette
 /**
  * Better Auth Mock Structure
  * Provides type-safe mocks for Better Auth API methods
+ *
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy | Jest ESM Mocking Strategy}
  */
 interface BetterAuthMock {
-  /**
-   * The auth object to pass to jest.unstable_mockModule
-   * @example
-   * const authMock = createBetterAuthMock()
-   * jest.unstable_mockModule('path/to/BetterAuth/config', () => ({ auth: authMock.auth }))
-   */
+  /** The auth object to pass to jest.unstable_mockModule */
   auth: {
     api: {
       signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<SignInSocialResult>>
     }
   }
-  /**
-   * Individual mock functions for assertions and setup
-   * @example
-   * authMock.mocks.signInSocial.mockResolvedValue({
-   *   user: {id: '123', email: 'test@example.com', ...},
-   *   session: {id: 'session-123', expiresAt: Date.now() + 86400000},
-   *   token: 'auth-token'
-   * })
-   * expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(expect.objectContaining({
-   *   body: expect.objectContaining({provider: 'apple'})
-   * }))
-   */
+  /** Individual mock functions for assertions and setup */
   mocks: {
     signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<SignInSocialResult>>
   }
@@ -39,27 +25,7 @@ interface BetterAuthMock {
  *
  * @returns BetterAuthMock object containing both the module export and individual mocks
  *
- * @example
- * ```typescript
- * const authMock = createBetterAuthMock()
- *
- * jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
- *   auth: authMock.auth
- * }))
- *
- * // In test
- * authMock.mocks.signInSocial.mockResolvedValue({
- *   user: {id: 'user-123', email: 'test@example.com', createdAt: new Date().toISOString()},
- *   session: {id: 'session-123', expiresAt: Date.now() + 86400000},
- *   token: 'auth-token-xyz'
- * })
- *
- * expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
- *   expect.objectContaining({
- *     body: expect.objectContaining({provider: 'apple'})
- *   })
- * )
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy | Jest ESM Mocking Strategy}
  */
 export function createBetterAuthMock(): BetterAuthMock {
   const signInSocialMock = jest.fn<(params: SignInSocialParams) => Promise<SignInSocialResult>>()
