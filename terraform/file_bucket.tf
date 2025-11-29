@@ -77,7 +77,7 @@ resource "aws_s3_bucket_policy" "cloudfront_access" {
   })
 }
 
-output "cloudfront_distribution_domain" {
+output "cloudfront_media_files_domain" {
   description = "CloudFront domain for media files (use this in iOS app)"
   value       = aws_cloudfront_distribution.media_files.domain_name
 }

@@ -225,7 +225,7 @@ resource "aws_dynamodb_table" "MediaDownloader" {
 
   tags = {
     Name        = "MediaDownloader"
-    Description = "Single-table design for Files, Users, Devices, UserFiles, UserDevices"
+    Description = "Single-table design for all entities"
   }
 }
 
