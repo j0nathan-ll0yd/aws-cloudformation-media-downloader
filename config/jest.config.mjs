@@ -55,8 +55,10 @@ const config = {
   // A set of global variables that need to be available in all test environments
   // globals: {},
 
-  // The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
-  // maxWorkers: "50%",
+  // Limit workers to prevent Jest worker hang issues with AWS SDK
+  // AWS SDK v3 maintains HTTP keep-alive connections that can prevent workers from exiting
+  // Running with fewer workers reduces resource contention and improves reliability
+  maxWorkers: 2,
 
   // An array of directory names to be searched recursively up from the requiring module's location
   // moduleDirectories: [
@@ -133,11 +135,6 @@ const config = {
 
   // The test environment that will be used for testing
   testEnvironment: 'node',
-
-  // Force Jest to exit after all tests complete
-  // Required because AWS SDK and X-Ray SDK maintain internal connections/contexts
-  // that don't properly clean up in a Jest test environment
-  forceExit: true,
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
