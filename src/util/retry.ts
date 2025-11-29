@@ -23,10 +23,7 @@ function sleep(ms: number): Promise<void> {
  * @param config - Optional retry configuration
  * @returns Final result with any remaining unprocessed items after all retries
  */
-export async function retryUnprocessed<T>(
-  operation: () => Promise<{data: T[]; unprocessed: unknown[]}>,
-  config?: RetryConfig
-): Promise<{data: T[]; unprocessed: unknown[]}> {
+export async function retryUnprocessed<T>(operation: () => Promise<{data: T[]; unprocessed: unknown[]}>, config?: RetryConfig): Promise<{data: T[]; unprocessed: unknown[]}> {
   const {maxRetries, initialDelayMs, multiplier} = {...DEFAULT_CONFIG, ...config}
 
   let result = await operation()
@@ -63,10 +60,7 @@ export async function retryUnprocessed<T>(
  * @param config - Optional retry configuration
  * @returns Final unprocessed items after all retries
  */
-export async function retryUnprocessedDelete(
-  operation: () => Promise<{unprocessed: unknown[]}>,
-  config?: RetryConfig
-): Promise<{unprocessed: unknown[]}> {
+export async function retryUnprocessedDelete(operation: () => Promise<{unprocessed: unknown[]}>, config?: RetryConfig): Promise<{unprocessed: unknown[]}> {
   const {maxRetries, initialDelayMs, multiplier} = {...DEFAULT_CONFIG, ...config}
 
   let result = await operation()

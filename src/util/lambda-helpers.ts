@@ -213,19 +213,42 @@ function sanitizeForTest(data: unknown): unknown {
   // Remove sensitive fields - expanded list for comprehensive PII protection
   const sensitiveFields = [
     // Auth headers
-    'Authorization', 'authorization',
+    'Authorization',
+    'authorization',
     // Tokens
-    'token', 'Token', 'deviceToken', 'DeviceToken', 'refreshToken', 'RefreshToken', 'accessToken', 'AccessToken',
+    'token',
+    'Token',
+    'deviceToken',
+    'DeviceToken',
+    'refreshToken',
+    'RefreshToken',
+    'accessToken',
+    'AccessToken',
     // Passwords
-    'password', 'Password',
+    'password',
+    'Password',
     // API keys
-    'apiKey', 'ApiKey',
+    'apiKey',
+    'ApiKey',
     // Secrets
-    'secret', 'Secret', 'privateKey', 'PrivateKey',
+    'secret',
+    'Secret',
+    'privateKey',
+    'PrivateKey',
     // Identity
-    'appleDeviceIdentifier', 'email', 'Email', 'phoneNumber', 'PhoneNumber', 'phone',
+    'appleDeviceIdentifier',
+    'email',
+    'Email',
+    'phoneNumber',
+    'PhoneNumber',
+    'phone',
     // Security
-    'certificate', 'Certificate', 'ssn', 'SSN', 'creditCard', 'CreditCard'
+    'certificate',
+    'Certificate',
+    'ssn',
+    'SSN',
+    'creditCard',
+    'CreditCard'
   ]
 
   for (const key in sanitized) {

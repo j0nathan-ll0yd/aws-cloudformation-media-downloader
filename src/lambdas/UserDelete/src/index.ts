@@ -86,11 +86,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   try {
     // Delete children FIRST (correct cascade order), then parent LAST
-    const childResults = await Promise.allSettled([
-      deleteUserFiles(userId),
-      deleteUserDevices(userId),
-      ...deletableDevices.map((device) => deleteDevice(device))
-    ])
+    const childResults = await Promise.allSettled([deleteUserFiles(userId), deleteUserDevices(userId), ...deletableDevices.map((device) => deleteDevice(device))])
     logDebug('Promise.allSettled (children)', childResults)
 
     // Check for failures before deleting parent
