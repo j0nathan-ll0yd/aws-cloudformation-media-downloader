@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check types
+        run: pnpm run check-types
+
+      - name: Lint code
+        run: pnpm run lint
+
       - name: Start LocalStack
         run: |
           docker compose -f docker-compose.localstack.yml up -d
