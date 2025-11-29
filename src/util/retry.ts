@@ -56,7 +56,7 @@ export async function retryUnprocessed<T>(operation: () => Promise<{data: T[]; u
 
 /**
  * Retries a batch delete operation that may return unprocessed items
- * @param operation - Async function that returns {unprocessed}
+ * @param operation - Async function that returns (unprocessed)
  * @param config - Optional retry configuration
  * @returns Final unprocessed items after all retries
  */
