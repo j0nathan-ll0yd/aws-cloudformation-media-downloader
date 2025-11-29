@@ -5,7 +5,10 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import {SQSEvent, ScheduledEvent} from 'aws-lambda'
+import {
+  ScheduledEvent,
+  SQSEvent
+} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {DynamoDBFile} from '../../../src/types/main'
 
@@ -16,7 +19,11 @@ import {DynamoDBFile} from '../../../src/types/main'
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults
  */
-export function createMockFile(id: string, status: FileStatus, partial?: Partial<DynamoDBFile>): Partial<DynamoDBFile> {
+export function createMockFile(
+  id: string,
+  status: FileStatus,
+  partial?: Partial<DynamoDBFile>
+): Partial<DynamoDBFile> {
   const base: Partial<DynamoDBFile> = {
     fileId: id,
     status,
@@ -37,7 +44,7 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
     base.url = `https://example.com/${id}.mp4`
   }
 
-  return {...base, ...partial}
+  return { ...base, ...partial }
 }
 
 /**
@@ -46,8 +53,12 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
  * @param status - Status for all files
  * @param idPrefix - Prefix for file IDs (default: 'video')
  */
-export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<DynamoDBFile>[] {
-  return Array.from({length: count}, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
+export function createMockFiles(
+  count: number,
+  status: FileStatus,
+  idPrefix = 'video'
+): Partial<DynamoDBFile>[] {
+  return Array.from({ length: count }, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
 }
 
 /**
@@ -56,10 +67,7 @@ export function createMockFiles(count: number, status: FileStatus, idPrefix = 'v
  * @param fileId - File ID
  */
 export function createMockUserFile(userId: string, fileId: string) {
-  return {
-    userId,
-    fileId
-  }
+  return { userId, fileId }
 }
 
 /**
@@ -68,10 +76,7 @@ export function createMockUserFile(userId: string, fileId: string) {
  * @param deviceId - Device UUID
  */
 export function createMockUserDevice(userId: string, deviceId: string) {
-  return {
-    userId,
-    deviceId
-  }
+  return { userId, deviceId }
 }
 
 /**
@@ -92,36 +97,41 @@ export function createMockDevice(deviceId: string, endpointArn?: string) {
  * @param fileId - File ID for the notification
  * @param partial - Partial file data to override defaults in message attributes
  */
-export function createMockSQSFileNotificationEvent(userId: string, fileId: string, partial?: {title?: string; size?: number; url?: string}): SQSEvent {
+export function createMockSQSFileNotificationEvent(
+  userId: string,
+  fileId: string,
+  partial?: { title?: string; size?: number; url?: string }
+): SQSEvent {
   const file = createMockFile(fileId, FileStatus.Downloaded, partial)
 
   return {
-    Records: [
-      {
-        messageId: `test-message-${fileId}`,
-        receiptHandle: `test-receipt-${fileId}`,
-        body: 'FileNotification',
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: String(Date.now()),
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: String(Date.now())
+    Records: [{
+      messageId: `test-message-${fileId}`,
+      receiptHandle: `test-receipt-${fileId}`,
+      body: 'FileNotification',
+      attributes: {
+        ApproximateReceiveCount: '1',
+        SentTimestamp: String(Date.now()),
+        SenderId: 'test-sender',
+        ApproximateFirstReceiveTimestamp: String(Date.now())
+      },
+      messageAttributes: {
+        userId: { stringValue: userId, dataType: 'String' },
+        fileId: { stringValue: fileId, dataType: 'String' },
+        key: { stringValue: file.key || `${fileId}.mp4`, dataType: 'String' },
+        publishDate: {
+          stringValue: file.publishDate || new Date().toISOString(),
+          dataType: 'String'
         },
-        messageAttributes: {
-          userId: {stringValue: userId, dataType: 'String'},
-          fileId: {stringValue: fileId, dataType: 'String'},
-          key: {stringValue: file.key || `${fileId}.mp4`, dataType: 'String'},
-          publishDate: {stringValue: file.publishDate || new Date().toISOString(), dataType: 'String'},
-          size: {stringValue: String(file.size || 5242880), dataType: 'String'},
-          url: {stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String'},
-          title: {stringValue: file.title || 'Test Video', dataType: 'String'}
-        },
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-        awsRegion: 'us-west-2'
-      }
-    ]
+        size: { stringValue: String(file.size || 5242880), dataType: 'String' },
+        url: { stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String' },
+        title: { stringValue: file.title || 'Test Video', dataType: 'String' }
+      },
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
+      awsRegion: 'us-west-2'
+    }]
   }
 }
 
@@ -130,7 +140,10 @@ export function createMockSQSFileNotificationEvent(userId: string, fileId: strin
  * @param eventId - Unique event ID
  * @param ruleName - Name of the EventBridge rule (default: 'FileCoordinatorSchedule')
  */
-export function createMockScheduledEvent(eventId: string, ruleName = 'FileCoordinatorSchedule'): ScheduledEvent {
+export function createMockScheduledEvent(
+  eventId: string,
+  ruleName = 'FileCoordinatorSchedule'
+): ScheduledEvent {
   return {
     id: eventId,
     version: '0',

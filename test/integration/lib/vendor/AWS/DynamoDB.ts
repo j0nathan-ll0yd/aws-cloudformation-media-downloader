@@ -5,7 +5,11 @@
  * This wrapper exists to maintain the AWS SDK Encapsulation Policy even in test code.
  */
 
-import {CreateTableCommand, DeleteTableCommand, CreateTableCommandInput} from '@aws-sdk/client-dynamodb'
+import {
+  CreateTableCommand,
+  CreateTableCommandInput,
+  DeleteTableCommand
+} from '@aws-sdk/client-dynamodb'
 import {createDynamoDBClient} from '../../../../../src/lib/vendor/AWS/clients'
 
 const dynamoDBClient = createDynamoDBClient()
@@ -23,5 +27,5 @@ export async function createTable(input: CreateTableCommandInput): Promise<void>
  * @param tableName - Name of the table to delete
  */
 export async function deleteTable(tableName: string): Promise<void> {
-  await dynamoDBClient.send(new DeleteTableCommand({TableName: tableName}))
+  await dynamoDBClient.send(new DeleteTableCommand({ TableName: tableName }))
 }

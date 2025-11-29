@@ -24,9 +24,6 @@ export interface SignInSocialResult {
     createdAt: string | Date
     emailVerified?: boolean
   }
-  session: {
-    id: string
-    expiresAt: number | Date
-  }
+  session: { id: string; expiresAt: number | Date }
   token: string
 }

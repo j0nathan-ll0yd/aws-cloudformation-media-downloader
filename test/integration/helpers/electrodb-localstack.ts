@@ -1,4 +1,7 @@
-import {CreateTableCommand, DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import {
+  CreateTableCommand,
+  DynamoDBClient
+} from '@aws-sdk/client-dynamodb'
 
 /**
  * Setup MediaDownloader DynamoDB table in LocalStack
@@ -16,10 +19,7 @@ export async function setupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
     region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-      accessKeyId: 'test',
-      secretAccessKey: 'test'
-    }
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' }
   })
 
   const tableName = process.env.DynamoDBTableName || 'MediaDownloader'
@@ -29,45 +29,41 @@ export async function setupLocalStackTable(): Promise<void> {
       new CreateTableCommand({
         TableName: tableName,
         AttributeDefinitions: [
-          {AttributeName: 'pk', AttributeType: 'S'},
-          {AttributeName: 'sk', AttributeType: 'S'},
-          {AttributeName: 'gsi1pk', AttributeType: 'S'},
-          {AttributeName: 'gsi1sk', AttributeType: 'S'},
-          {AttributeName: 'gsi2pk', AttributeType: 'S'},
-          {AttributeName: 'gsi2sk', AttributeType: 'S'},
-          {AttributeName: 'gsi3pk', AttributeType: 'S'},
-          {AttributeName: 'gsi3sk', AttributeType: 'S'}
+          { AttributeName: 'pk', AttributeType: 'S' },
+          { AttributeName: 'sk', AttributeType: 'S' },
+          { AttributeName: 'gsi1pk', AttributeType: 'S' },
+          { AttributeName: 'gsi1sk', AttributeType: 'S' },
+          { AttributeName: 'gsi2pk', AttributeType: 'S' },
+          { AttributeName: 'gsi2sk', AttributeType: 'S' },
+          { AttributeName: 'gsi3pk', AttributeType: 'S' },
+          { AttributeName: 'gsi3sk', AttributeType: 'S' }
         ],
-        KeySchema: [
-          {AttributeName: 'pk', KeyType: 'HASH'},
-          {AttributeName: 'sk', KeyType: 'RANGE'}
-        ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: 'gsi1',
-            KeySchema: [
-              {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'gsi2',
-            KeySchema: [
-              {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'gsi3',
-            KeySchema: [
-              {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          }
-        ],
+        KeySchema: [{ AttributeName: 'pk', KeyType: 'HASH' }, {
+          AttributeName: 'sk',
+          KeyType: 'RANGE'
+        }],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'gsi1',
+          KeySchema: [{ AttributeName: 'gsi1pk', KeyType: 'HASH' }, {
+            AttributeName: 'gsi1sk',
+            KeyType: 'RANGE'
+          }],
+          Projection: { ProjectionType: 'ALL' }
+        }, {
+          IndexName: 'gsi2',
+          KeySchema: [{ AttributeName: 'gsi2pk', KeyType: 'HASH' }, {
+            AttributeName: 'gsi2sk',
+            KeyType: 'RANGE'
+          }],
+          Projection: { ProjectionType: 'ALL' }
+        }, {
+          IndexName: 'gsi3',
+          KeySchema: [{ AttributeName: 'gsi3pk', KeyType: 'HASH' }, {
+            AttributeName: 'gsi3sk',
+            KeyType: 'RANGE'
+          }],
+          Projection: { ProjectionType: 'ALL' }
+        }],
         BillingMode: 'PAY_PER_REQUEST'
       })
     )
@@ -92,17 +88,14 @@ export async function cleanupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
     region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-      accessKeyId: 'test',
-      secretAccessKey: 'test'
-    }
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' }
   })
 
   const tableName = process.env.DynamoDBTableName || 'MediaDownloader'
 
   try {
-    const {DeleteTableCommand} = await import('@aws-sdk/client-dynamodb')
-    await client.send(new DeleteTableCommand({TableName: tableName}))
+    const { DeleteTableCommand } = await import('@aws-sdk/client-dynamodb')
+    await client.send(new DeleteTableCommand({ TableName: tableName }))
     console.log(`🗑️  Deleted table: ${tableName}`)
   } catch (error) {
     if (error instanceof Error && error.name === 'ResourceNotFoundException') {

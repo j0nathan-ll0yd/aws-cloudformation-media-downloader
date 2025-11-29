@@ -65,16 +65,16 @@ echo "🌐 Opening documentation in browser..."
 
 # Step 5: Open the HTML file in the default browser
 if command -v open &> /dev/null; then
-    # macOS
-    open "$PROJECT_DIR/docs/api/index.html"
+  # macOS
+  open "$PROJECT_DIR/docs/api/index.html"
 elif command -v xdg-open &> /dev/null; then
-    # Linux
-    xdg-open "$PROJECT_DIR/docs/api/index.html"
+  # Linux
+  xdg-open "$PROJECT_DIR/docs/api/index.html"
 elif command -v start &> /dev/null; then
-    # Windows
-    start "$PROJECT_DIR/docs/api/index.html"
+  # Windows
+  start "$PROJECT_DIR/docs/api/index.html"
 else
-    echo "   ℹ️  Could not automatically open browser. Please open docs/api/index.html manually."
+  echo "   ℹ️  Could not automatically open browser. Please open docs/api/index.html manually."
 fi
 
 echo ""

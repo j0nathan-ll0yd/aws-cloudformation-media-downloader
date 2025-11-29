@@ -4,7 +4,10 @@
  * Utilities for inserting and querying test data in LocalStack DynamoDB
  */
 
-import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
+import {
+  createTable,
+  deleteTable
+} from '../lib/vendor/AWS/DynamoDB'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
 import {createMockFile} from './test-data'
@@ -21,66 +24,60 @@ export async function createMediaDownloaderTable(): Promise<void> {
   try {
     await createTable({
       TableName: getMediaDownloaderTable(),
-      KeySchema: [
-        {AttributeName: 'pk', KeyType: 'HASH'},
-        {AttributeName: 'sk', KeyType: 'RANGE'}
-      ],
+      KeySchema: [{ AttributeName: 'pk', KeyType: 'HASH' }, {
+        AttributeName: 'sk',
+        KeyType: 'RANGE'
+      }],
       AttributeDefinitions: [
-        {AttributeName: 'pk', AttributeType: 'S'},
-        {AttributeName: 'sk', AttributeType: 'S'},
-        {AttributeName: 'gsi1pk', AttributeType: 'S'},
-        {AttributeName: 'gsi1sk', AttributeType: 'S'},
-        {AttributeName: 'gsi2pk', AttributeType: 'S'},
-        {AttributeName: 'gsi2sk', AttributeType: 'S'},
-        {AttributeName: 'gsi3pk', AttributeType: 'S'},
-        {AttributeName: 'gsi3sk', AttributeType: 'S'},
-        {AttributeName: 'gsi4pk', AttributeType: 'S'},
-        {AttributeName: 'gsi4sk', AttributeType: 'S'},
-        {AttributeName: 'gsi5pk', AttributeType: 'S'},
-        {AttributeName: 'gsi5sk', AttributeType: 'S'}
+        { AttributeName: 'pk', AttributeType: 'S' },
+        { AttributeName: 'sk', AttributeType: 'S' },
+        { AttributeName: 'gsi1pk', AttributeType: 'S' },
+        { AttributeName: 'gsi1sk', AttributeType: 'S' },
+        { AttributeName: 'gsi2pk', AttributeType: 'S' },
+        { AttributeName: 'gsi2sk', AttributeType: 'S' },
+        { AttributeName: 'gsi3pk', AttributeType: 'S' },
+        { AttributeName: 'gsi3sk', AttributeType: 'S' },
+        { AttributeName: 'gsi4pk', AttributeType: 'S' },
+        { AttributeName: 'gsi4sk', AttributeType: 'S' },
+        { AttributeName: 'gsi5pk', AttributeType: 'S' },
+        { AttributeName: 'gsi5sk', AttributeType: 'S' }
       ],
-      GlobalSecondaryIndexes: [
-        {
-          IndexName: 'UserCollection',
-          KeySchema: [
-            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'FileCollection',
-          KeySchema: [
-            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'DeviceCollection',
-          KeySchema: [
-            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'StatusIndex',
-          KeySchema: [
-            {AttributeName: 'gsi4pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'KeyIndex',
-          KeySchema: [
-            {AttributeName: 'gsi5pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        }
-      ],
+      GlobalSecondaryIndexes: [{
+        IndexName: 'UserCollection',
+        KeySchema: [{ AttributeName: 'gsi1pk', KeyType: 'HASH' }, {
+          AttributeName: 'gsi1sk',
+          KeyType: 'RANGE'
+        }],
+        Projection: { ProjectionType: 'ALL' }
+      }, {
+        IndexName: 'FileCollection',
+        KeySchema: [{ AttributeName: 'gsi2pk', KeyType: 'HASH' }, {
+          AttributeName: 'gsi2sk',
+          KeyType: 'RANGE'
+        }],
+        Projection: { ProjectionType: 'ALL' }
+      }, {
+        IndexName: 'DeviceCollection',
+        KeySchema: [{ AttributeName: 'gsi3pk', KeyType: 'HASH' }, {
+          AttributeName: 'gsi3sk',
+          KeyType: 'RANGE'
+        }],
+        Projection: { ProjectionType: 'ALL' }
+      }, {
+        IndexName: 'StatusIndex',
+        KeySchema: [{ AttributeName: 'gsi4pk', KeyType: 'HASH' }, {
+          AttributeName: 'gsi4sk',
+          KeyType: 'RANGE'
+        }],
+        Projection: { ProjectionType: 'ALL' }
+      }, {
+        IndexName: 'KeyIndex',
+        KeySchema: [{ AttributeName: 'gsi5pk', KeyType: 'HASH' }, {
+          AttributeName: 'gsi5sk',
+          KeyType: 'RANGE'
+        }],
+        Projection: { ProjectionType: 'ALL' }
+      }],
       BillingMode: 'PAY_PER_REQUEST'
     })
   } catch (error) {
@@ -122,7 +119,7 @@ export const deleteUserFilesTable = deleteMediaDownloaderTable
  * This ensures proper entity metadata is added for ElectroDB compatibility
  */
 export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
-  const {Files} = await import('../../../src/entities/Files')
+  const { Files } = await import('../../../src/entities/Files')
 
   // Get consistent defaults from createMockFile, then apply user overrides
   const defaults = createMockFile(file.fileId!, file.status || FileStatus.PendingMetadata, file)
@@ -140,7 +137,7 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
     authorUser: defaults.authorUser!,
     publishDate: defaults.publishDate!,
     contentType: defaults.contentType!,
-    ...(defaults.url && {url: defaults.url})
+    ...(defaults.url && { url: defaults.url })
   }).go()
 }
 
@@ -148,9 +145,9 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
  * Get a file record from DynamoDB using ElectroDB
  */
 export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
-  const {Files} = await import('../../../src/entities/Files')
+  const { Files } = await import('../../../src/entities/Files')
 
-  const response = await Files.get({fileId}).go()
+  const response = await Files.get({ fileId }).go()
 
   if (!response || !response.data) {
     return null

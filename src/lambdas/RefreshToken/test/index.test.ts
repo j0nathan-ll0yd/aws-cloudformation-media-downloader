@@ -1,19 +1,27 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {SessionPayload} from '../../../util/better-auth-helpers'
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
+  assert: { type: 'json' }
+})
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
-jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
-  validateSessionToken: validateSessionTokenMock,
-  refreshSession: refreshSessionMock
-}))
+const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{ expiresAt: number }>>()
+jest.unstable_mockModule(
+  '../../../util/better-auth-helpers',
+  () => ({ validateSessionToken: validateSessionTokenMock, refreshSession: refreshSessionMock })
+)
 
-const {handler} = await import('./../src')
+const { handler } = await import('./../src')
 
 describe('#RefreshToken', () => {
   const context = testContext
@@ -35,7 +43,7 @@ describe('#RefreshToken', () => {
       sessionId: fakeSessionId,
       expiresAt: Date.now() + 1000000
     })
-    refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
+    refreshSessionMock.mockResolvedValue({ expiresAt: futureExpiresAt })
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -93,7 +101,7 @@ describe('#RefreshToken', () => {
       sessionId: fakeSessionId,
       expiresAt: Date.now() + 1000000
     })
-    refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
+    refreshSessionMock.mockResolvedValue({ expiresAt: futureExpiresAt })
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)

@@ -1,18 +1,28 @@
-import {describe, expect, test} from '@jest/globals'
+import {
+  describe,
+  expect,
+  test
+} from '@jest/globals'
 import {renderGithubIssueTemplate} from './template-helpers'
 
 describe('#template-helpers', () => {
   describe('renderGithubIssueTemplate', () => {
     test('should render user-deletion-failure template with all variables', () => {
       const mockError = new Error('DynamoDB conditional check failed')
-      mockError.stack = 'Error: DynamoDB conditional check failed\n    at Object.deleteUser (/var/task/index.js:123:45)'
+      mockError.stack =
+        'Error: DynamoDB conditional check failed\n    at Object.deleteUser (/var/task/index.js:123:45)'
 
       const result = renderGithubIssueTemplate('user-deletion-failure', {
         userId: 'test-user-123',
-        devices: [
-          {deviceToken: 'device-token-1', platform: 'iOS', updatedAt: '2024-01-01T00:00:00.000Z'},
-          {deviceToken: 'device-token-2', platform: 'iOS', updatedAt: '2024-01-02T00:00:00.000Z'}
-        ],
+        devices: [{
+          deviceToken: 'device-token-1',
+          platform: 'iOS',
+          updatedAt: '2024-01-01T00:00:00.000Z'
+        }, {
+          deviceToken: 'device-token-2',
+          platform: 'iOS',
+          updatedAt: '2024-01-02T00:00:00.000Z'
+        }],
         error: mockError,
         requestId: 'req-abc-123'
       })

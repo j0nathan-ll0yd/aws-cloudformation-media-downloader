@@ -1,10 +1,17 @@
-import {describe, expect, test, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  test
+} from '@jest/globals'
 import {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
+  assert: { type: 'json' }
+})
 
-const {handler} = await import('./../src')
+const { handler } = await import('./../src')
 
 describe('#LogClientEvent', () => {
   const context = testContext

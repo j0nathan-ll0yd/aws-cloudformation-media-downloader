@@ -6,7 +6,10 @@
  */
 
 import {Sessions} from '../entities/Sessions'
-import {logDebug, logError} from './lambda-helpers'
+import {
+  logDebug,
+  logError
+} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
 
 /**
@@ -30,7 +33,8 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
 
   try {
     // Note: Using scan instead of index lookup - consider adding token GSI if this becomes a bottleneck
-    const result = await Sessions.scan.where(({token: tokenAttr}, {eq}) => eq(tokenAttr, token)).go()
+    const result = await Sessions.scan.where(({ token: tokenAttr }, { eq }) => eq(tokenAttr, token))
+      .go()
 
     if (!result.data || result.data.length === 0) {
       logError('validateSessionToken: session not found')
@@ -47,23 +51,19 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
       throw new UnauthorizedError('Session expired')
     }
 
-    await Sessions.update({sessionId: session.sessionId}).set({updatedAt: Date.now()}).go()
+    await Sessions.update({ sessionId: session.sessionId }).set({ updatedAt: Date.now() }).go()
 
     logDebug('validateSessionToken: session valid', {
       userId: session.userId,
       sessionId: session.sessionId
     })
 
-    return {
-      userId: session.userId,
-      sessionId: session.sessionId,
-      expiresAt: session.expiresAt
-    }
+    return { userId: session.userId, sessionId: session.sessionId, expiresAt: session.expiresAt }
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       throw error
     }
-    logError('validateSessionToken: validation failed', {error})
+    logError('validateSessionToken: validation failed', { error })
     throw new UnauthorizedError('Token validation failed')
   }
 }
@@ -77,8 +77,13 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * @param userAgent - Optional user agent for device identification
  * @returns Session token and expiration
  */
-export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<{token: string; expiresAt: number; sessionId: string}> {
-  logDebug('createUserSession: creating session', {userId, deviceId})
+export async function createUserSession(
+  userId: string,
+  deviceId?: string,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<{ token: string; expiresAt: number; sessionId: string }> {
+  logDebug('createUserSession: creating session', { userId, deviceId })
 
   // Manual token generation since we're using ElectroDB adapter instead of Better Auth's built-in session management
   const token = generateSecureToken()
@@ -94,16 +99,9 @@ export async function createUserSession(userId: string, deviceId?: string, ipAdd
     userAgent
   }).go()
 
-  logDebug('createUserSession: session created', {
-    sessionId: result.data.sessionId,
-    expiresAt
-  })
+  logDebug('createUserSession: session created', { sessionId: result.data.sessionId, expiresAt })
 
-  return {
-    token,
-    sessionId: result.data.sessionId,
-    expiresAt
-  }
+  return { token, sessionId: result.data.sessionId, expiresAt }
 }
 
 /**
@@ -112,9 +110,9 @@ export async function createUserSession(userId: string, deviceId?: string, ipAdd
  * @param sessionId - The session ID to revoke
  */
 export async function revokeSession(sessionId: string): Promise<void> {
-  logDebug('revokeSession: revoking session', {sessionId})
+  logDebug('revokeSession: revoking session', { sessionId })
 
-  await Sessions.delete({sessionId}).go()
+  await Sessions.delete({ sessionId }).go()
 
   logDebug('revokeSession: session revoked')
 }
@@ -125,15 +123,15 @@ export async function revokeSession(sessionId: string): Promise<void> {
  * @param userId - The user ID to revoke all sessions for
  */
 export async function revokeAllUserSessions(userId: string): Promise<void> {
-  logDebug('revokeAllUserSessions: revoking all sessions', {userId})
+  logDebug('revokeAllUserSessions: revoking all sessions', { userId })
 
-  const result = await Sessions.query.byUser({userId}).go()
+  const result = await Sessions.query.byUser({ userId }).go()
 
   for (const session of result.data) {
-    await Sessions.delete({sessionId: session.sessionId}).go()
+    await Sessions.delete({ sessionId: session.sessionId }).go()
   }
 
-  logDebug('revokeAllUserSessions: revoked sessions', {count: result.data.length})
+  logDebug('revokeAllUserSessions: revoked sessions', { count: result.data.length })
 }
 
 /**
@@ -142,16 +140,16 @@ export async function revokeAllUserSessions(userId: string): Promise<void> {
  * @param sessionId - The session ID to refresh
  * @returns New expiration timestamp
  */
-export async function refreshSession(sessionId: string): Promise<{expiresAt: number}> {
-  logDebug('refreshSession: refreshing session', {sessionId})
+export async function refreshSession(sessionId: string): Promise<{ expiresAt: number }> {
+  logDebug('refreshSession: refreshing session', { sessionId })
 
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
 
-  await Sessions.update({sessionId}).set({expiresAt, updatedAt: Date.now()}).go()
+  await Sessions.update({ sessionId }).set({ expiresAt, updatedAt: Date.now() }).go()
 
-  logDebug('refreshSession: session refreshed', {expiresAt})
+  logDebug('refreshSession: session refreshed', { expiresAt })
 
-  return {expiresAt}
+  return { expiresAt }
 }
 
 /**

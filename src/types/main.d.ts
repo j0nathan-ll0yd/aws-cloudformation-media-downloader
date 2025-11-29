@@ -1,7 +1,19 @@
-import {SQSMessageAttribute, SQSMessageAttributes} from '../lib/vendor/AWS/SQS'
-import {Author, videoFormat} from 'ytdl-core'
-import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {FileStatus, UserStatus} from './enums'
+import {
+  SQSMessageAttribute,
+  SQSMessageAttributes
+} from '../lib/vendor/AWS/SQS'
+import {
+  Author,
+  videoFormat
+} from 'ytdl-core'
+import {
+  CloudFrontCustomOrigin,
+  CloudFrontRequest
+} from 'aws-lambda/common/cloudfront'
+import {
+  FileStatus,
+  UserStatus
+} from './enums'
 import {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventMultiValueHeaders,
@@ -141,7 +153,7 @@ interface IdentityProvider {
 }
 
 // Types specifically for Cloudfront
-type CustomCloudFrontOrigin = {custom: CloudFrontCustomOrigin}
+type CustomCloudFrontOrigin = { custom: CloudFrontCustomOrigin }
 interface CustomCloudFrontRequest extends CloudFrontRequest {
   clientIp: string
   origin: CustomCloudFrontOrigin
@@ -157,10 +169,7 @@ interface CustomAPIGatewayRequestAuthorizerEvent {
     // since it ends up the same and avoids breaking users that are testing the property.
     // This lets us allow parameterizing the authorizer for proxy events that know what authorizer
     // context values they have.
-    authorizer: {
-      integrationLatency: number
-      principalId: string
-    }
+    authorizer: { integrationLatency: number; principalId: string }
     connectedAt?: number | undefined
     connectionId?: string | undefined
     domainName?: string | undefined

@@ -4,7 +4,10 @@
  * This enables extraction of Better Auth fixtures from CloudWatch logs
  */
 
-import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
+import {
+  logIncomingFixture,
+  logOutgoingFixture
+} from '../../util/lambda-helpers'
 
 /**
  * Better Auth hook context type
@@ -12,16 +15,12 @@ import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
  */
 interface BetterAuthHookContext {
   path: string
-  request?: {method?: string}
+  request?: { method?: string }
   headers?: Record<string, string>
   body?: unknown
   query?: Record<string, string>
   requestId?: string
-  response?: {
-    status?: number
-    headers?: Record<string, string>
-    body?: unknown
-  }
+  response?: { status?: number; headers?: Record<string, string>; body?: unknown }
 }
 
 /**
@@ -33,10 +32,9 @@ function getFixtureName(path: string): string {
   const cleanPath = path.replace(/^\/?(auth\/)?/, '')
 
   // Convert kebab-case to PascalCase
-  return cleanPath
-    .split(/[-/]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')
+  return cleanPath.split(/[-/]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(
+    ''
+  )
 }
 
 /**

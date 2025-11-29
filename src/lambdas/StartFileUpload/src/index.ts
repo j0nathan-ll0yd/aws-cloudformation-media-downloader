@@ -1,13 +1,36 @@
 import {Context} from 'aws-lambda'
-import {fetchVideoInfo, chooseVideoFormat, streamVideoToS3} from '../../../lib/vendor/YouTube'
-import {StartFileUploadParams, DynamoDBFile} from '../../../types/main'
+import {
+  chooseVideoFormat,
+  fetchVideoInfo,
+  streamVideoToS3
+} from '../../../lib/vendor/YouTube'
+import {
+  DynamoDBFile,
+  StartFileUploadParams
+} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
-import {logDebug, logInfo, putMetric, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
+import {
+  lambdaErrorResponse,
+  logDebug,
+  logInfo,
+  putMetric,
+  response
+} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
-import {UnexpectedError, CookieExpirationError, providerFailureErrorMessage} from '../../../util/errors'
+import {
+  CookieExpirationError,
+  providerFailureErrorMessage,
+  UnexpectedError
+} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
-import {createVideoDownloadFailureIssue, createCookieExpirationIssue} from '../../../util/github-helpers'
-import {withXRay, getSegment} from '../../../lib/vendor/AWS/XRay'
+import {
+  createCookieExpirationIssue,
+  createVideoDownloadFailureIssue
+} from '../../../util/github-helpers'
+import {
+  getSegment,
+  withXRay
+} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -61,7 +84,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     await upsertFile(dynamoItem)
     logDebug('upsertFile =>')
 
-    logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
+    logDebug('streamVideoToS3 <=', { url: fileUrl, bucket, key: fileName })
     const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
     const uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
     if (subsegmentStream) {
@@ -92,24 +115,35 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     assertIsError(error)
 
     try {
-      await upsertFile({
-        fileId,
-        status: FileStatus.Failed
-      } as DynamoDBFile)
+      await upsertFile({ fileId, status: FileStatus.Failed } as DynamoDBFile)
     } catch (updateError) {
       assertIsError(updateError)
       logDebug('upsertFile error =>', updateError.message)
     }
 
-    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
+    await putMetric('LambdaExecutionFailure', 1, undefined, [{
+      Name: 'ErrorType',
+      Value: error.constructor.name
+    }])
 
     if (error instanceof CookieExpirationError) {
-      await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
+      await putMetric('CookieAuthenticationFailure', 1, undefined, [{
+        Name: 'VideoId',
+        Value: fileId
+      }])
       await createCookieExpirationIssue(fileId, fileUrl, error)
-      return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
+      return lambdaErrorResponse(
+        context,
+        new UnexpectedError(`Cookie expiration detected: ${error.message}`)
+      )
     }
 
-    await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
+    await createVideoDownloadFailureIssue(
+      fileId,
+      fileUrl,
+      error,
+      'Video download failed during processing. Check CloudWatch logs for full details.'
+    )
     return lambdaErrorResponse(context, error)
   }
 })

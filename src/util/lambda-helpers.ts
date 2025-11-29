@@ -1,18 +1,30 @@
-import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putMetricData, getStandardUnit} from '../lib/vendor/AWS/CloudWatch'
-import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
+import {
+  APIGatewayProxyEventHeaders,
+  APIGatewayProxyResult,
+  Context
+} from 'aws-lambda'
+import {
+  getStandardUnit,
+  putMetricData
+} from '../lib/vendor/AWS/CloudWatch'
+import {
+  CustomLambdaError,
+  ServiceUnavailableError,
+  UnauthorizedError
+} from './errors'
+import {
+  CustomAPIGatewayRequestAuthorizerEvent,
+  UserEventDetails
+} from '../types/main'
 import {UserStatus} from '../types/enums'
 
 export function unknownErrorToString(unknownVariable: unknown): string {
   if (typeof unknownVariable === 'string') {
     return unknownVariable
   } else if (Array.isArray(unknownVariable)) {
-    return unknownVariable
-      .map(function (s) {
-        return unknownErrorToString(s)
-      })
-      .join(', ')
+    return unknownVariable.map(function(s) {
+      return unknownErrorToString(s)
+    }).join(', ')
   } else if (typeof unknownVariable === 'object') {
     return JSON.stringify(unknownVariable)
   } else {
@@ -20,7 +32,12 @@ export function unknownErrorToString(unknownVariable: unknown): string {
   }
 }
 
-export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
+export function response(
+  context: Context,
+  statusCode: number,
+  body?: string | object,
+  headers?: APIGatewayProxyEventHeaders
+): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
   let error = false
   const statusCodeString = statusCode.toString()
@@ -35,34 +52,16 @@ export function response(context: Context, statusCode: number, body?: string | o
     error = true
   }
   if (error) {
-    const rawBody = {
-      error: {code, message: body},
-      requestId: context.awsRequestId
-    }
+    const rawBody = { error: { code, message: body }, requestId: context.awsRequestId }
     logDebug('response ==', rawBody)
-    return {
-      body: JSON.stringify(rawBody),
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return { body: JSON.stringify(rawBody), headers, statusCode } as APIGatewayProxyResult
   } else if (body) {
-    const rawBody = {
-      body,
-      requestId: context.awsRequestId
-    }
+    const rawBody = { body, requestId: context.awsRequestId }
     logDebug('response ==', rawBody)
-    return {
-      body: JSON.stringify(rawBody),
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return { body: JSON.stringify(rawBody), headers, statusCode } as APIGatewayProxyResult
   } else {
     logDebug('response ==', '')
-    return {
-      body: '',
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return { body: '', headers, statusCode } as APIGatewayProxyResult
   }
 }
 
@@ -111,7 +110,9 @@ export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
 }
 
-export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
+export function getUserDetailsFromEvent(
+  event: CustomAPIGatewayRequestAuthorizerEvent
+): UserEventDetails {
   let principalId = 'unknown'
   // This should always be present, via the API Gateway
   /* c8 ignore else */
@@ -132,7 +133,7 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
   logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
   logDebug('getUserDetailsFromEvent.authHeader', authHeader)
   logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
-  return {userId, userStatus} as UserEventDetails
+  return { userId, userStatus } as UserEventDetails
 }
 
 /**
@@ -142,24 +143,27 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
  * @param unit - Unit of measurement (Seconds, Bytes, Count, etc.)
  * @param dimensions - Optional dimensions for filtering/grouping
  */
-export async function putMetric(metricName: string, value: number, unit?: string, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
+export async function putMetric(
+  metricName: string,
+  value: number,
+  unit?: string,
+  dimensions: { Name: string; Value: string }[] = []
+): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
-      MetricData: [
-        {
-          MetricName: metricName,
-          Value: value,
-          Unit: getStandardUnit(unit),
-          Timestamp: new Date(),
-          Dimensions: dimensions
-        }
-      ]
+      MetricData: [{
+        MetricName: metricName,
+        Value: value,
+        Unit: getStandardUnit(unit),
+        Timestamp: new Date(),
+        Dimensions: dimensions
+      }]
     })
-    logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
+    logDebug(`Published metric: ${metricName}`, { value, unit: unit || 'Count', dimensions })
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
-    logError('Failed to publish CloudWatch metric', {metricName, error})
+    logError('Failed to publish CloudWatch metric', { metricName, error })
   }
 }
 
@@ -168,12 +172,9 @@ export async function putMetric(metricName: string, value: number, unit?: string
  * @param metrics - Array of metrics to publish
  */
 export async function putMetrics(
-  metrics: Array<{
-    name: string
-    value: number
-    unit?: string
-    dimensions?: {Name: string; Value: string}[]
-  }>
+  metrics: Array<
+    { name: string; value: number; unit?: string; dimensions?: { Name: string; Value: string }[] }
+  >
 ): Promise<void> {
   try {
     await putMetricData({
@@ -186,7 +187,7 @@ export async function putMetrics(
         Dimensions: m.dimensions || []
       }))
     })
-    logDebug(`Published ${metrics.length} metrics`, {metrics: metrics.map((m) => m.name)})
+    logDebug(`Published ${metrics.length} metrics`, { metrics: metrics.map((m) => m.name) })
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
     logError('Failed to publish CloudWatch metrics', error)
@@ -208,10 +209,22 @@ function sanitizeForTest(data: unknown): unknown {
     return data.map((item) => sanitizeForTest(item))
   }
 
-  const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
+  const sanitized: Record<string, unknown> = { ...(data as Record<string, unknown>) }
 
   // Remove sensitive fields
-  const sensitiveFields = ['Authorization', 'authorization', 'token', 'Token', 'password', 'Password', 'apiKey', 'ApiKey', 'secret', 'Secret', 'appleDeviceIdentifier']
+  const sensitiveFields = [
+    'Authorization',
+    'authorization',
+    'token',
+    'Token',
+    'password',
+    'Password',
+    'apiKey',
+    'ApiKey',
+    'secret',
+    'Secret',
+    'appleDeviceIdentifier'
+  ]
 
   for (const key in sanitized) {
     if (sensitiveFields.includes(key)) {

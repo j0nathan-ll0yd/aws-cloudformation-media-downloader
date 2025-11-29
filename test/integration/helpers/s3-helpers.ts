@@ -4,7 +4,14 @@
  * Utilities for creating buckets and verifying S3 uploads in LocalStack
  */
 
-import {createBucket, deleteBucket, listObjectsV2, deleteObject as deleteS3Object, headObject, getObject} from '../lib/vendor/AWS/S3'
+import {
+  createBucket,
+  deleteBucket,
+  deleteObject as deleteS3Object,
+  getObject,
+  headObject,
+  listObjectsV2
+} from '../lib/vendor/AWS/S3'
 import {Readable} from 'stream'
 
 /**
@@ -30,7 +37,9 @@ export async function deleteTestBucket(bucketName: string): Promise<void> {
     const listResponse = await listObjectsV2(bucketName)
 
     if (listResponse.Contents && listResponse.Contents.length > 0) {
-      await Promise.all(listResponse.Contents.map((object) => deleteS3Object(bucketName, object.Key!)))
+      await Promise.all(
+        listResponse.Contents.map((object) => deleteS3Object(bucketName, object.Key!))
+      )
     }
 
     // Then delete the bucket
@@ -55,7 +64,10 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
 /**
  * Get object metadata from S3
  */
-export async function getObjectMetadata(bucketName: string, key: string): Promise<{contentLength: number; contentType: string} | null> {
+export async function getObjectMetadata(
+  bucketName: string,
+  key: string
+): Promise<{ contentLength: number; contentType: string } | null> {
   try {
     const response = await headObject(bucketName, key)
 

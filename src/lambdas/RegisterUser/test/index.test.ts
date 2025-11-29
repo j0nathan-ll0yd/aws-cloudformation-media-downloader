@@ -1,4 +1,10 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
@@ -7,18 +13,16 @@ import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
-  auth: authMock.auth
-}))
+jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({ auth: authMock.auth }))
 
 // Mock Users entity for name updates
 const usersMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Users', () => ({
-  Users: usersMock.entity
-}))
+jest.unstable_mockModule('../../../entities/Users', () => ({ Users: usersMock.entity }))
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
-const {handler} = await import('./../src')
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
+  assert: { type: 'json' }
+})
+const { handler } = await import('./../src')
 
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
@@ -45,16 +49,13 @@ describe('#RegisterUser', () => {
         name: 'New User',
         createdAt: new Date().toISOString() // Just created
       },
-      session: {
-        id: sessionId,
-        expiresAt
-      },
+      session: { id: sessionId, expiresAt },
       token
     })
 
     // Mock the user name update
     usersMock.mocks.update.set.mockReturnThis()
-    usersMock.mocks.update.go.mockResolvedValue({data: {}})
+    usersMock.mocks.update.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -70,9 +71,7 @@ describe('#RegisterUser', () => {
       expect.objectContaining({
         body: expect.objectContaining({
           provider: 'apple',
-          idToken: expect.objectContaining({
-            token: expect.any(String)
-          })
+          idToken: expect.objectContaining({ token: expect.any(String) })
         })
       })
     )
@@ -98,10 +97,7 @@ describe('#RegisterUser', () => {
         name: 'Existing User',
         createdAt: new Date(Date.now() - 7 * 86400000).toISOString() // Created a week ago
       },
-      session: {
-        id: sessionId,
-        expiresAt
-      },
+      session: { id: sessionId, expiresAt },
       token
     })
 
@@ -129,10 +125,7 @@ describe('#RegisterUser', () => {
 
   test('should handle Better Auth errors gracefully', async () => {
     // Mock Better Auth throwing an error
-    authMock.mocks.signInSocial.mockRejectedValue({
-      status: 500,
-      message: 'Internal server error'
-    })
+    authMock.mocks.signInSocial.mockRejectedValue({ status: 500, message: 'Internal server error' })
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)

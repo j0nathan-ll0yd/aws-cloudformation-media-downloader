@@ -5,8 +5,16 @@ import {Files} from '../entities/Files'
 import {Users} from '../entities/Users'
 import type {EntityItem} from '../lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
-import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
-import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
+import {
+  Device,
+  DynamoDBFile,
+  DynamoDBUserDevice,
+  User
+} from '../types/main'
+import {
+  deleteEndpoint,
+  subscribe
+} from '../lib/vendor/AWS/SNS'
 import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '../lib/vendor/AWS/Lambda'
 
@@ -17,8 +25,8 @@ import {invokeAsync} from '../lib/vendor/AWS/Lambda'
  * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
-  logDebug('deleteUserDevice <=', {userId, deviceId})
-  const response = await UserDevices.delete({userId, deviceId}).go()
+  logDebug('deleteUserDevice <=', { userId, deviceId })
+  const response = await UserDevices.delete({ userId, deviceId }).go()
   logDebug('deleteUserDevice =>', response)
 }
 
@@ -30,12 +38,12 @@ export async function deleteUserDevice(userId: string, deviceId: string): Promis
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  */
 export async function deleteDevice(device: Device): Promise<void> {
-  const removeEndpointParams = {EndpointArn: device.endpointArn}
+  const removeEndpointParams = { EndpointArn: device.endpointArn }
   logDebug('deleteDevice.deleteEndpoint <=', removeEndpointParams)
   const removeEndpointResponse = await deleteEndpoint(removeEndpointParams)
   logDebug('deleteDevice.deleteEndpoint =>', removeEndpointResponse)
   logDebug('deleteDevice.deleteItem <=', device.deviceId)
-  const removedDeviceResponse = await Devices.delete({deviceId: device.deviceId}).go()
+  const removedDeviceResponse = await Devices.delete({ deviceId: device.deviceId }).go()
   logDebug('deleteDevice.deleteItem =>', removedDeviceResponse)
 }
 
@@ -48,7 +56,7 @@ export async function deleteDevice(device: Device): Promise<void> {
  */
 export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice[]> {
   logDebug('getUserDevices <=', userId)
-  const response = await UserDevices.query.byUser({userId}).go()
+  const response = await UserDevices.query.byUser({ userId }).go()
   logDebug('getUserDevices =>', response)
   if (!response || !response.data) {
     return []
@@ -64,11 +72,7 @@ export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice
  * @see {@link lambdas/UserSubscribe/src!#handler | UserSubscribe }
  */
 export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  const subscribeParams = {
-    Endpoint: endpointArn,
-    Protocol: 'application',
-    TopicArn: topicArn
-  }
+  const subscribeParams = { Endpoint: endpointArn, Protocol: 'application', TopicArn: topicArn }
   logDebug('subscribe <=', subscribeParams)
   const subscribeResponse = await subscribe(subscribeParams)
   logDebug('subscribe =>', subscribeResponse)
@@ -103,7 +107,9 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 
   // Filter in memory since we can't query on nested identity provider field
   type UserEntity = EntityItem<typeof Users>
-  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) => user.identityProviders?.userId === userDeviceId)
+  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) =>
+    user.identityProviders?.userId === userDeviceId
+  )
   return usersWithAppleId as User[]
 }
 
@@ -117,12 +123,9 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 export async function initiateFileDownload(fileId: string) {
   logDebug('initiateFileDownload <=', fileId)
 
-  const result = await invokeAsync('StartFileUpload', {fileId})
+  const result = await invokeAsync('StartFileUpload', { fileId })
 
-  logDebug('initiateFileDownload =>', {
-    StatusCode: result.StatusCode,
-    fileId
-  })
+  logDebug('initiateFileDownload =>', { StatusCode: result.StatusCode, fileId })
 }
 
 /**

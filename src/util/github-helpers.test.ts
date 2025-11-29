@@ -1,43 +1,51 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import {Device} from '../types/main'
 
 // Mock Octokit
-const mockIssuesCreate = jest.fn<() => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
+const mockIssuesCreate = jest.fn<
+  () => Promise<{ status: number; data: { id: number; number: number; html_url: string } }>
+>()
 
 class MockOctokit {
-  public rest: {
-    issues: {
-      create: typeof mockIssuesCreate
-    }
-  }
+  public rest: { issues: { create: typeof mockIssuesCreate } }
   constructor() {
-    this.rest = {
-      issues: {
-        create: mockIssuesCreate
-      }
-    }
+    this.rest = { issues: { create: mockIssuesCreate } }
   }
 }
 
-jest.unstable_mockModule('@octokit/rest', () => ({
-  Octokit: jest.fn().mockImplementation(() => new MockOctokit())
-}))
+jest.unstable_mockModule(
+  '@octokit/rest',
+  () => ({ Octokit: jest.fn().mockImplementation(() => new MockOctokit()) })
+)
 
 // Mock template helpers
-jest.unstable_mockModule('./template-helpers', () => ({
-  renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
-    return `Rendered template: ${templateName}`
+jest.unstable_mockModule(
+  './template-helpers',
+  () => ({
+    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>()
+      .mockImplementation((templateName: string) => {
+        return `Rendered template: ${templateName}`
+      })
   })
-}))
+)
 
 // Mock logging helpers
-jest.unstable_mockModule('./lambda-helpers', () => ({
-  logDebug: jest.fn(),
-  logError: jest.fn(),
-  logInfo: jest.fn()
-}))
+jest.unstable_mockModule(
+  './lambda-helpers',
+  () => ({ logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn() })
+)
 
-const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('./github-helpers')
+const {
+  createFailedUserDeletionIssue,
+  createVideoDownloadFailureIssue,
+  createCookieExpirationIssue
+} = await import('./github-helpers')
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {
@@ -61,7 +69,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: {id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42'}
+        data: { id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42' }
       })
 
       const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
@@ -75,7 +83,12 @@ describe('#Util:GithubHelper', () => {
           repo: 'aws-cloudformation-media-downloader',
           title: `User Deletion Failed: ${userId}`,
           body: expect.stringContaining('Rendered template: user-deletion-failure'),
-          labels: expect.arrayContaining(['bug', 'user-management', 'automated', 'requires-manual-fix'])
+          labels: expect.arrayContaining([
+            'bug',
+            'user-management',
+            'automated',
+            'requires-manual-fix'
+          ])
         })
       )
     })
@@ -110,7 +123,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: {id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43'}
+        data: { id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43' }
       })
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error, errorDetails)
@@ -136,7 +149,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: {id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44'}
+        data: { id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44' }
       })
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error)
@@ -167,7 +180,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: {id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45'}
+        data: { id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45' }
       })
 
       const response = await createCookieExpirationIssue(fileId, fileUrl, error)
@@ -181,7 +194,12 @@ describe('#Util:GithubHelper', () => {
           repo: 'aws-cloudformation-media-downloader',
           title: '🍪 YouTube Cookie Expiration Detected',
           body: expect.stringContaining('Rendered template: cookie-expiration'),
-          labels: expect.arrayContaining(['cookie-expiration', 'requires-manual-fix', 'automated', 'priority'])
+          labels: expect.arrayContaining([
+            'cookie-expiration',
+            'requires-manual-fix',
+            'automated',
+            'priority'
+          ])
         })
       )
     })

@@ -36,7 +36,7 @@ export default [
       '.dependency-cruiser.cjs'
     ]
   },
-  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'),
+  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,

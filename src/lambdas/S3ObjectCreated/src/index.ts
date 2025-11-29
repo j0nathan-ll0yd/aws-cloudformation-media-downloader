@@ -1,10 +1,16 @@
 import {S3Event} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
-import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
+import {
+  sendMessage,
+  SendMessageRequest
+} from '../../../lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '../../../types/main'
 import {logDebug} from '../../../util/lambda-helpers'
-import {assertIsError, createFileNotificationAttributes} from '../../../util/transformers'
+import {
+  assertIsError,
+  createFileNotificationAttributes
+} from '../../../util/transformers'
 import {UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -15,7 +21,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
   logDebug('query file by key <=', fileName)
-  const queryResponse = await Files.query.byKey({key: fileName}).go()
+  const queryResponse = await Files.query.byKey({ key: fileName }).go()
   logDebug('query file by key =>', queryResponse)
   if (queryResponse.data && queryResponse.data.length > 0) {
     return queryResponse.data[0] as DynamoDBFile
@@ -32,7 +38,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
   logDebug('query users by fileId <=', file.fileId)
-  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
+  const queryResponse = await UserFiles.query.byFile({ fileId: file.fileId }).go()
   logDebug('query users by fileId =>', queryResponse)
   if (!queryResponse.data || queryResponse.data.length === 0) {
     return []

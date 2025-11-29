@@ -1,4 +1,10 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
@@ -12,27 +18,33 @@ const unauthorizedError = new Error('Unauthorized')
 const getApiKeysMock = jest.fn()
 const getUsagePlansMock = jest.fn()
 const getUsageMock = jest.fn()
-const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
-const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('../../../lib/vendor/AWS/ApiGateway', () => ({
-  getApiKeys: getApiKeysMock,
-  getUsagePlans: getUsagePlansMock,
-  getUsage: getUsageMock
-}))
+const { default: getUsagePlansResponse } = await import('./fixtures/getUsagePlans.json', {
+  assert: { type: 'json' }
+})
+const { default: getUsageResponse } = await import('./fixtures/getUsage.json', {
+  assert: { type: 'json' }
+})
+jest.unstable_mockModule(
+  '../../../lib/vendor/AWS/ApiGateway',
+  () => ({ getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock })
+)
 
 // Setup variations of the getApiKeys response
-const {default: getApiKeysResponse} = await import('./fixtures/getApiKeys.json', {assert: {type: 'json'}})
+const { default: getApiKeysResponse } = await import('./fixtures/getApiKeys.json', {
+  assert: { type: 'json' }
+})
 const getApiKeysDefaultResponse = JSON.parse(JSON.stringify(getApiKeysResponse))
 getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 
-const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
+const { default: eventMock } = await import('./fixtures/Event.json', { assert: { type: 'json' } })
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
-  validateSessionToken: validateSessionTokenMock
-}))
+jest.unstable_mockModule(
+  '../../../util/better-auth-helpers',
+  () => ({ validateSessionToken: validateSessionTokenMock })
+)
 
-const {handler} = await import('./../src')
+const { handler } = await import('./../src')
 
 describe('#APIGatewayAuthorizer', () => {
   const successResponseKeys = ['context', 'policyDocument', 'principalId', 'usageIdentifierKey']

@@ -20,22 +20,46 @@ process.env.Bucket = TEST_BUCKET
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
-import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
+import {
+  createFilesTable,
+  deleteFilesTable,
+  getFile
+} from '../helpers/dynamodb-helpers'
+import {
+  createTestBucket,
+  deleteTestBucket,
+  getObjectMetadata
+} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload, S3UploadFunction} from '../helpers/mock-youtube'
+import {
+  createMockStreamVideoToS3WithRealUpload,
+  createMockVideoFormat,
+  createMockVideoInfo,
+  S3UploadFunction
+} from '../helpers/mock-youtube'
 import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
 const s3UploadFn = createS3Upload as S3UploadFunction
 
 import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
+import {
+  dirname,
+  resolve
+} from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -48,22 +72,24 @@ const mockVideoInfo = createMockVideoInfo({
   uploader: 'Test Channel'
 })
 
-const mockFormat = createMockVideoFormat({
-  format_id: '18',
-  ext: 'mp4',
-  filesize: 5242880
-})
+const mockFormat = createMockVideoFormat({ format_id: '18', ext: 'mp4', filesize: 5242880 })
 
-jest.unstable_mockModule(youtubeModulePath, () => ({
-  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
-  chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
-  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
-}))
+jest.unstable_mockModule(
+  youtubeModulePath,
+  () => ({
+    fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
+    chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
+    streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
+  })
+)
 
-jest.unstable_mockModule(githubHelpersModulePath, () => ({
-  createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
-}))
+jest.unstable_mockModule(
+  githubHelpersModulePath,
+  () => ({
+    createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
+  })
+)
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler
@@ -87,31 +113,35 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     jest.clearAllMocks()
   })
 
-  test('should complete video download workflow with correct DynamoDB state transitions', async () => {
-    const fileId = 'test-video-123'
-    const event = {fileId}
+  test(
+    'should complete video download workflow with correct DynamoDB state transitions',
+    async () => {
+      const fileId = 'test-video-123'
+      const event = { fileId }
 
-    const result = await handler(event, mockContext)
+      const result = await handler(event, mockContext)
 
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.fileId).toBe(fileId)
-    expect(response.body.status).toBe('success')
-    expect(response.body.fileSize).toBe(5242880)
+      expect(result.statusCode).toBe(200)
+      const response = JSON.parse(result.body)
+      expect(response.body.fileId).toBe(fileId)
+      expect(response.body.status).toBe('success')
+      expect(response.body.fileSize).toBe(5242880)
 
-    const file = await getFile(fileId)
-    expect(file).not.toBeNull()
-    expect(file!.fileId).toBe(fileId)
-    expect(file!.status).toBe(FileStatus.Downloaded)
-    expect(file!.size).toBe(5242880)
-    expect(file!.key).toBe('test-video-123.mp4')
-    expect(file!.title).toBe('Integration Test Video')
-    expect(file!.authorName).toBe('Test Channel')
-    expect(file!.contentType).toBe('video/mp4')
+      const file = await getFile(fileId)
+      expect(file).not.toBeNull()
+      expect(file!.fileId).toBe(fileId)
+      expect(file!.status).toBe(FileStatus.Downloaded)
+      expect(file!.size).toBe(5242880)
+      expect(file!.key).toBe('test-video-123.mp4')
+      expect(file!.title).toBe('Integration Test Video')
+      expect(file!.authorName).toBe('Test Channel')
+      expect(file!.contentType).toBe('video/mp4')
 
-    const s3Metadata = await getObjectMetadata(TEST_BUCKET, 'test-video-123.mp4')
-    expect(s3Metadata).not.toBeNull()
-    expect(s3Metadata!.contentLength).toBe(5242880)
-    expect(s3Metadata!.contentType).toBe('video/mp4')
-  }, 30000)
+      const s3Metadata = await getObjectMetadata(TEST_BUCKET, 'test-video-123.mp4')
+      expect(s3Metadata).not.toBeNull()
+      expect(s3Metadata!.contentLength).toBe(5242880)
+      expect(s3Metadata!.contentType).toBe('video/mp4')
+    },
+    30000
+  )
 })

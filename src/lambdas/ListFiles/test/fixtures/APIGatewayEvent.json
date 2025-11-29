@@ -18,7 +18,9 @@
   },
   "multiValueHeaders": {
     "Accept-Encoding": ["gzip"],
-    "Authorization": ["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c"],
+    "Authorization": [
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c"
+    ],
     "Content-Type": ["application/json"],
     "Host": ["naf24gu6t6.execute-api.us-west-2.amazonaws.com"],
     "User-Agent": ["OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0"],

@@ -1,17 +1,40 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {
+  APIGatewayProxyResult,
+  Context
+} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
-import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
+import {
+  sendMessage,
+  SendMessageRequest
+} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
-import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
+import {
+  CustomAPIGatewayRequestAuthorizerEvent,
+  DynamoDBFile
+} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
+import {
+  getPayloadFromEvent,
+  validateRequest
+} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
+import {
+  getUserDetailsFromEvent,
+  lambdaErrorResponse,
+  logDebug,
+  logIncomingFixture,
+  logInfo,
+  logOutgoingFixture,
+  response
+} from '../../../util/lambda-helpers'
 import {createFileNotificationAttributes} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {
+  providerFailureErrorMessage,
+  UnexpectedError
+} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
@@ -22,9 +45,9 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param userId - The UUID of the user
  */
 export async function associateFileToUser(fileId: string, userId: string) {
-  logDebug('associateFileToUser <=', {fileId, userId})
+  logDebug('associateFileToUser <=', { fileId, userId })
   try {
-    const response = await UserFiles.create({userId, fileId}).go()
+    const response = await UserFiles.create({ userId, fileId }).go()
     logDebug('associateFileToUser =>', response)
     return response
   } catch (error) {
@@ -67,7 +90,7 @@ async function addFile(fileId: string) {
  */
 async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
   logDebug('getFile <=', fileId)
-  const fileResponse = await Files.get({fileId}).go()
+  const fileResponse = await Files.get({ fileId }).go()
   logDebug('getFile =>', fileResponse)
   return fileResponse.data as DynamoDBFile | undefined
 }
@@ -99,41 +122,46 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
-  logIncomingFixture(event)
+export const handler = withXRay(
+  async (
+    event: CustomAPIGatewayRequestAuthorizerEvent,
+    context: Context
+  ): Promise<APIGatewayProxyResult> => {
+    logInfo('event <=', event)
+    logIncomingFixture(event)
 
-  let requestBody
-  try {
-    requestBody = getPayloadFromEvent(event) as Webhook
-    validateRequest(requestBody, feedlyEventSchema)
-    const fileId = getVideoID(requestBody.articleURL)
-    const {userId} = getUserDetailsFromEvent(event)
-    if (!userId) {
-      throw new UnexpectedError(providerFailureErrorMessage)
-    }
-    await associateFileToUser(fileId, userId)
-    const file = await getFile(fileId)
-    let result: APIGatewayProxyResult
-    if (file && file.status == FileStatus.Downloaded) {
-      await sendFileNotification(file, userId)
-      result = response(context, 200, {status: 'Dispatched'})
-    } else {
-      if (!file) {
-        await addFile(fileId)
+    let requestBody
+    try {
+      requestBody = getPayloadFromEvent(event) as Webhook
+      validateRequest(requestBody, feedlyEventSchema)
+      const fileId = getVideoID(requestBody.articleURL)
+      const { userId } = getUserDetailsFromEvent(event)
+      if (!userId) {
+        throw new UnexpectedError(providerFailureErrorMessage)
       }
-      if (!requestBody.backgroundMode) {
-        await initiateFileDownload(fileId)
-        result = response(context, 202, {status: 'Initiated'})
+      await associateFileToUser(fileId, userId)
+      const file = await getFile(fileId)
+      let result: APIGatewayProxyResult
+      if (file && file.status == FileStatus.Downloaded) {
+        await sendFileNotification(file, userId)
+        result = response(context, 200, { status: 'Dispatched' })
       } else {
-        result = response(context, 202, {status: 'Accepted'})
+        if (!file) {
+          await addFile(fileId)
+        }
+        if (!requestBody.backgroundMode) {
+          await initiateFileDownload(fileId)
+          result = response(context, 202, { status: 'Initiated' })
+        } else {
+          result = response(context, 202, { status: 'Accepted' })
+        }
       }
+      logOutgoingFixture(result)
+      return result
+    } catch (error) {
+      const errorResult = lambdaErrorResponse(context, error)
+      logOutgoingFixture(errorResult)
+      return errorResult
     }
-    logOutgoingFixture(result)
-    return result
-  } catch (error) {
-    const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult)
-    return errorResult
   }
-})
+)

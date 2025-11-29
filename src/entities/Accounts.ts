@@ -1,4 +1,7 @@
-import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {
+  documentClient,
+  Entity
+} from '../lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for Better Auth accounts (OAuth provider links).
@@ -18,59 +21,19 @@ import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
  */
 export const Accounts = new Entity(
   {
-    model: {
-      entity: 'Account',
-      version: '1',
-      service: 'MediaDownloader'
-    },
+    model: { entity: 'Account', version: '1', service: 'MediaDownloader' },
     attributes: {
-      accountId: {
-        type: 'string',
-        required: true,
-        readOnly: true
-      },
-      userId: {
-        type: 'string',
-        required: true
-      },
-      providerId: {
-        type: 'string',
-        required: true
-      },
-      providerAccountId: {
-        type: 'string',
-        required: true
-      },
-      accessToken: {
-        type: 'string',
-        required: false
-      },
-      refreshToken: {
-        type: 'string',
-        required: false
-      },
-      expiresAt: {
-        type: 'number',
-        required: false
-      },
-      scope: {
-        type: 'string',
-        required: false
-      },
-      tokenType: {
-        type: 'string',
-        required: false
-      },
-      idToken: {
-        type: 'string',
-        required: false
-      },
-      createdAt: {
-        type: 'number',
-        required: true,
-        default: () => Date.now(),
-        readOnly: true
-      },
+      accountId: { type: 'string', required: true, readOnly: true },
+      userId: { type: 'string', required: true },
+      providerId: { type: 'string', required: true },
+      providerAccountId: { type: 'string', required: true },
+      accessToken: { type: 'string', required: false },
+      refreshToken: { type: 'string', required: false },
+      expiresAt: { type: 'number', required: false },
+      scope: { type: 'string', required: false },
+      tokenType: { type: 'string', required: false },
+      idToken: { type: 'string', required: false },
+      createdAt: { type: 'number', required: true, default: () => Date.now(), readOnly: true },
       updatedAt: {
         type: 'number',
         required: true,
@@ -81,43 +44,22 @@ export const Accounts = new Entity(
     },
     indexes: {
       primary: {
-        pk: {
-          field: 'pk',
-          composite: ['accountId']
-        },
-        sk: {
-          field: 'sk',
-          composite: []
-        }
+        pk: { field: 'pk', composite: ['accountId'] },
+        sk: { field: 'sk', composite: [] }
       },
       byUser: {
         index: 'gsi1',
-        pk: {
-          field: 'gsi1pk',
-          composite: ['userId']
-        },
-        sk: {
-          field: 'gsi1sk',
-          composite: ['providerId']
-        }
+        pk: { field: 'gsi1pk', composite: ['userId'] },
+        sk: { field: 'gsi1sk', composite: ['providerId'] }
       },
       byProvider: {
         index: 'gsi2',
-        pk: {
-          field: 'gsi2pk',
-          composite: ['providerId', 'providerAccountId']
-        },
-        sk: {
-          field: 'gsi2sk',
-          composite: []
-        }
+        pk: { field: 'gsi2pk', composite: ['providerId', 'providerAccountId'] },
+        sk: { field: 'gsi2sk', composite: [] }
       }
     }
   } as const,
-  {
-    table: process.env.DynamoDBTableName,
-    client: documentClient
-  }
+  { table: process.env.DynamoDBTableName, client: documentClient }
 )
 
 // Type exports for use in application code

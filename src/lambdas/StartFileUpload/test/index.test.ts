@@ -1,29 +1,43 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import {UnexpectedError} from '../../../util/errors'
 import {StartFileUploadParams} from '../../../types/main'
-import {YtDlpVideoInfo, YtDlpFormat} from '../../../types/youtube'
+import {
+  YtDlpFormat,
+  YtDlpVideoInfo
+} from '../../../types/youtube'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
-const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
+const streamVideoToS3Mock = jest.fn<
+  () => Promise<{ fileSize: number; s3Url: string; duration: number }>
+>()
 
-jest.unstable_mockModule('../../../lib/vendor/YouTube', () => ({
-  fetchVideoInfo: fetchVideoInfoMock,
-  chooseVideoFormat: chooseVideoFormatMock,
-  streamVideoToS3: streamVideoToS3Mock
-}))
+jest.unstable_mockModule(
+  '../../../lib/vendor/YouTube',
+  () => ({
+    fetchVideoInfo: fetchVideoInfoMock,
+    chooseVideoFormat: chooseVideoFormatMock,
+    streamVideoToS3: streamVideoToS3Mock
+  })
+)
 
 // Mock ElectroDB Files entity
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: filesMock.entity
-}))
+jest.unstable_mockModule('../../../entities/Files', () => ({ Files: filesMock.entity }))
 
-const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
-const {handler} = await import('./../src')
+const { default: eventMock } = await import('./fixtures/startFileUpload-200-OK.json', {
+  assert: { type: 'json' }
+})
+const { handler } = await import('./../src')
 
 describe('#StartFileUpload', () => {
   const context = testContext
@@ -68,7 +82,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 45
     })
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
 
@@ -83,7 +97,11 @@ describe('#StartFileUpload', () => {
     expect(filesMock.mocks.upsert.go).toHaveBeenCalledTimes(2)
 
     // Verify streamVideoToS3 was called with correct parameters
-    expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
+    expect(streamVideoToS3Mock).toHaveBeenCalledWith(
+      expect.stringContaining('youtube.com/watch?v='),
+      'test-bucket',
+      expect.stringMatching(/\.mp4$/)
+    )
   })
 
   test('should handle HLS/DASH streaming formats', async () => {
@@ -113,7 +131,7 @@ describe('#StartFileUpload', () => {
       s3Url: 's3://test-bucket/test-video.mp4',
       duration: 120
     })
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
 
@@ -149,7 +167,7 @@ describe('#StartFileUpload', () => {
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
     streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
 
@@ -161,7 +179,7 @@ describe('#StartFileUpload', () => {
 
   test('should handle video not found error', async () => {
     fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
 
@@ -194,7 +212,7 @@ describe('#StartFileUpload', () => {
     } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
 

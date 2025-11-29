@@ -1,12 +1,27 @@
 import {ScheduledEvent} from 'aws-lambda'
 import {Devices} from '../../../entities/Devices'
 import {UserDevices} from '../../../entities/UserDevices'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {ApplePushNotificationResponse, Device} from '../../../types/main'
+import {
+  logDebug,
+  logError,
+  logInfo
+} from '../../../util/lambda-helpers'
+import {
+  providerFailureErrorMessage,
+  UnexpectedError
+} from '../../../util/errors'
+import {
+  ApplePushNotificationResponse,
+  Device
+} from '../../../types/main'
 import {deleteDevice} from '../../../util/shared'
 import {assertIsError} from '../../../util/transformers'
-import {ApnsClient, Notification, PushType, Priority} from 'apns2'
+import {
+  ApnsClient,
+  Notification,
+  Priority,
+  PushType
+} from 'apns2'
 import {Apns2Error} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -38,7 +53,9 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
   return apnsResponse.statusCode === 410
 }
 
-async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
+async function dispatchHealthCheckNotificationToDeviceToken(
+  token: string
+): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   const client = new ApnsClient({
     team: process.env.ApnsTeam,
@@ -51,20 +68,18 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
     contentAvailable: true,
     type: PushType.background,
     priority: Priority.throttled,
-    aps: {
-      health: 'check'
-    }
+    aps: { health: 'check' }
   })
   try {
     logDebug('apnProvider.send <=', healthCheckNotification)
     const result = await client.send(healthCheckNotification)
     logDebug('apnProvider.send =>', result)
-    return {statusCode: 200}
+    return { statusCode: 200 }
   } catch (err) {
     logError('apnProvider.send =>', err as object)
     if (err && typeof err === 'object' && 'reason' in err) {
       const apnsError = err as Apns2Error
-      return {statusCode: Number(apnsError.statusCode), reason: apnsError.reason}
+      return { statusCode: Number(apnsError.statusCode), reason: apnsError.reason }
     } else {
       throw new UnexpectedError('Unexpected result from APNS')
     }
@@ -73,7 +88,7 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 
 async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
   logDebug('getUserIdsByDeviceId <=', deviceId)
-  const response = await UserDevices.query.byDevice({deviceId}).go()
+  const response = await UserDevices.query.byDevice({ deviceId }).go()
   logDebug('getUserIdsByDeviceId =>', response)
   if (!response || !response.data) {
     return []
@@ -94,11 +109,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  */
 export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevicesResult> => {
   logInfo('event <=', event)
-  const result: PruneDevicesResult = {
-    devicesChecked: 0,
-    devicesPruned: 0,
-    errors: []
-  }
+  const result: PruneDevicesResult = { devicesChecked: 0, devicesPruned: 0, errors: [] }
 
   const devices = await getDevices()
   result.devicesChecked = devices.length
@@ -110,16 +121,15 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const deleteUserDevicesPromise =
-          userIds.length > 0
-            ? (async () => {
-                const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-                const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
-                if (unprocessed.length > 0) {
-                  logDebug('deleteUserDevices.unprocessed =>', unprocessed)
-                }
-              })()
-            : Promise.resolve()
+        const deleteUserDevicesPromise = userIds.length > 0
+          ? (async () => {
+            const deleteKeys = userIds.map((userId) => ({ userId, deviceId }))
+            const { unprocessed } = await UserDevices.delete(deleteKeys).go({ concurrency: 5 })
+            if (unprocessed.length > 0) {
+              logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+            }
+          })()
+          : Promise.resolve()
         const values = await Promise.all([deleteDevice(device), deleteUserDevicesPromise])
         logDebug('Promise.all', values)
         result.devicesPruned++

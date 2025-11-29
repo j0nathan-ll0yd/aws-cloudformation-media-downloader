@@ -1,4 +1,9 @@
-import {PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
+import {
+  PutMetricDataCommand,
+  PutMetricDataCommandInput,
+  PutMetricDataCommandOutput,
+  StandardUnit
+} from '@aws-sdk/client-cloudwatch'
 import {createCloudWatchClient} from './clients'
 
 const cloudwatch = createCloudWatchClient()
@@ -13,7 +18,9 @@ const unitMapping: Record<string, StandardUnit> = {
   Milliseconds: StandardUnit.Milliseconds
 }
 
-export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMetricDataCommandOutput> {
+export function putMetricData(
+  params: PutMetricDataCommandInput
+): Promise<PutMetricDataCommandOutput> {
   const command = new PutMetricDataCommand(params)
   return cloudwatch.send(command)
 }
@@ -24,6 +31,8 @@ export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMet
  * @returns AWS StandardUnit value, defaults to Count if not found
  */
 export function getStandardUnit(unit?: string): StandardUnit {
-  if (!unit) return StandardUnit.Count
+  if (!unit) {
+    return StandardUnit.Count
+  }
   return unitMapping[unit] || StandardUnit.Count
 }

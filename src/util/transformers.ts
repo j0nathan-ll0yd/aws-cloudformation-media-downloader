@@ -1,11 +1,19 @@
-import {ClientFile, DynamoDBFile, FileNotification} from '../types/main'
+import {
+  ClientFile,
+  DynamoDBFile,
+  FileNotification
+} from '../types/main'
 import {logError} from './lambda-helpers'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
-import {stringAttribute, numberAttribute, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
+import {
+  MessageAttributeValue,
+  numberAttribute,
+  stringAttribute
+} from '../lib/vendor/AWS/SQS'
 
 // Re-export for backwards compatibility
-export {unknownErrorToString} from './lambda-helpers'
+export { unknownErrorToString } from './lambda-helpers'
 
 /**
  * Creates SQS message attributes for file notifications
@@ -14,7 +22,10 @@ export {unknownErrorToString} from './lambda-helpers'
  * @param userId - User ID to send notification to
  * @returns SQS message attributes for file notification
  */
-export function createFileNotificationAttributes(file: DynamoDBFile, userId: string): Record<string, MessageAttributeValue> {
+export function createFileNotificationAttributes(
+  file: DynamoDBFile,
+  userId: string
+): Record<string, MessageAttributeValue> {
   return {
     fileId: stringAttribute(file.fileId),
     key: stringAttribute(file.key),
@@ -25,7 +36,10 @@ export function createFileNotificationAttributes(file: DynamoDBFile, userId: str
   }
 }
 
-export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
+export function transformFileNotificationToPushNotification(
+  file: FileNotification,
+  targetArn: string
+): PublishInput {
   const keys: (keyof typeof file)[] = ['fileId', 'key', 'publishDate', 'size', 'url']
   keys.forEach((key) => {
     if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {
@@ -43,18 +57,12 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
 
   return {
     Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({
-        aps: {'content-available': 1},
-        file: clientFile
-      }),
+      APNS_SANDBOX: JSON.stringify({ aps: { 'content-available': 1 }, file: clientFile }),
       default: 'Default message'
     }),
     MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {
-        DataType: 'String',
-        StringValue: 'background'
-      }
+      'AWS.SNS.MOBILE.APNS.PRIORITY': { DataType: 'String', StringValue: '5' },
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': { DataType: 'String', StringValue: 'background' }
     },
     MessageStructure: 'json',
     TargetArn: targetArn

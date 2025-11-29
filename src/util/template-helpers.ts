@@ -1,5 +1,8 @@
 import {readFileSync} from 'fs'
-import {join, dirname} from 'path'
+import {
+  dirname,
+  join
+} from 'path'
 import {fileURLToPath} from 'url'
 
 // ES module equivalent of __dirname
@@ -13,7 +16,10 @@ const __dirname = dirname(__filename)
  * @param data - Variables to inject into the template
  * @returns Rendered template string
  */
-export function renderGithubIssueTemplate(templateName: string, data: Record<string, unknown>): string {
+export function renderGithubIssueTemplate(
+  templateName: string,
+  data: Record<string, unknown>
+): string {
   const templatePath = join(__dirname, '../templates/github-issues', `${templateName}.md`)
   const template = readFileSync(templatePath, 'utf-8')
 

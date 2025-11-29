@@ -19,19 +19,39 @@ const TEST_TABLE = 'test-list-files'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '../../../src/types/enums'
+import {
+  FileStatus,
+  UserStatus
+} from '../../../src/types/enums'
 import type {DynamoDBFile} from '../../../src/types/main'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {
+  createFilesTable,
+  deleteFilesTable
+} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
-import {createMockFile, createMockUserFile} from '../helpers/test-data'
+import {
+  createMockFile,
+  createMockUserFile
+} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
+import {
+  dirname,
+  resolve
+} from 'path'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -39,22 +59,25 @@ const __dirname = dirname(__filename)
 const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles')
 const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule(userFilesModulePath, () => ({
-  UserFiles: userFilesMock.entity
-}))
+const userFilesMock = createElectroDBEntityMock({ queryIndexes: ['byUser'] })
+jest.unstable_mockModule(userFilesModulePath, () => ({ UserFiles: userFilesMock.entity }))
 
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(filesModulePath, () => ({
-  Files: filesMock.entity
-}))
+jest.unstable_mockModule(filesModulePath, () => ({ Files: filesMock.entity }))
 
-const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
+const { handler } = await import('../../../src/lambdas/ListFiles/src/index')
 
-function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
+function createListFilesEvent(
+  userId: string | undefined,
+  userStatus: UserStatus
+): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: null,
-    headers: userId && userStatus === UserStatus.Authenticated ? {Authorization: 'Bearer test-token'} : userStatus === UserStatus.Unauthenticated ? {Authorization: 'Bearer invalid-token'} : {},
+    headers: userId && userStatus === UserStatus.Authenticated
+      ? { Authorization: 'Bearer test-token' }
+      : userStatus === UserStatus.Unauthenticated
+      ? { Authorization: 'Bearer invalid-token' }
+      : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
     isBase64Encoded: false,
@@ -81,10 +104,7 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
         userStatus,
         integrationLatency: 342
       },
-      identity: {
-        sourceIp: '127.0.0.1',
-        userAgent: 'test-agent'
-      }
+      identity: { sourceIp: '127.0.0.1', userAgent: 'test-agent' }
     },
     resource: '/files'
   } as unknown as CustomAPIGatewayRequestAuthorizerEvent
@@ -118,15 +138,19 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB responses
     // UserFiles.query.byUser returns array of individual UserFile records
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserFile('user-abc-123', 'video-1'), createMockUserFile('user-abc-123', 'video-2'), createMockUserFile('user-abc-123', 'video-3')]
+      data: [
+        createMockUserFile('user-abc-123', 'video-1'),
+        createMockUserFile('user-abc-123', 'video-2'),
+        createMockUserFile('user-abc-123', 'video-3')
+      ]
     })
 
     // Files.get now uses BATCH get - returns array of files with unprocessed
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('video-1', FileStatus.Downloaded, {title: 'Video 1'}),
-        createMockFile('video-2', FileStatus.Downloaded, {title: 'Video 2', size: 10485760}),
-        createMockFile('video-3', FileStatus.PendingDownload, {title: 'Video 3 (not ready)'})
+        createMockFile('video-1', FileStatus.Downloaded, { title: 'Video 1' }),
+        createMockFile('video-2', FileStatus.Downloaded, { title: 'Video 2', size: 10485760 }),
+        createMockFile('video-3', FileStatus.PendingDownload, { title: 'Video 3 (not ready)' })
       ],
       unprocessed: []
     })
@@ -148,9 +172,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return empty list when user has no files', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: []
-    })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({ data: [] })
 
     const event = createListFilesEvent('user-no-files', UserStatus.Authenticated)
 
@@ -207,11 +229,13 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Files.get now uses BATCH get - returns array of all files
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('downloaded-1', FileStatus.Downloaded, {title: 'Downloaded 1'}),
-        createMockFile('downloaded-2', FileStatus.Downloaded, {title: 'Downloaded 2'}),
-        createMockFile('pending-1', FileStatus.PendingMetadata, {title: 'Pending 1'}),
-        createMockFile('failed-1', FileStatus.Failed, {title: 'Failed 1'}),
-        createMockFile('pending-download-1', FileStatus.PendingDownload, {title: 'Pending Download 1'})
+        createMockFile('downloaded-1', FileStatus.Downloaded, { title: 'Downloaded 1' }),
+        createMockFile('downloaded-2', FileStatus.Downloaded, { title: 'Downloaded 2' }),
+        createMockFile('pending-1', FileStatus.PendingMetadata, { title: 'Pending 1' }),
+        createMockFile('failed-1', FileStatus.Failed, { title: 'Failed 1' }),
+        createMockFile('pending-download-1', FileStatus.PendingDownload, {
+          title: 'Pending Download 1'
+        })
       ],
       unprocessed: []
     })
@@ -234,7 +258,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
   test('should handle large batch of files efficiently', async () => {
     // Arrange: Mock ElectroDB with 50 files
-    const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
+    const fileIds = Array.from({ length: 50 }, (_, i) => `video-${i}`)
 
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))
@@ -242,7 +266,13 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})),
+      data: fileIds.map((fileId, index) =>
+        createMockFile(
+          fileId,
+          index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
+          { title: `Video ${index}` }
+        )
+      ),
       unprocessed: []
     })
 
@@ -255,11 +285,17 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Downloaded)).toBe(true)
+    expect(
+      response.body.contents.every((file: Partial<DynamoDBFile>) =>
+        file.status === FileStatus.Downloaded
+      )
+    ).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockRejectedValue(new Error('DynamoDB service unavailable'))
+    userFilesMock.mocks.query.byUser!.go.mockRejectedValue(
+      new Error('DynamoDB service unavailable')
+    )
 
     const event = createListFilesEvent('user-error', UserStatus.Authenticated)
 

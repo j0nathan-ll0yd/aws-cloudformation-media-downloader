@@ -7,7 +7,10 @@
 
 import {Readable} from 'stream'
 import {jest} from '@jest/globals'
-import {YtDlpVideoInfo, YtDlpFormat} from '../../../src/types/youtube'
+import {
+  YtDlpFormat,
+  YtDlpVideoInfo
+} from '../../../src/types/youtube'
 
 /**
  * Create mock video info for testing
@@ -89,11 +92,9 @@ export function createMockVideoStream(sizeInBytes: number, contentPattern: strin
 /**
  * Mock streamVideoToS3 result
  */
-export function createMockStreamResult(sizeInBytes: number): {
-  fileSize: number
-  s3Url: string
-  duration: number
-} {
+export function createMockStreamResult(
+  sizeInBytes: number
+): { fileSize: number; s3Url: string; duration: number } {
   return {
     fileSize: sizeInBytes,
     s3Url: 's3://test-bucket/test-video.mp4',
@@ -105,7 +106,9 @@ export function createMockStreamResult(sizeInBytes: number): {
  * Create mock implementation of fetchVideoInfo
  */
 export function mockFetchVideoInfo(videoInfo?: YtDlpVideoInfo): jest.Mock {
-  return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(videoInfo || createMockVideoInfo())
+  return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(
+    videoInfo || createMockVideoInfo()
+  )
 }
 
 /**
@@ -129,7 +132,12 @@ export interface S3UploadHandle {
  * This type is used for type assertions when passing the real createS3Upload
  * function to mocks that have a simpler type signature.
  */
-export type S3UploadFunction = (bucket: string, key: string, body: Readable | Buffer, contentType?: string) => S3UploadHandle
+export type S3UploadFunction = (
+  bucket: string,
+  key: string,
+  body: Readable | Buffer,
+  contentType?: string
+) => S3UploadHandle
 
 /**
  * Create mock implementation of streamVideoToS3 that actually uploads to S3
@@ -147,17 +155,15 @@ export function createMockStreamVideoToS3WithRealUpload(createS3Upload: S3Upload
     const upload = createS3Upload(bucket, key, videoStream, 'video/mp4')
     await upload.done()
 
-    return {
-      fileSize: 5242880,
-      s3Url: `s3://${bucket}/${key}`,
-      duration: 1500
-    }
+    return { fileSize: 5242880, s3Url: `s3://${bucket}/${key}`, duration: 1500 }
   })
 }
 
 /**
  * Create mock implementation of streamVideoToS3 that fails for testing error handling
  */
-export function createMockStreamVideoToS3WithFailure(errorMessage: string = 'Mock S3 upload failed'): jest.Mock {
+export function createMockStreamVideoToS3WithFailure(
+  errorMessage: string = 'Mock S3 upload failed'
+): jest.Mock {
   return jest.fn<() => Promise<never>>().mockRejectedValue(new Error(errorMessage))
 }

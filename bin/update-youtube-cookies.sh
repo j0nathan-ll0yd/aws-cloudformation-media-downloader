@@ -4,7 +4,7 @@
 # Extracts YouTube cookies from Chrome and prepares them for Lambda layer
 # Usage: npm run update-cookies
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -23,15 +23,15 @@ echo ""
 
 # Check if yt-dlp is installed
 if ! command -v yt-dlp &> /dev/null && ! command -v /opt/homebrew/bin/yt-dlp &> /dev/null; then
-    echo -e "${RED}Error: yt-dlp is not installed${NC}"
-    echo "Install with: brew install yt-dlp"
-    exit 1
+  echo -e "${RED}Error: yt-dlp is not installed${NC}"
+  echo "Install with: brew install yt-dlp"
+  exit 1
 fi
 
 # Determine yt-dlp path
 YTDLP_CMD="yt-dlp"
 if command -v /opt/homebrew/bin/yt-dlp &> /dev/null; then
-    YTDLP_CMD="/opt/homebrew/bin/yt-dlp"
+  YTDLP_CMD="/opt/homebrew/bin/yt-dlp"
 fi
 
 echo -e "${YELLOW}Step 1: Creating directories${NC}"
@@ -46,8 +46,8 @@ echo "Note: You must be logged into YouTube in Chrome for this to work"
   --cookies "${SECURE_DIR}/youtube-cookies.txt" \
   "https://www.youtube.com/watch?v=dQw4w9WgXcQ" \
   --quiet --no-warnings || {
-    echo -e "${RED}Failed to extract cookies. Are you logged into YouTube in Chrome?${NC}"
-    exit 1
+  echo -e "${RED}Failed to extract cookies. Are you logged into YouTube in Chrome?${NC}"
+  exit 1
 }
 
 COOKIE_COUNT=$(wc -l < "${SECURE_DIR}/youtube-cookies.txt" | tr -d ' ')

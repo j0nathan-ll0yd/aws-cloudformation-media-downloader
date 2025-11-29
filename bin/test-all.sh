@@ -4,7 +4,7 @@
 # Runs ALL tests (unit + integration) with merged coverage reporting
 # Usage: pnpm run test:all or ./bin/test-all.sh
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -52,15 +52,15 @@ echo ""
 echo -e "${YELLOW}Checking prerequisites...${NC}"
 
 if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Error: docker is not installed${NC}"
-    echo "Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
-    exit 1
+  echo -e "${RED}Error: docker is not installed${NC}"
+  echo "Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
+  exit 1
 fi
 
 if ! docker compose version &> /dev/null; then
-    echo -e "${RED}Error: docker compose is not available${NC}"
-    echo "Please install Docker with Compose plugin or docker-compose standalone"
-    exit 1
+  echo -e "${RED}Error: docker compose is not available${NC}"
+  echo "Please install Docker with Compose plugin or docker-compose standalone"
+  exit 1
 fi
 
 echo "✅ Docker and docker compose are available"

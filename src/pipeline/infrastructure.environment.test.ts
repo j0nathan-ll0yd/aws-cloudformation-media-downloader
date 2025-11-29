@@ -1,4 +1,8 @@
-import {describe, expect, test} from '@jest/globals'
+import {
+  describe,
+  expect,
+  test
+} from '@jest/globals'
 import * as fs from 'fs'
 import {InfrastructureD} from '../types/infrastructure'
 import {logDebug} from '../util/lambda-helpers'
@@ -20,7 +24,8 @@ const excludedSourceVariables = {
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
-    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
+    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') &&
+      !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
   })
 }
 
@@ -30,22 +35,34 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
-    const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
+    const resources =
+      (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
+        functionName
+      ]
+    const resource = resources[0] as { environment?: { variables?: Record<string, unknown> }[] }
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
       environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
-      logDebug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
+      logDebug(
+        `environmentVariablesForFunction[${functionName}] = ${
+          environmentVariablesForFunction[functionName]
+        }`
+      )
     }
   }
   logDebug('CloudFront distribution name', cloudFrontDistributionNames)
   logDebug('Environment variables by function', environmentVariablesForFunction)
   logDebug('Lambda function names', lambdaFunctionNames)
-  return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
+  return { cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction }
 }
 
-function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
+function getEnvironmentVariablesFromSource(
+  functionName: string,
+  sourceCodeRegex: RegExp,
+  matchSubstring: number,
+  matchSlice = [0]
+) {
   // You need to use the build version here to see dependent environment variables
   const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
@@ -53,7 +70,11 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   const matches = functionSource.match(sourceCodeRegex)
   logDebug(`functionSource.match(${sourceCodeRegex})`, JSON.stringify(matches))
   if (matches && matches.length > 0) {
-    environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
+    environmentVariablesSource = filterSourceVariables([
+      ...new Set(
+        matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice))
+      )
+    ])
     logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
     return environmentVariablesSource
   } else {
@@ -67,7 +88,8 @@ describe('#Infrastructure', () => {
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
   logDebug('JSON file', jsonFile)
   const infrastructurePlan = JSON.parse(jsonFile) as InfrastructureD
-  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessInfrastructurePlan(infrastructurePlan)
+  const { cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction } =
+    preprocessInfrastructurePlan(infrastructurePlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform: string[] = []
     if (environmentVariablesForFunction[functionName]) {
@@ -99,11 +121,18 @@ describe('#Infrastructure', () => {
       matchSubstring = 12
       sourceCodeRegex = /process\.env(?:\[['"]([^'"\]]+)['"]\]|\.(\w+))/gi
     }
-    const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
+    const environmentVariablesSource = getEnvironmentVariablesFromSource(
+      functionName,
+      sourceCodeRegex,
+      matchSubstring,
+      matchSlice
+    )
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
       // Filter out infrastructure-level variables from Terraform list for comparison
-      const filteredTerraformVars = environmentVariablesTerraform.filter((v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v))
+      const filteredTerraformVars = environmentVariablesTerraform.filter((v) =>
+        !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v)
+      )
       expect(filteredTerraformVars.sort()).toEqual(environmentVariablesSource.sort())
       expect(filteredTerraformVars.length).toEqual(environmentVariablesSourceCount)
     })

@@ -30,29 +30,29 @@ echo ""
 # Extract fixtures for each Lambda function
 for LAMBDA_NAME in "${LAMBDA_FUNCTIONS[@]}"; do
   echo "Processing ${LAMBDA_NAME}..."
-  
+
   LOG_GROUP="/aws/lambda/${LAMBDA_NAME}"
   OUTPUT_FILE="${OUTPUT_DIR}/${LAMBDA_NAME}-$(date +%Y%m%d).json"
-  
+
   # Check if log group exists
-  if ! aws logs describe-log-groups --log-group-name-prefix "${LOG_GROUP}" --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q "${LOG_GROUP}"; then
+  if ! aws logs describe-log-groups --log-group-name-prefix "${LOG_GROUP}" --query 'logGroups[0].logGroupName' --output text 2> /dev/null | grep -q "${LOG_GROUP}"; then
     echo "  ⚠️  Log group ${LOG_GROUP} not found, skipping..."
     continue
   fi
-  
+
   # Extract fixture markers from CloudWatch
   aws logs filter-log-events \
     --log-group-name "${LOG_GROUP}" \
     --filter-pattern '__FIXTURE_MARKER__' \
     --start-time "${START_TIME}" \
     --query 'events[*].message' \
-    --output json \
-    | jq -r '.[] | fromjson' \
-    > "${OUTPUT_FILE}" 2>/dev/null || true
-  
+    --output json |
+    jq -r '.[] | fromjson' \
+      > "${OUTPUT_FILE}" 2> /dev/null || true
+
   # Count extracted fixtures
-  FIXTURE_COUNT=$(jq -s 'length' "${OUTPUT_FILE}" 2>/dev/null || echo "0")
-  
+  FIXTURE_COUNT=$(jq -s 'length' "${OUTPUT_FILE}" 2> /dev/null || echo "0")
+
   if [ "${FIXTURE_COUNT}" -eq 0 ]; then
     echo "  ℹ️  No fixtures found"
     rm -f "${OUTPUT_FILE}"

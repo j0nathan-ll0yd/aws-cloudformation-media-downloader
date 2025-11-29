@@ -1,6 +1,17 @@
-import {CloudFrontRequestEvent, CloudFrontResultResponse, CloudFrontResponse, Context} from 'aws-lambda'
-import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import {logDebug, logInfo} from '../../../util/lambda-helpers'
+import {
+  CloudFrontRequestEvent,
+  CloudFrontResponse,
+  CloudFrontResultResponse,
+  Context
+} from 'aws-lambda'
+import {
+  CloudFrontHeaders,
+  CloudFrontRequest
+} from 'aws-lambda/common/cloudfront'
+import {
+  logDebug,
+  logInfo
+} from '../../../util/lambda-helpers'
 import {CustomCloudFrontRequest} from '../../../types/main'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
@@ -26,20 +37,20 @@ async function handleQueryString(request: CloudFrontRequest) {
   if (params.has(apiKeyString)) {
     logDebug('pre-get URLSearchParams')
     const apiKeyValue = params.get(apiKeyString) as string
-    headers['x-api-key'] = [
-      {
-        key: 'X-API-Key',
-        value: apiKeyValue
-      }
-    ]
+    headers['x-api-key'] = [{ key: 'X-API-Key', value: apiKeyValue }]
   }
 }
 
-export const handler = withXRay(async (event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> => {
-  logInfo('event <=', event)
-  logInfo('context <=', context)
-  const request = event.Records[0].cf.request as CustomCloudFrontRequest
-  await handleQueryString(request)
-  logDebug('request <=', request)
-  return request
-})
+export const handler = withXRay(
+  async (
+    event: CloudFrontRequestEvent,
+    context: Context
+  ): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> => {
+    logInfo('event <=', event)
+    logInfo('context <=', context)
+    const request = event.Records[0].cf.request as CustomCloudFrontRequest
+    await handleQueryString(request)
+    logDebug('request <=', request)
+    return request
+  }
+)

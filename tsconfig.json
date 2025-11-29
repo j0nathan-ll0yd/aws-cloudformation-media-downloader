@@ -1,30 +1,30 @@
 {
-	"compilerOptions": {
-		"allowSyntheticDefaultImports": true,
-		"module": "esnext",
-		"target": "esnext",
-		"outDir": "./dist",
-		"strict": true,
-		"types": ["node", "jest"],
-		"moduleResolution": "bundler",
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noImplicitAny": true,
-		"noImplicitThis": true,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true
-	},
-	"include": ["src/**/*"],
-	"exclude": [
-		"node_modules",
-		"**/*.spec.ts",
-		"test/**/*",
-		"./src/types/terraform.d.ts"
-	],
-	"ts-node": {
-		"compilerOptions": {"module": "esnext"},
-		"esm": true
-	}
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "target": "esnext",
+    "outDir": "./dist",
+    "strict": true,
+    "types": ["node", "jest"],
+    "moduleResolution": "bundler",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "test/**/*",
+    "./src/types/terraform.d.ts"
+  ],
+  "ts-node": {
+    "compilerOptions": { "module": "esnext" },
+    "esm": true
+  }
 }

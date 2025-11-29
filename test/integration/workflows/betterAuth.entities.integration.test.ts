@@ -17,33 +17,57 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-east-1'
 
-import {describe, it, expect, beforeAll, afterAll, afterEach} from '@jest/globals'
-import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it
+} from '@jest/globals'
+import {
+  cleanupLocalStackTable,
+  setupLocalStackTable
+} from '../helpers/electrodb-localstack'
 
 // Dynamic imports to ensure env vars are set before entity instantiation
-const {Users} = await import('../../../src/entities/Users')
-const {Sessions} = await import('../../../src/entities/Sessions')
-const {Accounts} = await import('../../../src/entities/Accounts')
-const {VerificationTokens} = await import('../../../src/entities/VerificationTokens')
-const {MediaDownloaderService} = await import('../../../src/entities/Collections')
-const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import('../../helpers/better-auth-test-data')
-const {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth, transformUserToAuth, transformSessionToAuth, transformAccountToAuth, splitFullName} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
+const { Users } = await import('../../../src/entities/Users')
+const { Sessions } = await import('../../../src/entities/Sessions')
+const { Accounts } = await import('../../../src/entities/Accounts')
+const { VerificationTokens } = await import('../../../src/entities/VerificationTokens')
+const { MediaDownloaderService } = await import('../../../src/entities/Collections')
+const {
+  createMockUser,
+  createMockSession,
+  createMockAccount,
+  createMockVerificationToken,
+  createMinimalUser
+} = await import('../../helpers/better-auth-test-data')
+const {
+  transformUserFromAuth,
+  transformSessionFromAuth,
+  transformAccountFromAuth,
+  transformUserToAuth,
+  transformSessionToAuth,
+  transformAccountToAuth,
+  splitFullName
+} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
 // Type helpers for ElectroDB service collections
 // ElectroDB collections return an object with entity-named arrays, not a flat array
 interface UserSessionsData {
-  Users: Array<{userId: string; [key: string]: unknown}>
-  Sessions: Array<{sessionId: string; [key: string]: unknown}>
+  Users: Array<{ userId: string; [key: string]: unknown }>
+  Sessions: Array<{ sessionId: string; [key: string]: unknown }>
 }
 
 interface UserAccountsData {
-  Users: Array<{userId: string; [key: string]: unknown}>
-  Accounts: Array<{accountId: string; providerId: string; [key: string]: unknown}>
+  Users: Array<{ userId: string; [key: string]: unknown }>
+  Accounts: Array<{ accountId: string; providerId: string; [key: string]: unknown }>
 }
 
 type ServiceCollections = {
-  userSessions: (params: {userId: string}) => {go: () => Promise<{data: UserSessionsData}>}
-  userAccounts: (params: {userId: string}) => {go: () => Promise<{data: UserAccountsData}>}
+  userSessions: (params: { userId: string }) => { go: () => Promise<{ data: UserSessionsData }> }
+  userAccounts: (params: { userId: string }) => { go: () => Promise<{ data: UserAccountsData }> }
 }
 
 const collections = MediaDownloaderService.collections as unknown as ServiceCollections
@@ -81,7 +105,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Users.create(userData).go()
 
-      const result = await Users.get({userId: 'user-test-1'}).go()
+      const result = await Users.get({ userId: 'user-test-1' }).go()
 
       expect(result.data).toBeDefined()
       expect(result.data?.userId).toBe('user-test-1')
@@ -101,7 +125,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Users.create(userData).go()
 
-      const result = await Users.query.byEmail({email: 'unique@example.com'}).go()
+      const result = await Users.query.byEmail({ email: 'unique@example.com' }).go()
 
       expect(result.data).toHaveLength(1)
       expect(result.data[0].userId).toBe('user-test-2')
@@ -109,7 +133,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should return empty array for non-existent email', async () => {
-      const result = await Users.query.byEmail({email: 'nonexistent@example.com'}).go()
+      const result = await Users.query.byEmail({ email: 'nonexistent@example.com' }).go()
 
       expect(result.data).toHaveLength(0)
     })
@@ -124,15 +148,13 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Users.create(userData).go()
 
-      await Users.update({userId: 'user-test-3'})
-        .set({
-          firstName: 'New',
-          lastName: 'Updated',
-          emailVerified: true
-        })
-        .go()
+      await Users.update({ userId: 'user-test-3' }).set({
+        firstName: 'New',
+        lastName: 'Updated',
+        emailVerified: true
+      }).go()
 
-      const result = await Users.get({userId: 'user-test-3'}).go()
+      const result = await Users.get({ userId: 'user-test-3' }).go()
 
       expect(result.data?.firstName).toBe('New')
       expect(result.data?.lastName).toBe('Updated')
@@ -153,7 +175,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Sessions.create(sessionData).go()
 
-      const result = await Sessions.get({sessionId: 'session-test-1'}).go()
+      const result = await Sessions.get({ sessionId: 'session-test-1' }).go()
 
       expect(result.data).toBeDefined()
       expect(result.data?.sessionId).toBe('session-test-1')
@@ -194,7 +216,7 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      const result = await Sessions.query.byUser({userId}).go()
+      const result = await Sessions.query.byUser({ userId }).go()
 
       expect(result.data).toHaveLength(3)
       expect(result.data.every((s) => s.userId === userId)).toBe(true)
@@ -227,7 +249,7 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      const result = await Sessions.query.byDevice({deviceId}).go()
+      const result = await Sessions.query.byDevice({ deviceId }).go()
 
       expect(result.data).toHaveLength(2)
       expect(result.data.every((s) => s.deviceId === deviceId)).toBe(true)
@@ -245,13 +267,9 @@ describe('Better Auth Entities Integration Tests', () => {
 
       const newExpiresAt = Date.now() + 172800000
 
-      await Sessions.update({sessionId: 'session-update-1'})
-        .set({
-          expiresAt: newExpiresAt
-        })
-        .go()
+      await Sessions.update({ sessionId: 'session-update-1' }).set({ expiresAt: newExpiresAt }).go()
 
-      const result = await Sessions.get({sessionId: 'session-update-1'}).go()
+      const result = await Sessions.get({ sessionId: 'session-update-1' }).go()
 
       expect(result.data?.expiresAt).toBe(newExpiresAt)
     })
@@ -266,9 +284,9 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      await Sessions.delete({sessionId: 'session-delete-1'}).go()
+      await Sessions.delete({ sessionId: 'session-delete-1' }).go()
 
-      const result = await Sessions.get({sessionId: 'session-delete-1'}).go()
+      const result = await Sessions.get({ sessionId: 'session-delete-1' }).go()
 
       expect(result.data).toBeNull()
     })
@@ -289,7 +307,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Accounts.create(accountData).go()
 
-      const result = await Accounts.get({accountId: 'account-test-1'}).go()
+      const result = await Accounts.get({ accountId: 'account-test-1' }).go()
 
       expect(result.data).toBeDefined()
       expect(result.data?.accountId).toBe('account-test-1')
@@ -321,7 +339,7 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      const result = await Accounts.query.byUser({userId}).go()
+      const result = await Accounts.query.byUser({ userId }).go()
 
       expect(result.data).toHaveLength(2)
       expect(result.data.map((a) => a.providerId).sort()).toEqual(['apple', 'google'])
@@ -336,12 +354,10 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      const result = await Accounts.query
-        .byProvider({
-          providerId: 'apple',
-          providerAccountId: 'apple-unique-id'
-        })
-        .go()
+      const result = await Accounts.query.byProvider({
+        providerId: 'apple',
+        providerAccountId: 'apple-unique-id'
+      }).go()
 
       expect(result.data).toHaveLength(1)
       expect(result.data[0].userId).toBe('user-lookup-1')
@@ -351,13 +367,11 @@ describe('Better Auth Entities Integration Tests', () => {
 
   describe('VerificationTokens Entity', () => {
     it('should create and retrieve verification token', async () => {
-      const tokenData = createMockVerificationToken({
-        token: 'verify-token-123'
-      })
+      const tokenData = createMockVerificationToken({ token: 'verify-token-123' })
 
       await VerificationTokens.create(tokenData).go()
 
-      const result = await VerificationTokens.get({token: 'verify-token-123'}).go()
+      const result = await VerificationTokens.get({ token: 'verify-token-123' }).go()
 
       expect(result.data).toBeDefined()
       expect(result.data?.token).toBe('verify-token-123')
@@ -367,15 +381,12 @@ describe('Better Auth Entities Integration Tests', () => {
 
     it('should delete verification token after use', async () => {
       await VerificationTokens.create(
-        createMockVerificationToken({
-          token: 'temp-token-123',
-          identifier: 'user@example.com'
-        })
+        createMockVerificationToken({ token: 'temp-token-123', identifier: 'user@example.com' })
       ).go()
 
-      await VerificationTokens.delete({token: 'temp-token-123'}).go()
+      await VerificationTokens.delete({ token: 'temp-token-123' }).go()
 
-      const result = await VerificationTokens.get({token: 'temp-token-123'}).go()
+      const result = await VerificationTokens.get({ token: 'temp-token-123' }).go()
 
       expect(result.data).toBeNull()
     })
@@ -418,7 +429,7 @@ describe('Better Auth Entities Integration Tests', () => {
       ).go()
 
       // Query collection
-      const result = await collections.userSessions({userId}).go()
+      const result = await collections.userSessions({ userId }).go()
 
       expect(result.data.Users).toHaveLength(1)
       expect(result.data.Sessions).toHaveLength(2)
@@ -459,11 +470,14 @@ describe('Better Auth Entities Integration Tests', () => {
       ).go()
 
       // Query collection
-      const result = await collections.userAccounts({userId}).go()
+      const result = await collections.userAccounts({ userId }).go()
 
       expect(result.data.Users).toHaveLength(1)
       expect(result.data.Accounts).toHaveLength(2)
-      expect(result.data.Accounts.map((a: {providerId: string}) => a.providerId).sort()).toEqual(['apple', 'google'])
+      expect(result.data.Accounts.map((a: { providerId: string }) => a.providerId).sort()).toEqual([
+        'apple',
+        'google'
+      ])
     })
   })
 
@@ -473,14 +487,8 @@ describe('Better Auth Entities Integration Tests', () => {
       const email = 'complete@example.com'
 
       // Step 1: Register user
-      await Users.create(
-        createMockUser({
-          userId,
-          email,
-          firstName: 'Complete',
-          lastName: 'Flow'
-        })
-      ).go()
+      await Users.create(createMockUser({ userId, email, firstName: 'Complete', lastName: 'Flow' }))
+        .go()
 
       // Step 2: Link OAuth account (Apple)
       await Accounts.create(
@@ -507,27 +515,25 @@ describe('Better Auth Entities Integration Tests', () => {
       ).go()
 
       // Verify: User can be found by email
-      const userByEmail = await Users.query.byEmail({email}).go()
+      const userByEmail = await Users.query.byEmail({ email }).go()
       expect(userByEmail.data).toHaveLength(1)
       expect(userByEmail.data[0].userId).toBe(userId)
 
       // Verify: Account can be found by provider
-      const accountByProvider = await Accounts.query
-        .byProvider({
-          providerId: 'apple',
-          providerAccountId: 'apple-flow-123'
-        })
-        .go()
+      const accountByProvider = await Accounts.query.byProvider({
+        providerId: 'apple',
+        providerAccountId: 'apple-flow-123'
+      }).go()
       expect(accountByProvider.data).toHaveLength(1)
       expect(accountByProvider.data[0].userId).toBe(userId)
 
       // Verify: Sessions can be queried
-      const userSessions = await Sessions.query.byUser({userId}).go()
+      const userSessions = await Sessions.query.byUser({ userId }).go()
       expect(userSessions.data).toHaveLength(1)
       expect(userSessions.data[0].token).toBe('flow-session-token')
 
       // Verify: Accounts can be queried by user
-      const userAccounts = await Accounts.query.byUser({userId}).go()
+      const userAccounts = await Accounts.query.byUser({ userId }).go()
       expect(userAccounts.data).toHaveLength(1)
       expect(userAccounts.data[0].providerId).toBe('apple')
     })
@@ -559,7 +565,7 @@ describe('Better Auth Entities Integration Tests', () => {
       ).go()
 
       // Query all sessions
-      const allSessions = await Sessions.query.byUser({userId}).go()
+      const allSessions = await Sessions.query.byUser({ userId }).go()
 
       // Filter to active only (application-level filtering)
       const activeSessions = allSessions.data.filter((s) => s.expiresAt > now)
@@ -613,7 +619,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await Users.create(electroUser).go()
 
       // Retrieve from DynamoDB
-      const result = await Users.get({userId: 'user-transform-1'}).go()
+      const result = await Users.get({ userId: 'user-transform-1' }).go()
 
       // Transform back to Better Auth format
       const roundTripped = transformUserToAuth(result.data!)
@@ -651,7 +657,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await Sessions.create(electroSession).go()
 
       // Retrieve from DynamoDB
-      const result = await Sessions.get({sessionId: 'session-transform-1'}).go()
+      const result = await Sessions.get({ sessionId: 'session-transform-1' }).go()
 
       // Transform back to Better Auth format
       const roundTripped = transformSessionToAuth(result.data!)
@@ -691,7 +697,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await Accounts.create(electroAccount).go()
 
       // Retrieve from DynamoDB
-      const result = await Accounts.get({accountId: 'account-transform-1'}).go()
+      const result = await Accounts.get({ accountId: 'account-transform-1' }).go()
 
       // Transform back to Better Auth format
       const roundTripped = transformAccountToAuth(result.data!)
@@ -707,11 +713,14 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should handle name splitting edge cases', () => {
-      expect(splitFullName('John Doe')).toEqual({firstName: 'John', lastName: 'Doe'})
-      expect(splitFullName('John')).toEqual({firstName: 'John', lastName: ''})
-      expect(splitFullName('')).toEqual({firstName: '', lastName: ''})
-      expect(splitFullName('John Doe Smith')).toEqual({firstName: 'John', lastName: 'Doe Smith'})
-      expect(splitFullName('Jean-Claude Van Damme')).toEqual({firstName: 'Jean-Claude', lastName: 'Van Damme'})
+      expect(splitFullName('John Doe')).toEqual({ firstName: 'John', lastName: 'Doe' })
+      expect(splitFullName('John')).toEqual({ firstName: 'John', lastName: '' })
+      expect(splitFullName('')).toEqual({ firstName: '', lastName: '' })
+      expect(splitFullName('John Doe Smith')).toEqual({ firstName: 'John', lastName: 'Doe Smith' })
+      expect(splitFullName('Jean-Claude Van Damme')).toEqual({
+        firstName: 'Jean-Claude',
+        lastName: 'Van Damme'
+      })
     })
 
     it('should handle null to undefined conversion for optional fields', async () => {
@@ -736,7 +745,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await Sessions.create(electroSession).go()
 
       // Retrieve and verify undefined fields are handled
-      const result = await Sessions.get({sessionId: 'session-null-test'}).go()
+      const result = await Sessions.get({ sessionId: 'session-null-test' }).go()
       expect(result.data).toBeDefined()
       expect(result.data?.ipAddress).toBeUndefined()
       expect(result.data?.userAgent).toBeUndefined()

@@ -15,8 +15,8 @@ const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '../../..')
 
 interface DependencyGraph {
-  metadata: {generated: string; projectRoot: string; totalFiles: number}
-  files: Record<string, {file: string; imports: string[]}>
+  metadata: { generated: string; projectRoot: string; totalFiles: number }
+  files: Record<string, { file: string; imports: string[] }>
   transitiveDependencies: Record<string, string[]>
 }
 
@@ -43,8 +43,8 @@ interface Metadata {
   externalServices: ServiceMetadata[]
   awsServices: ServiceMetadata[]
   entityRelationships: EntityRelationship[]
-  lambdaInvocations: Array<{from: string; to: string; via: string}>
-  serviceToServiceEdges: Array<{from: string; to: string; relationship: string; event?: string}>
+  lambdaInvocations: Array<{ from: string; to: string; via: string }>
+  serviceToServiceEdges: Array<{ from: string; to: string; relationship: string; event?: string }>
 }
 
 // Cache for loaded data
@@ -90,11 +90,8 @@ export async function loadDependencyGraph(): Promise<DependencyGraph> {
  */
 export async function discoverLambdas(): Promise<string[]> {
   const lambdasDir = path.join(projectRoot, 'src', 'lambdas')
-  const entries = await fs.readdir(lambdasDir, {withFileTypes: true})
-  return entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort()
+  const entries = await fs.readdir(lambdasDir, { withFileTypes: true })
+  return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort()
 }
 
 /**
@@ -103,10 +100,8 @@ export async function discoverLambdas(): Promise<string[]> {
 export async function discoverEntities(): Promise<string[]> {
   const entitiesDir = path.join(projectRoot, 'src', 'entities')
   const entries = await fs.readdir(entitiesDir)
-  return entries
-    .filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts')
-    .map((e) => e.replace('.ts', ''))
-    .sort()
+  return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts')
+    .map((e) => e.replace('.ts', '')).sort()
 }
 
 /**
@@ -115,21 +110,23 @@ export async function discoverEntities(): Promise<string[]> {
 export async function getLambdaConfigs(): Promise<
   Record<
     string,
-    {
-      name: string
-      trigger: string
-      purpose: string
-      dependencies: string[]
-      entities: string[]
-    }
+    { name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[] }
   >
 > {
-  const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([discoverLambdas(), loadMetadata(), loadDependencyGraph(), discoverEntities()])
+  const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([
+    discoverLambdas(),
+    loadMetadata(),
+    loadDependencyGraph(),
+    discoverEntities()
+  ])
 
-  const configs: Record<string, {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}> = {}
+  const configs: Record<
+    string,
+    { name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[] }
+  > = {}
 
   for (const name of lambdaNames) {
-    const lambdaMeta = metadata.lambdas[name] || {trigger: 'Unknown', purpose: 'Unknown'}
+    const lambdaMeta = metadata.lambdas[name] || { trigger: 'Unknown', purpose: 'Unknown' }
     const entryPoint = `src/lambdas/${name}/src/index.ts`
     const deps = depGraph.transitiveDependencies[entryPoint] || []
 
@@ -149,7 +146,9 @@ export async function getLambdaConfigs(): Promise<
 
       // Entities
       const entityMatch = dep.match(/src\/entities\/(\w+)/)
-      if (entityMatch && entityNames.includes(entityMatch[1]) && !entities.includes(entityMatch[1])) {
+      if (
+        entityMatch && entityNames.includes(entityMatch[1]) && !entities.includes(entityMatch[1])
+      ) {
         entities.push(entityMatch[1])
       }
     }
@@ -169,22 +168,20 @@ export async function getLambdaConfigs(): Promise<
 /**
  * Get entity schemas and relationships
  */
-export async function getEntityInfo(): Promise<{
-  entities: string[]
-  relationships: EntityRelationship[]
-}> {
+export async function getEntityInfo(): Promise<
+  { entities: string[]; relationships: EntityRelationship[] }
+> {
   const [entities, metadata] = await Promise.all([discoverEntities(), loadMetadata()])
 
-  return {
-    entities,
-    relationships: metadata.entityRelationships
-  }
+  return { entities, relationships: metadata.entityRelationships }
 }
 
 /**
  * Get Lambda invocation chains
  */
-export async function getLambdaInvocations(): Promise<Array<{from: string; to: string; via: string}>> {
+export async function getLambdaInvocations(): Promise<
+  Array<{ from: string; to: string; via: string }>
+> {
   const metadata = await loadMetadata()
   return metadata.lambdaInvocations
 }
@@ -205,4 +202,4 @@ export async function getAwsServices(): Promise<ServiceMetadata[]> {
   return metadata.awsServices
 }
 
-export {Metadata, DependencyGraph, LambdaMetadata, ServiceMetadata, EntityRelationship}
+export { DependencyGraph, EntityRelationship, LambdaMetadata, Metadata, ServiceMetadata }

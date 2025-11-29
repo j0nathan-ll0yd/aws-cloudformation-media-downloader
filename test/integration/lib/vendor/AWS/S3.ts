@@ -5,7 +5,16 @@
  * This wrapper exists to maintain the AWS SDK Encapsulation Policy even in test code.
  */
 
-import {CreateBucketCommand, HeadObjectCommand, DeleteObjectCommand, DeleteBucketCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommandOutput, GetObjectCommandOutput} from '@aws-sdk/client-s3'
+import {
+  CreateBucketCommand,
+  DeleteBucketCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  GetObjectCommandOutput,
+  HeadObjectCommand,
+  HeadObjectCommandOutput,
+  ListObjectsV2Command
+} from '@aws-sdk/client-s3'
 import {createS3Client} from '../../../../../src/lib/vendor/AWS/clients'
 
 const s3Client = createS3Client()
@@ -15,7 +24,7 @@ const s3Client = createS3Client()
  * @param bucketName - Name of the bucket to create
  */
 export async function createBucket(bucketName: string): Promise<void> {
-  await s3Client.send(new CreateBucketCommand({Bucket: bucketName}))
+  await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }))
 }
 
 /**
@@ -23,15 +32,17 @@ export async function createBucket(bucketName: string): Promise<void> {
  * @param bucketName - Name of the bucket to delete
  */
 export async function deleteBucket(bucketName: string): Promise<void> {
-  await s3Client.send(new DeleteBucketCommand({Bucket: bucketName}))
+  await s3Client.send(new DeleteBucketCommand({ Bucket: bucketName }))
 }
 
 /**
  * Lists all objects in a bucket
  * @param bucketName - Name of the bucket
  */
-export async function listObjectsV2(bucketName: string): Promise<{Contents?: Array<{Key?: string}>}> {
-  return s3Client.send(new ListObjectsV2Command({Bucket: bucketName}))
+export async function listObjectsV2(
+  bucketName: string
+): Promise<{ Contents?: Array<{ Key?: string }> }> {
+  return s3Client.send(new ListObjectsV2Command({ Bucket: bucketName }))
 }
 
 /**
@@ -40,7 +51,7 @@ export async function listObjectsV2(bucketName: string): Promise<{Contents?: Arr
  * @param key - Object key
  */
 export async function deleteObject(bucketName: string, key: string): Promise<void> {
-  await s3Client.send(new DeleteObjectCommand({Bucket: bucketName, Key: key}))
+  await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }))
 }
 
 /**
@@ -48,8 +59,11 @@ export async function deleteObject(bucketName: string, key: string): Promise<voi
  * @param bucketName - Name of the bucket
  * @param key - Object key
  */
-export async function headObject(bucketName: string, key: string): Promise<HeadObjectCommandOutput> {
-  return s3Client.send(new HeadObjectCommand({Bucket: bucketName, Key: key}))
+export async function headObject(
+  bucketName: string,
+  key: string
+): Promise<HeadObjectCommandOutput> {
+  return s3Client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }))
 }
 
 /**
@@ -58,5 +72,5 @@ export async function headObject(bucketName: string, key: string): Promise<HeadO
  * @param key - Object key
  */
 export async function getObject(bucketName: string, key: string): Promise<GetObjectCommandOutput> {
-  return s3Client.send(new GetObjectCommand({Bucket: bucketName, Key: key}))
+  return s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }))
 }

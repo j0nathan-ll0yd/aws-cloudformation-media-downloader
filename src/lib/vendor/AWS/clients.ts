@@ -8,13 +8,34 @@
  * maintaining the AWS SDK Encapsulation Policy.
  */
 
-import {S3Client, S3ClientConfig} from '@aws-sdk/client-s3'
-import {DynamoDBClient, DynamoDBClientConfig} from '@aws-sdk/client-dynamodb'
-import {SNSClient, SNSClientConfig} from '@aws-sdk/client-sns'
-import {SQSClient, SQSClientConfig} from '@aws-sdk/client-sqs'
-import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
-import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
-import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
+import {
+  S3Client,
+  S3ClientConfig
+} from '@aws-sdk/client-s3'
+import {
+  DynamoDBClient,
+  DynamoDBClientConfig
+} from '@aws-sdk/client-dynamodb'
+import {
+  SNSClient,
+  SNSClientConfig
+} from '@aws-sdk/client-sns'
+import {
+  SQSClient,
+  SQSClientConfig
+} from '@aws-sdk/client-sqs'
+import {
+  LambdaClient,
+  LambdaClientConfig
+} from '@aws-sdk/client-lambda'
+import {
+  CloudWatchClient,
+  CloudWatchClientConfig
+} from '@aws-sdk/client-cloudwatch'
+import {
+  APIGateway,
+  APIGatewayClientConfig
+} from '@aws-sdk/client-api-gateway'
 import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
@@ -37,16 +58,11 @@ function getBaseConfig() {
     return {
       endpoint: LOCALSTACK_ENDPOINT,
       region: AWS_REGION,
-      credentials: {
-        accessKeyId: 'test',
-        secretAccessKey: 'test'
-      }
+      credentials: { accessKeyId: 'test', secretAccessKey: 'test' }
     }
   }
 
-  return {
-    region: AWS_REGION
-  }
+  return { region: AWS_REGION }
 }
 
 /**

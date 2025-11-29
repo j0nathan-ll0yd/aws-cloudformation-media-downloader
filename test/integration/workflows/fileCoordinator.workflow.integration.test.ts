@@ -11,14 +11,29 @@ const TEST_TABLE = 'test-files-coordinator'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test
+} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
-import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
+import {
+  createFilesTable,
+  deleteFilesTable,
+  insertFile
+} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockScheduledEvent} from '../helpers/test-data'
 import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
+import {
+  dirname,
+  resolve
+} from 'path'
 
 interface FileInvocationPayload {
   fileId: string
@@ -31,13 +46,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
 
-const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({
-  invokeLambda: invokeLambdaMock,
-  invokeAsync: invokeLambdaMock
-}))
+const invokeLambdaMock = jest.fn<() => Promise<{ StatusCode: number }>>()
+jest.unstable_mockModule(
+  lambdaModulePath,
+  () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock })
+)
 
-const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
+const { handler } = await import('../../../src/lambdas/FileCoordinator/src/index')
 
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
   await insertFile({
@@ -64,7 +79,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     invokeLambdaMock.mockClear()
-    invokeLambdaMock.mockResolvedValue({StatusCode: 202})
+    invokeLambdaMock.mockResolvedValue({ StatusCode: 202 })
 
     await deleteFilesTable()
     await createFilesTable()
@@ -82,7 +97,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((
+      call
+    ) => call[1] as unknown as FileInvocationPayload)
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(fileIds.sort())
@@ -107,7 +124,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((
+      call
+    ) => call[1] as unknown as FileInvocationPayload)
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(['now-video', 'past-video'])
@@ -127,15 +146,19 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       size: 5242880
     })
 
-    const {Files} = await import('../../../src/entities/Files')
-    await Files.update({fileId: 'downloaded-video'}).set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}).go()
+    const { Files } = await import('../../../src/entities/Files')
+    await Files.update({ fileId: 'downloaded-video' }).set({
+      url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'
+    }).go()
 
     const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
 
-    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][1] as unknown as FileInvocationPayload
+    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][
+      1
+    ] as unknown as FileInvocationPayload
     expect(invocationPayload.fileId).toBe('pending-video')
   })
 
@@ -145,7 +168,10 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
     await Promise.all(fileIds.map((fileId) => insertPendingFile(fileId, now - 1000)))
 
-    const [result1, result2] = await Promise.all([handler(createMockScheduledEvent('test-event-5a'), mockContext), handler(createMockScheduledEvent('test-event-5b'), mockContext)])
+    const [result1, result2] = await Promise.all([
+      handler(createMockScheduledEvent('test-event-5a'), mockContext),
+      handler(createMockScheduledEvent('test-event-5b'), mockContext)
+    ])
 
     expect(result1.statusCode).toBe(200)
     expect(result2.statusCode).toBe(200)
