@@ -99,7 +99,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logInfo('event <=', event)
   logIncomingFixture(event)
 

@@ -24,6 +24,17 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Status**: ✅ Documented
    - **Enforcement**: Required for Collections changes
 
+### Detected: 2025-11-28 (Script Validation)
+
+7. **Script Documentation Sync** (Rule)
+   - **What**: All npm scripts referenced in `AGENTS.md` or `README.md` must exist in `package.json`
+   - **Why**: Documentation drift causes confusion and broken developer workflows
+   - **Detected**: During comprehensive repository review
+   - **Target**: docs/wiki/Infrastructure/Script-Registry.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: CI validates on every push (unit-tests.yml)
+
 ### Detected: 2025-11-27
 
 3. **No Try-Catch for Required Environment Variables** (Rule)
@@ -188,5 +199,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-28
-- **Total Conventions**: 16 detected, 11 documented, 5 pending
+- **Total Conventions**: 17 detected, 12 documented, 5 pending
 - **Convention Capture System**: Active

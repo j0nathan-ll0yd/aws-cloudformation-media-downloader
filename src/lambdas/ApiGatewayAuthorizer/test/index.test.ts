@@ -4,6 +4,7 @@ import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '../../../util/errors'
 import {testContext} from '../../../util/jest-setup'
+import type {SessionPayload} from '../../../util/better-auth-helpers'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
@@ -26,7 +27,7 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
-const validateSessionTokenMock = jest.fn() as any
+const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
 jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
   validateSessionToken: validateSessionTokenMock
 }))

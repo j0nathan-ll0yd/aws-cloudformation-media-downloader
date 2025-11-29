@@ -31,6 +31,7 @@ export default [
       '**/.idea',
       '**/.webpackCache',
       'src/types/terraform.d.ts',
+      'src/types/infrastructure.d.ts',
       'eslint.config.mjs'
     ]
   },

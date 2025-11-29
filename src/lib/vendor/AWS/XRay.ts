@@ -76,11 +76,12 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
  * })
  * ```
  */
-export function withXRay<TEvent = any, TResult = any>(handler: (event: TEvent, context: Context, metadata: {traceId: string}) => Promise<TResult>) {
+export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>) {
   return async (event: TEvent, context: Context): Promise<TResult> => {
     const xray = getXRayClient()
     const segment = xray.getSegment()
-    const traceId = (segment as any)?.trace_id || context.awsRequestId
+    // X-Ray segment has trace_id property but it's not in the type definitions
+    const traceId = (segment as {trace_id?: string} | undefined)?.trace_id || context.awsRequestId
 
     return handler(event, context, {traceId})
   }

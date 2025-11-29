@@ -24,7 +24,7 @@ async function getOctokitInstance() {
         logDebug(message)
       },
       error: (message) => {
-        /* istanbul ignore next */
+        /* c8 ignore next */
         logError(message)
       }
     }

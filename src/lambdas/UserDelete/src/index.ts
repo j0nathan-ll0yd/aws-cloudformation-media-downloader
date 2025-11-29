@@ -49,7 +49,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logIncomingFixture(event)
   const {userId} = getUserDetailsFromEvent(event)
   if (!userId) {
@@ -62,7 +62,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   const deletableDevices: Device[] = []
   try {
     const userDevices = await getUserDevices(userId)
-    /* istanbul ignore else */
+    /* c8 ignore else */
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
       const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))

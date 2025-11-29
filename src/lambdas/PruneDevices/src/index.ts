@@ -1,7 +1,7 @@
-import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
+import {ScheduledEvent} from 'aws-lambda'
 import {Devices} from '../../../entities/Devices'
 import {UserDevices} from '../../../entities/UserDevices'
-import {logDebug, logError, logInfo, response} from '../../../util/lambda-helpers'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {ApplePushNotificationResponse, Device} from '../../../types/main'
 import {deleteDevice} from '../../../util/shared'
@@ -82,7 +82,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * @param context - An AWS Context object
  * @notExported
  */
-export const handler = withXRay(async (event: ScheduledEvent, context: Context, {traceId: _traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(async (event: ScheduledEvent): Promise<void> => {
   logInfo('event <=', event)
   const devices = await getDevices()
   for (const device of devices) {
@@ -111,5 +111,5 @@ export const handler = withXRay(async (event: ScheduledEvent, context: Context, 
       }
     }
   }
-  return response(context, 200)
+  logInfo('PruneDevices completed')
 })

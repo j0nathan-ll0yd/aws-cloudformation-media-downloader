@@ -21,17 +21,7 @@ const {Sessions} = await import('../entities/Sessions')
 /**
  * Helper to create mock session objects with sensible defaults
  */
-function createMockSession(overrides?: {
-  sessionId?: string
-  userId?: string
-  token?: string
-  expiresAt?: number
-  deviceId?: string
-  ipAddress?: string
-  userAgent?: string
-  createdAt?: number
-  updatedAt?: number
-}) {
+function createMockSession(overrides?: {sessionId?: string; userId?: string; token?: string; expiresAt?: number; deviceId?: string; ipAddress?: string; userAgent?: string; createdAt?: number; updatedAt?: number}) {
   const now = Date.now()
   return {
     sessionId: 'session-123',

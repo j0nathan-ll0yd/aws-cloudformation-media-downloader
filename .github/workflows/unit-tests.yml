@@ -47,6 +47,40 @@ jobs:
       id: build
       run: pnpm run build
 
+    - name: Check types
+      run: pnpm run check-types
+
+    - name: Lint code
+      run: pnpm run lint
+
+    - name: Validate documented scripts exist
+      run: |
+        # Extract script references from documentation and verify they exist in package.json
+        echo "Validating documented scripts..."
+        MISSING_SCRIPTS=""
+
+        # Check AGENTS.md for pnpm run commands
+        for script in $(grep -oE 'pnpm run [a-z:-]+' AGENTS.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
+          if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
+            MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
+          fi
+        done
+
+        # Check README.md for pnpm run commands
+        for script in $(grep -oE 'pnpm run [a-z:-]+' README.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
+          if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
+            MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
+          fi
+        done
+
+        if [ -n "$MISSING_SCRIPTS" ]; then
+          echo "ERROR: The following scripts are documented but not in package.json:"
+          echo "$MISSING_SCRIPTS" | tr ' ' '\n' | sort -u | grep -v '^$'
+          exit 1
+        fi
+
+        echo "✓ All documented scripts exist in package.json"
+
     - name: Run unit tests
       run: pnpm test --coverage --coverageDirectory=coverage/unit
       env:

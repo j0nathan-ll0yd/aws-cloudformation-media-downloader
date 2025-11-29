@@ -161,8 +161,7 @@ describe('#PruneDevices', () => {
     sendMock.mockImplementationOnce(() => {
       return getSuccessfulResponseForDevice(3)
     })
-    const output = await handler(event, context)
-    expect(output.statusCode).toEqual(200)
+    await expect(handler(event, context)).resolves.toBeUndefined()
   })
   describe('#AWSFailure', () => {
     test('should throw error when device scan fails', async () => {
@@ -175,8 +174,7 @@ describe('#PruneDevices', () => {
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
       })
-      const output = await handler(event, context)
-      expect(output.statusCode).toEqual(200)
+      await expect(handler(event, context)).resolves.toBeUndefined()
     })
   })
   describe('#APNSFailure', () => {

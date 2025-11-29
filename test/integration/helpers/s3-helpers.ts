@@ -35,7 +35,7 @@ export async function deleteTestBucket(bucketName: string): Promise<void> {
 
     // Then delete the bucket
     await deleteBucket(bucketName)
-  } catch (error) {
+  } catch {
     // Bucket might not exist
   }
 }
@@ -47,7 +47,7 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
   try {
     await headObject(bucketName, key)
     return true
-  } catch (error) {
+  } catch {
     return false
   }
 }
@@ -63,7 +63,7 @@ export async function getObjectMetadata(bucketName: string, key: string): Promis
       contentLength: response.ContentLength || 0,
       contentType: response.ContentType || 'application/octet-stream'
     }
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -88,7 +88,7 @@ export async function getObjectContent(bucketName: string, key: string): Promise
       stream.on('error', reject)
       stream.on('end', () => resolve(Buffer.concat(chunks)))
     })
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -99,7 +99,7 @@ export async function getObjectContent(bucketName: string, key: string): Promise
 export async function deleteObject(bucketName: string, key: string): Promise<void> {
   try {
     await deleteS3Object(bucketName, key)
-  } catch (error) {
+  } catch {
     // Object might not exist
   }
 }
