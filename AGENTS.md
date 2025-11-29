@@ -129,6 +129,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 
 ### Essential Commands
 ```bash
+pnpm run precheck       # TypeScript type checking and lint (run before commits)
 pnpm run build          # Build Lambda functions with webpack
 pnpm run test           # Run unit tests
 pnpm run deploy         # Deploy infrastructure with OpenTofu
@@ -148,13 +149,14 @@ pnpm run document-source         # Generate TSDoc documentation
 ```
 
 ### Pre-Commit Checklist
-1. Run `pnpm run format` - Auto-format code
-2. Run `pnpm run build` - Verify TypeScript compilation
-3. Run `pnpm test` - Ensure all tests pass
-4. Verify NO AI references in commit message
-5. Stage changes: `git add -A`
-6. Commit with clean message: `git commit -m "type: description"`
-7. **NEVER push automatically** - Wait for user request
+1. Run `pnpm run precheck` - TypeScript type checking and lint
+2. Run `pnpm run format` - Auto-format code
+3. Run `pnpm run build` - Compile with webpack
+4. Run `pnpm test` - Ensure all tests pass
+5. Verify NO AI references in commit message
+6. Stage changes: `git add -A`
+7. Commit with clean message: `git commit -m "type: description"`
+8. **NEVER push automatically** - Wait for user request
 
 ## Integration Points
 
