@@ -96,8 +96,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Purpose**: Test RegisterDevice Lambda against production API
 **Dependencies**: AWS credentials, jq
 **CI Coverage**: No (requires production)
-**Status**: **MISSING** - Documented but not implemented
-**Notes**: Needs implementation for device registration testing
+**Notes**: Uses idempotent synthetic device; creates SNS Platform Endpoint
 
 ---
 

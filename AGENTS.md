@@ -143,6 +143,7 @@ pnpm run test:integration:with-lifecycle   # Full suite with lifecycle
 # Remote testing
 pnpm run test-remote-list        # Test file listing
 pnpm run test-remote-hook        # Test Feedly webhook
+pnpm run test-remote-registerDevice  # Test device registration
 
 # Documentation
 pnpm run document-source         # Generate TSDoc documentation

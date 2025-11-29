@@ -28,6 +28,7 @@
     "test-pipeline": "DEBUG_LEVEL=DEBUG act -s AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) -s AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key) -s GITHUB_TOKEN",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
+    "test-remote-registerDevice": "./bin/test-registerDevice.sh",
     "localstack:start": "docker compose -f docker-compose.localstack.yml up -d",
     "localstack:stop": "docker compose -f docker-compose.localstack.yml down",
     "localstack:logs": "docker compose -f docker-compose.localstack.yml logs -f localstack",
