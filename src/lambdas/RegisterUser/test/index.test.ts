@@ -60,9 +60,7 @@ describe('#RegisterUser', () => {
 
     // Verify Better Auth API was called with correct parameters (using idToken, not accessToken)
     expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({provider: 'apple', idToken: expect.objectContaining({token: expect.any(String)})})
-      })
+      expect.objectContaining({body: expect.objectContaining({provider: 'apple', idToken: expect.objectContaining({token: expect.any(String)})})})
     )
 
     // Verify name was updated for new user

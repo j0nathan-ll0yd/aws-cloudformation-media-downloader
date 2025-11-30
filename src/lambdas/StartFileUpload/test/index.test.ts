@@ -78,11 +78,7 @@ describe('#StartFileUpload', () => {
     expect(filesMock.mocks.upsert.go).toHaveBeenCalledTimes(2)
 
     // Verify streamVideoToS3 was called with correct parameters
-    expect(streamVideoToS3Mock).toHaveBeenCalledWith(
-      expect.stringContaining('youtube.com/watch?v='),
-      'test-bucket',
-      expect.stringMatching(/\.mp4$/)
-    )
+    expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
   })
 
   test('should handle HLS/DASH streaming formats', async () => {

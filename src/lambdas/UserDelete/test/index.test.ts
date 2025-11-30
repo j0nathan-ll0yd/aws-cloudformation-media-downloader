@@ -50,14 +50,11 @@ const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SNS',
+  '#lib/vendor/AWS/SNS',
   () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()})
 )
 
-jest.unstable_mockModule(
-  '../../../util/github-helpers',
-  () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)})
-)
+jest.unstable_mockModule('#util/github-helpers', () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

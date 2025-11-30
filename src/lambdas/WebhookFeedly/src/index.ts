@@ -7,15 +7,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {
-  getUserDetailsFromEvent,
-  lambdaErrorResponse,
-  logDebug,
-  logIncomingFixture,
-  logInfo,
-  logOutgoingFixture,
-  response
-} from '#util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
 import {createFileNotificationAttributes} from '#util/transformers'
 import {FileStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'

@@ -308,11 +308,7 @@ describe('ElectroDB Adapter', () => {
         data: {identifier: 'test@example.com', token: 'verify-token-123', expiresAt: Date.now() + 86400000}
       })
 
-      await adapter.createVerificationToken({
-        identifier: 'test@example.com',
-        token: 'verify-token-123',
-        expiresAt: new Date(Date.now() + 86400000)
-      })
+      await adapter.createVerificationToken({identifier: 'test@example.com', token: 'verify-token-123', expiresAt: new Date(Date.now() + 86400000)})
 
       expect(VerificationTokens.create).toHaveBeenCalled()
     })

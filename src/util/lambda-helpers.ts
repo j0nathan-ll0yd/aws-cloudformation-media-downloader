@@ -18,12 +18,7 @@ export function unknownErrorToString(unknownVariable: unknown): string {
   }
 }
 
-export function response(
-  context: Context,
-  statusCode: number,
-  body?: string | object,
-  headers?: APIGatewayProxyEventHeaders
-): APIGatewayProxyResult {
+export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
   let error = false
   const statusCodeString = statusCode.toString()
@@ -127,12 +122,7 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
  * @param unit - Unit of measurement (Seconds, Bytes, Count, etc.)
  * @param dimensions - Optional dimensions for filtering/grouping
  */
-export async function putMetric(
-  metricName: string,
-  value: number,
-  unit?: string,
-  dimensions: {Name: string; Value: string}[] = []
-): Promise<void> {
+export async function putMetric(metricName: string, value: number, unit?: string, dimensions: {Name: string; Value: string}[] = []): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
@@ -229,9 +219,7 @@ function sanitizeForTest(data: unknown): unknown {
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-  console.log(
-    JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)})
-  )
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)}))
 }
 
 /**
@@ -248,7 +236,5 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
  */
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-  console.log(
-    JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)})
-  )
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)}))
 }

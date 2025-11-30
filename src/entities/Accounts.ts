@@ -42,11 +42,7 @@ export const Accounts = new Entity(
     indexes: {
       primary: {pk: {field: 'pk', composite: ['accountId']}, sk: {field: 'sk', composite: []}},
       byUser: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['providerId']}},
-      byProvider: {
-        index: 'gsi2',
-        pk: {field: 'gsi2pk', composite: ['providerId', 'providerAccountId']},
-        sk: {field: 'gsi2sk', composite: []}
-      }
+      byProvider: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['providerId', 'providerAccountId']}, sk: {field: 'gsi2sk', composite: []}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

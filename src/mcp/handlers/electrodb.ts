@@ -26,11 +26,7 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
         if (!entities.includes(entity)) {
           return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`}
         }
-        return {
-          entity,
-          note: 'Schema is defined in src/entities/' + entity + '.ts',
-          suggestion: 'Read the entity file for full schema details'
-        }
+        return {entity, note: 'Schema is defined in src/entities/' + entity + '.ts', suggestion: 'Read the entity file for full schema details'}
       }
       // Return all entity names with their file locations
       return {entities: entities.map((e) => ({name: e, file: `src/entities/${e}.ts`}))}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://dprint.dev/schemas/v0.json",
 
-  "lineWidth": 140,
+  "lineWidth": 150,
   "indentWidth": 2,
   "useTabs": false,
   "newLineKind": "lf",

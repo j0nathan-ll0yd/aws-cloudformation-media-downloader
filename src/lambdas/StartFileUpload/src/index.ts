@@ -82,12 +82,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
     await putMetric('LambdaExecutionSuccess', 1)
 
-    return response(context, 200, {
-      fileId: videoInfo.id,
-      status: 'success',
-      fileSize: uploadResult.fileSize,
-      duration: uploadResult.duration
-    })
+    return response(context, 200, {fileId: videoInfo.id, status: 'success', fileSize: uploadResult.fileSize, duration: uploadResult.duration})
   } catch (error) {
     assertIsError(error)
 
@@ -106,12 +101,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
       return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }
 
-    await createVideoDownloadFailureIssue(
-      fileId,
-      fileUrl,
-      error,
-      'Video download failed during processing. Check CloudWatch logs for full details.'
-    )
+    await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
     return lambdaErrorResponse(context, error)
   }
 })

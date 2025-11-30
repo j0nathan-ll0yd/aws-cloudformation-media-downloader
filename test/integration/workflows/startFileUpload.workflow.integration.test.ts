@@ -28,12 +28,7 @@ import {FileStatus} from '#types/enums'
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createMockStreamVideoToS3WithRealUpload,
-  createMockVideoFormat,
-  createMockVideoInfo,
-  S3UploadFunction
-} from '../helpers/mock-youtube'
+import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '../helpers/mock-youtube'
 import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature

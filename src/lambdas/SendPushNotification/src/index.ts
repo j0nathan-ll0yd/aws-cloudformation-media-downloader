@@ -62,10 +62,7 @@ export const handler = withXRay(async (event: SQSEvent): Promise<void> => {
         const device = await getDevice(deviceId)
         const targetArn = device.endpointArn as string
         logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-        const publishParams = transformFileNotificationToPushNotification(
-          record.messageAttributes as FileNotification,
-          targetArn
-        ) as PublishInput
+        const publishParams = transformFileNotificationToPushNotification(record.messageAttributes as FileNotification, targetArn) as PublishInput
         logDebug('publishSnsEvent <=', publishParams)
         const publishResponse = await publishSnsEvent(publishParams)
         logDebug('publishSnsEvent <=', publishResponse)

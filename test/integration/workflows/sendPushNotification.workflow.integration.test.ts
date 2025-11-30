@@ -97,11 +97,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB responses
     // First query: getUserDevicesByUserId returns array of individual UserDevice records
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        createMockUserDevice('user-456', 'device-1'),
-        createMockUserDevice('user-456', 'device-2'),
-        createMockUserDevice('user-456', 'device-3')
-      ]
+      data: [createMockUserDevice('user-456', 'device-1'), createMockUserDevice('user-456', 'device-2'), createMockUserDevice('user-456', 'device-3')]
     })
 
     devicesMock.mocks.get.mockResolvedValueOnce({

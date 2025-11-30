@@ -74,9 +74,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) =>
-      call[1] as unknown as FileInvocationPayload
-    )
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(fileIds.sort())
@@ -101,9 +99,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) =>
-      call[1] as unknown as FileInvocationPayload
-    )
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(['now-video', 'past-video'])

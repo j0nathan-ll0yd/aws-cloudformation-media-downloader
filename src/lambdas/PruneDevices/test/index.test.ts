@@ -65,12 +65,7 @@ class MockApnsClient {
 }
 jest.unstable_mockModule(
   'apns2',
-  () => ({
-    ApnsClient: MockApnsClient,
-    Notification: jest.fn().mockReturnValue({fake: 'notification'}),
-    Priority: jest.fn(),
-    PushType: jest.fn()
-  })
+  () => ({ApnsClient: MockApnsClient, Notification: jest.fn().mockReturnValue({fake: 'notification'}), Priority: jest.fn(), PushType: jest.fn()})
 )
 
 const fakeApnsNotificationOptions = {contentAvailable: true, type: 'background', priority: 5, aps: {health: 'check'}}
@@ -130,9 +125,7 @@ describe('#PruneDevices', () => {
   const context = testContext
   test('should search for and remove disabled devices (single)', async () => {
     devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
-    userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue({
-      data: [{userId: fakeUserId, deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A'}]
-    })
+    userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue({data: [{userId: fakeUserId, deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A'}]})
     userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
     sendMock.mockImplementationOnce(() => {
       throw getExpiredResponseForDevice(0)

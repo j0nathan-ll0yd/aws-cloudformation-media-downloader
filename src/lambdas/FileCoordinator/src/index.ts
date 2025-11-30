@@ -11,9 +11,10 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   logDebug('Querying for files ready to be downloaded')
-  const queryResponse = await Files.query.byStatus({status: 'PendingDownload'}).where(({availableAt}, {lte}) =>
-    lte(availableAt, Date.now())
-  ).where(({url}, {notExists}) => notExists(url)).go()
+  const queryResponse = await Files.query.byStatus({status: 'PendingDownload'}).where(({availableAt}, {lte}) => lte(availableAt, Date.now())).where((
+    {url},
+    {notExists}
+  ) => notExists(url)).go()
   logDebug('getFilesToBeDownloaded =>', queryResponse)
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)

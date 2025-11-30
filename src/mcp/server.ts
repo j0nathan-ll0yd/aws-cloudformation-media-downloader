@@ -32,11 +32,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             description: 'Entity name (Users, Files, Devices, UserFiles, UserDevices)',
             enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices']
           },
-          query: {
-            type: 'string',
-            description: 'Query type (schema, relationships, collections)',
-            enum: ['schema', 'relationships', 'collections']
-          }
+          query: {type: 'string', description: 'Query type (schema, relationships, collections)', enum: ['schema', 'relationships', 'collections']}
         },
         required: ['query']
       }

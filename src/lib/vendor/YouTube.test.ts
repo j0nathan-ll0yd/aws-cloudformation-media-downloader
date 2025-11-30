@@ -25,13 +25,7 @@ let uploadDoneResolver:
   | null = null
 class MockUpload extends EventEmitter {
   public done: jest.Mock<() => Promise<unknown>>
-  constructor(
-    public bucket: string,
-    public key: string,
-    public body: unknown,
-    public contentType: string,
-    public options?: Record<string, unknown>
-  ) {
+  constructor(public bucket: string, public key: string, public body: unknown, public contentType: string, public options?: Record<string, unknown>) {
     super()
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     mockUploadInstance = this

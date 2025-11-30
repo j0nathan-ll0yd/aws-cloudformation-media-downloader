@@ -89,8 +89,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
     // Apple's ID token doesn't include first/last name for privacy reasons
     // The iOS app provides this from ASAuthorizationAppleIDCredential.fullName
     // (only populated on first sign-in)
-    const isNewUser = !result.user?.createdAt ||
-      Date.now() - new Date(result.user.createdAt).getTime() < 5000
+    const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
     if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
       await Users.update({userId: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()

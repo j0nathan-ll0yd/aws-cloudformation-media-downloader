@@ -72,9 +72,7 @@ describe('#Infrastructure', () => {
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
   logDebug('JSON file', jsonFile)
   const infrastructurePlan = JSON.parse(jsonFile) as InfrastructureD
-  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessInfrastructurePlan(
-    infrastructurePlan
-  )
+  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessInfrastructurePlan(infrastructurePlan)
   for (const functionName of lambdaFunctionNames) {
     let environmentVariablesTerraform: string[] = []
     if (environmentVariablesForFunction[functionName]) {
@@ -110,9 +108,7 @@ describe('#Infrastructure', () => {
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
       // Filter out infrastructure-level variables from Terraform list for comparison
-      const filteredTerraformVars = environmentVariablesTerraform.filter((v) =>
-        !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v)
-      )
+      const filteredTerraformVars = environmentVariablesTerraform.filter((v) => !Object.prototype.hasOwnProperty.call(excludedSourceVariables, v))
       expect(filteredTerraformVars.sort()).toEqual(environmentVariablesSource.sort())
       expect(filteredTerraformVars.length).toEqual(environmentVariablesSourceCount)
     })

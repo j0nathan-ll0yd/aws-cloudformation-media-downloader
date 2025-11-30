@@ -48,11 +48,7 @@ export const logIncomingRequestHook = {
       headers: ctx.headers || {},
       body: ctx.body ? JSON.stringify(ctx.body) : null,
       queryStringParameters: ctx.query || null,
-      requestContext: {
-        requestId: ctx.requestId || crypto.randomUUID(),
-        accountId: process.env.AWS_ACCOUNT_ID,
-        stage: process.env.STAGE || 'prod'
-      }
+      requestContext: {requestId: ctx.requestId || crypto.randomUUID(), accountId: process.env.AWS_ACCOUNT_ID, stage: process.env.STAGE || 'prod'}
     }
 
     // Log using the standard fixture logging function
