@@ -11,12 +11,32 @@ Instead, we use **workflow decomposition**: CI logic is extracted into reusable 
 ## Quick Start
 
 ```bash
+# First time setup (installs git hooks)
+pnpm run prepare
+
 # Fast CI (no integration tests) - recommended for most iterations
 pnpm run ci:local
 
 # Full CI (includes integration tests with LocalStack)
 pnpm run ci:local:full
 ```
+
+## Pre-Push Hook
+
+This project uses Husky to enforce CI checks before pushing. When you run `git push`, the pre-push hook automatically runs `pnpm run ci:local:full` (~5-10 minutes).
+
+**First time setup** (after cloning):
+```bash
+pnpm install
+pnpm run prepare  # Installs git hooks
+```
+
+**To bypass in emergencies**:
+```bash
+git push --no-verify
+```
+
+Note: Lifecycle scripts are disabled in `.npmrc` for security, so `pnpm run prepare` must be run manually once after cloning.
 
 ## Available Commands
 
@@ -96,7 +116,7 @@ This catches:
 
 1. **During development**: Run `pnpm run precheck` frequently (type check + lint)
 2. **Before committing**: Run `pnpm run ci:local` (fast, ~2-3 min)
-3. **Before pushing**: Run `pnpm run ci:local:full` if you changed integration-related code
+3. **Before pushing**: The pre-push hook runs `ci:local:full` automatically
 4. **After pushing**: Monitor GitHub Actions for the remaining 5% of checks
 
 ## Troubleshooting
