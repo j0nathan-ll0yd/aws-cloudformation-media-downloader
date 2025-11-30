@@ -58,10 +58,7 @@ jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: 
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',
-  () => ({
-    deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }),
-    subscribe: jest.fn()
-  })
+  () => ({ deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }), subscribe: jest.fn() })
 )
 
 const sendMock = jest.fn()
@@ -80,12 +77,7 @@ jest.unstable_mockModule(
   })
 )
 
-const fakeApnsNotificationOptions = {
-  contentAvailable: true,
-  type: 'background',
-  priority: 5,
-  aps: { health: 'check' }
-}
+const fakeApnsNotificationOptions = { contentAvailable: true, type: 'background', priority: 5, aps: { health: 'check' } }
 
 function getExpiredResponseForDevice(arrayIndex: number) {
   return {

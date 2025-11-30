@@ -69,10 +69,7 @@ export async function getObjectMetadata(
   try {
     const response = await headObject(bucketName, key)
 
-    return {
-      contentLength: response.ContentLength || 0,
-      contentType: response.ContentType || 'application/octet-stream'
-    }
+    return { contentLength: response.ContentLength || 0, contentType: response.ContentType || 'application/octet-stream' }
   } catch {
     return null
   }

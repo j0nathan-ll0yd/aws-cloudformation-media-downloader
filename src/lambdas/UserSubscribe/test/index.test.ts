@@ -16,9 +16,7 @@ describe('#UserSubscribe', () => {
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
   })
   test('should create a new remote endpoint (for the mobile phone)', async () => {
-    const { default: subscribeResponse } = await import('./fixtures/subscribe-200-OK.json', {
-      assert: { type: 'json' }
-    })
+    const { default: subscribeResponse } = await import('./fixtures/subscribe-200-OK.json', { assert: { type: 'json' } })
     subscribeMock.mockReturnValue(subscribeResponse)
     const output = await handler(event, context)
     const body = JSON.parse(output.body)

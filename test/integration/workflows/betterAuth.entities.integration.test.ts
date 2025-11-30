@@ -138,8 +138,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Users.create(userData).go()
 
-      await Users.update({ userId: 'user-test-3' }).set({ firstName: 'New', lastName: 'Updated', emailVerified: true })
-        .go()
+      await Users.update({ userId: 'user-test-3' }).set({ firstName: 'New', lastName: 'Updated', emailVerified: true }).go()
 
       const result = await Users.get({ userId: 'user-test-3' }).go()
 
@@ -298,12 +297,7 @@ describe('Better Auth Entities Integration Tests', () => {
       ).go()
 
       await Accounts.create(
-        createMockAccount({
-          accountId: 'account-google',
-          userId,
-          providerId: 'google',
-          providerAccountId: 'google-123'
-        })
+        createMockAccount({ accountId: 'account-google', userId, providerId: 'google', providerAccountId: 'google-123' })
       ).go()
 
       const result = await Accounts.query.byUser({ userId }).go()
@@ -314,11 +308,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
     it('should query account by provider using byProvider GSI', async () => {
       await Accounts.create(
-        createMockAccount({
-          accountId: 'account-lookup-1',
-          userId: 'user-lookup-1',
-          providerAccountId: 'apple-unique-id'
-        })
+        createMockAccount({ accountId: 'account-lookup-1', userId: 'user-lookup-1', providerAccountId: 'apple-unique-id' })
       ).go()
 
       const result = await Accounts.query.byProvider({ providerId: 'apple', providerAccountId: 'apple-unique-id' }).go()
@@ -406,12 +396,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       // Create OAuth accounts
       await Accounts.create(
-        createMockAccount({
-          accountId: 'coll-acc-apple',
-          userId,
-          providerId: 'apple',
-          providerAccountId: 'apple-coll-123'
-        })
+        createMockAccount({ accountId: 'coll-acc-apple', userId, providerId: 'apple', providerAccountId: 'apple-coll-123' })
       ).go()
 
       await Accounts.create(
@@ -470,10 +455,8 @@ describe('Better Auth Entities Integration Tests', () => {
       expect(userByEmail.data[0].userId).toBe(userId)
 
       // Verify: Account can be found by provider
-      const accountByProvider = await Accounts.query.byProvider({
-        providerId: 'apple',
-        providerAccountId: 'apple-flow-123'
-      }).go()
+      const accountByProvider = await Accounts.query.byProvider({ providerId: 'apple', providerAccountId: 'apple-flow-123' })
+        .go()
       expect(accountByProvider.data).toHaveLength(1)
       expect(accountByProvider.data[0].userId).toBe(userId)
 

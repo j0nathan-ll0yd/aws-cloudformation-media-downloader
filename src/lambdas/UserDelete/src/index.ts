@@ -42,10 +42,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
   const userDevices = await UserDevices.query.byUser({ userId }).go()
   if (userDevices.data && userDevices.data.length > 0) {
-    const deleteKeys = userDevices.data.map((userDevice) => ({
-      userId: userDevice.userId,
-      deviceId: userDevice.deviceId
-    }))
+    const deleteKeys = userDevices.data.map((userDevice) => ({ userId: userDevice.userId, deviceId: userDevice.deviceId }))
     const { unprocessed } = await UserDevices.delete(deleteKeys).go({ concurrency: 5 })
     if (unprocessed.length > 0) {
       logDebug('deleteUserDevices.unprocessed =>', unprocessed)

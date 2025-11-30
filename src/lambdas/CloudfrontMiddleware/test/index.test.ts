@@ -19,10 +19,7 @@ describe('#CloudfrontMiddleware', () => {
     const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
     const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
-    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{
-      key: apiKeyHeaderName,
-      value: apiKeyValue
-    }]
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{ key: apiKeyHeaderName, value: apiKeyValue }]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
     expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
@@ -52,10 +49,7 @@ describe('#CloudfrontMiddleware', () => {
     const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
     const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
-    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{
-      key: apiKeyHeaderName,
-      value: apiKeyValue
-    }]
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{ key: apiKeyHeaderName, value: apiKeyValue }]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
     expect(spyURLParamsHas).toHaveBeenCalledTimes(0)

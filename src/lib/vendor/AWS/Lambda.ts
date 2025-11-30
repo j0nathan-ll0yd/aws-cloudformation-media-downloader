@@ -22,10 +22,7 @@ export function invokeLambda(params: InvokeCommandInput): Promise<InvokeCommandO
  * @returns The invocation response
  */
 /* c8 ignore start - Thin wrapper with minimal logic, tested via integration tests */
-export async function invokeAsync(
-  functionName: string,
-  payload: Record<string, unknown>
-): Promise<InvokeCommandOutput> {
+export async function invokeAsync(functionName: string, payload: Record<string, unknown>): Promise<InvokeCommandOutput> {
   const params: InvokeCommandInput = {
     FunctionName: functionName,
     InvocationType: 'Event',

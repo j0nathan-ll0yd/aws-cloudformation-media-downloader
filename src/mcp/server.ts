@@ -155,9 +155,7 @@ async function handleDependencyQuery(args: { file?: string; query: string }) {
         return { content: [{ type: 'text', text: 'File path required for transitive dependencies query' }] }
       }
       const transitive = graphData.transitiveDependencies[file] || []
-      return {
-        content: [{ type: 'text', text: JSON.stringify({ file, transitiveDependencies: transitive }, null, 2) }]
-      }
+      return { content: [{ type: 'text', text: JSON.stringify({ file, transitiveDependencies: transitive }, null, 2) }] }
     }
 
     case 'circular':

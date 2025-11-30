@@ -99,9 +99,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
 
   // Filter in memory since we can't query on nested identity provider field
   type UserEntity = EntityItem<typeof Users>
-  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) =>
-    user.identityProviders?.userId === userDeviceId
-  )
+  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) => user.identityProviders?.userId === userDeviceId)
   return usersWithAppleId as User[]
 }
 

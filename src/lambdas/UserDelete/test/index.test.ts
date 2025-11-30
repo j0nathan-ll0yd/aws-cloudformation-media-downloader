@@ -54,10 +54,7 @@ jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: 
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',
-  () => ({
-    deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }),
-    subscribe: jest.fn()
-  })
+  () => ({ deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }), subscribe: jest.fn() })
 )
 
 jest.unstable_mockModule(

@@ -25,9 +25,7 @@ const { default: listSubscriptionsByTopicResponse } = await import('./fixtures/l
 })
 const { default: subscribeResponse } = await import('./fixtures/subscribe-200-OK.json', { assert: { type: 'json' } })
 const { default: queryDefaultResponse } = await import('./fixtures/query-200-OK.json', { assert: { type: 'json' } })
-const { default: querySuccessResponse } = await import('./fixtures/query-201-Created.json', {
-  assert: { type: 'json' }
-})
+const { default: querySuccessResponse } = await import('./fixtures/query-201-Created.json', { assert: { type: 'json' } })
 const createPlatformEndpointMock = jest.fn()
 const listSubscriptionsByTopicMock = jest.fn()
 jest.unstable_mockModule(

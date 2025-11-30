@@ -140,10 +140,7 @@ export const handler = withXRay(
           return successResult
         } else {
           // Confirm the subscription, and unsubscribe
-          const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(
-            device.endpointArn,
-            pushNotificationTopicArn
-          )
+          const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
           await unsubscribeEndpointToTopic(subscriptionArn)
           const createdResult = response(context, 201, { endpointArn: platformEndpoint.EndpointArn })
           logOutgoingFixture(createdResult)

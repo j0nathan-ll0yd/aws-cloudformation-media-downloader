@@ -44,12 +44,7 @@ interface ElectroDBEntityMock<TData> {
     }
     create: jest.Mock<() => Promise<{ data: TData }>>
     upsert: { go: jest.Mock<() => Promise<{ data: TData }>> }
-    update: {
-      go: jest.Mock<() => Promise<{ data: TData } | undefined>>
-      set: jest.Mock
-      add: jest.Mock
-      delete: jest.Mock
-    }
+    update: { go: jest.Mock<() => Promise<{ data: TData } | undefined>>; set: jest.Mock; add: jest.Mock; delete: jest.Mock }
     delete: jest.Mock<() => Promise<{ unprocessed?: unknown[] } | void>>
   }
 }

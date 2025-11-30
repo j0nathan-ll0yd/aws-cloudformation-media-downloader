@@ -228,9 +228,7 @@ function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpda
  * Converts null to undefined for ElectroDB compatibility
  * Note: deviceId is conditionally included to support sparse GSI indexing
  */
-function transformSessionFromAuth(
-  authSession: Partial<Session> & { id?: string; deviceId?: string }
-): ElectroSessionCreate {
+function transformSessionFromAuth(authSession: Partial<Session> & { id?: string; deviceId?: string }): ElectroSessionCreate {
   const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
     userId: authSession.userId!, // Required by Better Auth
@@ -467,11 +465,7 @@ export function createElectroDBAdapter() {
           return null
         }
 
-        return {
-          identifier: result.data.identifier,
-          token: result.data.token,
-          expiresAt: new Date(result.data.expiresAt)
-        }
+        return { identifier: result.data.identifier, token: result.data.token, expiresAt: new Date(result.data.expiresAt) }
       } catch (error) {
         logError('ElectroDB Adapter: getVerificationToken failed', { token, error })
         return null

@@ -14,10 +14,7 @@ export { unknownErrorToString } from './lambda-helpers'
  * @param userId - User ID to send notification to
  * @returns SQS message attributes for file notification
  */
-export function createFileNotificationAttributes(
-  file: DynamoDBFile,
-  userId: string
-): Record<string, MessageAttributeValue> {
+export function createFileNotificationAttributes(file: DynamoDBFile, userId: string): Record<string, MessageAttributeValue> {
   return {
     fileId: stringAttribute(file.fileId),
     key: stringAttribute(file.key),

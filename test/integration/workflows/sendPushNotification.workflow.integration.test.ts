@@ -176,16 +176,12 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
   test('should process multiple SQS records in same batch', async () => {
     // Arrange: Mock ElectroDB responses for two different users
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
-      data: [createMockUserDevice('user-1', 'device-user1')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({ data: [createMockUserDevice('user-1', 'device-user1')] })
     devicesMock.mocks.get.mockResolvedValueOnce({
       data: createMockDevice('device-user1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint')
     })
 
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
-      data: [createMockUserDevice('user-2', 'device-user2')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({ data: [createMockUserDevice('user-2', 'device-user2')] })
     devicesMock.mocks.get.mockResolvedValueOnce({
       data: createMockDevice('device-user2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint')
     })

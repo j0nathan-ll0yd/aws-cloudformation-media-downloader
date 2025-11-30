@@ -11,10 +11,7 @@ export const feedlyEventSchema = Joi.object({
 
 export const registerDeviceSchema = Joi.object({ token: Joi.string().required() })
 
-export const userSubscribeSchema = Joi.object({
-  endpointArn: Joi.string().required(),
-  topicArn: Joi.string().required()
-})
+export const userSubscribeSchema = Joi.object({ endpointArn: Joi.string().required(), topicArn: Joi.string().required() })
 
 export const registerUserSchema = Joi.object({
   idToken: Joi.string().required(),

@@ -17,21 +17,13 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
   } as CustomAuthorizerResult
 }
 
-export function generateAllow(
-  principalId: string,
-  resource: string,
-  usageIdentifierKey?: string
-): CustomAuthorizerResult {
+export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
   const policy = generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
   logDebug('response ==', policy)
   return policy
 }
 
-export function generateDeny(
-  principalId: string,
-  resource: string,
-  usageIdentifierKey?: string
-): CustomAuthorizerResult {
+export function generateDeny(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
   const policy = generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
   logDebug('response ==', policy)
   return policy

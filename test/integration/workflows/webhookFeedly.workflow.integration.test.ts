@@ -30,11 +30,7 @@ interface FileInvocationPayload {
 
 type LambdaCallArgs = [string, Record<string, unknown>]
 type SQSCallArgs = [
-  {
-    QueueUrl: string
-    MessageBody: string
-    MessageAttributes?: Record<string, { StringValue: string; DataType: string }>
-  }
+  { QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, { StringValue: string; DataType: string }> }
 ]
 
 const { default: apiGatewayEventFixture } = await import(

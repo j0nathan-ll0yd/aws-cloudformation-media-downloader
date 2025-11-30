@@ -47,10 +47,7 @@ jest.unstable_mockModule(filesModulePath, () => ({ Files: filesMock.entity }))
 
 const { handler } = await import('../../../src/lambdas/ListFiles/src/index')
 
-function createListFilesEvent(
-  userId: string | undefined,
-  userStatus: UserStatus
-): CustomAPIGatewayRequestAuthorizerEvent {
+function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: null,
     headers: userId && userStatus === UserStatus.Authenticated
@@ -261,9 +258,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Downloaded)).toBe(
-      true
-    )
+    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {

@@ -38,9 +38,7 @@ export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function listSubscriptionsByTopic(
-  params: ListSubscriptionsByTopicInput
-): Promise<ListSubscriptionsByTopicResponse> {
+export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput): Promise<ListSubscriptionsByTopicResponse> {
   const command = new ListSubscriptionsByTopicCommand(params)
   return snsClient.send(command)
 }

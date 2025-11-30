@@ -125,12 +125,7 @@ export interface S3UploadHandle {
  * This type is used for type assertions when passing the real createS3Upload
  * function to mocks that have a simpler type signature.
  */
-export type S3UploadFunction = (
-  bucket: string,
-  key: string,
-  body: Readable | Buffer,
-  contentType?: string
-) => S3UploadHandle
+export type S3UploadFunction = (bucket: string, key: string, body: Readable | Buffer, contentType?: string) => S3UploadHandle
 
 /**
  * Create mock implementation of streamVideoToS3 that actually uploads to S3

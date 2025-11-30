@@ -66,11 +66,7 @@ describe('#StartFileUpload', () => {
     } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(mockFormat)
-    streamVideoToS3Mock.mockResolvedValue({
-      fileSize: 82784319,
-      s3Url: 's3://test-bucket/test-video.mp4',
-      duration: 45
-    })
+    streamVideoToS3Mock.mockResolvedValue({ fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45 })
     filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)
@@ -115,11 +111,7 @@ describe('#StartFileUpload', () => {
     } as YtDlpVideoInfo
     fetchVideoInfoMock.mockResolvedValue(mockVideoInfo)
     chooseVideoFormatMock.mockReturnValue(hlsFormat)
-    streamVideoToS3Mock.mockResolvedValue({
-      fileSize: 104857600,
-      s3Url: 's3://test-bucket/test-video.mp4',
-      duration: 120
-    })
+    streamVideoToS3Mock.mockResolvedValue({ fileSize: 104857600, s3Url: 's3://test-bucket/test-video.mp4', duration: 120 })
     filesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
 
     const output = await handler(event, context)

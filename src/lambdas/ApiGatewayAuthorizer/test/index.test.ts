@@ -27,10 +27,7 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 const { default: eventMock } = await import('./fixtures/Event.json', { assert: { type: 'json' } })
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule(
-  '../../../util/better-auth-helpers',
-  () => ({ validateSessionToken: validateSessionTokenMock })
-)
+jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({ validateSessionToken: validateSessionTokenMock }))
 
 const { handler } = await import('./../src')
 

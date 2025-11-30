@@ -45,9 +45,7 @@ jest.unstable_mockModule(
     headObject: jest.fn(),
     createS3Upload: jest.fn().mockReturnValue({
       on: jest.fn(),
-      done: jest.fn<() => Promise<{ Location: string }>>().mockResolvedValue({
-        Location: 's3://test-bucket/test-key.mp4'
-      })
+      done: jest.fn<() => Promise<{ Location: string }>>().mockResolvedValue({ Location: 's3://test-bucket/test-key.mp4' })
     })
   })
 )

@@ -128,11 +128,7 @@ describe('Better Auth Helpers', () => {
 
       const result = await createUserSession('user-123', 'device-123', '1.2.3.4', 'Mozilla/5.0')
 
-      expect(result).toEqual({
-        token: expect.any(String),
-        sessionId: expect.any(String),
-        expiresAt: expect.any(Number)
-      })
+      expect(result).toEqual({ token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number) })
 
       expect(Sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -145,21 +141,13 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should create session without optional parameters', async () => {
-      const mockSession = createMockSession({
-        sessionId: 'session-minimal',
-        userId: 'user-456',
-        token: 'minimal-token'
-      })
+      const mockSession = createMockSession({ sessionId: 'session-minimal', userId: 'user-456', token: 'minimal-token' })
 
       sessionsMock.mocks.create.mockResolvedValue({ data: mockSession })
 
       const result = await createUserSession('user-456')
 
-      expect(result).toEqual({
-        token: expect.any(String),
-        sessionId: expect.any(String),
-        expiresAt: expect.any(Number)
-      })
+      expect(result).toEqual({ token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number) })
 
       expect(Sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'user-456', deviceId: undefined, ipAddress: undefined, userAgent: undefined })
@@ -179,10 +167,10 @@ describe('Better Auth Helpers', () => {
 
   describe('revokeAllUserSessions', () => {
     it('should revoke all sessions for a user', async () => {
-      const mockSessions = [{ sessionId: 'session-1', userId: 'user-123' }, {
-        sessionId: 'session-2',
+      const mockSessions = [{ sessionId: 'session-1', userId: 'user-123' }, { sessionId: 'session-2', userId: 'user-123' }, {
+        sessionId: 'session-3',
         userId: 'user-123'
-      }, { sessionId: 'session-3', userId: 'user-123' }]
+      }]
 
       // Mock query operation
       if (sessionsMock.mocks.query.byUser) {

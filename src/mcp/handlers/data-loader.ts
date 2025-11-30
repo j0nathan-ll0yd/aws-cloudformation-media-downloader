@@ -154,13 +154,7 @@ export async function getLambdaConfigs(): Promise<
       }
     }
 
-    configs[name] = {
-      name,
-      trigger: lambdaMeta.trigger,
-      purpose: lambdaMeta.purpose,
-      dependencies: awsServices,
-      entities
-    }
+    configs[name] = { name, trigger: lambdaMeta.trigger, purpose: lambdaMeta.purpose, dependencies: awsServices, entities }
   }
 
   return configs
