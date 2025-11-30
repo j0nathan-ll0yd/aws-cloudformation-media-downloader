@@ -49,8 +49,8 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 ### `pnpm run test:integration`
 **Purpose**: Run integration tests against LocalStack
 **Dependencies**: LocalStack (Docker), Jest
-**CI Coverage**: No (requires Docker)
-**Notes**: Requires `localstack:start` first; validates real DynamoDB operations
+**CI Coverage**: Yes (integration-tests.yml)
+**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30s). For full lifecycle management, use `ci:local:full` instead.
 
 ---
 

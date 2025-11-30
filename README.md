@@ -381,12 +381,14 @@ pnpm run localstack:stop
 **Available Commands:**
 
 - `pnpm run ci:local` - Fast local CI checks (~2-3 min, no integration tests)
-- `pnpm run ci:local:full` - Full local CI (~5-10 min, includes integration tests)
+- `pnpm run ci:local:full` - Full local CI (~5-10 min, manages LocalStack lifecycle)
+- `pnpm run test:integration` - Run integration tests only (~30s, for fast iteration when developing tests)
 - `pnpm run localstack:start` - Start LocalStack container in detached mode
 - `pnpm run localstack:stop` - Stop and remove LocalStack container
 - `pnpm run localstack:logs` - Stream LocalStack logs
 - `pnpm run localstack:health` - Check LocalStack service health
-- `pnpm run test:integration` - Run integration tests (assumes LocalStack is running)
+
+> **Note:** Use `ci:local:full` for comprehensive pre-push validation. Use `test:integration` with manually-started LocalStack for rapid iteration when developing integration tests.
 
 **Test Organization:**
 

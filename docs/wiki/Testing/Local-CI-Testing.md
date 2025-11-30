@@ -44,9 +44,38 @@ Note: Lifecycle scripts are disabled in `.npmrc` for security, so `pnpm run prep
 |---------|----------|--------------|
 | `pnpm run ci:local` | ~2-3 min | All checks except integration tests |
 | `pnpm run ci:local:full` | ~5-10 min | Everything including integration tests |
+| `pnpm run test:integration` | ~30 sec | Integration tests only (LocalStack must be running) |
 | `pnpm run validate:docs` | ~1 sec | Documentation script validation only |
 | `pnpm run validate:graphrag` | ~5 sec | GraphRAG freshness check only |
 | `pnpm run lint:workflows` | ~1 sec | GitHub Actions YAML validation (requires actionlint) |
+
+### Why Both `ci:local:full` and `test:integration`?
+
+These serve different purposes:
+
+| Command | LocalStack Lifecycle | Use Case |
+|---------|---------------------|----------|
+| `ci:local:full` | Manages start/stop automatically | Pre-push validation, comprehensive CI |
+| `test:integration` | Assumes already running | Fast iteration when developing tests |
+
+**When developing integration tests**, use `test:integration` for rapid feedback:
+
+```bash
+# Start LocalStack once at the beginning of your session
+pnpm run localstack:start
+
+# Iterate rapidly (~30s per run instead of 5-10 min)
+pnpm run test:integration   # run tests
+# make changes...
+pnpm run test:integration   # run again
+# make changes...
+pnpm run test:integration   # run again
+
+# Stop when done
+pnpm run localstack:stop
+```
+
+**For pre-push validation**, use `ci:local:full` (or let the pre-push hook run it automatically).
 
 ## What ci:local Checks
 
