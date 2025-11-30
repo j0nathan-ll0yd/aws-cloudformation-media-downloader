@@ -369,24 +369,24 @@ brew install docker jq
 **Quick Start:**
 
 ```bash
-# Start LocalStack
-npm run localstack:start
+# Full CI with integration tests (handles LocalStack lifecycle)
+pnpm run ci:local:full
 
-# Run integration tests
-npm run test:integration:with-lifecycle
-
-# Stop LocalStack when done
-npm run localstack:stop
+# Or manually manage LocalStack:
+pnpm run localstack:start
+pnpm run test:integration
+pnpm run localstack:stop
 ```
 
 **Available Commands:**
 
-- `npm run localstack:start` - Start LocalStack container in detached mode
-- `npm run localstack:stop` - Stop and remove LocalStack container
-- `npm run localstack:logs` - Stream LocalStack logs
-- `npm run localstack:health` - Check LocalStack service health
-- `npm run test:integration` - Run integration tests (assumes LocalStack is running)
-- `npm run test:integration:with-lifecycle` - Full integration test suite with LocalStack lifecycle management
+- `pnpm run ci:local` - Fast local CI checks (~2-3 min, no integration tests)
+- `pnpm run ci:local:full` - Full local CI (~5-10 min, includes integration tests)
+- `pnpm run localstack:start` - Start LocalStack container in detached mode
+- `pnpm run localstack:stop` - Stop and remove LocalStack container
+- `pnpm run localstack:logs` - Stream LocalStack logs
+- `pnpm run localstack:health` - Check LocalStack service health
+- `pnpm run test:integration` - Run integration tests (assumes LocalStack is running)
 
 **Test Organization:**
 
