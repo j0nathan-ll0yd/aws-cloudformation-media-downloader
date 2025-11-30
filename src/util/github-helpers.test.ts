@@ -14,12 +14,12 @@ class MockOctokit {
 jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImplementation(() => new MockOctokit())}))
 
 // Mock template helpers
-jest.unstable_mockModule('#util/template-helpers',
-  () => ({
-    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
-      return `Rendered template: ${templateName}`
-    })
-  }))
+// dprint-ignore
+jest.unstable_mockModule('#util/template-helpers', () => ({
+  renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
+    return `Rendered template: ${templateName}`
+  })
+}))
 
 const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('./github-helpers')
 
