@@ -52,12 +52,6 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **CI Coverage**: No (requires Docker)
 **Notes**: Requires `localstack:start` first; validates real DynamoDB operations
 
-### `pnpm run test:integration:full`
-**Purpose**: Full integration test suite with LocalStack lifecycle
-**Dependencies**: Docker, shell access
-**CI Coverage**: No
-**Notes**: Starts LocalStack, runs tests, stops LocalStack. Used by `ci:local:full`.
-
 ---
 
 ## Local CI Scripts

@@ -29,7 +29,6 @@
     "deps:report": "dependency-cruiser src --config .dependency-cruiser.cjs --output-type html --output-to dependency-report.html",
     "test": "pnpm run generate-graph && node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.config.mjs",
     "test:integration": "pnpm run generate-graph && USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.integration.config.mjs",
-    "test:integration:full": "./bin/test-integration.sh",
     "ci:local": "./bin/ci-local.sh",
     "ci:local:full": "./bin/ci-local-full.sh",
     "validate:docs": "./bin/validate-docs.sh",
