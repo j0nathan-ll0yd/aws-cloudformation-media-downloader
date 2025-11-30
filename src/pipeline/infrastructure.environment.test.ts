@@ -1,8 +1,4 @@
-import {
-  describe,
-  expect,
-  test
-} from '@jest/globals'
+import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
 import {InfrastructureD} from '../types/infrastructure'
 import {logDebug} from '../util/lambda-helpers'

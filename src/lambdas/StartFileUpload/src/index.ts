@@ -1,36 +1,13 @@
 import {Context} from 'aws-lambda'
-import {
-  chooseVideoFormat,
-  fetchVideoInfo,
-  streamVideoToS3
-} from '../../../lib/vendor/YouTube'
-import {
-  DynamoDBFile,
-  StartFileUploadParams
-} from '../../../types/main'
+import {chooseVideoFormat, fetchVideoInfo, streamVideoToS3} from '../../../lib/vendor/YouTube'
+import {DynamoDBFile, StartFileUploadParams} from '../../../types/main'
 import {FileStatus} from '../../../types/enums'
-import {
-  lambdaErrorResponse,
-  logDebug,
-  logInfo,
-  putMetric,
-  response
-} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logInfo, putMetric, response} from '../../../util/lambda-helpers'
 import {assertIsError} from '../../../util/transformers'
-import {
-  CookieExpirationError,
-  providerFailureErrorMessage,
-  UnexpectedError
-} from '../../../util/errors'
+import {CookieExpirationError, providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {upsertFile} from '../../../util/shared'
-import {
-  createCookieExpirationIssue,
-  createVideoDownloadFailureIssue
-} from '../../../util/github-helpers'
-import {
-  getSegment,
-  withXRay
-} from '../../../lib/vendor/AWS/XRay'
+import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '../../../util/github-helpers'
+import {getSegment, withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**
  * Downloads a YouTube video and uploads it to S3

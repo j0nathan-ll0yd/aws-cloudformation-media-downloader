@@ -17,18 +17,8 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-east-1'
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it
-} from '@jest/globals'
-import {
-  cleanupLocalStackTable,
-  setupLocalStackTable
-} from '../helpers/electrodb-localstack'
+import {afterAll, afterEach, beforeAll, describe, expect, it} from '@jest/globals'
+import {cleanupLocalStackTable, setupLocalStackTable} from '../helpers/electrodb-localstack'
 
 // Dynamic imports to ensure env vars are set before entity instantiation
 const { Users } = await import('../../../src/entities/Users')

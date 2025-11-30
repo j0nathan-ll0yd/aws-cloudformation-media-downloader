@@ -42,7 +42,7 @@
     "memberExpression.linePerExpression": false,
     "memberExpression.preferSingleLine": true,
 
-    "importDeclaration.forceMultiLine": "whenMultiple",
+    "importDeclaration.forceMultiLine": "never",
     "importDeclaration.sortNamedImports": "caseInsensitive",
     "importDeclaration.spaceSurroundingNamedImports": false,
     "module.sortImportDeclarations": "maintain",

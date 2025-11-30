@@ -4,10 +4,7 @@
  * Utilities for inserting and querying test data in LocalStack DynamoDB
  */
 
-import {
-  createTable,
-  deleteTable
-} from '../lib/vendor/AWS/DynamoDB'
+import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
 import {DynamoDBFile} from '../../../src/types/main'
 import {FileStatus} from '../../../src/types/enums'
 import {createMockFile} from './test-data'

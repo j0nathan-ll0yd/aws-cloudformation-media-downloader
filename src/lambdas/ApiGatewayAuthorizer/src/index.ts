@@ -1,23 +1,7 @@
-import {
-  APIGatewayRequestAuthorizerEvent,
-  CustomAuthorizerResult
-} from 'aws-lambda'
-import {
-  logDebug,
-  logError,
-  logInfo
-} from '../../../util/lambda-helpers'
-import {
-  ApiKey,
-  getApiKeys,
-  getUsage,
-  getUsagePlans,
-  UsagePlan
-} from '../../../lib/vendor/AWS/ApiGateway'
-import {
-  providerFailureErrorMessage,
-  UnexpectedError
-} from '../../../util/errors'
+import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
+import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
+import {ApiKey, getApiKeys, getUsage, getUsagePlans, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 

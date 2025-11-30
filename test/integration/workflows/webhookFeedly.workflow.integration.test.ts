@@ -15,30 +15,14 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
-import {
-  createFilesTable,
-  deleteFilesTable,
-  getFile,
-  insertFile
-} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {fileURLToPath} from 'url'
-import {
-  dirname,
-  resolve
-} from 'path'
+import {dirname, resolve} from 'path'
 
 interface FileInvocationPayload {
   fileId: string

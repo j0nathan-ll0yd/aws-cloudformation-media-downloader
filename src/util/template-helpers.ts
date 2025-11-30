@@ -1,8 +1,5 @@
 import {readFileSync} from 'fs'
-import {
-  dirname,
-  join
-} from 'path'
+import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 
 // ES module equivalent of __dirname

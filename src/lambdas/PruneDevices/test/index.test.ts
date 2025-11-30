@@ -1,14 +1,6 @@
-import {
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {describe, expect, jest, test} from '@jest/globals'
 import {ScheduledEvent} from 'aws-lambda'
-import {
-  fakePrivateKey,
-  testContext
-} from '../../../util/jest-setup'
+import {fakePrivateKey, testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '../../../util/errors'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'

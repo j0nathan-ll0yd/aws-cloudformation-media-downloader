@@ -1,18 +1,7 @@
-import {
-  APIGatewayProxyResult,
-  Context,
-  ScheduledEvent
-} from 'aws-lambda'
+import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
-import {
-  logDebug,
-  logInfo,
-  response
-} from '../../../util/lambda-helpers'
-import {
-  providerFailureErrorMessage,
-  UnexpectedError
-} from '../../../util/errors'
+import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {initiateFileDownload} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 

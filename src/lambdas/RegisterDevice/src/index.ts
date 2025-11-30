@@ -1,24 +1,10 @@
-import {
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Devices} from '../../../entities/Devices'
 import {UserDevices} from '../../../entities/UserDevices'
-import {
-  createPlatformEndpoint,
-  listSubscriptionsByTopic,
-  unsubscribe
-} from '../../../lib/vendor/AWS/SNS'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  Device,
-  DeviceRegistrationRequest
-} from '../../../types/main'
+import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
 import {UserStatus} from '../../../types/enums'
-import {
-  getPayloadFromEvent,
-  validateRequest
-} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerDeviceSchema} from '../../../util/constraints'
 import {
   getUserDetailsFromEvent,
@@ -29,15 +15,8 @@ import {
   response,
   verifyPlatformConfiguration
 } from '../../../util/lambda-helpers'
-import {
-  providerFailureErrorMessage,
-  UnauthorizedError,
-  UnexpectedError
-} from '../../../util/errors'
-import {
-  getUserDevices,
-  subscribeEndpointToTopic
-} from '../../../util/shared'
+import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
+import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**

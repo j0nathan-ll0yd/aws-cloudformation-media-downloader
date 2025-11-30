@@ -1,10 +1,4 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
 

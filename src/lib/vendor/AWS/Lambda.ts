@@ -1,8 +1,4 @@
-import {
-  InvokeCommand,
-  InvokeCommandInput,
-  InvokeCommandOutput
-} from '@aws-sdk/client-lambda'
+import {InvokeCommand, InvokeCommandInput, InvokeCommandOutput} from '@aws-sdk/client-lambda'
 import {createLambdaClient} from './clients'
 
 const lambda = createLambdaClient()

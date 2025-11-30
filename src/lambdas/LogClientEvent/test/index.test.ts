@@ -1,9 +1,4 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  test
-} from '@jest/globals'
+import {beforeEach, describe, expect, test} from '@jest/globals'
 import {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 

@@ -5,10 +5,7 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import {
-  ScheduledEvent,
-  SQSEvent
-} from 'aws-lambda'
+import {ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 import {DynamoDBFile} from '../../../src/types/main'
 

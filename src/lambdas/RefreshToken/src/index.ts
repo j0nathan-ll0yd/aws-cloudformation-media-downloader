@@ -8,11 +8,7 @@
  * Response: 200 with token, expiresAt, sessionId; 401 for invalid session; 500 for errors
  */
 
-import {
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
+import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {
   lambdaErrorResponse,
   logDebug,
@@ -22,10 +18,7 @@ import {
   logOutgoingFixture,
   response
 } from '../../../util/lambda-helpers'
-import {
-  refreshSession,
-  validateSessionToken
-} from '../../../util/better-auth-helpers'
+import {refreshSession, validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**

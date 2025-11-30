@@ -1,10 +1,5 @@
 import {testContext} from '../../../util/jest-setup'
-import {
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {describe, expect, jest, test} from '@jest/globals'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 const { default: eventMock } = await import('./fixtures/ScheduledEvent.json', { assert: { type: 'json' } })
 

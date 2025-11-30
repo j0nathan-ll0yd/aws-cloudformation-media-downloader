@@ -1,9 +1,4 @@
-import {
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {describe, expect, jest, test} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'

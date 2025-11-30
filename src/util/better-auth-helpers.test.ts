@@ -4,13 +4,7 @@
  * Tests session management, validation, and token generation using electrodb-mock.
  */
 
-import {
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest
-} from '@jest/globals'
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {UnauthorizedError} from './errors'
 import {createElectroDBEntityMock} from '../../test/helpers/electrodb-mock'
 

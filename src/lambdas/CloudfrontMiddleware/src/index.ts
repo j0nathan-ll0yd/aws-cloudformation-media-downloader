@@ -1,17 +1,6 @@
-import {
-  CloudFrontRequestEvent,
-  CloudFrontResponse,
-  CloudFrontResultResponse,
-  Context
-} from 'aws-lambda'
-import {
-  CloudFrontHeaders,
-  CloudFrontRequest
-} from 'aws-lambda/common/cloudfront'
-import {
-  logDebug,
-  logInfo
-} from '../../../util/lambda-helpers'
+import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse, Context} from 'aws-lambda'
+import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import {logDebug, logInfo} from '../../../util/lambda-helpers'
 import {CustomCloudFrontRequest} from '../../../types/main'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 

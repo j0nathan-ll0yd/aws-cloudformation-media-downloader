@@ -6,10 +6,7 @@
  */
 
 import {Sessions} from '../entities/Sessions'
-import {
-  logDebug,
-  logError
-} from './lambda-helpers'
+import {logDebug, logError} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
 
 /**

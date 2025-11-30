@@ -1,19 +1,7 @@
-import {
-  SQSMessageAttribute,
-  SQSMessageAttributes
-} from '../lib/vendor/AWS/SQS'
-import {
-  Author,
-  videoFormat
-} from 'ytdl-core'
-import {
-  CloudFrontCustomOrigin,
-  CloudFrontRequest
-} from 'aws-lambda/common/cloudfront'
-import {
-  FileStatus,
-  UserStatus
-} from './enums'
+import {SQSMessageAttribute, SQSMessageAttributes} from '../lib/vendor/AWS/SQS'
+import {Author, videoFormat} from 'ytdl-core'
+import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
+import {FileStatus, UserStatus} from './enums'
 import {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventMultiValueHeaders,

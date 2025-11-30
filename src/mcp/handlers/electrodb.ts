@@ -7,10 +7,7 @@
  * - graphrag/metadata.json (relationships)
  */
 
-import {
-  getEntityInfo,
-  getLambdaConfigs
-} from './data-loader.js'
+import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 
 // Re-export with old name for backwards compatibility
 export { handleEntityQuery as handleElectroDBQuery }

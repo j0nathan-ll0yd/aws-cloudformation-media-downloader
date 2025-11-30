@@ -1,7 +1,4 @@
-import {
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Users} from '../../../entities/Users'
 import {UserFiles} from '../../../entities/UserFiles'
 import {UserDevices} from '../../../entities/UserDevices'
@@ -15,18 +12,9 @@ import {
   logOutgoingFixture,
   response
 } from '../../../util/lambda-helpers'
-import {
-  deleteDevice,
-  getUserDevices
-} from '../../../util/shared'
-import {
-  providerFailureErrorMessage,
-  UnexpectedError
-} from '../../../util/errors'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  Device
-} from '../../../types/main'
+import {deleteDevice, getUserDevices} from '../../../util/shared'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
 import {assertIsError} from '../../../util/transformers'
 import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'

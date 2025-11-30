@@ -18,35 +18,17 @@ const TEST_TABLE = 'test-push-notification'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
 
 // Test helpers
-import {
-  createFilesTable,
-  deleteFilesTable
-} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createMockDevice,
-  createMockSQSFileNotificationEvent,
-  createMockUserDevice
-} from '../helpers/test-data'
+import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
-import {
-  dirname,
-  resolve
-} from 'path'
+import {dirname, resolve} from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

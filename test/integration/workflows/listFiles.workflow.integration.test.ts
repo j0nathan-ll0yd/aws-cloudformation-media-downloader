@@ -19,39 +19,19 @@ const TEST_TABLE = 'test-list-files'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {
-  FileStatus,
-  UserStatus
-} from '../../../src/types/enums'
+import {FileStatus, UserStatus} from '../../../src/types/enums'
 import type {DynamoDBFile} from '../../../src/types/main'
 
 // Test helpers
-import {
-  createFilesTable,
-  deleteFilesTable
-} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
-import {
-  createMockFile,
-  createMockUserFile
-} from '../helpers/test-data'
+import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
-import {
-  dirname,
-  resolve
-} from 'path'
+import {dirname, resolve} from 'path'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
 const __filename = fileURLToPath(import.meta.url)

@@ -1,15 +1,6 @@
-import {
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  UserSubscribe
-} from '../../../types/main'
-import {
-  getPayloadFromEvent,
-  validateRequest
-} from '../../../util/apigateway-helpers'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '../../../types/main'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {userSubscribeSchema} from '../../../util/constraints'
 import {
   lambdaErrorResponse,

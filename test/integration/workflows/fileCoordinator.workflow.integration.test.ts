@@ -11,29 +11,14 @@ const TEST_TABLE = 'test-files-coordinator'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
-import {
-  createFilesTable,
-  deleteFilesTable,
-  insertFile
-} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockScheduledEvent} from '../helpers/test-data'
 import {fileURLToPath} from 'url'
-import {
-  dirname,
-  resolve
-} from 'path'
+import {dirname, resolve} from 'path'
 
 interface FileInvocationPayload {
   fileId: string

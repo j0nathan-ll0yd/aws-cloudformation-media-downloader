@@ -1,23 +1,11 @@
-import {
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '../../../entities/Files'
 import {UserFiles} from '../../../entities/UserFiles'
-import {
-  sendMessage,
-  SendMessageRequest
-} from '../../../lib/vendor/AWS/SQS'
+import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
 import {getVideoID} from '../../../lib/vendor/YouTube'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  DynamoDBFile
-} from '../../../types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
 import {Webhook} from '../../../types/vendor/IFTTT/Feedly/Webhook'
-import {
-  getPayloadFromEvent,
-  validateRequest
-} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {feedlyEventSchema} from '../../../util/constraints'
 import {
   getUserDetailsFromEvent,
@@ -31,10 +19,7 @@ import {
 import {createFileNotificationAttributes} from '../../../util/transformers'
 import {FileStatus} from '../../../types/enums'
 import {initiateFileDownload} from '../../../util/shared'
-import {
-  providerFailureErrorMessage,
-  UnexpectedError
-} from '../../../util/errors'
+import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 /**

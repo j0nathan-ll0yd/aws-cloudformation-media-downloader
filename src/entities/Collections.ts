@@ -1,7 +1,4 @@
-import {
-  createService,
-  documentClient
-} from '../lib/vendor/ElectroDB/service'
+import {createService, documentClient} from '../lib/vendor/ElectroDB/service'
 import {Files} from './Files'
 import {Users} from './Users'
 import {Devices} from './Devices'

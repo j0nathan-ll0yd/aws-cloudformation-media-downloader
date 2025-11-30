@@ -15,22 +15,11 @@
  * This is only populated on first sign-in, so we cache it for new user registration.
  */
 
-import {
-  APIGatewayEvent,
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
 import {UserRegistration} from '../../../types/main'
-import {
-  getPayloadFromEvent,
-  validateRequest
-} from '../../../util/apigateway-helpers'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {registerUserSchema} from '../../../util/constraints'
-import {
-  lambdaErrorResponse,
-  logInfo,
-  response
-} from '../../../util/lambda-helpers'
+import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
 import {auth} from '../../../lib/vendor/BetterAuth/config'
 import {Users} from '../../../entities/Users'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'

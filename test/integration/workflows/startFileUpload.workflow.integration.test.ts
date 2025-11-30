@@ -20,29 +20,13 @@ process.env.Bucket = TEST_BUCKET
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  jest,
-  test
-} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {
-  createFilesTable,
-  deleteFilesTable,
-  getFile
-} from '../helpers/dynamodb-helpers'
-import {
-  createTestBucket,
-  deleteTestBucket,
-  getObjectMetadata
-} from '../helpers/s3-helpers'
+import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
+import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {
   createMockStreamVideoToS3WithRealUpload,
@@ -56,10 +40,7 @@ import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
 const s3UploadFn = createS3Upload as S3UploadFunction
 
 import {fileURLToPath} from 'url'
-import {
-  dirname,
-  resolve
-} from 'path'
+import {dirname, resolve} from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

@@ -10,18 +10,9 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import {
-  APIGatewayProxyResult,
-  Context
-} from 'aws-lambda'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  UserLogin
-} from '../../../types/main'
-import {
-  getPayloadFromEvent,
-  validateRequest
-} from '../../../util/apigateway-helpers'
+import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
+import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
 import {loginUserSchema} from '../../../util/constraints'
 import {
   lambdaErrorResponse,

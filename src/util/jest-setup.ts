@@ -1,8 +1,4 @@
-import {
-  afterAll,
-  beforeAll,
-  jest
-} from '@jest/globals'
+import {afterAll, beforeAll, jest} from '@jest/globals'
 
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT =

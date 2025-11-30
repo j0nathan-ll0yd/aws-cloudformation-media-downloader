@@ -1,16 +1,8 @@
-import {
-  ClientFile,
-  DynamoDBFile,
-  FileNotification
-} from '../types/main'
+import {ClientFile, DynamoDBFile, FileNotification} from '../types/main'
 import {logError} from './lambda-helpers'
 import {UnexpectedError} from './errors'
 import {PublishInput} from '../lib/vendor/AWS/SNS'
-import {
-  MessageAttributeValue,
-  numberAttribute,
-  stringAttribute
-} from '../lib/vendor/AWS/SQS'
+import {MessageAttributeValue, numberAttribute, stringAttribute} from '../lib/vendor/AWS/SQS'
 
 // Re-export for backwards compatibility
 export { unknownErrorToString } from './lambda-helpers'

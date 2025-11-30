@@ -1,7 +1,4 @@
-import {
-  CreateTableCommand,
-  DynamoDBClient
-} from '@aws-sdk/client-dynamodb'
+import {CreateTableCommand, DynamoDBClient} from '@aws-sdk/client-dynamodb'
 
 /**
  * Setup MediaDownloader DynamoDB table in LocalStack
