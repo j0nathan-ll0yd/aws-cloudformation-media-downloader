@@ -7,7 +7,8 @@
   ],
   "exclude": [
     "**/*+(.spec|.e2e|.test).ts",
-    "src/types/terraform.d.ts"
+    "src/types/terraform.d.ts",
+    "src/types/global.d.ts"
   ],
   "entryPointStrategy": "expand",
   "excludeNotDocumented": true,
@@ -26,6 +27,26 @@
     "SetSignature",
     "Reference"
   ],
+  "intentionallyNotExported": [
+    "ElectroUserItem",
+    "ElectroSessionItem",
+    "ElectroAccountItem",
+    "ElectroUserCreate",
+    "ElectroSessionCreate",
+    "ElectroAccountCreate",
+    "ElectroUserUpdate",
+    "ElectroSessionUpdate",
+    "EntityMapConstraint",
+    "BetterAuthHookContext"
+  ],
+  "externalSymbolLinkMappings": {
+    "@types/node": {
+      "EventEmitter.defaultMaxListeners": "https://nodejs.org/api/events.html#eventseventsizemaxlisteners",
+      "Stream.pipe": "https://nodejs.org/api/stream.html#readablepipedestination-options",
+      "Stream.Readable.push": "https://nodejs.org/api/stream.html#readablepushchunk-encoding",
+      "Stream.Readable._read": "https://nodejs.org/api/stream.html#readable_readsize"
+    }
+  },
   "tsconfig": "./tsconfig.json",
   "out": "docs/source"
 }

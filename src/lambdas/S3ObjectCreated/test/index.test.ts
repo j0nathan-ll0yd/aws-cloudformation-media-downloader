@@ -4,7 +4,7 @@ import {testContext} from '../../../util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 beforeAll(() => {
-  process.env.SNSQueueUrl = 'https://sqs.us-east-1.amazonaws.com/123456789/test-queue'
+  process.env.SNSQueueUrl = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
 })
 
 const filesMock = createElectroDBEntityMock({queryIndexes: ['byKey']})

@@ -77,6 +77,7 @@ export const Sessions = new Entity(
         }
       },
       byUser: {
+        collection: 'userSessions',
         index: 'gsi1',
         pk: {
           field: 'gsi1pk',

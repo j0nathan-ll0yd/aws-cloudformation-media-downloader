@@ -13,6 +13,7 @@ import {documentClient} from '../AWS/DynamoDB'
 /**
  * Entity map type constraint for createService.
  * Uses ElectroDB's Entity type with loosened generic constraints.
+ * @internal
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EntityMapConstraint = Record<string, Entity<any, any, any, any>>

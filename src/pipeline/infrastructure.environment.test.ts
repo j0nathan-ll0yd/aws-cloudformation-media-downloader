@@ -68,8 +68,9 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   // - X("EnvVarName") where X is a single-letter minified function name
   // - yn("EnvVarName") where yn is a 2-3 letter minified function name
   // - }("EnvVarName") for IIFE patterns (immediately invoked function expressions)
+  // - $("EnvVarName") where $ is used as minified function name ($ is not a word char in regex)
   // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
-  const envValidationRegex = /(?:\b[a-zA-Z_$][a-zA-Z0-9_$]{0,2}|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
+  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
   const envValidationMatches = functionSource.match(envValidationRegex)
   logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {

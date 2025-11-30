@@ -7,6 +7,10 @@ coverage
 dist
 docs/source
 docs/terraform.md
+
+# Dependency cruiser generated files
+dependency-graph.svg
+dependency-report.html
 secure
 local
 temp

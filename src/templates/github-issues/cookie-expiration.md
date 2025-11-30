@@ -16,7 +16,7 @@ YouTube has detected the cookies as expired or is blocking requests with bot det
 \`\`\`bash
 # Ensure you're logged into YouTube in Chrome
 # Then run the cookie update script
-npm run update-cookies
+pnpm run update-cookies
 \`\`\`
 
 This will:
@@ -26,8 +26,8 @@ This will:
 
 ### Step 2: Build and Deploy
 \`\`\`bash
-npm run build
-npm run deploy
+pnpm run build
+pnpm run deploy
 \`\`\`
 
 ### Step 3: Verify Fix

@@ -137,7 +137,7 @@ Integration tests should:
 Integration tests automatically set:
 
 - `USE_LOCALSTACK=true` - Triggers vendor wrappers to use LocalStack clients
-- `AWS_REGION=us-east-1` - LocalStack default region
+- `AWS_REGION=us-west-2` - Match production region for consistency
 
 These are configured in `test/integration/setup.ts`.
 

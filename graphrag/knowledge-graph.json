@@ -346,11 +346,6 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:CloudfrontMiddleware",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
       "source": "service:CloudFront",
       "target": "lambda:CloudfrontMiddleware",
       "relationship": "triggers"

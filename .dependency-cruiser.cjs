@@ -137,6 +137,15 @@ module.exports = {
         path: '^src/mcp/handlers/',
       },
     },
+    {
+      comment: 'Allow MCP handlers to import shared utilities within handlers',
+      from: {
+        path: '^src/mcp/handlers/',
+      },
+      to: {
+        path: '^src/mcp/handlers/',
+      },
+    },
   ],
   options: {
     /* Configuration options */

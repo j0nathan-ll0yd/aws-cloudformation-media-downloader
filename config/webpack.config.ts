@@ -17,6 +17,7 @@ const config: webpack.Configuration = {
     return acc
   }, {}),
   externals: {
+    // AWS SDK v3 is available in Lambda runtime - externalize to reduce bundle size
     '@aws-sdk/client-api-gateway': '@aws-sdk/client-api-gateway',
     '@aws-sdk/client-cloudwatch': '@aws-sdk/client-cloudwatch',
     '@aws-sdk/client-dynamodb': '@aws-sdk/client-dynamodb',
@@ -26,9 +27,8 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
     '@aws-sdk/lib-storage': '@aws-sdk/lib-storage',
-    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb',
-    'aws-xray-sdk-core': 'aws-xray-sdk-core',
-    'supports-color': 'supports-color'
+    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
+    // Note: aws-xray-sdk-core is NOT in Lambda runtime - must be bundled
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
