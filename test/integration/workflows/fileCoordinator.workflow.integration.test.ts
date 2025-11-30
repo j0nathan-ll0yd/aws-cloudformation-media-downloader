@@ -23,7 +23,8 @@ import {createFilesTable, deleteFilesTable} from '#test/integration/helpers/dyna
 import {createMockContext} from '#test/integration/helpers/lambda-context'
 import {createMockScheduledEvent} from '#test/integration/helpers/test-data'
 
-const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+// Type the mock with full signature so mock.calls is properly typed
+const invokeLambdaMock = jest.fn<(arn: string, payload: {fileId: string}) => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
 // Note: No #lambdas/* path alias exists, using relative import for handler
@@ -51,12 +52,6 @@ async function clearFileDownloads() {
     await FileDownloads.delete({fileId: record.fileId}).go()
   }
 }
-
-interface FileInvocationPayload {
-  fileId: string
-}
-
-type LambdaCallArgs = [string, FileInvocationPayload]
 
 describe('FileCoordinator Workflow Integration Tests', () => {
   let mockContext: Context
@@ -91,9 +86,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
-    const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
-
+    const invokedFileIds = invokeLambdaMock.mock.calls.map(([, payload]) => payload.fileId).sort()
     expect(invokedFileIds).toEqual(['video-1', 'video-2', 'video-3'])
   })
 
@@ -121,9 +114,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     // Should process 2 retries (past-retry and now-retry, not future-retry)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
-    const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
-
+    const invokedFileIds = invokeLambdaMock.mock.calls.map(([, payload]) => payload.fileId).sort()
     expect(invokedFileIds).toEqual(['now-retry', 'past-retry'])
   })
 
