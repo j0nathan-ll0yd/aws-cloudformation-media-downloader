@@ -29,9 +29,11 @@
     "deps:report": "dependency-cruiser src --config .dependency-cruiser.cjs --output-type html --output-to dependency-report.html",
     "test": "pnpm run generate-graph && node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.config.mjs",
     "test:integration": "pnpm run generate-graph && USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.integration.config.mjs",
-    "test:integration:with-lifecycle": "./bin/test-integration.sh",
-    "test:all": "./bin/test-all.sh",
-    "test-full": "pnpm run build-dependencies && pnpm run build && pnpm run test:all",
+    "ci:local": "./bin/ci-local.sh",
+    "ci:local:full": "./bin/ci-local-full.sh",
+    "validate:docs": "./bin/validate-docs.sh",
+    "validate:graphrag": "./bin/validate-graphrag.sh",
+    "lint:workflows": "actionlint",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
     "test-remote-registerDevice": "./bin/test-registerDevice.sh",
@@ -49,7 +51,8 @@
     "graphrag:extract": "node --disable-warning=DEP0180 --import tsx graphrag/extract.ts",
     "graphrag:query": "pnpm dlx tsx graphrag/query.ts",
     "plan": "eval export $(cat .env) && cd terraform && tofu plan",
-    "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve"
+    "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve",
+    "prepare": "husky"
   },
   "author": "Jonathan Lloyd",
   "dependencies": {
@@ -108,6 +111,7 @@
     "eslint-plugin-tsdoc": "^0.4.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "glob": "^11.1.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "quicktype": "^23.1.3",
     "redoc": "^2.2.0",

@@ -49,32 +49,42 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 ### `pnpm run test:integration`
 **Purpose**: Run integration tests against LocalStack
 **Dependencies**: LocalStack (Docker), Jest
-**CI Coverage**: No (requires Docker)
-**Notes**: Requires `localstack:start` first; validates real DynamoDB operations
+**CI Coverage**: Yes (integration-tests.yml)
+**Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30s). For full lifecycle management, use `ci:local:full` instead.
 
-### `pnpm run test:integration:with-lifecycle`
-**Purpose**: Full integration test suite with LocalStack lifecycle
-**Dependencies**: Docker, shell access
-**CI Coverage**: No
-**Notes**: Starts LocalStack, runs tests, stops LocalStack
+---
 
-### `pnpm run test:all`
-**Purpose**: Run both unit and integration tests
-**Dependencies**: All test dependencies
-**CI Coverage**: No
-**Notes**: Comprehensive local testing
+## Local CI Scripts
 
-### `pnpm run test-full`
-**Purpose**: Full build + test pipeline
-**Dependencies**: All build and test dependencies
-**CI Coverage**: Partial
-**Notes**: `build-dependencies` → `build` → `test`
+### `pnpm run ci:local`
+**Purpose**: Run all CI checks locally (fast mode, no integration tests)
+**Dependencies**: Node.js 22+, hcl2json, jq
+**CI Coverage**: Mirrors unit-tests.yml + dependency-check.yml
+**Notes**: ~2-3 minutes; catches ~95% of CI failures. Use before committing.
 
-### `pnpm run test-pipeline`
-**Purpose**: Run GitHub Actions locally with `act`
-**Dependencies**: Docker, act CLI, AWS credentials
-**CI Coverage**: N/A (tests CI itself)
-**Notes**: Requires GitHub token; useful for CI debugging
+### `pnpm run ci:local:full`
+**Purpose**: Run complete CI checks including integration tests
+**Dependencies**: All ci:local deps + Docker (for LocalStack)
+**CI Coverage**: Mirrors all CI workflows
+**Notes**: ~5-10 minutes; includes LocalStack lifecycle management.
+
+### `pnpm run validate:docs`
+**Purpose**: Validate documented scripts exist in package.json
+**Dependencies**: jq
+**CI Coverage**: Yes (unit-tests.yml)
+**Notes**: Checks AGENTS.md and README.md for pnpm run commands.
+
+### `pnpm run validate:graphrag`
+**Purpose**: Validate GraphRAG knowledge graph is up to date
+**Dependencies**: ts-morph
+**CI Coverage**: Yes (dependency-check.yml)
+**Notes**: Regenerates graph and checks for uncommitted changes.
+
+### `pnpm run lint:workflows`
+**Purpose**: Validate GitHub Actions workflow YAML syntax
+**Dependencies**: actionlint CLI
+**CI Coverage**: No (manual validation)
+**Notes**: Install with `brew install actionlint`. Native ARM64 binary.
 
 ---
 
@@ -236,11 +246,11 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 | Tool | Scripts Using It | Installation |
 |------|------------------|--------------|
-| Docker | build-dependencies, localstack:*, test:integration | `brew install docker` |
+| Docker | build-dependencies, localstack:*, test:integration, ci:local:full | `brew install docker` |
 | terraform-docs | document-terraform | `brew install terraform-docs` |
-| hcl2json | test pipeline | `brew install hcl2json` |
-| act | test-pipeline | `brew install act` |
-| jq | test-remote-*, localstack:health | `brew install jq` |
+| hcl2json | ci:local, build-dependencies | `brew install hcl2json` |
+| jq | test-remote-*, localstack:health, validate:docs | `brew install jq` |
+| actionlint | lint:workflows | `brew install actionlint` |
 | OpenTofu | plan, deploy | `brew install opentofu` |
 
 ---

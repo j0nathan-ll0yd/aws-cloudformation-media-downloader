@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# pre-push hook: Run full local CI checks before pushing
+# This ensures broken code never reaches the remote repository
+#
+# To bypass (emergency only): git push --no-verify
+
+echo "Running pre-push checks (ci:local:full)..."
+echo "This may take 5-10 minutes. Use 'git push --no-verify' to bypass in emergencies."
+echo ""
+
+pnpm run ci:local:full
