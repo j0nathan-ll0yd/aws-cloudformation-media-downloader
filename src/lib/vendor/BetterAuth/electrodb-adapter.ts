@@ -70,15 +70,7 @@ type ElectroUserCreate = {
   identityProviders: IdentityProvidersData // ElectroDB requires all fields
 }
 
-type ElectroSessionCreate = {
-  sessionId: string
-  userId: string
-  expiresAt: number
-  token: string
-  ipAddress?: string
-  userAgent?: string
-  deviceId?: string
-}
+type ElectroSessionCreate = {sessionId: string; userId: string; expiresAt: number; token: string; ipAddress?: string; userAgent?: string; deviceId?: string}
 
 type ElectroAccountCreate = {
   accountId: string

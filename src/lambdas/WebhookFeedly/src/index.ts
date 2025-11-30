@@ -80,11 +80,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
  */
 async function sendFileNotification(file: DynamoDBFile, userId: string) {
   const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
-    MessageBody: 'FileNotification',
-    MessageAttributes: messageAttributes,
-    QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  const sendMessageParams = {MessageBody: 'FileNotification', MessageAttributes: messageAttributes, QueueUrl: process.env.SNSQueueUrl} as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)

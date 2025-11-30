@@ -33,9 +33,7 @@ type SQSCallArgs = [
   {QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, {StringValue: string; DataType: string}>}
 ]
 
-const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {
-  assert: {type: 'json'}
-})
+const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

@@ -3,15 +3,7 @@ import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import {
-  getUserDetailsFromEvent,
-  lambdaErrorResponse,
-  logDebug,
-  logError,
-  logIncomingFixture,
-  logOutgoingFixture,
-  response
-} from '#util/lambda-helpers'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logIncomingFixture, logOutgoingFixture, response} from '#util/lambda-helpers'
 import {deleteDevice, getUserDevices} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '#types/main'

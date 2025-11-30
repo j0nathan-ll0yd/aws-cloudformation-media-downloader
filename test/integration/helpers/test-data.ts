@@ -83,11 +83,7 @@ export function createMockDevice(deviceId: string, endpointArn?: string) {
  * @param fileId - File ID for the notification
  * @param partial - Partial file data to override defaults in message attributes
  */
-export function createMockSQSFileNotificationEvent(
-  userId: string,
-  fileId: string,
-  partial?: {title?: string; size?: number; url?: string}
-): SQSEvent {
+export function createMockSQSFileNotificationEvent(userId: string, fileId: string, partial?: {title?: string; size?: number; url?: string}): SQSEvent {
   const file = createMockFile(fileId, FileStatus.Downloaded, partial)
 
   return {

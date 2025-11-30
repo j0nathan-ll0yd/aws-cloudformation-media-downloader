@@ -76,9 +76,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // First query: getUserDevicesByUserId returns array of individual UserDevice records
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice('user-123', 'device-abc')]})
 
-    devicesMock.mocks.get.mockResolvedValue({
-      data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
-    })
+    devicesMock.mocks.get.mockResolvedValue({data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')})
 
     const event = createMockSQSFileNotificationEvent('user-123', 'video-123')
 
@@ -100,17 +98,11 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       data: [createMockUserDevice('user-456', 'device-1'), createMockUserDevice('user-456', 'device-2'), createMockUserDevice('user-456', 'device-3')]
     })
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')})
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')})
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')})
 
     const event = createMockSQSFileNotificationEvent('user-456', 'video-456', {title: 'Multi-Device Video'})
 
@@ -203,12 +195,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
         messageId: 'test-message-6',
         receiptHandle: 'test-receipt-6',
         body: 'OtherNotificationType',
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: '1234567890',
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: '1234567890'
-        },
+        attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1234567890', SenderId: 'test-sender', ApproximateFirstReceiveTimestamp: '1234567890'},
         messageAttributes: {},
         md5OfBody: 'test-md5',
         eventSource: 'aws:sqs',

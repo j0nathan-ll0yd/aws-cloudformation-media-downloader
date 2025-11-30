@@ -100,17 +100,9 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
       }
 
     case 'all':
-      return {
-        aws: awsServices,
-        external: externalServices,
-        terraformDir: 'terraform/',
-        note: 'Use specific resource queries for detailed configuration'
-      }
+      return {aws: awsServices, external: externalServices, terraformDir: 'terraform/', note: 'Use specific resource queries for detailed configuration'}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']}
   }
 }

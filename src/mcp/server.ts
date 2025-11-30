@@ -57,11 +57,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: 'object',
         properties: {
-          resource: {
-            type: 'string',
-            description: 'Resource type (s3, dynamodb, apigateway, sns)',
-            enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']
-          },
+          resource: {type: 'string', description: 'Resource type (s3, dynamodb, apigateway, sns)', enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']},
           query: {type: 'string', description: 'Query type (config, usage, dependencies)', enum: ['config', 'usage', 'dependencies']}
         },
         required: ['resource', 'query']

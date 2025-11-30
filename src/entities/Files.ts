@@ -23,11 +23,7 @@ export const Files = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
-      byStatus: {
-        index: 'StatusIndex',
-        pk: {field: 'gsi4pk', composite: ['status'] as const},
-        sk: {field: 'gsi4sk', composite: ['availableAt'] as const}
-      },
+      byStatus: {index: 'StatusIndex', pk: {field: 'gsi4pk', composite: ['status'] as const}, sk: {field: 'gsi4sk', composite: ['availableAt'] as const}},
       byKey: {index: 'KeyIndex', pk: {field: 'gsi5pk', composite: ['key'] as const}, sk: {field: 'sk', composite: [] as const}}
     }
   } as const,

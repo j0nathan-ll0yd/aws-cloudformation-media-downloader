@@ -48,11 +48,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
   const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
-    MessageBody: 'FileNotification',
-    MessageAttributes: messageAttributes,
-    QueueUrl: process.env.SNSQueueUrl
-  } as SendMessageRequest
+  const sendMessageParams = {MessageBody: 'FileNotification', MessageAttributes: messageAttributes, QueueUrl: process.env.SNSQueueUrl} as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }

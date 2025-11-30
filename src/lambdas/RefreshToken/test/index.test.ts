@@ -8,10 +8,7 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
-jest.unstable_mockModule(
-  '../../../util/better-auth-helpers',
-  () => ({validateSessionToken: validateSessionTokenMock, refreshSession: refreshSessionMock})
-)
+jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({validateSessionToken: validateSessionTokenMock, refreshSession: refreshSessionMock}))
 
 const {handler} = await import('./../src')
 

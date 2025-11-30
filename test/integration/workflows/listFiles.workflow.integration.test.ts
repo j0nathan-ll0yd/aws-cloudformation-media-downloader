@@ -75,12 +75,7 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/files',
-      authorizer: {
-        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
-        userId,
-        userStatus,
-        integrationLatency: 342
-      },
+      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/files'
@@ -115,11 +110,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB responses
     // UserFiles.query.byUser returns array of individual UserFile records
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        createMockUserFile('user-abc-123', 'video-1'),
-        createMockUserFile('user-abc-123', 'video-2'),
-        createMockUserFile('user-abc-123', 'video-3')
-      ]
+      data: [createMockUserFile('user-abc-123', 'video-1'), createMockUserFile('user-abc-123', 'video-2'), createMockUserFile('user-abc-123', 'video-3')]
     })
 
     // Files.get now uses BATCH get - returns array of files with unprocessed

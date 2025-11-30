@@ -13,11 +13,7 @@ export const registerDeviceSchema = Joi.object({token: Joi.string().required()})
 
 export const userSubscribeSchema = Joi.object({endpointArn: Joi.string().required(), topicArn: Joi.string().required()})
 
-export const registerUserSchema = Joi.object({
-  idToken: Joi.string().required(),
-  firstName: Joi.string().required(),
-  lastName: Joi.string().required()
-})
+export const registerUserSchema = Joi.object({idToken: Joi.string().required(), firstName: Joi.string().required(), lastName: Joi.string().required()})
 
 export const loginUserSchema = Joi.object({idToken: Joi.string().required()})
 

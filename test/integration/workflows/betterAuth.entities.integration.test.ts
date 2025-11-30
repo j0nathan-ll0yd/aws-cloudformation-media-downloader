@@ -199,8 +199,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should update session expiration', async () => {
-      await Sessions.create(createMockSession({sessionId: 'session-update-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000}))
-        .go()
+      await Sessions.create(createMockSession({sessionId: 'session-update-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
       const newExpiresAt = Date.now() + 172800000
 
@@ -212,8 +211,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should delete session', async () => {
-      await Sessions.create(createMockSession({sessionId: 'session-delete-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000}))
-        .go()
+      await Sessions.create(createMockSession({sessionId: 'session-delete-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
       await Sessions.delete({sessionId: 'session-delete-1'}).go()
 
@@ -305,8 +303,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = 'user-collection-1'
 
       // Create user
-      await Users.create(createMockUser({userId, email: 'collection@example.com', emailVerified: true, firstName: 'Collection', lastName: 'Test'}))
-        .go()
+      await Users.create(createMockUser({userId, email: 'collection@example.com', emailVerified: true, firstName: 'Collection', lastName: 'Test'})).go()
 
       // Create sessions
       await Sessions.create(createMockSession({sessionId: 'coll-session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
@@ -330,8 +327,7 @@ describe('Better Auth Entities Integration Tests', () => {
       // Create OAuth accounts
       await Accounts.create(createMockAccount({accountId: 'coll-acc-apple', userId, providerId: 'apple', providerAccountId: 'apple-coll-123'})).go()
 
-      await Accounts.create(createMockAccount({accountId: 'coll-acc-google', userId, providerId: 'google', providerAccountId: 'google-coll-123'}))
-        .go()
+      await Accounts.create(createMockAccount({accountId: 'coll-acc-google', userId, providerId: 'google', providerAccountId: 'google-coll-123'})).go()
 
       // Query collection
       const result = await collections.userAccounts({userId}).go()
@@ -423,8 +419,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       // Attempting to create account with same accountId should fail
       await expect(
-        Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-2', providerId: 'google', providerAccountId: 'google-456'}))
-          .go()
+        Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-2', providerId: 'google', providerAccountId: 'google-456'})).go()
       ).rejects.toThrow()
     })
   })

@@ -73,9 +73,6 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
       return {lambdas: lambdaConfigs, invocations: await getLambdaInvocations()}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']}
   }
 }

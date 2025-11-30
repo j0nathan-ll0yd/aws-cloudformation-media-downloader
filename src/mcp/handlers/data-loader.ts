@@ -112,12 +112,7 @@ export async function getLambdaConfigs(): Promise<
     {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}
   >
 > {
-  const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([
-    discoverLambdas(),
-    loadMetadata(),
-    loadDependencyGraph(),
-    discoverEntities()
-  ])
+  const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([discoverLambdas(), loadMetadata(), loadDependencyGraph(), discoverEntities()])
 
   const configs: Record<
     string,

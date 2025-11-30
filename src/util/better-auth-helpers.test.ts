@@ -199,9 +199,7 @@ describe('Better Auth Helpers', () => {
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
       expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
-      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(
-        expect.objectContaining({expiresAt: expect.any(Number), updatedAt: expect.any(Number)})
-      )
+      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(expect.objectContaining({expiresAt: expect.any(Number), updatedAt: expect.any(Number)}))
     })
   })
 })

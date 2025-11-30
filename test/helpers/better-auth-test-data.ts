@@ -86,16 +86,7 @@ export function createMockUser(overrides?: Partial<MockUserData>): MockUserData 
     emailVerified: false,
     firstName: 'John',
     lastName: 'Doe',
-    identityProviders: {
-      userId: '',
-      email: '',
-      emailVerified: false,
-      isPrivateEmail: false,
-      accessToken: '',
-      refreshToken: '',
-      tokenType: '',
-      expiresAt: 0
-    },
+    identityProviders: {userId: '', email: '', emailVerified: false, isPrivateEmail: false, accessToken: '', refreshToken: '', tokenType: '', expiresAt: 0},
     createdAt: now,
     updatedAt: now,
     ...overrides
@@ -171,16 +162,7 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
   return createMockUser({
     firstName: '',
     lastName: '',
-    identityProviders: {
-      userId: '',
-      email: '',
-      emailVerified: false,
-      isPrivateEmail: false,
-      accessToken: '',
-      refreshToken: '',
-      tokenType: '',
-      expiresAt: 0
-    },
+    identityProviders: {userId: '', email: '', emailVerified: false, isPrivateEmail: false, accessToken: '', refreshToken: '', tokenType: '', expiresAt: 0},
     ...overrides
   })
 }

@@ -20,8 +20,7 @@ const excludedSourceVariables = {
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
-    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') &&
-      !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
+    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
   })
 }
 
@@ -56,9 +55,7 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   const matches = functionSource.match(sourceCodeRegex)
   logDebug(`functionSource.match(${sourceCodeRegex})`, JSON.stringify(matches))
   if (matches && matches.length > 0) {
-    environmentVariablesSource = filterSourceVariables([
-      ...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))
-    ])
+    environmentVariablesSource = filterSourceVariables([...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))])
     logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
     return environmentVariablesSource
   } else {
