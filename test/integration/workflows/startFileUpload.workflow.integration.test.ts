@@ -34,25 +34,19 @@ import {createS3Upload} from '#lib/vendor/AWS/S3'
 // Type assertion for createS3Upload to match S3UploadFunction signature
 const s3UploadFn = createS3Upload as S3UploadFunction
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
-const githubHelpersModulePath = resolve(__dirname, '../../../src/util/github-helpers')
-
 const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
 
 const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
-jest.unstable_mockModule(youtubeModulePath, () => ({
-  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo), // fmt: multiline
+// Mock modules using path aliases to match how handler imports them
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
+  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
+  fetchVideoInfoSafe: jest.fn<() => Promise<typeof mockVideoInfo | undefined>>().mockResolvedValue(undefined),
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
   streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
 
-jest.unstable_mockModule(githubHelpersModulePath, () => ({
+jest.unstable_mockModule('#util/github-helpers', () => ({
   createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
