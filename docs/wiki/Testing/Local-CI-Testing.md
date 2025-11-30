@@ -27,8 +27,12 @@ This project uses Husky to enforce CI checks before pushing. When you run `git p
 
 **First time setup** (after cloning):
 ```bash
-pnpm install
-pnpm run prepare  # Installs git hooks
+pnpm install  # Automatically runs 'prepare' which installs git hooks
+```
+
+**To verify hooks are installed**:
+```bash
+git config core.hooksPath  # Should output: .husky/_
 ```
 
 **To bypass in emergencies**:
@@ -36,7 +40,7 @@ pnpm run prepare  # Installs git hooks
 git push --no-verify
 ```
 
-Note: Lifecycle scripts are disabled in `.npmrc` for security, so `pnpm run prepare` must be run manually once after cloning.
+**Troubleshooting**: If `git config core.hooksPath` shows nothing, run `pnpm run prepare` manually.
 
 ## Available Commands
 
@@ -182,6 +186,22 @@ pnpm run localstack:stop && pnpm run localstack:start
 pnpm run graphrag:extract
 git add graphrag/knowledge-graph.json
 git commit -m "chore: update GraphRAG knowledge graph"
+```
+
+### Pre-push hook not running
+
+If `git push` succeeds without running CI checks:
+
+```bash
+# Check if hooks are configured
+git config core.hooksPath
+
+# If empty or missing, reinstall hooks
+pnpm run prepare
+
+# Verify hook exists and is executable
+ls -la .husky/pre-push
+ls -la .husky/_/pre-push
 ```
 
 ## Architecture
