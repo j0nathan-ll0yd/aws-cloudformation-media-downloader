@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
 import {StartFileUploadParams} from '#types/main'
+import {DownloadStatus} from '#types/enums'
 import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
 import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
@@ -11,8 +12,11 @@ const fetchVideoInfoMock = jest.fn<() => Promise<FetchVideoInfoResult>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
 const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-jest.unstable_mockModule('#lib/vendor/YouTube',
-  () => ({fetchVideoInfo: fetchVideoInfoMock, chooseVideoFormat: chooseVideoFormatMock, streamVideoToS3: streamVideoToS3Mock}))
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
+  fetchVideoInfo: fetchVideoInfoMock,
+  chooseVideoFormat: chooseVideoFormatMock,
+  streamVideoToS3: streamVideoToS3Mock
+}))
 
 // Mock ElectroDB Files entity (for permanent metadata)
 const filesMock = createElectroDBEntityMock()
@@ -20,7 +24,10 @@ jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 // Mock ElectroDB FileDownloads entity (for transient download state)
 const fileDownloadsMock = createElectroDBEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock.entity}))
+jest.unstable_mockModule('#entities/FileDownloads', () => ({
+  FileDownloads: fileDownloadsMock.entity,
+  DownloadStatus // Re-export the real enum
+}))
 
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

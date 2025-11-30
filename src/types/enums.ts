@@ -8,7 +8,7 @@ export enum UserStatus {
  * File status for permanent media records.
  *
  * These are FINAL states only - all transient/orchestration states
- * (retries, scheduling, in_progress) are in FileDownloads.DownloadStatus.
+ * (retries, scheduling, in_progress) are in DownloadStatus.
  *
  * - pending: File record exists, download not yet complete
  * - available: Successfully downloaded, ready for users
@@ -18,6 +18,24 @@ export enum FileStatus {
   Pending = 'pending',
   Available = 'available',
   Unavailable = 'unavailable'
+}
+
+/**
+ * Download status for transient orchestration state.
+ *
+ * Tracks the download lifecycle in FileDownloads entity:
+ * - pending: Queued, waiting for FileCoordinator to pick up
+ * - in_progress: Currently being downloaded
+ * - scheduled: Failed but scheduled for retry (retryAfter set)
+ * - completed: Successfully downloaded (can be cleaned up)
+ * - failed: Permanently failed, no more retries
+ */
+export enum DownloadStatus {
+  Pending = 'pending',
+  InProgress = 'in_progress',
+  Scheduled = 'scheduled',
+  Completed = 'completed',
+  Failed = 'failed'
 }
 
 export enum ResponseStatus {

@@ -81,7 +81,7 @@ async function handleDownloadFailure(
 
   // Handle retryable errors with scheduled retry
   if (classification.retryable && classification.retryAfter && !isRetryExhausted(newRetryCount, maxRetries)) {
-    await updateDownloadState(fileId, 'scheduled', classification, newRetryCount)
+    await updateDownloadState(fileId, DownloadStatus.Scheduled, classification, newRetryCount)
 
     await putMetrics([
       {name: 'ScheduledVideoDetected', value: 1, unit: 'Count'},
@@ -97,7 +97,7 @@ async function handleDownloadFailure(
     // Return success - scheduling a retry is expected behavior, not a failure
     return response(context, 200, {
       fileId,
-      status: 'scheduled',
+      status: DownloadStatus.Scheduled,
       retryAfter: classification.retryAfter,
       retryCount: newRetryCount,
       reason: classification.reason
@@ -105,7 +105,7 @@ async function handleDownloadFailure(
   }
 
   // Handle permanent failures or retry exhaustion
-  await updateDownloadState(fileId, 'failed', classification, newRetryCount)
+  await updateDownloadState(fileId, DownloadStatus.Failed, classification, newRetryCount)
 
   // Also update File entity to reflect permanent failure
   try {
@@ -128,7 +128,7 @@ async function handleDownloadFailure(
     logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
   }
 
-  return response(context, 500, {fileId, status: 'failed', error: classification.reason, category: classification.category})
+  return response(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
 }
 
 /**
@@ -169,7 +169,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   }
 
   // Mark download as in_progress
-  await updateDownloadState(fileId, 'in_progress', undefined, existingRetryCount)
+  await updateDownloadState(fileId, DownloadStatus.InProgress, undefined, existingRetryCount)
 
   const segment = getSegment()
 
@@ -250,7 +250,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   logDebug('upsertFile =>')
 
   // Step 5: Mark download as completed
-  await updateDownloadState(fileId, 'completed', undefined, existingRetryCount)
+  await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
   await putMetric('LambdaExecutionSuccess', 1)
 

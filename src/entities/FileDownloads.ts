@@ -1,10 +1,7 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
-/**
- * Download status for FileDownloads entity.
- * Separate from FileStatus to represent transient download state.
- */
-export type DownloadStatus = 'pending' | 'in_progress' | 'scheduled' | 'completed' | 'failed'
+// Re-export DownloadStatus enum from enums for consumers of this module
+export {DownloadStatus} from '#types/enums'
 
 /**
  * ElectroDB entity schema for tracking download attempts.

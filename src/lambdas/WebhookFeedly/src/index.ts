@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '#entities/Files'
-import {FileDownloads} from '#entities/FileDownloads'
+import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
@@ -69,7 +69,7 @@ async function addFile(fileId: string, sourceUrl?: string) {
   // Create FileDownloads record to track download orchestration
   const downloadResponse = await FileDownloads.create({
     fileId,
-    status: 'pending',
+    status: DownloadStatus.Pending,
     sourceUrl
   }).go()
   logDebug('addFile FileDownloads.create =>', downloadResponse)

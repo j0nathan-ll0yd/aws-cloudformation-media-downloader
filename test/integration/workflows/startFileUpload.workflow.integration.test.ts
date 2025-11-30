@@ -21,7 +21,7 @@ process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '#types/enums'
+import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
@@ -56,7 +56,10 @@ jest.unstable_mockModule('#util/github-helpers', () => ({
 
 // Mock FileDownloads entity (transient orchestration state)
 const fileDownloadsMock = createElectroDBEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock.entity}))
+jest.unstable_mockModule('#entities/FileDownloads', () => ({
+  FileDownloads: fileDownloadsMock.entity,
+  DownloadStatus // Re-export the real enum
+}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler

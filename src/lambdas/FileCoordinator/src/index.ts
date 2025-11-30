@@ -1,5 +1,5 @@
 import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
-import {FileDownloads} from '#entities/FileDownloads'
+import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {logDebug, logInfo, putMetrics, response} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
@@ -21,7 +21,7 @@ async function getPendingFileIds(): Promise<string[]> {
 
   // Query FileDownloads with status='pending' - these are new downloads
   // Note: pending downloads don't have retryAfter set, so we just query by status
-  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: 'pending'}).go()
+  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Pending}).go()
 
   logDebug('getPendingFileIds =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {
@@ -40,7 +40,7 @@ async function getScheduledFileIds(): Promise<string[]> {
   const nowSeconds = Math.floor(Date.now() / 1000)
 
   // Query FileDownloads with status='scheduled' and retryAfter <= now
-  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: 'scheduled'}).where(({retryAfter}, {lte}) => lte(retryAfter, nowSeconds)).go()
+  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Scheduled}).where(({retryAfter}, {lte}) => lte(retryAfter, nowSeconds)).go()
 
   logDebug('getScheduledFileIds =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {

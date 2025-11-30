@@ -18,9 +18,10 @@ process.env.StartFileUploadFunctionArn = 'arn:aws:lambda:us-west-2:123456789012:
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-import {createMockScheduledEvent} from '../helpers/test-data'
+import {DownloadStatus} from '#types/enums'
+import {createFilesTable, deleteFilesTable} from '#test/integration/helpers/dynamodb-helpers'
+import {createMockContext} from '#test/integration/helpers/lambda-context'
+import {createMockScheduledEvent} from '#test/integration/helpers/test-data'
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
 
@@ -35,8 +36,8 @@ jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMoc
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
 
 // Helper to insert a FileDownloads record for testing
-async function insertFileDownload(fileId: string, status: 'pending' | 'scheduled', retryAfter?: number) {
-  const {FileDownloads} = await import('../../../src/entities/FileDownloads')
+async function insertFileDownload(fileId: string, status: DownloadStatus, retryAfter?: number) {
+  const {FileDownloads} = await import('#entities/FileDownloads')
   await FileDownloads.create({
     fileId,
     status,
@@ -47,10 +48,10 @@ async function insertFileDownload(fileId: string, status: 'pending' | 'scheduled
 
 // Helper to clear FileDownloads table
 async function clearFileDownloads() {
-  const {FileDownloads} = await import('../../../src/entities/FileDownloads')
+  const {FileDownloads} = await import('#entities/FileDownloads')
   // Query and delete all - for testing purposes
-  const pending = await FileDownloads.query.byStatusRetryAfter({status: 'pending'}).go()
-  const scheduled = await FileDownloads.query.byStatusRetryAfter({status: 'scheduled'}).go()
+  const pending = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Pending}).go()
+  const scheduled = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Scheduled}).go()
   const all = [...(pending.data || []), ...(scheduled.data || [])]
   for (const record of all) {
     await FileDownloads.delete({fileId: record.fileId}).go()
@@ -87,9 +88,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
 
   test('should fan-out to multiple StartFileUpload invocations for pending downloads', async () => {
     // Create 3 pending download records
-    await insertFileDownload('video-1', 'pending')
-    await insertFileDownload('video-2', 'pending')
-    await insertFileDownload('video-3', 'pending')
+    await insertFileDownload('video-1', DownloadStatus.Pending)
+    await insertFileDownload('video-2', DownloadStatus.Pending)
+    await insertFileDownload('video-3', DownloadStatus.Pending)
 
     const result = await handler(createMockScheduledEvent('test-event-1'), mockContext)
 
@@ -114,11 +115,11 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Scheduled retry ready to process
-    await insertFileDownload('past-retry', 'scheduled', nowSeconds - 100)
+    await insertFileDownload('past-retry', DownloadStatus.Scheduled, nowSeconds - 100)
     // Scheduled retry not yet ready
-    await insertFileDownload('future-retry', 'scheduled', nowSeconds + 3600)
+    await insertFileDownload('future-retry', DownloadStatus.Scheduled, nowSeconds + 3600)
     // Another ready one
-    await insertFileDownload('now-retry', 'scheduled', nowSeconds)
+    await insertFileDownload('now-retry', DownloadStatus.Scheduled, nowSeconds)
 
     const result = await handler(createMockScheduledEvent('test-event-3'), mockContext)
 
@@ -136,9 +137,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Pending download (new)
-    await insertFileDownload('pending-video', 'pending')
+    await insertFileDownload('pending-video', DownloadStatus.Pending)
     // Scheduled retry (ready)
-    await insertFileDownload('scheduled-video', 'scheduled', nowSeconds - 100)
+    await insertFileDownload('scheduled-video', DownloadStatus.Scheduled, nowSeconds - 100)
 
     const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 

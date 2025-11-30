@@ -1,5 +1,6 @@
 import {testContext} from '#util/jest-setup'
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {DownloadStatus} from '#types/enums'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const {default: eventMock} = await import('./fixtures/ScheduledEvent.json', {assert: {type: 'json'}})
 
@@ -8,7 +9,10 @@ const {default: eventMock} = await import('./fixtures/ScheduledEvent.json', {ass
 // - status='pending' for new downloads
 // - status='scheduled' for retries
 const fileDownloadsMock = createElectroDBEntityMock({queryIndexes: ['byStatusRetryAfter']})
-jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock.entity}))
+jest.unstable_mockModule('#entities/FileDownloads', () => ({
+  FileDownloads: fileDownloadsMock.entity,
+  DownloadStatus // Re-export the real enum
+}))
 
 const invokeAsyncMock = jest.fn<() => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
