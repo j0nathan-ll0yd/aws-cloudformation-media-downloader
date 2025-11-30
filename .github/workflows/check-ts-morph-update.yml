@@ -1,0 +1,54 @@
+name: Check ts-morph Update
+
+on:
+  pull_request:
+    paths:
+      - 'pnpm-lock.yaml'
+
+jobs:
+  check-ts-morph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for diff
+
+      - name: Check if ts-morph was updated
+        id: check
+        run: |
+          set -e
+
+          echo "Checking if ts-morph was updated in this PR..."
+
+          # Get the diff of pnpm-lock.yaml against the base branch
+          if git diff origin/${{ github.base_ref }} -- pnpm-lock.yaml | grep -q '"ts-morph"'; then
+            echo "ts_morph_updated=true" >> $GITHUB_OUTPUT
+            echo "✅ ts-morph package was updated in this PR"
+          else
+            echo "ts_morph_updated=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ ts-morph was not updated in this PR"
+          fi
+
+      - name: Comment on DEP0180 issue
+        if: steps.check.outputs.ts_morph_updated == 'true'
+        run: |
+          gh issue comment 137 \
+            --repo j0nathan-ll0yd/aws-cloudformation-media-downloader \
+            --body "$(cat <<EOF
+          📦 **ts-morph Update Detected**
+
+          PR #${{ github.event.pull_request.number }} updates the \`ts-morph\` package.
+
+          **Please test if the DEP0180 flag can be removed**:
+          \`\`\`bash
+          # Run without the --disable-warning flag
+          node --import tsx scripts/generateDependencyGraph.ts 2>&1 | grep DEP0180
+          \`\`\`
+
+          If no DEP0180 warning appears, you can remove the flag from \`package.json\` and close this issue.
+
+          [View PR](${{ github.event.pull_request.html_url }})
+          EOF
+          )"
+        env:
+          GH_TOKEN: ${{ github.token }}

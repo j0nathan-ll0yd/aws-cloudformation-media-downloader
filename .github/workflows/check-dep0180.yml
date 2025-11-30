@@ -1,0 +1,83 @@
+name: Check DEP0180 Status
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'  # Monthly on the 1st at 9am UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  check-deprecation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test for DEP0180 warning
+        id: check
+        run: |
+          set -e
+
+          echo "Running generateDependencyGraph.ts WITHOUT --disable-warning=DEP0180..."
+
+          # Run the script without the deprecation suppression flag
+          # Capture both stdout and stderr
+          OUTPUT=$(node --import tsx scripts/generateDependencyGraph.ts 2>&1) || true
+
+          # Check if DEP0180 appears in the output
+          if echo "$OUTPUT" | grep -q "DEP0180"; then
+            echo "still_broken=true" >> $GITHUB_OUTPUT
+            echo "⚠️ DEP0180 warning still appears - ts-morph or dependencies not yet fixed"
+          else
+            echo "still_broken=false" >> $GITHUB_OUTPUT
+            echo "✅ No DEP0180 warning detected!"
+          fi
+
+          # Get current ts-morph version for the report
+          TS_MORPH_VERSION=$(pnpm list ts-morph --depth=0 | grep ts-morph || echo "unknown")
+          echo "ts_morph_version=${TS_MORPH_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Comment on issue if fixed
+        if: steps.check.outputs.still_broken == 'false'
+        run: |
+          gh issue comment 137 \
+            --repo j0nathan-ll0yd/aws-cloudformation-media-downloader \
+            --body "$(cat <<EOF
+          🎉 **DEP0180 Warning No Longer Appears!**
+
+          The monthly automated check found that the \`--disable-warning=DEP0180\` flag can likely be removed.
+
+          **Current ts-morph version**: ${{ steps.check.outputs.ts_morph_version }}
+
+          **Next steps**:
+          1. Remove \`--disable-warning=DEP0180\` from \`package.json\` scripts
+          2. Test locally to confirm no warnings appear
+          3. Close this issue
+
+          [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+          )"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          gh issue create \
+            --repo j0nathan-ll0yd/aws-cloudformation-media-downloader \
+            --title "DEP0180 check workflow failed" \
+            --body "The automated DEP0180 deprecation check workflow failed. Check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
+            --label "bug" \
+            --label "automation"
+        env:
+          GH_TOKEN: ${{ github.token }}
