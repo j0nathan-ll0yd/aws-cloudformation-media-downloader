@@ -19,9 +19,7 @@ import {handleLambdaQuery} from './handlers/lambda.js'
 import {handleInfrastructureQuery} from './handlers/infrastructure.js'
 
 // Create server instance
-const server = new Server({ name: 'media-downloader-mcp', version: '1.0.0' }, {
-  capabilities: { tools: {} }
-})
+const server = new Server({ name: 'media-downloader-mcp', version: '1.0.0' }, { capabilities: { tools: {} } })
 
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -120,12 +118,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`)
     }
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: `Error: ${error instanceof Error ? error.message : String(error)}`
-      }]
-    }
+    return { content: [{ type: 'text', text: `Error: ${error instanceof Error ? error.message : String(error)}` }] }
   }
 })
 
@@ -162,16 +155,11 @@ async function handleDependencyQuery(args: { file?: string; query: string }) {
 
     case 'transitive': {
       if (!file) {
-        return {
-          content: [{ type: 'text', text: 'File path required for transitive dependencies query' }]
-        }
+        return { content: [{ type: 'text', text: 'File path required for transitive dependencies query' }] }
       }
       const transitive = graphData.transitiveDependencies[file] || []
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({ file, transitiveDependencies: transitive }, null, 2)
-        }]
+        content: [{ type: 'text', text: JSON.stringify({ file, transitiveDependencies: transitive }, null, 2) }]
       }
     }
 
@@ -179,11 +167,7 @@ async function handleDependencyQuery(args: { file?: string; query: string }) {
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify(
-            { circularDependencies: graphData.circularDependencies || [] },
-            null,
-            2
-          )
+          text: JSON.stringify({ circularDependencies: graphData.circularDependencies || [] }, null, 2)
         }]
       }
 

@@ -11,12 +11,8 @@ import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 const fakeUserId = uuidv4()
-const { default: queryStubReturnObject } = await import('./fixtures/query-200-OK.json', {
-  assert: { type: 'json' }
-})
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: queryStubReturnObject } = await import('./fixtures/query-200-OK.json', { assert: { type: 'json' } })
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 
 const userFilesMock = createElectroDBEntityMock({ queryIndexes: ['byUser'] })
 const filesMock = createElectroDBEntityMock()

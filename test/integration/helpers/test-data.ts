@@ -19,11 +19,7 @@ import {DynamoDBFile} from '../../../src/types/main'
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults
  */
-export function createMockFile(
-  id: string,
-  status: FileStatus,
-  partial?: Partial<DynamoDBFile>
-): Partial<DynamoDBFile> {
+export function createMockFile(id: string, status: FileStatus, partial?: Partial<DynamoDBFile>): Partial<DynamoDBFile> {
   const base: Partial<DynamoDBFile> = {
     fileId: id,
     status,
@@ -53,11 +49,7 @@ export function createMockFile(
  * @param status - Status for all files
  * @param idPrefix - Prefix for file IDs (default: 'video')
  */
-export function createMockFiles(
-  count: number,
-  status: FileStatus,
-  idPrefix = 'video'
-): Partial<DynamoDBFile>[] {
+export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<DynamoDBFile>[] {
   return Array.from({ length: count }, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
 }
 
@@ -85,10 +77,7 @@ export function createMockUserDevice(userId: string, deviceId: string) {
  * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
  */
 export function createMockDevice(deviceId: string, endpointArn?: string) {
-  return {
-    deviceId,
-    endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`
-  }
+  return { deviceId, endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}` }
 }
 
 /**
@@ -119,10 +108,7 @@ export function createMockSQSFileNotificationEvent(
         userId: { stringValue: userId, dataType: 'String' },
         fileId: { stringValue: fileId, dataType: 'String' },
         key: { stringValue: file.key || `${fileId}.mp4`, dataType: 'String' },
-        publishDate: {
-          stringValue: file.publishDate || new Date().toISOString(),
-          dataType: 'String'
-        },
+        publishDate: { stringValue: file.publishDate || new Date().toISOString(), dataType: 'String' },
         size: { stringValue: String(file.size || 5242880), dataType: 'String' },
         url: { stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String' },
         title: { stringValue: file.title || 'Test Video', dataType: 'String' }
@@ -140,10 +126,7 @@ export function createMockSQSFileNotificationEvent(
  * @param eventId - Unique event ID
  * @param ruleName - Name of the EventBridge rule (default: 'FileCoordinatorSchedule')
  */
-export function createMockScheduledEvent(
-  eventId: string,
-  ruleName = 'FileCoordinatorSchedule'
-): ScheduledEvent {
+export function createMockScheduledEvent(eventId: string, ruleName = 'FileCoordinatorSchedule'): ScheduledEvent {
   return {
     id: eventId,
     version: '0',

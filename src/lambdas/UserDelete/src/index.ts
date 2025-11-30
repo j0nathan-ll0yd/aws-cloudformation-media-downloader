@@ -35,10 +35,7 @@ async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
   const userFiles = await UserFiles.query.byUser({ userId }).go()
   if (userFiles.data && userFiles.data.length > 0) {
-    const deleteKeys = userFiles.data.map((userFile) => ({
-      userId: userFile.userId,
-      fileId: userFile.fileId
-    }))
+    const deleteKeys = userFiles.data.map((userFile) => ({ userId: userFile.userId, fileId: userFile.fileId }))
     const { unprocessed } = await UserFiles.delete(deleteKeys).go({ concurrency: 5 })
     if (unprocessed.length > 0) {
       logDebug('deleteUserFiles.unprocessed =>', unprocessed)
@@ -76,10 +73,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param context - An AWS Context object
  */
 export const handler = withXRay(
-  async (
-    event: CustomAPIGatewayRequestAuthorizerEvent,
-    context: Context
-  ): Promise<APIGatewayProxyResult> => {
+  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
     logIncomingFixture(event)
     const { userId } = getUserDetailsFromEvent(event)
     if (!userId) {
@@ -108,10 +102,7 @@ export const handler = withXRay(
       }
     } catch (error) {
       assertIsError(error)
-      const errorResult = lambdaErrorResponse(
-        context,
-        new UnexpectedError('Service unavailable; try again later')
-      )
+      const errorResult = lambdaErrorResponse(context, new UnexpectedError('Service unavailable; try again later'))
       logOutgoingFixture(errorResult)
       return errorResult
     }

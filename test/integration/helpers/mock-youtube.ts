@@ -92,9 +92,7 @@ export function createMockVideoStream(sizeInBytes: number, contentPattern: strin
 /**
  * Mock streamVideoToS3 result
  */
-export function createMockStreamResult(
-  sizeInBytes: number
-): { fileSize: number; s3Url: string; duration: number } {
+export function createMockStreamResult(sizeInBytes: number): { fileSize: number; s3Url: string; duration: number } {
   return {
     fileSize: sizeInBytes,
     s3Url: 's3://test-bucket/test-video.mp4',
@@ -106,9 +104,7 @@ export function createMockStreamResult(
  * Create mock implementation of fetchVideoInfo
  */
 export function mockFetchVideoInfo(videoInfo?: YtDlpVideoInfo): jest.Mock {
-  return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(
-    videoInfo || createMockVideoInfo()
-  )
+  return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(videoInfo || createMockVideoInfo())
 }
 
 /**
@@ -162,8 +158,6 @@ export function createMockStreamVideoToS3WithRealUpload(createS3Upload: S3Upload
 /**
  * Create mock implementation of streamVideoToS3 that fails for testing error handling
  */
-export function createMockStreamVideoToS3WithFailure(
-  errorMessage: string = 'Mock S3 upload failed'
-): jest.Mock {
+export function createMockStreamVideoToS3WithFailure(errorMessage: string = 'Mock S3 upload failed'): jest.Mock {
   return jest.fn<() => Promise<never>>().mockRejectedValue(new Error(errorMessage))
 }

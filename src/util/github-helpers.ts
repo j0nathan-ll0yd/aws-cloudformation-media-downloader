@@ -42,20 +42,9 @@ export async function createFailedUserDeletionIssue(
   requestId: string
 ) {
   const title = `User Deletion Failed: ${userId}`
-  const body = renderGithubIssueTemplate('user-deletion-failure', {
-    userId,
-    devices,
-    error,
-    requestId
-  })
+  const body = renderGithubIssueTemplate('user-deletion-failure', { userId, devices, error, requestId })
 
-  const params = {
-    owner,
-    repo,
-    title,
-    body,
-    labels: ['bug', 'user-management', 'automated', 'requires-manual-fix']
-  }
+  const params = { owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix'] }
 
   try {
     const octokit = await getOctokitInstance()
@@ -77,12 +66,7 @@ export async function createVideoDownloadFailureIssue(
   errorDetails?: string
 ) {
   const title = `Video Download Failed: ${fileId}`
-  const body = renderGithubIssueTemplate('video-download-failure', {
-    fileId,
-    fileUrl,
-    error,
-    errorDetails
-  })
+  const body = renderGithubIssueTemplate('video-download-failure', { fileId, fileUrl, error, errorDetails })
 
   const params = { owner, repo, title, body, labels: ['bug', 'video-download', 'automated'] }
 

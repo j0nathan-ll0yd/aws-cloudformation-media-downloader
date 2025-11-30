@@ -10,9 +10,7 @@ import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()

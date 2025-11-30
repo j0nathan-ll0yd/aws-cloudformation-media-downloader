@@ -110,9 +110,7 @@ export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
 }
 
-export function getUserDetailsFromEvent(
-  event: CustomAPIGatewayRequestAuthorizerEvent
-): UserEventDetails {
+export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
   let principalId = 'unknown'
   // This should always be present, via the API Gateway
   /* c8 ignore else */

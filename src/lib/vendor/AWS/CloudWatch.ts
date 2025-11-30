@@ -18,9 +18,7 @@ const unitMapping: Record<string, StandardUnit> = {
   Milliseconds: StandardUnit.Milliseconds
 }
 
-export function putMetricData(
-  params: PutMetricDataCommandInput
-): Promise<PutMetricDataCommandOutput> {
+export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMetricDataCommandOutput> {
   const command = new PutMetricDataCommand(params)
   return cloudwatch.send(command)
 }

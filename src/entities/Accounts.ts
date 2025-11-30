@@ -43,10 +43,7 @@ export const Accounts = new Entity(
       }
     },
     indexes: {
-      primary: {
-        pk: { field: 'pk', composite: ['accountId'] },
-        sk: { field: 'sk', composite: [] }
-      },
+      primary: { pk: { field: 'pk', composite: ['accountId'] }, sk: { field: 'sk', composite: [] } },
       byUser: {
         index: 'gsi1',
         pk: { field: 'gsi1pk', composite: ['userId'] },

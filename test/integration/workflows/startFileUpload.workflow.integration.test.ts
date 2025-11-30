@@ -113,35 +113,31 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     jest.clearAllMocks()
   })
 
-  test(
-    'should complete video download workflow with correct DynamoDB state transitions',
-    async () => {
-      const fileId = 'test-video-123'
-      const event = { fileId }
+  test('should complete video download workflow with correct DynamoDB state transitions', async () => {
+    const fileId = 'test-video-123'
+    const event = { fileId }
 
-      const result = await handler(event, mockContext)
+    const result = await handler(event, mockContext)
 
-      expect(result.statusCode).toBe(200)
-      const response = JSON.parse(result.body)
-      expect(response.body.fileId).toBe(fileId)
-      expect(response.body.status).toBe('success')
-      expect(response.body.fileSize).toBe(5242880)
+    expect(result.statusCode).toBe(200)
+    const response = JSON.parse(result.body)
+    expect(response.body.fileId).toBe(fileId)
+    expect(response.body.status).toBe('success')
+    expect(response.body.fileSize).toBe(5242880)
 
-      const file = await getFile(fileId)
-      expect(file).not.toBeNull()
-      expect(file!.fileId).toBe(fileId)
-      expect(file!.status).toBe(FileStatus.Downloaded)
-      expect(file!.size).toBe(5242880)
-      expect(file!.key).toBe('test-video-123.mp4')
-      expect(file!.title).toBe('Integration Test Video')
-      expect(file!.authorName).toBe('Test Channel')
-      expect(file!.contentType).toBe('video/mp4')
+    const file = await getFile(fileId)
+    expect(file).not.toBeNull()
+    expect(file!.fileId).toBe(fileId)
+    expect(file!.status).toBe(FileStatus.Downloaded)
+    expect(file!.size).toBe(5242880)
+    expect(file!.key).toBe('test-video-123.mp4')
+    expect(file!.title).toBe('Integration Test Video')
+    expect(file!.authorName).toBe('Test Channel')
+    expect(file!.contentType).toBe('video/mp4')
 
-      const s3Metadata = await getObjectMetadata(TEST_BUCKET, 'test-video-123.mp4')
-      expect(s3Metadata).not.toBeNull()
-      expect(s3Metadata!.contentLength).toBe(5242880)
-      expect(s3Metadata!.contentType).toBe('video/mp4')
-    },
-    30000
-  )
+    const s3Metadata = await getObjectMetadata(TEST_BUCKET, 'test-video-123.mp4')
+    expect(s3Metadata).not.toBeNull()
+    expect(s3Metadata!.contentLength).toBe(5242880)
+    expect(s3Metadata!.contentType).toBe('video/mp4')
+  }, 30000)
 })

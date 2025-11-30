@@ -47,10 +47,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function createPlatformEndpointFromToken(token: string) {
   // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
-  const params = {
-    PlatformApplicationArn: process.env.PlatformApplicationArn as string,
-    Token: token
-  }
+  const params = { PlatformApplicationArn: process.env.PlatformApplicationArn as string, Token: token }
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
   if (!createPlatformEndpointResponse) {
@@ -110,15 +107,10 @@ async function upsertDevice(device: Device) {
  * @param topicArn - The Device details (e.g. endpointArn)
  * @notExported
  */
-async function getSubscriptionArnFromEndpointAndTopic(
-  endpointArn: string,
-  topicArn: string
-): Promise<string> {
+async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topicArn: string): Promise<string> {
   const listSubscriptionsByTopicParams = { TopicArn: topicArn }
   logDebug('getSubscriptionArnFromEndpointAndTopic <=', listSubscriptionsByTopicParams)
-  const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(
-    listSubscriptionsByTopicParams
-  )
+  const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
   logDebug('getSubscriptionArnFromEndpointAndTopic =>', listSubscriptionsByTopicResponse)
   if (!listSubscriptionsByTopicResponse || !listSubscriptionsByTopicResponse.Subscriptions) {
     throw new UnexpectedError(providerFailureErrorMessage)
@@ -137,10 +129,7 @@ async function getSubscriptionArnFromEndpointAndTopic(
  * @notExported
  */
 export const handler = withXRay(
-  async (
-    event: CustomAPIGatewayRequestAuthorizerEvent,
-    context: Context
-  ): Promise<APIGatewayProxyResult> => {
+  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
     logIncomingFixture(event)
     let requestBody
     try {
@@ -177,9 +166,7 @@ export const handler = withXRay(
             pushNotificationTopicArn
           )
           await unsubscribeEndpointToTopic(subscriptionArn)
-          const createdResult = response(context, 201, {
-            endpointArn: platformEndpoint.EndpointArn
-          })
+          const createdResult = response(context, 201, { endpointArn: platformEndpoint.EndpointArn })
           logOutgoingFixture(createdResult)
           return createdResult
         }

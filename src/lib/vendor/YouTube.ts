@@ -65,22 +65,12 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
     // - no-warnings: Suppress format selection warnings
     // - cookies: Use authentication cookies from /tmp (writable)
     // Note: Node.js runtime detection handled via PATH environment variable
-    const ytdlpFlags = [
-      '--extractor-args',
-      'youtube:player_client=default',
-      '--no-warnings',
-      '--cookies',
-      cookiesDest
-    ]
+    const ytdlpFlags = ['--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', cookiesDest]
 
     // Get video info in JSON format
     const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
 
-    logDebug('fetchVideoInfo <=', {
-      id: info.id,
-      title: info.title,
-      formatCount: info.formats?.length || 0
-    })
+    logDebug('fetchVideoInfo <=', { id: info.id, title: info.title, formatCount: info.formats?.length || 0 })
 
     return info
   } catch (error) {
@@ -90,9 +80,7 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
     // Check if this is a cookie expiration error
     if (isCookieExpirationError(error.message)) {
       logError('Cookie expiration detected', { message: error.message })
-      throw new CookieExpirationError(
-        `YouTube cookie expiration or bot detection: ${error.message}`
-      )
+      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
     }
 
     throw new UnexpectedError(`Failed to fetch video info: ${error.message}`)
@@ -135,9 +123,7 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
   }
 
   // 2. Try progressive formats without filesize (GOOD - direct download URL, size unknown)
-  const progressiveWithoutSize = combinedFormats.filter((f) =>
-    !f.url.includes('manifest') && !f.url.includes('.m3u8')
-  )
+  const progressiveWithoutSize = combinedFormats.filter((f) => !f.url.includes('manifest') && !f.url.includes('.m3u8'))
 
   if (progressiveWithoutSize.length > 0) {
     const sorted = progressiveWithoutSize.sort((a, b) => {
@@ -280,9 +266,7 @@ export async function streamVideoToS3(
         let error: Error
         if (isCookieExpirationError(stderrOutput)) {
           logError('Cookie expiration detected in stderr', { stderrOutput })
-          error = new CookieExpirationError(
-            `YouTube cookie expiration or bot detection: ${stderrOutput}`
-          )
+          error = new CookieExpirationError(`YouTube cookie expiration or bot detection: ${stderrOutput}`)
         } else {
           error = new UnexpectedError(`yt-dlp process exited with code ${code}: ${stderrOutput}`)
         }
@@ -346,9 +330,7 @@ export async function streamVideoToS3(
 
     // Check if the error message contains cookie expiration indicators
     if (isCookieExpirationError(error.message)) {
-      throw new CookieExpirationError(
-        `YouTube cookie expiration or bot detection: ${error.message}`
-      )
+      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
     }
 
     throw new UnexpectedError(`Failed to stream video to S3: ${error.message}`)

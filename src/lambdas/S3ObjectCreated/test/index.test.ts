@@ -19,10 +19,7 @@ jest.unstable_mockModule(
   () => ({
     sendMessage: jest.fn(),
     stringAttribute: jest.fn((value: string) => ({ DataType: 'String', StringValue: value })),
-    numberAttribute: jest.fn((value: number) => ({
-      DataType: 'Number',
-      StringValue: value.toString()
-    }))
+    numberAttribute: jest.fn((value: number) => ({ DataType: 'Number', StringValue: value.toString() }))
   })
 )
 
@@ -36,10 +33,9 @@ describe('#S3ObjectCreated', () => {
       assert: { type: 'json' }
     })
     filesMock.mocks.query.byKey!.go.mockResolvedValue({ data: getFileByKeyResponse.Items })
-    const { default: getUsersByFileIdResponse } = await import(
-      './fixtures/getUsersByFileId-200-OK.json',
-      { assert: { type: 'json' } }
-    )
+    const { default: getUsersByFileIdResponse } = await import('./fixtures/getUsersByFileId-200-OK.json', {
+      assert: { type: 'json' }
+    })
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({ data: getUsersByFileIdResponse.Items })
     const output = await handler(event, testContext)
     expect(output).toBeUndefined()

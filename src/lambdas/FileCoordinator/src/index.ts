@@ -22,10 +22,9 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   logDebug('Querying for files ready to be downloaded')
-  const queryResponse = await Files.query.byStatus({ status: 'PendingDownload' }).where((
-    { availableAt },
-    { lte }
-  ) => lte(availableAt, Date.now())).where(({ url }, { notExists }) => notExists(url)).go()
+  const queryResponse = await Files.query.byStatus({ status: 'PendingDownload' }).where(({ availableAt }, { lte }) =>
+    lte(availableAt, Date.now())
+  ).where(({ url }, { notExists }) => notExists(url)).go()
   logDebug('getFilesToBeDownloaded =>', queryResponse)
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
@@ -38,13 +37,11 @@ async function getFileIdsToBeDownloaded(): Promise<string[]> {
  * @param event - An AWS ScheduledEvent; happening every X minutes
  * @param context - An AWS Context object
  */
-export const handler = withXRay(
-  async (event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logInfo('event', event)
-    const files = await getFileIdsToBeDownloaded()
-    const downloads: Promise<void>[] = []
-    files.forEach((fileId) => downloads.push(initiateFileDownload(fileId)))
-    await Promise.all(downloads)
-    return response(context, 200)
-  }
-)
+export const handler = withXRay(async (event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logInfo('event', event)
+  const files = await getFileIdsToBeDownloaded()
+  const downloads: Promise<void>[] = []
+  files.forEach((fileId) => downloads.push(initiateFileDownload(fileId)))
+  await Promise.all(downloads)
+  return response(context, 200)
+})

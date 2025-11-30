@@ -53,9 +53,7 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
   return apnsResponse.statusCode === 410
 }
 
-async function dispatchHealthCheckNotificationToDeviceToken(
-  token: string
-): Promise<ApplePushNotificationResponse> {
+async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
   const client = new ApnsClient({
     team: process.env.ApnsTeam,

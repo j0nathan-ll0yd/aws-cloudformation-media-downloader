@@ -18,21 +18,15 @@ const unauthorizedError = new Error('Unauthorized')
 const getApiKeysMock = jest.fn()
 const getUsagePlansMock = jest.fn()
 const getUsageMock = jest.fn()
-const { default: getUsagePlansResponse } = await import('./fixtures/getUsagePlans.json', {
-  assert: { type: 'json' }
-})
-const { default: getUsageResponse } = await import('./fixtures/getUsage.json', {
-  assert: { type: 'json' }
-})
+const { default: getUsagePlansResponse } = await import('./fixtures/getUsagePlans.json', { assert: { type: 'json' } })
+const { default: getUsageResponse } = await import('./fixtures/getUsage.json', { assert: { type: 'json' } })
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/ApiGateway',
   () => ({ getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock })
 )
 
 // Setup variations of the getApiKeys response
-const { default: getApiKeysResponse } = await import('./fixtures/getApiKeys.json', {
-  assert: { type: 'json' }
-})
+const { default: getApiKeysResponse } = await import('./fixtures/getApiKeys.json', { assert: { type: 'json' } })
 const getApiKeysDefaultResponse = JSON.parse(JSON.stringify(getApiKeysResponse))
 getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 

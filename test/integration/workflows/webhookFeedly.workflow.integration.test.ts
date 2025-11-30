@@ -70,18 +70,12 @@ jest.unstable_mockModule(
   () => ({
     sendMessage: sendMessageMock,
     stringAttribute: jest.fn((value: string) => ({ DataType: 'String', StringValue: value })),
-    numberAttribute: jest.fn((value: number) => ({
-      DataType: 'Number',
-      StringValue: value.toString()
-    }))
+    numberAttribute: jest.fn((value: number) => ({ DataType: 'Number', StringValue: value.toString() }))
   })
 )
 
 const invokeLambdaMock = jest.fn<() => Promise<{ StatusCode: number }>>()
-jest.unstable_mockModule(
-  lambdaModulePath,
-  () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock })
-)
+jest.unstable_mockModule(lambdaModulePath, () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock }))
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
   getVideoID: jest.fn((url: string) => {
@@ -97,9 +91,7 @@ function createWebhookEvent(
   backgroundMode: boolean,
   userId: string
 ): CustomAPIGatewayRequestAuthorizerEvent {
-  const event = JSON.parse(
-    JSON.stringify(apiGatewayEventFixture)
-  ) as CustomAPIGatewayRequestAuthorizerEvent
+  const event = JSON.parse(JSON.stringify(apiGatewayEventFixture)) as CustomAPIGatewayRequestAuthorizerEvent
   event.body = JSON.stringify({ articleURL, backgroundMode })
   event.requestContext.authorizer.principalId = userId
   return event
@@ -132,11 +124,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should create new file and initiate download', async () => {
-    const event = createWebhookEvent(
-      'https://www.youtube.com/watch?v=new-video-123',
-      false,
-      'user-uuid-123'
-    )
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=new-video-123', false, 'user-uuid-123')
 
     const result = await handler(event, mockContext)
 
@@ -169,11 +157,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       contentType: 'video/mp4'
     })
 
-    const event = createWebhookEvent(
-      'https://www.youtube.com/watch?v=existing-video',
-      false,
-      'user-uuid-456'
-    )
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=existing-video', false, 'user-uuid-456')
 
     const result = await handler(event, mockContext)
 
@@ -193,11 +177,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should handle backgroundMode without immediate download', async () => {
-    const event = createWebhookEvent(
-      'https://www.youtube.com/watch?v=background-video',
-      true,
-      'user-uuid-789'
-    )
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=background-video', true, 'user-uuid-789')
 
     const result = await handler(event, mockContext)
 
@@ -216,11 +196,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should be idempotent when receiving duplicate webhooks', async () => {
-    const event = createWebhookEvent(
-      'https://www.youtube.com/watch?v=duplicate-video',
-      false,
-      'user-uuid-101'
-    )
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=duplicate-video', false, 'user-uuid-101')
 
     const result1 = await handler(event, mockContext)
     const result2 = await handler(event, mockContext)
@@ -245,16 +221,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       title: 'Shared Video'
     })
 
-    const event1 = createWebhookEvent(
-      'https://www.youtube.com/watch?v=shared-video',
-      false,
-      'user-alice'
-    )
-    const event2 = createWebhookEvent(
-      'https://www.youtube.com/watch?v=shared-video',
-      false,
-      'user-bob'
-    )
+    const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
+    const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')
 
     const result1 = await handler(event1, mockContext)
     const result2 = await handler(event2, mockContext)

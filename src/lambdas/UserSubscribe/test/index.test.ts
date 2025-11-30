@@ -9,14 +9,9 @@ import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 
 const subscribeMock = jest.fn()
-jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SNS',
-  () => ({ deleteEndpoint: jest.fn(), subscribe: subscribeMock })
-)
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({ deleteEndpoint: jest.fn(), subscribe: subscribeMock }))
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 const { handler } = await import('./../src')
 
 describe('#UserSubscribe', () => {

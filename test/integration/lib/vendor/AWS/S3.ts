@@ -39,9 +39,7 @@ export async function deleteBucket(bucketName: string): Promise<void> {
  * Lists all objects in a bucket
  * @param bucketName - Name of the bucket
  */
-export async function listObjectsV2(
-  bucketName: string
-): Promise<{ Contents?: Array<{ Key?: string }> }> {
+export async function listObjectsV2(bucketName: string): Promise<{ Contents?: Array<{ Key?: string }> }> {
   return s3Client.send(new ListObjectsV2Command({ Bucket: bucketName }))
 }
 
@@ -59,10 +57,7 @@ export async function deleteObject(bucketName: string, key: string): Promise<voi
  * @param bucketName - Name of the bucket
  * @param key - Object key
  */
-export async function headObject(
-  bucketName: string,
-  key: string
-): Promise<HeadObjectCommandOutput> {
+export async function headObject(bucketName: string, key: string): Promise<HeadObjectCommandOutput> {
   return s3Client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }))
 }
 

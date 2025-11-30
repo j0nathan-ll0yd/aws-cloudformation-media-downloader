@@ -32,9 +32,7 @@ function getFixtureName(path: string): string {
   const cleanPath = path.replace(/^\/?(auth\/)?/, '')
 
   // Convert kebab-case to PascalCase
-  return cleanPath.split(/[-/]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(
-    ''
-  )
+  return cleanPath.split(/[-/]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('')
 }
 
 /**
@@ -93,7 +91,4 @@ export const logOutgoingResponseHook = {
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Better Auth Fixture Integration}
  */
-export const fixtureLoggingHooks = {
-  before: [logIncomingRequestHook],
-  after: [logOutgoingResponseHook]
-}
+export const fixtureLoggingHooks = { before: [logIncomingRequestHook], after: [logOutgoingResponseHook] }

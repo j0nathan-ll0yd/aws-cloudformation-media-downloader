@@ -233,9 +233,7 @@ describe('ListFiles Workflow Integration Tests', () => {
         createMockFile('downloaded-2', FileStatus.Downloaded, { title: 'Downloaded 2' }),
         createMockFile('pending-1', FileStatus.PendingMetadata, { title: 'Pending 1' }),
         createMockFile('failed-1', FileStatus.Failed, { title: 'Failed 1' }),
-        createMockFile('pending-download-1', FileStatus.PendingDownload, {
-          title: 'Pending Download 1'
-        })
+        createMockFile('pending-download-1', FileStatus.PendingDownload, { title: 'Pending Download 1' })
       ],
       unprocessed: []
     })
@@ -267,11 +265,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
       data: fileIds.map((fileId, index) =>
-        createMockFile(
-          fileId,
-          index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload,
-          { title: `Video ${index}` }
-        )
+        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {
+          title: `Video ${index}`
+        })
       ),
       unprocessed: []
     })
@@ -285,17 +281,13 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(
-      response.body.contents.every((file: Partial<DynamoDBFile>) =>
-        file.status === FileStatus.Downloaded
-      )
-    ).toBe(true)
+    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Downloaded)).toBe(
+      true
+    )
   })
 
   test('should handle DynamoDB errors gracefully', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockRejectedValue(
-      new Error('DynamoDB service unavailable')
-    )
+    userFilesMock.mocks.query.byUser!.go.mockRejectedValue(new Error('DynamoDB service unavailable'))
 
     const event = createListFilesEvent('user-error', UserStatus.Authenticated)
 

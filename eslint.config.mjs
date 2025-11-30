@@ -36,33 +36,20 @@ export default [
       '.dependency-cruiser.cjs'
     ]
   },
-  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
+  ...compat.extends(
+    'eslint:recommended',
+    'plugin:@typescript-eslint/eslint-recommended',
+    'plugin:@typescript-eslint/recommended'
+  ),
   {
-    plugins: {
-      '@typescript-eslint': typescriptEslint,
-      tsdoc
-    },
+    plugins: { '@typescript-eslint': typescriptEslint, tsdoc },
 
-    languageOptions: {
-      parser: tsParser
-    },
+    languageOptions: { parser: tsParser },
 
     rules: {
-      quotes: [
-        2,
-        'single',
-        {
-          avoidEscape: true
-        }
-      ],
+      quotes: [2, 'single', { avoidEscape: true }],
 
-      'max-len': [
-        'error',
-        {
-          code: 250,
-          ignoreUrls: true
-        }
-      ],
+      'max-len': ['error', { code: 250, ignoreUrls: true }],
 
       'new-parens': 2,
       'no-caller': 2,

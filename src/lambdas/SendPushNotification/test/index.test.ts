@@ -21,23 +21,15 @@ const getDeviceResponse = {
 }
 
 const userDevicesMock = createElectroDBEntityMock({ queryIndexes: ['byUser'] })
-jest.unstable_mockModule(
-  '../../../entities/UserDevices',
-  () => ({ UserDevices: userDevicesMock.entity })
-)
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: userDevicesMock.entity }))
 
 const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({ Devices: devicesMock.entity }))
 
 const publishSnsEventMock = jest.fn<() => unknown>()
-jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SNS',
-  () => ({ publishSnsEvent: publishSnsEventMock })
-)
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({ publishSnsEvent: publishSnsEventMock }))
 
-const { default: eventMock } = await import('./fixtures/SQSEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: eventMock } = await import('./fixtures/SQSEvent.json', { assert: { type: 'json' } })
 const { handler } = await import('./../src')
 
 describe('#SendPushNotification', () => {
@@ -46,14 +38,11 @@ describe('#SendPushNotification', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
   })
   test('should send a notification for each user device', async () => {
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: getUserDevicesByUserIdResponse
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({ data: getUserDevicesByUserIdResponse })
     devicesMock.mocks.get.mockResolvedValue({ data: getDeviceResponse })
-    const { default: publishSnsEventResponse } = await import(
-      './fixtures/publishSnsEvent-200-OK.json',
-      { assert: { type: 'json' } }
-    )
+    const { default: publishSnsEventResponse } = await import('./fixtures/publishSnsEvent-200-OK.json', {
+      assert: { type: 'json' }
+    })
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()
@@ -78,9 +67,7 @@ describe('#SendPushNotification', () => {
       expect(notificationsSent).toBeUndefined()
     })
     test('ElectroDB Devices.get fails', async () => {
-      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-        data: getUserDevicesByUserIdResponse
-      })
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({ data: getUserDevicesByUserIdResponse })
       devicesMock.mocks.get.mockResolvedValue(undefined)
       const notificationsSent = await handler(event, testContext)
       expect(notificationsSent).toBeUndefined()

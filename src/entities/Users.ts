@@ -33,11 +33,7 @@ export const Users = new Entity(
     },
     indexes: {
       primary: { pk: { field: 'pk', composite: ['userId'] }, sk: { field: 'sk', composite: [] } },
-      byEmail: {
-        index: 'gsi3',
-        pk: { field: 'gsi3pk', composite: ['email'] },
-        sk: { field: 'gsi3sk', composite: [] }
-      }
+      byEmail: { index: 'gsi3', pk: { field: 'gsi3pk', composite: ['email'] }, sk: { field: 'gsi3sk', composite: [] } }
     }
   } as const,
   { table: process.env.DynamoDBTableName, client: documentClient }

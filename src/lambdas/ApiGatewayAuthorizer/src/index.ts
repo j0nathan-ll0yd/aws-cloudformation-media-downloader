@@ -21,12 +21,7 @@ import {
 import {validateSessionToken} from '../../../util/better-auth-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
-const generatePolicy = (
-  principalId: string,
-  effect: string,
-  resource: string,
-  usageIdentifierKey?: string
-) => {
+const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
     context: {},
     policyDocument: {
@@ -104,9 +99,7 @@ async function fetchUsageData(keyId: string, usagePlanId: string) {
   return response.items[keyId]
 }
 
-async function getUserIdFromAuthenticationHeader(
-  authorizationHeader: string
-): Promise<string | undefined> {
+async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
   // Match Bearer token format (session tokens or JWTs during migration)
   const bearerRegex = /^Bearer [A-Za-z\d-_=.]+$/
   const matches = authorizationHeader.match(bearerRegex)
@@ -156,62 +149,60 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
-export const handler = withXRay(
-  async (event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> => {
-    logInfo('event <=', event)
-    const queryStringParameters = event.queryStringParameters
-    if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
-      logInfo('No API key found')
-      throw new Error('Unauthorized')
-    }
-    const apiKeyValue = queryStringParameters.ApiKey
-    const apiKeys = await fetchApiKeys()
-    const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
-    if (matchedApiKey.length == 0) {
-      logInfo('API key is invalid')
-      throw new Error('Unauthorized')
-    }
-    const apiKey = matchedApiKey[0]
-    if (apiKey.enabled === false) {
-      logInfo('API key is disabled')
-      throw new Error('Unauthorized')
-    }
+export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> => {
+  logInfo('event <=', event)
+  const queryStringParameters = event.queryStringParameters
+  if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
+    logInfo('No API key found')
+    throw new Error('Unauthorized')
+  }
+  const apiKeyValue = queryStringParameters.ApiKey
+  const apiKeys = await fetchApiKeys()
+  const matchedApiKey = apiKeys.filter((item) => item.value === apiKeyValue)
+  if (matchedApiKey.length == 0) {
+    logInfo('API key is invalid')
+    throw new Error('Unauthorized')
+  }
+  const apiKey = matchedApiKey[0]
+  if (apiKey.enabled === false) {
+    logInfo('API key is disabled')
+    throw new Error('Unauthorized')
+  }
 
-    if (isRemoteTestRequest(event)) {
-      const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
-      return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
-    }
+  if (isRemoteTestRequest(event)) {
+    const fakeUserId = '123e4567-e89b-12d3-a456-426614174000'
+    return generateAllow(fakeUserId, event.methodArn, apiKeyValue)
+  }
 
-    const apiKeyId = apiKey.id as string
-    const usagePlans = await fetchUsagePlans(apiKeyId)
-    const usagePlanId = usagePlans[0].id as string
-    const usageData = await fetchUsageData(apiKeyId, usagePlanId)
-    logInfo('usageData =>', usageData)
+  const apiKeyId = apiKey.id as string
+  const usagePlans = await fetchUsagePlans(apiKeyId)
+  const usagePlanId = usagePlans[0].id as string
+  const usageData = await fetchUsageData(apiKeyId, usagePlanId)
+  logInfo('usageData =>', usageData)
 
-    let principalId = 'unknown'
-    const pathPart = event.path.substring(1)
-    const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
-    const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
-    if (
-      event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined
-    ) {
-      const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
-      if (maybeUserId) {
-        principalId = maybeUserId
-      } else {
-        if (multiAuthenticationPaths.includes(pathPart)) {
-          logInfo('Multi-authentication path; userId not required')
-        } else {
-          logInfo('Token is invalid')
-          return generateDeny('unknown', event.methodArn)
-        }
-      }
+  let principalId = 'unknown'
+  const pathPart = event.path.substring(1)
+  const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
+  const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
+  if (
+    event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined
+  ) {
+    const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
+    if (maybeUserId) {
+      principalId = maybeUserId
     } else {
-      // If it's not a multi-authentication path, it needs the Authorization header
-      if (!multiAuthenticationPaths.includes(pathPart)) {
+      if (multiAuthenticationPaths.includes(pathPart)) {
+        logInfo('Multi-authentication path; userId not required')
+      } else {
+        logInfo('Token is invalid')
         return generateDeny('unknown', event.methodArn)
       }
     }
-    return generateAllow(principalId, event.methodArn, apiKeyValue)
+  } else {
+    // If it's not a multi-authentication path, it needs the Authorization header
+    if (!multiAuthenticationPaths.includes(pathPart)) {
+      return generateDeny('unknown', event.methodArn)
+    }
   }
-)
+  return generateAllow(principalId, event.methodArn, apiKeyValue)
+})

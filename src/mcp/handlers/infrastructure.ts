@@ -16,10 +16,7 @@ import {
 export async function handleInfrastructureQuery(args: { resource?: string; query: string }) {
   const { resource, query } = args
 
-  const [awsServices, externalServices] = await Promise.all([
-    getAwsServices(),
-    getExternalServices()
-  ])
+  const [awsServices, externalServices] = await Promise.all([getAwsServices(), getExternalServices()])
 
   switch (query) {
     case 'services':
@@ -28,9 +25,7 @@ export async function handleInfrastructureQuery(args: { resource?: string; query
     case 'config':
       if (resource) {
         const awsService = awsServices.find((s) => s.name.toLowerCase() === resource.toLowerCase())
-        const extService = externalServices.find((s) =>
-          s.name.toLowerCase() === resource.toLowerCase()
-        )
+        const extService = externalServices.find((s) => s.name.toLowerCase() === resource.toLowerCase())
 
         if (awsService) {
           return {
@@ -40,10 +35,7 @@ export async function handleInfrastructureQuery(args: { resource?: string; query
           }
         }
         if (extService) {
-          return {
-            service: extService,
-            note: 'External service configuration varies by integration'
-          }
+          return { service: extService, note: 'External service configuration varies by integration' }
         }
         return { error: `Service '${resource}' not found` }
       }
@@ -122,16 +114,7 @@ export async function handleInfrastructureQuery(args: { resource?: string; query
     default:
       return {
         error: `Unknown query: ${query}`,
-        availableQueries: [
-          'services',
-          'config',
-          'usage',
-          'dependencies',
-          'dynamodb',
-          's3',
-          'apigateway',
-          'all'
-        ]
+        availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']
       }
   }
 }

@@ -154,9 +154,7 @@ export function createMockAccount(overrides?: Partial<MockAccountData>): MockAcc
  * @param overrides - Partial token data to override defaults
  * @returns Complete verification token object ready for ElectroDB entity operations
  */
-export function createMockVerificationToken(
-  overrides?: Partial<MockVerificationTokenData>
-): MockVerificationTokenData {
+export function createMockVerificationToken(overrides?: Partial<MockVerificationTokenData>): MockVerificationTokenData {
   return {
     identifier: 'test@example.com',
     token: 'verify-token-123',

@@ -100,8 +100,9 @@ export async function discoverLambdas(): Promise<string[]> {
 export async function discoverEntities(): Promise<string[]> {
   const entitiesDir = path.join(projectRoot, 'src', 'entities')
   const entries = await fs.readdir(entitiesDir)
-  return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts')
-    .map((e) => e.replace('.ts', '')).sort()
+  return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts').map((e) =>
+    e.replace('.ts', '')
+  ).sort()
 }
 
 /**

@@ -19,27 +19,22 @@ class MockOctokit {
   }
 }
 
-jest.unstable_mockModule(
-  '@octokit/rest',
-  () => ({ Octokit: jest.fn().mockImplementation(() => new MockOctokit()) })
-)
+jest.unstable_mockModule('@octokit/rest', () => ({ Octokit: jest.fn().mockImplementation(() => new MockOctokit()) }))
 
 // Mock template helpers
 jest.unstable_mockModule(
   './template-helpers',
   () => ({
-    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>()
-      .mockImplementation((templateName: string) => {
+    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation(
+      (templateName: string) => {
         return `Rendered template: ${templateName}`
-      })
+      }
+    )
   })
 )
 
 // Mock logging helpers
-jest.unstable_mockModule(
-  './lambda-helpers',
-  () => ({ logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn() })
-)
+jest.unstable_mockModule('./lambda-helpers', () => ({ logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn() }))
 
 const {
   createFailedUserDeletionIssue,
@@ -83,12 +78,7 @@ describe('#Util:GithubHelper', () => {
           repo: 'aws-cloudformation-media-downloader',
           title: `User Deletion Failed: ${userId}`,
           body: expect.stringContaining('Rendered template: user-deletion-failure'),
-          labels: expect.arrayContaining([
-            'bug',
-            'user-management',
-            'automated',
-            'requires-manual-fix'
-          ])
+          labels: expect.arrayContaining(['bug', 'user-management', 'automated', 'requires-manual-fix'])
         })
       )
     })
@@ -194,12 +184,7 @@ describe('#Util:GithubHelper', () => {
           repo: 'aws-cloudformation-media-downloader',
           title: '🍪 YouTube Cookie Expiration Detected',
           body: expect.stringContaining('Rendered template: cookie-expiration'),
-          labels: expect.arrayContaining([
-            'cookie-expiration',
-            'requires-manual-fix',
-            'automated',
-            'priority'
-          ])
+          labels: expect.arrayContaining(['cookie-expiration', 'requires-manual-fix', 'automated', 'priority'])
         })
       )
     })

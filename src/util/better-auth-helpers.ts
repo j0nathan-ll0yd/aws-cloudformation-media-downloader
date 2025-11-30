@@ -33,8 +33,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
 
   try {
     // Note: Using scan instead of index lookup - consider adding token GSI if this becomes a bottleneck
-    const result = await Sessions.scan.where(({ token: tokenAttr }, { eq }) => eq(tokenAttr, token))
-      .go()
+    const result = await Sessions.scan.where(({ token: tokenAttr }, { eq }) => eq(tokenAttr, token)).go()
 
     if (!result.data || result.data.length === 0) {
       logError('validateSessionToken: session not found')
@@ -44,19 +43,13 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
     const session = result.data[0]
 
     if (session.expiresAt < Date.now()) {
-      logError('validateSessionToken: session expired', {
-        expiresAt: session.expiresAt,
-        now: Date.now()
-      })
+      logError('validateSessionToken: session expired', { expiresAt: session.expiresAt, now: Date.now() })
       throw new UnauthorizedError('Session expired')
     }
 
     await Sessions.update({ sessionId: session.sessionId }).set({ updatedAt: Date.now() }).go()
 
-    logDebug('validateSessionToken: session valid', {
-      userId: session.userId,
-      sessionId: session.sessionId
-    })
+    logDebug('validateSessionToken: session valid', { userId: session.userId, sessionId: session.sessionId })
 
     return { userId: session.userId, sessionId: session.sessionId, expiresAt: session.expiresAt }
   } catch (error) {

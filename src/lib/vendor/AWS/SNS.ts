@@ -47,9 +47,7 @@ export function listSubscriptionsByTopic(
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-export function createPlatformEndpoint(
-  params: CreatePlatformEndpointInput
-): Promise<CreateEndpointResponse> {
+export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Promise<CreateEndpointResponse> {
   const command = new CreatePlatformEndpointCommand(params)
   return snsClient.send(command)
 }

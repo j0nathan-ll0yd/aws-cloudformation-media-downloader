@@ -50,10 +50,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 export const handler = withXRay(
-  async (
-    event: CustomAPIGatewayRequestAuthorizerEvent,
-    context: Context
-  ): Promise<APIGatewayProxyResult> => {
+  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
     logIncomingFixture(event)
     let requestBody: UserLogin
 
@@ -85,9 +82,7 @@ export const handler = withXRay(
       // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
       // Since we're using ID token authentication, we expect a token response
       if ('url' in rawResult && rawResult.url) {
-        throw new Error(
-          'Unexpected redirect response from Better Auth - ID token flow should not redirect'
-        )
+        throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
       }
 
       // Type narrow to token response

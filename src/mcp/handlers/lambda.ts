@@ -21,18 +21,13 @@ export async function handleLambdaQuery(args: { lambda?: string; query: string }
 
   switch (query) {
     case 'list':
-      return {
-        lambdas: Object.keys(lambdaConfigs).sort(),
-        count: Object.keys(lambdaConfigs).length
-      }
+      return { lambdas: Object.keys(lambdaConfigs).sort(), count: Object.keys(lambdaConfigs).length }
 
     case 'config':
       if (lambda && lambdaConfigs[lambda]) {
         return lambdaConfigs[lambda]
       }
-      return {
-        error: `Lambda '${lambda}' not found. Available: ${Object.keys(lambdaConfigs).join(', ')}`
-      }
+      return { error: `Lambda '${lambda}' not found. Available: ${Object.keys(lambdaConfigs).join(', ')}` }
 
     case 'triggers': {
       const triggers: Record<string, string[]> = {}
@@ -83,16 +78,7 @@ export async function handleLambdaQuery(args: { lambda?: string; query: string }
     default:
       return {
         error: `Unknown query: ${query}`,
-        availableQueries: [
-          'list',
-          'config',
-          'triggers',
-          'dependencies',
-          'entities',
-          'invocations',
-          'env',
-          'all'
-        ]
+        availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']
       }
   }
 }

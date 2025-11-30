@@ -10,9 +10,7 @@ import {testContext} from '../../../util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {SessionPayload} from '../../../util/better-auth-helpers'
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{ expiresAt: number }>>()

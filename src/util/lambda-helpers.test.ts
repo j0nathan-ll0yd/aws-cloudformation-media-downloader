@@ -24,11 +24,7 @@ describe('lambda-helpers', () => {
   describe('logIncomingFixture', () => {
     it('should log incoming fixture with manual type', async () => {
       const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = {
-        httpMethod: 'POST',
-        body: '{"test":"data"}',
-        headers: { Authorization: 'Bearer token123' }
-      }
+      const mockEvent = { httpMethod: 'POST', body: '{"test":"data"}', headers: { Authorization: 'Bearer token123' } }
 
       logIncomingFixture(mockEvent, 'test-fixture')
 

@@ -19,9 +19,7 @@ jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({ auth:
 const usersMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Users', () => ({ Users: usersMock.entity }))
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
-  assert: { type: 'json' }
-})
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 const { handler } = await import('./../src')
 
 describe('#RegisterUser', () => {
@@ -77,10 +75,7 @@ describe('#RegisterUser', () => {
     )
 
     // Verify name was updated for new user
-    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({
-      firstName: 'Jonathan',
-      lastName: 'Lloyd'
-    })
+    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({ firstName: 'Jonathan', lastName: 'Lloyd' })
   })
 
   test('should successfully login an existing user via Better Auth without updating name', async () => {

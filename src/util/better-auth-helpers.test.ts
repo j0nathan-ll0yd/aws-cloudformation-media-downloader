@@ -89,11 +89,7 @@ describe('Better Auth Helpers', () => {
 
       const result = await validateSessionToken('valid-token')
 
-      expect(result).toEqual({
-        userId: 'user-123',
-        sessionId: 'session-123',
-        expiresAt: mockSession.expiresAt
-      })
+      expect(result).toEqual({ userId: 'user-123', sessionId: 'session-123', expiresAt: mockSession.expiresAt })
 
       // Should update lastActiveAt
       expect(Sessions.update).toHaveBeenCalledWith({ sessionId: 'session-123' })
@@ -172,12 +168,7 @@ describe('Better Auth Helpers', () => {
       })
 
       expect(Sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'user-456',
-          deviceId: undefined,
-          ipAddress: undefined,
-          userAgent: undefined
-        })
+        expect.objectContaining({ userId: 'user-456', deviceId: undefined, ipAddress: undefined, userAgent: undefined })
       )
     })
   })

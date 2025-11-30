@@ -121,21 +121,12 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
       logDebug('upsertFile error =>', updateError.message)
     }
 
-    await putMetric('LambdaExecutionFailure', 1, undefined, [{
-      Name: 'ErrorType',
-      Value: error.constructor.name
-    }])
+    await putMetric('LambdaExecutionFailure', 1, undefined, [{ Name: 'ErrorType', Value: error.constructor.name }])
 
     if (error instanceof CookieExpirationError) {
-      await putMetric('CookieAuthenticationFailure', 1, undefined, [{
-        Name: 'VideoId',
-        Value: fileId
-      }])
+      await putMetric('CookieAuthenticationFailure', 1, undefined, [{ Name: 'VideoId', Value: fileId }])
       await createCookieExpirationIssue(fileId, fileUrl, error)
-      return lambdaErrorResponse(
-        context,
-        new UnexpectedError(`Cookie expiration detected: ${error.message}`)
-      )
+      return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }
 
     await createVideoDownloadFailureIssue(

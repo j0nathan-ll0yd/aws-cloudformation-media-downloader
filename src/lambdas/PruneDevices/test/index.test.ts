@@ -62,10 +62,7 @@ const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('../../../entities/Devices', () => ({ Devices: devicesMock.entity }))
 
 const userDevicesMock = createElectroDBEntityMock({ queryIndexes: ['byDevice'] })
-jest.unstable_mockModule(
-  '../../../entities/UserDevices',
-  () => ({ UserDevices: userDevicesMock.entity })
-)
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: userDevicesMock.entity }))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',

@@ -18,9 +18,7 @@ export const Devices = new Entity(
       systemName: { type: 'string', required: true },
       endpointArn: { type: 'string', required: true }
     },
-    indexes: {
-      primary: { pk: { field: 'pk', composite: ['deviceId'] }, sk: { field: 'sk', composite: [] } }
-    }
+    indexes: { primary: { pk: { field: 'pk', composite: ['deviceId'] }, sk: { field: 'sk', composite: [] } } }
   } as const,
   { table: process.env.DynamoDBTableName, client: documentClient }
 )

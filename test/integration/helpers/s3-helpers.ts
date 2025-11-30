@@ -37,9 +37,7 @@ export async function deleteTestBucket(bucketName: string): Promise<void> {
     const listResponse = await listObjectsV2(bucketName)
 
     if (listResponse.Contents && listResponse.Contents.length > 0) {
-      await Promise.all(
-        listResponse.Contents.map((object) => deleteS3Object(bucketName, object.Key!))
-      )
+      await Promise.all(listResponse.Contents.map((object) => deleteS3Object(bucketName, object.Key!)))
     }
 
     // Then delete the bucket

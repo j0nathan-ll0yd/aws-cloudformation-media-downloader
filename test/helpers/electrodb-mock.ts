@@ -39,14 +39,8 @@ interface ElectroDBEntityMock<TData> {
       byStatus?: { go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>; where: jest.Mock }
       byKey?: { go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>; where: jest.Mock }
       byEmail?: { go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>; where: jest.Mock }
-      byProvider?: {
-        go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>
-        where: jest.Mock
-      }
-      byIdentifier?: {
-        go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>
-        where: jest.Mock
-      }
+      byProvider?: { go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>; where: jest.Mock }
+      byIdentifier?: { go: jest.Mock<() => Promise<{ data: TData[] } | undefined>>; where: jest.Mock }
     }
     create: jest.Mock<() => Promise<{ data: TData }>>
     upsert: { go: jest.Mock<() => Promise<{ data: TData }>> }
@@ -131,12 +125,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
   const updateSetMock = jest.fn(() => ({ go: updateGoMock }))
   const updateAddMock = jest.fn(() => ({ go: updateGoMock }))
   const updateDeleteMock = jest.fn(() => ({ go: updateGoMock }))
-  const update = jest.fn(() => ({
-    set: updateSetMock,
-    add: updateAddMock,
-    delete: updateDeleteMock,
-    go: updateGoMock
-  }))
+  const update = jest.fn(() => ({ set: updateSetMock, add: updateAddMock, delete: updateDeleteMock, go: updateGoMock }))
 
   // Delete operation: Entity.delete({key}).go() or Entity.delete([...]).go()
   // Supports both single (returns void) and batch (returns {unprocessed}) operations
@@ -151,12 +140,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
       query: queryMocks as ElectroDBEntityMock<TData>['mocks']['query'],
       create: createGoMock,
       upsert: { go: upsertGoMock },
-      update: {
-        go: updateGoMock,
-        set: updateSetMock,
-        add: updateAddMock,
-        delete: updateDeleteMock
-      },
+      update: { go: updateGoMock, set: updateSetMock, add: updateAddMock, delete: updateDeleteMock },
       delete: deleteGoMock
     }
   }

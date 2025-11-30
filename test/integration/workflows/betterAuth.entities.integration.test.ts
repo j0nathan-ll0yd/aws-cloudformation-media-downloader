@@ -148,11 +148,8 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await Users.create(userData).go()
 
-      await Users.update({ userId: 'user-test-3' }).set({
-        firstName: 'New',
-        lastName: 'Updated',
-        emailVerified: true
-      }).go()
+      await Users.update({ userId: 'user-test-3' }).set({ firstName: 'New', lastName: 'Updated', emailVerified: true })
+        .go()
 
       const result = await Users.get({ userId: 'user-test-3' }).go()
 
@@ -190,30 +187,15 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = 'user-multi-session'
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'session-1',
-          userId,
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
+        createMockSession({ sessionId: 'session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000 })
       ).go()
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'session-2',
-          userId,
-          token: 'token-2',
-          expiresAt: Date.now() + 172800000
-        })
+        createMockSession({ sessionId: 'session-2', userId, token: 'token-2', expiresAt: Date.now() + 172800000 })
       ).go()
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'session-3',
-          userId,
-          token: 'token-3',
-          expiresAt: Date.now() + 259200000
-        })
+        createMockSession({ sessionId: 'session-3', userId, token: 'token-3', expiresAt: Date.now() + 259200000 })
       ).go()
 
       const result = await Sessions.query.byUser({ userId }).go()
@@ -322,12 +304,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = 'user-multi-provider'
 
       await Accounts.create(
-        createMockAccount({
-          accountId: 'account-apple',
-          userId,
-          providerId: 'apple',
-          providerAccountId: 'apple-123'
-        })
+        createMockAccount({ accountId: 'account-apple', userId, providerId: 'apple', providerAccountId: 'apple-123' })
       ).go()
 
       await Accounts.create(
@@ -354,10 +331,7 @@ describe('Better Auth Entities Integration Tests', () => {
         })
       ).go()
 
-      const result = await Accounts.query.byProvider({
-        providerId: 'apple',
-        providerAccountId: 'apple-unique-id'
-      }).go()
+      const result = await Accounts.query.byProvider({ providerId: 'apple', providerAccountId: 'apple-unique-id' }).go()
 
       expect(result.data).toHaveLength(1)
       expect(result.data[0].userId).toBe('user-lookup-1')
@@ -411,21 +385,11 @@ describe('Better Auth Entities Integration Tests', () => {
 
       // Create sessions
       await Sessions.create(
-        createMockSession({
-          sessionId: 'coll-session-1',
-          userId,
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
+        createMockSession({ sessionId: 'coll-session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000 })
       ).go()
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'coll-session-2',
-          userId,
-          token: 'token-2',
-          expiresAt: Date.now() + 86400000
-        })
+        createMockSession({ sessionId: 'coll-session-2', userId, token: 'token-2', expiresAt: Date.now() + 86400000 })
       ).go()
 
       // Query collection
@@ -474,10 +438,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
       expect(result.data.Users).toHaveLength(1)
       expect(result.data.Accounts).toHaveLength(2)
-      expect(result.data.Accounts.map((a: { providerId: string }) => a.providerId).sort()).toEqual([
-        'apple',
-        'google'
-      ])
+      expect(result.data.Accounts.map((a: { providerId: string }) => a.providerId).sort()).toEqual(['apple', 'google'])
     })
   })
 
@@ -487,8 +448,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const email = 'complete@example.com'
 
       // Step 1: Register user
-      await Users.create(createMockUser({ userId, email, firstName: 'Complete', lastName: 'Flow' }))
-        .go()
+      await Users.create(createMockUser({ userId, email, firstName: 'Complete', lastName: 'Flow' })).go()
 
       // Step 2: Link OAuth account (Apple)
       await Accounts.create(
@@ -546,22 +506,12 @@ describe('Better Auth Entities Integration Tests', () => {
 
       // Create expired session
       await Sessions.create(
-        createMockSession({
-          sessionId: 'expired-session',
-          userId,
-          token: 'expired-token',
-          expiresAt: now - 1000
-        })
+        createMockSession({ sessionId: 'expired-session', userId, token: 'expired-token', expiresAt: now - 1000 })
       ).go()
 
       // Create active session
       await Sessions.create(
-        createMockSession({
-          sessionId: 'active-session',
-          userId,
-          token: 'active-token',
-          expiresAt: now + 86400000
-        })
+        createMockSession({ sessionId: 'active-session', userId, token: 'active-token', expiresAt: now + 86400000 })
       ).go()
 
       // Query all sessions
@@ -577,11 +527,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
     it('should handle duplicate account creation gracefully', async () => {
       await Accounts.create(
-        createMockAccount({
-          accountId: 'dup-account-1',
-          userId: 'user-dup-1',
-          providerAccountId: 'apple-dup-123'
-        })
+        createMockAccount({ accountId: 'dup-account-1', userId: 'user-dup-1', providerAccountId: 'apple-dup-123' })
       ).go()
 
       // Attempting to create account with same accountId should fail
@@ -717,10 +663,7 @@ describe('Better Auth Entities Integration Tests', () => {
       expect(splitFullName('John')).toEqual({ firstName: 'John', lastName: '' })
       expect(splitFullName('')).toEqual({ firstName: '', lastName: '' })
       expect(splitFullName('John Doe Smith')).toEqual({ firstName: 'John', lastName: 'Doe Smith' })
-      expect(splitFullName('Jean-Claude Van Damme')).toEqual({
-        firstName: 'Jean-Claude',
-        lastName: 'Van Damme'
-      })
+      expect(splitFullName('Jean-Claude Van Damme')).toEqual({ firstName: 'Jean-Claude', lastName: 'Van Damme' })
     })
 
     it('should handle null to undefined conversion for optional fields', async () => {

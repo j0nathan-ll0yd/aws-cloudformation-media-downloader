@@ -115,11 +115,7 @@ type ElectroSessionUpdate = Partial<
  * Extended Account type that includes OAuth token metadata we store in ElectroDB
  * Better Auth's base Account type doesn't include these fields, but we persist them
  */
-export type ExtendedAccount = Account & {
-  scope?: string | null
-  tokenType?: string | null
-  expiresAt?: number | null
-}
+export type ExtendedAccount = Account & { scope?: string | null; tokenType?: string | null; expiresAt?: number | null }
 
 /**
  * Splits a full name into first and last name parts.
@@ -284,9 +280,7 @@ function transformSessionUpdateFromAuth(authUpdate: Partial<Session>): ElectroSe
  * Transforms Better Auth account format to ElectroDB account create data
  * Note: Better Auth passes 'accountId' field, we store as 'providerAccountId'
  */
-function transformAccountFromAuth(
-  authAccount: Partial<ExtendedAccount> & { id?: string }
-): ElectroAccountCreate {
+function transformAccountFromAuth(authAccount: Partial<ExtendedAccount> & { id?: string }): ElectroAccountCreate {
   return {
     accountId: authAccount.id || uuidv4(),
     userId: authAccount.userId!, // Required by Better Auth
@@ -381,9 +375,7 @@ export function createElectroDBAdapter() {
      * Session Operations
      * Maps Better Auth session operations to ElectroDB Sessions entity
      */
-    async createSession(
-      data: Partial<Session> & { id?: string; deviceId?: string }
-    ): Promise<Session> {
+    async createSession(data: Partial<Session> & { id?: string; deviceId?: string }): Promise<Session> {
       logDebug('ElectroDB Adapter: createSession', { data })
 
       const sessionData = transformSessionFromAuth(data)
@@ -427,9 +419,7 @@ export function createElectroDBAdapter() {
      * Account Operations (OAuth Providers)
      * Maps Better Auth account operations to ElectroDB Accounts entity
      */
-    async createAccount(
-      data: Partial<ExtendedAccount> & { id?: string }
-    ): Promise<ExtendedAccount> {
+    async createAccount(data: Partial<ExtendedAccount> & { id?: string }): Promise<ExtendedAccount> {
       logDebug('ElectroDB Adapter: createAccount', { data })
 
       const accountData = transformAccountFromAuth(data)
@@ -465,9 +455,7 @@ export function createElectroDBAdapter() {
      * Verification Token Operations
      * Maps Better Auth verification token operations to ElectroDB VerificationTokens entity
      */
-    async createVerificationToken(
-      data: { identifier: string; token: string; expiresAt: Date }
-    ): Promise<void> {
+    async createVerificationToken(data: { identifier: string; token: string; expiresAt: Date }): Promise<void> {
       logDebug('ElectroDB Adapter: createVerificationToken', { data })
 
       await VerificationTokens.create({
@@ -477,9 +465,7 @@ export function createElectroDBAdapter() {
       }).go()
     },
 
-    async getVerificationToken(
-      token: string
-    ): Promise<{ identifier: string; token: string; expiresAt: Date } | null> {
+    async getVerificationToken(token: string): Promise<{ identifier: string; token: string; expiresAt: Date } | null> {
       logDebug('ElectroDB Adapter: getVerificationToken', { token })
 
       try {

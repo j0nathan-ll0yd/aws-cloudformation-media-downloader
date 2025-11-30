@@ -30,10 +30,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @notExported
  */
 export const handler = withXRay(
-  async (
-    event: CustomAPIGatewayRequestAuthorizerEvent,
-    context: Context
-  ): Promise<APIGatewayProxyResult> => {
+  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
     logIncomingFixture(event)
     let requestBody
     try {
@@ -46,13 +43,8 @@ export const handler = withXRay(
       return errorResult
     }
 
-    const subscribeResponse = await subscribeEndpointToTopic(
-      requestBody.endpointArn,
-      requestBody.topicArn
-    )
-    const successResult = response(context, 201, {
-      subscriptionArn: subscribeResponse.SubscriptionArn
-    })
+    const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
+    const successResult = response(context, 201, { subscriptionArn: subscribeResponse.SubscriptionArn })
     logOutgoingFixture(successResult)
     return successResult
   }

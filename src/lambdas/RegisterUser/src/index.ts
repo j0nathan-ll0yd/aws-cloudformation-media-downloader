@@ -51,90 +51,86 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(
-  async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logInfo('RegisterUser (Better Auth): event <=', event)
-    let requestBody: UserRegistration
+export const handler = withXRay(async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logInfo('RegisterUser (Better Auth): event <=', event)
+  let requestBody: UserRegistration
 
-    try {
-      // 1. Validate request
-      requestBody = getPayloadFromEvent(event) as UserRegistration
-      validateRequest(requestBody, registerUserSchema)
+  try {
+    // 1. Validate request
+    requestBody = getPayloadFromEvent(event) as UserRegistration
+    validateRequest(requestBody, registerUserSchema)
 
-      // 2. Sign in/Register using Better Auth with ID token from iOS app
-      // Better Auth handles:
-      // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
-      // - User lookup by Apple ID (or creation if new)
-      // - OAuth account linking (Accounts entity)
-      // - Session creation with device tracking
-      // - Email verification status from Apple
-      const ipAddress = event.requestContext?.identity?.sourceIp
-      const userAgent = event.headers?.['User-Agent'] || ''
+    // 2. Sign in/Register using Better Auth with ID token from iOS app
+    // Better Auth handles:
+    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
+    // - User lookup by Apple ID (or creation if new)
+    // - OAuth account linking (Accounts entity)
+    // - Session creation with device tracking
+    // - Email verification status from Apple
+    const ipAddress = event.requestContext?.identity?.sourceIp
+    const userAgent = event.headers?.['User-Agent'] || ''
 
-      const rawResult = await auth.api.signInSocial({
-        headers: { 'user-agent': userAgent, 'x-forwarded-for': ipAddress || '' },
-        body: {
-          provider: 'apple',
-          idToken: {
-            token: requestBody.idToken
-            // No accessToken needed - we only have the ID token from iOS
-          }
+    const rawResult = await auth.api.signInSocial({
+      headers: { 'user-agent': userAgent, 'x-forwarded-for': ipAddress || '' },
+      body: {
+        provider: 'apple',
+        idToken: {
+          token: requestBody.idToken
+          // No accessToken needed - we only have the ID token from iOS
         }
-      })
-
-      // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
-      // Since we're using ID token authentication, we expect a token response
-      if ('url' in rawResult && rawResult.url) {
-        throw new Error(
-          'Unexpected redirect response from Better Auth - ID token flow should not redirect'
-        )
       }
+    })
 
-      // Type narrow to token response
-      const result = rawResult as {
-        redirect: boolean
-        token: string
-        url: undefined
-        user: { id: string; createdAt: Date; email: string; name: string }
-        session?: { id: string; expiresAt: number }
-      }
-
-      // 3. Check if this is a new user and update with name from iOS app
-      // Apple's ID token doesn't include first/last name for privacy reasons
-      // The iOS app provides this from ASAuthorizationAppleIDCredential.fullName
-      // (only populated on first sign-in)
-      const isNewUser = !result.user?.createdAt ||
-        Date.now() - new Date(result.user.createdAt).getTime() < 5000
-
-      if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-        await Users.update({ userId: result.user.id }).set({
-          firstName: requestBody.firstName || '',
-          lastName: requestBody.lastName || ''
-        }).go()
-
-        logInfo('RegisterUser: Updated new user with name from iOS app', {
-          userId: result.user.id,
-          hasFirstName: !!requestBody.firstName,
-          hasLastName: !!requestBody.lastName
-        })
-      }
-
-      logInfo('RegisterUser: Better Auth sign-in/registration successful', {
-        userId: result.user?.id,
-        sessionToken: result.token ? 'present' : 'missing',
-        isNewUser
-      })
-
-      // 4. Return session token (Better Auth format)
-      return response(context, 200, {
-        token: result.token,
-        expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
-        sessionId: result.session?.id,
-        userId: result.user?.id
-      })
-    } catch (error) {
-      logInfo('RegisterUser: error', { error })
-      return lambdaErrorResponse(context, error)
+    // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
+    // Since we're using ID token authentication, we expect a token response
+    if ('url' in rawResult && rawResult.url) {
+      throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
     }
+
+    // Type narrow to token response
+    const result = rawResult as {
+      redirect: boolean
+      token: string
+      url: undefined
+      user: { id: string; createdAt: Date; email: string; name: string }
+      session?: { id: string; expiresAt: number }
+    }
+
+    // 3. Check if this is a new user and update with name from iOS app
+    // Apple's ID token doesn't include first/last name for privacy reasons
+    // The iOS app provides this from ASAuthorizationAppleIDCredential.fullName
+    // (only populated on first sign-in)
+    const isNewUser = !result.user?.createdAt ||
+      Date.now() - new Date(result.user.createdAt).getTime() < 5000
+
+    if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
+      await Users.update({ userId: result.user.id }).set({
+        firstName: requestBody.firstName || '',
+        lastName: requestBody.lastName || ''
+      }).go()
+
+      logInfo('RegisterUser: Updated new user with name from iOS app', {
+        userId: result.user.id,
+        hasFirstName: !!requestBody.firstName,
+        hasLastName: !!requestBody.lastName
+      })
+    }
+
+    logInfo('RegisterUser: Better Auth sign-in/registration successful', {
+      userId: result.user?.id,
+      sessionToken: result.token ? 'present' : 'missing',
+      isNewUser
+    })
+
+    // 4. Return session token (Better Auth format)
+    return response(context, 200, {
+      token: result.token,
+      expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
+      sessionId: result.session?.id,
+      userId: result.user?.id
+    })
+  } catch (error) {
+    logInfo('RegisterUser: error', { error })
+    return lambdaErrorResponse(context, error)
   }
-)
+})

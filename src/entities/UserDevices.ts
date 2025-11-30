@@ -20,10 +20,7 @@ export const UserDevices = new Entity(
       deviceId: { type: 'string', required: true, readOnly: true }
     },
     indexes: {
-      primary: {
-        pk: { field: 'pk', composite: ['userId', 'deviceId'] },
-        sk: { field: 'sk', composite: [] }
-      },
+      primary: { pk: { field: 'pk', composite: ['userId', 'deviceId'] }, sk: { field: 'sk', composite: [] } },
       byUser: {
         index: 'UserCollection',
         pk: { field: 'gsi1pk', composite: ['userId'] },

@@ -79,10 +79,7 @@ export const handler = withXRay(
         userId: sessionPayload.userId
       }
 
-      logInfo('RefreshToken: session refreshed successfully', {
-        sessionId: sessionPayload.sessionId,
-        expiresAt
-      })
+      logInfo('RefreshToken: session refreshed successfully', { sessionId: sessionPayload.sessionId, expiresAt })
 
       const successResult = response(context, 200, responseData)
       logOutgoingFixture(successResult)

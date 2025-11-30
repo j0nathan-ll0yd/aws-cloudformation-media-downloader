@@ -55,10 +55,7 @@ const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevi
 const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 
 const publishSnsEventMock = jest.fn<() => Promise<{ MessageId: string }>>()
-jest.unstable_mockModule(
-  snsModulePath,
-  () => ({ publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock })
-)
+jest.unstable_mockModule(snsModulePath, () => ({ publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock }))
 
 const userDevicesMock = createElectroDBEntityMock({ queryIndexes: ['byUser'] })
 jest.unstable_mockModule(userDevicesModulePath, () => ({ UserDevices: userDevicesMock.entity }))
@@ -95,15 +92,10 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
     // Arrange: Mock ElectroDB responses
     // First query: getUserDevicesByUserId returns array of individual UserDevice records
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice('user-123', 'device-abc')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({ data: [createMockUserDevice('user-123', 'device-abc')] })
 
     devicesMock.mocks.get.mockResolvedValue({
-      data: createMockDevice(
-        'device-abc',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'
-      )
+      data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
     })
 
     const event = createMockSQSFileNotificationEvent('user-123', 'video-123')
@@ -116,9 +108,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
 
     const publishParams = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0]
-    expect(publishParams.TargetArn).toBe(
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'
-    )
+    expect(publishParams.TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
   })
 
   test('should fan-out to multiple devices when user has multiple registered devices', async () => {
@@ -133,29 +123,18 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     })
 
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-1',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'
-      )
+      data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')
     })
 
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-2',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'
-      )
+      data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')
     })
 
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-3',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'
-      )
+      data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')
     })
 
-    const event = createMockSQSFileNotificationEvent('user-456', 'video-456', {
-      title: 'Multi-Device Video'
-    })
+    const event = createMockSQSFileNotificationEvent('user-456', 'video-456', { title: 'Multi-Device Video' })
 
     await handler(event, createMockContext())
 
@@ -166,9 +145,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // Assert: SNS publish called 3 times (one per device)
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
 
-    const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((
-      call
-    ) => call[0].TargetArn)
+    const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((call) => call[0].TargetArn)
     expect(targetArns).toEqual([
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
       'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
@@ -195,17 +172,11 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   test('should handle invalid device gracefully and continue to next device', async () => {
     // Arrange: Mock ElectroDB responses
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        createMockUserDevice('user-789', 'device-good'),
-        createMockUserDevice('user-789', 'device-bad')
-      ]
+      data: [createMockUserDevice('user-789', 'device-good'), createMockUserDevice('user-789', 'device-bad')]
     })
 
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-good',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'
-      )
+      data: createMockDevice('device-good', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
     })
 
     // Second device query fails (device not found)
@@ -227,20 +198,14 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       data: [createMockUserDevice('user-1', 'device-user1')]
     })
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-user1',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint'
-      )
+      data: createMockDevice('device-user1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint')
     })
 
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
       data: [createMockUserDevice('user-2', 'device-user2')]
     })
     devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice(
-        'device-user2',
-        'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint'
-      )
+      data: createMockDevice('device-user2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint')
     })
 
     const event1 = createMockSQSFileNotificationEvent('user-1', 'video-batch-1')

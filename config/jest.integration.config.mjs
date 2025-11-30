@@ -32,15 +32,7 @@ const config = {
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
 
   // Transform TypeScript files with ts-jest
-  transform: {
-    '^.+\\.[tj]sx?$': [
-      'ts-jest',
-      {
-        useESM: true,
-        tsconfig: '<rootDir>/tsconfig.test.json'
-      }
-    ]
-  },
+  transform: { '^.+\\.[tj]sx?$': ['ts-jest', { useESM: true, tsconfig: '<rootDir>/tsconfig.test.json' }] },
 
   // Setup file to configure LocalStack environment
   setupFilesAfterEnv: ['<rootDir>/test/integration/setup.ts']

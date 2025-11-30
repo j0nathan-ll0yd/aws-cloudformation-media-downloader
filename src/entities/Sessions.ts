@@ -38,10 +38,7 @@ export const Sessions = new Entity(
       }
     },
     indexes: {
-      primary: {
-        pk: { field: 'pk', composite: ['sessionId'] },
-        sk: { field: 'sk', composite: [] }
-      },
+      primary: { pk: { field: 'pk', composite: ['sessionId'] }, sk: { field: 'sk', composite: [] } },
       byUser: {
         index: 'gsi1',
         pk: { field: 'gsi1pk', composite: ['userId'] },

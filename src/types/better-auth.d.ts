@@ -17,13 +17,7 @@ export type SignInSocialParams = Parameters<typeof auth.api.signInSocial>[0]
  * Used for mocking in tests.
  */
 export interface SignInSocialResult {
-  user: {
-    id: string
-    email: string
-    name?: string
-    createdAt: string | Date
-    emailVerified?: boolean
-  }
+  user: { id: string; email: string; name?: string; createdAt: string | Date; emailVerified?: boolean }
   session: { id: string; expiresAt: number | Date }
   token: string
 }

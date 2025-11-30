@@ -20,10 +20,7 @@ export const UserFiles = new Entity(
       fileId: { type: 'string', required: true, readOnly: true }
     },
     indexes: {
-      primary: {
-        pk: { field: 'pk', composite: ['userId', 'fileId'] },
-        sk: { field: 'sk', composite: [] }
-      },
+      primary: { pk: { field: 'pk', composite: ['userId', 'fileId'] }, sk: { field: 'sk', composite: [] } },
       byUser: {
         index: 'UserCollection',
         pk: { field: 'gsi1pk', composite: ['userId'] },

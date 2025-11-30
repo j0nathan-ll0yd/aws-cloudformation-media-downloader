@@ -11,7 +11,10 @@
  */
 
 import {fileURLToPath} from 'url'
-import {dirname, join} from 'path'
+import {
+  dirname,
+  join
+} from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -38,7 +41,6 @@ const config = {
 
   // Longer timeout for integration tests (LocalStack operations can be slower)
   testTimeout: 30000
-
   // Optional: Set coverage thresholds
   // coverageThreshold: {
   //   global: {

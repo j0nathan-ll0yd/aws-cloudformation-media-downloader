@@ -28,12 +28,7 @@ export const VerificationTokens = new Entity(
         required: true,
         default: () => Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
       },
-      createdAt: {
-        type: 'number',
-        required: true,
-        default: () => Date.now(),
-        readOnly: true
-      }
+      createdAt: { type: 'number', required: true, default: () => Date.now(), readOnly: true }
     },
     indexes: {
       primary: { pk: { field: 'pk', composite: ['token'] }, sk: { field: 'sk', composite: [] } },

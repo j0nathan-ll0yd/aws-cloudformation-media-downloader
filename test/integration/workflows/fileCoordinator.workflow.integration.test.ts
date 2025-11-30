@@ -47,20 +47,12 @@ const __dirname = dirname(__filename)
 const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
 
 const invokeLambdaMock = jest.fn<() => Promise<{ StatusCode: number }>>()
-jest.unstable_mockModule(
-  lambdaModulePath,
-  () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock })
-)
+jest.unstable_mockModule(lambdaModulePath, () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock }))
 
 const { handler } = await import('../../../src/lambdas/FileCoordinator/src/index')
 
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
-  await insertFile({
-    fileId,
-    status: FileStatus.PendingDownload,
-    availableAt,
-    title: title || `Test Video ${fileId}`
-  })
+  await insertFile({ fileId, status: FileStatus.PendingDownload, availableAt, title: title || `Test Video ${fileId}` })
 }
 
 describe('FileCoordinator Workflow Integration Tests', () => {
@@ -97,9 +89,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((
-      call
-    ) => call[1] as unknown as FileInvocationPayload)
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) =>
+      call[1] as unknown as FileInvocationPayload
+    )
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(fileIds.sort())
@@ -124,9 +116,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((
-      call
-    ) => call[1] as unknown as FileInvocationPayload)
+    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) =>
+      call[1] as unknown as FileInvocationPayload
+    )
     const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
 
     expect(invokedFileIds).toEqual(['now-video', 'past-video'])

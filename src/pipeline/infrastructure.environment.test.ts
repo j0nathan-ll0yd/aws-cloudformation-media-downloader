@@ -35,20 +35,15 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources =
-      (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
-        functionName
-      ]
+    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
+      functionName
+    ]
     const resource = resources[0] as { environment?: { variables?: Record<string, unknown> }[] }
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
       environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
-      logDebug(
-        `environmentVariablesForFunction[${functionName}] = ${
-          environmentVariablesForFunction[functionName]
-        }`
-      )
+      logDebug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }
   logDebug('CloudFront distribution name', cloudFrontDistributionNames)
@@ -71,9 +66,7 @@ function getEnvironmentVariablesFromSource(
   logDebug(`functionSource.match(${sourceCodeRegex})`, JSON.stringify(matches))
   if (matches && matches.length > 0) {
     environmentVariablesSource = filterSourceVariables([
-      ...new Set(
-        matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice))
-      )
+      ...new Set(matches.map((match: string) => match.substring(matchSubstring).slice(...matchSlice)))
     ])
     logDebug(`environmentVariablesSource[${functionName}] = ${environmentVariablesSource}`)
     return environmentVariablesSource

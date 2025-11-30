@@ -27,10 +27,7 @@ jest.unstable_mockModule(
     }),
     subscribe: jest.fn(),
     stringAttribute: jest.fn((value: string) => ({ DataType: 'String', StringValue: value })),
-    numberAttribute: jest.fn((value: number) => ({
-      DataType: 'Number',
-      StringValue: value.toString()
-    }))
+    numberAttribute: jest.fn((value: number) => ({ DataType: 'Number', StringValue: value.toString() }))
   })
 )
 
@@ -64,14 +61,11 @@ jest.unstable_mockModule(
 const invokeAsyncMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({ invokeAsync: invokeAsyncMock }))
 
-const { default: handleFeedlyEventResponse } = await import(
-  './fixtures/handleFeedlyEvent-200-OK.json',
-  { assert: { type: 'json' } }
-)
-
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', {
+const { default: handleFeedlyEventResponse } = await import('./fixtures/handleFeedlyEvent-200-OK.json', {
   assert: { type: 'json' }
 })
+
+const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
 const { handler } = await import('./../src')
 
 describe('#WebhookFeedly', () => {

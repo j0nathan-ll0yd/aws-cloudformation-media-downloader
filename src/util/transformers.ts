@@ -36,10 +36,7 @@ export function createFileNotificationAttributes(
   }
 }
 
-export function transformFileNotificationToPushNotification(
-  file: FileNotification,
-  targetArn: string
-): PublishInput {
+export function transformFileNotificationToPushNotification(file: FileNotification, targetArn: string): PublishInput {
   const keys: (keyof typeof file)[] = ['fileId', 'key', 'publishDate', 'size', 'url']
   keys.forEach((key) => {
     if (!file[key] || !file[key].stringValue || typeof file[key].stringValue !== 'string') {

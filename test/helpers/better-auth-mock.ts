@@ -12,9 +12,7 @@ import type {
  */
 interface BetterAuthMock {
   /** The auth object to pass to jest.unstable_mockModule */
-  auth: {
-    api: { signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<SignInSocialResult>> }
-  }
+  auth: { api: { signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<SignInSocialResult>> } }
   /** Individual mock functions for assertions and setup */
   mocks: { signInSocial: jest.Mock<(params: SignInSocialParams) => Promise<SignInSocialResult>> }
 }
@@ -29,8 +27,5 @@ interface BetterAuthMock {
 export function createBetterAuthMock(): BetterAuthMock {
   const signInSocialMock = jest.fn<(params: SignInSocialParams) => Promise<SignInSocialResult>>()
 
-  return {
-    auth: { api: { signInSocial: signInSocialMock } },
-    mocks: { signInSocial: signInSocialMock }
-  }
+  return { auth: { api: { signInSocial: signInSocialMock } }, mocks: { signInSocial: signInSocialMock } }
 }
