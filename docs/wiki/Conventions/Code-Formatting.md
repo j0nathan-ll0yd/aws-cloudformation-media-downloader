@@ -10,13 +10,13 @@
 
 **Let the formatter handle formatting, with targeted overrides when readability suffers.**
 
-This project uses [dprint](https://dprint.dev/) for code formatting. The formatter makes most decisions automatically based on line width (156 characters). Use the techniques below only when the automatic formatting harms readability.
+This project uses [dprint](https://dprint.dev/) for code formatting. The formatter makes most decisions automatically based on line width (157 characters). Use the techniques below only when the automatic formatting harms readability.
 
 ## Key Configuration
 
 | Setting | Value | Effect |
 |---------|-------|--------|
-| `lineWidth` | 156 | Maximum line length before wrapping |
+| `lineWidth` | 157 | Maximum line length before wrapping |
 | `semiColons` | "asi" | No semicolons (automatic semicolon insertion) |
 | `quoteStyle` | "preferSingle" | Single quotes for strings |
 | `trailingCommas` | "never" | No trailing commas |
@@ -149,6 +149,113 @@ Skip formatting for an entire file (use sparingly):
 - **Complex regex** - Manual formatting aids readability
 - **Generated code** - Preserve generator's formatting
 - **Temporary debugging** - Will be removed soon
+
+## Type Aliases for Line Width Management
+
+### The Problem
+
+Function signatures with multiple parameters, long return types, or complex generics can exceed the line width limit, causing dprint to wrap them across multiple lines:
+
+```typescript
+// Wrapped due to length - loses visual clarity
+export async function createUserSession(
+  userId: string,
+  deviceId?: string,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<{token: string; expiresAt: number; sessionId: string}> {
+```
+
+### The Solution: Extract Type Aliases
+
+Create type aliases for return types or parameter groups to keep signatures under the line width:
+
+```typescript
+// Type alias keeps the signature on one line
+type SessionResult = {token: string; expiresAt: number; sessionId: string}
+
+export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<SessionResult> {
+```
+
+### Guidelines
+
+**When to create type aliases:**
+- Function signature exceeds 157 characters
+- Return type is complex (multiple properties)
+- Generic type parameter is verbose
+- Multiple functions share the same type
+
+**When NOT to use type aliases:**
+- Type is used only once and is self-explanatory
+- Alias would obscure the actual type
+- Signature already fits on one line
+
+### Examples
+
+#### Return Type Extraction
+
+```typescript
+// Before: 175 characters, wraps
+export async function getResourceDetails(id: string): Promise<{userId: string; fileId: string; metadata: Record<string, unknown>}> {
+
+// After: 89 characters, stays on one line
+type ResourceDetails = {userId: string; fileId: string; metadata: Record<string, unknown>}
+
+export async function getResourceDetails(id: string): Promise<ResourceDetails> {
+```
+
+#### Parameter Type Extraction
+
+```typescript
+// Before: Parameters cause wrapping
+export function validateRequest(
+  requestBody: Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin,
+  schema: Joi.ObjectSchema
+): void {
+
+// After: Union type extracted
+type RequestPayload = Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin
+
+export function validateRequest(requestBody: RequestPayload, schema: Joi.ObjectSchema): void {
+```
+
+#### Generic Type Simplification
+
+```typescript
+// Before: Long generic wraps
+export function captureAWSClient<T extends {
+  middlewareStack: {remove: unknown; use: unknown};
+  config: unknown
+}>(client: T): T {
+
+// After: Collapsed to one line (111 chars, fits)
+export function captureAWSClient<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
+```
+
+### Naming Conventions for Type Aliases
+
+- **Result types**: `[Function]Result` - `SessionResult`, `ValidationResult`
+- **Input types**: `[Function]Input` or `[Entity]Payload` - `RequestPayload`, `CreateUserInput`
+- **Configuration types**: `[Feature]Config` - `AuthConfig`, `CacheConfig`
+
+### Trade-offs
+
+| Type Alias | Inline Type |
+|------------|-------------|
+| Reusable | Single use |
+| Named (self-documenting) | Immediately visible |
+| Shorter signatures | All info in one place |
+| Requires navigation to understand | No navigation needed |
+
+**Prefer type aliases when:**
+- Type is complex (3+ properties)
+- Type is reused
+- Signature would exceed line width
+
+**Prefer inline types when:**
+- Type is simple (1-2 properties)
+- Type is used once
+- Signature fits comfortably
 
 ## Running the Formatter
 

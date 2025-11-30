@@ -28,9 +28,7 @@ interface ElectroDBEntityMock<TData> {
   }
   /** Individual mock functions for assertions and setup */
   mocks: {
-    get: jest.Mock<
-      () => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>
-    >
+    get: jest.Mock<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>
     scan: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
     query: {
       byUser?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}

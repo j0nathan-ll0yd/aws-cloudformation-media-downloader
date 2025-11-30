@@ -1,5 +1,5 @@
 import {Octokit} from '@octokit/rest'
-import {logDebug, logError, logInfo} from './lambda-helpers'
+import {logDebug, logError, logInfo} from './logging'
 import {Device} from '#types/main'
 import {renderGithubIssueTemplate} from './template-helpers'
 

@@ -18,6 +18,8 @@ export interface SessionPayload {
   expiresAt: number
 }
 
+type SessionResult = {token: string; expiresAt: number; sessionId: string}
+
 /**
  * Validates a session token and returns the session payload.
  *
@@ -67,12 +69,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * @param userAgent - Optional user agent for device identification
  * @returns Session token and expiration
  */
-export async function createUserSession(
-  userId: string,
-  deviceId?: string,
-  ipAddress?: string,
-  userAgent?: string
-): Promise<{token: string; expiresAt: number; sessionId: string}> {
+export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<SessionResult> {
   logDebug('createUserSession: creating session', {userId, deviceId})
 
   // Manual token generation since we're using ElectroDB adapter instead of Better Auth's built-in session management

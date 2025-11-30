@@ -46,18 +46,16 @@ const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integra
 
 const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
-jest.unstable_mockModule(youtubeModulePath,
-  () => ({
-    fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
-    chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
-    streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
-  }))
+jest.unstable_mockModule(youtubeModulePath, () => ({
+  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo), // fmt: multiline
+  chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
+  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
+}))
 
-jest.unstable_mockModule(githubHelpersModulePath,
-  () => ({
-    createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-    createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
-  }))
+jest.unstable_mockModule(githubHelpersModulePath, () => ({
+  createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
+  createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
+}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler

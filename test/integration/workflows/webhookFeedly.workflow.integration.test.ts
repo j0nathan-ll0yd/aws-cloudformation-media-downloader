@@ -42,18 +42,17 @@ const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda'
 const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 
 const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule(sqsModulePath,
-  () => ({
-    sendMessage: sendMessageMock,
-    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-  }))
+jest.unstable_mockModule(sqsModulePath, () => ({
+  sendMessage: sendMessageMock, // fmt: multiline
+  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+}))
 
 const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
-  getVideoID: jest.fn((url: string) => {
+  getVideoID: jest.fn((url: string) => { // fmt: multiline
     const match = url.match(/v=([^&]+)/)
     return match ? match[1] : 'test-video-id'
   })

@@ -118,6 +118,14 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Priority**: MEDIUM
    - **Enforcement**: Optional (use when dprint's default formatting harms readability)
 
+2. **Type Aliases for Line Width Management** (Convention)
+   - **What**: Create type aliases for return types or parameter groups when function signatures exceed 157 characters
+   - **Why**: Keeps function signatures on single lines for better readability; avoids awkward parameter wrapping
+   - **Examples**: `SessionResult`, `RequestPayload`, `MetricInput`
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Optional (use when signatures would otherwise wrap)
+
 ### Documented: 2025-11-28
 
 1. **ElectroDB Test Mocking Standard** (Rule)
@@ -201,5 +209,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-29
-- **Total Conventions**: 18 detected, 18 documented, 0 pending
+- **Total Conventions**: 19 detected, 19 documented, 0 pending
 - **Convention Capture System**: Active

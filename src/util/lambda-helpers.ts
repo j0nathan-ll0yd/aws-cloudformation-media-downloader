@@ -3,6 +3,10 @@ import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'
 import {UserStatus} from '#types/enums'
+import {logDebug, logError, logInfo} from './logging'
+
+// Re-export logging functions for backwards compatibility
+export { logDebug, logError, logInfo }
 
 export function unknownErrorToString(unknownVariable: unknown): string {
   if (typeof unknownVariable === 'string') {
@@ -68,25 +72,6 @@ export function lambdaErrorResponse(context: Context, error: unknown): APIGatewa
   }
 }
 
-function stringify(stringOrObject: object | string | unknown) {
-  if (typeof stringOrObject === 'object') {
-    stringOrObject = JSON.stringify(stringOrObject, null, 2)
-  }
-  return stringOrObject
-}
-
-export function logInfo(message: string, stringOrObject?: string | object): void {
-  console.info(message, stringOrObject ? stringify(stringOrObject) : '')
-}
-
-export function logDebug(message: string, stringOrObject?: string | object): void {
-  console.log(message, stringOrObject ? stringify(stringOrObject) : '')
-}
-
-export function logError(message: string, stringOrObject?: string | object | unknown): void {
-  console.error(message, stringOrObject ? stringify(stringOrObject) : '')
-}
-
 export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
 }
@@ -135,15 +120,13 @@ export async function putMetric(metricName: string, value: number, unit?: string
   }
 }
 
+type MetricInput = {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}
+
 /**
  * Publish multiple metrics in a single API call for efficiency
  * @param metrics - Array of metrics to publish
  */
-export async function putMetrics(
-  metrics: Array<
-    {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}
-  >
-): Promise<void> {
+export async function putMetrics(metrics: MetricInput[]): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
