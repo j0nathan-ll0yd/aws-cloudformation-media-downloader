@@ -1,5 +1,6 @@
 import {createService, documentClient} from '#lib/vendor/ElectroDB/service'
 import {Files} from './Files'
+import {FileDownloads} from './FileDownloads'
 import {Users} from './Users'
 import {Devices} from './Devices'
 import {UserFiles} from './UserFiles'
@@ -50,6 +51,7 @@ import {VerificationTokens} from './VerificationTokens'
  */
 export const MediaDownloaderService = createService({
   files: Files,
+  fileDownloads: FileDownloads,
   users: Users,
   devices: Devices,
   userFiles: UserFiles,

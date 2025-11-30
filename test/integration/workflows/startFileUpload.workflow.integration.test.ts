@@ -38,10 +38,13 @@ const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integra
 
 const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
+// FetchVideoInfoResult type for the new safe fetchVideoInfo API
+type FetchVideoInfoResult = {success: boolean; info?: typeof mockVideoInfo; error?: Error; isCookieError?: boolean}
+
 // Mock modules using path aliases to match how handler imports them
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
-  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
-  fetchVideoInfoSafe: jest.fn<() => Promise<typeof mockVideoInfo | undefined>>().mockResolvedValue(undefined),
+  // fetchVideoInfo now returns a result object {success, info, error}
+  fetchVideoInfo: jest.fn<() => Promise<FetchVideoInfoResult>>().mockResolvedValue({success: true, info: mockVideoInfo}),
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
   streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
@@ -50,6 +53,14 @@ jest.unstable_mockModule('#util/github-helpers', () => ({
   createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
+
+// Mock FileDownloads entity for transient download state (uses real DynamoDB for Files)
+const fileDownloadsMock = {
+  get: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: null})}),
+  update: jest.fn().mockReturnValue({set: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})}),
+  create: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})
+}
+jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler

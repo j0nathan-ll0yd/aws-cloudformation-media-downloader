@@ -1,5 +1,6 @@
 import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
 import {Files} from '#entities/Files'
+import {FileDownloads} from '#entities/FileDownloads'
 import {logDebug, logInfo, putMetrics, response} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
@@ -13,8 +14,9 @@ const BATCH_SIZE = 5
 const BATCH_DELAY_MS = 10000
 
 /**
- * Returns an array of fileIds from PendingDownload files ready to be downloaded
- * Uses StatusIndex GSI to efficiently query
+ * Returns an array of fileIds from PendingDownload files ready to be downloaded.
+ * These are new files (from WebhookFeedly) that haven't been attempted yet.
+ * Uses Files.byStatus GSI to efficiently query.
  */
 async function getPendingFileIds(): Promise<string[]> {
   logDebug('Querying for pending files ready to be downloaded')
@@ -32,19 +34,22 @@ async function getPendingFileIds(): Promise<string[]> {
 }
 
 /**
- * Returns an array of fileIds from Scheduled files ready for retry
- * Uses StatusIndex GSI with availableAt less than or equal to now to find overdue retries
+ * Returns an array of fileIds from FileDownloads scheduled for retry.
+ * These are downloads that failed but are retryable (scheduled videos, transient errors).
+ * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
  */
 async function getScheduledFileIds(): Promise<string[]> {
-  logDebug('Querying for scheduled files ready for retry')
-  const now = Date.now()
-  const queryResponse = await Files.query.byStatus({status: FileStatus.Scheduled}).where(({availableAt}, {lte}) => lte(availableAt, now)).go()
+  logDebug('Querying for scheduled downloads ready for retry')
+  const nowSeconds = Math.floor(Date.now() / 1000)
+
+  // Query FileDownloads with status='scheduled' and retryAfter <= now
+  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: 'scheduled'}).where(({retryAfter}, {lte}) => lte(retryAfter, nowSeconds)).go()
 
   logDebug('getScheduledFileIds =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return queryResponse.data.map((file) => file.fileId)
+  return queryResponse.data.map((download) => download.fileId)
 }
 
 /**

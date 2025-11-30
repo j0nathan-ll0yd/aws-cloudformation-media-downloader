@@ -159,6 +159,13 @@
       }
     },
     {
+      "id": "entity:FileDownloads",
+      "type": "Entity",
+      "properties": {
+        "name": "FileDownloads"
+      }
+    },
+    {
       "id": "entity:Files",
       "type": "Entity",
       "properties": {

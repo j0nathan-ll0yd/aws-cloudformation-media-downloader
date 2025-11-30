@@ -1,19 +1,151 @@
 import {Context} from 'aws-lambda'
-import {chooseVideoFormat, fetchVideoInfo, fetchVideoInfoSafe, streamVideoToS3} from '#lib/vendor/YouTube'
+import {chooseVideoFormat, fetchVideoInfo, FetchVideoInfoResult, streamVideoToS3} from '#lib/vendor/YouTube'
 import {DynamoDBFile, StartFileUploadParams} from '#types/main'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {lambdaErrorResponse, logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
+import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
 import {assertIsError} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
 import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
-import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
-import {Files} from '#entities/Files'
+import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#util/video-error-classifier'
+import {FileDownloads} from '#entities/FileDownloads'
 
 /**
- * Downloads a YouTube video and uploads it to S3
+ * Update FileDownload entity with current download state.
+ * This is the transient state that tracks retry attempts, errors, and scheduling.
+ */
+async function updateDownloadState(
+  fileId: string,
+  status: 'pending' | 'in_progress' | 'scheduled' | 'completed' | 'failed',
+  classification?: VideoErrorClassification,
+  retryCount = 0
+): Promise<void> {
+  const update: Record<string, unknown> = {status, retryCount}
+
+  if (classification) {
+    update.errorCategory = classification.category
+    update.lastError = classification.reason
+    update.maxRetries = classification.maxRetries ?? 5
+    if (classification.retryAfter) {
+      update.retryAfter = classification.retryAfter
+    }
+  }
+
+  try {
+    // Try to update existing record first
+    await FileDownloads.update({fileId}).set(update).go()
+  } catch {
+    // If record doesn't exist, create it
+    await FileDownloads.create({
+      fileId,
+      status,
+      retryCount,
+      maxRetries: classification?.maxRetries ?? 5,
+      errorCategory: classification?.category,
+      lastError: classification?.reason,
+      retryAfter: classification?.retryAfter,
+      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
+    }).go()
+  }
+}
+
+/**
+ * Handle download failure: classify error, update state, and determine next action.
+ * Returns appropriate response based on whether download should be scheduled for retry.
+ */
+async function handleDownloadFailure(
+  fileId: string,
+  fileUrl: string,
+  error: Error,
+  videoInfoResult: FetchVideoInfoResult,
+  existingRetryCount: number,
+  existingMaxRetries: number,
+  context: Context
+): Promise<{statusCode: number; body: string}> {
+  // Classify the error to determine retry strategy
+  const classification = classifyVideoError(error, videoInfoResult.info, existingRetryCount)
+  const newRetryCount = existingRetryCount + 1
+  const maxRetries = classification.maxRetries ?? existingMaxRetries
+
+  logInfo('Download failure classified', {
+    fileId,
+    category: classification.category,
+    retryable: classification.retryable,
+    retryAfter: classification.retryAfter ? new Date(classification.retryAfter * 1000).toISOString() : undefined,
+    reason: classification.reason,
+    retryCount: newRetryCount,
+    maxRetries
+  })
+
+  // Handle retryable errors with scheduled retry
+  if (classification.retryable && classification.retryAfter && !isRetryExhausted(newRetryCount, maxRetries)) {
+    await updateDownloadState(fileId, 'scheduled', classification, newRetryCount)
+
+    await putMetrics([
+      {name: 'ScheduledVideoDetected', value: 1, unit: 'Count'},
+      {name: 'RetryScheduled', value: 1, unit: 'Count', dimensions: [{Name: 'Category', Value: classification.category}]}
+    ])
+
+    logInfo(`Scheduled retry for ${fileId}`, {
+      retryAfter: new Date(classification.retryAfter * 1000).toISOString(),
+      reason: classification.reason,
+      retryCount: newRetryCount
+    })
+
+    // Return success - scheduling a retry is expected behavior, not a failure
+    return response(context, 200, {
+      fileId,
+      status: 'scheduled',
+      retryAfter: classification.retryAfter,
+      retryCount: newRetryCount,
+      reason: classification.reason
+    })
+  }
+
+  // Handle permanent failures or retry exhaustion
+  await updateDownloadState(fileId, 'failed', classification, newRetryCount)
+
+  // Also update File entity to reflect failure
+  try {
+    await upsertFile({fileId, status: FileStatus.Failed} as DynamoDBFile)
+  } catch (updateError) {
+    assertIsError(updateError)
+    logDebug('Failed to update File entity status', updateError.message)
+  }
+
+  await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
+
+  // Create GitHub issues for actionable failures
+  if (classification.category === 'cookie_expired') {
+    await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
+    await createCookieExpirationIssue(fileId, fileUrl, error)
+  } else if (classification.category === 'permanent') {
+    await createVideoDownloadFailureIssue(fileId, fileUrl, error, classification.reason)
+  } else if (isRetryExhausted(newRetryCount, maxRetries)) {
+    await putMetric('RetryExhausted', 1, undefined, [{Name: 'Category', Value: classification.category}])
+    logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
+  }
+
+  return response(context, 500, {fileId, status: 'failed', error: classification.reason, category: classification.category})
+}
+
+/**
+ * Downloads a YouTube video and uploads it to S3.
+ *
+ * Architecture:
+ * - FileDownloads entity: Tracks transient download state (retries, scheduling, errors)
+ * - Files entity: Stores permanent media metadata (only updated on success)
+ *
+ * Flow:
+ * 1. Mark download as in_progress
+ * 2. Fetch video info (safe - never throws)
+ * 3. If fetch failed → classify → schedule retry or mark failed
+ * 4. If fetch succeeded → stream to S3
+ * 5. If stream failed → classify → schedule retry or mark failed
+ * 6. If stream succeeded → update Files entity with metadata
+ *
  * @param event - Contains the fileId to download
  * @param context - AWS Lambda context
  * @notExported
@@ -23,175 +155,105 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 
+  // Get existing download state for retry counting
+  let existingRetryCount = 0
+  let existingMaxRetries = 5
   try {
-    const segment = getSegment()
-
-    logDebug('fetchVideoInfo <=', fileUrl)
-    const subsegmentFetch = segment?.addNewSubsegment('yt-dlp-fetch-info')
-    const videoInfo = await fetchVideoInfo(fileUrl)
-    if (subsegmentFetch) {
-      subsegmentFetch.addAnnotation('videoId', videoInfo.id)
-      subsegmentFetch.addMetadata('videoUrl', fileUrl)
-      subsegmentFetch.close()
+    const {data: existingDownload} = await FileDownloads.get({fileId}).go()
+    if (existingDownload) {
+      existingRetryCount = existingDownload.retryCount ?? 0
+      existingMaxRetries = existingDownload.maxRetries ?? 5
     }
-    logDebug('fetchVideoInfo =>', videoInfo)
+  } catch {
+    logDebug('No existing download record, using defaults')
+  }
 
-    const selectedFormat = chooseVideoFormat(videoInfo)
-    logDebug('chooseVideoFormat =>', selectedFormat)
+  // Mark download as in_progress
+  await updateDownloadState(fileId, 'in_progress', undefined, existingRetryCount)
 
-    const fileName = `${videoInfo.id}.${selectedFormat.ext}`
-    const bucket = getRequiredEnv('Bucket')
+  const segment = getSegment()
 
-    const dynamoItem: DynamoDBFile = {
-      fileId: videoInfo.id,
-      key: fileName,
-      size: selectedFormat.filesize || 0,
-      availableAt: new Date().getTime() / 1000,
-      authorName: videoInfo.uploader || 'Unknown',
-      authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
-      title: videoInfo.title,
-      description: videoInfo.description || '',
-      publishDate: videoInfo.upload_date || new Date().toISOString(),
-      contentType: 'video/mp4',
-      status: FileStatus.PendingDownload
-    }
+  // Step 1: Fetch video info (safe - never throws)
+  logDebug('fetchVideoInfo <=', fileUrl)
+  const subsegmentFetch = segment?.addNewSubsegment('yt-dlp-fetch-info')
+  const videoInfoResult = await fetchVideoInfo(fileUrl)
+  if (subsegmentFetch) {
+    subsegmentFetch.addAnnotation('videoId', fileId)
+    subsegmentFetch.addMetadata('videoUrl', fileUrl)
+    subsegmentFetch.addMetadata('success', videoInfoResult.success)
+    subsegmentFetch.close()
+  }
 
-    logDebug('upsertFile <=', dynamoItem)
-    await upsertFile(dynamoItem)
-    logDebug('upsertFile =>')
+  // Handle fetch failure
+  if (!videoInfoResult.success || !videoInfoResult.info) {
+    const error = videoInfoResult.error ?? new UnexpectedError('Failed to fetch video info')
+    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+  }
 
-    logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
-    const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
-    const uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
-    if (subsegmentStream) {
-      subsegmentStream.addAnnotation('s3Bucket', bucket)
-      subsegmentStream.addAnnotation('s3Key', fileName)
-      subsegmentStream.addMetadata('fileSize', uploadResult.fileSize)
-      subsegmentStream.addMetadata('duration', uploadResult.duration)
-      subsegmentStream.close()
-    }
-    logDebug('streamVideoToS3 =>', uploadResult)
+  const videoInfo = videoInfoResult.info
+  logDebug('fetchVideoInfo =>', videoInfo)
 
-    dynamoItem.size = uploadResult.fileSize
-    dynamoItem.status = FileStatus.Downloaded
-
-    logDebug('upsertFile <=', dynamoItem)
-    await upsertFile(dynamoItem)
-    logDebug('upsertFile =>')
-
-    await putMetric('LambdaExecutionSuccess', 1)
-
-    return response(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
+  // Step 2: Choose format and prepare metadata
+  let selectedFormat
+  try {
+    selectedFormat = chooseVideoFormat(videoInfo)
   } catch (error) {
     assertIsError(error)
-
-    // Attempt to fetch video metadata even after failure (may have release_timestamp for scheduled videos)
-    const videoInfoSafe = await fetchVideoInfoSafe(fileUrl)
-
-    // Get existing file for retry count
-    let existingRetryCount = 0
-    let existingMaxRetries = 5
-    try {
-      const {data: existingFile} = await Files.get({fileId}).go()
-      if (existingFile) {
-        existingRetryCount = existingFile.retryCount ?? 0
-        existingMaxRetries = existingFile.maxRetries ?? 5
-      }
-    } catch {
-      logDebug('Failed to get existing file for retry count, using defaults')
-    }
-
-    // Classify the error to determine retry strategy
-    const classification = classifyVideoError(error, videoInfoSafe, existingRetryCount)
-    const newRetryCount = existingRetryCount + 1
-    const maxRetries = classification.maxRetries ?? existingMaxRetries
-
-    logInfo('Error classification', {
-      fileId,
-      category: classification.category,
-      retryable: classification.retryable,
-      retryAfter: classification.retryAfter ? new Date(classification.retryAfter * 1000).toISOString() : undefined,
-      reason: classification.reason,
-      retryCount: newRetryCount,
-      maxRetries
-    })
-
-    // Handle retryable errors with scheduled retry
-    if (classification.retryable && classification.retryAfter && !isRetryExhausted(newRetryCount, maxRetries)) {
-      try {
-        await upsertFile(
-          {
-            fileId,
-            status: FileStatus.Scheduled,
-            availableAt: classification.retryAfter,
-            retryAfter: classification.retryAfter,
-            retryCount: newRetryCount,
-            maxRetries,
-            lastError: classification.reason,
-            scheduledPublishTime: videoInfoSafe?.release_timestamp,
-            errorCategory: classification.category
-          } as DynamoDBFile
-        )
-
-        await putMetrics([
-          {name: 'ScheduledVideoDetected', value: 1, unit: 'Count'},
-          {name: 'RetryScheduled', value: 1, unit: 'Count', dimensions: [{Name: 'Category', Value: classification.category}]}
-        ])
-
-        logInfo(`Scheduled retry for ${fileId}`, {
-          retryAfter: new Date(classification.retryAfter * 1000).toISOString(),
-          reason: classification.reason,
-          retryCount: newRetryCount
-        })
-
-        // Return success - this is expected behavior for scheduled videos, NOT a failure
-        return response(context, 200, {
-          fileId,
-          status: 'scheduled',
-          retryAfter: classification.retryAfter,
-          retryCount: newRetryCount,
-          reason: classification.reason
-        })
-      } catch (updateError) {
-        assertIsError(updateError)
-        logDebug('Failed to schedule retry, falling through to failure handling', updateError.message)
-      }
-    }
-
-    // Handle permanent failures or retry exhaustion
-    try {
-      await upsertFile(
-        {
-          fileId,
-          status: FileStatus.Failed,
-          lastError: classification.reason,
-          retryCount: newRetryCount,
-          errorCategory: classification.category
-        } as DynamoDBFile
-      )
-    } catch (updateError) {
-      assertIsError(updateError)
-      logDebug('upsertFile error =>', updateError.message)
-    }
-
-    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
-
-    // Only create GitHub issues for permanent failures and cookie expiration
-    // Skip GitHub issues for retry exhaustion of transient/scheduled errors (they had their chance)
-    if (classification.category === 'cookie_expired') {
-      await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
-      await createCookieExpirationIssue(fileId, fileUrl, error)
-      return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
-    }
-
-    if (classification.category === 'permanent') {
-      await createVideoDownloadFailureIssue(fileId, fileUrl, error, classification.reason)
-    } else if (isRetryExhausted(newRetryCount, maxRetries)) {
-      // Retry exhaustion - log but don't create issue (it's noise, not actionable)
-      await putMetric('RetryExhausted', 1, undefined, [{Name: 'Category', Value: classification.category}])
-      logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
-    }
-
-    return lambdaErrorResponse(context, error)
+    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
   }
+  logDebug('chooseVideoFormat =>', selectedFormat)
+
+  const fileName = `${videoInfo.id}.${selectedFormat.ext}`
+  const bucket = getRequiredEnv('Bucket')
+
+  // Step 3: Stream video to S3
+  logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
+  const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
+
+  let uploadResult
+  try {
+    uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
+  } catch (error) {
+    if (subsegmentStream) {
+      subsegmentStream.addError(error as Error)
+      subsegmentStream.close()
+    }
+    assertIsError(error)
+    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+  }
+
+  if (subsegmentStream) {
+    subsegmentStream.addAnnotation('s3Bucket', bucket)
+    subsegmentStream.addAnnotation('s3Key', fileName)
+    subsegmentStream.addMetadata('fileSize', uploadResult.fileSize)
+    subsegmentStream.addMetadata('duration', uploadResult.duration)
+    subsegmentStream.close()
+  }
+  logDebug('streamVideoToS3 =>', uploadResult)
+
+  // Step 4: Update permanent File entity with metadata (only on success)
+  const fileData: DynamoDBFile = {
+    fileId: videoInfo.id,
+    key: fileName,
+    size: uploadResult.fileSize,
+    availableAt: new Date().getTime() / 1000,
+    authorName: videoInfo.uploader || 'Unknown',
+    authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
+    title: videoInfo.title,
+    description: videoInfo.description || '',
+    publishDate: videoInfo.upload_date || new Date().toISOString(),
+    contentType: 'video/mp4',
+    status: FileStatus.Downloaded
+  }
+
+  logDebug('upsertFile <=', fileData)
+  await upsertFile(fileData)
+  logDebug('upsertFile =>')
+
+  // Step 5: Mark download as completed
+  await updateDownloadState(fileId, 'completed', undefined, existingRetryCount)
+
+  await putMetric('LambdaExecutionSuccess', 1)
+
+  return response(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
 })

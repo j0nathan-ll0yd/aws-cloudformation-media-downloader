@@ -60,6 +60,10 @@ interface DynamoDBUserDevice {
   deviceId: string
 }
 
+/**
+ * Permanent media file metadata.
+ * Note: Transient download state (retries, errors) is in FileDownloads entity.
+ */
 interface DynamoDBFile {
   [key: string]: string | number | undefined
   availableAt: number
@@ -76,13 +80,6 @@ interface DynamoDBFile {
   authorUser: string
   title: string
   status: FileStatus
-  // Retry metadata for scheduled video handling
-  retryAfter?: number
-  retryCount?: number
-  maxRetries?: number
-  lastError?: string
-  scheduledPublishTime?: number
-  errorCategory?: string
 }
 
 interface SignInWithAppleConfig {

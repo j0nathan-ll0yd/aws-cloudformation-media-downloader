@@ -13,7 +13,7 @@ import {getRequiredEnv} from '#util/env-validation'
  * @param errorMessage - Error message from yt-dlp
  * @returns true if error is related to cookie expiration
  */
-function isCookieExpirationError(errorMessage: string): boolean {
+export function isCookieExpirationError(errorMessage: string): boolean {
   const cookieErrorPatterns = [
     "Sign in to confirm you're not a bot",
     'Sign in to confirm',
@@ -29,51 +29,26 @@ function isCookieExpirationError(errorMessage: string): boolean {
 }
 
 /**
- * Safely fetch video metadata without attempting download
- * Used to get scheduling info (release_timestamp) for unavailable videos
- * @param uri - YouTube video URL
- * @returns Video info if available, undefined on any error
+ * Result of fetching video info - either success with info or failure with error details
  */
-export async function fetchVideoInfoSafe(uri: string): Promise<YtDlpVideoInfo | undefined> {
-  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
-  logDebug('fetchVideoInfoSafe =>', {uri})
-
-  try {
-    const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
-
-    // Copy cookies from read-only /opt to writable /tmp
-    const fs = await import('fs')
-    const cookiesSource = '/opt/cookies/youtube-cookies.txt'
-    const cookiesDest = '/tmp/youtube-cookies.txt'
-    await fs.promises.copyFile(cookiesSource, cookiesDest)
-
-    // Use --skip-download and --ignore-errors to get metadata only
-    const ytdlpFlags = [
-      '--extractor-args',
-      'youtube:player_client=default',
-      '--no-warnings',
-      '--cookies',
-      cookiesDest,
-      '--skip-download',
-      '--ignore-errors'
-    ]
-
-    const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
-    logDebug('fetchVideoInfoSafe <=', {id: info?.id, release_timestamp: info?.release_timestamp, live_status: info?.live_status})
-    return info
-  } catch (error) {
-    // Silently return undefined - this is expected for many unavailable videos
-    logDebug('fetchVideoInfoSafe error (expected for unavailable videos)', {uri, error: error instanceof Error ? error.message : 'unknown'})
-    return undefined
-  }
+export interface FetchVideoInfoResult {
+  success: boolean
+  info?: YtDlpVideoInfo
+  error?: Error
+  isCookieError?: boolean
 }
 
 /**
- * Fetch video information using yt-dlp
+ * Safely fetch video metadata using yt-dlp.
+ *
+ * This function is designed to be "safe" - it never throws, instead returning
+ * a result object with success/failure status and optional error details.
+ * This enables callers to handle errors gracefully (e.g., scheduling retries).
+ *
  * @param uri - YouTube video URL
- * @returns Video information including formats and metadata
+ * @returns Result object with video info (if successful) or error details
  */
-export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
+export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult> {
   const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
@@ -91,26 +66,38 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
     // - player_client=default: Use alternate extraction method
     // - no-warnings: Suppress format selection warnings
     // - cookies: Use authentication cookies from /tmp (writable)
-    // Note: Node.js runtime detection handled via PATH environment variable
-    const ytdlpFlags = ['--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', cookiesDest]
+    // - ignore-errors: Don't fail completely on unavailable videos
+    const ytdlpFlags = [
+      '--extractor-args',
+      'youtube:player_client=default',
+      '--no-warnings',
+      '--cookies',
+      cookiesDest,
+      '--ignore-errors'
+    ]
 
     // Get video info in JSON format
     const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
 
-    logDebug('fetchVideoInfo <=', {id: info.id, title: info.title, formatCount: info.formats?.length || 0})
+    logDebug('fetchVideoInfo <=', {
+      id: info?.id,
+      title: info?.title,
+      formatCount: info?.formats?.length || 0,
+      release_timestamp: info?.release_timestamp,
+      live_status: info?.live_status
+    })
 
-    return info
+    return {success: true, info}
   } catch (error) {
     assertIsError(error)
-    logError('fetchVideoInfo error', error)
+    logDebug('fetchVideoInfo error', {uri, error: error.message})
 
-    // Check if this is a cookie expiration error
-    if (isCookieExpirationError(error.message)) {
+    const cookieError = isCookieExpirationError(error.message)
+    if (cookieError) {
       logError('Cookie expiration detected', {message: error.message})
-      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
     }
 
-    throw new UnexpectedError(`Failed to fetch video info: ${error.message}`)
+    return {success: false, error, isCookieError: cookieError}
   }
 }
 

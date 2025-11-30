@@ -4,10 +4,13 @@ export enum UserStatus {
   Anonymous
 }
 
+/**
+ * File status for permanent media records.
+ * Note: 'Scheduled' status is now in FileDownloads entity (DownloadStatus)
+ */
 export enum FileStatus {
   PendingMetadata = 'PendingMetadata',
   PendingDownload = 'PendingDownload',
-  Scheduled = 'Scheduled',
   Downloaded = 'Downloaded',
   Failed = 'Failed'
 }
