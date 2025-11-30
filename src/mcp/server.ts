@@ -21,63 +21,68 @@ const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {cap
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: [{
-      name: 'query_entities',
-      description: 'Query ElectroDB entity schemas and relationships',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          entity: {
-            type: 'string',
-            description: 'Entity name (Users, Files, Devices, UserFiles, UserDevices)',
-            enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices']
+    tools: [
+      { // fmt: multiline
+        name: 'query_entities',
+        description: 'Query ElectroDB entity schemas and relationships',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            entity: {
+              type: 'string',
+              description: 'Entity name (Users, Files, Devices, UserFiles, UserDevices)',
+              enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices']
+            },
+            query: {type: 'string', description: 'Query type (schema, relationships, collections)', enum: ['schema', 'relationships', 'collections']}
           },
-          query: {type: 'string', description: 'Query type (schema, relationships, collections)', enum: ['schema', 'relationships', 'collections']}
-        },
-        required: ['query']
+          required: ['query']
+        }
+      },
+      {
+        name: 'query_lambda',
+        description: 'Query Lambda function configurations and dependencies',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            lambda: {type: 'string', description: 'Lambda function name'},
+            query: {
+              type: 'string',
+              description: 'Query type (config, dependencies, triggers, env)',
+              enum: ['config', 'dependencies', 'triggers', 'env', 'list']
+            }
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'query_infrastructure',
+        description: 'Query AWS infrastructure configuration',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            resource: {type: 'string', description: 'Resource type (s3, dynamodb, apigateway, sns)', enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']},
+            query: {type: 'string', description: 'Query type (config, usage, dependencies)', enum: ['config', 'usage', 'dependencies']}
+          },
+          required: ['resource', 'query']
+        }
+      },
+      {
+        name: 'query_dependencies',
+        description: 'Query code dependencies from graph.json',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'File path to analyze'},
+            query: {
+              type: 'string',
+              description: 'Query type (imports, dependents, transitive, circular)',
+              enum: ['imports', 'dependents', 'transitive', 'circular']
+            }
+          },
+          required: ['query']
+        }
       }
-    }, {
-      name: 'query_lambda',
-      description: 'Query Lambda function configurations and dependencies',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          lambda: {type: 'string', description: 'Lambda function name'},
-          query: {
-            type: 'string',
-            description: 'Query type (config, dependencies, triggers, env)',
-            enum: ['config', 'dependencies', 'triggers', 'env', 'list']
-          }
-        },
-        required: ['query']
-      }
-    }, {
-      name: 'query_infrastructure',
-      description: 'Query AWS infrastructure configuration',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          resource: {type: 'string', description: 'Resource type (s3, dynamodb, apigateway, sns)', enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']},
-          query: {type: 'string', description: 'Query type (config, usage, dependencies)', enum: ['config', 'usage', 'dependencies']}
-        },
-        required: ['resource', 'query']
-      }
-    }, {
-      name: 'query_dependencies',
-      description: 'Query code dependencies from graph.json',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          file: {type: 'string', description: 'File path to analyze'},
-          query: {
-            type: 'string',
-            description: 'Query type (imports, dependents, transitive, circular)',
-            enum: ['imports', 'dependents', 'transitive', 'circular']
-          }
-        },
-        required: ['query']
-      }
-    }]
+    ]
   }
 })
 
