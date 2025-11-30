@@ -19,11 +19,9 @@ jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImpleme
 jest.unstable_mockModule(
   './template-helpers',
   () => ({
-    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation(
-      (templateName: string) => {
-        return `Rendered template: ${templateName}`
-      }
-    )
+    renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
+      return `Rendered template: ${templateName}`
+    })
   })
 )
 
@@ -56,10 +54,7 @@ describe('#Util:GithubHelper', () => {
       const error = new Error('DynamoDB deletion failed')
       const requestId = 'req-123'
 
-      mockIssuesCreate.mockResolvedValue({
-        status: 201,
-        data: {id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42'}
-      })
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42'}})
 
       const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
 
@@ -105,10 +100,7 @@ describe('#Util:GithubHelper', () => {
       const error = new Error('yt-dlp extraction failed')
       const errorDetails = 'Video unavailable: Removed by uploader'
 
-      mockIssuesCreate.mockResolvedValue({
-        status: 201,
-        data: {id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43'}
-      })
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43'}})
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error, errorDetails)
 
@@ -131,10 +123,7 @@ describe('#Util:GithubHelper', () => {
       const fileUrl = 'https://www.youtube.com/watch?v=test456'
       const error = new Error('Network timeout')
 
-      mockIssuesCreate.mockResolvedValue({
-        status: 201,
-        data: {id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44'}
-      })
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44'}})
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error)
 
@@ -162,10 +151,7 @@ describe('#Util:GithubHelper', () => {
       const fileUrl = 'https://www.youtube.com/watch?v=test789'
       const error = new Error('Sign in to confirm you are not a bot')
 
-      mockIssuesCreate.mockResolvedValue({
-        status: 201,
-        data: {id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45'}
-      })
+      mockIssuesCreate.mockResolvedValue({status: 201, data: {id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45'}})
 
       const response = await createCookieExpirationIssue(fileId, fileUrl, error)
 

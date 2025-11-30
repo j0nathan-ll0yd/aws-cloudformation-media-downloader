@@ -50,39 +50,37 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
  *
  * @notExported
  */
-export const handler = withXRay(
-  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logInfo('event <=', event)
-    logIncomingFixture(event)
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logInfo('event <=', event)
+  logIncomingFixture(event)
 
-    const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
-    const {userId, userStatus} = getUserDetailsFromEvent(event)
+  const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
+  const {userId, userStatus} = getUserDetailsFromEvent(event)
 
-    if (userStatus == UserStatus.Unauthenticated) {
-      const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
-
-    if (userStatus == UserStatus.Anonymous) {
-      myResponse.contents = [defaultFile]
-      myResponse.keyCount = myResponse.contents.length
-      const result = response(context, 200, myResponse)
-      logOutgoingFixture(result)
-      return result
-    }
-
-    try {
-      const files = await getFilesByUser(userId as string)
-      myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
-      myResponse.keyCount = myResponse.contents.length
-      const result = response(context, 200, myResponse)
-      logOutgoingFixture(result)
-      return result
-    } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
+  if (userStatus == UserStatus.Unauthenticated) {
+    const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
-)
+
+  if (userStatus == UserStatus.Anonymous) {
+    myResponse.contents = [defaultFile]
+    myResponse.keyCount = myResponse.contents.length
+    const result = response(context, 200, myResponse)
+    logOutgoingFixture(result)
+    return result
+  }
+
+  try {
+    const files = await getFilesByUser(userId as string)
+    myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded)
+    myResponse.keyCount = myResponse.contents.length
+    const result = response(context, 200, myResponse)
+    logOutgoingFixture(result)
+    return result
+  } catch (error) {
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
+  }
+})

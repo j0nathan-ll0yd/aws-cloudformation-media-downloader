@@ -26,9 +26,7 @@ describe('#S3ObjectCreated', () => {
   test('should dispatch push notifications for each user with the file', async () => {
     const {default: getFileByKeyResponse} = await import('./fixtures/getFileByKey-200-OK.json', {assert: {type: 'json'}})
     filesMock.mocks.query.byKey!.go.mockResolvedValue({data: getFileByKeyResponse.Items})
-    const {default: getUsersByFileIdResponse} = await import('./fixtures/getUsersByFileId-200-OK.json', {
-      assert: {type: 'json'}
-    })
+    const {default: getUsersByFileIdResponse} = await import('./fixtures/getUsersByFileId-200-OK.json', {assert: {type: 'json'}})
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: getUsersByFileIdResponse.Items})
     const output = await handler(event, testContext)
     expect(output).toBeUndefined()

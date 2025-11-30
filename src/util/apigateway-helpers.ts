@@ -1,11 +1,5 @@
 import Joi from 'joi'
-import {
-  CustomAPIGatewayRequestAuthorizerEvent,
-  DeviceRegistrationRequest,
-  UserLogin,
-  UserRegistration,
-  UserSubscribe
-} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent, DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '#types/main'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'

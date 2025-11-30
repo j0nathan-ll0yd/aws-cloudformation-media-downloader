@@ -4,14 +4,7 @@
  * Utilities for creating buckets and verifying S3 uploads in LocalStack
  */
 
-import {
-  createBucket,
-  deleteBucket,
-  deleteObject as deleteS3Object,
-  getObject,
-  headObject,
-  listObjectsV2
-} from '../lib/vendor/AWS/S3'
+import {createBucket, deleteBucket, deleteObject as deleteS3Object, getObject, headObject, listObjectsV2} from '../lib/vendor/AWS/S3'
 import {Readable} from 'stream'
 
 /**
@@ -62,10 +55,7 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
 /**
  * Get object metadata from S3
  */
-export async function getObjectMetadata(
-  bucketName: string,
-  key: string
-): Promise<{contentLength: number; contentType: string} | null> {
+export async function getObjectMetadata(bucketName: string, key: string): Promise<{contentLength: number; contentType: string} | null> {
   try {
     const response = await headObject(bucketName, key)
 

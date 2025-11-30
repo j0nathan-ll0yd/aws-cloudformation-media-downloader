@@ -60,12 +60,7 @@ describe('ElectroDB Adapter', () => {
 
       usersMock.mocks.create.mockResolvedValue({data: mockUser})
 
-      const result = await adapter.createUser({
-        id: 'user-123',
-        email: 'test@example.com',
-        emailVerified: false,
-        name: 'John Doe'
-      })
+      const result = await adapter.createUser({id: 'user-123', email: 'test@example.com', emailVerified: false, name: 'John Doe'})
 
       expect(result).toEqual({
         id: 'user-123',

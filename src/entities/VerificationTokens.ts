@@ -29,11 +29,7 @@ export const VerificationTokens = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['token']}, sk: {field: 'sk', composite: []}},
-      byIdentifier: {
-        index: 'gsi1',
-        pk: {field: 'gsi1pk', composite: ['identifier']},
-        sk: {field: 'gsi1sk', composite: ['expiresAt']}
-      }
+      byIdentifier: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['identifier']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

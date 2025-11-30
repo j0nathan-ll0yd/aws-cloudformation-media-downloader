@@ -136,13 +136,7 @@ export async function putMetric(
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
-      MetricData: [{
-        MetricName: metricName,
-        Value: value,
-        Unit: getStandardUnit(unit),
-        Timestamp: new Date(),
-        Dimensions: dimensions
-      }]
+      MetricData: [{MetricName: metricName, Value: value, Unit: getStandardUnit(unit), Timestamp: new Date(), Dimensions: dimensions}]
     })
     logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
   } catch (error) {
@@ -236,12 +230,7 @@ function sanitizeForTest(data: unknown): unknown {
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
-    JSON.stringify({
-      __FIXTURE_MARKER__: 'INCOMING',
-      fixtureType: detectedType,
-      timestamp: Date.now(),
-      data: sanitizeForTest(event)
-    })
+    JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)})
   )
 }
 
@@ -260,11 +249,6 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
   console.log(
-    JSON.stringify({
-      __FIXTURE_MARKER__: 'OUTGOING',
-      fixtureType: detectedType,
-      timestamp: Date.now(),
-      data: sanitizeForTest(response)
-    })
+    JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)})
   )
 }

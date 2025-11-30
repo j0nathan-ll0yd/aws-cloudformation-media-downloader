@@ -34,9 +34,7 @@ describe('#SendPushNotification', () => {
   test('should send a notification for each user device', async () => {
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
     devicesMock.mocks.get.mockResolvedValue({data: getDeviceResponse})
-    const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {
-      assert: {type: 'json'}
-    })
+    const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
     const notificationsSent = await handler(event, testContext)
     expect(notificationsSent).toBeUndefined()

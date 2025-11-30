@@ -79,15 +79,7 @@ export async function createUserSession(
   const token = generateSecureToken()
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
-  const result = await Sessions.create({
-    sessionId: generateSessionId(),
-    userId,
-    token,
-    expiresAt,
-    deviceId,
-    ipAddress,
-    userAgent
-  }).go()
+  const result = await Sessions.create({sessionId: generateSessionId(), userId, token, expiresAt, deviceId, ipAddress, userAgent}).go()
 
   logDebug('createUserSession: session created', {sessionId: result.data.sessionId, expiresAt})
 

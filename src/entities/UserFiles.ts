@@ -12,22 +12,11 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 export const UserFiles = new Entity(
   {
     model: {entity: 'UserFile', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      userId: {type: 'string', required: true, readOnly: true},
-      fileId: {type: 'string', required: true, readOnly: true}
-    },
+    attributes: {userId: {type: 'string', required: true, readOnly: true}, fileId: {type: 'string', required: true, readOnly: true}},
     indexes: {
       primary: {pk: {field: 'pk', composite: ['userId', 'fileId']}, sk: {field: 'sk', composite: []}},
-      byUser: {
-        index: 'UserCollection',
-        pk: {field: 'gsi1pk', composite: ['userId']},
-        sk: {field: 'gsi1sk', composite: ['fileId']}
-      },
-      byFile: {
-        index: 'FileCollection',
-        pk: {field: 'gsi2pk', composite: ['fileId']},
-        sk: {field: 'gsi2sk', composite: ['userId']}
-      }
+      byUser: {index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['fileId']}},
+      byFile: {index: 'FileCollection', pk: {field: 'gsi2pk', composite: ['fileId']}, sk: {field: 'gsi2sk', composite: ['userId']}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

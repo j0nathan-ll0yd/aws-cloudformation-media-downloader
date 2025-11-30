@@ -40,10 +40,7 @@ export { documentClient }
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#collections-testing-join-operations | ElectroDB Service Usage}
  */
-export function createService<E extends EntityMapConstraint>(
-  entities: E,
-  config: {client: DynamoDBDocumentClient; table?: string}
-) {
+export function createService<E extends EntityMapConstraint>(entities: E, config: {client: DynamoDBDocumentClient; table?: string}) {
   return new Service(entities, config)
 }
 

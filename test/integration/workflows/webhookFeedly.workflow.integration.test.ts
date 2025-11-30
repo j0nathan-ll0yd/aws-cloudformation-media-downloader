@@ -33,10 +33,9 @@ type SQSCallArgs = [
   {QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, {StringValue: string; DataType: string}>}
 ]
 
-const {default: apiGatewayEventFixture} = await import(
-  '../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json',
-  {assert: {type: 'json'}}
-)
+const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {
+  assert: {type: 'json'}
+})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -66,11 +65,7 @@ jest.unstable_mockModule(youtubeModulePath, () => ({
 
 const {handler} = await import('../../../src/lambdas/WebhookFeedly/src/index')
 
-function createWebhookEvent(
-  articleURL: string,
-  backgroundMode: boolean,
-  userId: string
-): CustomAPIGatewayRequestAuthorizerEvent {
+function createWebhookEvent(articleURL: string, backgroundMode: boolean, userId: string): CustomAPIGatewayRequestAuthorizerEvent {
   const event = JSON.parse(JSON.stringify(apiGatewayEventFixture)) as CustomAPIGatewayRequestAuthorizerEvent
   event.body = JSON.stringify({articleURL, backgroundMode})
   event.requestContext.authorizer.principalId = userId
@@ -193,13 +188,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should associate file with multiple users', async () => {
-    await insertFile({
-      fileId: 'shared-video',
-      status: FileStatus.Downloaded,
-      key: 'shared-video.mp4',
-      size: 5242880,
-      title: 'Shared Video'
-    })
+    await insertFile({fileId: 'shared-video', status: FileStatus.Downloaded, key: 'shared-video.mp4', size: 5242880, title: 'Shared Video'})
 
     const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
     const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')

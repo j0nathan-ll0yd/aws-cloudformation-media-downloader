@@ -107,43 +107,41 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(
-  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logInfo('event <=', event)
-    logIncomingFixture(event)
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logInfo('event <=', event)
+  logIncomingFixture(event)
 
-    let requestBody
-    try {
-      requestBody = getPayloadFromEvent(event) as Webhook
-      validateRequest(requestBody, feedlyEventSchema)
-      const fileId = getVideoID(requestBody.articleURL)
-      const {userId} = getUserDetailsFromEvent(event)
-      if (!userId) {
-        throw new UnexpectedError(providerFailureErrorMessage)
-      }
-      await associateFileToUser(fileId, userId)
-      const file = await getFile(fileId)
-      let result: APIGatewayProxyResult
-      if (file && file.status == FileStatus.Downloaded) {
-        await sendFileNotification(file, userId)
-        result = response(context, 200, {status: 'Dispatched'})
-      } else {
-        if (!file) {
-          await addFile(fileId)
-        }
-        if (!requestBody.backgroundMode) {
-          await initiateFileDownload(fileId)
-          result = response(context, 202, {status: 'Initiated'})
-        } else {
-          result = response(context, 202, {status: 'Accepted'})
-        }
-      }
-      logOutgoingFixture(result)
-      return result
-    } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
-      logOutgoingFixture(errorResult)
-      return errorResult
+  let requestBody
+  try {
+    requestBody = getPayloadFromEvent(event) as Webhook
+    validateRequest(requestBody, feedlyEventSchema)
+    const fileId = getVideoID(requestBody.articleURL)
+    const {userId} = getUserDetailsFromEvent(event)
+    if (!userId) {
+      throw new UnexpectedError(providerFailureErrorMessage)
     }
+    await associateFileToUser(fileId, userId)
+    const file = await getFile(fileId)
+    let result: APIGatewayProxyResult
+    if (file && file.status == FileStatus.Downloaded) {
+      await sendFileNotification(file, userId)
+      result = response(context, 200, {status: 'Dispatched'})
+    } else {
+      if (!file) {
+        await addFile(fileId)
+      }
+      if (!requestBody.backgroundMode) {
+        await initiateFileDownload(fileId)
+        result = response(context, 202, {status: 'Initiated'})
+      } else {
+        result = response(context, 202, {status: 'Accepted'})
+      }
+    }
+    logOutgoingFixture(result)
+    return result
+  } catch (error) {
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
-)
+})

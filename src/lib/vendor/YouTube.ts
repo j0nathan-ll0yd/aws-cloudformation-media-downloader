@@ -86,9 +86,7 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
   }
 
   // Filter for combined formats (video + audio in one file)
-  const combinedFormats = info.formats.filter((f) =>
-    f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.url
-  )
+  const combinedFormats = info.formats.filter((f) => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.url)
 
   if (combinedFormats.length === 0) {
     throw new UnexpectedError('No combined video+audio formats available')
@@ -119,11 +117,7 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
       }
       return 0
     })
-    logDebug('chooseVideoFormat: progressive without filesize', {
-      formatId: sorted[0].format_id,
-      tbr: sorted[0].tbr,
-      ext: sorted[0].ext
-    })
+    logDebug('chooseVideoFormat: progressive without filesize', {formatId: sorted[0].format_id, tbr: sorted[0].tbr, ext: sorted[0].ext})
     return sorted[0]
   }
 

@@ -19,11 +19,7 @@ export const Files = new Entity(
       url: {type: 'string', required: false},
       contentType: {type: 'string', required: true},
       title: {type: 'string', required: true},
-      status: {
-        type: ['PendingMetadata', 'PendingDownload', 'Downloaded', 'Failed'] as const,
-        required: true,
-        default: 'PendingMetadata'
-      }
+      status: {type: ['PendingMetadata', 'PendingDownload', 'Downloaded', 'Failed'] as const, required: true, default: 'PendingMetadata'}
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
@@ -32,11 +28,7 @@ export const Files = new Entity(
         pk: {field: 'gsi4pk', composite: ['status'] as const},
         sk: {field: 'gsi4sk', composite: ['availableAt'] as const}
       },
-      byKey: {
-        index: 'KeyIndex',
-        pk: {field: 'gsi5pk', composite: ['key'] as const},
-        sk: {field: 'sk', composite: [] as const}
-      }
+      byKey: {index: 'KeyIndex', pk: {field: 'gsi5pk', composite: ['key'] as const}, sk: {field: 'sk', composite: [] as const}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

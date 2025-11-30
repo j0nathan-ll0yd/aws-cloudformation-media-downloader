@@ -66,11 +66,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             description: 'Resource type (s3, dynamodb, apigateway, sns)',
             enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']
           },
-          query: {
-            type: 'string',
-            description: 'Query type (config, usage, dependencies)',
-            enum: ['config', 'usage', 'dependencies']
-          }
+          query: {type: 'string', description: 'Query type (config, usage, dependencies)', enum: ['config', 'usage', 'dependencies']}
         },
         required: ['resource', 'query']
       }
@@ -159,12 +155,7 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
     }
 
     case 'circular':
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)
-        }]
-      }
+      return {content: [{type: 'text', text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)}]}
 
     case 'dependents': {
       if (!file) {

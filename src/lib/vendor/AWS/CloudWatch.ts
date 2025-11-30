@@ -1,9 +1,4 @@
-import {
-  PutMetricDataCommand,
-  PutMetricDataCommandInput,
-  PutMetricDataCommandOutput,
-  StandardUnit
-} from '@aws-sdk/client-cloudwatch'
+import {PutMetricDataCommand, PutMetricDataCommandInput, PutMetricDataCommandOutput, StandardUnit} from '@aws-sdk/client-cloudwatch'
 import {createCloudWatchClient} from './clients'
 
 const cloudwatch = createCloudWatchClient()

@@ -57,62 +57,57 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(
-  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logIncomingFixture(event)
-    const {userId} = getUserDetailsFromEvent(event)
-    if (!userId) {
-      // This should never happen; enforced by the API Gateway Authorizer
-      const error = new UnexpectedError('No userId found')
-      const errorResult = lambdaErrorResponse(context, error)
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
-    const deletableDevices: Device[] = []
-    try {
-      const userDevices = await getUserDevices(userId)
-      /* c8 ignore else */
-      logDebug('Found userDevices', userDevices.length.toString())
-      if (userDevices.length > 0) {
-        const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
-        const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
-        logDebug('Found devices', devices.length.toString())
-        if (unprocessed.length > 0) {
-          logDebug('getDevices.unprocessed =>', unprocessed)
-        }
-        if (!devices || devices.length === 0) {
-          throw new UnexpectedError(providerFailureErrorMessage)
-        }
-        deletableDevices.push(...(devices as Device[]))
-      }
-    } catch (error) {
-      assertIsError(error)
-      const errorResult = lambdaErrorResponse(context, new UnexpectedError('Service unavailable; try again later'))
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
-    try {
-      // Now that all the delete operations are queued; perform the deletion
-      const values = await Promise.all([
-        deleteUserFiles(userId),
-        deleteUserDevices(userId),
-        deleteUser(userId),
-        deletableDevices.map((device) => deleteDevice(device))
-      ])
-      logDebug('Promise.all', values)
-      const successResult = response(context, 204)
-      logOutgoingFixture(successResult)
-      return successResult
-    } catch (error) {
-      assertIsError(error)
-      logError(`Failed to properly remove user ${userId}`, error.message)
-      await createFailedUserDeletionIssue(userId, deletableDevices, error, context.awsRequestId)
-      const errorResult = lambdaErrorResponse(
-        context,
-        new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
-      )
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logIncomingFixture(event)
+  const {userId} = getUserDetailsFromEvent(event)
+  if (!userId) {
+    // This should never happen; enforced by the API Gateway Authorizer
+    const error = new UnexpectedError('No userId found')
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
-)
+  const deletableDevices: Device[] = []
+  try {
+    const userDevices = await getUserDevices(userId)
+    /* c8 ignore else */
+    logDebug('Found userDevices', userDevices.length.toString())
+    if (userDevices.length > 0) {
+      const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
+      const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
+      logDebug('Found devices', devices.length.toString())
+      if (unprocessed.length > 0) {
+        logDebug('getDevices.unprocessed =>', unprocessed)
+      }
+      if (!devices || devices.length === 0) {
+        throw new UnexpectedError(providerFailureErrorMessage)
+      }
+      deletableDevices.push(...(devices as Device[]))
+    }
+  } catch (error) {
+    assertIsError(error)
+    const errorResult = lambdaErrorResponse(context, new UnexpectedError('Service unavailable; try again later'))
+    logOutgoingFixture(errorResult)
+    return errorResult
+  }
+  try {
+    // Now that all the delete operations are queued; perform the deletion
+    const values = await Promise.all([
+      deleteUserFiles(userId),
+      deleteUserDevices(userId),
+      deleteUser(userId),
+      deletableDevices.map((device) => deleteDevice(device))
+    ])
+    logDebug('Promise.all', values)
+    const successResult = response(context, 204)
+    logOutgoingFixture(successResult)
+    return successResult
+  } catch (error) {
+    assertIsError(error)
+    logError(`Failed to properly remove user ${userId}`, error.message)
+    await createFailedUserDeletionIssue(userId, deletableDevices, error, context.awsRequestId)
+    const errorResult = lambdaErrorResponse(context, new UnexpectedError('Operation failed unexpectedly; but logged for resolution'))
+    logOutgoingFixture(errorResult)
+    return errorResult
+  }
+})

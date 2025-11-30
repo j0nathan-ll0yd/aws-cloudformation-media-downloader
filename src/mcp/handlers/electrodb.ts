@@ -80,9 +80,6 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
       return {entities, relationships, collectionsFile: 'src/entities/Collections.ts'}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']}
   }
 }

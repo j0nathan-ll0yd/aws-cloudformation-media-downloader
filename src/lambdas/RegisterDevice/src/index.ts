@@ -107,59 +107,57 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
  * @notExported
  */
-export const handler = withXRay(
-  async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    logIncomingFixture(event)
-    let requestBody
-    try {
-      verifyPlatformConfiguration()
-      requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
-      validateRequest(requestBody, registerDeviceSchema)
-    } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
-    try {
-      const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-      const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
-      const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-      const {userId, userStatus} = getUserDetailsFromEvent(event)
-      // Store the device details, regardless of user status
-      await upsertDevice(device)
-      /* c8 ignore else */
-      if (userStatus === UserStatus.Authenticated && userId) {
-        // Extract the userId and associate them
-        // Store the device details associated with the user
-        await upsertUserDevices(userId, requestBody.deviceId)
-        // Determine if the user already exists
-        const userDevices = await getUserDevices(userId)
-        if (userDevices.length === 1) {
-          const successResult = response(context, 200, {endpointArn: device.endpointArn})
-          logOutgoingFixture(successResult)
-          return successResult
-        } else {
-          // Confirm the subscription, and unsubscribe
-          const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
-          await unsubscribeEndpointToTopic(subscriptionArn)
-          const createdResult = response(context, 201, {endpointArn: platformEndpoint.EndpointArn})
-          logOutgoingFixture(createdResult)
-          return createdResult
-        }
-      } else if (userStatus === UserStatus.Anonymous) {
-        // If the user hasn't registered; add them to the unregistered topic
-        await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
-      } else if (userStatus === UserStatus.Unauthenticated) {
-        // If the user is unauthenticated, then need to authenticate
-        throw new UnauthorizedError('Unauthenticated -- please login')
-      }
-      const successResult = response(context, 200, {endpointArn: device.endpointArn})
-      logOutgoingFixture(successResult)
-      return successResult
-    } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
-      logOutgoingFixture(errorResult)
-      return errorResult
-    }
+export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logIncomingFixture(event)
+  let requestBody
+  try {
+    verifyPlatformConfiguration()
+    requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
+    validateRequest(requestBody, registerDeviceSchema)
+  } catch (error) {
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
   }
-)
+  try {
+    const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
+    const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
+    const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
+    const {userId, userStatus} = getUserDetailsFromEvent(event)
+    // Store the device details, regardless of user status
+    await upsertDevice(device)
+    /* c8 ignore else */
+    if (userStatus === UserStatus.Authenticated && userId) {
+      // Extract the userId and associate them
+      // Store the device details associated with the user
+      await upsertUserDevices(userId, requestBody.deviceId)
+      // Determine if the user already exists
+      const userDevices = await getUserDevices(userId)
+      if (userDevices.length === 1) {
+        const successResult = response(context, 200, {endpointArn: device.endpointArn})
+        logOutgoingFixture(successResult)
+        return successResult
+      } else {
+        // Confirm the subscription, and unsubscribe
+        const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
+        await unsubscribeEndpointToTopic(subscriptionArn)
+        const createdResult = response(context, 201, {endpointArn: platformEndpoint.EndpointArn})
+        logOutgoingFixture(createdResult)
+        return createdResult
+      }
+    } else if (userStatus === UserStatus.Anonymous) {
+      // If the user hasn't registered; add them to the unregistered topic
+      await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+    } else if (userStatus === UserStatus.Unauthenticated) {
+      // If the user is unauthenticated, then need to authenticate
+      throw new UnauthorizedError('Unauthenticated -- please login')
+    }
+    const successResult = response(context, 200, {endpointArn: device.endpointArn})
+    logOutgoingFixture(successResult)
+    return successResult
+  } catch (error) {
+    const errorResult = lambdaErrorResponse(context, error)
+    logOutgoingFixture(errorResult)
+    return errorResult
+  }
+})

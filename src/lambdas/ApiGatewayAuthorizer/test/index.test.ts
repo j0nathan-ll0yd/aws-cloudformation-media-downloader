@@ -70,11 +70,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual(fakeUserId)
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
@@ -85,11 +81,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
@@ -134,11 +126,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')

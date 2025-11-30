@@ -30,11 +30,7 @@ describe('#RefreshToken', () => {
   })
 
   test('should successfully refresh a valid session token', async () => {
-    validateSessionTokenMock.mockResolvedValue({
-      userId: fakeUserId,
-      sessionId: fakeSessionId,
-      expiresAt: Date.now() + 1000000
-    })
+    validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
     refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
 
     const output = await handler(event, context)
@@ -88,11 +84,7 @@ describe('#RefreshToken', () => {
     delete event.headers!['Authorization']
     event.headers!['authorization'] = `Bearer ${fakeToken}`
 
-    validateSessionTokenMock.mockResolvedValue({
-      userId: fakeUserId,
-      sessionId: fakeSessionId,
-      expiresAt: Date.now() + 1000000
-    })
+    validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
     refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
 
     const output = await handler(event, context)
@@ -125,11 +117,7 @@ describe('#RefreshToken', () => {
 
   describe('#RefreshFailure', () => {
     test('should return error when refresh operation fails', async () => {
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: fakeSessionId,
-        expiresAt: Date.now() + 1000000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
       refreshSessionMock.mockRejectedValue(new Error('DynamoDB connection failed'))
 
       const output = await handler(event, context)

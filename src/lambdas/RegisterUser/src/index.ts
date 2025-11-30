@@ -93,10 +93,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
       Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
     if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-      await Users.update({userId: result.user.id}).set({
-        firstName: requestBody.firstName || '',
-        lastName: requestBody.lastName || ''
-      }).go()
+      await Users.update({userId: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()
 
       logInfo('RegisterUser: Updated new user with name from iOS app', {
         userId: result.user.id,

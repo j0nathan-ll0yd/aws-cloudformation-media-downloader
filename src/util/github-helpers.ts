@@ -79,10 +79,7 @@ export async function createCookieExpirationIssue(fileId: string, fileUrl: strin
     const octokit = await getOctokitInstance()
     logDebug('createCookieExpirationIssue =>', params)
     const response = await octokit.rest.issues.create(params)
-    logInfo('Created GitHub issue for cookie expiration', {
-      issueNumber: response.data.number,
-      issueUrl: response.data.html_url
-    })
+    logInfo('Created GitHub issue for cookie expiration', {issueNumber: response.data.number, issueUrl: response.data.html_url})
     return response
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails

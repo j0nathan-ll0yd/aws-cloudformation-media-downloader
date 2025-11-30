@@ -12,22 +12,11 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 export const UserDevices = new Entity(
   {
     model: {entity: 'UserDevice', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      userId: {type: 'string', required: true, readOnly: true},
-      deviceId: {type: 'string', required: true, readOnly: true}
-    },
+    attributes: {userId: {type: 'string', required: true, readOnly: true}, deviceId: {type: 'string', required: true, readOnly: true}},
     indexes: {
       primary: {pk: {field: 'pk', composite: ['userId', 'deviceId']}, sk: {field: 'sk', composite: []}},
-      byUser: {
-        index: 'UserCollection',
-        pk: {field: 'gsi1pk', composite: ['userId']},
-        sk: {field: 'gsi1sk', composite: ['deviceId']}
-      },
-      byDevice: {
-        index: 'DeviceCollection',
-        pk: {field: 'gsi3pk', composite: ['deviceId']},
-        sk: {field: 'gsi3sk', composite: ['userId']}
-      }
+      byUser: {index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['deviceId']}},
+      byDevice: {index: 'DeviceCollection', pk: {field: 'gsi3pk', composite: ['deviceId']}, sk: {field: 'gsi3sk', composite: ['userId']}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

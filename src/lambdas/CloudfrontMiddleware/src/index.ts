@@ -31,10 +31,7 @@ async function handleQueryString(request: CloudFrontRequest) {
 }
 
 export const handler = withXRay(
-  async (
-    event: CloudFrontRequestEvent,
-    context: Context
-  ): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> => {
+  async (event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse> => {
     logInfo('event <=', event)
     logInfo('context <=', context)
     const request = event.Records[0].cf.request as CustomCloudFrontRequest

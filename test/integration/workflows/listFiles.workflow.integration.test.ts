@@ -235,16 +235,12 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB with 50 files
     const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))
-    })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))})
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
       data: fileIds.map((fileId, index) =>
-        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {
-          title: `Video ${index}`
-        })
+        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})
       ),
       unprocessed: []
     })

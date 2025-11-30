@@ -37,11 +37,7 @@ export const Sessions = new Entity(
     indexes: {
       primary: {pk: {field: 'pk', composite: ['sessionId']}, sk: {field: 'sk', composite: []}},
       byUser: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}},
-      byDevice: {
-        index: 'gsi2',
-        pk: {field: 'gsi2pk', composite: ['deviceId']},
-        sk: {field: 'gsi2sk', composite: ['createdAt']}
-      }
+      byDevice: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['deviceId']}, sk: {field: 'gsi2sk', composite: ['createdAt']}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

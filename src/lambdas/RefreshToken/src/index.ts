@@ -9,15 +9,7 @@
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {
-  lambdaErrorResponse,
-  logDebug,
-  logError,
-  logIncomingFixture,
-  logInfo,
-  logOutgoingFixture,
-  response
-} from '#util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logError, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 

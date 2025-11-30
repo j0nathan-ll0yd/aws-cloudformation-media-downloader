@@ -73,11 +73,7 @@ describe('lambda-helpers', () => {
   describe('logOutgoingFixture', () => {
     it('should log outgoing fixture with manual type', async () => {
       const {logOutgoingFixture} = await import('./lambda-helpers')
-      const mockResponse = {
-        statusCode: 200,
-        body: JSON.stringify({success: true}),
-        headers: {'Content-Type': 'application/json'}
-      }
+      const mockResponse = {statusCode: 200, body: JSON.stringify({success: true}), headers: {'Content-Type': 'application/json'}}
 
       logOutgoingFixture(mockResponse, 'test-fixture')
 

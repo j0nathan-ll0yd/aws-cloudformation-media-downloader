@@ -449,8 +449,7 @@ export function createElectroDBAdapter() {
     async createVerificationToken(data: {identifier: string; token: string; expiresAt: Date}): Promise<void> {
       logDebug('ElectroDB Adapter: createVerificationToken', {data})
 
-      await VerificationTokens.create({identifier: data.identifier, token: data.token, expiresAt: data.expiresAt.getTime()})
-        .go()
+      await VerificationTokens.create({identifier: data.identifier, token: data.token, expiresAt: data.expiresAt.getTime()}).go()
     },
 
     async getVerificationToken(token: string): Promise<{identifier: string; token: string; expiresAt: Date} | null> {

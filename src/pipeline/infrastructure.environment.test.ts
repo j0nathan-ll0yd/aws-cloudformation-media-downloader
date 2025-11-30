@@ -48,12 +48,7 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
-function getEnvironmentVariablesFromSource(
-  functionName: string,
-  sourceCodeRegex: RegExp,
-  matchSubstring: number,
-  matchSlice = [0]
-) {
+function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
   const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
@@ -111,12 +106,7 @@ describe('#Infrastructure', () => {
       matchSubstring = 12
       sourceCodeRegex = /process\.env(?:\[['"]([^'"\]]+)['"]\]|\.(\w+))/gi
     }
-    const environmentVariablesSource = getEnvironmentVariablesFromSource(
-      functionName,
-      sourceCodeRegex,
-      matchSubstring,
-      matchSlice
-    )
+    const environmentVariablesSource = getEnvironmentVariablesFromSource(functionName, sourceCodeRegex, matchSubstring, matchSlice)
     const environmentVariablesSourceCount = environmentVariablesSource.length
     test(`should match environment variables for lambda ${functionName}`, async () => {
       // Filter out infrastructure-level variables from Terraform list for comparison
