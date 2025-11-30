@@ -1,14 +1,13 @@
 /**
  * StartFileUpload Workflow Integration Tests
  *
- * Tests the complete video download workflow against LocalStack:
- * 1. Fetch video info from YouTube (mocked)
- * 2. Update DynamoDB with "pending" status (REAL LocalStack)
- * 3. Stream video to S3 (REAL LocalStack)
- * 4. Update DynamoDB with "available" status (REAL LocalStack)
- * 5. Handle errors with rollback to "unavailable" status
+ * Tests the complete video download workflow:
+ * - YouTube API: mocked (fetchVideoInfo, streamVideoToS3)
+ * - Files entity: LocalStack DynamoDB
+ * - FileDownloads entity: mocked (transient orchestration state)
+ * - S3 storage: LocalStack S3
  *
- * This tests YOUR orchestration logic, not AWS SDK behavior.
+ * This tests orchestration logic, not AWS SDK behavior.
  */
 
 // Test configuration
@@ -29,6 +28,7 @@ import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-h
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '../helpers/mock-youtube'
+import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
@@ -54,18 +54,9 @@ jest.unstable_mockModule('#util/github-helpers', () => ({
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
 
-// Mock FileDownloads entity for transient download state (uses real DynamoDB for Files)
-// Using explicit any types to satisfy TypeScript while keeping mock structure simple
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const mockGo = () => jest.fn<any>().mockResolvedValue({data: null})
-const mockGoWithData = () => jest.fn<any>().mockResolvedValue({data: {}})
-const fileDownloadsMock = {
-  get: jest.fn<any>().mockReturnValue({go: mockGo()}),
-  update: jest.fn<any>().mockReturnValue({set: jest.fn<any>().mockReturnValue({go: mockGoWithData()})}),
-  create: jest.fn<any>().mockReturnValue({go: mockGoWithData()})
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock}))
+// Mock FileDownloads entity (transient orchestration state)
+const fileDownloadsMock = createElectroDBEntityMock()
+jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock.entity}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
 const handler = module.handler
