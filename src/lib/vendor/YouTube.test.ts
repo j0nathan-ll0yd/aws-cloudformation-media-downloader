@@ -97,20 +97,16 @@ describe('#Vendor:YouTube', () => {
       expect(result).toEqual({fileSize: 1024000, s3Url: 's3://test-bucket/test-key.mp4', duration: expect.any(Number)})
 
       // Verify yt-dlp was spawned correctly
-      expect(mockSpawn).toHaveBeenCalledWith(
-        expect.stringContaining('yt-dlp'),
-        expect.arrayContaining([
-          '-o',
-          '-',
-          '--extractor-args',
-          'youtube:player_client=default',
-          '--no-warnings',
-          '--cookies',
-          '/tmp/youtube-cookies.txt',
-          'https://www.youtube.com/watch?v=test123'
-        ]),
-        {cwd: '/tmp'}
-      )
+      expect(mockSpawn).toHaveBeenCalledWith(expect.stringContaining('yt-dlp'), expect.arrayContaining([
+        '-o',
+        '-',
+        '--extractor-args',
+        'youtube:player_client=default',
+        '--no-warnings',
+        '--cookies',
+        '/tmp/youtube-cookies.txt',
+        'https://www.youtube.com/watch?v=test123'
+      ]), {cwd: '/tmp'})
 
       // Verify cookies were copied
       expect(mockCopyFile).toHaveBeenCalledWith('/opt/cookies/youtube-cookies.txt', '/tmp/youtube-cookies.txt')

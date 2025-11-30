@@ -49,10 +49,8 @@ jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-jest.unstable_mockModule(
-  '#lib/vendor/AWS/SNS',
-  () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()})
-)
+jest.unstable_mockModule('#lib/vendor/AWS/SNS',
+  () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()}))
 
 jest.unstable_mockModule('#util/github-helpers', () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
 

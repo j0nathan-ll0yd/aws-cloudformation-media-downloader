@@ -11,8 +11,7 @@ jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 const userFilesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
-jest.unstable_mockModule(
-  '#lib/vendor/AWS/SQS',
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: jest.fn().mockReturnValue({
       MD5OfMessageBody: '44dd2fc26e4186dc12b8e67ccb9a9435',
@@ -22,8 +21,7 @@ jest.unstable_mockModule(
     subscribe: jest.fn(),
     stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
     numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-  })
-)
+  }))
 
 // Mock yt-dlp-wrap to prevent YouTube module from failing
 class MockYTDlpWrap {
@@ -39,16 +37,14 @@ jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
 jest.unstable_mockModule('fs', () => ({promises: {copyFile: jest.fn()}}))
 
 // Mock S3 vendor wrapper for YouTube
-jest.unstable_mockModule(
-  '#lib/vendor/AWS/S3',
+jest.unstable_mockModule('#lib/vendor/AWS/S3',
   () => ({
     headObject: jest.fn(),
     createS3Upload: jest.fn().mockReturnValue({
       on: jest.fn(),
       done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
     })
-  })
-)
+  }))
 
 const invokeAsyncMock = jest.fn()
 jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))

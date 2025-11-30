@@ -52,10 +52,8 @@ jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entit
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-jest.unstable_mockModule(
-  '#lib/vendor/AWS/SNS',
-  () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()})
-)
+jest.unstable_mockModule('#lib/vendor/AWS/SNS',
+  () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()}))
 
 const sendMock = jest.fn()
 class MockApnsClient {
@@ -63,10 +61,8 @@ class MockApnsClient {
     return sendMock()
   }
 }
-jest.unstable_mockModule(
-  'apns2',
-  () => ({ApnsClient: MockApnsClient, Notification: jest.fn().mockReturnValue({fake: 'notification'}), Priority: jest.fn(), PushType: jest.fn()})
-)
+jest.unstable_mockModule('apns2',
+  () => ({ApnsClient: MockApnsClient, Notification: jest.fn().mockReturnValue({fake: 'notification'}), Priority: jest.fn(), PushType: jest.fn()}))
 
 const fakeApnsNotificationOptions = {contentAvailable: true, type: 'background', priority: 5, aps: {health: 'check'}}
 

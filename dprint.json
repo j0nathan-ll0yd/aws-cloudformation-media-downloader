@@ -34,6 +34,7 @@
     "arrayExpression.trailingCommas": "never",
 
     "arguments.preferSingleLine": true,
+    "arguments.preferHanging": "always",
     "arguments.trailingCommas": "never",
     "parameters.preferSingleLine": true,
     "parameters.trailingCommas": "never",

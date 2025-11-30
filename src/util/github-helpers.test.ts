@@ -14,14 +14,12 @@ class MockOctokit {
 jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImplementation(() => new MockOctokit())}))
 
 // Mock template helpers
-jest.unstable_mockModule(
-  '#util/template-helpers',
+jest.unstable_mockModule('#util/template-helpers',
   () => ({
     renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
       return `Rendered template: ${templateName}`
     })
-  })
-)
+  }))
 
 // Mock logging helpers
 jest.unstable_mockModule('#util/lambda-helpers', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
