@@ -1,3 +1,20 @@
+# =============================================================================
+# DEPRECATED: FileCoordinator Lambda
+# =============================================================================
+# This Lambda has been replaced by the FileCoordinator Step Functions state machine.
+# See: terraform/file_coordinator_sfn.tf
+#
+# The Step Functions version provides:
+# - Visual workflow debugging in AWS Console
+# - Built-in retry logic with exponential backoff
+# - Per-file error handling (partial success possible)
+# - EventBridge event publishing for observability
+#
+# This Lambda and its CloudWatch Event Rule remain DISABLED.
+# Keep for rollback capability during validation period.
+# TODO: Remove after successful Step Functions migration validation
+# =============================================================================
+
 resource "aws_iam_role" "FileCoordinatorRole" {
   name               = "FileCoordinatorRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json

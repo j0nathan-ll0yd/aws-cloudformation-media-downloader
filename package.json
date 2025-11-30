@@ -88,6 +88,8 @@
     "#test/*": "./test/*"
   },
   "devDependencies": {
+    "@aws-sdk/client-eventbridge": "^3.940.0",
+    "@aws-sdk/client-sfn": "^3.940.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.17.0",
     "@jest/globals": "^29.7.0",

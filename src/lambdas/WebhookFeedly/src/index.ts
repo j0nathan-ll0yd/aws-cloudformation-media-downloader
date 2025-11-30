@@ -1,9 +1,11 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
+import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
+import {FileWebhookReceivedEvent} from '#types/events'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
@@ -13,7 +15,7 @@ import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
-import {getRequiredEnv} from '#util/env-validation'
+import {getRequiredEnv, getOptionalEnv} from '#util/env-validation'
 
 /**
  * Associates a File to a User by creating a UserFile record
@@ -115,6 +117,23 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     }
     await associateFileToUser(fileId, userId)
     const file = await getFile(fileId)
+
+    // Publish FileWebhookReceived event to EventBridge (if EventBusName is configured)
+    const eventBusName = getOptionalEnv('EventBusName', '')
+    if (eventBusName) {
+      const webhookEvent: FileWebhookReceivedEvent = {
+        fileId,
+        userId,
+        timestamp: new Date().toISOString(),
+        source: 'feedly',
+        backgroundMode: requestBody.backgroundMode ?? false,
+        articleTitle: requestBody.articleTitle,
+        articleUrl: requestBody.articleURL
+      }
+      logDebug('publishEvent FileWebhookReceived <=', webhookEvent)
+      await publishEvent('FileWebhookReceived', webhookEvent)
+    }
+
     let result: APIGatewayProxyResult
     if (file && file.status == FileStatus.Downloaded) {
       await sendFileNotification(file, userId)
