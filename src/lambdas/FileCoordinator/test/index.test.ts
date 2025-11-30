@@ -3,11 +3,10 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const {default: eventMock} = await import('./fixtures/ScheduledEvent.json', {assert: {type: 'json'}})
 
-// Mock Files entity (for pending downloads from WebhookFeedly)
-const filesMock = createElectroDBEntityMock({queryIndexes: ['byStatus']})
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
-
-// Mock FileDownloads entity (for scheduled retries)
+// Mock FileDownloads entity (only entity used by FileCoordinator now)
+// FileCoordinator queries:
+// - status='pending' for new downloads
+// - status='scheduled' for retries
 const fileDownloadsMock = createElectroDBEntityMock({queryIndexes: ['byStatusRetryAfter']})
 jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock.entity}))
 
@@ -22,35 +21,37 @@ describe('#FileCoordinator', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    // Default: no scheduled downloads
+    // Reset mock to return empty arrays by default
+    // Note: getPendingFileIds and getScheduledFileIds both use byStatusRetryAfter
+    // First call = pending, Second call = scheduled
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({data: []})
   })
 
-  test('should handle scheduled event (with no events)', async () => {
-    const {default: scanResponse} = await import('./fixtures/scan-204-NoContent.json', {assert: {type: 'json'}})
-    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
+  test('should handle scheduled event (with no downloads)', async () => {
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
   })
 
-  test('should handle scheduled event (with 1 pending file)', async () => {
-    const {default: scanResponse} = await import('./fixtures/scan-200-OK.json', {assert: {type: 'json'}})
-    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: scanResponse.Items || []})
+  test('should handle scheduled event (with 1 pending download)', async () => {
+    // Mock: first call (pending) returns 1 file, second call (scheduled) returns 0
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
+      .mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]})
+      .mockResolvedValueOnce({data: []})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
+
     const output = await handler(event, context)
+
     expect(output.statusCode).toEqual(200)
-    expect(invokeAsyncMock).toHaveBeenCalled()
+    expect(invokeAsyncMock).toHaveBeenCalledTimes(1)
   })
 
   test('should process scheduled retries from FileDownloads', async () => {
-    // No pending files
-    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: []})
-    // One scheduled retry ready
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({
-      data: [{fileId: 'scheduled-retry-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
-    })
+    // Mock: first call (pending) returns 0, second call (scheduled) returns 1
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
+      .mockResolvedValueOnce({data: []})
+      .mockResolvedValueOnce({data: [{fileId: 'scheduled-retry-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
     const output = await handler(event, context)
@@ -61,13 +62,11 @@ describe('#FileCoordinator', () => {
     expect(parsedBody.body.scheduled).toEqual(1)
   })
 
-  test('should process both pending files and scheduled retries', async () => {
-    // One pending file
-    filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: [{fileId: 'pending-1', status: 'PendingDownload'}]})
-    // One scheduled retry
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({
-      data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
-    })
+  test('should process both pending downloads and scheduled retries', async () => {
+    // Mock: first call (pending) returns 1, second call (scheduled) returns 1
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
+      .mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]})
+      .mockResolvedValueOnce({data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]})
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
     const output = await handler(event, context)
@@ -80,16 +79,19 @@ describe('#FileCoordinator', () => {
   })
 
   describe('#AWSFailure', () => {
-    test('should throw error when file query fails', async () => {
+    test('should throw error when pending query fails', async () => {
       const message = 'AWS request failed'
-      filesMock.mocks.query.byStatus!.go.mockResolvedValue(undefined)
+      // First call (pending) returns undefined - simulating failure
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce(undefined)
       await expect(handler(event, context)).rejects.toThrowError(message)
     })
 
-    test('should throw error when FileDownloads query fails', async () => {
+    test('should throw error when scheduled query fails', async () => {
       const message = 'AWS request failed'
-      filesMock.mocks.query.byStatus!.go.mockResolvedValue({data: []})
-      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue(undefined)
+      // First call (pending) succeeds, second call (scheduled) fails
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
+        .mockResolvedValueOnce({data: []})
+        .mockResolvedValueOnce(undefined)
       await expect(handler(event, context)).rejects.toThrowError(message)
     })
   })

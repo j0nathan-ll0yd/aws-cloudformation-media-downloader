@@ -25,14 +25,13 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
     authorUser: 'testchannel',
     publishDate: new Date().toISOString(),
     description: `Test description for ${id}`,
-    availableAt: Date.now(),
     contentType: 'video/mp4',
     size: 0,
     key: `${id}.mp4`
   }
 
-  // Add Downloaded-specific fields
-  if (status === FileStatus.Downloaded) {
+  // Add Available-specific fields (downloaded files)
+  if (status === FileStatus.Available) {
     base.size = 5242880
     base.url = `https://example.com/${id}.mp4`
   }
@@ -84,7 +83,7 @@ export function createMockDevice(deviceId: string, endpointArn?: string) {
  * @param partial - Partial file data to override defaults in message attributes
  */
 export function createMockSQSFileNotificationEvent(userId: string, fileId: string, partial?: {title?: string; size?: number; url?: string}): SQSEvent {
-  const file = createMockFile(fileId, FileStatus.Downloaded, partial)
+  const file = createMockFile(fileId, FileStatus.Available, partial)
 
   return {
     Records: [{

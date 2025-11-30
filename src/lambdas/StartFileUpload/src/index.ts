@@ -107,9 +107,9 @@ async function handleDownloadFailure(
   // Handle permanent failures or retry exhaustion
   await updateDownloadState(fileId, 'failed', classification, newRetryCount)
 
-  // Also update File entity to reflect failure
+  // Also update File entity to reflect permanent failure
   try {
-    await upsertFile({fileId, status: FileStatus.Failed} as DynamoDBFile)
+    await upsertFile({fileId, status: FileStatus.Unavailable} as DynamoDBFile)
   } catch (updateError) {
     assertIsError(updateError)
     logDebug('Failed to update File entity status', updateError.message)
@@ -236,14 +236,13 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     fileId: videoInfo.id,
     key: fileName,
     size: uploadResult.fileSize,
-    availableAt: new Date().getTime() / 1000,
     authorName: videoInfo.uploader || 'Unknown',
     authorUser: (videoInfo.uploader || 'unknown').toLowerCase().replace(/\s+/g, '_'),
     title: videoInfo.title,
     description: videoInfo.description || '',
     publishDate: videoInfo.upload_date || new Date().toISOString(),
     contentType: 'video/mp4',
-    status: FileStatus.Downloaded
+    status: FileStatus.Available
   }
 
   logDebug('upsertFile <=', fileData)

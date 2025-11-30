@@ -107,13 +107,12 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
   const {Files} = await import('../../../src/entities/Files')
 
   // Get consistent defaults from createMockFile, then apply user overrides
-  const defaults = createMockFile(file.fileId!, file.status || FileStatus.PendingMetadata, file)
+  const defaults = createMockFile(file.fileId!, file.status || FileStatus.Pending, file)
 
   // ElectroDB requires all fields - createMockFile provides them all
   await Files.create({
     fileId: defaults.fileId!,
     status: defaults.status!,
-    availableAt: defaults.availableAt!,
     size: defaults.size!,
     key: defaults.key!,
     title: defaults.title!,

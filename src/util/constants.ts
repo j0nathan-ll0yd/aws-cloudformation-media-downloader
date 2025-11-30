@@ -3,16 +3,15 @@ import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 
 export const defaultFile = {
-  availableAt: Date.now(),
+  fileId: 'default',
   size: getRequiredEnvNumber('DefaultFileSize'),
   authorName: 'Lifegames',
-  description: 'Description',
-  fileId: 'default',
+  authorUser: 'sxephil',
   publishDate: new Date().toISOString(),
+  description: 'Description',
   key: getRequiredEnv('DefaultFileName'),
   url: getRequiredEnv('DefaultFileUrl'),
   contentType: getRequiredEnv('DefaultFileContentType'),
-  authorUser: 'sxephil',
-  status: FileStatus.Downloaded,
-  title: 'Welcome! Tap to download.'
+  title: 'Welcome! Tap to download.',
+  status: FileStatus.Available
 } as DynamoDBFile

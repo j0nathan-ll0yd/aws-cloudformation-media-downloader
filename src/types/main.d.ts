@@ -62,22 +62,25 @@ interface DynamoDBUserDevice {
 
 /**
  * Permanent media file metadata.
- * Note: Transient download state (retries, errors) is in FileDownloads entity.
+ *
+ * This contains ONLY permanent metadata about the media file.
+ * Transient download state (retries, scheduling, errors) is in FileDownloads entity.
+ *
+ * Status values: 'pending' | 'available' | 'unavailable'
  */
 interface DynamoDBFile {
   [key: string]: string | number | undefined
-  availableAt: number
+  fileId: string
   size: number
   authorName: string
-  fileId: string
+  authorUser: string
   publishDate: string
   description: string
   key: string
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  url?: string // Won't exist on create
+  url?: string // Source URL (optional)
   contentType: string
-  authorUser: string
   title: string
   status: FileStatus
 }

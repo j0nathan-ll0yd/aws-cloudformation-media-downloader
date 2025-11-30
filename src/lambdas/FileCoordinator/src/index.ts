@@ -1,11 +1,9 @@
 import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
-import {Files} from '#entities/Files'
 import {FileDownloads} from '#entities/FileDownloads'
 import {logDebug, logInfo, putMetrics, response} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
-import {FileStatus} from '#types/enums'
 
 /** Maximum number of files to process concurrently per batch */
 const BATCH_SIZE = 5
@@ -14,23 +12,22 @@ const BATCH_SIZE = 5
 const BATCH_DELAY_MS = 10000
 
 /**
- * Returns an array of fileIds from PendingDownload files ready to be downloaded.
- * These are new files (from WebhookFeedly) that haven't been attempted yet.
- * Uses Files.byStatus GSI to efficiently query.
+ * Returns an array of fileIds from FileDownloads with status='pending'.
+ * These are new downloads (from WebhookFeedly) that haven't been attempted yet.
+ * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
  */
 async function getPendingFileIds(): Promise<string[]> {
-  logDebug('Querying for pending files ready to be downloaded')
-  const now = Date.now()
-  const queryResponse = await Files.query.byStatus({status: FileStatus.PendingDownload}).where(({availableAt}, {lte}) => lte(availableAt, now)).where((
-    {url},
-    {notExists}
-  ) => notExists(url)).go()
+  logDebug('Querying for pending downloads ready to start')
+
+  // Query FileDownloads with status='pending' - these are new downloads
+  // Note: pending downloads don't have retryAfter set, so we just query by status
+  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: 'pending'}).go()
 
   logDebug('getPendingFileIds =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return queryResponse.data.map((file) => file.fileId)
+  return queryResponse.data.map((download) => download.fileId)
 }
 
 /**

@@ -3,10 +3,10 @@
  *
  * Tests the complete video download workflow against LocalStack:
  * 1. Fetch video info from YouTube (mocked)
- * 2. Update DynamoDB with "PendingDownload" status (REAL LocalStack)
+ * 2. Update DynamoDB with "pending" status (REAL LocalStack)
  * 3. Stream video to S3 (REAL LocalStack)
- * 4. Update DynamoDB with "Downloaded" status (REAL LocalStack)
- * 5. Handle errors with rollback to "Failed" status
+ * 4. Update DynamoDB with "available" status (REAL LocalStack)
+ * 5. Handle errors with rollback to "unavailable" status
  *
  * This tests YOUR orchestration logic, not AWS SDK behavior.
  */
@@ -104,7 +104,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     const file = await getFile(fileId)
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe(fileId)
-    expect(file!.status).toBe(FileStatus.Downloaded)
+    expect(file!.status).toBe(FileStatus.Available)
     expect(file!.size).toBe(5242880)
     expect(file!.key).toBe('test-video-123.mp4')
     expect(file!.title).toBe('Integration Test Video')
