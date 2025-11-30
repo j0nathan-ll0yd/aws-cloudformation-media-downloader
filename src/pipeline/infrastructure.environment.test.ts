@@ -30,8 +30,9 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    // dprint-ignore
-    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
+    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
+      functionName
+    ]
     const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
