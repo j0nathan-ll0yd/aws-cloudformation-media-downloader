@@ -55,11 +55,16 @@ jest.unstable_mockModule('#util/github-helpers', () => ({
 }))
 
 // Mock FileDownloads entity for transient download state (uses real DynamoDB for Files)
+// Using explicit any types to satisfy TypeScript while keeping mock structure simple
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const mockGo = () => jest.fn<any>().mockResolvedValue({data: null})
+const mockGoWithData = () => jest.fn<any>().mockResolvedValue({data: {}})
 const fileDownloadsMock = {
-  get: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: null})}),
-  update: jest.fn().mockReturnValue({set: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})}),
-  create: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})
-} as unknown
+  get: jest.fn<any>().mockReturnValue({go: mockGo()}),
+  update: jest.fn<any>().mockReturnValue({set: jest.fn<any>().mockReturnValue({go: mockGoWithData()})}),
+  create: jest.fn<any>().mockReturnValue({go: mockGoWithData()})
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')

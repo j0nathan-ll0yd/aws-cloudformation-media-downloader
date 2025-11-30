@@ -34,7 +34,9 @@ export async function createMediaDownloaderTable(): Promise<void> {
         {AttributeName: 'gsi4pk', AttributeType: 'S'},
         {AttributeName: 'gsi4sk', AttributeType: 'S'},
         {AttributeName: 'gsi5pk', AttributeType: 'S'},
-        {AttributeName: 'gsi5sk', AttributeType: 'S'}
+        {AttributeName: 'gsi5sk', AttributeType: 'S'},
+        {AttributeName: 'gsi6pk', AttributeType: 'S'},
+        {AttributeName: 'gsi6sk', AttributeType: 'S'}
       ],
       GlobalSecondaryIndexes: [{
         IndexName: 'UserCollection',
@@ -55,6 +57,10 @@ export async function createMediaDownloaderTable(): Promise<void> {
       }, {
         IndexName: 'KeyIndex',
         KeySchema: [{AttributeName: 'gsi5pk', KeyType: 'HASH'}, {AttributeName: 'gsi5sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'GSI6',
+        KeySchema: [{AttributeName: 'gsi6pk', KeyType: 'HASH'}, {AttributeName: 'gsi6sk', KeyType: 'RANGE'}],
         Projection: {ProjectionType: 'ALL'}
       }],
       BillingMode: 'PAY_PER_REQUEST'
