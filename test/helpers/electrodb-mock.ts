@@ -73,9 +73,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
 }): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
   // Supports both single and batch operations
-  const getMock = jest.fn<
-    () => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>
-  >()
+  const getMock = jest.fn<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>()
   const get = jest.fn(() => ({go: getMock}))
 
   // Scan operation: Entity.scan().go() or Entity.scan().where(...).go()

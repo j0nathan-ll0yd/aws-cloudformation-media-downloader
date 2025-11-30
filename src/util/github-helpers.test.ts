@@ -26,11 +26,7 @@ jest.unstable_mockModule(
 // Mock logging helpers
 jest.unstable_mockModule('#util/lambda-helpers', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
 
-const {
-  createFailedUserDeletionIssue,
-  createVideoDownloadFailureIssue,
-  createCookieExpirationIssue
-} = await import('./github-helpers')
+const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('./github-helpers')
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {

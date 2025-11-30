@@ -30,7 +30,7 @@
     "objectExpression.preferSingleLine": true,
     "objectExpression.trailingCommas": "never",
 
-    "arrayExpression.preferSingleLine": true,
+    "arrayExpression.preferSingleLine": false,
     "arrayExpression.trailingCommas": "never",
 
     "arguments.preferSingleLine": true,

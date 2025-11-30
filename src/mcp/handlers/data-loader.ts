@@ -114,10 +114,7 @@ export async function getLambdaConfigs(): Promise<
 > {
   const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([discoverLambdas(), loadMetadata(), loadDependencyGraph(), discoverEntities()])
 
-  const configs: Record<
-    string,
-    {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}
-  > = {}
+  const configs: Record<string, {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}> = {}
 
   for (const name of lambdaNames) {
     const lambdaMeta = metadata.lambdas[name] || {trigger: 'Unknown', purpose: 'Unknown'}
@@ -140,9 +137,7 @@ export async function getLambdaConfigs(): Promise<
 
       // Entities
       const entityMatch = dep.match(/src\/entities\/(\w+)/)
-      if (
-        entityMatch && entityNames.includes(entityMatch[1]) && !entities.includes(entityMatch[1])
-      ) {
+      if (entityMatch && entityNames.includes(entityMatch[1]) && !entities.includes(entityMatch[1])) {
         entities.push(entityMatch[1])
       }
     }
@@ -156,9 +151,7 @@ export async function getLambdaConfigs(): Promise<
 /**
  * Get entity schemas and relationships
  */
-export async function getEntityInfo(): Promise<
-  {entities: string[]; relationships: EntityRelationship[]}
-> {
+export async function getEntityInfo(): Promise<{entities: string[]; relationships: EntityRelationship[]}> {
   const [entities, metadata] = await Promise.all([discoverEntities(), loadMetadata()])
 
   return {entities, relationships: metadata.entityRelationships}
@@ -167,9 +160,7 @@ export async function getEntityInfo(): Promise<
 /**
  * Get Lambda invocation chains
  */
-export async function getLambdaInvocations(): Promise<
-  Array<{from: string; to: string; via: string}>
-> {
+export async function getLambdaInvocations(): Promise<Array<{from: string; to: string; via: string}>> {
   const metadata = await loadMetadata()
   return metadata.lambdaInvocations
 }

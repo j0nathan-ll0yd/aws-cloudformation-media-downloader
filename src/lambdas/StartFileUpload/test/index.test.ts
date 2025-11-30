@@ -8,9 +8,7 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
-const streamVideoToS3Mock = jest.fn<
-  () => Promise<{fileSize: number; s3Url: string; duration: number}>
->()
+const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
 jest.unstable_mockModule(
   '#lib/vendor/YouTube',
