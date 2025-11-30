@@ -69,7 +69,7 @@ interface DynamoDBUserDevice {
  * Status values: 'pending' | 'available' | 'unavailable'
  */
 interface DynamoDBFile {
-  [key: string]: string | number | undefined
+  [key: string]: string | number | FileStatus | undefined
   fileId: string
   size: number
   authorName: string
@@ -77,9 +77,7 @@ interface DynamoDBFile {
   publishDate: string
   description: string
   key: string
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  url?: string // Source URL (optional)
+  url?: string
   contentType: string
   title: string
   status: FileStatus
