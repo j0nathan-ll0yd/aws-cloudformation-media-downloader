@@ -20,7 +20,7 @@
     "singleBodyPosition": "nextLine",
     "useBraces": "whenNotSingleLine",
 
-    "operatorPosition": "maintain",
+    "operatorPosition": "sameLine",
     "binaryExpression.operatorPosition": "sameLine",
     "conditionalExpression.operatorPosition": "nextLine",
 

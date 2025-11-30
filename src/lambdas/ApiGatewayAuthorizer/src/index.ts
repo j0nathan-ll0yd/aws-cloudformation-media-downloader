@@ -157,9 +157,7 @@ export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent):
   const pathPart = event.path.substring(1)
   const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
   const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
-  if (
-    event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined
-  ) {
+  if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
     const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)
     if (maybeUserId) {
       principalId = maybeUserId
