@@ -22,17 +22,11 @@ import {DownloadStatus} from '#types/enums'
 import {createFilesTable, deleteFilesTable} from '#test/integration/helpers/dynamodb-helpers'
 import {createMockContext} from '#test/integration/helpers/lambda-context'
 import {createMockScheduledEvent} from '#test/integration/helpers/test-data'
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// We need to resolve the path for Lambda mock since it's used by FileCoordinator
-const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
 const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
+// Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
 
 // Helper to insert a FileDownloads record for testing

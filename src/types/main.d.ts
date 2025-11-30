@@ -69,7 +69,6 @@ interface DynamoDBUserDevice {
  * Status values: 'pending' | 'available' | 'unavailable'
  */
 interface DynamoDBFile {
-  [key: string]: string | number | FileStatus | undefined
   fileId: string
   size: number
   authorName: string

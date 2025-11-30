@@ -24,11 +24,11 @@ import type {Context} from 'aws-lambda'
 import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
-import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '../helpers/mock-youtube'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/helpers/dynamodb-helpers'
+import {createTestBucket, deleteTestBucket, getObjectMetadata} from '#test/integration/helpers/s3-helpers'
+import {createMockContext} from '#test/integration/helpers/lambda-context'
+import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '#test/integration/helpers/mock-youtube'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
@@ -61,8 +61,8 @@ jest.unstable_mockModule('#entities/FileDownloads', () => ({
   DownloadStatus // Re-export the real enum
 }))
 
-const module = await import('../../../src/lambdas/StartFileUpload/src/index')
-const handler = module.handler
+// Note: No #lambdas/* path alias exists, using relative import for handler
+const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   let mockContext: Context

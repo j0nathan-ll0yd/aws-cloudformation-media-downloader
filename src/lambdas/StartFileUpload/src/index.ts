@@ -36,11 +36,7 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
  * Stream video to S3 with X-Ray tracing.
  * Wraps streamVideoToS3 and handles subsegment lifecycle including error capture.
  */
-async function streamVideoToS3Traced(
-  fileUrl: string,
-  bucket: string,
-  fileName: string
-): Promise<{fileSize: number; s3Url: string; duration: number}> {
+async function streamVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const segment = getSegment()
   const subsegment = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
 
@@ -67,12 +63,7 @@ async function streamVideoToS3Traced(
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
  */
-async function updateDownloadState(
-  fileId: string,
-  status: DownloadStatus,
-  classification?: VideoErrorClassification,
-  retryCount = 0
-): Promise<void> {
+async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}
 
   if (classification) {
