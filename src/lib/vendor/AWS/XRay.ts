@@ -43,9 +43,7 @@ function isXRayEnabled(): boolean {
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#aws-sdk-integration | X-Ray AWS SDK Integration}
  */
-export function captureAWSClient<
-  T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}
->(client: T): T {
+export function captureAWSClient<T extends {middlewareStack: {remove: unknown; use: unknown}; config: unknown}>(client: T): T {
   if (!isXRayEnabled()) {
     return client
   }
