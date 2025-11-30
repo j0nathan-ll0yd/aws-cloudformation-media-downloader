@@ -30,8 +30,6 @@
     "test": "pnpm run generate-graph && node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.config.mjs",
     "test:integration": "pnpm run generate-graph && USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.integration.config.mjs",
     "test:integration:with-lifecycle": "./bin/test-integration.sh",
-    "test:all": "./bin/test-all.sh",
-    "test-full": "pnpm run build-dependencies && pnpm run build && pnpm run test:all",
     "ci:local": "./bin/ci-local.sh",
     "ci:local:full": "./bin/ci-local-full.sh",
     "validate:docs": "./bin/validate-docs.sh",

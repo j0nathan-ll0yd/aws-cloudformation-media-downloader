@@ -328,10 +328,13 @@ pnpm run test           # Run unit tests
 pnpm run deploy         # Deploy infrastructure with OpenTofu
 pnpm run format         # Auto-format with Prettier (250 char lines)
 
+# Local CI (run before pushing)
+pnpm run ci:local                # Fast CI checks (~2-3 min, no integration)
+pnpm run ci:local:full           # Full CI checks (~5-10 min, with integration)
+
 # Integration testing
 pnpm run localstack:start        # Start LocalStack
-pnpm run test:integration        # Run integration tests
-pnpm run test:integration:with-lifecycle   # Full suite with lifecycle
+pnpm run test:integration        # Run integration tests (assumes LocalStack running)
 
 # Remote testing
 pnpm run test-remote-list        # Test file listing
