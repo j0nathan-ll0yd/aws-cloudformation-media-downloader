@@ -279,11 +279,12 @@ export async function streamVideoToS3(uri: string, bucket: string, key: string):
     // Publish CloudWatch metrics
     const throughputMBps = fileSize > 0 && duration > 0 ? fileSize / 1024 / 1024 / duration : 0
 
-    await putMetrics([{name: 'VideoDownloadSuccess', value: 1, unit: 'Count'}, {name: 'VideoDownloadDuration', value: duration, unit: 'Seconds'}, {
-      name: 'VideoFileSize',
-      value: fileSize,
-      unit: 'Bytes'
-    }, {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}])
+    await putMetrics([
+      {name: 'VideoDownloadSuccess', value: 1, unit: 'Count'}, // fmt: multiline
+      {name: 'VideoDownloadDuration', value: duration, unit: 'Seconds'},
+      {name: 'VideoFileSize', value: fileSize, unit: 'Bytes'},
+      {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}
+    ])
 
     return {fileSize, s3Url, duration}
   } catch (error) {

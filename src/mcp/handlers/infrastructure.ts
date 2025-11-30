@@ -76,12 +76,11 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         tableFile: 'terraform/dynamodb.tf',
         entitiesDir: 'src/entities/',
         collectionsFile: 'src/entities/Collections.ts',
-        indexes: [{name: 'Primary', pk: 'pk', sk: 'sk'}, {name: 'GSI1', pk: 'gsi1pk', sk: 'gsi1sk', description: 'User-based queries'}, {
-          name: 'GSI2',
-          pk: 'gsi2pk',
-          sk: 'gsi2sk',
-          description: 'File/Device lookups'
-        }]
+        indexes: [
+          {name: 'Primary', pk: 'pk', sk: 'sk'}, // fmt: multiline
+          {name: 'GSI1', pk: 'gsi1pk', sk: 'gsi1sk', description: 'User-based queries'},
+          {name: 'GSI2', pk: 'gsi2pk', sk: 'gsi2sk', description: 'File/Device lookups'}
+        ]
       }
 
     case 's3':

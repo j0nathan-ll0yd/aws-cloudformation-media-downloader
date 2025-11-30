@@ -274,13 +274,10 @@ describe('#Vendor:YouTube', () => {
     test('should throw error if no combined formats available', () => {
       const info = {
         ...baseVideoInfo,
-        formats: [{format_id: 'video-only', url: 'https://example.com/video', ext: 'mp4', vcodec: 'h264', acodec: 'none'}, {
-          format_id: 'audio-only',
-          url: 'https://example.com/audio',
-          ext: 'm4a',
-          vcodec: 'none',
-          acodec: 'aac'
-        }]
+        formats: [
+          {format_id: 'video-only', url: 'https://example.com/video', ext: 'mp4', vcodec: 'h264', acodec: 'none'}, // fmt: multiline
+          {format_id: 'audio-only', url: 'https://example.com/audio', ext: 'm4a', vcodec: 'none', acodec: 'aac'}
+        ]
       }
 
       expect(() => chooseVideoFormat(info)).toThrow('No combined video+audio formats available')

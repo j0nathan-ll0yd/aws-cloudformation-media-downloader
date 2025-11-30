@@ -4,10 +4,10 @@ import {v4 as uuidv4} from 'uuid'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
-const fakeUserDevicesResponse = [{deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1', userId: fakeUserId}, {
-  deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
-  userId: fakeUserId
-}]
+const fakeUserDevicesResponse = [
+  {deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1', userId: fakeUserId}, // fmt: multiline
+  {deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A', userId: fakeUserId}
+]
 const fakeDevice1 = {
   deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
   token: 'fake-token',

@@ -4,6 +4,25 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-11-29
+
+1. **Multiline Array/Object Formatting Hint** (Convention)
+   - **What**: Use `// fmt: multiline` comment after first element to force consistent multiline formatting
+   - **Why**: dprint uses "best fit" algorithm that can create ugly mixed inline/multiline arrays; line comments cannot be collapsed to single line
+   - **Example**:
+     ```typescript
+     const items = [
+       {id: 1, name: 'first'}, // fmt: multiline
+       {id: 2, name: 'second'},
+       {id: 3, name: 'third'}
+     ]
+     ```
+   - **Detected**: During dprint migration and formatting optimization
+   - **Target**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Status**: 🔄 Pending documentation
+   - **Enforcement**: Optional (use when dprint's default formatting harms readability)
+
 ### Detected: 2025-11-28
 
 1. **Production Fixture Logging** (Testing Pattern)
@@ -191,6 +210,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-11-28
-- **Total Conventions**: 17 detected, 17 documented, 0 pending
+- **Last Updated**: 2025-11-29
+- **Total Conventions**: 18 detected, 17 documented, 1 pending
 - **Convention Capture System**: Active

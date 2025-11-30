@@ -9,11 +9,10 @@ describe('#template-helpers', () => {
 
       const result = renderGithubIssueTemplate('user-deletion-failure', {
         userId: 'test-user-123',
-        devices: [{deviceToken: 'device-token-1', platform: 'iOS', updatedAt: '2024-01-01T00:00:00.000Z'}, {
-          deviceToken: 'device-token-2',
-          platform: 'iOS',
-          updatedAt: '2024-01-02T00:00:00.000Z'
-        }],
+        devices: [
+          {deviceToken: 'device-token-1', platform: 'iOS', updatedAt: '2024-01-01T00:00:00.000Z'}, // fmt: multiline
+          {deviceToken: 'device-token-2', platform: 'iOS', updatedAt: '2024-01-02T00:00:00.000Z'}
+        ],
         error: mockError,
         requestId: 'req-abc-123'
       })

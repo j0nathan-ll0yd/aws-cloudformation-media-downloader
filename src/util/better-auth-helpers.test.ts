@@ -156,10 +156,11 @@ describe('Better Auth Helpers', () => {
 
   describe('revokeAllUserSessions', () => {
     it('should revoke all sessions for a user', async () => {
-      const mockSessions = [{sessionId: 'session-1', userId: 'user-123'}, {sessionId: 'session-2', userId: 'user-123'}, {
-        sessionId: 'session-3',
-        userId: 'user-123'
-      }]
+      const mockSessions = [
+        {sessionId: 'session-1', userId: 'user-123'}, // fmt: multiline
+        {sessionId: 'session-2', userId: 'user-123'},
+        {sessionId: 'session-3', userId: 'user-123'}
+      ]
 
       // Mock query operation
       if (sessionsMock.mocks.query.byUser) {
