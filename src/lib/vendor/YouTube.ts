@@ -5,9 +5,8 @@ import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
 import {logDebug, logError, putMetrics} from '#util/lambda-helpers'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
 import {assertIsError} from '#util/transformers'
-import {createS3Upload, headObject} from '#lib/vendor/AWS/S3'
-
-const ytdlpBinaryPath = process.env.YtdlpBinaryPath as string
+import {createS3Upload, headObject} from '../vendor/AWS/S3'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Check if an error message indicates cookie expiration or bot detection
@@ -35,6 +34,7 @@ function isCookieExpirationError(errorMessage: string): boolean {
  * @returns Video information including formats and metadata
  */
 export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
+  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
   try {
@@ -168,12 +168,12 @@ export function getVideoID(url: string): string {
 /**
  * Stream video directly from yt-dlp to S3 using multipart upload
  * @param uri - YouTube video URL
- * @param s3Client - Configured S3 client
  * @param bucket - Target S3 bucket name
  * @param key - Target S3 object key
  * @returns Upload results including file size, S3 URL, and duration
  */
 export async function streamVideoToS3(uri: string, bucket: string, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
+  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: ytdlpBinaryPath})
 
   try {
@@ -280,7 +280,7 @@ export async function streamVideoToS3(uri: string, bucket: string, key: string):
     const throughputMBps = fileSize > 0 && duration > 0 ? fileSize / 1024 / 1024 / duration : 0
 
     await putMetrics([
-      {name: 'VideoDownloadSuccess', value: 1, unit: 'Count'}, // fmt: multiline
+      {name: 'VideoDownloadSuccess', value: 1, unit: 'Count'},
       {name: 'VideoDownloadDuration', value: duration, unit: 'Seconds'},
       {name: 'VideoFileSize', value: fileSize, unit: 'Bytes'},
       {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}

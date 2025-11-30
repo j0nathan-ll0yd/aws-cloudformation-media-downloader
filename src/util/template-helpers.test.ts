@@ -98,9 +98,9 @@ describe('#template-helpers', () => {
       expect(result).toContain('file-789')
       expect(result).toContain('https://youtube.com/watch?v=test3')
       expect(result).toContain("Sign in to confirm you're not a bot")
-      expect(result).toContain('npm run update-cookies')
-      expect(result).toContain('npm run build')
-      expect(result).toContain('npm run deploy')
+      expect(result).toContain('pnpm run update-cookies')
+      expect(result).toContain('pnpm run build')
+      expect(result).toContain('pnpm run deploy')
       expect(result).toContain(mockError.stack)
 
       // Verify template variables were replaced

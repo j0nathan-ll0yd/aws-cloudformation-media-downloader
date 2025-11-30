@@ -35,11 +35,14 @@ import {logDebug, logError} from '#util/lambda-helpers'
 /**
  * ElectroDB entity response types - what we get back from database queries
  * ElectroDB's EntityItem doesn't include auto-generated fields, so we extend it
+ * @internal
  */
 type ElectroUserItem = EntityItem<typeof Users> & {createdAt?: number; updatedAt?: number}
 
+/** @internal */
 type ElectroSessionItem = EntityItem<typeof Sessions> & {createdAt: number; updatedAt: number}
 
+/** @internal */
 type ElectroAccountItem = EntityItem<typeof Accounts> & {createdAt: number; updatedAt: number}
 
 /**
@@ -60,6 +63,7 @@ type IdentityProvidersData = {
 /**
  * ElectroDB create types - what we send to database creates
  * Required fields must be present, optional fields can be omitted
+ * @internal
  */
 type ElectroUserCreate = {
   userId: string
@@ -70,8 +74,10 @@ type ElectroUserCreate = {
   identityProviders: IdentityProvidersData // ElectroDB requires all fields
 }
 
+/** @internal */
 type ElectroSessionCreate = {sessionId: string; userId: string; expiresAt: number; token: string; ipAddress?: string; userAgent?: string; deviceId?: string}
 
+/** @internal */
 type ElectroAccountCreate = {
   accountId: string
   userId: string
@@ -88,8 +94,10 @@ type ElectroAccountCreate = {
 /**
  * ElectroDB update types - partial updates for set() operations
  * Only include fields that can be updated
+ * @internal
  */
 type ElectroUserUpdate = Partial<Pick<ElectroUserCreate, 'email' | 'emailVerified' | 'firstName' | 'lastName'>>
+/** @internal */
 type ElectroSessionUpdate = Partial<Pick<ElectroSessionCreate, 'expiresAt' | 'token' | 'ipAddress' | 'userAgent'>>
 
 /**
@@ -220,7 +228,7 @@ function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; 
   const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
     userId: authSession.userId!, // Required by Better Auth
-    expiresAt: authSession.expiresAt?.getTime() ?? Date.now() + 30 * 24 * 60 * 60 * 1000,
+    expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
     token: authSession.token || uuidv4(),
     ipAddress: authSession.ipAddress ?? undefined,
     userAgent: authSession.userAgent ?? undefined

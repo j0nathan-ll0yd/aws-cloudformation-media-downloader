@@ -68,7 +68,7 @@ describe('#StartFileUpload', () => {
 
     expect(output.statusCode).toEqual(200)
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.status).toEqual('Success')
     expect(parsedBody.body.fileSize).toEqual(82784319)
     expect(parsedBody.body.duration).toEqual(45)
     expect(parsedBody.body.fileId).toBeDefined()
@@ -109,7 +109,7 @@ describe('#StartFileUpload', () => {
 
     expect(output.statusCode).toEqual(200)
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('success')
+    expect(parsedBody.body.status).toEqual('Success')
     expect(parsedBody.body.fileSize).toEqual(104857600)
     expect(parsedBody.body.duration).toEqual(120)
 

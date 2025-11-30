@@ -149,7 +149,7 @@ cd "$PROJECT_ROOT"
 export USE_LOCALSTACK=true
 
 # Run Jest with integration config
-if node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --config config/jest.integration.config.mjs; then
+if node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --config config/jest.integration.config.mjs; then
   test_exit_code=0
   echo ""
   echo -e "${GREEN}✅ All integration tests passed!${NC}"

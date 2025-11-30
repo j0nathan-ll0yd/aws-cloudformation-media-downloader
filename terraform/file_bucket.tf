@@ -2,9 +2,84 @@ resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
 }
 
-resource "aws_s3_bucket_acl" "Files" {
+# Origin Access Control for CloudFront (replaces public-read ACL)
+resource "aws_cloudfront_origin_access_control" "media_files_oac" {
+  name                              = "media-files-oac"
+  description                       = "OAC for media files S3 bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront Distribution for S3 media files
+resource "aws_cloudfront_distribution" "media_files" {
+  enabled             = true
+  default_root_object = ""
+  price_class         = "PriceClass_100" # US, Canada, Europe - lowest cost
+
+  origin {
+    domain_name              = aws_s3_bucket.Files.bucket_regional_domain_name
+    origin_id                = "S3-media-files"
+    origin_access_control_id = aws_cloudfront_origin_access_control.media_files_oac.id
+  }
+
+  default_cache_behavior {
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "S3-media-files"
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 86400    # 1 day
+    max_ttl     = 31536000 # 1 year
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "whitelist"
+      locations        = ["US"]
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name = "MediaFilesDistribution"
+  }
+}
+
+# S3 Bucket Policy for CloudFront OAC access
+resource "aws_s3_bucket_policy" "cloudfront_access" {
   bucket = aws_s3_bucket.Files.id
-  acl    = "public-read"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "AllowCloudFrontAccess"
+      Effect    = "Allow"
+      Principal = { Service = "cloudfront.amazonaws.com" }
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_bucket.Files.arn}/*"
+      Condition = {
+        StringEquals = {
+          "AWS:SourceArn" = aws_cloudfront_distribution.media_files.arn
+        }
+      }
+    }]
+  })
+}
+
+output "cloudfront_media_files_domain" {
+  description = "CloudFront domain for media files (use this in iOS app)"
+  value       = aws_cloudfront_distribution.media_files.domain_name
 }
 
 resource "aws_s3_bucket_notification" "Files" {

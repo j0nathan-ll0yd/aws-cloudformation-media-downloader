@@ -19,20 +19,26 @@ const TEST_TABLE = 'test-list-files'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
+// DefaultFile env vars required by constants.ts (loaded when importing ListFiles handler)
+process.env.DefaultFileSize = '1024'
+process.env.DefaultFileName = 'test-default-file.mp4'
+process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
+process.env.DefaultFileContentType = 'video/mp4'
+
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '#types/enums'
-import type {DynamoDBFile} from '#types/main'
+import {FileStatus, UserStatus} from '../../../src/types/enums'
+import type {DynamoDBFile} from '../../../src/types/main'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

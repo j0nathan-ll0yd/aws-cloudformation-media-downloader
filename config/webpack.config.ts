@@ -17,6 +17,7 @@ const config: webpack.Configuration = {
     return acc
   }, {}),
   externals: {
+    // AWS SDK v3 is available in Lambda runtime - externalize to reduce bundle size
     '@aws-sdk/client-api-gateway': '@aws-sdk/client-api-gateway',
     '@aws-sdk/client-cloudwatch': '@aws-sdk/client-cloudwatch',
     '@aws-sdk/client-dynamodb': '@aws-sdk/client-dynamodb',
@@ -26,32 +27,27 @@ const config: webpack.Configuration = {
     '@aws-sdk/client-sqs': '@aws-sdk/client-sqs',
     '@aws-sdk/lib-dynamodb': '@aws-sdk/lib-dynamodb',
     '@aws-sdk/lib-storage': '@aws-sdk/lib-storage',
-    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb',
-    'aws-xray-sdk-core': 'aws-xray-sdk-core',
-    'supports-color': 'supports-color'
+    '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
+    // Note: aws-xray-sdk-core is NOT in Lambda runtime - must be bundled
   },
-  resolve: {
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    alias: {
-      '#entities': path.resolve(__dirname, '../src/entities'),
-      '#lib': path.resolve(__dirname, '../src/lib'),
-      '#util': path.resolve(__dirname, '../src/util'),
-      '#types': path.resolve(__dirname, '../src/types')
-    }
-  },
-  output: {libraryTarget: 'umd', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js'},
+  resolve: {extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']},
+  output: {libraryTarget: 'commonjs2', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js'},
   optimization: {usedExports: true},
   stats: {usedExports: true},
   target: 'node',
   module: {
-    rules: [{
-      // Include ts, tsx, js, and jsx files.
-      test: /\.(ts|js)x?$/,
-      exclude: [/node_modules/, /\.test\.ts$/, /\/test\//],
-      use: 'ts-loader'
-    }]
+    rules: [
+      {
+        // Include ts, tsx, js, and jsx files.
+        test: /\.(ts|js)x?$/,
+        exclude: [/node_modules/, /\.test\.ts$/, /\/test\//],
+        use: 'ts-loader'
+      }
+    ]
   },
-  plugins: [new ForkTsCheckerWebpackPlugin({typescript: {configOverwrite: {exclude: ['**/*.test.ts', '**/test/**']}}})],
+  plugins: [
+    new ForkTsCheckerWebpackPlugin({typescript: {configOverwrite: {exclude: ['**/*.test.ts', '**/test/**']}}})
+  ],
   watch: false
 }
 

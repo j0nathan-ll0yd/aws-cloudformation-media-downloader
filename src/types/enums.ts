@@ -10,3 +10,10 @@ export enum FileStatus {
   Downloaded = 'Downloaded',
   Failed = 'Failed'
 }
+
+export enum ResponseStatus {
+  Dispatched = 'Dispatched',
+  Initiated = 'Initiated',
+  Accepted = 'Accepted',
+  Success = 'Success'
+}

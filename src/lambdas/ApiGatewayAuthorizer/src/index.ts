@@ -4,11 +4,17 @@ import {ApiKey, getApiKeys, getUsage, getUsagePlans, UsagePlan} from '#lib/vendo
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {validateSessionToken} from '#util/better-auth-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
+import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
     context: {},
-    policyDocument: {Statement: [{Action: 'execute-api:Invoke', Effect: effect, Resource: resource}], Version: '2012-10-17'},
+    policyDocument: {
+      Statement: [
+        {Action: 'execute-api:Invoke', Effect: effect, Resource: resource}
+      ],
+      Version: '2012-10-17'
+    },
     principalId,
     usageIdentifierKey
   } as CustomAuthorizerResult
@@ -104,7 +110,10 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
   if (!event.headers) {
     return false
   }
-  const reservedIp = process.env.ReservedClientIp as string
+  const reservedIp = getOptionalEnv('ReservedClientIp', '')
+  if (!reservedIp) {
+    return false
+  }
   const userAgent = event.headers['User-Agent']
   const clientIp = event.requestContext.identity.sourceIp
   logDebug('reservedIp <=', reservedIp)
@@ -155,7 +164,7 @@ export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent):
 
   let principalId = 'unknown'
   const pathPart = event.path.substring(1)
-  const multiAuthenticationPathsString = process.env.MultiAuthenticationPathParts as string
+  const multiAuthenticationPathsString = getRequiredEnv('MultiAuthenticationPathParts')
   const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
   if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
     const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)

@@ -88,7 +88,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
     expect(response.body.fileId).toBe(fileId)
-    expect(response.body.status).toBe('success')
+    expect(response.body.status).toBe('Success')
     expect(response.body.fileSize).toBe(5242880)
 
     const file = await getFile(fileId)

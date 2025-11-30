@@ -20,7 +20,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  * extends the session expiration, and returns the updated expiration.
  *
  * @param event - API Gateway proxy event
- * @param _context - Lambda context (unused)
+ * @param context - Lambda context
  * @returns API Gateway proxy result with refreshed session info
  */
 export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {

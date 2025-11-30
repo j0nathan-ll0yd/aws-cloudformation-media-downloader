@@ -34,16 +34,16 @@ import {VerificationTokens} from './VerificationTokens'
  *    - Access pattern: collections.deviceUsers(deviceId).go()
  *    - Used by: PruneDevices (for cleanup)
  *
- * 4. **userSessions** (SessionCollection/gsi1)
+ * 4. **userSessions** (gsi1)
  *    - Query: Get all sessions for a user
  *    - Entities: Sessions
- *    - Access pattern: collections.userSessions(userId).go()
+ *    - Access pattern: `collections.userSessions(\{userId\}).go()`
  *    - Used by: LoginUser, RefreshToken, Logout
  *
- * 5. **userAccounts** (AccountCollection/gsi1)
+ * 5. **userAccounts** (gsi1)
  *    - Query: Get all OAuth accounts for a user
  *    - Entities: Accounts
- *    - Access pattern: collections.userAccounts(userId).go()
+ *    - Access pattern: `collections.userAccounts(\{userId\}).go()`
  *    - Used by: Better Auth adapter for account linking
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#collections-testing-join-operations | Collections Usage Examples}

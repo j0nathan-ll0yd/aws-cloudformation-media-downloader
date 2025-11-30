@@ -9,6 +9,7 @@ import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '#types/main'
 import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
 import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '#lib/vendor/AWS/Lambda'
+import {scanAllPages} from './pagination'
 
 /**
  * Disassociates a deviceId from a User by deleting the UserDevice record
@@ -84,22 +85,25 @@ export async function upsertFile(item: DynamoDBFile) {
 }
 
 /**
- * Searches for a User record via their Apple Device ID
+ * Searches for a User record via their Apple Device ID using paginated scan
  * @param userDeviceId - The subject registered claim that identifies the principal user.
  * @see {@link lambdas/RegisterUser/src!#handler | RegisterUser }
  * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
  */
 export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
   logDebug('getUsersByAppleDeviceIdentifier <=', userDeviceId)
-  const scanResponse = await Users.scan.go()
-  logDebug('getUsersByAppleDeviceIdentifier =>', scanResponse)
-  if (!scanResponse || !scanResponse.data) {
-    return []
-  }
+
+  type UserEntity = EntityItem<typeof Users>
+  const allUsers = await scanAllPages<UserEntity>(async (cursor) => {
+    const scanResponse = await Users.scan.go({cursor})
+    return {data: scanResponse.data || [], cursor: scanResponse.cursor ?? null}
+  })
+
+  logDebug('getUsersByAppleDeviceIdentifier: scanned users', {count: allUsers.length})
 
   // Filter in memory since we can't query on nested identity provider field
-  type UserEntity = EntityItem<typeof Users>
-  const usersWithAppleId = scanResponse.data.filter((user: UserEntity) => user.identityProviders?.userId === userDeviceId)
+  const usersWithAppleId = allUsers.filter((user) => user.identityProviders?.userId === userDeviceId)
+  logDebug('getUsersByAppleDeviceIdentifier =>', {matchCount: usersWithAppleId.length})
   return usersWithAppleId as User[]
 }
 
@@ -121,7 +125,6 @@ export async function initiateFileDownload(fileId: string) {
 /**
  * Makes an HTTP request via Axios
  * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
   logDebug('axios <= ', options)

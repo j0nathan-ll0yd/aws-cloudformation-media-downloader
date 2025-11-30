@@ -15,7 +15,7 @@
 const TEST_TABLE = 'MediaDownloader'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
-process.env.AWS_REGION = 'us-east-1'
+process.env.AWS_REGION = 'us-west-2'
 
 import {afterAll, afterEach, beforeAll, describe, expect, it} from '@jest/globals'
 import {cleanupLocalStackTable, setupLocalStackTable} from '../helpers/electrodb-localstack'
@@ -26,13 +26,9 @@ const {Sessions} = await import('../../../src/entities/Sessions')
 const {Accounts} = await import('../../../src/entities/Accounts')
 const {VerificationTokens} = await import('../../../src/entities/VerificationTokens')
 const {MediaDownloaderService} = await import('../../../src/entities/Collections')
-const {
-  createMockUser,
-  createMockSession,
-  createMockAccount,
-  createMockVerificationToken,
-  createMinimalUser
-} = await import('../../helpers/better-auth-test-data')
+const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import(
+  '../../helpers/better-auth-test-data'
+)
 const {
   transformUserFromAuth,
   transformSessionFromAuth,
@@ -44,15 +40,14 @@ const {
 } = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
 // Type helpers for ElectroDB service collections
-// ElectroDB collections return an object with entity-named arrays, not a flat array
+// ElectroDB collections return an object with entity-named arrays (using the keys from service creation)
+// Keys match the service registration: sessions, accounts (lowercase)
 interface UserSessionsData {
-  Users: Array<{userId: string; [key: string]: unknown}>
-  Sessions: Array<{sessionId: string; [key: string]: unknown}>
+  sessions: Array<{sessionId: string; [key: string]: unknown}>
 }
 
 interface UserAccountsData {
-  Users: Array<{userId: string; [key: string]: unknown}>
-  Accounts: Array<{accountId: string; providerId: string; [key: string]: unknown}>
+  accounts: Array<{accountId: string; providerId: string; [key: string]: unknown}>
 }
 
 type ServiceCollections = {
@@ -296,45 +291,35 @@ describe('Better Auth Entities Integration Tests', () => {
     })
   })
 
-  // Note: userSessions and userAccounts collections are documented but not yet implemented
-  // in ElectroDB. These tests are skipped until collection support is added to entities.
-  describe.skip('Collections - Better Auth Queries', () => {
+  describe('Collections - Better Auth Queries', () => {
     it('should query userSessions collection', async () => {
       const userId = 'user-collection-1'
 
-      // Create user
-      await Users.create(createMockUser({userId, email: 'collection@example.com', emailVerified: true, firstName: 'Collection', lastName: 'Test'})).go()
-
-      // Create sessions
+      // Create sessions for the user
       await Sessions.create(createMockSession({sessionId: 'coll-session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
       await Sessions.create(createMockSession({sessionId: 'coll-session-2', userId, token: 'token-2', expiresAt: Date.now() + 86400000})).go()
 
-      // Query collection
+      // Query collection - returns only Sessions (entity key matches service registration: sessions)
       const result = await collections.userSessions({userId}).go()
 
-      expect(result.data.Users).toHaveLength(1)
-      expect(result.data.Sessions).toHaveLength(2)
-      expect(result.data.Users[0].userId).toBe(userId)
+      expect(result.data.sessions).toHaveLength(2)
+      expect(result.data.sessions.map((s: {sessionId: string}) => s.sessionId).sort()).toEqual(['coll-session-1', 'coll-session-2'])
     })
 
     it('should query userAccounts collection', async () => {
       const userId = 'user-collection-2'
 
-      // Create user
-      await Users.create(createMockUser({userId, email: 'accounts@example.com', emailVerified: true, firstName: 'Accounts', lastName: 'Test'})).go()
-
-      // Create OAuth accounts
+      // Create OAuth accounts for the user
       await Accounts.create(createMockAccount({accountId: 'coll-acc-apple', userId, providerId: 'apple', providerAccountId: 'apple-coll-123'})).go()
 
       await Accounts.create(createMockAccount({accountId: 'coll-acc-google', userId, providerId: 'google', providerAccountId: 'google-coll-123'})).go()
 
-      // Query collection
+      // Query collection - returns only Accounts (entity key matches service registration: accounts)
       const result = await collections.userAccounts({userId}).go()
 
-      expect(result.data.Users).toHaveLength(1)
-      expect(result.data.Accounts).toHaveLength(2)
-      expect(result.data.Accounts.map((a: {providerId: string}) => a.providerId).sort()).toEqual(['apple', 'google'])
+      expect(result.data.accounts).toHaveLength(2)
+      expect(result.data.accounts.map((a: {providerId: string}) => a.providerId).sort()).toEqual(['apple', 'google'])
     })
   })
 

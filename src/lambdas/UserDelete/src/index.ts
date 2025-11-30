@@ -10,15 +10,17 @@ import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '#types/main'
 import {assertIsError} from '#util/transformers'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
+import {retryUnprocessedDelete} from '#util/retry'
+import {retryUnprocessed} from '#util/retry'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
   const userFiles = await UserFiles.query.byUser({userId}).go()
   if (userFiles.data && userFiles.data.length > 0) {
     const deleteKeys = userFiles.data.map((userFile) => ({userId: userFile.userId, fileId: userFile.fileId}))
-    const {unprocessed} = await UserFiles.delete(deleteKeys).go({concurrency: 5})
+    const {unprocessed} = await retryUnprocessedDelete(() => UserFiles.delete(deleteKeys).go({concurrency: 5}))
     if (unprocessed.length > 0) {
-      logDebug('deleteUserFiles.unprocessed =>', unprocessed)
+      logError('deleteUserFiles: failed to delete all items after retries', unprocessed)
     }
   }
   logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
@@ -35,9 +37,9 @@ async function deleteUserDevices(userId: string): Promise<void> {
   const userDevices = await UserDevices.query.byUser({userId}).go()
   if (userDevices.data && userDevices.data.length > 0) {
     const deleteKeys = userDevices.data.map((userDevice) => ({userId: userDevice.userId, deviceId: userDevice.deviceId}))
-    const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
+    const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
     if (unprocessed.length > 0) {
-      logDebug('deleteUserDevices.unprocessed =>', unprocessed)
+      logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
     }
   }
   logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
@@ -66,10 +68,10 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     logDebug('Found userDevices', userDevices.length.toString())
     if (userDevices.length > 0) {
       const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
-      const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
+      const {data: devices, unprocessed} = await retryUnprocessed(() => Devices.get(deviceKeys).go({concurrency: 5}))
       logDebug('Found devices', devices.length.toString())
       if (unprocessed.length > 0) {
-        logDebug('getDevices.unprocessed =>', unprocessed)
+        logError('getDevices: failed to fetch all items after retries', unprocessed)
       }
       if (!devices || devices.length === 0) {
         throw new UnexpectedError(providerFailureErrorMessage)
@@ -83,14 +85,24 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     return errorResult
   }
   try {
-    // Now that all the delete operations are queued; perform the deletion
-    const values = await Promise.all([
+    // Delete children FIRST (correct cascade order), then parent LAST
+    const childResults = await Promise.allSettled([
       deleteUserFiles(userId),
       deleteUserDevices(userId),
-      deleteUser(userId),
-      deletableDevices.map((device) => deleteDevice(device))
+      ...deletableDevices.map((device) => deleteDevice(device))
     ])
-    logDebug('Promise.all', values)
+    logDebug('Promise.allSettled (children)', childResults)
+
+    // Check for failures before deleting parent
+    const failures = childResults.filter((r) => r.status === 'rejected')
+    if (failures.length > 0) {
+      logError('Cascade deletion partial failure', failures)
+    }
+
+    // Delete parent LAST
+    await deleteUser(userId)
+    logDebug('deleteUser completed')
+
     const successResult = response(context, 204)
     logOutgoingFixture(successResult)
     return successResult

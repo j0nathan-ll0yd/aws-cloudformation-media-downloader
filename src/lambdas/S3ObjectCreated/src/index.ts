@@ -7,6 +7,7 @@ import {logDebug} from '#util/lambda-helpers'
 import {assertIsError, createFileNotificationAttributes} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Returns the DynamoDBFile by S3 object key using KeyIndex GSI
@@ -48,7 +49,11 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
   const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {MessageBody: 'FileNotification', MessageAttributes: messageAttributes, QueueUrl: process.env.SNSQueueUrl} as SendMessageRequest
+  const sendMessageParams = {
+    MessageBody: 'FileNotification',
+    MessageAttributes: messageAttributes,
+    QueueUrl: getRequiredEnv('SNSQueueUrl')
+  } as SendMessageRequest
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }

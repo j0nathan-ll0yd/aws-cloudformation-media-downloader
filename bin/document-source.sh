@@ -27,4 +27,4 @@ eval $typedoc_command
 
 # retrieve or rebuild the files
 git checkout "${test_file_path}"
-npm run build-dependencies
+pnpm run build-dependencies

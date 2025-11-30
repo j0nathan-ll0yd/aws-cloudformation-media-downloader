@@ -28,6 +28,9 @@ const config = {
   // Use ts-jest preset for TypeScript support
   preset: 'ts-jest',
 
+  // Limit workers to prevent Jest worker hang issues with AWS SDK
+  maxWorkers: 2,
+
   // Root directory for Jest
   rootDir: '../',
 

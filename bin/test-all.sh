@@ -140,7 +140,7 @@ echo -e "${BLUE}📋 Running integration tests...${NC}"
 echo -e "${BLUE}📊 Collecting coverage...${NC}"
 echo ""
 
-if node --no-warnings --experimental-vm-modules ./node_modules/.bin/jest --silent --config config/jest.all.config.mjs; then
+if node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.all.config.mjs; then
   test_exit_code=0
   echo ""
   echo -e "${GREEN}✅ All tests passed!${NC}"

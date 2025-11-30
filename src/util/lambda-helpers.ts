@@ -3,6 +3,7 @@ import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'
 import {UserStatus} from '#types/enums'
+import {getOptionalEnv} from './env-validation'
 import {logDebug, logError, logInfo} from './logging'
 
 // Re-export logging functions for backwards compatibility
@@ -52,7 +53,7 @@ export function response(context: Context, statusCode: number, body?: string | o
 
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
-  const platformApplicationArn = process.env.PlatformApplicationArn
+  const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
   logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')
@@ -162,19 +163,38 @@ function sanitizeForTest(data: unknown): unknown {
 
   const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
-  // Remove sensitive fields
+  // Remove sensitive fields - expanded list for comprehensive PII protection
   const sensitiveFields = [
-    'Authorization',
+    'Authorization', // fmt: multiline
     'authorization',
     'token',
     'Token',
+    'deviceToken',
+    'DeviceToken',
+    'refreshToken',
+    'RefreshToken',
+    'accessToken',
+    'AccessToken',
     'password',
     'Password',
     'apiKey',
     'ApiKey',
     'secret',
     'Secret',
-    'appleDeviceIdentifier'
+    'privateKey',
+    'PrivateKey',
+    'appleDeviceIdentifier',
+    'email',
+    'Email',
+    'phoneNumber',
+    'PhoneNumber',
+    'phone',
+    'certificate',
+    'Certificate',
+    'ssn',
+    'SSN',
+    'creditCard',
+    'CreditCard'
   ]
 
   for (const key in sanitized) {
