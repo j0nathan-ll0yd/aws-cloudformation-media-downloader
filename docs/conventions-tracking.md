@@ -4,25 +4,6 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
-### Detected: 2025-11-29
-
-1. **Multiline Array/Object Formatting Hint** (Convention)
-   - **What**: Use `// fmt: multiline` comment after first element to force consistent multiline formatting
-   - **Why**: dprint uses "best fit" algorithm that can create ugly mixed inline/multiline arrays; line comments cannot be collapsed to single line
-   - **Example**:
-     ```typescript
-     const items = [
-       {id: 1, name: 'first'}, // fmt: multiline
-       {id: 2, name: 'second'},
-       {id: 3, name: 'third'}
-     ]
-     ```
-   - **Detected**: During dprint migration and formatting optimization
-   - **Target**: docs/wiki/Conventions/Code-Formatting.md
-   - **Priority**: MEDIUM
-   - **Status**: 🔄 Pending documentation
-   - **Enforcement**: Optional (use when dprint's default formatting harms readability)
-
 ### Detected: 2025-11-28
 
 1. **Production Fixture Logging** (Testing Pattern)
@@ -128,6 +109,15 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## ✅ Recently Documented
 
+### Documented: 2025-11-29
+
+1. **Multiline Array/Object Formatting Hint** (Convention)
+   - **What**: Use `// fmt: multiline` comment after first element to force consistent multiline formatting
+   - **Why**: dprint uses "best fit" algorithm that can create ugly mixed inline/multiline arrays; line comments cannot be collapsed to single line
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Optional (use when dprint's default formatting harms readability)
+
 ### Documented: 2025-11-28
 
 1. **ElectroDB Test Mocking Standard** (Rule)
@@ -211,5 +201,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-29
-- **Total Conventions**: 18 detected, 17 documented, 1 pending
+- **Total Conventions**: 18 detected, 18 documented, 0 pending
 - **Convention Capture System**: Active
