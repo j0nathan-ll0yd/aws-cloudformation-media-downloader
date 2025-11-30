@@ -13,6 +13,57 @@ import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#u
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 
 /**
+ * Fetch video info with X-Ray tracing.
+ * Wraps fetchVideoInfo and handles subsegment lifecycle.
+ */
+async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<FetchVideoInfoResult> {
+  const segment = getSegment()
+  const subsegment = segment?.addNewSubsegment('yt-dlp-fetch-info')
+
+  const result = await fetchVideoInfo(fileUrl)
+
+  if (subsegment) {
+    subsegment.addAnnotation('videoId', fileId)
+    subsegment.addMetadata('videoUrl', fileUrl)
+    subsegment.addMetadata('success', result.success)
+    subsegment.close()
+  }
+
+  return result
+}
+
+/**
+ * Stream video to S3 with X-Ray tracing.
+ * Wraps streamVideoToS3 and handles subsegment lifecycle including error capture.
+ */
+async function streamVideoToS3Traced(
+  fileUrl: string,
+  bucket: string,
+  fileName: string
+): Promise<{fileSize: number; s3Url: string; duration: number}> {
+  const segment = getSegment()
+  const subsegment = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
+
+  try {
+    const result = await streamVideoToS3(fileUrl, bucket, fileName)
+    if (subsegment) {
+      subsegment.addAnnotation('s3Bucket', bucket)
+      subsegment.addAnnotation('s3Key', fileName)
+      subsegment.addMetadata('fileSize', result.fileSize)
+      subsegment.addMetadata('duration', result.duration)
+      subsegment.close()
+    }
+    return result
+  } catch (error) {
+    if (subsegment) {
+      subsegment.addError(error as Error)
+      subsegment.close()
+    }
+    throw error
+  }
+}
+
+/**
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
  */
@@ -171,20 +222,10 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   // Mark download as in_progress
   await updateDownloadState(fileId, DownloadStatus.InProgress, undefined, existingRetryCount)
 
-  const segment = getSegment()
-
   // Step 1: Fetch video info (safe - never throws)
   logDebug('fetchVideoInfo <=', fileUrl)
-  const subsegmentFetch = segment?.addNewSubsegment('yt-dlp-fetch-info')
-  const videoInfoResult = await fetchVideoInfo(fileUrl)
-  if (subsegmentFetch) {
-    subsegmentFetch.addAnnotation('videoId', fileId)
-    subsegmentFetch.addMetadata('videoUrl', fileUrl)
-    subsegmentFetch.addMetadata('success', videoInfoResult.success)
-    subsegmentFetch.close()
-  }
+  const videoInfoResult = await fetchVideoInfoTraced(fileUrl, fileId)
 
-  // Handle fetch failure
   if (!videoInfoResult.success || !videoInfoResult.info) {
     const error = videoInfoResult.error ?? new UnexpectedError('Failed to fetch video info')
     return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
@@ -208,26 +249,12 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
   // Step 3: Stream video to S3
   logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
-  const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
-
   let uploadResult
   try {
-    uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
+    uploadResult = await streamVideoToS3Traced(fileUrl, bucket, fileName)
   } catch (error) {
-    if (subsegmentStream) {
-      subsegmentStream.addError(error as Error)
-      subsegmentStream.close()
-    }
     assertIsError(error)
     return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
-  }
-
-  if (subsegmentStream) {
-    subsegmentStream.addAnnotation('s3Bucket', bucket)
-    subsegmentStream.addAnnotation('s3Key', fileName)
-    subsegmentStream.addMetadata('fileSize', uploadResult.fileSize)
-    subsegmentStream.addMetadata('duration', uploadResult.duration)
-    subsegmentStream.close()
   }
   logDebug('streamVideoToS3 =>', uploadResult)
 
