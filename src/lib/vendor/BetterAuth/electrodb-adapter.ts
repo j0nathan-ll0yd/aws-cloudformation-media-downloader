@@ -220,9 +220,7 @@ function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; 
   const result: ElectroSessionCreate = {
     sessionId: authSession.id || uuidv4(),
     userId: authSession.userId!, // Required by Better Auth
-    expiresAt: authSession.expiresAt
-      ? authSession.expiresAt.getTime()
-      : Date.now() + 30 * 24 * 60 * 60 * 1000,
+    expiresAt: authSession.expiresAt?.getTime() ?? Date.now() + 30 * 24 * 60 * 60 * 1000,
     token: authSession.token || uuidv4(),
     ipAddress: authSession.ipAddress ?? undefined,
     userAgent: authSession.userAgent ?? undefined
