@@ -59,7 +59,7 @@ const fileDownloadsMock = {
   get: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: null})}),
   update: jest.fn().mockReturnValue({set: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})}),
   create: jest.fn().mockReturnValue({go: jest.fn().mockResolvedValue({data: {}})})
-}
+} as unknown
 jest.unstable_mockModule('#entities/FileDownloads', () => ({FileDownloads: fileDownloadsMock}))
 
 const module = await import('../../../src/lambdas/StartFileUpload/src/index')
