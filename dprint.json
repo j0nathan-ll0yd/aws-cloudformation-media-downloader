@@ -22,6 +22,7 @@
 
     "operatorPosition": "sameLine",
     "binaryExpression.operatorPosition": "sameLine",
+    "binaryExpression.preferSingleLine": true,
     "conditionalExpression.operatorPosition": "nextLine",
 
     "arrowFunction.useParentheses": "force",

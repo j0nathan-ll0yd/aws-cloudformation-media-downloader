@@ -51,10 +51,7 @@ async function waitForLocalStack(): Promise<void> {
     }
   }
 
-  throw new Error(
-    `LocalStack is not responding after ${maxRetries} attempts. ` +
-      'Ensure LocalStack is running with: npm run localstack:start'
-  )
+  throw new Error(`LocalStack is not responding after ${maxRetries} attempts. ` + 'Ensure LocalStack is running with: npm run localstack:start')
 }
 
 /**
