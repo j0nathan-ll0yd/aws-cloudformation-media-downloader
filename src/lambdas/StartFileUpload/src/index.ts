@@ -1,14 +1,16 @@
 import {Context} from 'aws-lambda'
-import {chooseVideoFormat, fetchVideoInfo, streamVideoToS3} from '#lib/vendor/YouTube'
+import {chooseVideoFormat, fetchVideoInfo, fetchVideoInfoSafe, streamVideoToS3} from '#lib/vendor/YouTube'
 import {DynamoDBFile, StartFileUploadParams} from '#types/main'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {lambdaErrorResponse, logDebug, logInfo, putMetric, response} from '#util/lambda-helpers'
+import {lambdaErrorResponse, logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
 import {assertIsError} from '#util/transformers'
-import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
 import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
+import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
+import {Files} from '#entities/Files'
 
 /**
  * Downloads a YouTube video and uploads it to S3
@@ -83,8 +85,90 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   } catch (error) {
     assertIsError(error)
 
+    // Attempt to fetch video metadata even after failure (may have release_timestamp for scheduled videos)
+    const videoInfoSafe = await fetchVideoInfoSafe(fileUrl)
+
+    // Get existing file for retry count
+    let existingRetryCount = 0
+    let existingMaxRetries = 5
     try {
-      await upsertFile({fileId, status: FileStatus.Failed} as DynamoDBFile)
+      const {data: existingFile} = await Files.get({fileId}).go()
+      if (existingFile) {
+        existingRetryCount = existingFile.retryCount ?? 0
+        existingMaxRetries = existingFile.maxRetries ?? 5
+      }
+    } catch {
+      logDebug('Failed to get existing file for retry count, using defaults')
+    }
+
+    // Classify the error to determine retry strategy
+    const classification = classifyVideoError(error, videoInfoSafe, existingRetryCount)
+    const newRetryCount = existingRetryCount + 1
+    const maxRetries = classification.maxRetries ?? existingMaxRetries
+
+    logInfo('Error classification', {
+      fileId,
+      category: classification.category,
+      retryable: classification.retryable,
+      retryAfter: classification.retryAfter ? new Date(classification.retryAfter * 1000).toISOString() : undefined,
+      reason: classification.reason,
+      retryCount: newRetryCount,
+      maxRetries
+    })
+
+    // Handle retryable errors with scheduled retry
+    if (classification.retryable && classification.retryAfter && !isRetryExhausted(newRetryCount, maxRetries)) {
+      try {
+        await upsertFile(
+          {
+            fileId,
+            status: FileStatus.Scheduled,
+            availableAt: classification.retryAfter,
+            retryAfter: classification.retryAfter,
+            retryCount: newRetryCount,
+            maxRetries,
+            lastError: classification.reason,
+            scheduledPublishTime: videoInfoSafe?.release_timestamp,
+            errorCategory: classification.category
+          } as DynamoDBFile
+        )
+
+        await putMetrics([
+          {name: 'ScheduledVideoDetected', value: 1, unit: 'Count'},
+          {name: 'RetryScheduled', value: 1, unit: 'Count', dimensions: [{Name: 'Category', Value: classification.category}]}
+        ])
+
+        logInfo(`Scheduled retry for ${fileId}`, {
+          retryAfter: new Date(classification.retryAfter * 1000).toISOString(),
+          reason: classification.reason,
+          retryCount: newRetryCount
+        })
+
+        // Return success - this is expected behavior for scheduled videos, NOT a failure
+        return response(context, 200, {
+          fileId,
+          status: 'scheduled',
+          retryAfter: classification.retryAfter,
+          retryCount: newRetryCount,
+          reason: classification.reason
+        })
+      } catch (updateError) {
+        assertIsError(updateError)
+        logDebug('Failed to schedule retry, falling through to failure handling', updateError.message)
+      }
+    }
+
+    // Handle permanent failures or retry exhaustion
+    try {
+      await upsertFile(
+        {
+          fileId,
+          status: FileStatus.Failed,
+          lastError: classification.reason,
+          retryCount: newRetryCount,
+          errorCategory: classification.category
+        } as DynamoDBFile
+      )
     } catch (updateError) {
       assertIsError(updateError)
       logDebug('upsertFile error =>', updateError.message)
@@ -92,13 +176,22 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
     await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
 
-    if (error instanceof CookieExpirationError) {
+    // Only create GitHub issues for permanent failures and cookie expiration
+    // Skip GitHub issues for retry exhaustion of transient/scheduled errors (they had their chance)
+    if (classification.category === 'cookie_expired') {
       await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
       await createCookieExpirationIssue(fileId, fileUrl, error)
       return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }
 
-    await createVideoDownloadFailureIssue(fileId, fileUrl, error, 'Video download failed during processing. Check CloudWatch logs for full details.')
+    if (classification.category === 'permanent') {
+      await createVideoDownloadFailureIssue(fileId, fileUrl, error, classification.reason)
+    } else if (isRetryExhausted(newRetryCount, maxRetries)) {
+      // Retry exhaustion - log but don't create issue (it's noise, not actionable)
+      await putMetric('RetryExhausted', 1, undefined, [{Name: 'Category', Value: classification.category}])
+      logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
+    }
+
     return lambdaErrorResponse(context, error)
   }
 })

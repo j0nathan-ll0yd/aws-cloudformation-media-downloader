@@ -7,14 +7,17 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
+const fetchVideoInfoSafeMock = jest.fn<() => Promise<YtDlpVideoInfo | undefined>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
 const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
-  fetchVideoInfo: fetchVideoInfoMock, // fmt: multiline
-  chooseVideoFormat: chooseVideoFormatMock,
-  streamVideoToS3: streamVideoToS3Mock
-}))
+jest.unstable_mockModule('#lib/vendor/YouTube',
+  () => ({
+    fetchVideoInfo: fetchVideoInfoMock,
+    fetchVideoInfoSafe: fetchVideoInfoSafeMock,
+    chooseVideoFormat: chooseVideoFormatMock,
+    streamVideoToS3: streamVideoToS3Mock
+  }))
 
 // Mock ElectroDB Files entity
 const filesMock = createElectroDBEntityMock()
@@ -33,6 +36,10 @@ describe('#StartFileUpload', () => {
 
     // Reset mocks
     jest.clearAllMocks()
+
+    // Set default mock return values for error handling path
+    fetchVideoInfoSafeMock.mockResolvedValue(undefined)
+    filesMock.mocks.get.mockResolvedValue({data: null})
 
     // Set environment variables
     process.env.Bucket = 'test-bucket'
@@ -117,7 +124,7 @@ describe('#StartFileUpload', () => {
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
-  test('should handle streaming errors and mark file as Failed', async () => {
+  test('should schedule retry for transient streaming errors', async () => {
     const mockFormat = {
       format_id: '22',
       url: 'https://example.com/video.mp4',
@@ -143,25 +150,46 @@ describe('#StartFileUpload', () => {
 
     const output = await handler(event, context)
 
+    // Transient errors now get scheduled for retry (200) instead of immediate failure
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.retryAfter).toBeDefined()
+
+    // Verify Files.upsert was called to set Scheduled status
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
+  })
+
+  test('should mark file as Failed for permanent errors (video private)', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('This video is private'))
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+
+    const output = await handler(event, context)
+
+    // Permanent errors still return error status codes
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
     // Verify Files.upsert was called to set Failed status
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
-  test('should handle video not found error', async () => {
+  test('should schedule retry for unknown errors (benefit of doubt)', async () => {
+    // Unknown errors are treated as transient (retryable) by default
     fetchVideoInfoMock.mockRejectedValue(new UnexpectedError('Video not found'))
     filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    // Unknown errors get scheduled for retry
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('scheduled')
 
-    // Verify Files.upsert was called to set Failed status
+    // Verify Files.upsert was called to set Scheduled status
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
-  test('should handle missing bucket environment variable', async () => {
+  test('should schedule retry for missing bucket environment variable', async () => {
     const originalBucket = process.env.Bucket
     process.env.Bucket = '' // Empty string also triggers the check
     const mockFormat = {
@@ -188,7 +216,10 @@ describe('#StartFileUpload', () => {
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+    // Configuration errors are treated as transient (will be retried when config is fixed)
+    expect(output.statusCode).toEqual(200)
+    const parsedBody = JSON.parse(output.body)
+    expect(parsedBody.body.status).toEqual('scheduled')
 
     // Verify streamVideoToS3 was NOT called since bucket check happens first
     expect(streamVideoToS3Mock).not.toHaveBeenCalled()
@@ -196,15 +227,32 @@ describe('#StartFileUpload', () => {
     process.env.Bucket = originalBucket
   })
 
-  test('should continue even if Files.upsert fails during error handling', async () => {
+  test('should fall through to failure handling if Files.upsert fails during retry scheduling', async () => {
     fetchVideoInfoMock.mockRejectedValue(new Error('Video fetch failed'))
+    // First upsert (for scheduled) fails, second upsert (for failed) also fails
     filesMock.mocks.upsert.go.mockRejectedValue(new Error('Files.upsert failed'))
 
     const output = await handler(event, context)
 
+    // Falls through to error response when upsert fails
     expect(output.statusCode).toBeGreaterThanOrEqual(400)
 
-    // Should have attempted to upsert file despite the failure
+    // Should have attempted to upsert file (possibly multiple times: scheduled then failed)
+    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
+  })
+
+  test('should mark file as Failed when max retries exceeded', async () => {
+    fetchVideoInfoMock.mockRejectedValue(new Error('Stream upload failed'))
+    // Simulate a file that has already been retried 5 times
+    filesMock.mocks.get.mockResolvedValue({data: {fileId: 'test', retryCount: 5, maxRetries: 5}})
+    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+
+    const output = await handler(event, context)
+
+    // Max retries exceeded should result in error
+    expect(output.statusCode).toBeGreaterThanOrEqual(400)
+
+    // Verify Files.upsert was called with Failed status
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 })

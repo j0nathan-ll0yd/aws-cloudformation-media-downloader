@@ -29,6 +29,46 @@ function isCookieExpirationError(errorMessage: string): boolean {
 }
 
 /**
+ * Safely fetch video metadata without attempting download
+ * Used to get scheduling info (release_timestamp) for unavailable videos
+ * @param uri - YouTube video URL
+ * @returns Video info if available, undefined on any error
+ */
+export async function fetchVideoInfoSafe(uri: string): Promise<YtDlpVideoInfo | undefined> {
+  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
+  logDebug('fetchVideoInfoSafe =>', {uri})
+
+  try {
+    const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
+
+    // Copy cookies from read-only /opt to writable /tmp
+    const fs = await import('fs')
+    const cookiesSource = '/opt/cookies/youtube-cookies.txt'
+    const cookiesDest = '/tmp/youtube-cookies.txt'
+    await fs.promises.copyFile(cookiesSource, cookiesDest)
+
+    // Use --skip-download and --ignore-errors to get metadata only
+    const ytdlpFlags = [
+      '--extractor-args',
+      'youtube:player_client=default',
+      '--no-warnings',
+      '--cookies',
+      cookiesDest,
+      '--skip-download',
+      '--ignore-errors'
+    ]
+
+    const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
+    logDebug('fetchVideoInfoSafe <=', {id: info?.id, release_timestamp: info?.release_timestamp, live_status: info?.live_status})
+    return info
+  } catch (error) {
+    // Silently return undefined - this is expected for many unavailable videos
+    logDebug('fetchVideoInfoSafe error (expected for unavailable videos)', {uri, error: error instanceof Error ? error.message : 'unknown'})
+    return undefined
+  }
+}
+
+/**
  * Fetch video information using yt-dlp
  * @param uri - YouTube video URL
  * @returns Video information including formats and metadata

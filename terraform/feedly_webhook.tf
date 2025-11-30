@@ -109,8 +109,9 @@ resource "aws_api_gateway_integration" "WebhookFeedlyPost" {
 
 data "aws_iam_policy_document" "MultipartUpload" {
   # UpdateItem on base table to update File metadata during upload
+  # GetItem to retrieve existing file for retry count
   statement {
-    actions   = ["dynamodb:UpdateItem"]
+    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
   statement {

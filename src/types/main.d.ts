@@ -61,7 +61,7 @@ interface DynamoDBUserDevice {
 }
 
 interface DynamoDBFile {
-  [key: string]: string | number
+  [key: string]: string | number | undefined
   availableAt: number
   size: number
   authorName: string
@@ -76,6 +76,13 @@ interface DynamoDBFile {
   authorUser: string
   title: string
   status: FileStatus
+  // Retry metadata for scheduled video handling
+  retryAfter?: number
+  retryCount?: number
+  maxRetries?: number
+  lastError?: string
+  scheduledPublishTime?: number
+  errorCategory?: string
 }
 
 interface SignInWithAppleConfig {
