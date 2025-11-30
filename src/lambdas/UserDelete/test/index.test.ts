@@ -35,7 +35,7 @@ const fakeGithubIssueResponse = {
 
 const getUserDevicesMock = jest.fn<() => unknown>()
 const deleteDeviceMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('../../../util/shared', () => ({getUserDevices: getUserDevicesMock, deleteDevice: deleteDeviceMock}))
+jest.unstable_mockModule('#util/shared', () => ({getUserDevices: getUserDevicesMock, deleteDevice: deleteDeviceMock}))
 
 const devicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
