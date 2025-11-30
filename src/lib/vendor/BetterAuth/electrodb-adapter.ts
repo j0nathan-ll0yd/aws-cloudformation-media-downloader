@@ -89,12 +89,8 @@ type ElectroAccountCreate = {
  * ElectroDB update types - partial updates for set() operations
  * Only include fields that can be updated
  */
-type ElectroUserUpdate = Partial<
-  Pick<ElectroUserCreate, 'email' | 'emailVerified' | 'firstName' | 'lastName'>
->
-type ElectroSessionUpdate = Partial<
-  Pick<ElectroSessionCreate, 'expiresAt' | 'token' | 'ipAddress' | 'userAgent'>
->
+type ElectroUserUpdate = Partial<Pick<ElectroUserCreate, 'email' | 'emailVerified' | 'firstName' | 'lastName'>>
+type ElectroSessionUpdate = Partial<Pick<ElectroSessionCreate, 'expiresAt' | 'token' | 'ipAddress' | 'userAgent'>>
 
 /**
  * Extended Account type that includes OAuth token metadata we store in ElectroDB
