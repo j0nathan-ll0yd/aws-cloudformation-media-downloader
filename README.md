@@ -112,7 +112,7 @@ pnpm run test-remote-hook
 
 ```bash
 # Install system dependencies and configure
-brew install act awscli jq nvm quicktype opentofu terraform-docs
+brew install awscli graphviz jq nvm quicktype opentofu terraform-docs
 nvm install lts/jod
 nvm use lts/jod
 npm install -g pnpm
@@ -238,13 +238,11 @@ brew install terraform-docs
 brew install jq
 ```
 
-* Install [act](https://github.com/nektos/act) (used for running Github Actions locally)
+* Install [Graphviz](https://graphviz.org/) (used for dependency graph visualization)
 
 ```bash
-brew install act
+brew install graphviz
 ```
-
-You will also need to create an environment variable called `GITHUB_TOKEN` with [a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) from Github.
 
 * Install [gh](https://cli.github.com/) (for Github usage by Claude Code)
 

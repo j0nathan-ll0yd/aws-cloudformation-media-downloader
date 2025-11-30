@@ -19,7 +19,7 @@ echo ""
 
 # Step 2: Compile TypeSpec to OpenAPI
 echo "🔨 Compiling TypeSpec to OpenAPI..."
-npx tsp compile "$PROJECT_DIR/tsp" --output-dir "$PROJECT_DIR/docs/api"
+pnpm exec tsp compile "$PROJECT_DIR/tsp" --output-dir "$PROJECT_DIR/docs/api"
 
 echo ""
 
@@ -41,7 +41,8 @@ echo ""
 
 # Step 4: Generate Redoc HTML documentation
 echo "📄 Generating Redoc HTML documentation..."
-npx --yes @redocly/cli build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "$PACKAGE_NAME"
+# Filter npm warnings about pnpm-specific .npmrc settings (redocly internally calls npm)
+pnpm exec redocly build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "$PACKAGE_NAME" 2>&1 | grep -v "^npm warn"
 
 echo ""
 echo "✅ Redoc HTML documentation generated successfully!"

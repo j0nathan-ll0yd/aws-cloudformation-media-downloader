@@ -160,7 +160,6 @@ export function getVideoID(url: string): string {
 /**
  * Stream video directly from yt-dlp to S3 using multipart upload
  * @param uri - YouTube video URL
- * @param s3Client - Configured S3 client
  * @param bucket - Target S3 bucket name
  * @param key - Target S3 object key
  * @returns Upload results including file size, S3 URL, and duration

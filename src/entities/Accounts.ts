@@ -91,6 +91,7 @@ export const Accounts = new Entity(
         }
       },
       byUser: {
+        collection: 'userAccounts',
         index: 'gsi1',
         pk: {
           field: 'gsi1pk',

@@ -415,7 +415,7 @@ pnpm run document-source         # Generate TSDoc documentation
 ## Support Resources
 
 - **CI/CD**: GitHub Actions with test pipeline
-- **Local Testing**: act for GitHub Actions locally
+- **Local Testing**: LocalStack for AWS service emulation
 - **Documentation**: TSDoc + terraform-docs
 - **Error Tracking**: Automated GitHub issue creation
 - **Monitoring**: CloudWatch dashboards and alarms

@@ -9,6 +9,7 @@ import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
 /**
  * Better Auth hook context type
  * Represents the context passed to before/after hooks
+ * @internal
  */
 interface BetterAuthHookContext {
   path: string

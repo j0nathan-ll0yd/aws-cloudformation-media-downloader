@@ -174,6 +174,7 @@ export interface Output {
     api_gateway_stage:              APIGatewayStage[];
     api_gateway_subdomain:          APIGatewayStage[];
     cloudfront_distribution_domain: APIGatewayStage[];
+    cloudfront_media_files_domain:  APIGatewayStage[];
     public_ip:                      APIGatewayStage[];
 }
 
@@ -1217,6 +1218,7 @@ const typeMap: any = {
         { json: "api_gateway_stage", js: "api_gateway_stage", typ: a(r("APIGatewayStage")) },
         { json: "api_gateway_subdomain", js: "api_gateway_subdomain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_distribution_domain", js: "cloudfront_distribution_domain", typ: a(r("APIGatewayStage")) },
+        { json: "cloudfront_media_files_domain", js: "cloudfront_media_files_domain", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
     ], false),
     "APIGatewayAPIKey": o([

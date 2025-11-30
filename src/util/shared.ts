@@ -135,7 +135,6 @@ export async function initiateFileDownload(fileId: string) {
 /**
  * Makes an HTTP request via Axios
  * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- * @see {@link lambdas/UploadPart/src!#handler | UploadPart }
  */
 export async function makeHttpRequest(options: AxiosRequestConfig) {
   logDebug('axios <= ', options)
