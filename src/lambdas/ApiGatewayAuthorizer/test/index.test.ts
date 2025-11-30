@@ -2,9 +2,9 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
-import {UnexpectedError} from '../../../util/errors'
-import {testContext} from '../../../util/jest-setup'
-import type {SessionPayload} from '../../../util/better-auth-helpers'
+import {UnexpectedError} from '#util/errors'
+import {testContext} from '#util/jest-setup'
+import type {SessionPayload} from '#util/better-auth-helpers'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')

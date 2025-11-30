@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
+import {testContext} from '#util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})

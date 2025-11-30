@@ -1,6 +1,6 @@
 import {Octokit} from '@octokit/rest'
 import {logDebug, logError, logInfo} from './lambda-helpers'
-import {Device} from '../types/main'
+import {Device} from '#types/main'
 import {renderGithubIssueTemplate} from './template-helpers'
 
 const owner = 'j0nathan-ll0yd'

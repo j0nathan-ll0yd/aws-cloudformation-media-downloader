@@ -4,7 +4,7 @@
  * This enables extraction of Better Auth fixtures from CloudWatch logs
  */
 
-import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
+import {logIncomingFixture, logOutgoingFixture} from '#util/lambda-helpers'
 
 /**
  * Better Auth hook context type

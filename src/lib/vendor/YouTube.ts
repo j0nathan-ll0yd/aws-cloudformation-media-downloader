@@ -1,11 +1,11 @@
 import YTDlpWrap from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
 import {PassThrough} from 'stream'
-import {YtDlpFormat, YtDlpVideoInfo} from '../../types/youtube'
-import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
-import {CookieExpirationError, UnexpectedError} from '../../util/errors'
-import {assertIsError} from '../../util/transformers'
-import {createS3Upload, headObject} from '../vendor/AWS/S3'
+import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
+import {logDebug, logError, putMetrics} from '#util/lambda-helpers'
+import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {assertIsError} from '#util/transformers'
+import {createS3Upload, headObject} from '#lib/vendor/AWS/S3'
 
 const ytdlpBinaryPath = process.env.YtdlpBinaryPath as string
 

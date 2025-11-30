@@ -1,16 +1,16 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {userSubscribeSchema} from '../../../util/constraints'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '#types/main'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {userSubscribeSchema} from '#util/constraints'
 import {
   lambdaErrorResponse,
   logIncomingFixture,
   logOutgoingFixture,
   response,
   verifyPlatformConfiguration
-} from '../../../util/lambda-helpers'
-import {subscribeEndpointToTopic} from '../../../util/shared'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+} from '#util/lambda-helpers'
+import {subscribeEndpointToTopic} from '#util/shared'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

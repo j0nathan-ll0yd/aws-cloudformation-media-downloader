@@ -1,14 +1,14 @@
 import {ScheduledEvent} from 'aws-lambda'
-import {Devices} from '../../../entities/Devices'
-import {UserDevices} from '../../../entities/UserDevices'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {ApplePushNotificationResponse, Device} from '../../../types/main'
-import {deleteDevice} from '../../../util/shared'
-import {assertIsError} from '../../../util/transformers'
+import {Devices} from '#entities/Devices'
+import {UserDevices} from '#entities/UserDevices'
+import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {ApplePushNotificationResponse, Device} from '#types/main'
+import {deleteDevice} from '#util/shared'
+import {assertIsError} from '#util/transformers'
 import {ApnsClient, Notification, Priority, PushType} from 'apns2'
-import {Apns2Error} from '../../../util/errors'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {Apns2Error} from '#util/errors'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Result of the PruneDevices operation

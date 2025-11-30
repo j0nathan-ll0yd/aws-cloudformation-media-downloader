@@ -1,12 +1,12 @@
 import {S3Event} from 'aws-lambda'
-import {Files} from '../../../entities/Files'
-import {UserFiles} from '../../../entities/UserFiles'
-import {sendMessage, SendMessageRequest} from '../../../lib/vendor/AWS/SQS'
-import {DynamoDBFile} from '../../../types/main'
-import {logDebug} from '../../../util/lambda-helpers'
-import {assertIsError, createFileNotificationAttributes} from '../../../util/transformers'
-import {UnexpectedError} from '../../../util/errors'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {Files} from '#entities/Files'
+import {UserFiles} from '#entities/UserFiles'
+import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
+import {DynamoDBFile} from '#types/main'
+import {logDebug} from '#util/lambda-helpers'
+import {assertIsError, createFileNotificationAttributes} from '#util/transformers'
+import {UnexpectedError} from '#util/errors'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Returns the DynamoDBFile by S3 object key using KeyIndex GSI

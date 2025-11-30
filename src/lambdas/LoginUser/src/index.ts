@@ -11,12 +11,12 @@
  */
 
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {loginUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logIncomingFixture, logInfo, logOutgoingFixture, response} from '../../../util/lambda-helpers'
-import {auth} from '../../../lib/vendor/BetterAuth/config'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '#types/main'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {loginUserSchema} from '#util/constraints'
+import {lambdaErrorResponse, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {auth} from '#lib/vendor/BetterAuth/config'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.

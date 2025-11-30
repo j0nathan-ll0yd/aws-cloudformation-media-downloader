@@ -1,14 +1,14 @@
 // These are methods that are shared across multiple lambdas
-import {Devices} from '../entities/Devices'
-import {UserDevices} from '../entities/UserDevices'
-import {Files} from '../entities/Files'
-import {Users} from '../entities/Users'
-import type {EntityItem} from '../lib/vendor/ElectroDB/entity'
+import {Devices} from '#entities/Devices'
+import {UserDevices} from '#entities/UserDevices'
+import {Files} from '#entities/Files'
+import {Users} from '#entities/Users'
+import type {EntityItem} from '#lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
-import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
-import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
+import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '#types/main'
+import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
 import axios, {AxiosRequestConfig} from 'axios'
-import {invokeAsync} from '../lib/vendor/AWS/Lambda'
+import {invokeAsync} from '#lib/vendor/AWS/Lambda'
 
 /**
  * Disassociates a deviceId from a User by deleting the UserDevice record

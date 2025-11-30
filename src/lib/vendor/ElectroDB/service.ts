@@ -8,7 +8,7 @@
  */
 import {Entity, Service} from 'electrodb'
 import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
-import {documentClient} from '../AWS/DynamoDB'
+import {documentClient} from '#lib/vendor/AWS/DynamoDB'
 
 /**
  * Entity map type constraint for createService.

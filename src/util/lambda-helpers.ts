@@ -1,8 +1,8 @@
 import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {getStandardUnit, putMetricData} from '../lib/vendor/AWS/CloudWatch'
+import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
-import {UserStatus} from '../types/enums'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'
+import {UserStatus} from '#types/enums'
 
 export function unknownErrorToString(unknownVariable: unknown): string {
   if (typeof unknownVariable === 'string') {

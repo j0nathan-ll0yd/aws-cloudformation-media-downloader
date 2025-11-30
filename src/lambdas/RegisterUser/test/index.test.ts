@@ -1,8 +1,8 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {APIGatewayEvent} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
-import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
+import {testContext} from '#util/jest-setup'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API

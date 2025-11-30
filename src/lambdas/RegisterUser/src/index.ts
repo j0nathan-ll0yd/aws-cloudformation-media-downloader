@@ -16,13 +16,13 @@
  */
 
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {UserRegistration} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {registerUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
-import {auth} from '../../../lib/vendor/BetterAuth/config'
-import {Users} from '../../../entities/Users'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {UserRegistration} from '#types/main'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {registerUserSchema} from '#util/constraints'
+import {lambdaErrorResponse, logInfo, response} from '#util/lambda-helpers'
+import {auth} from '#lib/vendor/BetterAuth/config'
+import {Users} from '#entities/Users'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Registers a User or logs in existing User via Sign in with Apple using Better Auth.

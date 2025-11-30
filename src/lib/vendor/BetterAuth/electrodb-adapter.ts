@@ -25,12 +25,12 @@
 
 import type {Account, Session, User} from 'better-auth'
 import type {EntityItem} from 'electrodb'
-import {Users} from '../../../entities/Users'
-import {Sessions} from '../../../entities/Sessions'
-import {Accounts} from '../../../entities/Accounts'
-import {VerificationTokens} from '../../../entities/VerificationTokens'
+import {Users} from '#entities/Users'
+import {Sessions} from '#entities/Sessions'
+import {Accounts} from '#entities/Accounts'
+import {VerificationTokens} from '#entities/VerificationTokens'
 import {v4 as uuidv4} from 'uuid'
-import {logDebug, logError} from '../../../util/lambda-helpers'
+import {logDebug, logError} from '#util/lambda-helpers'
 
 /**
  * ElectroDB entity response types - what we get back from database queries

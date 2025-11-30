@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {testContext} from '#util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
 
 const subscribeMock = jest.fn()
 jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({deleteEndpoint: jest.fn(), subscribe: subscribeMock}))

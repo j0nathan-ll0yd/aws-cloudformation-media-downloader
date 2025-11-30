@@ -22,7 +22,7 @@ process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '../../../src/types/enums'
+import {FileStatus} from '#types/enums'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
@@ -34,7 +34,7 @@ import {
   createMockVideoInfo,
   S3UploadFunction
 } from '../helpers/mock-youtube'
-import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
+import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
 const s3UploadFn = createS3Upload as S3UploadFunction

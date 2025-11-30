@@ -30,7 +30,15 @@ const config: webpack.Configuration = {
     'aws-xray-sdk-core': 'aws-xray-sdk-core',
     'supports-color': 'supports-color'
   },
-  resolve: {extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']},
+  resolve: {
+    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
+    alias: {
+      '#entities': path.resolve(__dirname, '../src/entities'),
+      '#lib': path.resolve(__dirname, '../src/lib'),
+      '#util': path.resolve(__dirname, '../src/util'),
+      '#types': path.resolve(__dirname, '../src/types')
+    }
+  },
   output: {libraryTarget: 'umd', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js'},
   optimization: {usedExports: true},
   stats: {usedExports: true},

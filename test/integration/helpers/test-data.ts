@@ -6,8 +6,8 @@
  */
 
 import {ScheduledEvent, SQSEvent} from 'aws-lambda'
-import {FileStatus} from '../../../src/types/enums'
-import {DynamoDBFile} from '../../../src/types/main'
+import {FileStatus} from '#types/enums'
+import {DynamoDBFile} from '#types/main'
 
 /**
  * Creates a mock file object with sensible defaults

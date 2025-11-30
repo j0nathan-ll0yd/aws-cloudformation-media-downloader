@@ -13,7 +13,7 @@
  */
 import {Entity} from 'electrodb'
 import type {EntityItem} from 'electrodb'
-import {documentClient} from '../AWS/DynamoDB'
+import {documentClient} from '#lib/vendor/AWS/DynamoDB'
 
 /**
  * Re-export documentClient for entity configuration.

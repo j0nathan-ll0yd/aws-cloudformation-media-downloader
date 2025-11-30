@@ -4,7 +4,7 @@
  * These types are extracted from Better Auth's API for use in tests and type-safe code.
  */
 
-import type {auth} from '../lib/vendor/BetterAuth/config'
+import type {auth} from '#lib/vendor/BetterAuth/config'
 
 /**
  * Parameters for Better Auth's signInSocial API method.

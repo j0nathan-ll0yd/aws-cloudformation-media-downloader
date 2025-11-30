@@ -1,7 +1,7 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {InfrastructureD} from '../types/infrastructure'
-import {logDebug} from '../util/lambda-helpers'
+import {InfrastructureD} from '#types/infrastructure'
+import {logDebug} from '#util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)

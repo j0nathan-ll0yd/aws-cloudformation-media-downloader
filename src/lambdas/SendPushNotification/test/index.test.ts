@@ -1,8 +1,8 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
 const getUserDevicesByUserIdResponse = [{deviceId: fakeDeviceId, userId: fakeUserId}]

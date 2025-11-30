@@ -1,7 +1,7 @@
 import {describe, expect, jest, test} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {testContext} from '#util/jest-setup'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 const filesMock = createElectroDBEntityMock({queryIndexes: ['byKey']})
 jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))

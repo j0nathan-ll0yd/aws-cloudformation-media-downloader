@@ -1,12 +1,12 @@
 import {SQSEvent} from 'aws-lambda'
-import {UserDevices} from '../../../entities/UserDevices'
-import {Devices} from '../../../entities/Devices'
-import {PublishInput, publishSnsEvent} from '../../../lib/vendor/AWS/SNS'
-import {Device, FileNotification} from '../../../types/main'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {assertIsError, transformFileNotificationToPushNotification} from '../../../util/transformers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {UserDevices} from '#entities/UserDevices'
+import {Devices} from '#entities/Devices'
+import {PublishInput, publishSnsEvent} from '#lib/vendor/AWS/SNS'
+import {Device, FileNotification} from '#types/main'
+import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {assertIsError, transformFileNotificationToPushNotification} from '#util/transformers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Returns device IDs for a user

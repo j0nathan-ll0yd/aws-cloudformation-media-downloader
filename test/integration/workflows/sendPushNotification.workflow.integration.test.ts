@@ -23,7 +23,7 @@ import {SQSEvent} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
 

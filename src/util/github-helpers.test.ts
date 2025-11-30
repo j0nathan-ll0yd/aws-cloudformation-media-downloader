@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {Device} from '../types/main'
+import {Device} from '#types/main'
 
 // Mock Octokit
 const mockIssuesCreate = jest.fn<

@@ -1,9 +1,9 @@
 import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
-import {Files} from '../../../entities/Files'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {initiateFileDownload} from '../../../util/shared'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {Files} from '#entities/Files'
+import {logDebug, logInfo, response} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {initiateFileDownload} from '#util/shared'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of fileIds that are ready to be downloaded

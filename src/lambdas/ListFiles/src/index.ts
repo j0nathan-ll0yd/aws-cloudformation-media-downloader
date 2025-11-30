@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Files} from '../../../entities/Files'
-import {UserFiles} from '../../../entities/UserFiles'
+import {Files} from '#entities/Files'
+import {UserFiles} from '#entities/UserFiles'
 import {
   generateUnauthorizedError,
   getUserDetailsFromEvent,
@@ -10,11 +10,11 @@ import {
   logInfo,
   logOutgoingFixture,
   response
-} from '../../../util/lambda-helpers'
-import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '../../../types/main'
-import {FileStatus, UserStatus} from '../../../types/enums'
-import {defaultFile} from '../../../util/constants'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+} from '#util/lambda-helpers'
+import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
+import {FileStatus, UserStatus} from '#types/enums'
+import {defaultFile} from '#util/constants'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Returns an array of Files for a user using ElectroDB batch get

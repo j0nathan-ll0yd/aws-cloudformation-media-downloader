@@ -6,8 +6,8 @@
  */
 
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
-import {createMockAccount, createMockSession, createMockUser} from '../../../../test/helpers/better-auth-test-data'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createMockAccount, createMockSession, createMockUser} from '#test/helpers/better-auth-test-data'
 import type {ExtendedAccount} from './electrodb-adapter'
 
 // Create entity mocks

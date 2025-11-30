@@ -7,7 +7,7 @@
 
 import {betterAuth} from 'better-auth'
 import {createElectroDBAdapter} from './electrodb-adapter'
-import {logDebug} from '../../../util/lambda-helpers'
+import {logDebug} from '#util/lambda-helpers'
 
 /**
  * Better Auth instance configured for MediaDownloader service.

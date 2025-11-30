@@ -7,6 +7,14 @@
     "strict": true,
     "types": ["node", "jest"],
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "#entities/*": ["src/entities/*"],
+      "#lib/*": ["src/lib/*"],
+      "#util/*": ["src/util/*"],
+      "#types/*": ["src/types/*"],
+      "#test/*": ["test/*"]
+    },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitAny": true,

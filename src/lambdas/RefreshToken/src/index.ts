@@ -17,9 +17,9 @@ import {
   logInfo,
   logOutgoingFixture,
   response
-} from '../../../util/lambda-helpers'
-import {refreshSession, validateSessionToken} from '../../../util/better-auth-helpers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+} from '#util/lambda-helpers'
+import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Lambda handler for refreshing session tokens.

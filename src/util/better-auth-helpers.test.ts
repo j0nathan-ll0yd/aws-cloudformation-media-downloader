@@ -6,7 +6,7 @@
 
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {UnauthorizedError} from './errors'
-import {createElectroDBEntityMock} from '../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Create entity mocks
 const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})

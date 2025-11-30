@@ -5,8 +5,8 @@ import {
   UserLogin,
   UserRegistration,
   UserSubscribe
-} from '../types/main'
-import {Webhook} from '../types/vendor/IFTTT/Feedly/Webhook'
+} from '#types/main'
+import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
 import {APIGatewayEvent} from 'aws-lambda'

@@ -1,4 +1,4 @@
-import {DynamoDBFile} from '../types/main'
+import {DynamoDBFile} from '#types/main'
 
 export const defaultFile = {
   availableAt: Date.now(),

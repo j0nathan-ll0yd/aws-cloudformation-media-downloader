@@ -21,18 +21,18 @@ process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '../../../src/types/enums'
-import type {DynamoDBFile} from '../../../src/types/main'
+import {FileStatus, UserStatus} from '#types/enums'
+import type {DynamoDBFile} from '#types/main'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

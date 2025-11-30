@@ -1,9 +1,9 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {UnexpectedError} from '../../../util/errors'
-import {StartFileUploadParams} from '../../../types/main'
-import {YtDlpFormat, YtDlpVideoInfo} from '../../../types/youtube'
-import {testContext} from '../../../util/jest-setup'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {UnexpectedError} from '#util/errors'
+import {StartFileUploadParams} from '#types/main'
+import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
+import {testContext} from '#util/jest-setup'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()

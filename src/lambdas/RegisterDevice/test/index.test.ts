@@ -1,8 +1,8 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
 const devicesMock = createElectroDBEntityMock()

@@ -1,5 +1,5 @@
 import {jest} from '@jest/globals'
-import type {SignInSocialParams, SignInSocialResult} from '../../src/types/better-auth'
+import type {SignInSocialParams, SignInSocialResult} from '#types/better-auth'
 
 /**
  * Better Auth Mock Structure
