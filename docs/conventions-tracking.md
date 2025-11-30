@@ -109,6 +109,31 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## ✅ Recently Documented
 
+### Documented: 2025-11-29
+
+1. **Multiline Array/Object Formatting Hint** (Convention)
+   - **What**: Use `// fmt: multiline` comment after first element to force consistent multiline formatting
+   - **Why**: dprint uses "best fit" algorithm that can create ugly mixed inline/multiline arrays; line comments cannot be collapsed to single line
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Optional (use when dprint's default formatting harms readability)
+
+2. **Type Aliases for Line Width Management** (Convention)
+   - **What**: Create type aliases for return types or parameter groups when function signatures exceed 157 characters
+   - **Why**: Keeps function signatures on single lines for better readability; avoids awkward parameter wrapping
+   - **Examples**: `SessionResult`, `RequestPayload`, `MetricInput`
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Optional (use when signatures would otherwise wrap)
+
+3. **Sequential Mock Return Values as Separate Statements** (Convention)
+   - **What**: Use separate statements instead of method chaining for `mockResolvedValueOnce` / `mockReturnValueOnce` sequences
+   - **Why**: Chained methods exceed line width and wrap mid-chain; separate statements are dprint-stable and more readable
+   - **Example**: `mockFn.mockResolvedValueOnce(a)` on line 1, `mockFn.mockResolvedValueOnce(b)` on line 2
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Always for sequences of 2+ mock return values
+
 ### Documented: 2025-11-28 (Code Quality Improvements)
 
 1. **ResponseStatus Enum for API Responses** (Convention)
@@ -125,7 +150,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Priority**: HIGH
    - **Enforcement**: Required for new Lambda functions
 
-7. **Lazy Evaluation for Environment Variables** (Pattern)
+3. **Lazy Evaluation for Environment Variables** (Pattern)
    - **What**: Call `getRequiredEnv()` inside functions, not at module level
    - **Why**: Avoids test failures from env validation running at import time before mocks are set up
    - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent webpack tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
@@ -135,28 +160,28 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Priority**: HIGH
    - **Enforcement**: Prefer lazy evaluation; use env vars in tests for module-level constants
 
-3. **Batch Operation Retry Logic** (Pattern)
+4. **Batch Operation Retry Logic** (Pattern)
    - **What**: Use `retryUnprocessed()` / `retryUnprocessedDelete()` from `util/retry.ts` for DynamoDB batch operations
    - **Why**: DynamoDB batch operations may return unprocessed items; retry with exponential backoff prevents data loss
    - **Documented**: src/util/retry.ts
    - **Priority**: HIGH
    - **Enforcement**: Required for batch get/delete operations
 
-4. **Paginated Scan Operations** (Pattern)
+5. **Paginated Scan Operations** (Pattern)
    - **What**: Use `scanAllPages()` from `util/pagination.ts` for DynamoDB scan operations
    - **Why**: DynamoDB scans are limited to 1MB per request; pagination prevents silent data truncation
    - **Documented**: src/util/pagination.ts
    - **Priority**: HIGH
    - **Enforcement**: Required for all scan operations
 
-5. **Promise.allSettled for Cascade Operations** (Pattern)
+6. **Promise.allSettled for Cascade Operations** (Pattern)
    - **What**: Use `Promise.allSettled()` instead of `Promise.all()` for cascade deletion and multi-resource operations
    - **Why**: Prevents partial state from orphaning data; allows handling individual failures gracefully
    - **Documented**: src/lambdas/UserDelete/src/index.ts, src/lambdas/PruneDevices/src/index.ts
    - **Priority**: HIGH
    - **Enforcement**: Required for cascade operations
 
-6. **Cascade Deletion Order** (Rule)
+7. **Cascade Deletion Order** (Rule)
    - **What**: Delete child entities BEFORE parent entities in cascade operations
    - **Why**: Prevents orphaned references if parent deletion succeeds but child deletion fails
    - **Documented**: src/lambdas/UserDelete/src/index.ts
@@ -246,5 +271,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-29
-- **Total Conventions**: 24 detected, 24 documented, 0 pending
+- **Total Conventions**: 27 detected, 27 documented, 0 pending
 - **Convention Capture System**: Active

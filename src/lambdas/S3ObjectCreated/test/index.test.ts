@@ -1,6 +1,6 @@
-import {describe, expect, test, jest, beforeAll} from '@jest/globals'
+import {beforeAll, describe, expect, jest, test} from '@jest/globals'
 import {S3Event} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 
 beforeAll(() => {
@@ -8,17 +8,13 @@ beforeAll(() => {
 })
 
 const filesMock = createElectroDBEntityMock({queryIndexes: ['byKey']})
-jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: filesMock.entity
-}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({
-  UserFiles: userFilesMock.entity
-}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/SQS', () => ({
-  sendMessage: jest.fn(),
+jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
+  sendMessage: jest.fn(), // fmt: multiline
   stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))

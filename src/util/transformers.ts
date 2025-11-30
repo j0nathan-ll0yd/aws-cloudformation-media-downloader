@@ -1,11 +1,11 @@
-import {ClientFile, DynamoDBFile, FileNotification} from '../types/main'
+import {ClientFile, DynamoDBFile, FileNotification} from '#types/main'
 import {logError} from './lambda-helpers'
 import {UnexpectedError} from './errors'
-import {PublishInput} from '../lib/vendor/AWS/SNS'
-import {stringAttribute, numberAttribute, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
+import {PublishInput} from '#lib/vendor/AWS/SNS'
+import {MessageAttributeValue, numberAttribute, stringAttribute} from '#lib/vendor/AWS/SQS'
 
 // Re-export for backwards compatibility
-export {unknownErrorToString} from './lambda-helpers'
+export { unknownErrorToString } from './lambda-helpers'
 
 /**
  * Creates SQS message attributes for file notifications
@@ -42,19 +42,10 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
   }
 
   return {
-    Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({
-        aps: {'content-available': 1},
-        file: clientFile
-      }),
-      default: 'Default message'
-    }),
+    Message: JSON.stringify({APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: clientFile}), default: 'Default message'}),
     MessageAttributes: {
       'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {
-        DataType: 'String',
-        StringValue: 'background'
-      }
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
     },
     MessageStructure: 'json',
     TargetArn: targetArn

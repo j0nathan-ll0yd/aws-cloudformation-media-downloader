@@ -15,11 +15,11 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '../../../src/types/enums'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
-import {createFilesTable, deleteFilesTable, insertFile, getFile} from '../helpers/dynamodb-helpers'
+import {FileStatus} from '#types/enums'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -27,19 +27,11 @@ import {dirname, resolve} from 'path'
 interface FileInvocationPayload {
   fileId: string
 }
-
-type LambdaCallArgs = [string, Record<string, unknown>]
 type SQSCallArgs = [
-  {
-    QueueUrl: string
-    MessageBody: string
-    MessageAttributes?: Record<string, {StringValue: string; DataType: string}>
-  }
+  {QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, {StringValue: string; DataType: string}>}
 ]
 
-const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {
-  assert: {type: 'json'}
-})
+const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -49,19 +41,16 @@ const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 
 const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule(sqsModulePath, () => ({
-  sendMessage: sendMessageMock,
+  sendMessage: sendMessageMock, // fmt: multiline
   stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
-const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({
-  invokeLambda: invokeLambdaMock,
-  invokeAsync: invokeLambdaMock
-}))
+const invokeLambdaMock = jest.fn<(name: string, payload: FileInvocationPayload) => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
-  getVideoID: jest.fn((url: string) => {
+  getVideoID: jest.fn((url: string) => { // fmt: multiline
     const match = url.match(/v=([^&]+)/)
     return match ? match[1] : 'test-video-id'
   })
@@ -117,8 +106,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.status).toBe(FileStatus.PendingMetadata)
 
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
-    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][1] as unknown as FileInvocationPayload
-    expect(invocationPayload.fileId).toBe('new-video-123')
+    expect(invokeLambdaMock.mock.calls[0][1].fileId).toBe('new-video-123')
 
     expect(sendMessageMock).not.toHaveBeenCalled()
   })
@@ -190,13 +178,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should associate file with multiple users', async () => {
-    await insertFile({
-      fileId: 'shared-video',
-      status: FileStatus.Downloaded,
-      key: 'shared-video.mp4',
-      size: 5242880,
-      title: 'Shared Video'
-    })
+    await insertFile({fileId: 'shared-video', status: FileStatus.Downloaded, key: 'shared-video.mp4', size: 5242880, title: 'Shared Video'})
 
     const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
     const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')

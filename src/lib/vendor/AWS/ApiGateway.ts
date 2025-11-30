@@ -4,7 +4,7 @@ import {createAPIGatewayClient} from './clients'
 const apigateway = createAPIGatewayClient()
 
 // Re-export types for application code to use
-export type {ApiKey, UsagePlan}
+export type { ApiKey, UsagePlan }
 
 export function getApiKeys(params: GetApiKeysRequest): Promise<ApiKeys> {
   return apigateway.getApiKeys(params)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get the directory of this file
-bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 
 cd "${bin_dir}/../terraform"
 domain=$(tofu output cloudfront_distribution_domain | tr -d '"')

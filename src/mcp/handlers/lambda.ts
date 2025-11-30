@@ -18,10 +18,7 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
 
   switch (query) {
     case 'list':
-      return {
-        lambdas: Object.keys(lambdaConfigs).sort(),
-        count: Object.keys(lambdaConfigs).length
-      }
+      return {lambdas: Object.keys(lambdaConfigs).sort(), count: Object.keys(lambdaConfigs).length}
 
     case 'config':
       if (lambda && lambdaConfigs[lambda]) {
@@ -73,15 +70,9 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
       return {error: 'Lambda name required for env query'}
 
     case 'all':
-      return {
-        lambdas: lambdaConfigs,
-        invocations: await getLambdaInvocations()
-      }
+      return {lambdas: lambdaConfigs, invocations: await getLambdaInvocations()}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']}
   }
 }

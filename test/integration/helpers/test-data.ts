@@ -5,9 +5,9 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import {SQSEvent, ScheduledEvent} from 'aws-lambda'
-import {FileStatus} from '../../../src/types/enums'
-import {DynamoDBFile} from '../../../src/types/main'
+import {ScheduledEvent, SQSEvent} from 'aws-lambda'
+import {FileStatus} from '#types/enums'
+import {DynamoDBFile} from '#types/main'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -56,10 +56,7 @@ export function createMockFiles(count: number, status: FileStatus, idPrefix = 'v
  * @param fileId - File ID
  */
 export function createMockUserFile(userId: string, fileId: string) {
-  return {
-    userId,
-    fileId
-  }
+  return {userId, fileId}
 }
 
 /**
@@ -68,10 +65,7 @@ export function createMockUserFile(userId: string, fileId: string) {
  * @param deviceId - Device UUID
  */
 export function createMockUserDevice(userId: string, deviceId: string) {
-  return {
-    userId,
-    deviceId
-  }
+  return {userId, deviceId}
 }
 
 /**
@@ -80,10 +74,7 @@ export function createMockUserDevice(userId: string, deviceId: string) {
  * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
  */
 export function createMockDevice(deviceId: string, endpointArn?: string) {
-  return {
-    deviceId,
-    endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`
-  }
+  return {deviceId, endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`}
 }
 
 /**
@@ -96,32 +87,30 @@ export function createMockSQSFileNotificationEvent(userId: string, fileId: strin
   const file = createMockFile(fileId, FileStatus.Downloaded, partial)
 
   return {
-    Records: [
-      {
-        messageId: `test-message-${fileId}`,
-        receiptHandle: `test-receipt-${fileId}`,
-        body: 'FileNotification',
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: String(Date.now()),
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: String(Date.now())
-        },
-        messageAttributes: {
-          userId: {stringValue: userId, dataType: 'String'},
-          fileId: {stringValue: fileId, dataType: 'String'},
-          key: {stringValue: file.key || `${fileId}.mp4`, dataType: 'String'},
-          publishDate: {stringValue: file.publishDate || new Date().toISOString(), dataType: 'String'},
-          size: {stringValue: String(file.size || 5242880), dataType: 'String'},
-          url: {stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String'},
-          title: {stringValue: file.title || 'Test Video', dataType: 'String'}
-        },
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-        awsRegion: 'us-west-2'
-      }
-    ]
+    Records: [{
+      messageId: `test-message-${fileId}`,
+      receiptHandle: `test-receipt-${fileId}`,
+      body: 'FileNotification',
+      attributes: {
+        ApproximateReceiveCount: '1',
+        SentTimestamp: String(Date.now()),
+        SenderId: 'test-sender',
+        ApproximateFirstReceiveTimestamp: String(Date.now())
+      },
+      messageAttributes: {
+        userId: {stringValue: userId, dataType: 'String'},
+        fileId: {stringValue: fileId, dataType: 'String'},
+        key: {stringValue: file.key || `${fileId}.mp4`, dataType: 'String'},
+        publishDate: {stringValue: file.publishDate || new Date().toISOString(), dataType: 'String'},
+        size: {stringValue: String(file.size || 5242880), dataType: 'String'},
+        url: {stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String'},
+        title: {stringValue: file.title || 'Test Video', dataType: 'String'}
+      },
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
+      awsRegion: 'us-west-2'
+    }]
   }
 }
 

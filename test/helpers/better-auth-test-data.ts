@@ -70,11 +70,7 @@ export type MockAccountData = {
 /**
  * Verification token entity structure for ElectroDB
  */
-export type MockVerificationTokenData = {
-  identifier: string
-  token: string
-  expiresAt: number
-}
+export type MockVerificationTokenData = {identifier: string; token: string; expiresAt: number}
 
 /**
  * Create mock user with sensible defaults
@@ -90,16 +86,7 @@ export function createMockUser(overrides?: Partial<MockUserData>): MockUserData 
     emailVerified: false,
     firstName: 'John',
     lastName: 'Doe',
-    identityProviders: {
-      userId: '',
-      email: '',
-      emailVerified: false,
-      isPrivateEmail: false,
-      accessToken: '',
-      refreshToken: '',
-      tokenType: '',
-      expiresAt: 0
-    },
+    identityProviders: {userId: '', email: '', emailVerified: false, isPrivateEmail: false, accessToken: '', refreshToken: '', tokenType: '', expiresAt: 0},
     createdAt: now,
     updatedAt: now,
     ...overrides
@@ -175,16 +162,7 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
   return createMockUser({
     firstName: '',
     lastName: '',
-    identityProviders: {
-      userId: '',
-      email: '',
-      emailVerified: false,
-      isPrivateEmail: false,
-      accessToken: '',
-      refreshToken: '',
-      tokenType: '',
-      expiresAt: 0
-    },
+    identityProviders: {userId: '', email: '', emailVerified: false, isPrivateEmail: false, accessToken: '', refreshToken: '', tokenType: '', expiresAt: 0},
     ...overrides
   })
 }
@@ -195,14 +173,7 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
  */
 export function createMinimalSession(overrides?: Partial<MockSessionData>): MockSessionData {
   const full = createMockSession(overrides)
-  return {
-    sessionId: full.sessionId,
-    userId: full.userId,
-    expiresAt: full.expiresAt,
-    token: full.token,
-    createdAt: full.createdAt,
-    updatedAt: full.updatedAt
-  }
+  return {sessionId: full.sessionId, userId: full.userId, expiresAt: full.expiresAt, token: full.token, createdAt: full.createdAt, updatedAt: full.updatedAt}
 }
 
 /**

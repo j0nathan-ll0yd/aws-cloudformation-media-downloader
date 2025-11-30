@@ -1,10 +1,10 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
-import {UnexpectedError} from '../../../util/errors'
-import {testContext} from '../../../util/jest-setup'
-import type {SessionPayload} from '../../../util/better-auth-helpers'
+import {UnexpectedError} from '#util/errors'
+import {testContext} from '#util/jest-setup'
+import type {SessionPayload} from '#util/better-auth-helpers'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
@@ -14,8 +14,8 @@ const getUsagePlansMock = jest.fn()
 const getUsageMock = jest.fn()
 const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
 const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('../../../lib/vendor/AWS/ApiGateway', () => ({
-  getApiKeys: getApiKeysMock,
+jest.unstable_mockModule('#lib/vendor/AWS/ApiGateway', () => ({
+  getApiKeys: getApiKeysMock, // fmt: multiline
   getUsagePlans: getUsagePlansMock,
   getUsage: getUsageMock
 }))
@@ -28,9 +28,7 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
-  validateSessionToken: validateSessionTokenMock
-}))
+jest.unstable_mockModule('#util/better-auth-helpers', () => ({validateSessionToken: validateSessionTokenMock}))
 
 const {handler} = await import('./../src')
 
@@ -73,11 +71,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual(fakeUserId)
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
@@ -88,11 +82,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
@@ -137,11 +127,7 @@ describe('#APIGatewayAuthorizer', () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: 'session-123',
-        expiresAt: Date.now() + 3600000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('unknown')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')

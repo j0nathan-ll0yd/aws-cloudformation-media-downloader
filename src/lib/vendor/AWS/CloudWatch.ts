@@ -24,6 +24,8 @@ export function putMetricData(params: PutMetricDataCommandInput): Promise<PutMet
  * @returns AWS StandardUnit value, defaults to Count if not found
  */
 export function getStandardUnit(unit?: string): StandardUnit {
-  if (!unit) return StandardUnit.Count
+  if (!unit) {
+    return StandardUnit.Count
+  }
   return unitMapping[unit] || StandardUnit.Count
 }

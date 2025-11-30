@@ -1,4 +1,4 @@
-import {createService, documentClient} from '../lib/vendor/ElectroDB/service'
+import {createService, documentClient} from '#lib/vendor/ElectroDB/service'
 import {Files} from './Files'
 import {Users} from './Users'
 import {Devices} from './Devices'
@@ -48,22 +48,16 @@ import {VerificationTokens} from './VerificationTokens'
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#collections-testing-join-operations | Collections Usage Examples}
  */
-export const MediaDownloaderService = createService(
-  {
-    files: Files,
-    users: Users,
-    devices: Devices,
-    userFiles: UserFiles,
-    userDevices: UserDevices,
-    sessions: Sessions,
-    accounts: Accounts,
-    verificationTokens: VerificationTokens
-  },
-  {
-    client: documentClient,
-    table: process.env.DynamoDBTableName || 'MediaDownloader'
-  }
-)
+export const MediaDownloaderService = createService({
+  files: Files,
+  users: Users,
+  devices: Devices,
+  userFiles: UserFiles,
+  userDevices: UserDevices,
+  sessions: Sessions,
+  accounts: Accounts,
+  verificationTokens: VerificationTokens
+}, {client: documentClient, table: process.env.DynamoDBTableName || 'MediaDownloader'})
 
 /**
  * Collections for JOIN-like operations between entities.

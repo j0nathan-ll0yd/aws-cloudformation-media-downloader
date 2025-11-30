@@ -16,13 +16,13 @@
  */
 
 import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {UserRegistration} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {registerUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, response} from '../../../util/lambda-helpers'
-import {auth} from '../../../lib/vendor/BetterAuth/config'
-import {Users} from '../../../entities/Users'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {UserRegistration} from '#types/main'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {registerUserSchema} from '#util/constraints'
+import {lambdaErrorResponse, logInfo, response} from '#util/lambda-helpers'
+import {auth} from '#lib/vendor/BetterAuth/config'
+import {Users} from '#entities/Users'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
@@ -60,10 +60,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
     const userAgent = event.headers?.['User-Agent'] || ''
 
     const rawResult = await auth.api.signInSocial({
-      headers: {
-        'user-agent': userAgent,
-        'x-forwarded-for': ipAddress || ''
-      },
+      headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
       body: {
         provider: 'apple',
         idToken: {
@@ -95,12 +92,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
     const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
     if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-      await Users.update({userId: result.user.id})
-        .set({
-          firstName: requestBody.firstName || '',
-          lastName: requestBody.lastName || ''
-        })
-        .go()
+      await Users.update({userId: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()
 
       logInfo('RegisterUser: Updated new user with name from iOS app', {
         userId: result.user.id,

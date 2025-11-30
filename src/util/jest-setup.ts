@@ -1,7 +1,8 @@
-import {beforeAll, afterAll, jest} from '@jest/globals'
+import {afterAll, beforeAll, jest} from '@jest/globals'
 
 export const partSize = 1024 * 1024 * 5
-export const fakeJWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
+export const fakeJWT =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
 export const testContext = {
   callbackWaitsForEmptyEventLoop: true,
   logGroupName: 'The log group for the function.',

@@ -5,7 +5,7 @@
  * These helpers bridge Better Auth's framework with our serverless architecture.
  */
 
-import {Sessions} from '../entities/Sessions'
+import {Sessions} from '#entities/Sessions'
 import {logDebug, logError} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
 
@@ -17,6 +17,8 @@ export interface SessionPayload {
   sessionId: string
   expiresAt: number
 }
+
+type SessionResult = {token: string; expiresAt: number; sessionId: string}
 
 /**
  * Validates a session token and returns the session payload.
@@ -40,25 +42,15 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
     const session = result.data[0]
 
     if (session.expiresAt < Date.now()) {
-      logError('validateSessionToken: session expired', {
-        expiresAt: session.expiresAt,
-        now: Date.now()
-      })
+      logError('validateSessionToken: session expired', {expiresAt: session.expiresAt, now: Date.now()})
       throw new UnauthorizedError('Session expired')
     }
 
     await Sessions.update({sessionId: session.sessionId}).set({updatedAt: Date.now()}).go()
 
-    logDebug('validateSessionToken: session valid', {
-      userId: session.userId,
-      sessionId: session.sessionId
-    })
+    logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.sessionId})
 
-    return {
-      userId: session.userId,
-      sessionId: session.sessionId,
-      expiresAt: session.expiresAt
-    }
+    return {userId: session.userId, sessionId: session.sessionId, expiresAt: session.expiresAt}
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       throw error
@@ -77,33 +69,18 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * @param userAgent - Optional user agent for device identification
  * @returns Session token and expiration
  */
-export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<{token: string; expiresAt: number; sessionId: string}> {
+export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<SessionResult> {
   logDebug('createUserSession: creating session', {userId, deviceId})
 
   // Manual token generation since we're using ElectroDB adapter instead of Better Auth's built-in session management
   const token = generateSecureToken()
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
-  const result = await Sessions.create({
-    sessionId: generateSessionId(),
-    userId,
-    token,
-    expiresAt,
-    deviceId,
-    ipAddress,
-    userAgent
-  }).go()
+  const result = await Sessions.create({sessionId: generateSessionId(), userId, token, expiresAt, deviceId, ipAddress, userAgent}).go()
 
-  logDebug('createUserSession: session created', {
-    sessionId: result.data.sessionId,
-    expiresAt
-  })
+  logDebug('createUserSession: session created', {sessionId: result.data.sessionId, expiresAt})
 
-  return {
-    token,
-    sessionId: result.data.sessionId,
-    expiresAt
-  }
+  return {token, sessionId: result.data.sessionId, expiresAt}
 }
 
 /**

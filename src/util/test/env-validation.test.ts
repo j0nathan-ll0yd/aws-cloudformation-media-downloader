@@ -1,5 +1,5 @@
-import {describe, it, expect, beforeEach, afterEach} from '@jest/globals'
-import {getRequiredEnv, getOptionalEnv, getRequiredEnvNumber, MissingEnvVarError} from '../env-validation'
+import {afterEach, beforeEach, describe, expect, it} from '@jest/globals'
+import {getOptionalEnv, getRequiredEnv, getRequiredEnvNumber, MissingEnvVarError} from '../env-validation'
 
 describe('env-validation', () => {
   const originalEnv = process.env

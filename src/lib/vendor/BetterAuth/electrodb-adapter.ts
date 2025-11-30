@@ -23,36 +23,27 @@
  * @see https://www.better-auth.com/docs/adapters for adapter interface specification
  */
 
-import type {User, Session, Account} from 'better-auth'
+import type {Account, Session, User} from 'better-auth'
 import type {EntityItem} from 'electrodb'
-import {Users} from '../../../entities/Users'
-import {Sessions} from '../../../entities/Sessions'
-import {Accounts} from '../../../entities/Accounts'
-import {VerificationTokens} from '../../../entities/VerificationTokens'
+import {Users} from '#entities/Users'
+import {Sessions} from '#entities/Sessions'
+import {Accounts} from '#entities/Accounts'
+import {VerificationTokens} from '#entities/VerificationTokens'
 import {v4 as uuidv4} from 'uuid'
-import {logDebug, logError} from '../../../util/lambda-helpers'
+import {logDebug, logError} from '#util/lambda-helpers'
 
 /**
  * ElectroDB entity response types - what we get back from database queries
  * ElectroDB's EntityItem doesn't include auto-generated fields, so we extend it
  * @internal
  */
-type ElectroUserItem = EntityItem<typeof Users> & {
-  createdAt?: number
-  updatedAt?: number
-}
+type ElectroUserItem = EntityItem<typeof Users> & {createdAt?: number; updatedAt?: number}
 
 /** @internal */
-type ElectroSessionItem = EntityItem<typeof Sessions> & {
-  createdAt: number
-  updatedAt: number
-}
+type ElectroSessionItem = EntityItem<typeof Sessions> & {createdAt: number; updatedAt: number}
 
 /** @internal */
-type ElectroAccountItem = EntityItem<typeof Accounts> & {
-  createdAt: number
-  updatedAt: number
-}
+type ElectroAccountItem = EntityItem<typeof Accounts> & {createdAt: number; updatedAt: number}
 
 /**
  * Identity provider data structure (from Sign in with Apple)
@@ -84,15 +75,7 @@ type ElectroUserCreate = {
 }
 
 /** @internal */
-type ElectroSessionCreate = {
-  sessionId: string
-  userId: string
-  expiresAt: number
-  token: string
-  ipAddress?: string
-  userAgent?: string
-  deviceId?: string
-}
+type ElectroSessionCreate = {sessionId: string; userId: string; expiresAt: number; token: string; ipAddress?: string; userAgent?: string; deviceId?: string}
 
 /** @internal */
 type ElectroAccountCreate = {
@@ -121,11 +104,7 @@ type ElectroSessionUpdate = Partial<Pick<ElectroSessionCreate, 'expiresAt' | 'to
  * Extended Account type that includes OAuth token metadata we store in ElectroDB
  * Better Auth's base Account type doesn't include these fields, but we persist them
  */
-export type ExtendedAccount = Account & {
-  scope?: string | null
-  tokenType?: string | null
-  expiresAt?: number | null
-}
+export type ExtendedAccount = Account & {scope?: string | null; tokenType?: string | null; expiresAt?: number | null}
 
 /**
  * Splits a full name into first and last name parts.
@@ -138,10 +117,7 @@ export type ExtendedAccount = Account & {
  */
 export function splitFullName(fullName?: string): {firstName: string; lastName: string} {
   const parts = (fullName || '').split(' ')
-  return {
-    firstName: parts[0] || '',
-    lastName: parts.slice(1).join(' ') || ''
-  }
+  return {firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || ''}
 }
 
 /**
@@ -229,8 +205,12 @@ function transformUserFromAuth(authUser: Partial<User> & {id?: string}): Electro
  */
 function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpdate {
   const updates: ElectroUserUpdate = {}
-  if (authUpdate.email) updates.email = authUpdate.email
-  if (authUpdate.emailVerified !== undefined) updates.emailVerified = authUpdate.emailVerified
+  if (authUpdate.email) {
+    updates.email = authUpdate.email
+  }
+  if (authUpdate.emailVerified !== undefined) {
+    updates.emailVerified = authUpdate.emailVerified
+  }
   if (authUpdate.name) {
     const {firstName, lastName} = splitFullName(authUpdate.name)
     updates.firstName = firstName
@@ -266,8 +246,12 @@ function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; 
  */
 function transformSessionUpdateFromAuth(authUpdate: Partial<Session>): ElectroSessionUpdate {
   const updates: ElectroSessionUpdate = {}
-  if (authUpdate.expiresAt) updates.expiresAt = authUpdate.expiresAt.getTime()
-  if (authUpdate.token) updates.token = authUpdate.token
+  if (authUpdate.expiresAt) {
+    updates.expiresAt = authUpdate.expiresAt.getTime()
+  }
+  if (authUpdate.token) {
+    updates.token = authUpdate.token
+  }
   if (authUpdate.ipAddress !== undefined && authUpdate.ipAddress !== null) {
     updates.ipAddress = authUpdate.ipAddress
   }
@@ -328,7 +312,9 @@ export function createElectroDBAdapter() {
 
       try {
         const result = await Users.get({userId}).go()
-        if (!result.data) return null
+        if (!result.data) {
+          return null
+        }
 
         return transformUserToAuth(result.data)
       } catch (error) {
@@ -344,7 +330,9 @@ export function createElectroDBAdapter() {
         // Use byEmail GSI for efficient lookup
         const result = await Users.query.byEmail({email}).go()
 
-        if (!result.data || result.data.length === 0) return null
+        if (!result.data || result.data.length === 0) {
+          return null
+        }
 
         return transformUserToAuth(result.data[0])
       } catch (error) {
@@ -386,7 +374,9 @@ export function createElectroDBAdapter() {
 
       try {
         const result = await Sessions.get({sessionId}).go()
-        if (!result.data) return null
+        if (!result.data) {
+          return null
+        }
 
         return transformSessionToAuth(result.data)
       } catch (error) {
@@ -428,7 +418,9 @@ export function createElectroDBAdapter() {
 
       try {
         const result = await Accounts.get({accountId}).go()
-        if (!result.data) return null
+        if (!result.data) {
+          return null
+        }
 
         return transformAccountToAuth(result.data)
       } catch (error) {
@@ -451,11 +443,7 @@ export function createElectroDBAdapter() {
     async createVerificationToken(data: {identifier: string; token: string; expiresAt: Date}): Promise<void> {
       logDebug('ElectroDB Adapter: createVerificationToken', {data})
 
-      await VerificationTokens.create({
-        identifier: data.identifier,
-        token: data.token,
-        expiresAt: data.expiresAt.getTime()
-      }).go()
+      await VerificationTokens.create({identifier: data.identifier, token: data.token, expiresAt: data.expiresAt.getTime()}).go()
     },
 
     async getVerificationToken(token: string): Promise<{identifier: string; token: string; expiresAt: Date} | null> {
@@ -463,13 +451,11 @@ export function createElectroDBAdapter() {
 
       try {
         const result = await VerificationTokens.get({token}).go()
-        if (!result.data) return null
-
-        return {
-          identifier: result.data.identifier,
-          token: result.data.token,
-          expiresAt: new Date(result.data.expiresAt)
+        if (!result.data) {
+          return null
         }
+
+        return {identifier: result.data.identifier, token: result.data.token, expiresAt: new Date(result.data.expiresAt)}
       } catch (error) {
         logError('ElectroDB Adapter: getVerificationToken failed', {token, error})
         return null
@@ -490,4 +476,13 @@ export function createElectroDBAdapter() {
  * Exported transformer functions for testing
  * These allow integration tests to validate transformation logic against real DynamoDB
  */
-export {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth, transformUserToAuth, transformSessionToAuth, transformAccountToAuth, transformUserUpdateFromAuth, transformSessionUpdateFromAuth}
+export {
+  transformAccountFromAuth,
+  transformAccountToAuth,
+  transformSessionFromAuth,
+  transformSessionToAuth,
+  transformSessionUpdateFromAuth,
+  transformUserFromAuth,
+  transformUserToAuth,
+  transformUserUpdateFromAuth
+}

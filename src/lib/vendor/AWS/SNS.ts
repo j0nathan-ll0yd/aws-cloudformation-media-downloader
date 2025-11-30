@@ -1,27 +1,27 @@
 import {
   CreateEndpointResponse,
+  CreatePlatformEndpointCommand,
   CreatePlatformEndpointInput,
+  DeleteEndpointCommand,
   DeleteEndpointInput,
+  ListSubscriptionsByTopicCommand,
   ListSubscriptionsByTopicInput,
   ListSubscriptionsByTopicResponse,
+  PublishCommand,
   PublishInput,
   PublishResponse,
+  SubscribeCommand,
   SubscribeInput,
   SubscribeResponse,
-  UnsubscribeInput,
-  SubscribeCommand,
-  PublishCommand,
-  ListSubscriptionsByTopicCommand,
-  CreatePlatformEndpointCommand,
   UnsubscribeCommand,
-  DeleteEndpointCommand
+  UnsubscribeInput
 } from '@aws-sdk/client-sns'
 import {createSNSClient} from './clients'
 
 const snsClient = createSNSClient()
 
 // Re-export types for application code to use
-export type {PublishInput}
+export type { PublishInput }
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
 export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> {

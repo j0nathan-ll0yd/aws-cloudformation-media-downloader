@@ -1,18 +1,12 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeUserDevicesResponse = [
-  {
-    deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
-    userId: fakeUserId
-  },
-  {
-    deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
-    userId: fakeUserId
-  }
+  {deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1', userId: fakeUserId}, // fmt: multiline
+  {deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A', userId: fakeUserId}
 ]
 const fakeDevice1 = {
   deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
@@ -36,52 +30,34 @@ const fakeGithubIssueResponse = {
   status: '201',
   url: 'https://api.github.com/repos/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues',
   headers: {},
-  data: {
-    id: 1679634750,
-    number: 57,
-    title: 'UserDelete Failed for UserId: 0f2e90e6-3c52-4d48-a6f2-5119446765f1'
-  }
+  data: {id: 1679634750, number: 57, title: 'UserDelete Failed for UserId: 0f2e90e6-3c52-4d48-a6f2-5119446765f1'}
 }
 
 const getUserDevicesMock = jest.fn<() => unknown>()
 const deleteDeviceMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('../../../util/shared', () => ({
-  getUserDevices: getUserDevicesMock,
+jest.unstable_mockModule('#util/shared', () => ({
+  getUserDevices: getUserDevicesMock, // fmt: multiline
   deleteDevice: deleteDeviceMock
 }))
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: devicesMock.entity
-}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const usersMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Users', () => ({
-  Users: usersMock.entity
-}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({
-  UserFiles: userFilesMock.entity
-}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: userDevicesMock.entity
-}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn().mockReturnValue({
-    ResponseMetadata: {
-      RequestId: uuidv4()
-    }
-  }),
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
   subscribe: jest.fn()
 }))
 
-jest.unstable_mockModule('../../../util/github-helpers', () => ({
-  createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)
-}))
+jest.unstable_mockModule('#util/github-helpers', () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

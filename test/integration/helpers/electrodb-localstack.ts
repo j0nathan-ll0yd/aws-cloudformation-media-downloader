@@ -16,61 +16,56 @@ export async function setupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
     region: process.env.AWS_REGION || 'us-west-2',
-    credentials: {
-      accessKeyId: 'test',
-      secretAccessKey: 'test'
-    }
+    credentials: {accessKeyId: 'test', secretAccessKey: 'test'}
   })
 
   const tableName = process.env.DynamoDBTableName || 'MediaDownloader'
 
   try {
-    await client.send(
-      new CreateTableCommand({
-        TableName: tableName,
-        AttributeDefinitions: [
-          {AttributeName: 'pk', AttributeType: 'S'},
-          {AttributeName: 'sk', AttributeType: 'S'},
-          {AttributeName: 'gsi1pk', AttributeType: 'S'},
-          {AttributeName: 'gsi1sk', AttributeType: 'S'},
-          {AttributeName: 'gsi2pk', AttributeType: 'S'},
-          {AttributeName: 'gsi2sk', AttributeType: 'S'},
-          {AttributeName: 'gsi3pk', AttributeType: 'S'},
-          {AttributeName: 'gsi3sk', AttributeType: 'S'}
-        ],
-        KeySchema: [
-          {AttributeName: 'pk', KeyType: 'HASH'},
-          {AttributeName: 'sk', KeyType: 'RANGE'}
-        ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: 'gsi1',
-            KeySchema: [
-              {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'gsi2',
-            KeySchema: [
-              {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          },
-          {
-            IndexName: 'gsi3',
-            KeySchema: [
-              {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-              {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-            ],
-            Projection: {ProjectionType: 'ALL'}
-          }
-        ],
-        BillingMode: 'PAY_PER_REQUEST'
-      })
-    )
+    await client.send(new CreateTableCommand({
+      TableName: tableName,
+      AttributeDefinitions: [
+        {AttributeName: 'pk', AttributeType: 'S'},
+        {AttributeName: 'sk', AttributeType: 'S'},
+        {AttributeName: 'gsi1pk', AttributeType: 'S'},
+        {AttributeName: 'gsi1sk', AttributeType: 'S'},
+        {AttributeName: 'gsi2pk', AttributeType: 'S'},
+        {AttributeName: 'gsi2sk', AttributeType: 'S'},
+        {AttributeName: 'gsi3pk', AttributeType: 'S'},
+        {AttributeName: 'gsi3sk', AttributeType: 'S'}
+      ],
+      KeySchema: [
+        {AttributeName: 'pk', KeyType: 'HASH'},
+        {AttributeName: 'sk', KeyType: 'RANGE'}
+      ],
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: 'gsi1',
+          KeySchema: [
+            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'gsi2',
+          KeySchema: [
+            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'gsi3',
+          KeySchema: [
+            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
+            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
+          ],
+          Projection: {ProjectionType: 'ALL'}
+        }
+      ],
+      BillingMode: 'PAY_PER_REQUEST'
+    }))
 
     console.log(`✅ Created table: ${tableName}`)
   } catch (error) {
@@ -92,10 +87,7 @@ export async function cleanupLocalStackTable(): Promise<void> {
   const client = new DynamoDBClient({
     endpoint: process.env.LOCALSTACK_ENDPOINT || 'http://localhost:4566',
     region: process.env.AWS_REGION || 'us-west-2',
-    credentials: {
-      accessKeyId: 'test',
-      secretAccessKey: 'test'
-    }
+    credentials: {accessKeyId: 'test', secretAccessKey: 'test'}
   })
 
   const tableName = process.env.DynamoDBTableName || 'MediaDownloader'

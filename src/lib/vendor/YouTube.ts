@@ -1,12 +1,12 @@
 import YTDlpWrap from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
 import {PassThrough} from 'stream'
-import {YtDlpVideoInfo, YtDlpFormat} from '../../types/youtube'
-import {logDebug, logError, putMetrics} from '../../util/lambda-helpers'
-import {UnexpectedError, CookieExpirationError} from '../../util/errors'
-import {assertIsError} from '../../util/transformers'
-import {headObject, createS3Upload} from '../vendor/AWS/S3'
-import {getRequiredEnv} from '../../util/env-validation'
+import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
+import {logDebug, logError, putMetrics} from '#util/lambda-helpers'
+import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {assertIsError} from '#util/transformers'
+import {createS3Upload, headObject} from '../vendor/AWS/S3'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Check if an error message indicates cookie expiration or bot detection
@@ -14,7 +14,15 @@ import {getRequiredEnv} from '../../util/env-validation'
  * @returns true if error is related to cookie expiration
  */
 function isCookieExpirationError(errorMessage: string): boolean {
-  const cookieErrorPatterns = ["Sign in to confirm you're not a bot", 'Sign in to confirm', 'bot detection', 'cookies', 'This helps protect our community', 'HTTP Error 403', 'Forbidden']
+  const cookieErrorPatterns = [
+    "Sign in to confirm you're not a bot",
+    'Sign in to confirm',
+    'bot detection',
+    'cookies',
+    'This helps protect our community',
+    'HTTP Error 403',
+    'Forbidden'
+  ]
 
   const lowerMessage = errorMessage.toLowerCase()
   return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
@@ -49,11 +57,7 @@ export async function fetchVideoInfo(uri: string): Promise<YtDlpVideoInfo> {
     // Get video info in JSON format
     const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
 
-    logDebug('fetchVideoInfo <=', {
-      id: info.id,
-      title: info.title,
-      formatCount: info.formats?.length || 0
-    })
+    logDebug('fetchVideoInfo <=', {id: info.id, title: info.title, formatCount: info.formats?.length || 0})
 
     return info
   } catch (error) {
@@ -93,11 +97,7 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
 
   if (progressiveWithSize.length > 0) {
     const sorted = progressiveWithSize.sort((a, b) => (b.filesize || 0) - (a.filesize || 0))
-    logDebug('chooseVideoFormat: progressive with filesize', {
-      formatId: sorted[0].format_id,
-      filesize: sorted[0].filesize,
-      ext: sorted[0].ext
-    })
+    logDebug('chooseVideoFormat: progressive with filesize', {formatId: sorted[0].format_id, filesize: sorted[0].filesize, ext: sorted[0].ext})
     return sorted[0]
   }
 
@@ -106,14 +106,12 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
 
   if (progressiveWithoutSize.length > 0) {
     const sorted = progressiveWithoutSize.sort((a, b) => {
-      if (a.tbr && b.tbr) return b.tbr - a.tbr
+      if (a.tbr && b.tbr) {
+        return b.tbr - a.tbr
+      }
       return 0
     })
-    logDebug('chooseVideoFormat: progressive without filesize', {
-      formatId: sorted[0].format_id,
-      tbr: sorted[0].tbr,
-      ext: sorted[0].ext
-    })
+    logDebug('chooseVideoFormat: progressive without filesize', {formatId: sorted[0].format_id, tbr: sorted[0].tbr, ext: sorted[0].ext})
     return sorted[0]
   }
 
@@ -121,10 +119,16 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
   // This is the modern YouTube default - yt-dlp handles the streaming
   const sorted = combinedFormats.sort((a, b) => {
     // Prefer formats with filesize estimate
-    if (a.filesize && !b.filesize) return -1
-    if (!a.filesize && b.filesize) return 1
+    if (a.filesize && !b.filesize) {
+      return -1
+    }
+    if (!a.filesize && b.filesize) {
+      return 1
+    }
     // Otherwise sort by bitrate (quality)
-    if (a.tbr && b.tbr) return b.tbr - a.tbr
+    if (a.tbr && b.tbr) {
+      return b.tbr - a.tbr
+    }
     return 0
   })
 
@@ -145,7 +149,11 @@ export function chooseVideoFormat(info: YtDlpVideoInfo): YtDlpFormat {
  * @returns Video ID
  */
 export function getVideoID(url: string): string {
-  const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/, /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/, /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/]
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+  ]
 
   for (const pattern of patterns) {
     const match = url.match(pattern)
@@ -164,15 +172,7 @@ export function getVideoID(url: string): string {
  * @param key - Target S3 object key
  * @returns Upload results including file size, S3 URL, and duration
  */
-export async function streamVideoToS3(
-  uri: string,
-  bucket: string,
-  key: string
-): Promise<{
-  fileSize: number
-  s3Url: string
-  duration: number
-}> {
+export async function streamVideoToS3(uri: string, bucket: string, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   logDebug('streamVideoToS3 =>', {uri, bucket, key, binaryPath: ytdlpBinaryPath})
 
@@ -258,11 +258,7 @@ export async function streamVideoToS3(
     upload.on('httpUploadProgress', (progress) => {
       if (progress.loaded) {
         bytesUploaded = progress.loaded
-        logDebug('Upload progress', {
-          loaded: progress.loaded,
-          total: progress.total,
-          key
-        })
+        logDebug('Upload progress', {loaded: progress.loaded, total: progress.total, key})
       }
     })
 
@@ -278,12 +274,7 @@ export async function streamVideoToS3(
     const duration = Math.floor((Date.now() - startTime) / 1000)
     const s3Url = `s3://${bucket}/${key}`
 
-    logDebug('streamVideoToS3 <=', {
-      fileSize,
-      s3Url,
-      duration,
-      bytesUploaded
-    })
+    logDebug('streamVideoToS3 <=', {fileSize, s3Url, duration, bytesUploaded})
 
     // Publish CloudWatch metrics
     const throughputMBps = fileSize > 0 && duration > 0 ? fileSize / 1024 / 1024 / duration : 0
@@ -295,11 +286,7 @@ export async function streamVideoToS3(
       {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}
     ])
 
-    return {
-      fileSize,
-      s3Url,
-      duration
-    }
+    return {fileSize, s3Url, duration}
   } catch (error) {
     assertIsError(error)
     logError('streamVideoToS3 error', error)

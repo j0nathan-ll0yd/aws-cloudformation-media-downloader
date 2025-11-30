@@ -1,17 +1,17 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Users} from '../../../entities/Users'
-import {UserFiles} from '../../../entities/UserFiles'
-import {UserDevices} from '../../../entities/UserDevices'
-import {Devices} from '../../../entities/Devices'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
-import {deleteDevice, getUserDevices} from '../../../util/shared'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '../../../types/main'
-import {assertIsError} from '../../../util/transformers'
-import {createFailedUserDeletionIssue} from '../../../util/github-helpers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {retryUnprocessedDelete} from '../../../util/retry'
-import {retryUnprocessed} from '../../../util/retry'
+import {Users} from '#entities/Users'
+import {UserFiles} from '#entities/UserFiles'
+import {UserDevices} from '#entities/UserDevices'
+import {Devices} from '#entities/Devices'
+import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logIncomingFixture, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {deleteDevice, getUserDevices} from '#util/shared'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '#types/main'
+import {assertIsError} from '#util/transformers'
+import {createFailedUserDeletionIssue} from '#util/github-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {retryUnprocessedDelete} from '#util/retry'
+import {retryUnprocessed} from '#util/retry'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
@@ -86,7 +86,11 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
   }
   try {
     // Delete children FIRST (correct cascade order), then parent LAST
-    const childResults = await Promise.allSettled([deleteUserFiles(userId), deleteUserDevices(userId), ...deletableDevices.map((device) => deleteDevice(device))])
+    const childResults = await Promise.allSettled([
+      deleteUserFiles(userId),
+      deleteUserDevices(userId),
+      ...deletableDevices.map((device) => deleteDevice(device))
+    ])
     logDebug('Promise.allSettled (children)', childResults)
 
     // Check for failures before deleting parent

@@ -20,16 +20,16 @@ process.env.Bucket = TEST_BUCKET
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '../../../src/types/enums'
+import {FileStatus} from '#types/enums'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
 import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockVideoInfo, createMockVideoFormat, createMockStreamVideoToS3WithRealUpload, S3UploadFunction} from '../helpers/mock-youtube'
-import {createS3Upload} from '../../../src/lib/vendor/AWS/S3'
+import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '../helpers/mock-youtube'
+import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
 const s3UploadFn = createS3Upload as S3UploadFunction
@@ -42,26 +42,18 @@ const __dirname = dirname(__filename)
 const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 const githubHelpersModulePath = resolve(__dirname, '../../../src/util/github-helpers')
 
-const mockVideoInfo = createMockVideoInfo({
-  id: 'test-video-123',
-  title: 'Integration Test Video',
-  uploader: 'Test Channel'
-})
+const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
 
-const mockFormat = createMockVideoFormat({
-  format_id: '18',
-  ext: 'mp4',
-  filesize: 5242880
-})
+const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
-  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo),
+  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo), // fmt: multiline
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
   streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
 
 jest.unstable_mockModule(githubHelpersModulePath, () => ({
-  createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
 

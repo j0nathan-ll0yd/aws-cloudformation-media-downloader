@@ -11,12 +11,12 @@
  */
 
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '../../../types/main'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {loginUserSchema} from '../../../util/constraints'
-import {lambdaErrorResponse, logInfo, logIncomingFixture, logOutgoingFixture, response} from '../../../util/lambda-helpers'
-import {auth} from '../../../lib/vendor/BetterAuth/config'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '#types/main'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {loginUserSchema} from '#util/constraints'
+import {lambdaErrorResponse, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {auth} from '#lib/vendor/BetterAuth/config'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.
@@ -53,10 +53,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     const userAgent = event.headers?.['User-Agent'] || ''
 
     const rawResult = await auth.api.signInSocial({
-      headers: {
-        'user-agent': userAgent,
-        'x-forwarded-for': ipAddress || ''
-      },
+      headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
       body: {
         provider: 'apple',
         idToken: {
@@ -81,10 +78,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
       session?: {id: string; expiresAt: number}
     }
 
-    logInfo('LoginUser: Better Auth sign-in successful', {
-      userId: result.user?.id,
-      sessionToken: result.token ? 'present' : 'missing'
-    })
+    logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
     // 3. Return session token (Better Auth format)
     const successResult = response(context, 200, {

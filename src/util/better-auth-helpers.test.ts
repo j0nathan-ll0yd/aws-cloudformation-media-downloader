@@ -4,15 +4,15 @@
  * Tests session management, validation, and token generation using electrodb-mock.
  */
 
-import {describe, it, expect, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {UnauthorizedError} from './errors'
-import {createElectroDBEntityMock} from '../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Create entity mocks
 const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 
 // Mock Sessions entity
-jest.unstable_mockModule('../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
 const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} = await import('./better-auth-helpers')
@@ -77,11 +77,7 @@ describe('Better Auth Helpers', () => {
 
       const result = await validateSessionToken('valid-token')
 
-      expect(result).toEqual({
-        userId: 'user-123',
-        sessionId: 'session-123',
-        expiresAt: mockSession.expiresAt
-      })
+      expect(result).toEqual({userId: 'user-123', sessionId: 'session-123', expiresAt: mockSession.expiresAt})
 
       // Should update lastActiveAt
       expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
@@ -126,46 +122,24 @@ describe('Better Auth Helpers', () => {
 
       const result = await createUserSession('user-123', 'device-123', '1.2.3.4', 'Mozilla/5.0')
 
-      expect(result).toEqual({
-        token: expect.any(String),
-        sessionId: expect.any(String),
-        expiresAt: expect.any(Number)
-      })
+      expect(result).toEqual({token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number)})
 
       expect(Sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'user-123',
-          deviceId: 'device-123',
-          ipAddress: '1.2.3.4',
-          userAgent: 'Mozilla/5.0'
-        })
+        expect.objectContaining({userId: 'user-123', deviceId: 'device-123', ipAddress: '1.2.3.4', userAgent: 'Mozilla/5.0'})
       )
     })
 
     it('should create session without optional parameters', async () => {
-      const mockSession = createMockSession({
-        sessionId: 'session-minimal',
-        userId: 'user-456',
-        token: 'minimal-token'
-      })
+      const mockSession = createMockSession({sessionId: 'session-minimal', userId: 'user-456', token: 'minimal-token'})
 
       sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
 
       const result = await createUserSession('user-456')
 
-      expect(result).toEqual({
-        token: expect.any(String),
-        sessionId: expect.any(String),
-        expiresAt: expect.any(Number)
-      })
+      expect(result).toEqual({token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number)})
 
       expect(Sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'user-456',
-          deviceId: undefined,
-          ipAddress: undefined,
-          userAgent: undefined
-        })
+        expect.objectContaining({userId: 'user-456', deviceId: undefined, ipAddress: undefined, userAgent: undefined})
       )
     })
   })
@@ -183,7 +157,7 @@ describe('Better Auth Helpers', () => {
   describe('revokeAllUserSessions', () => {
     it('should revoke all sessions for a user', async () => {
       const mockSessions = [
-        {sessionId: 'session-1', userId: 'user-123'},
+        {sessionId: 'session-1', userId: 'user-123'}, // fmt: multiline
         {sessionId: 'session-2', userId: 'user-123'},
         {sessionId: 'session-3', userId: 'user-123'}
       ]
@@ -220,12 +194,7 @@ describe('Better Auth Helpers', () => {
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
       expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
-      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          expiresAt: expect.any(Number),
-          updatedAt: expect.any(Number)
-        })
-      )
+      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(expect.objectContaining({expiresAt: expect.any(Number), updatedAt: expect.any(Number)}))
     })
   })
 })

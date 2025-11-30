@@ -1,21 +1,17 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {getApiKeys, getUsage, getUsagePlans, ApiKey, UsagePlan} from '../../../lib/vendor/AWS/ApiGateway'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {validateSessionToken} from '../../../util/better-auth-helpers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {getRequiredEnv, getOptionalEnv} from '../../../util/env-validation'
+import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {ApiKey, getApiKeys, getUsage, getUsagePlans, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {validateSessionToken} from '#util/better-auth-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
     context: {},
     policyDocument: {
       Statement: [
-        {
-          Action: 'execute-api:Invoke',
-          Effect: effect,
-          Resource: resource
-        }
+        {Action: 'execute-api:Invoke', Effect: effect, Resource: resource}
       ],
       Version: '2012-10-17'
     },
@@ -72,12 +68,7 @@ async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
  */
 async function fetchUsageData(keyId: string, usagePlanId: string) {
   const usageDate = new Date().toISOString().split('T')[0]
-  const params = {
-    endDate: usageDate,
-    keyId,
-    startDate: usageDate,
-    usagePlanId
-  }
+  const params = {endDate: usageDate, keyId, startDate: usageDate, usagePlanId}
   logDebug('getUsage <=', params)
   const response = await getUsage(params)
   logDebug('getUsage =>', response)

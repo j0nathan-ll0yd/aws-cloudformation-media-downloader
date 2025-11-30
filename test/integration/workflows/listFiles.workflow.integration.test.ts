@@ -25,7 +25,7 @@ process.env.DefaultFileName = 'test-default-file.mp4'
 process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
 process.env.DefaultFileContentType = 'video/mp4'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
 import type {DynamoDBFile} from '../../../src/types/main'
@@ -46,21 +46,21 @@ const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles'
 const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule(userFilesModulePath, () => ({
-  UserFiles: userFilesMock.entity
-}))
+jest.unstable_mockModule(userFilesModulePath, () => ({UserFiles: userFilesMock.entity}))
 
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(filesModulePath, () => ({
-  Files: filesMock.entity
-}))
+jest.unstable_mockModule(filesModulePath, () => ({Files: filesMock.entity}))
 
 const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
 
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: null,
-    headers: userId && userStatus === UserStatus.Authenticated ? {Authorization: 'Bearer test-token'} : userStatus === UserStatus.Unauthenticated ? {Authorization: 'Bearer invalid-token'} : {},
+    headers: userId && userStatus === UserStatus.Authenticated
+      ? {Authorization: 'Bearer test-token'}
+      : userStatus === UserStatus.Unauthenticated
+      ? {Authorization: 'Bearer invalid-token'}
+      : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
     isBase64Encoded: false,
@@ -81,16 +81,8 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/files',
-      authorizer: {
-        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
-        userId,
-        userStatus,
-        integrationLatency: 342
-      },
-      identity: {
-        sourceIp: '127.0.0.1',
-        userAgent: 'test-agent'
-      }
+      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/files'
   } as unknown as CustomAPIGatewayRequestAuthorizerEvent
@@ -154,9 +146,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return empty list when user has no files', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: []
-    })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
 
     const event = createListFilesEvent('user-no-files', UserStatus.Authenticated)
 
@@ -242,13 +232,13 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Arrange: Mock ElectroDB with 50 files
     const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))
-    })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))})
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})),
+      data: fileIds.map((fileId, index) =>
+        createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.PendingDownload, {title: `Video ${index}`})
+      ),
       unprocessed: []
     })
 

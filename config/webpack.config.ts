@@ -30,20 +30,10 @@ const config: webpack.Configuration = {
     '@aws-sdk/util-dynamodb': '@aws-sdk/util-dynamodb'
     // Note: aws-xray-sdk-core is NOT in Lambda runtime - must be bundled
   },
-  resolve: {
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
-  },
-  output: {
-    libraryTarget: 'commonjs2',
-    path: path.resolve(__dirname, './../build/lambdas'),
-    filename: '[name].js'
-  },
-  optimization: {
-    usedExports: true
-  },
-  stats: {
-    usedExports: true
-  },
+  resolve: {extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']},
+  output: {libraryTarget: 'commonjs2', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js'},
+  optimization: {usedExports: true},
+  stats: {usedExports: true},
   target: 'node',
   module: {
     rules: [
@@ -56,13 +46,7 @@ const config: webpack.Configuration = {
     ]
   },
   plugins: [
-    new ForkTsCheckerWebpackPlugin({
-      typescript: {
-        configOverwrite: {
-          exclude: ['**/*.test.ts', '**/test/**']
-        }
-      }
-    })
+    new ForkTsCheckerWebpackPlugin({typescript: {configOverwrite: {exclude: ['**/*.test.ts', '**/test/**']}}})
   ],
   watch: false
 }

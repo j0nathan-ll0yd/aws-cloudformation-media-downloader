@@ -18,14 +18,14 @@ const TEST_TABLE = 'test-push-notification'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
-import {describe, test, expect, beforeAll, afterAll, beforeEach, jest} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockSQSFileNotificationEvent, createMockDevice, createMockUserDevice} from '../helpers/test-data'
+import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -37,20 +37,13 @@ const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevi
 const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 
 const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule(snsModulePath, () => ({
-  publishSnsEvent: publishSnsEventMock,
-  publish: publishSnsEventMock
-}))
+jest.unstable_mockModule(snsModulePath, () => ({publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock}))
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule(userDevicesModulePath, () => ({
-  UserDevices: userDevicesMock.entity
-}))
+jest.unstable_mockModule(userDevicesModulePath, () => ({UserDevices: userDevicesMock.entity}))
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(devicesModulePath, () => ({
-  Devices: devicesMock.entity
-}))
+jest.unstable_mockModule(devicesModulePath, () => ({Devices: devicesMock.entity}))
 
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
 
@@ -81,13 +74,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
     // Arrange: Mock ElectroDB responses
     // First query: getUserDevicesByUserId returns array of individual UserDevice records
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice('user-123', 'device-abc')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice('user-123', 'device-abc')]})
 
-    devicesMock.mocks.get.mockResolvedValue({
-      data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
-    })
+    devicesMock.mocks.get.mockResolvedValue({data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')})
 
     const event = createMockSQSFileNotificationEvent('user-123', 'video-123')
 
@@ -109,17 +98,11 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       data: [createMockUserDevice('user-456', 'device-1'), createMockUserDevice('user-456', 'device-2'), createMockUserDevice('user-456', 'device-3')]
     })
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')})
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')})
 
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')
-    })
+    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')})
 
     const event = createMockSQSFileNotificationEvent('user-456', 'video-456', {title: 'Multi-Device Video'})
 
@@ -133,14 +116,16 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
 
     const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((call) => call[0].TargetArn)
-    expect(targetArns).toEqual(['arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'])
+    expect(targetArns).toEqual([
+      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
+      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
+      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'
+    ])
   })
 
   test('should return early when user has no registered devices', async () => {
     // Arrange: Mock ElectroDB to return empty array (no devices)
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: []
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
 
     const event = createMockSQSFileNotificationEvent('user-no-devices', 'video-789')
 
@@ -172,30 +157,26 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await expect(handler(event, createMockContext())).resolves.not.toThrow()
 
     expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
-    expect((publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0].TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
+    expect((publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0].TargetArn).toBe(
+      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'
+    )
   })
 
   test('should process multiple SQS records in same batch', async () => {
     // Arrange: Mock ElectroDB responses for two different users
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
-      data: [createMockUserDevice('user-1', 'device-user1')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({data: [createMockUserDevice('user-1', 'device-user1')]})
     devicesMock.mocks.get.mockResolvedValueOnce({
       data: createMockDevice('device-user1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint')
     })
 
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({
-      data: [createMockUserDevice('user-2', 'device-user2')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({data: [createMockUserDevice('user-2', 'device-user2')]})
     devicesMock.mocks.get.mockResolvedValueOnce({
       data: createMockDevice('device-user2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint')
     })
 
     const event1 = createMockSQSFileNotificationEvent('user-1', 'video-batch-1')
     const event2 = createMockSQSFileNotificationEvent('user-2', 'video-batch-2')
-    const batchEvent: SQSEvent = {
-      Records: [...event1.Records, ...event2.Records]
-    }
+    const batchEvent: SQSEvent = {Records: [...event1.Records, ...event2.Records]}
 
     await handler(batchEvent, createMockContext())
 
@@ -210,24 +191,17 @@ describe('SendPushNotification Workflow Integration Tests', () => {
   test('should skip non-FileNotification messages', async () => {
     // Arrange: SQS event with different message type
     const event: SQSEvent = {
-      Records: [
-        {
-          messageId: 'test-message-6',
-          receiptHandle: 'test-receipt-6',
-          body: 'OtherNotificationType',
-          attributes: {
-            ApproximateReceiveCount: '1',
-            SentTimestamp: '1234567890',
-            SenderId: 'test-sender',
-            ApproximateFirstReceiveTimestamp: '1234567890'
-          },
-          messageAttributes: {},
-          md5OfBody: 'test-md5',
-          eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-          awsRegion: 'us-west-2'
-        }
-      ]
+      Records: [{
+        messageId: 'test-message-6',
+        receiptHandle: 'test-receipt-6',
+        body: 'OtherNotificationType',
+        attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1234567890', SenderId: 'test-sender', ApproximateFirstReceiveTimestamp: '1234567890'},
+        messageAttributes: {},
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
+        awsRegion: 'us-west-2'
+      }]
     }
 
     // Act: Invoke handler

@@ -10,7 +10,7 @@
 import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 
 // Re-export with old name for backwards compatibility
-export {handleEntityQuery as handleElectroDBQuery}
+export { handleEntityQuery as handleElectroDBQuery }
 
 export async function handleEntityQuery(args: {entity?: string; query: string}) {
   const {entity, query} = args
@@ -19,29 +19,17 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
 
   switch (query) {
     case 'list':
-      return {
-        entities,
-        count: entities.length
-      }
+      return {entities, count: entities.length}
 
     case 'schema':
       if (entity) {
         if (!entities.includes(entity)) {
           return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`}
         }
-        return {
-          entity,
-          note: 'Schema is defined in src/entities/' + entity + '.ts',
-          suggestion: 'Read the entity file for full schema details'
-        }
+        return {entity, note: 'Schema is defined in src/entities/' + entity + '.ts', suggestion: 'Read the entity file for full schema details'}
       }
       // Return all entity names with their file locations
-      return {
-        entities: entities.map((e) => ({
-          name: e,
-          file: `src/entities/${e}.ts`
-        }))
-      }
+      return {entities: entities.map((e) => ({name: e, file: `src/entities/${e}.ts`}))}
 
     case 'relationships': {
       if (entity) {
@@ -85,16 +73,9 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
     }
 
     case 'all':
-      return {
-        entities,
-        relationships,
-        collectionsFile: 'src/entities/Collections.ts'
-      }
+      return {entities, relationships, collectionsFile: 'src/entities/Collections.ts'}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']}
   }
 }

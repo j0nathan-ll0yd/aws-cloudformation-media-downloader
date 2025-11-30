@@ -5,8 +5,8 @@
  */
 
 import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
-import {DynamoDBFile} from '../../../src/types/main'
-import {FileStatus} from '../../../src/types/enums'
+import {DynamoDBFile} from '#types/main'
+import {FileStatus} from '#types/enums'
 import {createMockFile} from './test-data'
 
 function getMediaDownloaderTable() {
@@ -21,10 +21,7 @@ export async function createMediaDownloaderTable(): Promise<void> {
   try {
     await createTable({
       TableName: getMediaDownloaderTable(),
-      KeySchema: [
-        {AttributeName: 'pk', KeyType: 'HASH'},
-        {AttributeName: 'sk', KeyType: 'RANGE'}
-      ],
+      KeySchema: [{AttributeName: 'pk', KeyType: 'HASH'}, {AttributeName: 'sk', KeyType: 'RANGE'}],
       AttributeDefinitions: [
         {AttributeName: 'pk', AttributeType: 'S'},
         {AttributeName: 'sk', AttributeType: 'S'},
@@ -39,48 +36,27 @@ export async function createMediaDownloaderTable(): Promise<void> {
         {AttributeName: 'gsi5pk', AttributeType: 'S'},
         {AttributeName: 'gsi5sk', AttributeType: 'S'}
       ],
-      GlobalSecondaryIndexes: [
-        {
-          IndexName: 'UserCollection',
-          KeySchema: [
-            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'FileCollection',
-          KeySchema: [
-            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'DeviceCollection',
-          KeySchema: [
-            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'StatusIndex',
-          KeySchema: [
-            {AttributeName: 'gsi4pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi4sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        },
-        {
-          IndexName: 'KeyIndex',
-          KeySchema: [
-            {AttributeName: 'gsi5pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi5sk', KeyType: 'RANGE'}
-          ],
-          Projection: {ProjectionType: 'ALL'}
-        }
-      ],
+      GlobalSecondaryIndexes: [{
+        IndexName: 'UserCollection',
+        KeySchema: [{AttributeName: 'gsi1pk', KeyType: 'HASH'}, {AttributeName: 'gsi1sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'FileCollection',
+        KeySchema: [{AttributeName: 'gsi2pk', KeyType: 'HASH'}, {AttributeName: 'gsi2sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'DeviceCollection',
+        KeySchema: [{AttributeName: 'gsi3pk', KeyType: 'HASH'}, {AttributeName: 'gsi3sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'StatusIndex',
+        KeySchema: [{AttributeName: 'gsi4pk', KeyType: 'HASH'}, {AttributeName: 'gsi4sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'KeyIndex',
+        KeySchema: [{AttributeName: 'gsi5pk', KeyType: 'HASH'}, {AttributeName: 'gsi5sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }],
       BillingMode: 'PAY_PER_REQUEST'
     })
   } catch (error) {

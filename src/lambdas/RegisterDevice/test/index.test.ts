@@ -1,23 +1,19 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: devicesMock.entity
-}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const userDevicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: userDevicesMock.entity
-}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()
-jest.unstable_mockModule('../../../util/shared', () => ({
-  getUserDevices: getUserDevicesMock,
+jest.unstable_mockModule('#util/shared', () => ({
+  getUserDevices: getUserDevicesMock, // fmt: multiline
   subscribeEndpointToTopic: jest.fn()
 }))
 
@@ -28,12 +24,8 @@ const {default: queryDefaultResponse} = await import('./fixtures/query-200-OK.js
 const {default: querySuccessResponse} = await import('./fixtures/query-201-Created.json', {assert: {type: 'json'}})
 const createPlatformEndpointMock = jest.fn()
 const listSubscriptionsByTopicMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn().mockReturnValue({
-    ResponseMetadata: {
-      RequestId: uuidv4()
-    }
-  }),
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
   subscribe: jest.fn().mockReturnValue(subscribeResponse),
   listSubscriptionsByTopic: listSubscriptionsByTopicMock,
   createPlatformEndpoint: createPlatformEndpointMock,

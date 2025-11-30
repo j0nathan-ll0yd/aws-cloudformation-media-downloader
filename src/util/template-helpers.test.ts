@@ -10,7 +10,7 @@ describe('#template-helpers', () => {
       const result = renderGithubIssueTemplate('user-deletion-failure', {
         userId: 'test-user-123',
         devices: [
-          {deviceToken: 'device-token-1', platform: 'iOS', updatedAt: '2024-01-01T00:00:00.000Z'},
+          {deviceToken: 'device-token-1', platform: 'iOS', updatedAt: '2024-01-01T00:00:00.000Z'}, // fmt: multiline
           {deviceToken: 'device-token-2', platform: 'iOS', updatedAt: '2024-01-02T00:00:00.000Z'}
         ],
         error: mockError,
@@ -37,12 +37,7 @@ describe('#template-helpers', () => {
     test('should render user-deletion-failure template with no devices', () => {
       const mockError = new Error('Test error')
 
-      const result = renderGithubIssueTemplate('user-deletion-failure', {
-        userId: 'test-user-456',
-        devices: [],
-        error: mockError,
-        requestId: 'req-def-456'
-      })
+      const result = renderGithubIssueTemplate('user-deletion-failure', {userId: 'test-user-456', devices: [], error: mockError, requestId: 'req-def-456'})
 
       expect(result).toContain('No devices were registered for this user')
       expect(result).not.toContain('This user had')
@@ -97,11 +92,7 @@ describe('#template-helpers', () => {
       const mockError = new Error("Sign in to confirm you're not a bot")
       mockError.stack = 'CookieExpirationError: Sign in to confirm\n    at fetchVideoInfo'
 
-      const result = renderGithubIssueTemplate('cookie-expiration', {
-        fileId: 'file-789',
-        fileUrl: 'https://youtube.com/watch?v=test3',
-        error: mockError
-      })
+      const result = renderGithubIssueTemplate('cookie-expiration', {fileId: 'file-789', fileUrl: 'https://youtube.com/watch?v=test3', error: mockError})
 
       expect(result).toContain('## YouTube Cookie Expiration')
       expect(result).toContain('file-789')

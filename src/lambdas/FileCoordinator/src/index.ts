@@ -1,10 +1,10 @@
-import {ScheduledEvent, Context, APIGatewayProxyResult} from 'aws-lambda'
-import {Files} from '../../../entities/Files'
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '../../../util/errors'
-import {initiateFileDownload} from '../../../util/shared'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {FileStatus} from '../../../types/enums'
+import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
+import {Files} from '#entities/Files'
+import {logDebug, logInfo, response} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {initiateFileDownload} from '#util/shared'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {FileStatus} from '#types/enums'
 
 /**
  * Returns an array of fileIds that are ready to be downloaded
@@ -12,10 +12,8 @@ import {FileStatus} from '../../../types/enums'
  */
 async function getFileIdsToBeDownloaded(): Promise<string[]> {
   logDebug('Querying for files ready to be downloaded')
-  const queryResponse = await Files.query
-    .byStatus({status: FileStatus.PendingDownload})
-    .where(({availableAt}, {lte}) => lte(availableAt, Date.now()))
-    .where(({url}, {notExists}) => notExists(url))
+  const pendingFilesQuery = Files.query.byStatus({status: FileStatus.PendingDownload})
+  const queryResponse = await pendingFilesQuery.where(({availableAt}, {lte}) => lte(availableAt, Date.now())).where(({url}, {notExists}) => notExists(url))
     .go()
   logDebug('getFilesToBeDownloaded =>', queryResponse)
   if (!queryResponse || !queryResponse.data) {

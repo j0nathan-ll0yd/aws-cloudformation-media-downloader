@@ -5,7 +5,7 @@
  * This file runs before all integration tests via setupFilesAfterEnv in jest.integration.config.mjs
  */
 
-import {jest, beforeAll} from '@jest/globals'
+import {beforeAll, jest} from '@jest/globals'
 
 /**
  * Ensure USE_LOCALSTACK is set

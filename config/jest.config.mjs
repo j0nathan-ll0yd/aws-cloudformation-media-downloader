@@ -78,7 +78,13 @@ const config = {
   // ],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
-  // moduleNameMapper: {},
+  moduleNameMapper: {
+    '^#entities/(.*)$': '<rootDir>/src/entities/$1',
+    '^#lib/(.*)$': '<rootDir>/src/lib/$1',
+    '^#util/(.*)$': '<rootDir>/src/util/$1',
+    '^#types/(.*)$': '<rootDir>/src/types/$1',
+    '^#test/(.*)$': '<rootDir>/test/$1'
+  },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
   // modulePathIgnorePatterns: [],
@@ -161,15 +167,8 @@ const config = {
   transform: {
     // '^.+\\.[tj]sx?$' to process js/ts with `ts-jest`
     // '^.+\\.m?[tj]sx?$' to process js/ts/mjs/mts with `ts-jest`
-    '^.+\\.[tj]sx?$': [
-      'ts-jest',
-      {
-        useESM: true,
-        tsconfig: '<rootDir>/tsconfig.test.json'
-      }
-    ]
+    '^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]
   }
-
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
   // transformIgnorePatterns: [
   //   "/node_modules/",

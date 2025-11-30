@@ -16,23 +16,13 @@ import {handleLambdaQuery} from './handlers/lambda.js'
 import {handleInfrastructureQuery} from './handlers/infrastructure.js'
 
 // Create server instance
-const server = new Server(
-  {
-    name: 'media-downloader-mcp',
-    version: '1.0.0'
-  },
-  {
-    capabilities: {
-      tools: {}
-    }
-  }
-)
+const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
 
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
-      {
+      { // fmt: multiline
         name: 'query_entities',
         description: 'Query ElectroDB entity schemas and relationships',
         inputSchema: {
@@ -43,11 +33,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Entity name (Users, Files, Devices, UserFiles, UserDevices)',
               enum: ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices']
             },
-            query: {
-              type: 'string',
-              description: 'Query type (schema, relationships, collections)',
-              enum: ['schema', 'relationships', 'collections']
-            }
+            query: {type: 'string', description: 'Query type (schema, relationships, collections)', enum: ['schema', 'relationships', 'collections']}
           },
           required: ['query']
         }
@@ -58,10 +44,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            lambda: {
-              type: 'string',
-              description: 'Lambda function name'
-            },
+            lambda: {type: 'string', description: 'Lambda function name'},
             query: {
               type: 'string',
               description: 'Query type (config, dependencies, triggers, env)',
@@ -77,16 +60,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            resource: {
-              type: 'string',
-              description: 'Resource type (s3, dynamodb, apigateway, sns)',
-              enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']
-            },
-            query: {
-              type: 'string',
-              description: 'Query type (config, usage, dependencies)',
-              enum: ['config', 'usage', 'dependencies']
-            }
+            resource: {type: 'string', description: 'Resource type (s3, dynamodb, apigateway, sns)', enum: ['s3', 'dynamodb', 'apigateway', 'sns', 'all']},
+            query: {type: 'string', description: 'Query type (config, usage, dependencies)', enum: ['config', 'usage', 'dependencies']}
           },
           required: ['resource', 'query']
         }
@@ -97,10 +72,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            file: {
-              type: 'string',
-              description: 'File path to analyze'
-            },
+            file: {type: 'string', description: 'File path to analyze'},
             query: {
               type: 'string',
               description: 'Query type (imports, dependents, transitive, circular)',
@@ -136,14 +108,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`)
     }
   } catch (error) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : String(error)}`
-        }
-      ]
-    }
+    return {content: [{type: 'text', text: `Error: ${error instanceof Error ? error.message : String(error)}`}]}
   }
 })
 
@@ -172,57 +137,22 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
   switch (query) {
     case 'imports': {
       if (!file) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'File path required for imports query'
-            }
-          ]
-        }
+        return {content: [{type: 'text', text: 'File path required for imports query'}]}
       }
       const imports = graphData.graph[file]?.imports || []
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({file, imports}, null, 2)
-          }
-        ]
-      }
+      return {content: [{type: 'text', text: JSON.stringify({file, imports}, null, 2)}]}
     }
 
     case 'transitive': {
       if (!file) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'File path required for transitive dependencies query'
-            }
-          ]
-        }
+        return {content: [{type: 'text', text: 'File path required for transitive dependencies query'}]}
       }
       const transitive = graphData.transitiveDependencies[file] || []
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({file, transitiveDependencies: transitive}, null, 2)
-          }
-        ]
-      }
+      return {content: [{type: 'text', text: JSON.stringify({file, transitiveDependencies: transitive}, null, 2)}]}
     }
 
     case 'circular':
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)
-          }
-        ]
-      }
+      return {content: [{type: 'text', text: JSON.stringify({circularDependencies: graphData.circularDependencies || []}, null, 2)}]}
 
     case 'dependents': {
       if (!file) {
@@ -236,14 +166,7 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
             dependents[importedFile].push(sourceFile)
           }
         }
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(dependents, null, 2)
-            }
-          ]
-        }
+        return {content: [{type: 'text', text: JSON.stringify(dependents, null, 2)}]}
       } else {
         // Find who imports this specific file
         const dependents: string[] = []
@@ -252,26 +175,12 @@ async function handleDependencyQuery(args: {file?: string; query: string}) {
             dependents.push(sourceFile)
           }
         }
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({file, dependents}, null, 2)
-            }
-          ]
-        }
+        return {content: [{type: 'text', text: JSON.stringify({file, dependents}, null, 2)}]}
       }
     }
 
     default:
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Unknown query type: ${query}`
-          }
-        ]
-      }
+      return {content: [{type: 'text', text: `Unknown query type: ${query}`}]}
   }
 }
 

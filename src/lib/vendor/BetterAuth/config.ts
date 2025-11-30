@@ -7,8 +7,8 @@
 
 import {betterAuth} from 'better-auth'
 import {createElectroDBAdapter} from './electrodb-adapter'
-import {logDebug} from '../../../util/lambda-helpers'
-import {getRequiredEnv} from '../../../util/env-validation'
+import {logDebug} from '#util/lambda-helpers'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Better Auth instance configured for MediaDownloader service.
@@ -87,9 +87,7 @@ function getAppleBundleIdFromConfig(): string {
  * Call this at the top of Lambda handlers to ensure Better Auth is ready.
  */
 export async function initializeBetterAuth() {
-  logDebug('Better Auth initialized', {
-    applicationUrl: getRequiredEnv('ApplicationUrl')
-  })
+  logDebug('Better Auth initialized', {applicationUrl: getRequiredEnv('ApplicationUrl')})
 }
 
 /**

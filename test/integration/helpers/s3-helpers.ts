@@ -4,7 +4,7 @@
  * Utilities for creating buckets and verifying S3 uploads in LocalStack
  */
 
-import {createBucket, deleteBucket, listObjectsV2, deleteObject as deleteS3Object, headObject, getObject} from '../lib/vendor/AWS/S3'
+import {createBucket, deleteBucket, deleteObject as deleteS3Object, getObject, headObject, listObjectsV2} from '../lib/vendor/AWS/S3'
 import {Readable} from 'stream'
 
 /**
@@ -59,10 +59,7 @@ export async function getObjectMetadata(bucketName: string, key: string): Promis
   try {
     const response = await headObject(bucketName, key)
 
-    return {
-      contentLength: response.ContentLength || 0,
-      contentType: response.ContentType || 'application/octet-stream'
-    }
+    return {contentLength: response.ContentLength || 0, contentType: response.ContentType || 'application/octet-stream'}
   } catch {
     return null
   }

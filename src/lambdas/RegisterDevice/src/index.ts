@@ -1,16 +1,24 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Devices} from '../../../entities/Devices'
-import {UserDevices} from '../../../entities/UserDevices'
-import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '../../../lib/vendor/AWS/SNS'
-import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '../../../types/main'
-import {UserStatus} from '../../../types/enums'
-import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {registerDeviceSchema} from '../../../util/constraints'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logOutgoingFixture, response, verifyPlatformConfiguration} from '../../../util/lambda-helpers'
-import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '../../../util/errors'
-import {getUserDevices, subscribeEndpointToTopic} from '../../../util/shared'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {getRequiredEnv} from '../../../util/env-validation'
+import {Devices} from '#entities/Devices'
+import {UserDevices} from '#entities/UserDevices'
+import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '#lib/vendor/AWS/SNS'
+import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '#types/main'
+import {UserStatus} from '#types/enums'
+import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
+import {registerDeviceSchema} from '#util/constraints'
+import {
+  getUserDetailsFromEvent,
+  lambdaErrorResponse,
+  logDebug,
+  logIncomingFixture,
+  logOutgoingFixture,
+  response,
+  verifyPlatformConfiguration
+} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '#util/errors'
+import {getUserDevices, subscribeEndpointToTopic} from '#util/shared'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -19,10 +27,7 @@ import {getRequiredEnv} from '../../../util/env-validation'
  */
 async function createPlatformEndpointFromToken(token: string) {
   // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
-  const params = {
-    PlatformApplicationArn: getRequiredEnv('PlatformApplicationArn'),
-    Token: token
-  }
+  const params = {PlatformApplicationArn: getRequiredEnv('PlatformApplicationArn'), Token: token}
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
   if (!createPlatformEndpointResponse) {
@@ -137,9 +142,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
         // Confirm the subscription, and unsubscribe
         const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
         await unsubscribeEndpointToTopic(subscriptionArn)
-        const createdResult = response(context, 201, {
-          endpointArn: platformEndpoint.EndpointArn
-        })
+        const createdResult = response(context, 201, {endpointArn: platformEndpoint.EndpointArn})
         logOutgoingFixture(createdResult)
         return createdResult
       }

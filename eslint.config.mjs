@@ -8,11 +8,7 @@ import {FlatCompat} from '@eslint/eslintrc'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all
-})
+const compat = new FlatCompat({baseDirectory: __dirname, recommendedConfig: js.configs.recommended, allConfig: js.configs.all})
 
 export default [
   {
@@ -36,33 +32,16 @@ export default [
       '.dependency-cruiser.cjs'
     ]
   },
-  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'),
+  ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
   {
-    plugins: {
-      '@typescript-eslint': typescriptEslint,
-      tsdoc
-    },
+    plugins: {'@typescript-eslint': typescriptEslint, tsdoc},
 
-    languageOptions: {
-      parser: tsParser
-    },
+    languageOptions: {parser: tsParser},
 
     rules: {
-      quotes: [
-        2,
-        'single',
-        {
-          avoidEscape: true
-        }
-      ],
+      quotes: [2, 'single', {avoidEscape: true}],
 
-      'max-len': [
-        'error',
-        {
-          code: 250,
-          ignoreUrls: true
-        }
-      ],
+      'max-len': ['error', {code: 250, ignoreUrls: true}],
 
       'new-parens': 2,
       'no-caller': 2,

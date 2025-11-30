@@ -18,7 +18,10 @@
     "build": "pnpm run generate-graph && node --disable-warning=DEP0180 --import tsx node_modules/webpack-cli/bin/cli.js --config ./config/webpack.config.ts",
     "build-dependencies": "./bin/build-dependencies.sh",
     "install-prod": "pnpm install --prod",
-    "format": "prettier --write 'src/**/*.{ts,js,json}' 'config/**/*.{ts,js,json}'",
+    "format": "dprint fmt",
+    "format:check": "dprint check",
+    "format:bash": "shfmt -i 2 -ci -sr -w bin/*.sh",
+    "format:bash:check": "shfmt -i 2 -ci -sr -d bin/*.sh",
     "lint": "eslint -c ./eslint.config.mjs .",
     "lint-fix": "eslint -c ./eslint.config.mjs . --fix",
     "deps:check": "dependency-cruiser src --config .dependency-cruiser.cjs",
@@ -74,6 +77,13 @@
     "ytdl-core": "^4.11.5"
   },
   "sideEffects": false,
+  "imports": {
+    "#entities/*": "./src/entities/*",
+    "#lib/*": "./src/lib/*",
+    "#util/*": "./src/util/*",
+    "#types/*": "./src/types/*",
+    "#test/*": "./test/*"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.17.0",
@@ -93,9 +103,8 @@
     "@typespec/openapi": "^1.5.0",
     "@typespec/openapi3": "^1.5.0",
     "dependency-cruiser": "^17.3.1",
+    "dprint": "^0.50.2",
     "eslint": "^9.17.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-tsdoc": "^0.4.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "glob": "^11.1.0",

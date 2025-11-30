@@ -1,4 +1,4 @@
-import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for the UserDevices relationship.
@@ -11,62 +11,15 @@ import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
  */
 export const UserDevices = new Entity(
   {
-    model: {
-      entity: 'UserDevice',
-      version: '1',
-      service: 'MediaDownloader'
-    },
-    attributes: {
-      userId: {
-        type: 'string',
-        required: true,
-        readOnly: true
-      },
-      deviceId: {
-        type: 'string',
-        required: true,
-        readOnly: true
-      }
-    },
+    model: {entity: 'UserDevice', version: '1', service: 'MediaDownloader'},
+    attributes: {userId: {type: 'string', required: true, readOnly: true}, deviceId: {type: 'string', required: true, readOnly: true}},
     indexes: {
-      primary: {
-        pk: {
-          field: 'pk',
-          composite: ['userId', 'deviceId']
-        },
-        sk: {
-          field: 'sk',
-          composite: []
-        }
-      },
-      byUser: {
-        index: 'UserCollection',
-        pk: {
-          field: 'gsi1pk',
-          composite: ['userId']
-        },
-        sk: {
-          field: 'gsi1sk',
-          composite: ['deviceId']
-        }
-      },
-      byDevice: {
-        index: 'DeviceCollection',
-        pk: {
-          field: 'gsi3pk',
-          composite: ['deviceId']
-        },
-        sk: {
-          field: 'gsi3sk',
-          composite: ['userId']
-        }
-      }
+      primary: {pk: {field: 'pk', composite: ['userId', 'deviceId']}, sk: {field: 'sk', composite: []}},
+      byUser: {index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['deviceId']}},
+      byDevice: {index: 'DeviceCollection', pk: {field: 'gsi3pk', composite: ['deviceId']}, sk: {field: 'gsi3sk', composite: ['userId']}}
     }
   } as const,
-  {
-    table: process.env.DynamoDBTableName,
-    client: documentClient
-  }
+  {table: process.env.DynamoDBTableName, client: documentClient}
 )
 
 // Type exports for use in application code

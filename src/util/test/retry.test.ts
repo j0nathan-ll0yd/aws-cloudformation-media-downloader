@@ -1,12 +1,8 @@
-import {describe, it, expect, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {retryUnprocessed, retryUnprocessedDelete} from '../retry'
 
-// Mock lambda-helpers before importing retry
-jest.unstable_mockModule('../lambda-helpers', () => ({
-  logDebug: jest.fn(),
-  logError: jest.fn()
-}))
-
-const {retryUnprocessed, retryUnprocessedDelete} = await import('../retry')
+type RetryOpFn = () => Promise<{data: string[]; unprocessed: unknown[]}>
+type DeleteOpFn = () => Promise<{unprocessed: unknown[]}>
 
 describe('retryUnprocessed', () => {
   beforeEach(() => {
@@ -14,10 +10,8 @@ describe('retryUnprocessed', () => {
   })
 
   it('should return data without retrying when no unprocessed items', async () => {
-    const mockOperation = jest.fn<() => Promise<{data: string[]; unprocessed: unknown[]}>>().mockResolvedValue({
-      data: ['item1', 'item2'],
-      unprocessed: []
-    })
+    const mockOperation = jest.fn<RetryOpFn>()
+    mockOperation.mockResolvedValue({data: ['item1', 'item2'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation)
 
@@ -27,10 +21,9 @@ describe('retryUnprocessed', () => {
   })
 
   it('should retry when there are unprocessed items', async () => {
-    const mockOperation = jest
-      .fn<() => Promise<{data: string[]; unprocessed: unknown[]}>>()
-      .mockResolvedValueOnce({data: ['item1'], unprocessed: [{key: 'failed1'}]})
-      .mockResolvedValueOnce({data: ['item2'], unprocessed: []})
+    const mockOperation = jest.fn<RetryOpFn>()
+    mockOperation.mockResolvedValueOnce({data: ['item1'], unprocessed: [{key: 'failed1'}]})
+    mockOperation.mockResolvedValueOnce({data: ['item2'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation, {initialDelayMs: 1})
 
@@ -40,10 +33,8 @@ describe('retryUnprocessed', () => {
   })
 
   it('should stop retrying after maxRetries', async () => {
-    const mockOperation = jest.fn<() => Promise<{data: string[]; unprocessed: unknown[]}>>().mockResolvedValue({
-      data: ['item1'],
-      unprocessed: [{key: 'always-fails'}]
-    })
+    const mockOperation = jest.fn<RetryOpFn>()
+    mockOperation.mockResolvedValue({data: ['item1'], unprocessed: [{key: 'always-fails'}]})
 
     const result = await retryUnprocessed(mockOperation, {maxRetries: 2, initialDelayMs: 1})
 
@@ -52,11 +43,10 @@ describe('retryUnprocessed', () => {
   })
 
   it('should accumulate data across retries', async () => {
-    const mockOperation = jest
-      .fn<() => Promise<{data: string[]; unprocessed: unknown[]}>>()
-      .mockResolvedValueOnce({data: ['a'], unprocessed: [{key: '1'}]})
-      .mockResolvedValueOnce({data: ['b'], unprocessed: [{key: '2'}]})
-      .mockResolvedValueOnce({data: ['c'], unprocessed: []})
+    const mockOperation = jest.fn<RetryOpFn>()
+    mockOperation.mockResolvedValueOnce({data: ['a'], unprocessed: [{key: '1'}]})
+    mockOperation.mockResolvedValueOnce({data: ['b'], unprocessed: [{key: '2'}]})
+    mockOperation.mockResolvedValueOnce({data: ['c'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation, {initialDelayMs: 1})
 
@@ -70,9 +60,8 @@ describe('retryUnprocessedDelete', () => {
   })
 
   it('should return without retrying when no unprocessed items', async () => {
-    const mockOperation = jest.fn<() => Promise<{unprocessed: unknown[]}>>().mockResolvedValue({
-      unprocessed: []
-    })
+    const mockOperation = jest.fn<DeleteOpFn>()
+    mockOperation.mockResolvedValue({unprocessed: []})
 
     const result = await retryUnprocessedDelete(mockOperation)
 
@@ -81,10 +70,9 @@ describe('retryUnprocessedDelete', () => {
   })
 
   it('should retry delete operations with unprocessed items', async () => {
-    const mockOperation = jest
-      .fn<() => Promise<{unprocessed: unknown[]}>>()
-      .mockResolvedValueOnce({unprocessed: [{key: 'failed'}]})
-      .mockResolvedValueOnce({unprocessed: []})
+    const mockOperation = jest.fn<DeleteOpFn>()
+    mockOperation.mockResolvedValueOnce({unprocessed: [{key: 'failed'}]})
+    mockOperation.mockResolvedValueOnce({unprocessed: []})
 
     const result = await retryUnprocessedDelete(mockOperation, {initialDelayMs: 1})
 

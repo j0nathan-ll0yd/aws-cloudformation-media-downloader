@@ -6,9 +6,9 @@
  *
  * Follows the same pattern as AWS SDK encapsulation in lib/vendor/AWS/*.
  */
-import {Service, Entity} from 'electrodb'
+import {Entity, Service} from 'electrodb'
 import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
-import {documentClient} from '../AWS/DynamoDB'
+import {documentClient} from '#lib/vendor/AWS/DynamoDB'
 
 /**
  * Entity map type constraint for createService.
@@ -22,7 +22,7 @@ type EntityMapConstraint = Record<string, Entity<any, any, any, any>>
  * Re-export documentClient for service configuration.
  * Services need this to configure their DynamoDB client.
  */
-export {documentClient}
+export { documentClient }
 
 /**
  * Creates an ElectroDB Service with the provided entities and configuration.
@@ -49,4 +49,4 @@ export function createService<E extends EntityMapConstraint>(entities: E, config
  * Re-export Service type for type annotations (not for instantiation).
  * Use createService() to create instances.
  */
-export type {Service}
+export type { Service }

@@ -1,16 +1,14 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
-import {createBetterAuthMock} from '../../../../test/helpers/better-auth-mock'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {testContext} from '#util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({
-  auth: authMock.auth
-}))
+jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
 
 const {handler} = await import('./../src')
 
@@ -37,10 +35,7 @@ describe('#LoginUser', () => {
         name: 'Test User',
         createdAt: new Date(Date.now() - 86400000).toISOString() // Created yesterday
       },
-      session: {
-        id: sessionId,
-        expiresAt
-      },
+      session: {id: sessionId, expiresAt},
       token
     })
 
@@ -55,23 +50,13 @@ describe('#LoginUser', () => {
 
     // Verify Better Auth API was called with correct parameters (using idToken only)
     expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          provider: 'apple',
-          idToken: expect.objectContaining({
-            token: expect.any(String)
-          })
-        })
-      })
+      expect.objectContaining({body: expect.objectContaining({provider: 'apple', idToken: expect.objectContaining({token: expect.any(String)})})})
     )
   })
 
   test('should handle Better Auth error when user not found', async () => {
     // Mock Better Auth throwing an error for non-existent user
-    authMock.mocks.signInSocial.mockRejectedValue({
-      status: 404,
-      message: 'User not found'
-    })
+    authMock.mocks.signInSocial.mockRejectedValue({status: 404, message: 'User not found'})
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
@@ -82,10 +67,7 @@ describe('#LoginUser', () => {
 
   test('should handle Better Auth error for invalid token', async () => {
     // Mock Better Auth throwing an error for invalid ID token
-    authMock.mocks.signInSocial.mockRejectedValue({
-      status: 401,
-      message: 'Invalid ID token'
-    })
+    authMock.mocks.signInSocial.mockRejectedValue({status: 401, message: 'Invalid ID token'})
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)

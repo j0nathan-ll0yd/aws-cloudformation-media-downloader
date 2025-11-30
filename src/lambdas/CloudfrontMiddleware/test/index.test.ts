@@ -1,6 +1,6 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {CloudFrontRequestEvent} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import * as crypto from 'crypto'
 
 const {default: eventMock} = await import('./fixtures/CloudFrontRequestEvent.json', {assert: {type: 'json'}})

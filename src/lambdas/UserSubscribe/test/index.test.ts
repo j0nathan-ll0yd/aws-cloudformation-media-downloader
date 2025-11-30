@@ -1,10 +1,10 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
-import {testContext} from '../../../util/jest-setup'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {testContext} from '#util/jest-setup'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
 
 const subscribeMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn(),
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn(), // fmt: multiline
   subscribe: subscribeMock
 }))
 

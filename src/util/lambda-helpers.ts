@@ -1,19 +1,21 @@
 import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {putMetricData, getStandardUnit} from '../lib/vendor/AWS/CloudWatch'
+import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '../types/main'
-import {UserStatus} from '../types/enums'
+import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'
+import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
+import {logDebug, logError, logInfo} from './logging'
+
+// Re-export logging functions for backwards compatibility
+export { logDebug, logError, logInfo }
 
 export function unknownErrorToString(unknownVariable: unknown): string {
   if (typeof unknownVariable === 'string') {
     return unknownVariable
   } else if (Array.isArray(unknownVariable)) {
-    return unknownVariable
-      .map(function (s) {
-        return unknownErrorToString(s)
-      })
-      .join(', ')
+    return unknownVariable.map(function(s) {
+      return unknownErrorToString(s)
+    }).join(', ')
   } else if (typeof unknownVariable === 'object') {
     return JSON.stringify(unknownVariable)
   } else {
@@ -36,34 +38,16 @@ export function response(context: Context, statusCode: number, body?: string | o
     error = true
   }
   if (error) {
-    const rawBody = {
-      error: {code, message: body},
-      requestId: context.awsRequestId
-    }
+    const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
-    return {
-      body: JSON.stringify(rawBody),
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else if (body) {
-    const rawBody = {
-      body,
-      requestId: context.awsRequestId
-    }
+    const rawBody = {body, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
-    return {
-      body: JSON.stringify(rawBody),
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else {
     logDebug('response ==', '')
-    return {
-      body: '',
-      headers,
-      statusCode
-    } as APIGatewayProxyResult
+    return {body: '', headers, statusCode} as APIGatewayProxyResult
   }
 }
 
@@ -87,25 +71,6 @@ export function lambdaErrorResponse(context: Context, error: unknown): APIGatewa
   } else {
     return response(context, defaultStatusCode, unknownErrorToString(error))
   }
-}
-
-function stringify(stringOrObject: object | string | unknown) {
-  if (typeof stringOrObject === 'object') {
-    stringOrObject = JSON.stringify(stringOrObject, null, 2)
-  }
-  return stringOrObject
-}
-
-export function logInfo(message: string, stringOrObject?: string | object): void {
-  console.info(message, stringOrObject ? stringify(stringOrObject) : '')
-}
-
-export function logDebug(message: string, stringOrObject?: string | object): void {
-  console.debug(message, stringOrObject ? stringify(stringOrObject) : '')
-}
-
-export function logError(message: string, stringOrObject?: string | object | unknown): void {
-  console.error(message, stringOrObject ? stringify(stringOrObject) : '')
 }
 
 export function generateUnauthorizedError() {
@@ -147,15 +112,7 @@ export async function putMetric(metricName: string, value: number, unit?: string
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
-      MetricData: [
-        {
-          MetricName: metricName,
-          Value: value,
-          Unit: getStandardUnit(unit),
-          Timestamp: new Date(),
-          Dimensions: dimensions
-        }
-      ]
+      MetricData: [{MetricName: metricName, Value: value, Unit: getStandardUnit(unit), Timestamp: new Date(), Dimensions: dimensions}]
     })
     logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
   } catch (error) {
@@ -164,18 +121,13 @@ export async function putMetric(metricName: string, value: number, unit?: string
   }
 }
 
+type MetricInput = {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}
+
 /**
  * Publish multiple metrics in a single API call for efficiency
  * @param metrics - Array of metrics to publish
  */
-export async function putMetrics(
-  metrics: Array<{
-    name: string
-    value: number
-    unit?: string
-    dimensions?: {Name: string; Value: string}[]
-  }>
-): Promise<void> {
+export async function putMetrics(metrics: MetricInput[]): Promise<void> {
   try {
     await putMetricData({
       Namespace: 'MediaDownloader',
@@ -211,49 +163,28 @@ function sanitizeForTest(data: unknown): unknown {
 
   const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
-  // Remove sensitive fields - expanded list for comprehensive PII protection
-  const sensitiveFields = [
-    // Auth headers
-    'Authorization',
-    'authorization',
-    // Tokens
-    'token',
-    'Token',
-    'deviceToken',
-    'DeviceToken',
-    'refreshToken',
-    'RefreshToken',
-    'accessToken',
-    'AccessToken',
-    // Passwords
-    'password',
-    'Password',
-    // API keys
-    'apiKey',
-    'ApiKey',
-    // Secrets
-    'secret',
-    'Secret',
-    'privateKey',
-    'PrivateKey',
-    // Identity
-    'appleDeviceIdentifier',
-    'email',
-    'Email',
-    'phoneNumber',
-    'PhoneNumber',
-    'phone',
-    // Security
-    'certificate',
-    'Certificate',
-    'ssn',
-    'SSN',
-    'creditCard',
-    'CreditCard'
+  // Remove sensitive fields - case-insensitive patterns for comprehensive PII protection
+  const sensitivePatterns = [
+    /^authorization$/i, // fmt: multiline
+    /^token$/i,
+    /^deviceToken$/i,
+    /^refreshToken$/i,
+    /^accessToken$/i,
+    /^password$/i,
+    /^apiKey$/i,
+    /^secret$/i,
+    /^privateKey$/i,
+    /^appleDeviceIdentifier$/i,
+    /^email$/i,
+    /^phoneNumber$/i,
+    /^phone$/i,
+    /^certificate$/i,
+    /^ssn$/i,
+    /^creditCard$/i
   ]
 
   for (const key in sanitized) {
-    if (sensitiveFields.includes(key)) {
+    if (sensitivePatterns.some((pattern) => pattern.test(key))) {
       sanitized[key] = '[REDACTED]'
     } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
       sanitized[key] = sanitizeForTest(sanitized[key])
@@ -277,14 +208,7 @@ function sanitizeForTest(data: unknown): unknown {
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-  console.log(
-    JSON.stringify({
-      __FIXTURE_MARKER__: 'INCOMING',
-      fixtureType: detectedType,
-      timestamp: Date.now(),
-      data: sanitizeForTest(event)
-    })
-  )
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)}))
 }
 
 /**
@@ -301,12 +225,5 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
  */
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
   const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
-  console.log(
-    JSON.stringify({
-      __FIXTURE_MARKER__: 'OUTGOING',
-      fixtureType: detectedType,
-      timestamp: Date.now(),
-      data: sanitizeForTest(response)
-    })
-  )
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)}))
 }

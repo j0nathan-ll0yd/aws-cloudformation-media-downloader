@@ -4,7 +4,7 @@
  * These types are extracted from Better Auth's API for use in tests and type-safe code.
  */
 
-import type {auth} from '../lib/vendor/BetterAuth/config'
+import type {auth} from '#lib/vendor/BetterAuth/config'
 
 /**
  * Parameters for Better Auth's signInSocial API method.
@@ -17,16 +17,7 @@ export type SignInSocialParams = Parameters<typeof auth.api.signInSocial>[0]
  * Used for mocking in tests.
  */
 export interface SignInSocialResult {
-  user: {
-    id: string
-    email: string
-    name?: string
-    createdAt: string | Date
-    emailVerified?: boolean
-  }
-  session: {
-    id: string
-    expiresAt: number | Date
-  }
+  user: {id: string; email: string; name?: string; createdAt: string | Date; emailVerified?: boolean}
+  session: {id: string; expiresAt: number | Date}
   token: string
 }

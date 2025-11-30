@@ -1,16 +1,11 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {SQSEvent} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-const getUserDevicesByUserIdResponse = [
-  {
-    deviceId: fakeDeviceId,
-    userId: fakeUserId
-  }
-]
+const getUserDevicesByUserIdResponse = [{deviceId: fakeDeviceId, userId: fakeUserId}]
 
 const getDeviceResponse = {
   deviceId: fakeDeviceId,
@@ -20,19 +15,13 @@ const getDeviceResponse = {
 }
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({
-  UserDevices: userDevicesMock.entity
-}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({
-  Devices: devicesMock.entity
-}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const publishSnsEventMock = jest.fn<() => unknown>()
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({
-  publishSnsEvent: publishSnsEventMock
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

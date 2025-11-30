@@ -1,17 +1,17 @@
 import {ScheduledEvent} from 'aws-lambda'
-import {Devices} from '../../../entities/Devices'
-import {UserDevices} from '../../../entities/UserDevices'
-import {logDebug, logError, logInfo} from '../../../util/lambda-helpers'
-import {UnexpectedError} from '../../../util/errors'
-import {ApplePushNotificationResponse, Device} from '../../../types/main'
-import {deleteDevice} from '../../../util/shared'
-import {assertIsError} from '../../../util/transformers'
-import {ApnsClient, Notification, PushType, Priority} from 'apns2'
-import {Apns2Error} from '../../../util/errors'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
-import {scanAllPages} from '../../../util/pagination'
-import {retryUnprocessedDelete} from '../../../util/retry'
-import {getRequiredEnv} from '../../../util/env-validation'
+import {Devices} from '#entities/Devices'
+import {UserDevices} from '#entities/UserDevices'
+import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {UnexpectedError} from '#util/errors'
+import {ApplePushNotificationResponse, Device} from '#types/main'
+import {deleteDevice} from '#util/shared'
+import {assertIsError} from '#util/transformers'
+import {ApnsClient, Notification, Priority, PushType} from 'apns2'
+import {Apns2Error} from '#util/errors'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {scanAllPages} from '#util/pagination'
+import {retryUnprocessedDelete} from '#util/retry'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Result of the PruneDevices operation
@@ -33,10 +33,7 @@ async function getDevices(): Promise<Device[]> {
     if (!scanResponse) {
       throw new UnexpectedError('Device scan failed')
     }
-    return {
-      data: (scanResponse.data || []) as Device[],
-      cursor: scanResponse.cursor ?? null
-    }
+    return {data: (scanResponse.data || []) as Device[], cursor: scanResponse.cursor ?? null}
   })
   logDebug('getDevices =>', {count: devices.length})
   return devices
@@ -60,9 +57,7 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
     contentAvailable: true,
     type: PushType.background,
     priority: Priority.throttled,
-    aps: {
-      health: 'check'
-    }
+    aps: {health: 'check'}
   })
   try {
     logDebug('apnProvider.send <=', healthCheckNotification)
@@ -103,11 +98,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  */
 export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevicesResult> => {
   logInfo('event <=', event)
-  const result: PruneDevicesResult = {
-    devicesChecked: 0,
-    devicesPruned: 0,
-    errors: []
-  }
+  const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()
   result.devicesChecked = devices.length
@@ -119,16 +110,15 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const deleteUserDevicesPromise =
-          userIds.length > 0
-            ? (async () => {
-                const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-                const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
-                if (unprocessed.length > 0) {
-                  logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
-                }
-              })()
-            : Promise.resolve()
+        const deleteUserDevicesPromise = userIds.length > 0
+          ? (async () => {
+            const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+            const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
+            if (unprocessed.length > 0) {
+              logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
+            }
+          })()
+          : Promise.resolve()
         const results = await Promise.allSettled([deleteDevice(device), deleteUserDevicesPromise])
         logDebug('Promise.allSettled', results)
         const failures = results.filter((r) => r.status === 'rejected')

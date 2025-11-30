@@ -36,7 +36,9 @@
     "content-type": ["application/json"],
     "Host": ["lhpq0s2uk8.execute-api.us-west-2.amazonaws.com"],
     "User-Agent": ["OfflineMediaDownloader/1 CFNetwork/1220.1 Darwin/20.3.0"],
-    "Via": ["1.1 84e8aff8b00cd45c8ca895a7ab72ca10.cloudfront.net (CloudFront), 1.1 8acea2e792e5adae36bc6e11fb7a3b02.cloudfront.net (CloudFront)"],
+    "Via": [
+      "1.1 84e8aff8b00cd45c8ca895a7ab72ca10.cloudfront.net (CloudFront), 1.1 8acea2e792e5adae36bc6e11fb7a3b02.cloudfront.net (CloudFront)"
+    ],
     "X-Amz-Cf-Id": ["8AtzuE_7ZK4LY9svFe4uQVehzzM2DkJMMZ4dUAtodfi9WZsYy4h21A=="],
     "X-Amzn-Trace-Id": ["Root=1-605198fb-7f71d24042a106007094bfc2"],
     "X-API-Key": ["pgIoKaRmCd4fk7BLY6AFG1GeQIjN7JB0ajNLSKxy"],

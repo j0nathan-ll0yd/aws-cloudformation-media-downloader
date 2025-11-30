@@ -13,13 +13,13 @@
  */
 import {Entity} from 'electrodb'
 import type {EntityItem} from 'electrodb'
-import {documentClient} from '../AWS/DynamoDB'
+import {documentClient} from '#lib/vendor/AWS/DynamoDB'
 
 /**
  * Re-export documentClient for entity configuration.
  * Entities need this to configure their DynamoDB client.
  */
-export {documentClient}
+export { documentClient }
 
 /**
  * Re-export Entity class for creating entity instances.
@@ -29,5 +29,5 @@ export {documentClient}
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Testing-Patterns#entity-reference | ElectroDB Entity Usage}
  */
-export {Entity}
-export type {EntityItem}
+export { Entity }
+export type { EntityItem }

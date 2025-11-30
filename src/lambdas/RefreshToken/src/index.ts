@@ -9,9 +9,9 @@
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {logDebug, logError, logInfo, logIncomingFixture, logOutgoingFixture, lambdaErrorResponse, response} from '../../../util/lambda-helpers'
-import {validateSessionToken, refreshSession} from '../../../util/better-auth-helpers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {lambdaErrorResponse, logDebug, logError, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Lambda handler for refreshing session tokens.
@@ -63,10 +63,7 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
       userId: sessionPayload.userId
     }
 
-    logInfo('RefreshToken: session refreshed successfully', {
-      sessionId: sessionPayload.sessionId,
-      expiresAt
-    })
+    logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
     const successResult = response(context, 200, responseData)
     logOutgoingFixture(successResult)

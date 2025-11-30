@@ -5,9 +5,9 @@
  * Verifies correct mapping between Better Auth interface and ElectroDB entities.
  */
 
-import {describe, it, expect, jest, beforeEach} from '@jest/globals'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
-import {createMockUser, createMockSession, createMockAccount} from '../../../../test/helpers/better-auth-test-data'
+import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createMockAccount, createMockSession, createMockUser} from '#test/helpers/better-auth-test-data'
 import type {ExtendedAccount} from './electrodb-adapter'
 
 // Create entity mocks
@@ -17,12 +17,10 @@ const accountsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const verificationTokensMock = createElectroDBEntityMock()
 
 // Mock ElectroDB entities
-jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
-jest.unstable_mockModule('../../../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
-jest.unstable_mockModule('../../../entities/Accounts', () => ({Accounts: accountsMock.entity}))
-jest.unstable_mockModule('../../../entities/VerificationTokens', () => ({
-  VerificationTokens: verificationTokensMock.entity
-}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
+jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+jest.unstable_mockModule('#entities/Accounts', () => ({Accounts: accountsMock.entity}))
+jest.unstable_mockModule('#entities/VerificationTokens', () => ({VerificationTokens: verificationTokensMock.entity}))
 
 // Import adapter after mocking
 const {createElectroDBAdapter} = await import('./electrodb-adapter')
@@ -62,12 +60,7 @@ describe('ElectroDB Adapter', () => {
 
       usersMock.mocks.create.mockResolvedValue({data: mockUser})
 
-      const result = await adapter.createUser({
-        id: 'user-123',
-        email: 'test@example.com',
-        emailVerified: false,
-        name: 'John Doe'
-      })
+      const result = await adapter.createUser({id: 'user-123', email: 'test@example.com', emailVerified: false, name: 'John Doe'})
 
       expect(result).toEqual({
         id: 'user-123',
@@ -97,11 +90,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get a user by ID', async () => {
-      const mockUser = createMockUser({
-        emailVerified: true,
-        firstName: 'Jane',
-        lastName: 'Smith'
-      })
+      const mockUser = createMockUser({emailVerified: true, firstName: 'Jane', lastName: 'Smith'})
 
       usersMock.mocks.get.mockResolvedValue({data: mockUser})
 
@@ -127,10 +116,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get user by email', async () => {
-      const mockUser = createMockUser({
-        emailVerified: true,
-        lastName: ''
-      })
+      const mockUser = createMockUser({emailVerified: true, lastName: ''})
 
       // Mock query.byEmail operation for efficient email lookup
       usersMock.mocks.query.byEmail!.go.mockResolvedValue({data: [mockUser]})
@@ -148,18 +134,12 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should update a user', async () => {
-      const mockUpdatedUser = createMockUser({
-        email: 'newemail@example.com',
-        emailVerified: true
-      })
+      const mockUpdatedUser = createMockUser({email: 'newemail@example.com', emailVerified: true})
 
       usersMock.mocks.update.set.mockReturnThis()
       usersMock.mocks.update.go.mockResolvedValue({data: mockUpdatedUser})
 
-      const result = await adapter.updateUser('user-123', {
-        email: 'newemail@example.com',
-        emailVerified: true
-      })
+      const result = await adapter.updateUser('user-123', {email: 'newemail@example.com', emailVerified: true})
 
       expect(result).toEqual({
         id: 'user-123',
@@ -209,11 +189,7 @@ describe('ElectroDB Adapter', () => {
     })
 
     it('should get a session by ID', async () => {
-      const mockSession = createMockSession({
-        ipAddress: undefined,
-        userAgent: undefined,
-        deviceId: undefined
-      })
+      const mockSession = createMockSession({ipAddress: undefined, userAgent: undefined, deviceId: undefined})
 
       sessionsMock.mocks.get.mockResolvedValue({data: mockSession})
 
@@ -233,16 +209,12 @@ describe('ElectroDB Adapter', () => {
 
     it('should update a session', async () => {
       const newExpiresAt = Date.now() + 60 * 24 * 60 * 60 * 1000
-      const mockUpdatedSession = createMockSession({
-        expiresAt: newExpiresAt
-      })
+      const mockUpdatedSession = createMockSession({expiresAt: newExpiresAt})
 
       sessionsMock.mocks.update.set.mockReturnThis()
       sessionsMock.mocks.update.go.mockResolvedValue({data: mockUpdatedSession})
 
-      const result = await adapter.updateSession('session-123', {
-        expiresAt: new Date(newExpiresAt)
-      })
+      const result = await adapter.updateSession('session-123', {expiresAt: new Date(newExpiresAt)})
 
       expect(result.expiresAt.getTime()).toBeCloseTo(newExpiresAt, -3)
     })
@@ -333,38 +305,22 @@ describe('ElectroDB Adapter', () => {
   describe('Verification Token Operations', () => {
     it('should create a verification token', async () => {
       verificationTokensMock.mocks.create.mockResolvedValue({
-        data: {
-          identifier: 'test@example.com',
-          token: 'verify-token-123',
-          expiresAt: Date.now() + 86400000
-        }
+        data: {identifier: 'test@example.com', token: 'verify-token-123', expiresAt: Date.now() + 86400000}
       })
 
-      await adapter.createVerificationToken({
-        identifier: 'test@example.com',
-        token: 'verify-token-123',
-        expiresAt: new Date(Date.now() + 86400000)
-      })
+      await adapter.createVerificationToken({identifier: 'test@example.com', token: 'verify-token-123', expiresAt: new Date(Date.now() + 86400000)})
 
       expect(VerificationTokens.create).toHaveBeenCalled()
     })
 
     it('should get a verification token', async () => {
-      const mockToken = {
-        identifier: 'test@example.com',
-        token: 'verify-token-123',
-        expiresAt: Date.now() + 86400000
-      }
+      const mockToken = {identifier: 'test@example.com', token: 'verify-token-123', expiresAt: Date.now() + 86400000}
 
       verificationTokensMock.mocks.get.mockResolvedValue({data: mockToken})
 
       const result = await adapter.getVerificationToken('verify-token-123')
 
-      expect(result).toEqual({
-        identifier: 'test@example.com',
-        token: 'verify-token-123',
-        expiresAt: expect.any(Date)
-      })
+      expect(result).toEqual({identifier: 'test@example.com', token: 'verify-token-123', expiresAt: expect.any(Date)})
     })
 
     it('should delete a verification token', async () => {

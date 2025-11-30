@@ -1,4 +1,4 @@
-import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
+import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
  * ElectroDB entity schema for Better Auth verification tokens.
@@ -15,65 +15,24 @@ import {Entity, documentClient} from '../lib/vendor/ElectroDB/entity'
  */
 export const VerificationTokens = new Entity(
   {
-    model: {
-      entity: 'VerificationToken',
-      version: '1',
-      service: 'MediaDownloader'
-    },
+    model: {entity: 'VerificationToken', version: '1', service: 'MediaDownloader'},
     attributes: {
-      identifier: {
-        type: 'string',
-        required: true
-      },
-      token: {
-        type: 'string',
-        required: true,
-        readOnly: true
-      },
-      expiresAt: {
-        type: 'number',
-        required: true
-      },
+      identifier: {type: 'string', required: true},
+      token: {type: 'string', required: true, readOnly: true},
+      expiresAt: {type: 'number', required: true},
       ttl: {
         type: 'number',
         required: true,
         default: () => Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
       },
-      createdAt: {
-        type: 'number',
-        required: true,
-        default: () => Date.now(),
-        readOnly: true
-      }
+      createdAt: {type: 'number', required: true, default: () => Date.now(), readOnly: true}
     },
     indexes: {
-      primary: {
-        pk: {
-          field: 'pk',
-          composite: ['token']
-        },
-        sk: {
-          field: 'sk',
-          composite: []
-        }
-      },
-      byIdentifier: {
-        index: 'gsi1',
-        pk: {
-          field: 'gsi1pk',
-          composite: ['identifier']
-        },
-        sk: {
-          field: 'gsi1sk',
-          composite: ['expiresAt']
-        }
-      }
+      primary: {pk: {field: 'pk', composite: ['token']}, sk: {field: 'sk', composite: []}},
+      byIdentifier: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['identifier']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}}
     }
   } as const,
-  {
-    table: process.env.DynamoDBTableName,
-    client: documentClient
-  }
+  {table: process.env.DynamoDBTableName, client: documentClient}
 )
 
 // Type exports for use in application code

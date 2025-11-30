@@ -4,7 +4,7 @@
  * This enables extraction of Better Auth fixtures from CloudWatch logs
  */
 
-import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
+import {logIncomingFixture, logOutgoingFixture} from '#util/lambda-helpers'
 
 /**
  * Better Auth hook context type
@@ -18,11 +18,7 @@ interface BetterAuthHookContext {
   body?: unknown
   query?: Record<string, string>
   requestId?: string
-  response?: {
-    status?: number
-    headers?: Record<string, string>
-    body?: unknown
-  }
+  response?: {status?: number; headers?: Record<string, string>; body?: unknown}
 }
 
 /**
@@ -34,10 +30,7 @@ function getFixtureName(path: string): string {
   const cleanPath = path.replace(/^\/?(auth\/)?/, '')
 
   // Convert kebab-case to PascalCase
-  return cleanPath
-    .split(/[-/]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')
+  return cleanPath.split(/[-/]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('')
 }
 
 /**
@@ -56,11 +49,7 @@ export const logIncomingRequestHook = {
       headers: ctx.headers || {},
       body: ctx.body ? JSON.stringify(ctx.body) : null,
       queryStringParameters: ctx.query || null,
-      requestContext: {
-        requestId: ctx.requestId || crypto.randomUUID(),
-        accountId: process.env.AWS_ACCOUNT_ID,
-        stage: process.env.STAGE || 'prod'
-      }
+      requestContext: {requestId: ctx.requestId || crypto.randomUUID(), accountId: process.env.AWS_ACCOUNT_ID, stage: process.env.STAGE || 'prod'}
     }
 
     // Log using the standard fixture logging function
@@ -96,7 +85,4 @@ export const logOutgoingResponseHook = {
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Better Auth Fixture Integration}
  */
-export const fixtureLoggingHooks = {
-  before: [logIncomingRequestHook],
-  after: [logOutgoingResponseHook]
-}
+export const fixtureLoggingHooks = {before: [logIncomingRequestHook], after: [logOutgoingResponseHook]}

@@ -1,14 +1,14 @@
 // These are methods that are shared across multiple lambdas
-import {Devices} from '../entities/Devices'
-import {UserDevices} from '../entities/UserDevices'
-import {Files} from '../entities/Files'
-import {Users} from '../entities/Users'
-import type {EntityItem} from '../lib/vendor/ElectroDB/entity'
+import {Devices} from '#entities/Devices'
+import {UserDevices} from '#entities/UserDevices'
+import {Files} from '#entities/Files'
+import {Users} from '#entities/Users'
+import type {EntityItem} from '#lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
-import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '../types/main'
-import {deleteEndpoint, subscribe} from '../lib/vendor/AWS/SNS'
+import {Device, DynamoDBFile, DynamoDBUserDevice, User} from '#types/main'
+import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
 import axios, {AxiosRequestConfig} from 'axios'
-import {invokeAsync} from '../lib/vendor/AWS/Lambda'
+import {invokeAsync} from '#lib/vendor/AWS/Lambda'
 import {scanAllPages} from './pagination'
 
 /**
@@ -65,11 +65,7 @@ export async function getUserDevices(userId: string): Promise<DynamoDBUserDevice
  * @see {@link lambdas/UserSubscribe/src!#handler | UserSubscribe }
  */
 export async function subscribeEndpointToTopic(endpointArn: string, topicArn: string) {
-  const subscribeParams = {
-    Endpoint: endpointArn,
-    Protocol: 'application',
-    TopicArn: topicArn
-  }
+  const subscribeParams = {Endpoint: endpointArn, Protocol: 'application', TopicArn: topicArn}
   logDebug('subscribe <=', subscribeParams)
   const subscribeResponse = await subscribe(subscribeParams)
   logDebug('subscribe =>', subscribeResponse)
@@ -100,10 +96,7 @@ export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Pro
   type UserEntity = EntityItem<typeof Users>
   const allUsers = await scanAllPages<UserEntity>(async (cursor) => {
     const scanResponse = await Users.scan.go({cursor})
-    return {
-      data: scanResponse.data || [],
-      cursor: scanResponse.cursor ?? null
-    }
+    return {data: scanResponse.data || [], cursor: scanResponse.cursor ?? null}
   })
 
   logDebug('getUsersByAppleDeviceIdentifier: scanned users', {count: allUsers.length})
@@ -126,10 +119,7 @@ export async function initiateFileDownload(fileId: string) {
 
   const result = await invokeAsync('StartFileUpload', {fileId})
 
-  logDebug('initiateFileDownload =>', {
-    StatusCode: result.StatusCode,
-    fileId
-  })
+  logDebug('initiateFileDownload =>', {StatusCode: result.StatusCode, fileId})
 }
 
 /**

@@ -17,8 +17,8 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 
-import {describe, it, expect, beforeAll, afterAll, afterEach} from '@jest/globals'
-import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
+import {afterAll, afterEach, beforeAll, describe, expect, it} from '@jest/globals'
+import {cleanupLocalStackTable, setupLocalStackTable} from '../helpers/electrodb-localstack'
 
 // Dynamic imports to ensure env vars are set before entity instantiation
 const {Users} = await import('../../../src/entities/Users')
@@ -26,8 +26,18 @@ const {Sessions} = await import('../../../src/entities/Sessions')
 const {Accounts} = await import('../../../src/entities/Accounts')
 const {VerificationTokens} = await import('../../../src/entities/VerificationTokens')
 const {MediaDownloaderService} = await import('../../../src/entities/Collections')
-const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import('../../helpers/better-auth-test-data')
-const {transformUserFromAuth, transformSessionFromAuth, transformAccountFromAuth, transformUserToAuth, transformSessionToAuth, transformAccountToAuth, splitFullName} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
+const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import(
+  '../../helpers/better-auth-test-data'
+)
+const {
+  transformUserFromAuth,
+  transformSessionFromAuth,
+  transformAccountFromAuth,
+  transformUserToAuth,
+  transformSessionToAuth,
+  transformAccountToAuth,
+  splitFullName
+} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
 // Type helpers for ElectroDB service collections
 // ElectroDB collections return an object with entity-named arrays (using the keys from service creation)
@@ -91,12 +101,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should query user by email using byEmail GSI', async () => {
-      const userData = createMockUser({
-        userId: 'user-test-2',
-        email: 'unique@example.com',
-        firstName: 'Jane',
-        lastName: 'Smith'
-      })
+      const userData = createMockUser({userId: 'user-test-2', email: 'unique@example.com', firstName: 'Jane', lastName: 'Smith'})
 
       await Users.create(userData).go()
 
@@ -114,22 +119,11 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should update user fields', async () => {
-      const userData = createMinimalUser({
-        userId: 'user-test-3',
-        email: 'update@example.com',
-        firstName: 'Old',
-        lastName: 'Name'
-      })
+      const userData = createMinimalUser({userId: 'user-test-3', email: 'update@example.com', firstName: 'Old', lastName: 'Name'})
 
       await Users.create(userData).go()
 
-      await Users.update({userId: 'user-test-3'})
-        .set({
-          firstName: 'New',
-          lastName: 'Updated',
-          emailVerified: true
-        })
-        .go()
+      await Users.update({userId: 'user-test-3'}).set({firstName: 'New', lastName: 'Updated', emailVerified: true}).go()
 
       const result = await Users.get({userId: 'user-test-3'}).go()
 
@@ -166,32 +160,11 @@ describe('Better Auth Entities Integration Tests', () => {
     it('should query sessions by user using byUser GSI', async () => {
       const userId = 'user-multi-session'
 
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'session-1',
-          userId,
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'session-2',
-          userId,
-          token: 'token-2',
-          expiresAt: Date.now() + 172800000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'session-2', userId, token: 'token-2', expiresAt: Date.now() + 172800000})).go()
 
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'session-3',
-          userId,
-          token: 'token-3',
-          expiresAt: Date.now() + 259200000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'session-3', userId, token: 'token-3', expiresAt: Date.now() + 259200000})).go()
 
       const result = await Sessions.query.byUser({userId}).go()
 
@@ -207,23 +180,11 @@ describe('Better Auth Entities Integration Tests', () => {
       const deviceId = 'device-multi-session'
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'device-session-1',
-          userId: 'user-1',
-          deviceId,
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
+        createMockSession({sessionId: 'device-session-1', userId: 'user-1', deviceId, token: 'token-1', expiresAt: Date.now() + 86400000})
       ).go()
 
       await Sessions.create(
-        createMockSession({
-          sessionId: 'device-session-2',
-          userId: 'user-2',
-          deviceId,
-          token: 'token-2',
-          expiresAt: Date.now() + 86400000
-        })
+        createMockSession({sessionId: 'device-session-2', userId: 'user-2', deviceId, token: 'token-2', expiresAt: Date.now() + 86400000})
       ).go()
 
       const result = await Sessions.query.byDevice({deviceId}).go()
@@ -233,22 +194,11 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should update session expiration', async () => {
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'session-update-1',
-          userId: 'user-1',
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'session-update-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
       const newExpiresAt = Date.now() + 172800000
 
-      await Sessions.update({sessionId: 'session-update-1'})
-        .set({
-          expiresAt: newExpiresAt
-        })
-        .go()
+      await Sessions.update({sessionId: 'session-update-1'}).set({expiresAt: newExpiresAt}).go()
 
       const result = await Sessions.get({sessionId: 'session-update-1'}).go()
 
@@ -256,14 +206,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should delete session', async () => {
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'session-delete-1',
-          userId: 'user-1',
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'session-delete-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
       await Sessions.delete({sessionId: 'session-delete-1'}).go()
 
@@ -302,23 +245,9 @@ describe('Better Auth Entities Integration Tests', () => {
     it('should query accounts by user using byUser GSI', async () => {
       const userId = 'user-multi-provider'
 
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'account-apple',
-          userId,
-          providerId: 'apple',
-          providerAccountId: 'apple-123'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'account-apple', userId, providerId: 'apple', providerAccountId: 'apple-123'})).go()
 
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'account-google',
-          userId,
-          providerId: 'google',
-          providerAccountId: 'google-123'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'account-google', userId, providerId: 'google', providerAccountId: 'google-123'})).go()
 
       const result = await Accounts.query.byUser({userId}).go()
 
@@ -327,20 +256,9 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should query account by provider using byProvider GSI', async () => {
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'account-lookup-1',
-          userId: 'user-lookup-1',
-          providerAccountId: 'apple-unique-id'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'account-lookup-1', userId: 'user-lookup-1', providerAccountId: 'apple-unique-id'})).go()
 
-      const result = await Accounts.query
-        .byProvider({
-          providerId: 'apple',
-          providerAccountId: 'apple-unique-id'
-        })
-        .go()
+      const result = await Accounts.query.byProvider({providerId: 'apple', providerAccountId: 'apple-unique-id'}).go()
 
       expect(result.data).toHaveLength(1)
       expect(result.data[0].userId).toBe('user-lookup-1')
@@ -350,9 +268,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
   describe('VerificationTokens Entity', () => {
     it('should create and retrieve verification token', async () => {
-      const tokenData = createMockVerificationToken({
-        token: 'verify-token-123'
-      })
+      const tokenData = createMockVerificationToken({token: 'verify-token-123'})
 
       await VerificationTokens.create(tokenData).go()
 
@@ -365,12 +281,7 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should delete verification token after use', async () => {
-      await VerificationTokens.create(
-        createMockVerificationToken({
-          token: 'temp-token-123',
-          identifier: 'user@example.com'
-        })
-      ).go()
+      await VerificationTokens.create(createMockVerificationToken({token: 'temp-token-123', identifier: 'user@example.com'})).go()
 
       await VerificationTokens.delete({token: 'temp-token-123'}).go()
 
@@ -385,23 +296,9 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = 'user-collection-1'
 
       // Create sessions for the user
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'coll-session-1',
-          userId,
-          token: 'token-1',
-          expiresAt: Date.now() + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'coll-session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
 
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'coll-session-2',
-          userId,
-          token: 'token-2',
-          expiresAt: Date.now() + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'coll-session-2', userId, token: 'token-2', expiresAt: Date.now() + 86400000})).go()
 
       // Query collection - returns only Sessions (entity key matches service registration: sessions)
       const result = await collections.userSessions({userId}).go()
@@ -414,23 +311,9 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = 'user-collection-2'
 
       // Create OAuth accounts for the user
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'coll-acc-apple',
-          userId,
-          providerId: 'apple',
-          providerAccountId: 'apple-coll-123'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'coll-acc-apple', userId, providerId: 'apple', providerAccountId: 'apple-coll-123'})).go()
 
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'coll-acc-google',
-          userId,
-          providerId: 'google',
-          providerAccountId: 'google-coll-123'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'coll-acc-google', userId, providerId: 'google', providerAccountId: 'google-coll-123'})).go()
 
       // Query collection - returns only Accounts (entity key matches service registration: accounts)
       const result = await collections.userAccounts({userId}).go()
@@ -446,14 +329,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const email = 'complete@example.com'
 
       // Step 1: Register user
-      await Users.create(
-        createMockUser({
-          userId,
-          email,
-          firstName: 'Complete',
-          lastName: 'Flow'
-        })
-      ).go()
+      await Users.create(createMockUser({userId, email, firstName: 'Complete', lastName: 'Flow'})).go()
 
       // Step 2: Link OAuth account (Apple)
       await Accounts.create(
@@ -485,12 +361,7 @@ describe('Better Auth Entities Integration Tests', () => {
       expect(userByEmail.data[0].userId).toBe(userId)
 
       // Verify: Account can be found by provider
-      const accountByProvider = await Accounts.query
-        .byProvider({
-          providerId: 'apple',
-          providerAccountId: 'apple-flow-123'
-        })
-        .go()
+      const accountByProvider = await Accounts.query.byProvider({providerId: 'apple', providerAccountId: 'apple-flow-123'}).go()
       expect(accountByProvider.data).toHaveLength(1)
       expect(accountByProvider.data[0].userId).toBe(userId)
 
@@ -512,24 +383,10 @@ describe('Better Auth Entities Integration Tests', () => {
       const now = Date.now()
 
       // Create expired session
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'expired-session',
-          userId,
-          token: 'expired-token',
-          expiresAt: now - 1000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'expired-session', userId, token: 'expired-token', expiresAt: now - 1000})).go()
 
       // Create active session
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'active-session',
-          userId,
-          token: 'active-token',
-          expiresAt: now + 86400000
-        })
-      ).go()
+      await Sessions.create(createMockSession({sessionId: 'active-session', userId, token: 'active-token', expiresAt: now + 86400000})).go()
 
       // Query all sessions
       const allSessions = await Sessions.query.byUser({userId}).go()
@@ -543,24 +400,11 @@ describe('Better Auth Entities Integration Tests', () => {
     })
 
     it('should handle duplicate account creation gracefully', async () => {
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'dup-account-1',
-          userId: 'user-dup-1',
-          providerAccountId: 'apple-dup-123'
-        })
-      ).go()
+      await Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-1', providerAccountId: 'apple-dup-123'})).go()
 
       // Attempting to create account with same accountId should fail
       await expect(
-        Accounts.create(
-          createMockAccount({
-            accountId: 'dup-account-1',
-            userId: 'user-dup-2',
-            providerId: 'google',
-            providerAccountId: 'google-456'
-          })
-        ).go()
+        Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-2', providerId: 'google', providerAccountId: 'google-456'})).go()
       ).rejects.toThrow()
     })
   })
@@ -568,12 +412,7 @@ describe('Better Auth Entities Integration Tests', () => {
   describe('Transformer Validation (Better Auth ↔ ElectroDB)', () => {
     it('should correctly transform and round-trip User data', async () => {
       // Better Auth format
-      const betterAuthUser = {
-        id: 'user-transform-1',
-        email: 'transform@example.com',
-        name: 'Transform Test',
-        emailVerified: true
-      }
+      const betterAuthUser = {id: 'user-transform-1', email: 'transform@example.com', name: 'Transform Test', emailVerified: true}
 
       // Transform to ElectroDB format
       const electroUser = transformUserFromAuth(betterAuthUser)

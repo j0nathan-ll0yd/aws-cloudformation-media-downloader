@@ -1,7 +1,7 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {InfrastructureD} from '../types/infrastructure'
-import {logDebug} from '../util/lambda-helpers'
+import {InfrastructureD} from '#types/infrastructure'
+import {logDebug} from '#util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)
@@ -31,10 +31,11 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
-  const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
+  const lambdaFunctions = infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>
+  const lambdaFunctionNames = Object.keys(lambdaFunctions)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[functionName]
+    const resources = lambdaFunctions[functionName]
     const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
@@ -74,14 +75,11 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   const envValidationMatches = functionSource.match(envValidationRegex)
   logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {
-    const extracted = envValidationMatches
-      .map((match: string) => {
-        // Extract the variable name from patterns like X("VarName") or }("VarName")
-        const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
-        return varMatch ? varMatch[1] : ''
-      })
-      .filter(Boolean)
-      // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
+    const extracted = envValidationMatches.map((match: string) => {
+      // Extract the variable name from patterns like X("VarName") or }("VarName")
+      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
+      return varMatch ? varMatch[1] : ''
+    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
       .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v))
     environmentVariablesSource.push(...extracted)
   }

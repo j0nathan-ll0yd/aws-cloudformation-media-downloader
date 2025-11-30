@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get the directory of this file (where the package.json file is located)
-bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 
 infrastructure_files_list="${bin_dir}/../terraform/*.tf"
 types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
@@ -27,16 +27,16 @@ encrypted_secrets_file_path="${bin_dir}/../secrets.enc.yaml"
 sops_config_path="${bin_dir}/../.sops.yaml"
 
 if [ ! -f "$secrets_file_path" ]; then
-    echo "Warning: Secrets file does not exist at $secrets_file_path"
-    echo "Please refer to the README for setup instructions"
-    echo "Skipping encryption step"
+  echo "Warning: Secrets file does not exist at $secrets_file_path"
+  echo "Please refer to the README for setup instructions"
+  echo "Skipping encryption step"
 elif [ ! -f "$sops_config_path" ]; then
-    echo "Warning: SOPS config file does not exist at $sops_config_path"
-    echo "Please refer to the README for SOPS configuration instructions"
-    echo "Skipping encryption step"
+  echo "Warning: SOPS config file does not exist at $sops_config_path"
+  echo "Please refer to the README for SOPS configuration instructions"
+  echo "Skipping encryption step"
 else
-    encrypt_command="sops --config ${sops_config_path} --encrypt --output ${encrypted_secrets_file_path} ${secrets_file_path}"
-    eval $encrypt_command
+  encrypt_command="sops --config ${sops_config_path} --encrypt --output ${encrypted_secrets_file_path} ${secrets_file_path}"
+  eval $encrypt_command
 fi
 
 echo 'Prepending Typescript nocheck on file'

@@ -1,15 +1,15 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {APIGatewayProxyEvent} from 'aws-lambda'
-import {testContext} from '../../../util/jest-setup'
+import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {SessionPayload} from '../../../util/better-auth-helpers'
+import type {SessionPayload} from '#util/better-auth-helpers'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
-jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({
-  validateSessionToken: validateSessionTokenMock,
+jest.unstable_mockModule('#util/better-auth-helpers', () => ({
+  validateSessionToken: validateSessionTokenMock, // fmt: multiline
   refreshSession: refreshSessionMock
 }))
 
@@ -30,11 +30,7 @@ describe('#RefreshToken', () => {
   })
 
   test('should successfully refresh a valid session token', async () => {
-    validateSessionTokenMock.mockResolvedValue({
-      userId: fakeUserId,
-      sessionId: fakeSessionId,
-      expiresAt: Date.now() + 1000000
-    })
+    validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
     refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
 
     const output = await handler(event, context)
@@ -88,11 +84,7 @@ describe('#RefreshToken', () => {
     delete event.headers!['Authorization']
     event.headers!['authorization'] = `Bearer ${fakeToken}`
 
-    validateSessionTokenMock.mockResolvedValue({
-      userId: fakeUserId,
-      sessionId: fakeSessionId,
-      expiresAt: Date.now() + 1000000
-    })
+    validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
     refreshSessionMock.mockResolvedValue({expiresAt: futureExpiresAt})
 
     const output = await handler(event, context)
@@ -125,11 +117,7 @@ describe('#RefreshToken', () => {
 
   describe('#RefreshFailure', () => {
     test('should return error when refresh operation fails', async () => {
-      validateSessionTokenMock.mockResolvedValue({
-        userId: fakeUserId,
-        sessionId: fakeSessionId,
-        expiresAt: Date.now() + 1000000
-      })
+      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: fakeSessionId, expiresAt: Date.now() + 1000000})
       refreshSessionMock.mockRejectedValue(new Error('DynamoDB connection failed'))
 
       const output = await handler(event, context)

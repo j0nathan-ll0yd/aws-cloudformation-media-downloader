@@ -1,4 +1,4 @@
-import {describe, expect, test, jest, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
 
@@ -8,45 +8,32 @@ class MockYTDlpWrap {
   constructor(public binaryPath: string) {}
   getVideoInfo = mockGetVideoInfo
 }
-jest.unstable_mockModule('yt-dlp-wrap', () => ({
-  default: MockYTDlpWrap
-}))
+jest.unstable_mockModule('yt-dlp-wrap', () => ({default: MockYTDlpWrap}))
 
 // Mock child_process
 const mockSpawn = jest.fn()
-jest.unstable_mockModule('child_process', () => ({
-  spawn: mockSpawn
-}))
+jest.unstable_mockModule('child_process', () => ({spawn: mockSpawn}))
 
 // Mock fs
 const mockCopyFile = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('fs', () => ({
-  promises: {
-    copyFile: mockCopyFile
-  }
-}))
+jest.unstable_mockModule('fs', () => ({promises: {copyFile: mockCopyFile}}))
 
 // Mock S3 Upload
 let mockUploadInstance: MockUpload | null = null
-let uploadDoneResolver: {resolve: (value: unknown) => void; reject: (reason: unknown) => void} | null = null
+let uploadDoneResolver:
+  | {resolve: (value: unknown) => void; reject: (reason: unknown) => void}
+  | null = null
 class MockUpload extends EventEmitter {
   public done: jest.Mock<() => Promise<unknown>>
-  constructor(
-    public bucket: string,
-    public key: string,
-    public body: unknown,
-    public contentType: string,
-    public options?: Record<string, unknown>
-  ) {
+  constructor(public bucket: string, public key: string, public body: unknown, public contentType: string, public options?: Record<string, unknown>) {
     super()
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     mockUploadInstance = this
     // Create a promise that can be resolved externally
-    this.done = jest.fn(
-      () =>
-        new Promise((resolve, reject) => {
-          uploadDoneResolver = {resolve, reject}
-        })
+    this.done = jest.fn(() =>
+      new Promise((resolve, reject) => {
+        uploadDoneResolver = {resolve, reject}
+      })
     )
   }
 }
@@ -56,14 +43,14 @@ const mockCreateS3Upload = jest.fn((bucket: string, key: string, body: unknown, 
   return new MockUpload(bucket, key, body, contentType, options)
 })
 
-jest.unstable_mockModule('../vendor/AWS/S3', () => ({
-  headObject: mockHeadObject,
+jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
+  headObject: mockHeadObject, // fmt: multiline
   createS3Upload: mockCreateS3Upload
 }))
 
 // Mock CloudWatch vendor wrapper (let logging run normally)
-jest.unstable_mockModule('./AWS/CloudWatch', () => ({
-  putMetricData: jest.fn(),
+jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({
+  putMetricData: jest.fn(), // fmt: multiline
   getStandardUnit: (unit?: string) => unit || 'None'
 }))
 
@@ -84,10 +71,7 @@ describe('#Vendor:YouTube', () => {
   describe('streamVideoToS3', () => {
     test('should successfully stream video to S3', async () => {
       // Mock yt-dlp process
-      const mockProcess = new EventEmitter() as EventEmitter & {
-        stdout: Readable
-        stderr: EventEmitter
-      }
+      const mockProcess = new EventEmitter() as EventEmitter & {stdout: Readable; stderr: EventEmitter}
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data chunk 1')
@@ -116,28 +100,26 @@ describe('#Vendor:YouTube', () => {
 
       const result = await resultPromise
 
-      expect(result).toEqual({
-        fileSize: 1024000,
-        s3Url: 's3://test-bucket/test-key.mp4',
-        duration: expect.any(Number)
-      })
+      expect(result).toEqual({fileSize: 1024000, s3Url: 's3://test-bucket/test-key.mp4', duration: expect.any(Number)})
 
       // Verify yt-dlp was spawned correctly
-      expect(mockSpawn).toHaveBeenCalledWith(
-        expect.stringContaining('yt-dlp'),
-        expect.arrayContaining(['-o', '-', '--extractor-args', 'youtube:player_client=default', '--no-warnings', '--cookies', '/tmp/youtube-cookies.txt', 'https://www.youtube.com/watch?v=test123']),
-        {cwd: '/tmp'}
-      )
+      expect(mockSpawn).toHaveBeenCalledWith(expect.stringContaining('yt-dlp'), expect.arrayContaining([
+        '-o',
+        '-',
+        '--extractor-args',
+        'youtube:player_client=default',
+        '--no-warnings',
+        '--cookies',
+        '/tmp/youtube-cookies.txt',
+        'https://www.youtube.com/watch?v=test123'
+      ]), {cwd: '/tmp'})
 
       // Verify cookies were copied
       expect(mockCopyFile).toHaveBeenCalledWith('/opt/cookies/youtube-cookies.txt', '/tmp/youtube-cookies.txt')
     })
 
     test('should handle yt-dlp process error', async () => {
-      const mockProcess = new EventEmitter() as EventEmitter & {
-        stdout: Readable
-        stderr: EventEmitter
-      }
+      const mockProcess = new EventEmitter() as EventEmitter & {stdout: Readable; stderr: EventEmitter}
       const mockStdout = new Readable({read() {}})
       mockStdout.on('error', () => {}) // Suppress error for test
       mockProcess.stdout = mockStdout
@@ -158,10 +140,7 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should handle yt-dlp exit with non-zero code', async () => {
-      const mockProcess = new EventEmitter() as EventEmitter & {
-        stdout: Readable
-        stderr: EventEmitter
-      }
+      const mockProcess = new EventEmitter() as EventEmitter & {stdout: Readable; stderr: EventEmitter}
       const mockStdout = new Readable({read() {}})
       mockStdout.on('error', () => {}) // Suppress error for test
       mockProcess.stdout = mockStdout
@@ -183,10 +162,7 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should handle S3 upload failure', async () => {
-      const mockProcess = new EventEmitter() as EventEmitter & {
-        stdout: Readable
-        stderr: EventEmitter
-      }
+      const mockProcess = new EventEmitter() as EventEmitter & {stdout: Readable; stderr: EventEmitter}
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data')
@@ -211,10 +187,7 @@ describe('#Vendor:YouTube', () => {
     })
 
     test('should track upload progress', async () => {
-      const mockProcess = new EventEmitter() as EventEmitter & {
-        stdout: Readable
-        stderr: EventEmitter
-      }
+      const mockProcess = new EventEmitter() as EventEmitter & {stdout: Readable; stderr: EventEmitter}
       mockProcess.stdout = new Readable({
         read() {
           this.push('video data')
@@ -251,11 +224,25 @@ describe('#Vendor:YouTube', () => {
   describe('chooseVideoFormat', () => {
     const baseVideoInfo = {id: 'test123', title: 'Test Video', thumbnail: '', duration: 300}
     // prettier-ignore
-    const hlsFormat = (id: string, tbr: number, filesize?: number) =>
-      ({format_id: id, url: 'https://manifest.googlevideo.com/api/manifest.m3u8', ext: 'mp4', vcodec: 'h264', acodec: 'aac', tbr, ...(filesize && {filesize})})
+    const hlsFormat = (id: string, tbr: number, filesize?: number) => ({
+      format_id: id,
+      url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
+      ext: 'mp4',
+      vcodec: 'h264',
+      acodec: 'aac',
+      tbr,
+      ...(filesize && {filesize})
+    })
     // prettier-ignore
-    const progressiveFormat = (id: string, tbr: number, filesize?: number) =>
-      ({format_id: id, url: 'https://rr1---sn-ab5l6nez.googlevideo.com/videoplayback', ext: 'mp4', vcodec: 'h264', acodec: 'aac', tbr, ...(filesize && {filesize})})
+    const progressiveFormat = (id: string, tbr: number, filesize?: number) => ({
+      format_id: id,
+      url: 'https://rr1---sn-ab5l6nez.googlevideo.com/videoplayback',
+      ext: 'mp4',
+      vcodec: 'h264',
+      acodec: 'aac',
+      tbr,
+      ...(filesize && {filesize})
+    })
 
     test('should prefer progressive format with filesize', () => {
       const info = {...baseVideoInfo, formats: [hlsFormat('hls-720', 2000), progressiveFormat('22', 1500, 52428800)]}
@@ -290,7 +277,7 @@ describe('#Vendor:YouTube', () => {
       const info = {
         ...baseVideoInfo,
         formats: [
-          {format_id: 'video-only', url: 'https://example.com/video', ext: 'mp4', vcodec: 'h264', acodec: 'none'},
+          {format_id: 'video-only', url: 'https://example.com/video', ext: 'mp4', vcodec: 'h264', acodec: 'none'}, // fmt: multiline
           {format_id: 'audio-only', url: 'https://example.com/audio', ext: 'm4a', vcodec: 'none', acodec: 'aac'}
         ]
       }

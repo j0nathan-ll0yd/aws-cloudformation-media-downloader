@@ -16,10 +16,7 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
 
   switch (query) {
     case 'services':
-      return {
-        aws: awsServices,
-        external: externalServices
-      }
+      return {aws: awsServices, external: externalServices}
 
     case 'config':
       if (resource) {
@@ -34,17 +31,11 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
           }
         }
         if (extService) {
-          return {
-            service: extService,
-            note: 'External service configuration varies by integration'
-          }
+          return {service: extService, note: 'External service configuration varies by integration'}
         }
         return {error: `Service '${resource}' not found`}
       }
-      return {
-        aws: awsServices,
-        external: externalServices
-      }
+      return {aws: awsServices, external: externalServices}
 
     case 'usage': {
       if (!resource) {
@@ -60,11 +51,7 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         }
       }
 
-      return {
-        resource,
-        usedBy,
-        count: usedBy.length
-      }
+      return {resource, usedBy, count: usedBy.length}
     }
 
     case 'dependencies': {
@@ -90,7 +77,7 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         entitiesDir: 'src/entities/',
         collectionsFile: 'src/entities/Collections.ts',
         indexes: [
-          {name: 'Primary', pk: 'pk', sk: 'sk'},
+          {name: 'Primary', pk: 'pk', sk: 'sk'}, // fmt: multiline
           {name: 'GSI1', pk: 'gsi1pk', sk: 'gsi1sk', description: 'User-based queries'},
           {name: 'GSI2', pk: 'gsi2pk', sk: 'gsi2sk', description: 'File/Device lookups'}
         ]
@@ -112,17 +99,9 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
       }
 
     case 'all':
-      return {
-        aws: awsServices,
-        external: externalServices,
-        terraformDir: 'terraform/',
-        note: 'Use specific resource queries for detailed configuration'
-      }
+      return {aws: awsServices, external: externalServices, terraformDir: 'terraform/', note: 'Use specific resource queries for detailed configuration'}
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']
-      }
+      return {error: `Unknown query: ${query}`, availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']}
   }
 }

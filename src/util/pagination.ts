@@ -1,4 +1,4 @@
-import {logDebug} from './lambda-helpers'
+import {logDebug} from './logging'
 
 /**
  * Scans all pages of a DynamoDB table using ElectroDB pagination

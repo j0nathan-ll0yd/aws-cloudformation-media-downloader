@@ -4,14 +4,13 @@
 # TODO: File a bug demonstrating the issue to the TSDoc project
 
 # Get the directory of this file (where the package.json file is located)
-bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 
 test_file_path="${bin_dir}/../src/pipeline/infrastructure.environment.test.ts"
 types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
-git_diff_output=`git diff ${test_file_path}`
+git_diff_output=$(git diff ${test_file_path})
 git_diff_output_length=${#git_diff_output}
-if [[ $git_diff_output_length -gt 0 ]]
-then
+if [[ $git_diff_output_length -gt 0 ]]; then
   echo "Test file has changed; commit changes before running"
   exit
 fi

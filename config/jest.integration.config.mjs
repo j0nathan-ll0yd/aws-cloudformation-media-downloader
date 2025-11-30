@@ -10,6 +10,15 @@ const config = {
   // Automatically clear mock calls between tests
   clearMocks: true,
 
+  // Module path aliases for # imports
+  moduleNameMapper: {
+    '^#entities/(.*)$': '<rootDir>/src/entities/$1',
+    '^#lib/(.*)$': '<rootDir>/src/lib/$1',
+    '^#util/(.*)$': '<rootDir>/src/util/$1',
+    '^#types/(.*)$': '<rootDir>/src/types/$1',
+    '^#test/(.*)$': '<rootDir>/test/$1'
+  },
+
   // Coverage and timeout options are configured in jest.all.config.mjs when running multi-project tests
   // For standalone runs, use: npm run test:integration -- --coverage
 
@@ -35,15 +44,7 @@ const config = {
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
 
   // Transform TypeScript files with ts-jest
-  transform: {
-    '^.+\\.[tj]sx?$': [
-      'ts-jest',
-      {
-        useESM: true,
-        tsconfig: '<rootDir>/tsconfig.test.json'
-      }
-    ]
-  },
+  transform: {'^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]},
 
   // Setup file to configure LocalStack environment
   setupFilesAfterEnv: ['<rootDir>/test/integration/setup.ts']

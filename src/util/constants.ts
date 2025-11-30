@@ -1,5 +1,5 @@
-import {DynamoDBFile} from '../types/main'
-import {FileStatus} from '../types/enums'
+import {DynamoDBFile} from '#types/main'
+import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 
 export const defaultFile = {

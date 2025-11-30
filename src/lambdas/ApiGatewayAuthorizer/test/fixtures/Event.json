@@ -23,7 +23,9 @@
   },
   "multiValueHeaders": {
     "accept-encoding": ["gzip, deflate, br"],
-    "Authorization": ["Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjUwOTUzNDAsImV4cCI6MTY2NTA5NTY0MH0.e5iuKWBkf21IUZ214SilfO0PVHyTjmyy3XgPUhYuFRw"],
+    "Authorization": [
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0NzIyYTA5OS1iZDY4LTRkZDctODQyZS0wYzExMjc2MzhkZDkiLCJpYXQiOjE2NjUwOTUzNDAsImV4cCI6MTY2NTA5NTY0MH0.e5iuKWBkf21IUZ214SilfO0PVHyTjmyy3XgPUhYuFRw"
+    ],
     "Content-Length": ["186"],
     "content-type": ["application/json"],
     "Host": ["naf24gu6t6.execute-api.us-west-2.amazonaws.com"],
