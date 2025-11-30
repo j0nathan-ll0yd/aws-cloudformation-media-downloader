@@ -24,14 +24,13 @@ const {default: queryDefaultResponse} = await import('./fixtures/query-200-OK.js
 const {default: querySuccessResponse} = await import('./fixtures/query-201-Created.json', {assert: {type: 'json'}})
 const createPlatformEndpointMock = jest.fn()
 const listSubscriptionsByTopicMock = jest.fn()
-jest.unstable_mockModule('#lib/vendor/AWS/SNS',
-  () => ({
-    deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}),
-    subscribe: jest.fn().mockReturnValue(subscribeResponse),
-    listSubscriptionsByTopic: listSubscriptionsByTopicMock,
-    createPlatformEndpoint: createPlatformEndpointMock,
-    unsubscribe: jest.fn()
-  }))
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
+  subscribe: jest.fn().mockReturnValue(subscribeResponse),
+  listSubscriptionsByTopic: listSubscriptionsByTopicMock,
+  createPlatformEndpoint: createPlatformEndpointMock,
+  unsubscribe: jest.fn()
+}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
