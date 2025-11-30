@@ -173,14 +173,7 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
  */
 export function createMinimalSession(overrides?: Partial<MockSessionData>): MockSessionData {
   const full = createMockSession(overrides)
-  return {
-    sessionId: full.sessionId,
-    userId: full.userId,
-    expiresAt: full.expiresAt,
-    token: full.token,
-    createdAt: full.createdAt,
-    updatedAt: full.updatedAt
-  }
+  return {sessionId: full.sessionId, userId: full.userId, expiresAt: full.expiresAt, token: full.token, createdAt: full.createdAt, updatedAt: full.updatedAt}
 }
 
 /**

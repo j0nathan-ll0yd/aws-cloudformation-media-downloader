@@ -60,9 +60,7 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#lambda-usage | X-Ray Lambda Usage}
  */
-export function withXRay<TEvent = unknown, TResult = unknown>(
-  handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>
-) {
+export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>) {
   return async (event: TEvent, context: Context): Promise<TResult> => {
     const xray = getXRayClient()
     const segment = xray.getSegment()
