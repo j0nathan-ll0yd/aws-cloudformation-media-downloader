@@ -336,11 +336,6 @@
   ],
   "edges": [
     {
-      "source": "lambda:ApiGatewayAuthorizer",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
       "source": "service:API Gateway",
       "target": "lambda:ApiGatewayAuthorizer",
       "relationship": "triggers"
@@ -351,39 +346,9 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:FileCoordinator",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:ListFiles",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:ListFiles",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:ListFiles",
-      "target": "entity:UserFiles",
-      "relationship": "accesses"
-    },
-    {
       "source": "service:API Gateway",
       "target": "lambda:ListFiles",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:LogClientEvent",
-      "target": "service:XRay",
-      "relationship": "uses"
     },
     {
       "source": "service:API Gateway",
@@ -391,34 +356,9 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:LoginUser",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
       "source": "service:API Gateway",
       "target": "lambda:LoginUser",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:PruneDevices",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RefreshToken",
-      "target": "service:XRay",
-      "relationship": "uses"
     },
     {
       "source": "service:API Gateway",
@@ -426,39 +366,9 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:RegisterDevice",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:RegisterDevice",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:RegisterDevice",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:RegisterDevice",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
       "source": "service:API Gateway",
       "target": "lambda:RegisterDevice",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:RegisterUser",
-      "target": "entity:Users",
-      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
@@ -466,84 +376,9 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:S3ObjectCreated",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:S3ObjectCreated",
-      "target": "entity:UserFiles",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "service:SNS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:SendPushNotification",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
       "source": "service:SQS",
       "target": "lambda:SendPushNotification",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:StartFileUpload",
-      "target": "external:YouTube",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Devices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:UserDevices",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:UserFiles",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:UserDelete",
-      "target": "entity:Users",
-      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
@@ -551,44 +386,9 @@
       "relationship": "triggers"
     },
     {
-      "source": "lambda:UserSubscribe",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
       "source": "service:API Gateway",
       "target": "lambda:UserSubscribe",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:SQS",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "service:XRay",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "external:YouTube",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "external:Feedly",
-      "relationship": "uses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:Files",
-      "relationship": "accesses"
-    },
-    {
-      "source": "lambda:WebhookFeedly",
-      "target": "entity:UserFiles",
-      "relationship": "accesses"
     },
     {
       "source": "service:API Gateway",
