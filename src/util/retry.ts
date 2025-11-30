@@ -8,6 +8,9 @@ export interface RetryConfig {
 
 const DEFAULT_CONFIG: Required<RetryConfig> = {maxRetries: 3, initialDelayMs: 100, multiplier: 2}
 
+type RetryResult<T> = {data: T[]; unprocessed: unknown[]}
+type RetryOperation<T> = () => Promise<RetryResult<T>>
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -19,10 +22,7 @@ function sleep(ms: number): Promise<void> {
  * @param config - Optional retry configuration
  * @returns Final result with any remaining unprocessed items after all retries
  */
-export async function retryUnprocessed<T>(
-  operation: () => Promise<{data: T[]; unprocessed: unknown[]}>,
-  config?: RetryConfig
-): Promise<{data: T[]; unprocessed: unknown[]}> {
+export async function retryUnprocessed<T>(operation: RetryOperation<T>, config?: RetryConfig): Promise<RetryResult<T>> {
   const {maxRetries, initialDelayMs, multiplier} = {...DEFAULT_CONFIG, ...config}
 
   let result = await operation()

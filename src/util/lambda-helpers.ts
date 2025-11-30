@@ -163,42 +163,28 @@ function sanitizeForTest(data: unknown): unknown {
 
   const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
-  // Remove sensitive fields - expanded list for comprehensive PII protection
-  const sensitiveFields = [
-    'Authorization', // fmt: multiline
-    'authorization',
-    'token',
-    'Token',
-    'deviceToken',
-    'DeviceToken',
-    'refreshToken',
-    'RefreshToken',
-    'accessToken',
-    'AccessToken',
-    'password',
-    'Password',
-    'apiKey',
-    'ApiKey',
-    'secret',
-    'Secret',
-    'privateKey',
-    'PrivateKey',
-    'appleDeviceIdentifier',
-    'email',
-    'Email',
-    'phoneNumber',
-    'PhoneNumber',
-    'phone',
-    'certificate',
-    'Certificate',
-    'ssn',
-    'SSN',
-    'creditCard',
-    'CreditCard'
+  // Remove sensitive fields - case-insensitive patterns for comprehensive PII protection
+  const sensitivePatterns = [
+    /^authorization$/i, // fmt: multiline
+    /^token$/i,
+    /^deviceToken$/i,
+    /^refreshToken$/i,
+    /^accessToken$/i,
+    /^password$/i,
+    /^apiKey$/i,
+    /^secret$/i,
+    /^privateKey$/i,
+    /^appleDeviceIdentifier$/i,
+    /^email$/i,
+    /^phoneNumber$/i,
+    /^phone$/i,
+    /^certificate$/i,
+    /^ssn$/i,
+    /^creditCard$/i
   ]
 
   for (const key in sanitized) {
-    if (sensitiveFields.includes(key)) {
+    if (sensitivePatterns.some((pattern) => pattern.test(key))) {
       sanitized[key] = '[REDACTED]'
     } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
       sanitized[key] = sanitizeForTest(sanitized[key])
