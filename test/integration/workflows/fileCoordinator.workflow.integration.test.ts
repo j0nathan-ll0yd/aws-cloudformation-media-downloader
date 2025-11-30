@@ -1,43 +1,56 @@
 /**
  * FileCoordinator Workflow Integration Tests
  *
- * Tests the file coordination workflow against LocalStack:
- * 1. Scan DynamoDB for files ready to download (availableAt is past due AND no url)
- * 2. Fan-out: Invoke StartFileUpload Lambda for each pending file
- * 3. Handle empty queue gracefully
+ * Tests the FileCoordinator Lambda against real LocalStack DynamoDB:
+ * 1. Query FileDownloads for pending downloads (status='pending')
+ * 2. Query FileDownloads for scheduled retries (status='scheduled', retryAfter is past)
+ * 3. Fan-out to StartFileUpload for each file
+ *
+ * Architecture: FileCoordinator now ONLY queries FileDownloads entity.
+ * Files entity is for permanent metadata, FileDownloads for orchestration.
  */
 
-const TEST_TABLE = 'test-files-coordinator'
+// Test configuration
+const TEST_TABLE = 'test-filecoordinator'
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
+process.env.StartFileUploadFunctionArn = 'arn:aws:lambda:us-west-2:123456789012:function:StartFileUpload'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '#types/enums'
-import {createFilesTable, deleteFilesTable, insertFile} from '../helpers/dynamodb-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-import {createMockScheduledEvent} from '../helpers/test-data'
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
+import {DownloadStatus} from '#types/enums'
+import {createFilesTable, deleteFilesTable} from '#test/integration/helpers/dynamodb-helpers'
+import {createMockContext} from '#test/integration/helpers/lambda-context'
+import {createMockScheduledEvent} from '#test/integration/helpers/test-data'
 
-interface FileInvocationPayload {
-  fileId: string
-}
+// Type the mock with full signature so mock.calls is properly typed
+const invokeLambdaMock = jest.fn<(arn: string, payload: {fileId: string}) => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
-type LambdaCallArgs = [string, Record<string, unknown>]
-
-// Compute module path from test file location (Jest ESM mock resolution workaround)
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
-
-const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
-
+// Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
 
-async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
-  await insertFile({fileId, status: FileStatus.PendingDownload, availableAt, title: title || `Test Video ${fileId}`})
+// Helper to insert a FileDownloads record for testing
+async function insertFileDownload(fileId: string, status: DownloadStatus, retryAfter?: number) {
+  const {FileDownloads} = await import('#entities/FileDownloads')
+  await FileDownloads.create({
+    fileId,
+    status,
+    retryAfter,
+    sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
+  }).go()
+}
+
+// Helper to clear FileDownloads table
+async function clearFileDownloads() {
+  const {FileDownloads} = await import('#entities/FileDownloads')
+  // Query and delete all - for testing purposes
+  const pending = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Pending}).go()
+  const scheduled = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Scheduled}).go()
+  const all = [...(pending.data || []), ...(scheduled.data || [])]
+  for (const record of all) {
+    await FileDownloads.delete({fileId: record.fileId}).go()
+  }
 }
 
 describe('FileCoordinator Workflow Integration Tests', () => {
@@ -58,97 +71,68 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     invokeLambdaMock.mockClear()
     invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
-    await deleteFilesTable()
-    await createFilesTable()
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // Clear FileDownloads between tests
+    await clearFileDownloads()
   })
 
-  test('should fan-out to multiple StartFileUpload invocations for pending files', async () => {
-    const now = Date.now()
-    const fileIds = ['video-1', 'video-2', 'video-3']
-
-    await Promise.all(fileIds.map((fileId) => insertPendingFile(fileId, now - 1000)))
+  test('should fan-out to multiple StartFileUpload invocations for pending downloads', async () => {
+    // Create 3 pending download records
+    await insertFileDownload('video-1', DownloadStatus.Pending)
+    await insertFileDownload('video-2', DownloadStatus.Pending)
+    await insertFileDownload('video-3', DownloadStatus.Pending)
 
     const result = await handler(createMockScheduledEvent('test-event-1'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
-    const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
-
-    expect(invokedFileIds).toEqual(fileIds.sort())
+    const invokedFileIds = invokeLambdaMock.mock.calls.map(([, payload]) => payload.fileId).sort()
+    expect(invokedFileIds).toEqual(['video-1', 'video-2', 'video-3'])
   })
 
   test('should handle empty queue gracefully', async () => {
+    // No FileDownloads records - should handle gracefully
     const result = await handler(createMockScheduledEvent('test-event-2'), mockContext)
 
     expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
   })
 
-  test('should only process files with availableAt <= now', async () => {
-    const now = Date.now()
+  test('should process scheduled retries with retryAfter <= now', async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000)
 
-    await insertPendingFile('past-video', now - 10000, 'Past Video')
-    await insertPendingFile('future-video', now + 86400000, 'Future Video')
-    await insertPendingFile('now-video', now, 'Now Video')
+    // Scheduled retry ready to process
+    await insertFileDownload('past-retry', DownloadStatus.Scheduled, nowSeconds - 100)
+    // Scheduled retry not yet ready
+    await insertFileDownload('future-retry', DownloadStatus.Scheduled, nowSeconds + 3600)
+    // Another ready one
+    await insertFileDownload('now-retry', DownloadStatus.Scheduled, nowSeconds)
 
     const result = await handler(createMockScheduledEvent('test-event-3'), mockContext)
 
     expect(result.statusCode).toBe(200)
+    // Should process 2 retries (past-retry and now-retry, not future-retry)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayloads = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[]).map((call) => call[1] as unknown as FileInvocationPayload)
-    const invokedFileIds = invocationPayloads.map((payload) => payload.fileId).sort()
-
-    expect(invokedFileIds).toEqual(['now-video', 'past-video'])
+    const invokedFileIds = invokeLambdaMock.mock.calls.map(([, payload]) => payload.fileId).sort()
+    expect(invokedFileIds).toEqual(['now-retry', 'past-retry'])
   })
 
-  test('should skip files that already have url attribute', async () => {
-    const now = Date.now()
+  test('should process both pending and scheduled downloads', async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000)
 
-    await insertPendingFile('pending-video', now - 1000, 'Pending Video')
-
-    await insertFile({
-      fileId: 'downloaded-video',
-      status: FileStatus.Downloaded,
-      availableAt: now - 1000,
-      title: 'Downloaded Video',
-      key: 'downloaded-video.mp4',
-      size: 5242880
-    })
-
-    const {Files} = await import('../../../src/entities/Files')
-    await Files.update({fileId: 'downloaded-video'}).set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}).go()
+    // Pending download (new)
+    await insertFileDownload('pending-video', DownloadStatus.Pending)
+    // Scheduled retry (ready)
+    await insertFileDownload('scheduled-video', DownloadStatus.Scheduled, nowSeconds - 100)
 
     const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 
     expect(result.statusCode).toBe(200)
-    expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
+    expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
-    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][
-      1
-    ] as unknown as FileInvocationPayload
-    expect(invocationPayload.fileId).toBe('pending-video')
-  })
-
-  test('should handle concurrent execution without conflicts', async () => {
-    const now = Date.now()
-    const fileIds = ['concurrent-1', 'concurrent-2', 'concurrent-3', 'concurrent-4', 'concurrent-5']
-
-    await Promise.all(fileIds.map((fileId) => insertPendingFile(fileId, now - 1000)))
-
-    const [result1, result2] = await Promise.all([
-      handler(createMockScheduledEvent('test-event-5a'), mockContext),
-      handler(createMockScheduledEvent('test-event-5b'), mockContext)
-    ])
-
-    expect(result1.statusCode).toBe(200)
-    expect(result2.statusCode).toBe(200)
-
-    // Both invocations scan all files (idempotent)
-    // StartFileUpload handles deduplication via conditional updates
-    expect(invokeLambdaMock).toHaveBeenCalledTimes(10)
+    const body = JSON.parse(result.body)
+    expect(body.body.pending).toBe(1)
+    expect(body.body.scheduled).toBe(1)
   })
 })

@@ -16,6 +16,7 @@ interface ElectroDBEntityMock<TData> {
       byFile?: jest.Mock
       byDevice?: jest.Mock
       byStatus?: jest.Mock
+      byStatusRetryAfter?: jest.Mock
       byKey?: jest.Mock
       byEmail?: jest.Mock
       byProvider?: jest.Mock
@@ -35,6 +36,7 @@ interface ElectroDBEntityMock<TData> {
       byFile?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byDevice?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byStatus?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
+      byStatusRetryAfter?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byKey?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byEmail?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byProvider?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
@@ -63,6 +65,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     | 'byFile'
     | 'byDevice'
     | 'byStatus'
+    | 'byStatusRetryAfter'
     | 'byKey'
     | 'byEmail'
     | 'byProvider'
@@ -85,6 +88,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     | 'byFile'
     | 'byDevice'
     | 'byStatus'
+    | 'byStatusRetryAfter'
     | 'byKey'
     | 'byEmail'
     | 'byProvider'

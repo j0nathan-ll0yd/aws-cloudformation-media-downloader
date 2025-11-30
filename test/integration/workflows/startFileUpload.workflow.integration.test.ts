@@ -1,14 +1,13 @@
 /**
  * StartFileUpload Workflow Integration Tests
  *
- * Tests the complete video download workflow against LocalStack:
- * 1. Fetch video info from YouTube (mocked)
- * 2. Update DynamoDB with "PendingDownload" status (REAL LocalStack)
- * 3. Stream video to S3 (REAL LocalStack)
- * 4. Update DynamoDB with "Downloaded" status (REAL LocalStack)
- * 5. Handle errors with rollback to "Failed" status
+ * Tests the complete video download workflow:
+ * - YouTube API: mocked (fetchVideoInfo, streamVideoToS3)
+ * - Files entity: LocalStack DynamoDB
+ * - FileDownloads entity: mocked (transient orchestration state)
+ * - S3 storage: LocalStack S3
  *
- * This tests YOUR orchestration logic, not AWS SDK behavior.
+ * This tests orchestration logic, not AWS SDK behavior.
  */
 
 // Test configuration
@@ -22,43 +21,48 @@ process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
-import {FileStatus} from '#types/enums'
+import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable, getFile} from '../helpers/dynamodb-helpers'
-import {createTestBucket, deleteTestBucket, getObjectMetadata} from '../helpers/s3-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '../helpers/mock-youtube'
+import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/helpers/dynamodb-helpers'
+import {createTestBucket, deleteTestBucket, getObjectMetadata} from '#test/integration/helpers/s3-helpers'
+import {createMockContext} from '#test/integration/helpers/lambda-context'
+import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '#test/integration/helpers/mock-youtube'
+import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createS3Upload} from '#lib/vendor/AWS/S3'
 
 // Type assertion for createS3Upload to match S3UploadFunction signature
 const s3UploadFn = createS3Upload as S3UploadFunction
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
-const githubHelpersModulePath = resolve(__dirname, '../../../src/util/github-helpers')
-
 const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
 
 const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
-jest.unstable_mockModule(youtubeModulePath, () => ({
-  fetchVideoInfo: jest.fn<() => Promise<typeof mockVideoInfo>>().mockResolvedValue(mockVideoInfo), // fmt: multiline
+// FetchVideoInfoResult type for the new safe fetchVideoInfo API
+type FetchVideoInfoResult = {success: boolean; info?: typeof mockVideoInfo; error?: Error; isCookieError?: boolean}
+
+// Mock modules using path aliases to match how handler imports them
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
+  // fetchVideoInfo now returns a result object {success, info, error}
+  fetchVideoInfo: jest.fn<() => Promise<FetchVideoInfoResult>>().mockResolvedValue({success: true, info: mockVideoInfo}),
   chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
   streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
 }))
 
-jest.unstable_mockModule(githubHelpersModulePath, () => ({
+jest.unstable_mockModule('#util/github-helpers', () => ({
   createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))
 
-const module = await import('../../../src/lambdas/StartFileUpload/src/index')
-const handler = module.handler
+// Mock FileDownloads entity (transient orchestration state)
+const fileDownloadsMock = createElectroDBEntityMock()
+jest.unstable_mockModule('#entities/FileDownloads', () => ({
+  FileDownloads: fileDownloadsMock.entity,
+  DownloadStatus // Re-export the real enum
+}))
+
+// Note: No #lambdas/* path alias exists, using relative import for handler
+const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   let mockContext: Context
@@ -94,7 +98,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     const file = await getFile(fileId)
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe(fileId)
-    expect(file!.status).toBe(FileStatus.Downloaded)
+    expect(file!.status).toBe(FileStatus.Available)
     expect(file!.size).toBe(5242880)
     expect(file!.key).toBe('test-video-123.mp4')
     expect(file!.title).toBe('Integration Test Video')

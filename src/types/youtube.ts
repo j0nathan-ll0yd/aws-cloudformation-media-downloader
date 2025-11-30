@@ -13,6 +13,14 @@ export interface YtDlpVideoInfo {
   upload_date?: string
   view_count?: number
   filesize?: number
+  /** Unix timestamp when video becomes available (for scheduled content) */
+  release_timestamp?: number
+  /** Whether this is a livestream */
+  is_live?: boolean
+  /** Current live status */
+  live_status?: 'is_live' | 'is_upcoming' | 'was_live' | 'not_live'
+  /** Video availability status */
+  availability?: 'public' | 'unlisted' | 'private' | 'needs_auth' | 'subscriber_only'
 }
 
 export interface YtDlpFormat {

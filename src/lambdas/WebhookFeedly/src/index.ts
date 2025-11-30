@@ -1,5 +1,6 @@
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {Files} from '#entities/Files'
+import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
@@ -38,27 +39,42 @@ export async function associateFileToUser(fileId: string, userId: string) {
 }
 
 /**
- * Adds a base File (just fileId) to DynamoDB
- * @param fileId - The unique file identifier
- * @notExported
+ * Adds a base File record to DynamoDB with placeholder metadata.
+ * Also creates a FileDownloads record to track the download orchestration.
+ *
+ * Files = permanent metadata (populated when download succeeds)
+ * FileDownloads = transient orchestration state (retries, scheduling)
+ *
+ * @param fileId - The unique file identifier (YouTube video ID)
+ * @param sourceUrl - The original YouTube URL for the video
  */
-async function addFile(fileId: string) {
-  logDebug('addFile <=', fileId)
-  const response = await Files.create({
+async function addFile(fileId: string, sourceUrl?: string) {
+  logDebug('addFile <=', {fileId, sourceUrl})
+
+  // Create placeholder Files record (will be updated with real metadata on successful download)
+  const fileResponse = await Files.create({
     fileId,
-    availableAt: Date.now(),
     size: 0,
-    status: FileStatus.PendingMetadata,
+    status: FileStatus.Pending,
     authorName: '',
     authorUser: '',
     publishDate: new Date().toISOString(),
     description: '',
-    key: fileId,
+    key: fileId, // Will be updated to include extension
     contentType: '',
     title: ''
   }).go()
-  logDebug('addFile =>', response)
-  return response
+  logDebug('addFile Files.create =>', fileResponse)
+
+  // Create FileDownloads record to track download orchestration
+  const downloadResponse = await FileDownloads.create({
+    fileId,
+    status: DownloadStatus.Pending,
+    sourceUrl
+  }).go()
+  logDebug('addFile FileDownloads.create =>', downloadResponse)
+
+  return fileResponse
 }
 
 /**
@@ -116,17 +132,21 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     await associateFileToUser(fileId, userId)
     const file = await getFile(fileId)
     let result: APIGatewayProxyResult
-    if (file && file.status == FileStatus.Downloaded) {
+    if (file && file.status == FileStatus.Available) {
+      // File already downloaded - send notification to user
       await sendFileNotification(file, userId)
       result = response(context, 200, {status: ResponseStatus.Dispatched})
     } else {
       if (!file) {
-        await addFile(fileId)
+        // New file - create Files and FileDownloads records
+        await addFile(fileId, requestBody.articleURL)
       }
       if (!requestBody.backgroundMode) {
+        // Foreground mode - initiate download immediately
         await initiateFileDownload(fileId)
         result = response(context, 202, {status: ResponseStatus.Initiated})
       } else {
+        // Background mode - FileCoordinator will pick it up
         result = response(context, 202, {status: ResponseStatus.Accepted})
       }
     }

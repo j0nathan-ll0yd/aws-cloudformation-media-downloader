@@ -8,12 +8,17 @@ data "aws_iam_policy_document" "FileCoordinator" {
     actions   = ["lambda:InvokeFunction"]
     resources = [aws_lambda_function.StartFileUpload.arn]
   }
-  # Query StatusIndex for PendingDownload files
+  # Query StatusIndex for PendingDownload and Scheduled files
   statement {
     actions = ["dynamodb:Query"]
     resources = [
       "${aws_dynamodb_table.MediaDownloader.arn}/index/StatusIndex"
     ]
+  }
+  # Publish CloudWatch metrics for monitoring
+  statement {
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
   }
 }
 

@@ -34,7 +34,9 @@ export async function createMediaDownloaderTable(): Promise<void> {
         {AttributeName: 'gsi4pk', AttributeType: 'S'},
         {AttributeName: 'gsi4sk', AttributeType: 'S'},
         {AttributeName: 'gsi5pk', AttributeType: 'S'},
-        {AttributeName: 'gsi5sk', AttributeType: 'S'}
+        {AttributeName: 'gsi5sk', AttributeType: 'S'},
+        {AttributeName: 'gsi6pk', AttributeType: 'S'},
+        {AttributeName: 'gsi6sk', AttributeType: 'S'}
       ],
       GlobalSecondaryIndexes: [{
         IndexName: 'UserCollection',
@@ -55,6 +57,10 @@ export async function createMediaDownloaderTable(): Promise<void> {
       }, {
         IndexName: 'KeyIndex',
         KeySchema: [{AttributeName: 'gsi5pk', KeyType: 'HASH'}, {AttributeName: 'gsi5sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'GSI6',
+        KeySchema: [{AttributeName: 'gsi6pk', KeyType: 'HASH'}, {AttributeName: 'gsi6sk', KeyType: 'RANGE'}],
         Projection: {ProjectionType: 'ALL'}
       }],
       BillingMode: 'PAY_PER_REQUEST'
@@ -101,13 +107,12 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
   const {Files} = await import('../../../src/entities/Files')
 
   // Get consistent defaults from createMockFile, then apply user overrides
-  const defaults = createMockFile(file.fileId!, file.status || FileStatus.PendingMetadata, file)
+  const defaults = createMockFile(file.fileId!, file.status || FileStatus.Pending, file)
 
   // ElectroDB requires all fields - createMockFile provides them all
   await Files.create({
     fileId: defaults.fileId!,
     status: defaults.status!,
-    availableAt: defaults.availableAt!,
     size: defaults.size!,
     key: defaults.key!,
     title: defaults.title!,
