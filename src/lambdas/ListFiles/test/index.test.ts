@@ -10,8 +10,8 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const {handler} = await import('./../src')
 

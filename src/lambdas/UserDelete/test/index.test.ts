@@ -41,16 +41,16 @@ jest.unstable_mockModule(
 )
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({Devices: devicesMock.entity}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const usersMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',

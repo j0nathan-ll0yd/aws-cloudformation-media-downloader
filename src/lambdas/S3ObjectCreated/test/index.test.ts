@@ -4,10 +4,10 @@ import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 const filesMock = createElectroDBEntityMock({queryIndexes: ['byKey']})
-jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SQS',

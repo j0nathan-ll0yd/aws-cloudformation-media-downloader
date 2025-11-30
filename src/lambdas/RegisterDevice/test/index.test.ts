@@ -6,10 +6,10 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({Devices: devicesMock.entity}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const userDevicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()
 jest.unstable_mockModule(

@@ -15,13 +15,13 @@ const getDeviceResponse = {
 }
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({Devices: devicesMock.entity}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const publishSnsEventMock = jest.fn<() => unknown>()
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

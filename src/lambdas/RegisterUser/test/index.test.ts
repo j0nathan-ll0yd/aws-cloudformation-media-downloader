@@ -7,11 +7,11 @@ import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
+jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
 
 // Mock Users entity for name updates
 const usersMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

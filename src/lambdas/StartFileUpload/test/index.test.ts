@@ -23,7 +23,7 @@ jest.unstable_mockModule(
 
 // Mock ElectroDB Files entity
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

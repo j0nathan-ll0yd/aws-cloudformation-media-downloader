@@ -8,7 +8,7 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
+jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
 
 const {handler} = await import('./../src')
 

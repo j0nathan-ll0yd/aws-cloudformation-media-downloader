@@ -51,7 +51,7 @@ const mockCreateS3Upload = jest.fn(
   }
 )
 
-jest.unstable_mockModule('../vendor/AWS/S3', () => ({headObject: mockHeadObject, createS3Upload: mockCreateS3Upload}))
+jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({headObject: mockHeadObject, createS3Upload: mockCreateS3Upload}))
 
 // Mock CloudWatch vendor wrapper (let logging run normally)
 jest.unstable_mockModule(

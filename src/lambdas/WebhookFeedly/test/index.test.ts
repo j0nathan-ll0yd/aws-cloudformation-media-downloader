@@ -6,10 +6,10 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SQS',
@@ -51,7 +51,7 @@ jest.unstable_mockModule(
 )
 
 const invokeAsyncMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {
   assert: {type: 'json'}

@@ -15,7 +15,7 @@ const getUsageMock = jest.fn()
 const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
 const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/ApiGateway',
+  '#lib/vendor/AWS/ApiGateway',
   () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock})
 )
 
@@ -27,7 +27,7 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule('../../../util/better-auth-helpers', () => ({validateSessionToken: validateSessionTokenMock}))
+jest.unstable_mockModule('#util/better-auth-helpers', () => ({validateSessionToken: validateSessionTokenMock}))
 
 const {handler} = await import('./../src')
 

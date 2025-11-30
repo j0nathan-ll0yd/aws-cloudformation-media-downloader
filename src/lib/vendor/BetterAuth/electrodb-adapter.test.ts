@@ -17,10 +17,10 @@ const accountsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 const verificationTokensMock = createElectroDBEntityMock()
 
 // Mock ElectroDB entities
-jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
-jest.unstable_mockModule('../../../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
-jest.unstable_mockModule('../../../entities/Accounts', () => ({Accounts: accountsMock.entity}))
-jest.unstable_mockModule('../../../entities/VerificationTokens', () => ({VerificationTokens: verificationTokensMock.entity}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
+jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+jest.unstable_mockModule('#entities/Accounts', () => ({Accounts: accountsMock.entity}))
+jest.unstable_mockModule('#entities/VerificationTokens', () => ({VerificationTokens: verificationTokensMock.entity}))
 
 // Import adapter after mocking
 const {createElectroDBAdapter} = await import('./electrodb-adapter')

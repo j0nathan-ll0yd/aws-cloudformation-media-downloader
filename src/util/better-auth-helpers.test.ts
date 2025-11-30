@@ -12,7 +12,7 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 
 // Mock Sessions entity
-jest.unstable_mockModule('../entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
 const {
