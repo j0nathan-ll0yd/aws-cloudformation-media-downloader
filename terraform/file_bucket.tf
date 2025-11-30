@@ -126,6 +126,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
     variables = {
       DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
       SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      EventBusName      = aws_cloudwatch_event_bus.MediaDownloaderEvents.name
     }
   }
 }
@@ -148,6 +149,11 @@ data "aws_iam_policy_document" "S3ObjectCreated" {
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
+  }
+  # EventBridge PutEvents for FileUploaded and NotificationQueued events
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.MediaDownloaderEvents.arn]
   }
 }
 

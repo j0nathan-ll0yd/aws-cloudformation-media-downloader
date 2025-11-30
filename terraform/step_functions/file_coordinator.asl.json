@@ -1,0 +1,191 @@
+{
+  "Comment": "FileCoordinator State Machine - Orchestrates pending file downloads with retry logic and event publishing",
+  "StartAt": "QueryPendingFiles",
+  "States": {
+    "QueryPendingFiles": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
+      "Parameters": {
+        "TableName": "${DynamoDBTableName}",
+        "IndexName": "StatusIndex",
+        "KeyConditionExpression": "gsi4pk = :status",
+        "FilterExpression": "attribute_not_exists(#url)",
+        "ExpressionAttributeNames": {
+          "#url": "url"
+        },
+        "ExpressionAttributeValues": {
+          ":status": {
+            "S": "$MediaDownloader#File_status_PendingDownload"
+          }
+        }
+      },
+      "ResultPath": "$.queryResult",
+      "Next": "CheckForFiles",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ProvisionedThroughputExceededException",
+            "DynamoDB.RequestLimitExceeded",
+            "DynamoDB.ThrottlingException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "PublishCoordinatorError"
+        }
+      ]
+    },
+    "CheckForFiles": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.queryResult.Count",
+          "NumericEquals": 0,
+          "Next": "NoFilesToProcess"
+        }
+      ],
+      "Default": "ProcessFiles"
+    },
+    "NoFilesToProcess": {
+      "Type": "Succeed",
+      "Comment": "No pending files found - nothing to process"
+    },
+    "ProcessFiles": {
+      "Type": "Map",
+      "ItemsPath": "$.queryResult.Items",
+      "MaxConcurrency": 5,
+      "ResultPath": "$.processResults",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ExtractFileId",
+        "States": {
+          "ExtractFileId": {
+            "Type": "Pass",
+            "Parameters": {
+              "fileId.$": "$.pk.S"
+            },
+            "ResultPath": "$.extracted",
+            "Next": "ParseFileId"
+          },
+          "ParseFileId": {
+            "Type": "Pass",
+            "Comment": "ElectroDB pk format is $MediaDownloader#File_fileId - extract the actual fileId",
+            "Parameters": {
+              "fileId.$": "States.ArrayGetItem(States.StringSplit($.extracted.fileId, '_'), 1)"
+            },
+            "Next": "InvokeStartFileUpload"
+          },
+          "InvokeStartFileUpload": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${StartFileUploadArn}",
+              "InvocationType": "Event",
+              "Payload": {
+                "fileId.$": "$.fileId"
+              }
+            },
+            "ResultPath": "$.invokeResult",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.TooManyRequestsException",
+                  "Lambda.ServiceException"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 5,
+                "BackoffRate": 2
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": "$.error",
+                "Next": "PublishFileDownloadFailed"
+              }
+            ],
+            "Next": "PublishDownloadInitiated"
+          },
+          "PublishDownloadInitiated": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::events:putEvents",
+            "Parameters": {
+              "Entries": [
+                {
+                  "EventBusName": "${EventBusName}",
+                  "Source": "step-functions.file-coordinator",
+                  "DetailType": "FileDownloadInitiated",
+                  "Detail": {
+                    "fileId.$": "$.fileId",
+                    "timestamp.$": "$$.State.EnteredTime",
+                    "status": "InProgress",
+                    "initiatedBy": "step-functions"
+                  }
+                }
+              ]
+            },
+            "ResultPath": "$.eventResult",
+            "End": true
+          },
+          "PublishFileDownloadFailed": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::events:putEvents",
+            "Parameters": {
+              "Entries": [
+                {
+                  "EventBusName": "${EventBusName}",
+                  "Source": "step-functions.file-coordinator",
+                  "DetailType": "FileDownloadFailed",
+                  "Detail": {
+                    "fileId.$": "$.fileId",
+                    "timestamp.$": "$$.State.EnteredTime",
+                    "error.$": "$.error"
+                  }
+                }
+              ]
+            },
+            "ResultPath": "$.eventResult",
+            "End": true
+          }
+        }
+      },
+      "Next": "ExecutionComplete"
+    },
+    "ExecutionComplete": {
+      "Type": "Succeed",
+      "Comment": "All files processed successfully"
+    },
+    "PublishCoordinatorError": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::events:putEvents",
+      "Parameters": {
+        "Entries": [
+          {
+            "EventBusName": "${EventBusName}",
+            "Source": "step-functions.file-coordinator",
+            "DetailType": "FileCoordinatorError",
+            "Detail": {
+              "timestamp.$": "$$.State.EnteredTime",
+              "error.$": "$.error",
+              "executionArn.$": "$$.Execution.Id"
+            }
+          }
+        ]
+      },
+      "Next": "FailExecution"
+    },
+    "FailExecution": {
+      "Type": "Fail",
+      "Error": "FileCoordinatorError",
+      "Cause": "FileCoordinator execution failed - check CloudWatch Logs and EventBridge for details"
+    }
+  }
+}

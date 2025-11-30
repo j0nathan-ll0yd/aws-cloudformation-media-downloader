@@ -22,6 +22,11 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     ]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
+  # EventBridge PutEvents for FileWebhookReceived events
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.MediaDownloaderEvents.arn]
+  }
 }
 
 resource "aws_iam_policy" "WebhookFeedlyRolePolicy" {
@@ -79,6 +84,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
     variables = {
       DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
       SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      EventBusName      = aws_cloudwatch_event_bus.MediaDownloaderEvents.name
     }
   }
 }
