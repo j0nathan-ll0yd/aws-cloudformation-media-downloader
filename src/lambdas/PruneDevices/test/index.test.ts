@@ -53,7 +53,7 @@ const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SNS',
+  '#lib/vendor/AWS/SNS',
   () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()})
 )
 

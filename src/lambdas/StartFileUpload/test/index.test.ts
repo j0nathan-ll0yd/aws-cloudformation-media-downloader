@@ -13,7 +13,7 @@ const streamVideoToS3Mock = jest.fn<
 >()
 
 jest.unstable_mockModule(
-  '../../../lib/vendor/YouTube',
+  '#lib/vendor/YouTube',
   () => ({fetchVideoInfo: fetchVideoInfoMock, chooseVideoFormat: chooseVideoFormatMock, streamVideoToS3: streamVideoToS3Mock})
 )
 

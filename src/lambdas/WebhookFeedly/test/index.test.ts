@@ -12,7 +12,7 @@ const userFilesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SQS',
+  '#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: jest.fn().mockReturnValue({
       MD5OfMessageBody: '44dd2fc26e4186dc12b8e67ccb9a9435',
@@ -40,7 +40,7 @@ jest.unstable_mockModule('fs', () => ({promises: {copyFile: jest.fn()}}))
 
 // Mock S3 vendor wrapper for YouTube
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/S3',
+  '#lib/vendor/AWS/S3',
   () => ({
     headObject: jest.fn(),
     createS3Upload: jest.fn().mockReturnValue({

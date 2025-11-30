@@ -10,7 +10,7 @@ const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SQS',
+  '#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: jest.fn(),
     stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),

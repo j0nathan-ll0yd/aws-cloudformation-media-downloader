@@ -17,7 +17,7 @@ jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImpleme
 
 // Mock template helpers
 jest.unstable_mockModule(
-  './template-helpers',
+  '#util/template-helpers',
   () => ({
     renderGithubIssueTemplate: jest.fn<(templateName: string, data: object) => string>().mockImplementation((templateName: string) => {
       return `Rendered template: ${templateName}`

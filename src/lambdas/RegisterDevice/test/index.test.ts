@@ -22,7 +22,7 @@ const {default: querySuccessResponse} = await import('./fixtures/query-201-Creat
 const createPlatformEndpointMock = jest.fn()
 const listSubscriptionsByTopicMock = jest.fn()
 jest.unstable_mockModule(
-  '../../../lib/vendor/AWS/SNS',
+  '#lib/vendor/AWS/SNS',
   () => ({
     deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}),
     subscribe: jest.fn().mockReturnValue(subscribeResponse),
