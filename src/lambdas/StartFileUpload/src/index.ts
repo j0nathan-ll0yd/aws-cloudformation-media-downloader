@@ -10,7 +10,7 @@ import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#uti
 import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#util/video-error-classifier'
-import {FileDownloads} from '#entities/FileDownloads'
+import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 
 /**
  * Update FileDownload entity with current download state.
@@ -18,7 +18,7 @@ import {FileDownloads} from '#entities/FileDownloads'
  */
 async function updateDownloadState(
   fileId: string,
-  status: 'pending' | 'in_progress' | 'scheduled' | 'completed' | 'failed',
+  status: DownloadStatus,
   classification?: VideoErrorClassification,
   retryCount = 0
 ): Promise<void> {
