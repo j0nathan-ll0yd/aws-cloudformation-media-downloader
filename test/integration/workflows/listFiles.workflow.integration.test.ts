@@ -39,21 +39,21 @@ const __dirname = dirname(__filename)
 const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles')
 const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
-const userFilesMock = createElectroDBEntityMock({ queryIndexes: ['byUser'] })
-jest.unstable_mockModule(userFilesModulePath, () => ({ UserFiles: userFilesMock.entity }))
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+jest.unstable_mockModule(userFilesModulePath, () => ({UserFiles: userFilesMock.entity}))
 
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(filesModulePath, () => ({ Files: filesMock.entity }))
+jest.unstable_mockModule(filesModulePath, () => ({Files: filesMock.entity}))
 
-const { handler } = await import('../../../src/lambdas/ListFiles/src/index')
+const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
 
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: null,
     headers: userId && userStatus === UserStatus.Authenticated
-      ? { Authorization: 'Bearer test-token' }
+      ? {Authorization: 'Bearer test-token'}
       : userStatus === UserStatus.Unauthenticated
-      ? { Authorization: 'Bearer invalid-token' }
+      ? {Authorization: 'Bearer invalid-token'}
       : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
@@ -81,7 +81,7 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
         userStatus,
         integrationLatency: 342
       },
-      identity: { sourceIp: '127.0.0.1', userAgent: 'test-agent' }
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/files'
   } as unknown as CustomAPIGatewayRequestAuthorizerEvent
@@ -125,9 +125,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Files.get now uses BATCH get - returns array of files with unprocessed
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('video-1', FileStatus.Downloaded, { title: 'Video 1' }),
-        createMockFile('video-2', FileStatus.Downloaded, { title: 'Video 2', size: 10485760 }),
-        createMockFile('video-3', FileStatus.PendingDownload, { title: 'Video 3 (not ready)' })
+        createMockFile('video-1', FileStatus.Downloaded, {title: 'Video 1'}),
+        createMockFile('video-2', FileStatus.Downloaded, {title: 'Video 2', size: 10485760}),
+        createMockFile('video-3', FileStatus.PendingDownload, {title: 'Video 3 (not ready)'})
       ],
       unprocessed: []
     })
@@ -149,7 +149,7 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return empty list when user has no files', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({ data: [] })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
 
     const event = createListFilesEvent('user-no-files', UserStatus.Authenticated)
 
@@ -206,11 +206,11 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Files.get now uses BATCH get - returns array of all files
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('downloaded-1', FileStatus.Downloaded, { title: 'Downloaded 1' }),
-        createMockFile('downloaded-2', FileStatus.Downloaded, { title: 'Downloaded 2' }),
-        createMockFile('pending-1', FileStatus.PendingMetadata, { title: 'Pending 1' }),
-        createMockFile('failed-1', FileStatus.Failed, { title: 'Failed 1' }),
-        createMockFile('pending-download-1', FileStatus.PendingDownload, { title: 'Pending Download 1' })
+        createMockFile('downloaded-1', FileStatus.Downloaded, {title: 'Downloaded 1'}),
+        createMockFile('downloaded-2', FileStatus.Downloaded, {title: 'Downloaded 2'}),
+        createMockFile('pending-1', FileStatus.PendingMetadata, {title: 'Pending 1'}),
+        createMockFile('failed-1', FileStatus.Failed, {title: 'Failed 1'}),
+        createMockFile('pending-download-1', FileStatus.PendingDownload, {title: 'Pending Download 1'})
       ],
       unprocessed: []
     })
@@ -233,7 +233,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
   test('should handle large batch of files efficiently', async () => {
     // Arrange: Mock ElectroDB with 50 files
-    const fileIds = Array.from({ length: 50 }, (_, i) => `video-${i}`)
+    const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
 
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
       data: fileIds.map((fileId) => createMockUserFile('user-many-files', fileId))

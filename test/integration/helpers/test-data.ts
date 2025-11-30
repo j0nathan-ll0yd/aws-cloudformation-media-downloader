@@ -37,7 +37,7 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
     base.url = `https://example.com/${id}.mp4`
   }
 
-  return { ...base, ...partial }
+  return {...base, ...partial}
 }
 
 /**
@@ -47,7 +47,7 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
  * @param idPrefix - Prefix for file IDs (default: 'video')
  */
 export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<DynamoDBFile>[] {
-  return Array.from({ length: count }, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
+  return Array.from({length: count}, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
 }
 
 /**
@@ -56,7 +56,7 @@ export function createMockFiles(count: number, status: FileStatus, idPrefix = 'v
  * @param fileId - File ID
  */
 export function createMockUserFile(userId: string, fileId: string) {
-  return { userId, fileId }
+  return {userId, fileId}
 }
 
 /**
@@ -65,7 +65,7 @@ export function createMockUserFile(userId: string, fileId: string) {
  * @param deviceId - Device UUID
  */
 export function createMockUserDevice(userId: string, deviceId: string) {
-  return { userId, deviceId }
+  return {userId, deviceId}
 }
 
 /**
@@ -74,7 +74,7 @@ export function createMockUserDevice(userId: string, deviceId: string) {
  * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
  */
 export function createMockDevice(deviceId: string, endpointArn?: string) {
-  return { deviceId, endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}` }
+  return {deviceId, endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`}
 }
 
 /**
@@ -86,7 +86,7 @@ export function createMockDevice(deviceId: string, endpointArn?: string) {
 export function createMockSQSFileNotificationEvent(
   userId: string,
   fileId: string,
-  partial?: { title?: string; size?: number; url?: string }
+  partial?: {title?: string; size?: number; url?: string}
 ): SQSEvent {
   const file = createMockFile(fileId, FileStatus.Downloaded, partial)
 
@@ -102,13 +102,13 @@ export function createMockSQSFileNotificationEvent(
         ApproximateFirstReceiveTimestamp: String(Date.now())
       },
       messageAttributes: {
-        userId: { stringValue: userId, dataType: 'String' },
-        fileId: { stringValue: fileId, dataType: 'String' },
-        key: { stringValue: file.key || `${fileId}.mp4`, dataType: 'String' },
-        publishDate: { stringValue: file.publishDate || new Date().toISOString(), dataType: 'String' },
-        size: { stringValue: String(file.size || 5242880), dataType: 'String' },
-        url: { stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String' },
-        title: { stringValue: file.title || 'Test Video', dataType: 'String' }
+        userId: {stringValue: userId, dataType: 'String'},
+        fileId: {stringValue: fileId, dataType: 'String'},
+        key: {stringValue: file.key || `${fileId}.mp4`, dataType: 'String'},
+        publishDate: {stringValue: file.publishDate || new Date().toISOString(), dataType: 'String'},
+        size: {stringValue: String(file.size || 5242880), dataType: 'String'},
+        url: {stringValue: file.url || `https://example.com/${fileId}.mp4`, dataType: 'String'},
+        title: {stringValue: file.title || 'Test Video', dataType: 'String'}
       },
       md5OfBody: 'test-md5',
       eventSource: 'aws:sqs',

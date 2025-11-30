@@ -31,13 +31,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
 
-const invokeLambdaMock = jest.fn<() => Promise<{ StatusCode: number }>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock }))
+const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
-const { handler } = await import('../../../src/lambdas/FileCoordinator/src/index')
+const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
 
 async function insertPendingFile(fileId: string, availableAt: number, title?: string) {
-  await insertFile({ fileId, status: FileStatus.PendingDownload, availableAt, title: title || `Test Video ${fileId}` })
+  await insertFile({fileId, status: FileStatus.PendingDownload, availableAt, title: title || `Test Video ${fileId}`})
 }
 
 describe('FileCoordinator Workflow Integration Tests', () => {
@@ -56,7 +56,7 @@ describe('FileCoordinator Workflow Integration Tests', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     invokeLambdaMock.mockClear()
-    invokeLambdaMock.mockResolvedValue({ StatusCode: 202 })
+    invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
     await deleteFilesTable()
     await createFilesTable()
@@ -123,9 +123,8 @@ describe('FileCoordinator Workflow Integration Tests', () => {
       size: 5242880
     })
 
-    const { Files } = await import('../../../src/entities/Files')
-    await Files.update({ fileId: 'downloaded-video' }).set({ url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4' })
-      .go()
+    const {Files} = await import('../../../src/entities/Files')
+    await Files.update({fileId: 'downloaded-video'}).set({url: 'https://s3.amazonaws.com/bucket/downloaded-video.mp4'}).go()
 
     const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
 

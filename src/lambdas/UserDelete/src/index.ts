@@ -21,10 +21,10 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
-  const userFiles = await UserFiles.query.byUser({ userId }).go()
+  const userFiles = await UserFiles.query.byUser({userId}).go()
   if (userFiles.data && userFiles.data.length > 0) {
-    const deleteKeys = userFiles.data.map((userFile) => ({ userId: userFile.userId, fileId: userFile.fileId }))
-    const { unprocessed } = await UserFiles.delete(deleteKeys).go({ concurrency: 5 })
+    const deleteKeys = userFiles.data.map((userFile) => ({userId: userFile.userId, fileId: userFile.fileId}))
+    const {unprocessed} = await UserFiles.delete(deleteKeys).go({concurrency: 5})
     if (unprocessed.length > 0) {
       logDebug('deleteUserFiles.unprocessed =>', unprocessed)
     }
@@ -34,16 +34,16 @@ async function deleteUserFiles(userId: string): Promise<void> {
 
 async function deleteUser(userId: string): Promise<void> {
   logDebug('deleteUser <=', userId)
-  const response = await Users.delete({ userId }).go()
+  const response = await Users.delete({userId}).go()
   logDebug('deleteUser =>', response)
 }
 
 async function deleteUserDevices(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
-  const userDevices = await UserDevices.query.byUser({ userId }).go()
+  const userDevices = await UserDevices.query.byUser({userId}).go()
   if (userDevices.data && userDevices.data.length > 0) {
-    const deleteKeys = userDevices.data.map((userDevice) => ({ userId: userDevice.userId, deviceId: userDevice.deviceId }))
-    const { unprocessed } = await UserDevices.delete(deleteKeys).go({ concurrency: 5 })
+    const deleteKeys = userDevices.data.map((userDevice) => ({userId: userDevice.userId, deviceId: userDevice.deviceId}))
+    const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
     if (unprocessed.length > 0) {
       logDebug('deleteUserDevices.unprocessed =>', unprocessed)
     }
@@ -60,7 +60,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
 export const handler = withXRay(
   async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
     logIncomingFixture(event)
-    const { userId } = getUserDetailsFromEvent(event)
+    const {userId} = getUserDetailsFromEvent(event)
     if (!userId) {
       // This should never happen; enforced by the API Gateway Authorizer
       const error = new UnexpectedError('No userId found')
@@ -74,8 +74,8 @@ export const handler = withXRay(
       /* c8 ignore else */
       logDebug('Found userDevices', userDevices.length.toString())
       if (userDevices.length > 0) {
-        const deviceKeys = userDevices.map((userDevice) => ({ deviceId: userDevice.deviceId }))
-        const { data: devices, unprocessed } = await Devices.get(deviceKeys).go({ concurrency: 5 })
+        const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
+        const {data: devices, unprocessed} = await Devices.get(deviceKeys).go({concurrency: 5})
         logDebug('Found devices', devices.length.toString())
         if (unprocessed.length > 0) {
           logDebug('getDevices.unprocessed =>', unprocessed)

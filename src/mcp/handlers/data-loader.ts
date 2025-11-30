@@ -15,8 +15,8 @@ const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '../../..')
 
 interface DependencyGraph {
-  metadata: { generated: string; projectRoot: string; totalFiles: number }
-  files: Record<string, { file: string; imports: string[] }>
+  metadata: {generated: string; projectRoot: string; totalFiles: number}
+  files: Record<string, {file: string; imports: string[]}>
   transitiveDependencies: Record<string, string[]>
 }
 
@@ -43,8 +43,8 @@ interface Metadata {
   externalServices: ServiceMetadata[]
   awsServices: ServiceMetadata[]
   entityRelationships: EntityRelationship[]
-  lambdaInvocations: Array<{ from: string; to: string; via: string }>
-  serviceToServiceEdges: Array<{ from: string; to: string; relationship: string; event?: string }>
+  lambdaInvocations: Array<{from: string; to: string; via: string}>
+  serviceToServiceEdges: Array<{from: string; to: string; relationship: string; event?: string}>
 }
 
 // Cache for loaded data
@@ -90,7 +90,7 @@ export async function loadDependencyGraph(): Promise<DependencyGraph> {
  */
 export async function discoverLambdas(): Promise<string[]> {
   const lambdasDir = path.join(projectRoot, 'src', 'lambdas')
-  const entries = await fs.readdir(lambdasDir, { withFileTypes: true })
+  const entries = await fs.readdir(lambdasDir, {withFileTypes: true})
   return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort()
 }
 
@@ -111,7 +111,7 @@ export async function discoverEntities(): Promise<string[]> {
 export async function getLambdaConfigs(): Promise<
   Record<
     string,
-    { name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[] }
+    {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}
   >
 > {
   const [lambdaNames, metadata, depGraph, entityNames] = await Promise.all([
@@ -123,11 +123,11 @@ export async function getLambdaConfigs(): Promise<
 
   const configs: Record<
     string,
-    { name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[] }
+    {name: string; trigger: string; purpose: string; dependencies: string[]; entities: string[]}
   > = {}
 
   for (const name of lambdaNames) {
-    const lambdaMeta = metadata.lambdas[name] || { trigger: 'Unknown', purpose: 'Unknown' }
+    const lambdaMeta = metadata.lambdas[name] || {trigger: 'Unknown', purpose: 'Unknown'}
     const entryPoint = `src/lambdas/${name}/src/index.ts`
     const deps = depGraph.transitiveDependencies[entryPoint] || []
 
@@ -154,7 +154,7 @@ export async function getLambdaConfigs(): Promise<
       }
     }
 
-    configs[name] = { name, trigger: lambdaMeta.trigger, purpose: lambdaMeta.purpose, dependencies: awsServices, entities }
+    configs[name] = {name, trigger: lambdaMeta.trigger, purpose: lambdaMeta.purpose, dependencies: awsServices, entities}
   }
 
   return configs
@@ -164,18 +164,18 @@ export async function getLambdaConfigs(): Promise<
  * Get entity schemas and relationships
  */
 export async function getEntityInfo(): Promise<
-  { entities: string[]; relationships: EntityRelationship[] }
+  {entities: string[]; relationships: EntityRelationship[]}
 > {
   const [entities, metadata] = await Promise.all([discoverEntities(), loadMetadata()])
 
-  return { entities, relationships: metadata.entityRelationships }
+  return {entities, relationships: metadata.entityRelationships}
 }
 
 /**
  * Get Lambda invocation chains
  */
 export async function getLambdaInvocations(): Promise<
-  Array<{ from: string; to: string; via: string }>
+  Array<{from: string; to: string; via: string}>
 > {
   const metadata = await loadMetadata()
   return metadata.lambdaInvocations

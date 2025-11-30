@@ -30,10 +30,10 @@ const config: webpack.Configuration = {
     'aws-xray-sdk-core': 'aws-xray-sdk-core',
     'supports-color': 'supports-color'
   },
-  resolve: { extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'] },
-  output: { libraryTarget: 'umd', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js' },
-  optimization: { usedExports: true },
-  stats: { usedExports: true },
+  resolve: {extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']},
+  output: {libraryTarget: 'umd', path: path.resolve(__dirname, './../build/lambdas'), filename: '[name].js'},
+  optimization: {usedExports: true},
+  stats: {usedExports: true},
   target: 'node',
   module: {
     rules: [{
@@ -43,9 +43,7 @@ const config: webpack.Configuration = {
       use: 'ts-loader'
     }]
   },
-  plugins: [
-    new ForkTsCheckerWebpackPlugin({ typescript: { configOverwrite: { exclude: ['**/*.test.ts', '**/test/**'] } } })
-  ],
+  plugins: [new ForkTsCheckerWebpackPlugin({typescript: {configOverwrite: {exclude: ['**/*.test.ts', '**/test/**']}}})],
   watch: false
 }
 

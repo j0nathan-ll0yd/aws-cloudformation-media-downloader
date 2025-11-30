@@ -3,10 +3,10 @@ import {testContext} from '../../../util/jest-setup'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../types/main'
 
 const subscribeMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({ deleteEndpoint: jest.fn(), subscribe: subscribeMock }))
+jest.unstable_mockModule('../../../lib/vendor/AWS/SNS', () => ({deleteEndpoint: jest.fn(), subscribe: subscribeMock}))
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
-const { handler } = await import('./../src')
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#UserSubscribe', () => {
   const context = testContext
@@ -16,7 +16,7 @@ describe('#UserSubscribe', () => {
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
   })
   test('should create a new remote endpoint (for the mobile phone)', async () => {
-    const { default: subscribeResponse } = await import('./fixtures/subscribe-200-OK.json', { assert: { type: 'json' } })
+    const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
     subscribeMock.mockReturnValue(subscribeResponse)
     const output = await handler(event, context)
     const body = JSON.parse(output.body)

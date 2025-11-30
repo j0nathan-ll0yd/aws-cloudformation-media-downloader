@@ -16,16 +16,16 @@ import {documentClient, Entity} from '../lib/vendor/ElectroDB/entity'
  */
 export const Sessions = new Entity(
   {
-    model: { entity: 'Session', version: '1', service: 'MediaDownloader' },
+    model: {entity: 'Session', version: '1', service: 'MediaDownloader'},
     attributes: {
-      sessionId: { type: 'string', required: true, readOnly: true },
-      userId: { type: 'string', required: true },
-      expiresAt: { type: 'number', required: true },
-      token: { type: 'string', required: true },
-      ipAddress: { type: 'string', required: false },
-      userAgent: { type: 'string', required: false },
-      deviceId: { type: 'string', required: false },
-      createdAt: { type: 'number', required: true, default: () => Date.now(), readOnly: true },
+      sessionId: {type: 'string', required: true, readOnly: true},
+      userId: {type: 'string', required: true},
+      expiresAt: {type: 'number', required: true},
+      token: {type: 'string', required: true},
+      ipAddress: {type: 'string', required: false},
+      userAgent: {type: 'string', required: false},
+      deviceId: {type: 'string', required: false},
+      createdAt: {type: 'number', required: true, default: () => Date.now(), readOnly: true},
       updatedAt: {
         type: 'number',
         required: true,
@@ -35,20 +35,16 @@ export const Sessions = new Entity(
       }
     },
     indexes: {
-      primary: { pk: { field: 'pk', composite: ['sessionId'] }, sk: { field: 'sk', composite: [] } },
-      byUser: {
-        index: 'gsi1',
-        pk: { field: 'gsi1pk', composite: ['userId'] },
-        sk: { field: 'gsi1sk', composite: ['expiresAt'] }
-      },
+      primary: {pk: {field: 'pk', composite: ['sessionId']}, sk: {field: 'sk', composite: []}},
+      byUser: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}},
       byDevice: {
         index: 'gsi2',
-        pk: { field: 'gsi2pk', composite: ['deviceId'] },
-        sk: { field: 'gsi2sk', composite: ['createdAt'] }
+        pk: {field: 'gsi2pk', composite: ['deviceId']},
+        sk: {field: 'gsi2sk', composite: ['createdAt']}
       }
     }
   } as const,
-  { table: process.env.DynamoDBTableName, client: documentClient }
+  {table: process.env.DynamoDBTableName, client: documentClient}
 )
 
 // Type exports for use in application code

@@ -47,13 +47,9 @@ const __dirname = dirname(__filename)
 const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 const githubHelpersModulePath = resolve(__dirname, '../../../src/util/github-helpers')
 
-const mockVideoInfo = createMockVideoInfo({
-  id: 'test-video-123',
-  title: 'Integration Test Video',
-  uploader: 'Test Channel'
-})
+const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
 
-const mockFormat = createMockVideoFormat({ format_id: '18', ext: 'mp4', filesize: 5242880 })
+const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
 
 jest.unstable_mockModule(
   youtubeModulePath,
@@ -96,7 +92,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {
     const fileId = 'test-video-123'
-    const event = { fileId }
+    const event = {fileId}
 
     const result = await handler(event, mockContext)
 

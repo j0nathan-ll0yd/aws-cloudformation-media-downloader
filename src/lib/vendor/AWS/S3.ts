@@ -13,7 +13,7 @@ const s3Client = createS3Client()
  */
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
 export async function headObject(bucket: string, key: string): Promise<HeadObjectCommandOutput> {
-  const params: HeadObjectCommandInput = { Bucket: bucket, Key: key }
+  const params: HeadObjectCommandInput = {Bucket: bucket, Key: key}
   const command = new HeadObjectCommand(params)
   return s3Client.send(command)
 }
@@ -38,7 +38,7 @@ export function createS3Upload(
 ): Upload {
   return new Upload({
     client: s3Client,
-    params: { Bucket: bucket, Key: key, Body: body, ContentType: contentType },
+    params: {Bucket: bucket, Key: key, Body: body, ContentType: contentType},
     queueSize: options?.queueSize || 4,
     partSize: options?.partSize || 5 * 1024 * 1024, // 5MB default
     ...options

@@ -23,5 +23,5 @@ export async function createTable(input: CreateTableCommandInput): Promise<void>
  * @param tableName - Name of the table to delete
  */
 export async function deleteTable(tableName: string): Promise<void> {
-  await dynamoDBClient.send(new DeleteTableCommand({ TableName: tableName }))
+  await dynamoDBClient.send(new DeleteTableCommand({TableName: tableName}))
 }

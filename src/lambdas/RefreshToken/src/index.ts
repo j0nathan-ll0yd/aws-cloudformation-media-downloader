@@ -39,7 +39,7 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
     const authHeader = event.headers?.Authorization || event.headers?.authorization
     if (!authHeader) {
       logError('RefreshToken: missing Authorization header')
-      const errorResult = response(context, 401, { error: 'Missing Authorization header' })
+      const errorResult = response(context, 401, {error: 'Missing Authorization header'})
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -48,7 +48,7 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
     const tokenMatch = authHeader.match(/^Bearer (.+)$/)
     if (!tokenMatch) {
       logError('RefreshToken: invalid Authorization header format')
-      const errorResult = response(context, 401, { error: 'Invalid Authorization header format' })
+      const errorResult = response(context, 401, {error: 'Invalid Authorization header format'})
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -60,8 +60,8 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
     const sessionPayload = await validateSessionToken(token)
 
     // Refresh the session (extend expiration)
-    logDebug('RefreshToken: refreshing session', { sessionId: sessionPayload.sessionId })
-    const { expiresAt } = await refreshSession(sessionPayload.sessionId)
+    logDebug('RefreshToken: refreshing session', {sessionId: sessionPayload.sessionId})
+    const {expiresAt} = await refreshSession(sessionPayload.sessionId)
 
     // Return success with updated session info
     const responseData = {
@@ -71,13 +71,13 @@ export const handler = withXRay(async (event: APIGatewayProxyEvent, context: Con
       userId: sessionPayload.userId
     }
 
-    logInfo('RefreshToken: session refreshed successfully', { sessionId: sessionPayload.sessionId, expiresAt })
+    logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
     const successResult = response(context, 200, responseData)
     logOutgoingFixture(successResult)
     return successResult
   } catch (error) {
-    logError('RefreshToken: error', { error })
+    logError('RefreshToken: error', {error})
     const errorResult = lambdaErrorResponse(context, error)
     logOutgoingFixture(errorResult)
     return errorResult

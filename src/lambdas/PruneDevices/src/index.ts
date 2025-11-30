@@ -51,18 +51,18 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
     contentAvailable: true,
     type: PushType.background,
     priority: Priority.throttled,
-    aps: { health: 'check' }
+    aps: {health: 'check'}
   })
   try {
     logDebug('apnProvider.send <=', healthCheckNotification)
     const result = await client.send(healthCheckNotification)
     logDebug('apnProvider.send =>', result)
-    return { statusCode: 200 }
+    return {statusCode: 200}
   } catch (err) {
     logError('apnProvider.send =>', err as object)
     if (err && typeof err === 'object' && 'reason' in err) {
       const apnsError = err as Apns2Error
-      return { statusCode: Number(apnsError.statusCode), reason: apnsError.reason }
+      return {statusCode: Number(apnsError.statusCode), reason: apnsError.reason}
     } else {
       throw new UnexpectedError('Unexpected result from APNS')
     }
@@ -71,7 +71,7 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
 
 async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
   logDebug('getUserIdsByDeviceId <=', deviceId)
-  const response = await UserDevices.query.byDevice({ deviceId }).go()
+  const response = await UserDevices.query.byDevice({deviceId}).go()
   logDebug('getUserIdsByDeviceId =>', response)
   if (!response || !response.data) {
     return []
@@ -92,7 +92,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  */
 export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevicesResult> => {
   logInfo('event <=', event)
-  const result: PruneDevicesResult = { devicesChecked: 0, devicesPruned: 0, errors: [] }
+  const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()
   result.devicesChecked = devices.length
@@ -106,8 +106,8 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
         const userIds = await getUserIdsByDeviceId(deviceId)
         const deleteUserDevicesPromise = userIds.length > 0
           ? (async () => {
-            const deleteKeys = userIds.map((userId) => ({ userId, deviceId }))
-            const { unprocessed } = await UserDevices.delete(deleteKeys).go({ concurrency: 5 })
+            const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+            const {unprocessed} = await UserDevices.delete(deleteKeys).go({concurrency: 5})
             if (unprocessed.length > 0) {
               logDebug('deleteUserDevices.unprocessed =>', unprocessed)
             }

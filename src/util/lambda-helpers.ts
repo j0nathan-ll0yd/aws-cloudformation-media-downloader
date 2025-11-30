@@ -38,16 +38,16 @@ export function response(
     error = true
   }
   if (error) {
-    const rawBody = { error: { code, message: body }, requestId: context.awsRequestId }
+    const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
-    return { body: JSON.stringify(rawBody), headers, statusCode } as APIGatewayProxyResult
+    return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else if (body) {
-    const rawBody = { body, requestId: context.awsRequestId }
+    const rawBody = {body, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
-    return { body: JSON.stringify(rawBody), headers, statusCode } as APIGatewayProxyResult
+    return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
   } else {
     logDebug('response ==', '')
-    return { body: '', headers, statusCode } as APIGatewayProxyResult
+    return {body: '', headers, statusCode} as APIGatewayProxyResult
   }
 }
 
@@ -117,7 +117,7 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
   logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
   logDebug('getUserDetailsFromEvent.authHeader', authHeader)
   logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
-  return { userId, userStatus } as UserEventDetails
+  return {userId, userStatus} as UserEventDetails
 }
 
 /**
@@ -131,7 +131,7 @@ export async function putMetric(
   metricName: string,
   value: number,
   unit?: string,
-  dimensions: { Name: string; Value: string }[] = []
+  dimensions: {Name: string; Value: string}[] = []
 ): Promise<void> {
   try {
     await putMetricData({
@@ -144,10 +144,10 @@ export async function putMetric(
         Dimensions: dimensions
       }]
     })
-    logDebug(`Published metric: ${metricName}`, { value, unit: unit || 'Count', dimensions })
+    logDebug(`Published metric: ${metricName}`, {value, unit: unit || 'Count', dimensions})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
-    logError('Failed to publish CloudWatch metric', { metricName, error })
+    logError('Failed to publish CloudWatch metric', {metricName, error})
   }
 }
 
@@ -157,7 +157,7 @@ export async function putMetric(
  */
 export async function putMetrics(
   metrics: Array<
-    { name: string; value: number; unit?: string; dimensions?: { Name: string; Value: string }[] }
+    {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}
   >
 ): Promise<void> {
   try {
@@ -171,7 +171,7 @@ export async function putMetrics(
         Dimensions: m.dimensions || []
       }))
     })
-    logDebug(`Published ${metrics.length} metrics`, { metrics: metrics.map((m) => m.name) })
+    logDebug(`Published ${metrics.length} metrics`, {metrics: metrics.map((m) => m.name)})
   } catch (error) {
     // Don't fail Lambda execution if metrics fail
     logError('Failed to publish CloudWatch metrics', error)
@@ -193,7 +193,7 @@ function sanitizeForTest(data: unknown): unknown {
     return data.map((item) => sanitizeForTest(item))
   }
 
-  const sanitized: Record<string, unknown> = { ...(data as Record<string, unknown>) }
+  const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
 
   // Remove sensitive fields
   const sensitiveFields = [

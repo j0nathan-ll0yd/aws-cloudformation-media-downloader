@@ -16,8 +16,8 @@ describe('lambda-helpers', () => {
 
   describe('logIncomingFixture', () => {
     it('should log incoming fixture with manual type', async () => {
-      const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = { httpMethod: 'POST', body: '{"test":"data"}', headers: { Authorization: 'Bearer token123' } }
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST', body: '{"test":"data"}', headers: {Authorization: 'Bearer token123'}}
 
       logIncomingFixture(mockEvent, 'test-fixture')
 
@@ -33,8 +33,8 @@ describe('lambda-helpers', () => {
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
-      const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = { httpMethod: 'POST' }
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent)
 
@@ -46,8 +46,8 @@ describe('lambda-helpers', () => {
     it('should use manual override when provided', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
-      const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = { httpMethod: 'POST' }
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent, 'CustomName')
 
@@ -59,8 +59,8 @@ describe('lambda-helpers', () => {
     it('should fallback to UnknownLambda when no name available', async () => {
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
-      const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = { httpMethod: 'POST' }
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent)
 
@@ -72,11 +72,11 @@ describe('lambda-helpers', () => {
 
   describe('logOutgoingFixture', () => {
     it('should log outgoing fixture with manual type', async () => {
-      const { logOutgoingFixture } = await import('./lambda-helpers')
+      const {logOutgoingFixture} = await import('./lambda-helpers')
       const mockResponse = {
         statusCode: 200,
-        body: JSON.stringify({ success: true }),
-        headers: { 'Content-Type': 'application/json' }
+        body: JSON.stringify({success: true}),
+        headers: {'Content-Type': 'application/json'}
       }
 
       logOutgoingFixture(mockResponse, 'test-fixture')
@@ -92,8 +92,8 @@ describe('lambda-helpers', () => {
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
-      const { logOutgoingFixture } = await import('./lambda-helpers')
-      const mockResponse = { statusCode: 200 }
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse)
 
@@ -105,8 +105,8 @@ describe('lambda-helpers', () => {
     it('should use manual override when provided', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
-      const { logOutgoingFixture } = await import('./lambda-helpers')
-      const mockResponse = { statusCode: 200 }
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse, 'CustomName')
 
@@ -118,8 +118,8 @@ describe('lambda-helpers', () => {
     it('should fallback to UnknownLambda when no name available', async () => {
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
-      const { logOutgoingFixture } = await import('./lambda-helpers')
-      const mockResponse = { statusCode: 200 }
+      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse)
 
@@ -131,7 +131,7 @@ describe('lambda-helpers', () => {
 
   describe('sanitization', () => {
     it('should redact sensitive fields', async () => {
-      const { logIncomingFixture } = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
         authorization: 'Bearer secret',
         Authorization: 'Bearer secret2',
@@ -157,10 +157,10 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle nested objects', async () => {
-      const { logIncomingFixture } = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('./lambda-helpers')
       const mockEvent = {
-        headers: { Authorization: 'Bearer secret', 'Content-Type': 'application/json' },
-        body: { user: { password: 'secret123', email: 'test@example.com' } }
+        headers: {Authorization: 'Bearer secret', 'Content-Type': 'application/json'},
+        body: {user: {password: 'secret123', email: 'test@example.com'}}
       }
 
       logIncomingFixture(mockEvent, 'test-fixture')
@@ -173,8 +173,8 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle arrays', async () => {
-      const { logIncomingFixture } = await import('./lambda-helpers')
-      const mockEvent = { items: [{ id: '1', token: 'secret1' }, { id: '2', token: 'secret2' }] }
+      const {logIncomingFixture} = await import('./lambda-helpers')
+      const mockEvent = {items: [{id: '1', token: 'secret1'}, {id: '2', token: 'secret2'}]}
 
       logIncomingFixture(mockEvent, 'test-fixture')
 

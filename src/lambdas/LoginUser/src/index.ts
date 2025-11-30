@@ -54,7 +54,7 @@ export const handler = withXRay(
       const userAgent = event.headers?.['User-Agent'] || ''
 
       const rawResult = await auth.api.signInSocial({
-        headers: { 'user-agent': userAgent, 'x-forwarded-for': ipAddress || '' },
+        headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
         body: {
           provider: 'apple',
           idToken: {
@@ -75,8 +75,8 @@ export const handler = withXRay(
         redirect: boolean
         token: string
         url: undefined
-        user: { id: string; createdAt: Date; email: string; name: string }
-        session?: { id: string; expiresAt: number }
+        user: {id: string; createdAt: Date; email: string; name: string}
+        session?: {id: string; expiresAt: number}
       }
 
       logInfo('LoginUser: Better Auth sign-in successful', {

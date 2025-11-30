@@ -61,7 +61,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     await upsertFile(dynamoItem)
     logDebug('upsertFile =>')
 
-    logDebug('streamVideoToS3 <=', { url: fileUrl, bucket, key: fileName })
+    logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
     const subsegmentStream = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
     const uploadResult = await streamVideoToS3(fileUrl, bucket, fileName)
     if (subsegmentStream) {
@@ -92,16 +92,16 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     assertIsError(error)
 
     try {
-      await upsertFile({ fileId, status: FileStatus.Failed } as DynamoDBFile)
+      await upsertFile({fileId, status: FileStatus.Failed} as DynamoDBFile)
     } catch (updateError) {
       assertIsError(updateError)
       logDebug('upsertFile error =>', updateError.message)
     }
 
-    await putMetric('LambdaExecutionFailure', 1, undefined, [{ Name: 'ErrorType', Value: error.constructor.name }])
+    await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
 
     if (error instanceof CookieExpirationError) {
-      await putMetric('CookieAuthenticationFailure', 1, undefined, [{ Name: 'VideoId', Value: fileId }])
+      await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
       await createCookieExpirationIssue(fileId, fileUrl, error)
       return lambdaErrorResponse(context, new UnexpectedError(`Cookie expiration detected: ${error.message}`))
     }

@@ -52,7 +52,7 @@
     "typeLiteral.preferSingleLine": true,
     "typeAnnotation.spaceBeforeColon": false,
 
-    "spaceSurroundingProperties": true,
+    "spaceSurroundingProperties": false,
     "binaryExpression.spaceSurroundingBitwiseAndArithmeticOperator": true,
 
     "ifStatement.useBraces": "whenNotSingleLine",

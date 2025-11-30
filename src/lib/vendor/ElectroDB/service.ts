@@ -42,7 +42,7 @@ export { documentClient }
  */
 export function createService<E extends EntityMapConstraint>(
   entities: E,
-  config: { client: DynamoDBDocumentClient; table?: string }
+  config: {client: DynamoDBDocumentClient; table?: string}
 ) {
   return new Service(entities, config)
 }

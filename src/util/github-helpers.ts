@@ -33,9 +33,9 @@ async function getOctokitInstance() {
 
 export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
   const title = `User Deletion Failed: ${userId}`
-  const body = renderGithubIssueTemplate('user-deletion-failure', { userId, devices, error, requestId })
+  const body = renderGithubIssueTemplate('user-deletion-failure', {userId, devices, error, requestId})
 
-  const params = { owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix'] }
+  const params = {owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix']}
 
   try {
     const octokit = await getOctokitInstance()
@@ -52,9 +52,9 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
 
 export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string) {
   const title = `Video Download Failed: ${fileId}`
-  const body = renderGithubIssueTemplate('video-download-failure', { fileId, fileUrl, error, errorDetails })
+  const body = renderGithubIssueTemplate('video-download-failure', {fileId, fileUrl, error, errorDetails})
 
-  const params = { owner, repo, title, body, labels: ['bug', 'video-download', 'automated'] }
+  const params = {owner, repo, title, body, labels: ['bug', 'video-download', 'automated']}
 
   try {
     const octokit = await getOctokitInstance()
@@ -71,9 +71,9 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
 
 export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
   const title = '🍪 YouTube Cookie Expiration Detected'
-  const body = renderGithubIssueTemplate('cookie-expiration', { fileId, fileUrl, error })
+  const body = renderGithubIssueTemplate('cookie-expiration', {fileId, fileUrl, error})
 
-  const params = { owner, repo, title, body, labels: ['cookie-expiration', 'requires-manual-fix', 'automated', 'priority'] }
+  const params = {owner, repo, title, body, labels: ['cookie-expiration', 'requires-manual-fix', 'automated', 'priority']}
 
   try {
     const octokit = await getOctokitInstance()

@@ -57,7 +57,7 @@ export const MediaDownloaderService = createService({
   sessions: Sessions,
   accounts: Accounts,
   verificationTokens: VerificationTokens
-}, { client: documentClient, table: process.env.DynamoDBTableName || 'MediaDownloader' })
+}, {client: documentClient, table: process.env.DynamoDBTableName || 'MediaDownloader'})
 
 /**
  * Collections for JOIN-like operations between entities.

@@ -89,7 +89,7 @@ export function createMockVideoStream(sizeInBytes: number, contentPattern: strin
 /**
  * Mock streamVideoToS3 result
  */
-export function createMockStreamResult(sizeInBytes: number): { fileSize: number; s3Url: string; duration: number } {
+export function createMockStreamResult(sizeInBytes: number): {fileSize: number; s3Url: string; duration: number} {
   return {
     fileSize: sizeInBytes,
     s3Url: 's3://test-bucket/test-video.mp4',
@@ -143,7 +143,7 @@ export function createMockStreamVideoToS3WithRealUpload(createS3Upload: S3Upload
     const upload = createS3Upload(bucket, key, videoStream, 'video/mp4')
     await upload.done()
 
-    return { fileSize: 5242880, s3Url: `s3://${bucket}/${key}`, duration: 1500 }
+    return {fileSize: 5242880, s3Url: `s3://${bucket}/${key}`, duration: 1500}
   })
 }
 

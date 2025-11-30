@@ -6,10 +6,10 @@ import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock
 const fakeUserId = uuidv4()
 
 const filesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Files', () => ({ Files: filesMock.entity }))
+jest.unstable_mockModule('../../../entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserFiles', () => ({ UserFiles: userFilesMock.entity }))
+jest.unstable_mockModule('../../../entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SQS',
@@ -20,8 +20,8 @@ jest.unstable_mockModule(
       MessageId: 'e990c66f-23f6-4982-9274-a5a533ceb6dc'
     }),
     subscribe: jest.fn(),
-    stringAttribute: jest.fn((value: string) => ({ DataType: 'String', StringValue: value })),
-    numberAttribute: jest.fn((value: number) => ({ DataType: 'Number', StringValue: value.toString() }))
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   })
 )
 
@@ -30,13 +30,13 @@ class MockYTDlpWrap {
   constructor(public binaryPath: string) {}
   getVideoInfo = jest.fn()
 }
-jest.unstable_mockModule('yt-dlp-wrap', () => ({ default: MockYTDlpWrap }))
+jest.unstable_mockModule('yt-dlp-wrap', () => ({default: MockYTDlpWrap}))
 
 // Mock child_process for YouTube spawn operations
-jest.unstable_mockModule('child_process', () => ({ spawn: jest.fn() }))
+jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
 
 // Mock fs for YouTube cookie operations
-jest.unstable_mockModule('fs', () => ({ promises: { copyFile: jest.fn() } }))
+jest.unstable_mockModule('fs', () => ({promises: {copyFile: jest.fn()}}))
 
 // Mock S3 vendor wrapper for YouTube
 jest.unstable_mockModule(
@@ -45,20 +45,20 @@ jest.unstable_mockModule(
     headObject: jest.fn(),
     createS3Upload: jest.fn().mockReturnValue({
       on: jest.fn(),
-      done: jest.fn<() => Promise<{ Location: string }>>().mockResolvedValue({ Location: 's3://test-bucket/test-key.mp4' })
+      done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
     })
   })
 )
 
 const invokeAsyncMock = jest.fn()
-jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({ invokeAsync: invokeAsyncMock }))
+jest.unstable_mockModule('../../../lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
 
-const { default: handleFeedlyEventResponse } = await import('./fixtures/handleFeedlyEvent-200-OK.json', {
-  assert: { type: 'json' }
+const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {
+  assert: {type: 'json'}
 })
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
-const { handler } = await import('./../src')
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#WebhookFeedly', () => {
   const context = testContext
@@ -69,8 +69,8 @@ describe('#WebhookFeedly', () => {
   test('should fail gracefully if the ElectroDB update fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
-    filesMock.mocks.get.mockResolvedValue({ data: undefined })
-    filesMock.mocks.create.mockResolvedValue({ data: {} })
+    filesMock.mocks.get.mockResolvedValue({data: undefined})
+    filesMock.mocks.create.mockResolvedValue({data: {}})
     userFilesMock.mocks.create.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)

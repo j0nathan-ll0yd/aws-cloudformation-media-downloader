@@ -35,7 +35,7 @@ export const handler = withXRay(
     }
 
     const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
-    const successResult = response(context, 201, { subscriptionArn: subscribeResponse.SubscriptionArn })
+    const successResult = response(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
     logOutgoingFixture(successResult)
     return successResult
   }

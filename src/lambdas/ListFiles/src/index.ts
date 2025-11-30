@@ -24,15 +24,15 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
   logDebug('getFilesByUser <=', userId)
-  const userFilesResponse = await UserFiles.query.byUser({ userId }).go()
+  const userFilesResponse = await UserFiles.query.byUser({userId}).go()
   logDebug('getFilesByUser.userFiles =>', userFilesResponse)
 
   if (!userFilesResponse || !userFilesResponse.data || userFilesResponse.data.length === 0) {
     return []
   }
 
-  const fileKeys = userFilesResponse.data.map((userFile) => ({ fileId: userFile.fileId }))
-  const { data: files, unprocessed } = await Files.get(fileKeys).go({ concurrency: 5 })
+  const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
+  const {data: files, unprocessed} = await Files.get(fileKeys).go({concurrency: 5})
   logDebug('getFilesByUser.files =>', files)
 
   if (unprocessed.length > 0) {
@@ -55,8 +55,8 @@ export const handler = withXRay(
     logInfo('event <=', event)
     logIncomingFixture(event)
 
-    const myResponse = { contents: [] as DynamoDBFile[], keyCount: 0 }
-    const { userId, userStatus } = getUserDetailsFromEvent(event)
+    const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
+    const {userId, userStatus} = getUserDetailsFromEvent(event)
 
     if (userStatus == UserStatus.Unauthenticated) {
       const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())

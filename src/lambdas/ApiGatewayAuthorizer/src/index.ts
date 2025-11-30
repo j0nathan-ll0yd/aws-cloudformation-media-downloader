@@ -8,10 +8,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
     context: {},
-    policyDocument: {
-      Statement: [{ Action: 'execute-api:Invoke', Effect: effect, Resource: resource }],
-      Version: '2012-10-17'
-    },
+    policyDocument: {Statement: [{Action: 'execute-api:Invoke', Effect: effect, Resource: resource}], Version: '2012-10-17'},
     principalId,
     usageIdentifierKey
   } as CustomAuthorizerResult
@@ -34,7 +31,7 @@ export function generateDeny(principalId: string, resource: string, usageIdentif
  * @notExported
  */
 async function fetchApiKeys(): Promise<ApiKey[]> {
-  const params = { includeValues: true }
+  const params = {includeValues: true}
   logDebug('fetchApiKeys <=', params)
   const response = await getApiKeys(params)
   logDebug('fetchApiKeys =>', response)
@@ -49,7 +46,7 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
  * @notExported
  */
 async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
-  const params = { keyId }
+  const params = {keyId}
   logDebug('fetchUsagePlans <=', params)
   const response = await getUsagePlans(params)
   logDebug('fetchUsagePlans =>', response)
@@ -65,7 +62,7 @@ async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
  */
 async function fetchUsageData(keyId: string, usagePlanId: string) {
   const usageDate = new Date().toISOString().split('T')[0]
-  const params = { endDate: usageDate, keyId, startDate: usageDate, usagePlanId }
+  const params = {endDate: usageDate, keyId, startDate: usageDate, usagePlanId}
   logDebug('getUsage <=', params)
   const response = await getUsage(params)
   logDebug('getUsage =>', response)

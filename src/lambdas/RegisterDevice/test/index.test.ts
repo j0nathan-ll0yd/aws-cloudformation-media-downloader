@@ -6,32 +6,32 @@ import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock
 const fakeUserId = uuidv4()
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({ Devices: devicesMock.entity }))
+jest.unstable_mockModule('../../../entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const userDevicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: userDevicesMock.entity }))
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()
 jest.unstable_mockModule(
   '../../../util/shared',
-  () => ({ getUserDevices: getUserDevicesMock, subscribeEndpointToTopic: jest.fn() })
+  () => ({getUserDevices: getUserDevicesMock, subscribeEndpointToTopic: jest.fn()})
 )
 
-const { default: createPlatformEndpointResponse } = await import('./fixtures/createPlatformEndpoint-200-OK.json', {
-  assert: { type: 'json' }
+const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {
+  assert: {type: 'json'}
 })
-const { default: listSubscriptionsByTopicResponse } = await import('./fixtures/listSubscriptionsByTopic-200-OK.json', {
-  assert: { type: 'json' }
+const {default: listSubscriptionsByTopicResponse} = await import('./fixtures/listSubscriptionsByTopic-200-OK.json', {
+  assert: {type: 'json'}
 })
-const { default: subscribeResponse } = await import('./fixtures/subscribe-200-OK.json', { assert: { type: 'json' } })
-const { default: queryDefaultResponse } = await import('./fixtures/query-200-OK.json', { assert: { type: 'json' } })
-const { default: querySuccessResponse } = await import('./fixtures/query-201-Created.json', { assert: { type: 'json' } })
+const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
+const {default: queryDefaultResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
+const {default: querySuccessResponse} = await import('./fixtures/query-201-Created.json', {assert: {type: 'json'}})
 const createPlatformEndpointMock = jest.fn()
 const listSubscriptionsByTopicMock = jest.fn()
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',
   () => ({
-    deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }),
+    deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}),
     subscribe: jest.fn().mockReturnValue(subscribeResponse),
     listSubscriptionsByTopic: listSubscriptionsByTopicMock,
     createPlatformEndpoint: createPlatformEndpointMock,
@@ -39,8 +39,8 @@ jest.unstable_mockModule(
   })
 )
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
-const { handler } = await import('./../src')
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#RegisterDevice', () => {
   const context = testContext
@@ -48,8 +48,8 @@ describe('#RegisterDevice', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
-    devicesMock.mocks.upsert.go.mockResolvedValue({ data: {} })
-    userDevicesMock.mocks.create.mockResolvedValue({ data: {} })
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {}})
+    userDevicesMock.mocks.create.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
@@ -113,7 +113,7 @@ describe('#RegisterDevice', () => {
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
-      listSubscriptionsByTopicMock.mockReturnValue({ Subscriptions: [] })
+      listSubscriptionsByTopicMock.mockReturnValue({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

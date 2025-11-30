@@ -34,14 +34,10 @@ function isLocalStackMode(): boolean {
  */
 function getBaseConfig() {
   if (isLocalStackMode()) {
-    return {
-      endpoint: LOCALSTACK_ENDPOINT,
-      region: AWS_REGION,
-      credentials: { accessKeyId: 'test', secretAccessKey: 'test' }
-    }
+    return {endpoint: LOCALSTACK_ENDPOINT, region: AWS_REGION, credentials: {accessKeyId: 'test', secretAccessKey: 'test'}}
   }
 
-  return { region: AWS_REGION }
+  return {region: AWS_REGION}
 }
 
 /**

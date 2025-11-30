@@ -65,11 +65,11 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
 export async function getObjectMetadata(
   bucketName: string,
   key: string
-): Promise<{ contentLength: number; contentType: string } | null> {
+): Promise<{contentLength: number; contentType: string} | null> {
   try {
     const response = await headObject(bucketName, key)
 
-    return { contentLength: response.ContentLength || 0, contentType: response.ContentType || 'application/octet-stream' }
+    return {contentLength: response.ContentLength || 0, contentType: response.ContentType || 'application/octet-stream'}
   } catch {
     return null
   }

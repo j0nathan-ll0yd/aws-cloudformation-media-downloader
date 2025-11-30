@@ -30,12 +30,12 @@ interface FileInvocationPayload {
 
 type LambdaCallArgs = [string, Record<string, unknown>]
 type SQSCallArgs = [
-  { QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, { StringValue: string; DataType: string }> }
+  {QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, {StringValue: string; DataType: string}>}
 ]
 
-const { default: apiGatewayEventFixture } = await import(
+const {default: apiGatewayEventFixture} = await import(
   '../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json',
-  { assert: { type: 'json' } }
+  {assert: {type: 'json'}}
 )
 
 const __filename = fileURLToPath(import.meta.url)
@@ -44,18 +44,18 @@ const sqsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SQS')
 const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
 const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
 
-const sendMessageMock = jest.fn<() => Promise<{ MessageId: string }>>()
+const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule(
   sqsModulePath,
   () => ({
     sendMessage: sendMessageMock,
-    stringAttribute: jest.fn((value: string) => ({ DataType: 'String', StringValue: value })),
-    numberAttribute: jest.fn((value: number) => ({ DataType: 'Number', StringValue: value.toString() }))
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   })
 )
 
-const invokeLambdaMock = jest.fn<() => Promise<{ StatusCode: number }>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({ invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock }))
+const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
   getVideoID: jest.fn((url: string) => {
@@ -64,7 +64,7 @@ jest.unstable_mockModule(youtubeModulePath, () => ({
   })
 }))
 
-const { handler } = await import('../../../src/lambdas/WebhookFeedly/src/index')
+const {handler} = await import('../../../src/lambdas/WebhookFeedly/src/index')
 
 function createWebhookEvent(
   articleURL: string,
@@ -72,7 +72,7 @@ function createWebhookEvent(
   userId: string
 ): CustomAPIGatewayRequestAuthorizerEvent {
   const event = JSON.parse(JSON.stringify(apiGatewayEventFixture)) as CustomAPIGatewayRequestAuthorizerEvent
-  event.body = JSON.stringify({ articleURL, backgroundMode })
+  event.body = JSON.stringify({articleURL, backgroundMode})
   event.requestContext.authorizer.principalId = userId
   return event
 }
@@ -95,8 +95,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     sendMessageMock.mockClear()
     invokeLambdaMock.mockClear()
 
-    sendMessageMock.mockResolvedValue({ MessageId: 'test-message-id' })
-    invokeLambdaMock.mockResolvedValue({ StatusCode: 202 })
+    sendMessageMock.mockResolvedValue({MessageId: 'test-message-id'})
+    invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
     await deleteFilesTable()
     await createFilesTable()

@@ -43,12 +43,12 @@ export function transformFileNotificationToPushNotification(file: FileNotificati
 
   return {
     Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({ aps: { 'content-available': 1 }, file: clientFile }),
+      APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, file: clientFile}),
       default: 'Default message'
     }),
     MessageAttributes: {
-      'AWS.SNS.MOBILE.APNS.PRIORITY': { DataType: 'String', StringValue: '5' },
-      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': { DataType: 'String', StringValue: 'background' }
+      'AWS.SNS.MOBILE.APNS.PRIORITY': {DataType: 'String', StringValue: '5'},
+      'AWS.SNS.MOBILE.APNS.PUSH_TYPE': {DataType: 'String', StringValue: 'background'}
     },
     MessageStructure: 'json',
     TargetArn: targetArn

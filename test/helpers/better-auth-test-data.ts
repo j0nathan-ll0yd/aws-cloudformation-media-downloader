@@ -70,7 +70,7 @@ export type MockAccountData = {
 /**
  * Verification token entity structure for ElectroDB
  */
-export type MockVerificationTokenData = { identifier: string; token: string; expiresAt: number }
+export type MockVerificationTokenData = {identifier: string; token: string; expiresAt: number}
 
 /**
  * Create mock user with sensible defaults

@@ -26,7 +26,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function createPlatformEndpointFromToken(token: string) {
   // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
-  const params = { PlatformApplicationArn: process.env.PlatformApplicationArn as string, Token: token }
+  const params = {PlatformApplicationArn: process.env.PlatformApplicationArn as string, Token: token}
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
   if (!createPlatformEndpointResponse) {
@@ -42,7 +42,7 @@ async function createPlatformEndpointFromToken(token: string) {
  */
 export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
   logDebug('unsubscribeEndpointToTopic <=')
-  const response = await unsubscribe({ SubscriptionArn: subscriptionArn })
+  const response = await unsubscribe({SubscriptionArn: subscriptionArn})
   logDebug('unsubscribeEndpointToTopic =>', response)
   return response
 }
@@ -55,8 +55,8 @@ export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
  * @notExported
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
-  logDebug('upsertUserDevices <=', { userId, deviceId })
-  const response = await UserDevices.create({ userId, deviceId }).go()
+  logDebug('upsertUserDevices <=', {userId, deviceId})
+  const response = await UserDevices.create({userId, deviceId}).go()
   logDebug('upsertUserDevices =>', response)
   return response
 }
@@ -87,7 +87,7 @@ async function upsertDevice(device: Device) {
  * @notExported
  */
 async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topicArn: string): Promise<string> {
-  const listSubscriptionsByTopicParams = { TopicArn: topicArn }
+  const listSubscriptionsByTopicParams = {TopicArn: topicArn}
   logDebug('getSubscriptionArnFromEndpointAndTopic <=', listSubscriptionsByTopicParams)
   const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
   logDebug('getSubscriptionArnFromEndpointAndTopic =>', listSubscriptionsByTopicResponse)
@@ -123,8 +123,8 @@ export const handler = withXRay(
     try {
       const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
       const pushNotificationTopicArn = process.env.PushNotificationTopicArn as string
-      const device = { ...requestBody, endpointArn: platformEndpoint.EndpointArn } as Device
-      const { userId, userStatus } = getUserDetailsFromEvent(event)
+      const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
+      const {userId, userStatus} = getUserDetailsFromEvent(event)
       // Store the device details, regardless of user status
       await upsertDevice(device)
       /* c8 ignore else */
@@ -135,14 +135,14 @@ export const handler = withXRay(
         // Determine if the user already exists
         const userDevices = await getUserDevices(userId)
         if (userDevices.length === 1) {
-          const successResult = response(context, 200, { endpointArn: device.endpointArn })
+          const successResult = response(context, 200, {endpointArn: device.endpointArn})
           logOutgoingFixture(successResult)
           return successResult
         } else {
           // Confirm the subscription, and unsubscribe
           const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
           await unsubscribeEndpointToTopic(subscriptionArn)
-          const createdResult = response(context, 201, { endpointArn: platformEndpoint.EndpointArn })
+          const createdResult = response(context, 201, {endpointArn: platformEndpoint.EndpointArn})
           logOutgoingFixture(createdResult)
           return createdResult
         }
@@ -153,7 +153,7 @@ export const handler = withXRay(
         // If the user is unauthenticated, then need to authenticate
         throw new UnauthorizedError('Unauthenticated -- please login')
       }
-      const successResult = response(context, 200, { endpointArn: device.endpointArn })
+      const successResult = response(context, 200, {endpointArn: device.endpointArn})
       logOutgoingFixture(successResult)
       return successResult
     } catch (error) {

@@ -51,14 +51,14 @@ const fakeGetDevicesResponse = {
 }
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Devices', () => ({ Devices: devicesMock.entity }))
+jest.unstable_mockModule('../../../entities/Devices', () => ({Devices: devicesMock.entity}))
 
-const userDevicesMock = createElectroDBEntityMock({ queryIndexes: ['byDevice'] })
-jest.unstable_mockModule('../../../entities/UserDevices', () => ({ UserDevices: userDevicesMock.entity }))
+const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
+jest.unstable_mockModule('../../../entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule(
   '../../../lib/vendor/AWS/SNS',
-  () => ({ deleteEndpoint: jest.fn().mockReturnValue({ ResponseMetadata: { RequestId: uuidv4() } }), subscribe: jest.fn() })
+  () => ({deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), subscribe: jest.fn()})
 )
 
 const sendMock = jest.fn()
@@ -71,13 +71,13 @@ jest.unstable_mockModule(
   'apns2',
   () => ({
     ApnsClient: MockApnsClient,
-    Notification: jest.fn().mockReturnValue({ fake: 'notification' }),
+    Notification: jest.fn().mockReturnValue({fake: 'notification'}),
     Priority: jest.fn(),
     PushType: jest.fn()
   })
 )
 
-const fakeApnsNotificationOptions = { contentAvailable: true, type: 'background', priority: 5, aps: { health: 'check' } }
+const fakeApnsNotificationOptions = {contentAvailable: true, type: 'background', priority: 5, aps: {health: 'check'}}
 
 function getExpiredResponseForDevice(arrayIndex: number) {
   return {
@@ -117,7 +117,7 @@ function getSuccessfulResponseForDevice(arrayIndex: number) {
   }
 }
 
-const { handler } = await import('./../src')
+const {handler} = await import('./../src')
 
 describe('#PruneDevices', () => {
   const event: ScheduledEvent = {
@@ -133,11 +133,11 @@ describe('#PruneDevices', () => {
   }
   const context = testContext
   test('should search for and remove disabled devices (single)', async () => {
-    devicesMock.mocks.scan.go.mockResolvedValue({ data: fakeGetDevicesResponse.Items })
+    devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
     userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue({
-      data: [{ userId: fakeUserId, deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A' }]
+      data: [{userId: fakeUserId, deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A'}]
     })
-    userDevicesMock.mocks.delete.mockResolvedValue({ unprocessed: [] })
+    userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
     sendMock.mockImplementationOnce(() => {
       throw getExpiredResponseForDevice(0)
     })
@@ -161,7 +161,7 @@ describe('#PruneDevices', () => {
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
     test('should continue successfully when user device query fails for disabled device', async () => {
-      devicesMock.mocks.scan.go.mockResolvedValue({ data: fakeGetDevicesResponse.Items })
+      devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       userDevicesMock.mocks.query.byDevice!.go.mockResolvedValue(undefined)
       sendMock.mockImplementationOnce(() => {
         throw getExpiredResponseForDevice(0)
@@ -183,7 +183,7 @@ describe('#PruneDevices', () => {
   })
   describe('#APNSFailure', () => {
     test('should throw error when APNS health check returns unexpected error', async () => {
-      devicesMock.mocks.scan.go.mockResolvedValue({ data: fakeGetDevicesResponse.Items })
+      devicesMock.mocks.scan.go.mockResolvedValue({data: fakeGetDevicesResponse.Items})
       sendMock.mockImplementation(() => {
         throw undefined
       })

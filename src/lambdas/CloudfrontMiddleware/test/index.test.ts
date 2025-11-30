@@ -3,8 +3,8 @@ import {CloudFrontRequestEvent} from 'aws-lambda'
 import {testContext} from '../../../util/jest-setup'
 import * as crypto from 'crypto'
 
-const { default: eventMock } = await import('./fixtures/CloudFrontRequestEvent.json', { assert: { type: 'json' } })
-const { handler } = await import('./../src')
+const {default: eventMock} = await import('./fixtures/CloudFrontRequestEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#CloudfrontMiddleware', () => {
   const context = testContext
@@ -19,7 +19,7 @@ describe('#CloudfrontMiddleware', () => {
     const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
     const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
-    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{ key: apiKeyHeaderName, value: apiKeyValue }]
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
     expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
@@ -49,7 +49,7 @@ describe('#CloudfrontMiddleware', () => {
     const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
     const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
-    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{ key: apiKeyHeaderName, value: apiKeyValue }]
+    event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
     expect(spyURLParamsHas).toHaveBeenCalledTimes(0)

@@ -9,9 +9,9 @@ export const feedlyEventSchema = Joi.object({
   ).message('is not a valid YouTube URL')
 })
 
-export const registerDeviceSchema = Joi.object({ token: Joi.string().required() })
+export const registerDeviceSchema = Joi.object({token: Joi.string().required()})
 
-export const userSubscribeSchema = Joi.object({ endpointArn: Joi.string().required(), topicArn: Joi.string().required() })
+export const userSubscribeSchema = Joi.object({endpointArn: Joi.string().required(), topicArn: Joi.string().required()})
 
 export const registerUserSchema = Joi.object({
   idToken: Joi.string().required(),
@@ -19,15 +19,15 @@ export const registerUserSchema = Joi.object({
   lastName: Joi.string().required()
 })
 
-export const loginUserSchema = Joi.object({ idToken: Joi.string().required() })
+export const loginUserSchema = Joi.object({idToken: Joi.string().required()})
 
 // Helper function to validate data against a schema
 export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
-  const options = { abortEarly: false, allowUnknown: true, errors: { wrap: { label: '' } } }
+  const options = {abortEarly: false, allowUnknown: true, errors: {wrap: {label: ''}}}
 
-  const { error } = schema.validate(data, options)
+  const {error} = schema.validate(data, options)
   if (error) {
-    const errorHash: { [key: string]: [string] } = {}
+    const errorHash: {[key: string]: [string]} = {}
     error.details.map((detail) => {
       logInfo('Error detail', detail)
       const label = detail.context?.label ?? 'unknown'
@@ -37,7 +37,7 @@ export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
         errorHash[label].push(detail.message)
       }
     })
-    return { errors: errorHash }
+    return {errors: errorHash}
   }
   return null
 }

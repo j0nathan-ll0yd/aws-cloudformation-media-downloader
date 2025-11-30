@@ -3,17 +3,17 @@ import {Device} from '../types/main'
 
 // Mock Octokit
 const mockIssuesCreate = jest.fn<
-  () => Promise<{ status: number; data: { id: number; number: number; html_url: string } }>
+  () => Promise<{status: number; data: {id: number; number: number; html_url: string}}>
 >()
 
 class MockOctokit {
-  public rest: { issues: { create: typeof mockIssuesCreate } }
+  public rest: {issues: {create: typeof mockIssuesCreate}}
   constructor() {
-    this.rest = { issues: { create: mockIssuesCreate } }
+    this.rest = {issues: {create: mockIssuesCreate}}
   }
 }
 
-jest.unstable_mockModule('@octokit/rest', () => ({ Octokit: jest.fn().mockImplementation(() => new MockOctokit()) }))
+jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImplementation(() => new MockOctokit())}))
 
 // Mock template helpers
 jest.unstable_mockModule(
@@ -28,7 +28,7 @@ jest.unstable_mockModule(
 )
 
 // Mock logging helpers
-jest.unstable_mockModule('./lambda-helpers', () => ({ logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn() }))
+jest.unstable_mockModule('./lambda-helpers', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
 
 const {
   createFailedUserDeletionIssue,
@@ -58,7 +58,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: { id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42' }
+        data: {id: 1234, number: 42, html_url: 'https://github.com/owner/repo/issues/42'}
       })
 
       const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
@@ -107,7 +107,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: { id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43' }
+        data: {id: 5678, number: 43, html_url: 'https://github.com/owner/repo/issues/43'}
       })
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error, errorDetails)
@@ -133,7 +133,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: { id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44' }
+        data: {id: 9012, number: 44, html_url: 'https://github.com/owner/repo/issues/44'}
       })
 
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error)
@@ -164,7 +164,7 @@ describe('#Util:GithubHelper', () => {
 
       mockIssuesCreate.mockResolvedValue({
         status: 201,
-        data: { id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45' }
+        data: {id: 3456, number: 45, html_url: 'https://github.com/owner/repo/issues/45'}
       })
 
       const response = await createCookieExpirationIssue(fileId, fileUrl, error)

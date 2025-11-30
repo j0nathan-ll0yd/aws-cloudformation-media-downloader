@@ -15,7 +15,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
   logDebug('query file by key <=', fileName)
-  const queryResponse = await Files.query.byKey({ key: fileName }).go()
+  const queryResponse = await Files.query.byKey({key: fileName}).go()
   logDebug('query file by key =>', queryResponse)
   if (queryResponse.data && queryResponse.data.length > 0) {
     return queryResponse.data[0] as DynamoDBFile
@@ -32,7 +32,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
  */
 async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
   logDebug('query users by fileId <=', file.fileId)
-  const queryResponse = await UserFiles.query.byFile({ fileId: file.fileId }).go()
+  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
   logDebug('query users by fileId =>', queryResponse)
   if (!queryResponse.data || queryResponse.data.length === 0) {
     return []

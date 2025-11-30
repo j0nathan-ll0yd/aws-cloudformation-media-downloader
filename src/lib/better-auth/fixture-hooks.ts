@@ -12,12 +12,12 @@ import {logIncomingFixture, logOutgoingFixture} from '../../util/lambda-helpers'
  */
 interface BetterAuthHookContext {
   path: string
-  request?: { method?: string }
+  request?: {method?: string}
   headers?: Record<string, string>
   body?: unknown
   query?: Record<string, string>
   requestId?: string
-  response?: { status?: number; headers?: Record<string, string>; body?: unknown }
+  response?: {status?: number; headers?: Record<string, string>; body?: unknown}
 }
 
 /**
@@ -88,4 +88,4 @@ export const logOutgoingResponseHook = {
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Better Auth Fixture Integration}
  */
-export const fixtureLoggingHooks = { before: [logIncomingRequestHook], after: [logOutgoingResponseHook] }
+export const fixtureLoggingHooks = {before: [logIncomingRequestHook], after: [logOutgoingResponseHook]}

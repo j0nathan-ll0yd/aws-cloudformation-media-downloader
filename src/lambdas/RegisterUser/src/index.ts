@@ -60,7 +60,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
     const userAgent = event.headers?.['User-Agent'] || ''
 
     const rawResult = await auth.api.signInSocial({
-      headers: { 'user-agent': userAgent, 'x-forwarded-for': ipAddress || '' },
+      headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
       body: {
         provider: 'apple',
         idToken: {
@@ -81,8 +81,8 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
       redirect: boolean
       token: string
       url: undefined
-      user: { id: string; createdAt: Date; email: string; name: string }
-      session?: { id: string; expiresAt: number }
+      user: {id: string; createdAt: Date; email: string; name: string}
+      session?: {id: string; expiresAt: number}
     }
 
     // 3. Check if this is a new user and update with name from iOS app
@@ -93,7 +93,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
       Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
     if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-      await Users.update({ userId: result.user.id }).set({
+      await Users.update({userId: result.user.id}).set({
         firstName: requestBody.firstName || '',
         lastName: requestBody.lastName || ''
       }).go()
@@ -119,7 +119,7 @@ export const handler = withXRay(async (event: APIGatewayEvent, context: Context)
       userId: result.user?.id
     })
   } catch (error) {
-    logInfo('RegisterUser: error', { error })
+    logInfo('RegisterUser: error', {error})
     return lambdaErrorResponse(context, error)
   }
 })

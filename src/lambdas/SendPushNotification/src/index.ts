@@ -15,7 +15,7 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  */
 async function getUserDevicesByUserId(userId: string): Promise<string[]> {
   logDebug('getUserDevicesByUserId <=', userId)
-  const userResponse = await UserDevices.query.byUser({ userId }).go()
+  const userResponse = await UserDevices.query.byUser({userId}).go()
   logDebug('getUserDevicesByUserId =>', userResponse)
   if (!userResponse || !userResponse.data) {
     return []
@@ -30,7 +30,7 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
  */
 async function getDevice(deviceId: string): Promise<Device> {
   logDebug('getDevice <=', deviceId)
-  const response = await Devices.get({ deviceId }).go()
+  const response = await Devices.get({deviceId}).go()
   logDebug('getDevice =>', response)
   if (response && response.data) {
     return response.data as Device

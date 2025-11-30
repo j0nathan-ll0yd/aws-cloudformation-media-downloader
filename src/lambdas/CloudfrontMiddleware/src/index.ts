@@ -26,7 +26,7 @@ async function handleQueryString(request: CloudFrontRequest) {
   if (params.has(apiKeyString)) {
     logDebug('pre-get URLSearchParams')
     const apiKeyValue = params.get(apiKeyString) as string
-    headers['x-api-key'] = [{ key: 'X-API-Key', value: apiKeyValue }]
+    headers['x-api-key'] = [{key: 'X-API-Key', value: apiKeyValue}]
   }
 }
 

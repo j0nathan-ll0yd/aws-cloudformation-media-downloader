@@ -30,9 +30,9 @@ import {withXRay} from '../../../lib/vendor/AWS/XRay'
  * @param userId - The UUID of the user
  */
 export async function associateFileToUser(fileId: string, userId: string) {
-  logDebug('associateFileToUser <=', { fileId, userId })
+  logDebug('associateFileToUser <=', {fileId, userId})
   try {
-    const response = await UserFiles.create({ userId, fileId }).go()
+    const response = await UserFiles.create({userId, fileId}).go()
     logDebug('associateFileToUser =>', response)
     return response
   } catch (error) {
@@ -75,7 +75,7 @@ async function addFile(fileId: string) {
  */
 async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
   logDebug('getFile <=', fileId)
-  const fileResponse = await Files.get({ fileId }).go()
+  const fileResponse = await Files.get({fileId}).go()
   logDebug('getFile =>', fileResponse)
   return fileResponse.data as DynamoDBFile | undefined
 }
@@ -117,7 +117,7 @@ export const handler = withXRay(
       requestBody = getPayloadFromEvent(event) as Webhook
       validateRequest(requestBody, feedlyEventSchema)
       const fileId = getVideoID(requestBody.articleURL)
-      const { userId } = getUserDetailsFromEvent(event)
+      const {userId} = getUserDetailsFromEvent(event)
       if (!userId) {
         throw new UnexpectedError(providerFailureErrorMessage)
       }
@@ -126,16 +126,16 @@ export const handler = withXRay(
       let result: APIGatewayProxyResult
       if (file && file.status == FileStatus.Downloaded) {
         await sendFileNotification(file, userId)
-        result = response(context, 200, { status: 'Dispatched' })
+        result = response(context, 200, {status: 'Dispatched'})
       } else {
         if (!file) {
           await addFile(fileId)
         }
         if (!requestBody.backgroundMode) {
           await initiateFileDownload(fileId)
-          result = response(context, 202, { status: 'Initiated' })
+          result = response(context, 202, {status: 'Initiated'})
         } else {
-          result = response(context, 202, { status: 'Accepted' })
+          result = response(context, 202, {status: 'Accepted'})
         }
       }
       logOutgoingFixture(result)

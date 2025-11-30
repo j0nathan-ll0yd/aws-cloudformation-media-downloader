@@ -7,14 +7,14 @@ import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({ auth: authMock.auth }))
+jest.unstable_mockModule('../../../lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
 
 // Mock Users entity for name updates
 const usersMock = createElectroDBEntityMock()
-jest.unstable_mockModule('../../../entities/Users', () => ({ Users: usersMock.entity }))
+jest.unstable_mockModule('../../../entities/Users', () => ({Users: usersMock.entity}))
 
-const { default: eventMock } = await import('./fixtures/APIGatewayEvent.json', { assert: { type: 'json' } })
-const { handler } = await import('./../src')
+const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+const {handler} = await import('./../src')
 
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
@@ -41,13 +41,13 @@ describe('#RegisterUser', () => {
         name: 'New User',
         createdAt: new Date().toISOString() // Just created
       },
-      session: { id: sessionId, expiresAt },
+      session: {id: sessionId, expiresAt},
       token
     })
 
     // Mock the user name update
     usersMock.mocks.update.set.mockReturnThis()
-    usersMock.mocks.update.go.mockResolvedValue({ data: {} })
+    usersMock.mocks.update.go.mockResolvedValue({data: {}})
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -61,12 +61,12 @@ describe('#RegisterUser', () => {
     // Verify Better Auth API was called with correct parameters (using idToken, not accessToken)
     expect(authMock.mocks.signInSocial).toHaveBeenCalledWith(
       expect.objectContaining({
-        body: expect.objectContaining({ provider: 'apple', idToken: expect.objectContaining({ token: expect.any(String) }) })
+        body: expect.objectContaining({provider: 'apple', idToken: expect.objectContaining({token: expect.any(String)})})
       })
     )
 
     // Verify name was updated for new user
-    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({ firstName: 'Jonathan', lastName: 'Lloyd' })
+    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({firstName: 'Jonathan', lastName: 'Lloyd'})
   })
 
   test('should successfully login an existing user via Better Auth without updating name', async () => {
@@ -83,7 +83,7 @@ describe('#RegisterUser', () => {
         name: 'Existing User',
         createdAt: new Date(Date.now() - 7 * 86400000).toISOString() // Created a week ago
       },
-      session: { id: sessionId, expiresAt },
+      session: {id: sessionId, expiresAt},
       token
     })
 
@@ -111,7 +111,7 @@ describe('#RegisterUser', () => {
 
   test('should handle Better Auth errors gracefully', async () => {
     // Mock Better Auth throwing an error
-    authMock.mocks.signInSocial.mockRejectedValue({ status: 500, message: 'Internal server error' })
+    authMock.mocks.signInSocial.mockRejectedValue({status: 500, message: 'Internal server error'})
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)

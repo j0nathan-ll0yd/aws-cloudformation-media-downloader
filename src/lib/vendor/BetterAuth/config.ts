@@ -86,7 +86,7 @@ function getAppleBundleIdFromConfig(): string {
  * Call this at the top of Lambda handlers to ensure Better Auth is ready.
  */
 export async function initializeBetterAuth() {
-  logDebug('Better Auth initialized', { applicationUrl: process.env.ApplicationUrl })
+  logDebug('Better Auth initialized', {applicationUrl: process.env.ApplicationUrl})
 }
 
 /**

@@ -34,7 +34,7 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
     const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
       functionName
     ]
-    const resource = resources[0] as { environment?: { variables?: Record<string, unknown> }[] }
+    const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
@@ -45,7 +45,7 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   logDebug('CloudFront distribution name', cloudFrontDistributionNames)
   logDebug('Environment variables by function', environmentVariablesForFunction)
   logDebug('Lambda function names', lambdaFunctionNames)
-  return { cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction }
+  return {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction}
 }
 
 function getEnvironmentVariablesFromSource(
@@ -77,7 +77,7 @@ describe('#Infrastructure', () => {
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
   logDebug('JSON file', jsonFile)
   const infrastructurePlan = JSON.parse(jsonFile) as InfrastructureD
-  const { cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction } = preprocessInfrastructurePlan(
+  const {cloudFrontDistributionNames, lambdaFunctionNames, environmentVariablesForFunction} = preprocessInfrastructurePlan(
     infrastructurePlan
   )
   for (const functionName of lambdaFunctionNames) {
