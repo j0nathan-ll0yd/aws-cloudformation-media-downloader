@@ -1,4 +1,4 @@
-import {logDebug} from './lambda-helpers'
+import {logDebug} from './logging'
 
 export interface RetryConfig {
   maxRetries?: number

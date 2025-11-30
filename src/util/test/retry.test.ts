@@ -1,9 +1,5 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-
-// Mock lambda-helpers before importing retry
-jest.unstable_mockModule('../lambda-helpers', () => ({logDebug: jest.fn(), logError: jest.fn()}))
-
-const {retryUnprocessed, retryUnprocessedDelete} = await import('../retry')
+import {retryUnprocessed, retryUnprocessedDelete} from '../retry'
 
 type RetryOpFn = () => Promise<{data: string[]; unprocessed: unknown[]}>
 type DeleteOpFn = () => Promise<{unprocessed: unknown[]}>
