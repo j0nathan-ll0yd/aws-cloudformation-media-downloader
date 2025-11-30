@@ -27,8 +27,6 @@ import {dirname, resolve} from 'path'
 interface FileInvocationPayload {
   fileId: string
 }
-
-type LambdaCallArgs = [string, Record<string, unknown>]
 type SQSCallArgs = [
   {QueueUrl: string; MessageBody: string; MessageAttributes?: Record<string, {StringValue: string; DataType: string}>}
 ]
@@ -48,7 +46,7 @@ jest.unstable_mockModule(sqsModulePath, () => ({
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
-const invokeLambdaMock = jest.fn<() => Promise<{StatusCode: number}>>()
+const invokeLambdaMock = jest.fn<(name: string, payload: FileInvocationPayload) => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
 jest.unstable_mockModule(youtubeModulePath, () => ({
@@ -108,10 +106,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.status).toBe(FileStatus.PendingMetadata)
 
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
-    const invocationPayload = (invokeLambdaMock.mock.calls as unknown as LambdaCallArgs[])[0][
-      1
-    ] as unknown as FileInvocationPayload
-    expect(invocationPayload.fileId).toBe('new-video-123')
+    expect(invokeLambdaMock.mock.calls[0][1].fileId).toBe('new-video-123')
 
     expect(sendMessageMock).not.toHaveBeenCalled()
   })

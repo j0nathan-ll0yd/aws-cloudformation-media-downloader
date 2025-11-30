@@ -27,12 +27,11 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
-  const lambdaFunctionNames = Object.keys(infrastructurePlan.resource.aws_lambda_function)
+  const lambdaFunctions = infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>
+  const lambdaFunctionNames = Object.keys(lambdaFunctions)
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
-    const resources = (infrastructurePlan.resource.aws_lambda_function as unknown as Record<string, unknown[]>)[
-      functionName
-    ]
+    const resources = lambdaFunctions[functionName]
     const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
