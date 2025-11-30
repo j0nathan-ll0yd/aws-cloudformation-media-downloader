@@ -10,8 +10,11 @@ const fetchVideoInfoMock = jest.fn<() => Promise<YtDlpVideoInfo>>()
 const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
 const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-jest.unstable_mockModule('#lib/vendor/YouTube',
-  () => ({fetchVideoInfo: fetchVideoInfoMock, chooseVideoFormat: chooseVideoFormatMock, streamVideoToS3: streamVideoToS3Mock}))
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
+  fetchVideoInfo: fetchVideoInfoMock, // fmt: multiline
+  chooseVideoFormat: chooseVideoFormatMock,
+  streamVideoToS3: streamVideoToS3Mock
+}))
 
 // Mock ElectroDB Files entity
 const filesMock = createElectroDBEntityMock()

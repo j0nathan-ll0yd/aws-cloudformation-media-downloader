@@ -14,7 +14,11 @@ const getUsagePlansMock = jest.fn()
 const getUsageMock = jest.fn()
 const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
 const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/ApiGateway', () => ({
+  getApiKeys: getApiKeysMock, // fmt: multiline
+  getUsagePlans: getUsagePlansMock,
+  getUsage: getUsageMock
+}))
 
 // Setup variations of the getApiKeys response
 const {default: getApiKeysResponse} = await import('./fixtures/getApiKeys.json', {assert: {type: 'json'}})

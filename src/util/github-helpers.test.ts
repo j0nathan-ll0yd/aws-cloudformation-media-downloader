@@ -22,7 +22,11 @@ jest.unstable_mockModule('#util/template-helpers',
   }))
 
 // Mock logging helpers
-jest.unstable_mockModule('#util/lambda-helpers', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
+jest.unstable_mockModule('#util/lambda-helpers', () => ({
+  logDebug: jest.fn(), // fmt: multiline
+  logError: jest.fn(),
+  logInfo: jest.fn()
+}))
 
 const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('./github-helpers')
 

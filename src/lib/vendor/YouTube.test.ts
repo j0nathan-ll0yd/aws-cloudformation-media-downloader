@@ -43,10 +43,16 @@ const mockCreateS3Upload = jest.fn((bucket: string, key: string, body: unknown, 
   return new MockUpload(bucket, key, body, contentType, options)
 })
 
-jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({headObject: mockHeadObject, createS3Upload: mockCreateS3Upload}))
+jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
+  headObject: mockHeadObject, // fmt: multiline
+  createS3Upload: mockCreateS3Upload
+}))
 
 // Mock CloudWatch vendor wrapper (let logging run normally)
-jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({putMetricData: jest.fn(), getStandardUnit: (unit?: string) => unit || 'None'}))
+jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({
+  putMetricData: jest.fn(), // fmt: multiline
+  getStandardUnit: (unit?: string) => unit || 'None'
+}))
 
 // Set up environment variable before importing
 process.env.YtdlpBinaryPath = '/opt/bin/yt-dlp_linux'
