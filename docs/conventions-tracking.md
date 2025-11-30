@@ -126,6 +126,14 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Priority**: MEDIUM
    - **Enforcement**: Optional (use when signatures would otherwise wrap)
 
+3. **Sequential Mock Return Values as Separate Statements** (Convention)
+   - **What**: Use separate statements instead of method chaining for `mockResolvedValueOnce` / `mockReturnValueOnce` sequences
+   - **Why**: Chained methods exceed line width and wrap mid-chain; separate statements are dprint-stable and more readable
+   - **Example**: `mockFn.mockResolvedValueOnce(a)` on line 1, `mockFn.mockResolvedValueOnce(b)` on line 2
+   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
+   - **Priority**: MEDIUM
+   - **Enforcement**: Always for sequences of 2+ mock return values
+
 ### Documented: 2025-11-28 (Code Quality Improvements)
 
 1. **ResponseStatus Enum for API Responses** (Convention)
@@ -263,5 +271,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-11-29
-- **Total Conventions**: 26 detected, 26 documented, 0 pending
+- **Total Conventions**: 27 detected, 27 documented, 0 pending
 - **Convention Capture System**: Active

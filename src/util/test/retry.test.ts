@@ -22,7 +22,8 @@ describe('retryUnprocessed', () => {
 
   it('should retry when there are unprocessed items', async () => {
     const mockOperation = jest.fn<RetryOpFn>()
-    mockOperation.mockResolvedValueOnce({data: ['item1'], unprocessed: [{key: 'failed1'}]}).mockResolvedValueOnce({data: ['item2'], unprocessed: []})
+    mockOperation.mockResolvedValueOnce({data: ['item1'], unprocessed: [{key: 'failed1'}]})
+    mockOperation.mockResolvedValueOnce({data: ['item2'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation, {initialDelayMs: 1})
 
@@ -43,8 +44,9 @@ describe('retryUnprocessed', () => {
 
   it('should accumulate data across retries', async () => {
     const mockOperation = jest.fn<RetryOpFn>()
-    mockOperation.mockResolvedValueOnce({data: ['a'], unprocessed: [{key: '1'}]}).mockResolvedValueOnce({data: ['b'], unprocessed: [{key: '2'}]})
-      .mockResolvedValueOnce({data: ['c'], unprocessed: []})
+    mockOperation.mockResolvedValueOnce({data: ['a'], unprocessed: [{key: '1'}]})
+    mockOperation.mockResolvedValueOnce({data: ['b'], unprocessed: [{key: '2'}]})
+    mockOperation.mockResolvedValueOnce({data: ['c'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation, {initialDelayMs: 1})
 
@@ -69,7 +71,8 @@ describe('retryUnprocessedDelete', () => {
 
   it('should retry delete operations with unprocessed items', async () => {
     const mockOperation = jest.fn<DeleteOpFn>()
-    mockOperation.mockResolvedValueOnce({unprocessed: [{key: 'failed'}]}).mockResolvedValueOnce({unprocessed: []})
+    mockOperation.mockResolvedValueOnce({unprocessed: [{key: 'failed'}]})
+    mockOperation.mockResolvedValueOnce({unprocessed: []})
 
     const result = await retryUnprocessedDelete(mockOperation, {initialDelayMs: 1})
 

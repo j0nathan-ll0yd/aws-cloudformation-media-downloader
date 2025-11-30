@@ -257,6 +257,63 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
 - Type is used once
 - Signature fits comfortably
 
+## Sequential Mock Return Values
+
+### The Problem
+
+When configuring multiple return values with `mockResolvedValueOnce`, method chaining can exceed line width and wrap awkwardly:
+
+```typescript
+// Chained - dprint wraps mid-chain (ugly, inconsistent)
+mockOperation.mockResolvedValueOnce({data: ['page1'], cursor: 'cursor1'}).mockResolvedValueOnce({
+  data: ['page2'],
+  cursor: 'cursor2'
+}).mockResolvedValueOnce({data: ['page3'], cursor: null})
+```
+
+### The Solution: Separate Statements
+
+Use separate statements instead of chaining. `mockResolvedValueOnce` queues return values internally—chaining is syntactic sugar, not required:
+
+```typescript
+// Separate statements - clean, consistent, dprint-stable
+mockOperation.mockResolvedValueOnce({data: ['page1'], cursor: 'cursor1'})
+mockOperation.mockResolvedValueOnce({data: ['page2'], cursor: 'cursor2'})
+mockOperation.mockResolvedValueOnce({data: ['page3'], cursor: null})
+```
+
+### Why It Works
+
+1. **Readability** - Each return value on its own line, clear sequence
+2. **dprint stability** - Separate statements won't collapse or wrap mid-chain
+3. **Consistent** - Same visual structure regardless of content length
+
+### Pattern
+
+```typescript
+// Type alias for the mock function signature
+type ScanFn<T> = (cursor?: string) => Promise<{data: T[]; cursor: string | null}>
+
+it('should paginate through multiple pages', async () => {
+  // Declare mock with type
+  const mockScan = jest.fn<ScanFn<string>>()
+
+  // Configure sequential returns as separate statements
+  mockScan.mockResolvedValueOnce({data: ['item1', 'item2'], cursor: 'cursor1'})
+  mockScan.mockResolvedValueOnce({data: ['item3', 'item4'], cursor: 'cursor2'})
+  mockScan.mockResolvedValueOnce({data: ['item5'], cursor: null})
+
+  const result = await scanAllPages(mockScan)
+  // ...assertions
+})
+```
+
+### When to Apply
+
+- **Always** for `mockResolvedValueOnce` sequences (2+ calls)
+- **Always** for `mockReturnValueOnce` sequences (2+ calls)
+- Single `mockResolvedValue` or `mockReturnValue` can stay on same line as mock declaration
+
 ## Running the Formatter
 
 ```bash
