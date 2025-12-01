@@ -55,7 +55,7 @@ importers:
         version: 1.13.2
       better-auth:
         specifier: 1.4.3
-        version: 1.4.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.4.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       electrodb:
         specifier: 3.5.0
         version: 3.5.0(@aws-sdk/client-dynamodb@3.716.0)
@@ -155,7 +155,7 @@ importers:
         version: 23.2.6
       redoc:
         specifier: ^2.2.0
-        version: 2.5.2(core-js@3.47.0)(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.1.19(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+        version: 2.5.2(core-js@3.47.0)(mobx@6.15.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(styled-components@6.1.19(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
@@ -7309,20 +7309,20 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@better-auth/core@1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@5.10.0)(kysely@0.28.8)(nanostores@1.1.0)':
+  '@better-auth/core@1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.1.0)':
     dependencies:
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
       '@standard-schema/spec': 1.0.0
       better-call: 1.1.0
-      jose: 5.10.0
+      jose: 6.1.2
       kysely: 0.28.8
       nanostores: 1.1.0
       zod: 4.1.13
 
   '@better-auth/telemetry@1.4.3(@better-auth/core@1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.1.0))':
     dependencies:
-      '@better-auth/core': 1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@5.10.0)(kysely@0.28.8)(nanostores@1.1.0)
+      '@better-auth/core': 1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.1.0)
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
 
@@ -9910,9 +9910,9 @@ snapshots:
       jsonpointer: 5.0.1
       leven: 3.1.0
 
-  better-auth@1.4.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  better-auth@1.4.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
-      '@better-auth/core': 1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@5.10.0)(kysely@0.28.8)(nanostores@1.1.0)
+      '@better-auth/core': 1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.3(@better-auth/core@1.4.3(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.1.0)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.1.0))
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
@@ -9926,8 +9926,8 @@ snapshots:
       nanostores: 1.1.0
       zod: 4.1.13
     optionalDependencies:
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
 
   better-call@1.1.0:
     dependencies:
@@ -11560,14 +11560,6 @@ snapshots:
     dependencies:
       obliterator: 2.0.5
 
-  mobx-react-lite@4.1.1(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      mobx: 6.15.0
-      react: 18.3.1
-      use-sync-external-store: 1.6.0(react@18.3.1)
-    optionalDependencies:
-      react-dom: 18.3.1(react@18.3.1)
-
   mobx-react-lite@4.1.1(mobx@6.15.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       mobx: 6.15.0
@@ -11575,14 +11567,6 @@ snapshots:
       use-sync-external-store: 1.6.0(react@19.2.0)
     optionalDependencies:
       react-dom: 19.2.0(react@19.2.0)
-
-  mobx-react@9.2.0(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      mobx: 6.15.0
-      mobx-react-lite: 4.1.1(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-    optionalDependencies:
-      react-dom: 18.3.1(react@18.3.1)
 
   mobx-react@9.2.0(mobx@6.15.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
@@ -11990,12 +11974,6 @@ snapshots:
       react: 18.3.1
       tslib: 2.8.1
 
-  react-tabs@6.1.0(react@18.3.1):
-    dependencies:
-      clsx: 2.1.1
-      prop-types: 15.8.1
-      react: 18.3.1
-
   react-tabs@6.1.0(react@19.2.0):
     dependencies:
       clsx: 2.1.1
@@ -12073,7 +12051,7 @@ snapshots:
       - react-native
       - supports-color
 
-  redoc@2.5.2(core-js@3.47.0)(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.1.19(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
+  redoc@2.5.2(core-js@3.47.0)(mobx@6.15.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(styled-components@6.1.19(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
     dependencies:
       '@redocly/openapi-core': 1.34.5
       classnames: 2.5.1
@@ -12086,16 +12064,16 @@ snapshots:
       mark.js: 8.11.1
       marked: 4.3.0
       mobx: 6.15.0
-      mobx-react: 9.2.0(mobx@6.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      mobx-react: 9.2.0(mobx@6.15.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       openapi-sampler: 1.6.2
       path-browserify: 1.0.1
       perfect-scrollbar: 1.5.6
       polished: 4.3.1
       prismjs: 1.30.0
       prop-types: 15.8.1
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      react-tabs: 6.1.0(react@18.3.1)
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+      react-tabs: 6.1.0(react@19.2.0)
       slugify: 1.4.7
       stickyfill: 1.1.1
       styled-components: 6.1.19(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -12726,10 +12704,6 @@ snapshots:
       detect-node-es: 1.1.0
       react: 18.3.1
       tslib: 2.8.1
-
-  use-sync-external-store@1.6.0(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   use-sync-external-store@1.6.0(react@19.2.0):
     dependencies:
