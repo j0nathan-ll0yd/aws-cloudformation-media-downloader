@@ -1,0 +1,75 @@
+{
+  "metadata": {
+    "generated": "2024-01-15T12:00:00.000Z",
+    "projectRoot": "/test/project",
+    "totalFiles": 10
+  },
+  "files": {
+    "src/lambdas/TestLambda/src/index.ts": {
+      "file": "src/lambdas/TestLambda/src/index.ts",
+      "imports": [
+        "src/entities/Files",
+        "src/entities/Users",
+        "src/lib/vendor/AWS/DynamoDB",
+        "src/util/lambda-helpers"
+      ]
+    },
+    "src/lambdas/AnotherLambda/src/index.ts": {
+      "file": "src/lambdas/AnotherLambda/src/index.ts",
+      "imports": [
+        "src/entities/Files",
+        "src/util/lambda-helpers"
+      ]
+    },
+    "src/entities/Files.ts": {
+      "file": "src/entities/Files.ts",
+      "imports": [
+        "src/lib/vendor/ElectroDB/config"
+      ]
+    },
+    "src/entities/Users.ts": {
+      "file": "src/entities/Users.ts",
+      "imports": [
+        "src/lib/vendor/ElectroDB/config"
+      ]
+    },
+    "src/util/lambda-helpers.ts": {
+      "file": "src/util/lambda-helpers.ts",
+      "imports": []
+    },
+    "src/lib/vendor/AWS/DynamoDB.ts": {
+      "file": "src/lib/vendor/AWS/DynamoDB.ts",
+      "imports": []
+    },
+    "src/lib/vendor/ElectroDB/config.ts": {
+      "file": "src/lib/vendor/ElectroDB/config.ts",
+      "imports": [
+        "src/lib/vendor/AWS/DynamoDB"
+      ]
+    }
+  },
+  "transitiveDependencies": {
+    "src/lambdas/TestLambda/src/index.ts": [
+      "src/entities/Files",
+      "src/entities/Users",
+      "src/lib/vendor/AWS/DynamoDB",
+      "src/lib/vendor/ElectroDB/config",
+      "src/util/lambda-helpers"
+    ],
+    "src/lambdas/AnotherLambda/src/index.ts": [
+      "src/entities/Files",
+      "src/lib/vendor/AWS/DynamoDB",
+      "src/lib/vendor/ElectroDB/config",
+      "src/util/lambda-helpers"
+    ],
+    "src/entities/Files.ts": [
+      "src/lib/vendor/AWS/DynamoDB",
+      "src/lib/vendor/ElectroDB/config"
+    ],
+    "src/entities/Users.ts": [
+      "src/lib/vendor/AWS/DynamoDB",
+      "src/lib/vendor/ElectroDB/config"
+    ]
+  },
+  "circularDependencies": []
+}

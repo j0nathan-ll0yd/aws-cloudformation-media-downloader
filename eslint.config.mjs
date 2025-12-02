@@ -29,7 +29,8 @@ export default [
       'src/types/terraform.d.ts',
       'src/types/infrastructure.d.ts',
       'eslint.config.mjs',
-      '.dependency-cruiser.cjs'
+      '.dependency-cruiser.cjs',
+      'src/mcp/test/fixtures/**/*'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
