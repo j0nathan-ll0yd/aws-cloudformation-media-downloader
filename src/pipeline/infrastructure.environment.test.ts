@@ -22,9 +22,19 @@ const excludedSourceVariables = {
   Upgrade: 1 // HTTP header
 }
 
+// Patterns that indicate library operation types, not environment variables
+// These are verb+noun patterns commonly used in ORMs and libraries (e.g., ElectroDB)
+const operationTypePatterns = [
+  /^(Create|Delete|Update|Get|Put|Scan|Query|Batch|Find|List|Remove|Insert|Upsert)(One|Many|Item|Items|All)?$/
+]
+
+function isOperationType(variable: string): boolean {
+  return operationTypePatterns.some((pattern) => pattern.test(variable))
+}
+
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
-    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable)
+    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable) && !isOperationType(variable)
   })
 }
 

@@ -29,6 +29,7 @@ export interface Data {
 export interface ArchiveFile {
     ApiGatewayAuthorizer: StartFileUploadElement[];
     CloudfrontMiddleware: StartFileUploadElement[];
+    FfmpegLayer:          Layer[];
     FileCoordinator:      StartFileUploadElement[];
     ListFiles:            StartFileUploadElement[];
     LogClientEvent:       StartFileUploadElement[];
@@ -42,7 +43,7 @@ export interface ArchiveFile {
     UserDelete:           StartFileUploadElement[];
     UserSubscribe:        StartFileUploadElement[];
     WebhookFeedly:        StartFileUploadElement[];
-    YtDlpLayer:           YtDLPLayer[];
+    YtDlpLayer:           Layer[];
 }
 
 export interface StartFileUploadElement {
@@ -55,7 +56,7 @@ export enum APIGatewayAuthorizerType {
     Zip = "zip",
 }
 
-export interface YtDLPLayer {
+export interface Layer {
     depends_on:  string[];
     output_path: string;
     source_dir:  string;
@@ -82,23 +83,23 @@ export interface AwsIamPolicyDocument {
     ListFiles:                      APIGatewayAuthorizerRolePolicyElement[];
     LoginUser:                      APIGatewayAuthorizerRolePolicyElement[];
     MultipartUpload:                APIGatewayAuthorizerRolePolicyElement[];
-    PruneDevices:                   APIGatewayAuthorizerRolePolicyElement[];
+    PruneDevices:                   PruneDevice[];
     RegisterDevice:                 RegisterDevice[];
     RegisterUser:                   APIGatewayAuthorizerRolePolicyElement[];
     S3ObjectCreated:                APIGatewayAuthorizerRolePolicyElement[];
     SNSAssumeRole:                  AssumeRole[];
-    SendPushNotification:           APIGatewayAuthorizerRolePolicyElement[];
+    SendPushNotification:           PruneDevice[];
     StatesAssumeRole:               AssumeRole[];
-    UserDelete:                     APIGatewayAuthorizerRolePolicyElement[];
+    UserDelete:                     PruneDevice[];
     UserSubscribe:                  UserSubscribe[];
     WebhookFeedlyRole:              APIGatewayAuthorizerRolePolicyElement[];
 }
 
 export interface APIGatewayAuthorizerRolePolicyElement {
-    statement: APIGatewayAuthorizerStatement[];
+    statement: Ent[];
 }
 
-export interface APIGatewayAuthorizerStatement {
+export interface Ent {
     actions:   string[];
     resources: string[];
 }
@@ -125,6 +126,20 @@ export interface AssumeRole {
 export interface LambdaAssumeRoleStatement {
     actions:    string[];
     principals: PrincipalElement[];
+}
+
+export interface PruneDevice {
+    dynamic:   Dynamic;
+    statement: Ent[];
+}
+
+export interface Dynamic {
+    statement: DynamicStatement[];
+}
+
+export interface DynamicStatement {
+    content:  Ent[];
+    for_each: string;
 }
 
 export interface RegisterDevice {
@@ -705,15 +720,16 @@ export interface APIGatewayAuthorizerEnvironment {
 }
 
 export interface PurpleVariables {
+    ApplicationUrl?:               string;
+    BetterAuthSecret?:             string;
     DynamoDBTableName?:            DynamoDBTableName;
     MultiAuthenticationPathParts?: string;
     ReservedClientIp?:             string;
+    SignInWithAppleConfig?:        string;
     DefaultFileContentType?:       string;
     DefaultFileName?:              string;
     DefaultFileSize?:              number;
     DefaultFileUrl?:               string;
-    ApplicationUrl?:               string;
-    SignInWithAppleConfig?:        string;
     ApnsDefaultTopic?:             string;
     ApnsKeyId?:                    string;
     ApnsSigningKey?:               string;
@@ -741,19 +757,20 @@ export enum Mode {
 }
 
 export interface StartFileUpload {
-    depends_on:       string[];
-    description:      string;
-    environment:      StartFileUploadEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    memory_size:      number;
-    role:             string;
-    runtime:          Runtime;
-    source_code_hash: string;
-    timeout:          number;
-    tracing_config:   TracingConfig[];
+    depends_on:        string[];
+    description:       string;
+    environment:       StartFileUploadEnvironment[];
+    ephemeral_storage: EphemeralStorage[];
+    filename:          string;
+    function_name:     string;
+    handler:           string;
+    layers:            string[];
+    memory_size:       number;
+    role:              string;
+    runtime:           Runtime;
+    source_code_hash:  string;
+    timeout:           number;
+    tracing_config:    TracingConfig[];
 }
 
 export interface StartFileUploadEnvironment {
@@ -762,17 +779,23 @@ export interface StartFileUploadEnvironment {
 
 export interface FluffyVariables {
     Bucket:              string;
+    CloudfrontDomain:    string;
     DynamoDBTableName:   DynamoDBTableName;
     GithubPersonalToken: string;
     PATH:                string;
     YtdlpBinaryPath:     string;
 }
 
-export interface AwsLambdaLayerVersion {
-    YtDlp: YtDLP[];
+export interface EphemeralStorage {
+    size: number;
 }
 
-export interface YtDLP {
+export interface AwsLambdaLayerVersion {
+    Ffmpeg: Ffmpeg[];
+    YtDlp:  Ffmpeg[];
+}
+
+export interface Ffmpeg {
     compatible_runtimes: Runtime[];
     description:         string;
     filename:            string;
@@ -881,12 +904,13 @@ export interface SendPushNotificationTags {
 }
 
 export interface NullResource {
-    DownloadYtDlpBinary: DownloadYtDLPBinary[];
+    DownloadFfmpegBinary: DownloadFfmpegBinary[];
+    DownloadYtDlpBinary:  DownloadYtDLPBinary[];
 }
 
-export interface DownloadYtDLPBinary {
+export interface DownloadFfmpegBinary {
     provisioner: Provisioner;
-    triggers:    DownloadYtDLPBinaryTriggers;
+    triggers:    DownloadFfmpegBinaryTriggers;
 }
 
 export interface Provisioner {
@@ -895,6 +919,15 @@ export interface Provisioner {
 
 export interface LocalExec {
     command: string;
+}
+
+export interface DownloadFfmpegBinaryTriggers {
+    ffmpeg_exists: string;
+}
+
+export interface DownloadYtDLPBinary {
+    provisioner: Provisioner;
+    triggers:    DownloadYtDLPBinaryTriggers;
 }
 
 export interface DownloadYtDLPBinaryTriggers {
@@ -1100,6 +1133,7 @@ const typeMap: any = {
     "ArchiveFile": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("StartFileUploadElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("StartFileUploadElement")) },
+        { json: "FfmpegLayer", js: "FfmpegLayer", typ: a(r("Layer")) },
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("StartFileUploadElement")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("StartFileUploadElement")) },
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("StartFileUploadElement")) },
@@ -1113,14 +1147,14 @@ const typeMap: any = {
         { json: "UserDelete", js: "UserDelete", typ: a(r("StartFileUploadElement")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("StartFileUploadElement")) },
         { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("StartFileUploadElement")) },
-        { json: "YtDlpLayer", js: "YtDlpLayer", typ: a(r("YtDLPLayer")) },
+        { json: "YtDlpLayer", js: "YtDlpLayer", typ: a(r("Layer")) },
     ], false),
     "StartFileUploadElement": o([
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_file", js: "source_file", typ: "" },
         { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
     ], false),
-    "YtDLPLayer": o([
+    "Layer": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_dir", js: "source_dir", typ: "" },
@@ -1144,21 +1178,21 @@ const typeMap: any = {
         { json: "ListFiles", js: "ListFiles", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("PruneDevice")) },
         { json: "StatesAssumeRole", js: "StatesAssumeRole", typ: a(r("AssumeRole")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("UserSubscribe")) },
         { json: "WebhookFeedlyRole", js: "WebhookFeedlyRole", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
     ], false),
     "APIGatewayAuthorizerRolePolicyElement": o([
-        { json: "statement", js: "statement", typ: a(r("APIGatewayAuthorizerStatement")) },
+        { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
-    "APIGatewayAuthorizerStatement": o([
+    "Ent": o([
         { json: "actions", js: "actions", typ: a("") },
         { json: "resources", js: "resources", typ: a("") },
     ], false),
@@ -1180,6 +1214,17 @@ const typeMap: any = {
     "LambdaAssumeRoleStatement": o([
         { json: "actions", js: "actions", typ: a("") },
         { json: "principals", js: "principals", typ: a(r("PrincipalElement")) },
+    ], false),
+    "PruneDevice": o([
+        { json: "dynamic", js: "dynamic", typ: r("Dynamic") },
+        { json: "statement", js: "statement", typ: a(r("Ent")) },
+    ], false),
+    "Dynamic": o([
+        { json: "statement", js: "statement", typ: a(r("DynamicStatement")) },
+    ], false),
+    "DynamicStatement": o([
+        { json: "content", js: "content", typ: a(r("Ent")) },
+        { json: "for_each", js: "for_each", typ: "" },
     ], false),
     "RegisterDevice": o([
         { json: "statement", js: "statement", typ: a(r("RegisterDeviceStatement")) },
@@ -1666,15 +1711,16 @@ const typeMap: any = {
         { json: "variables", js: "variables", typ: r("PurpleVariables") },
     ], false),
     "PurpleVariables": o([
+        { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
+        { json: "BetterAuthSecret", js: "BetterAuthSecret", typ: u(undefined, "") },
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, r("DynamoDBTableName")) },
         { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
         { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
+        { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
         { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: u(undefined, "") },
         { json: "DefaultFileName", js: "DefaultFileName", typ: u(undefined, "") },
         { json: "DefaultFileSize", js: "DefaultFileSize", typ: u(undefined, 0) },
         { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: u(undefined, "") },
-        { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
-        { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
         { json: "ApnsDefaultTopic", js: "ApnsDefaultTopic", typ: u(undefined, "") },
         { json: "ApnsKeyId", js: "ApnsKeyId", typ: u(undefined, "") },
         { json: "ApnsSigningKey", js: "ApnsSigningKey", typ: u(undefined, "") },
@@ -1691,6 +1737,7 @@ const typeMap: any = {
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("StartFileUploadEnvironment")) },
+        { json: "ephemeral_storage", js: "ephemeral_storage", typ: a(r("EphemeralStorage")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: "" },
@@ -1707,15 +1754,20 @@ const typeMap: any = {
     ], false),
     "FluffyVariables": o([
         { json: "Bucket", js: "Bucket", typ: "" },
+        { json: "CloudfrontDomain", js: "CloudfrontDomain", typ: "" },
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: r("DynamoDBTableName") },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: "" },
         { json: "PATH", js: "PATH", typ: "" },
         { json: "YtdlpBinaryPath", js: "YtdlpBinaryPath", typ: "" },
     ], false),
-    "AwsLambdaLayerVersion": o([
-        { json: "YtDlp", js: "YtDlp", typ: a(r("YtDLP")) },
+    "EphemeralStorage": o([
+        { json: "size", js: "size", typ: 0 },
     ], false),
-    "YtDLP": o([
+    "AwsLambdaLayerVersion": o([
+        { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
+        { json: "YtDlp", js: "YtDlp", typ: a(r("Ffmpeg")) },
+    ], false),
+    "Ffmpeg": o([
         { json: "compatible_runtimes", js: "compatible_runtimes", typ: a(r("Runtime")) },
         { json: "description", js: "description", typ: "" },
         { json: "filename", js: "filename", typ: "" },
@@ -1796,17 +1848,25 @@ const typeMap: any = {
         { json: "Environment", js: "Environment", typ: "" },
     ], false),
     "NullResource": o([
+        { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadFfmpegBinary")) },
         { json: "DownloadYtDlpBinary", js: "DownloadYtDlpBinary", typ: a(r("DownloadYtDLPBinary")) },
     ], false),
-    "DownloadYtDLPBinary": o([
+    "DownloadFfmpegBinary": o([
         { json: "provisioner", js: "provisioner", typ: r("Provisioner") },
-        { json: "triggers", js: "triggers", typ: r("DownloadYtDLPBinaryTriggers") },
+        { json: "triggers", js: "triggers", typ: r("DownloadFfmpegBinaryTriggers") },
     ], false),
     "Provisioner": o([
         { json: "local-exec", js: "local-exec", typ: a(r("LocalExec")) },
     ], false),
     "LocalExec": o([
         { json: "command", js: "command", typ: "" },
+    ], false),
+    "DownloadFfmpegBinaryTriggers": o([
+        { json: "ffmpeg_exists", js: "ffmpeg_exists", typ: "" },
+    ], false),
+    "DownloadYtDLPBinary": o([
+        { json: "provisioner", js: "provisioner", typ: r("Provisioner") },
+        { json: "triggers", js: "triggers", typ: r("DownloadYtDLPBinaryTriggers") },
     ], false),
     "DownloadYtDLPBinaryTriggers": o([
         { json: "version", js: "version", typ: "" },

@@ -57,7 +57,7 @@ export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
   logDebug('upsertUserDevices <=', {userId, deviceId})
-  const response = await UserDevices.create({userId, deviceId}).go()
+  const response = await UserDevices.upsert({userId, deviceId}).go()
   logDebug('upsertUserDevices =>', response)
   return response
 }
