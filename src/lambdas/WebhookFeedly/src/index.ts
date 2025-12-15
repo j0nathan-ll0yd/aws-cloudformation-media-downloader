@@ -132,7 +132,7 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
     await associateFileToUser(fileId, userId)
     const file = await getFile(fileId)
     let result: APIGatewayProxyResult
-    if (file && file.status == FileStatus.Available) {
+    if (file && file.status == FileStatus.Available && file.url) {
       // File already downloaded - send notification to user
       await sendFileNotification(file, userId)
       result = response(context, 200, {status: ResponseStatus.Dispatched})

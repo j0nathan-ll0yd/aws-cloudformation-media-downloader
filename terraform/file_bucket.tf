@@ -136,13 +136,12 @@ resource "aws_iam_role" "S3ObjectCreatedRole" {
 }
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
-  # Query KeyIndex to find file by S3 object key
-  # Query FileCollection to find users associated with the file
+  # Query base table and indexes to find files and users
   statement {
     actions = ["dynamodb:Query"]
     resources = [
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/KeyIndex",
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/FileCollection"
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
     ]
   }
   statement {

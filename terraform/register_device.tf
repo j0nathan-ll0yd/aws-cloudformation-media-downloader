@@ -120,7 +120,7 @@ resource "aws_sns_topic" "PushNotifications" {
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
-  count                     = 1
+  count                     = 1 # APNS certificate valid until 2027-01-03
   name                      = "OfflineMediaDownloader"
   platform                  = "APNS_SANDBOX"
   platform_credential       = data.sops_file.secrets.data["apns.staging.privateKey"]  # APNS PRIVATE KEY

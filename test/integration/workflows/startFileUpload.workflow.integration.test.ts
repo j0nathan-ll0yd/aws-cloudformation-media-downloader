@@ -18,6 +18,7 @@ const TEST_TABLE = 'test-files-upload'
 process.env.Bucket = TEST_BUCKET
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
+process.env.CloudfrontDomain = 'test.cloudfront.net'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
@@ -25,18 +26,15 @@ import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/helpers/dynamodb-helpers'
-import {createTestBucket, deleteTestBucket, getObjectMetadata} from '#test/integration/helpers/s3-helpers'
+import {createTestBucket, deleteTestBucket} from '#test/integration/helpers/s3-helpers'
 import {createMockContext} from '#test/integration/helpers/lambda-context'
-import {createMockStreamVideoToS3WithRealUpload, createMockVideoFormat, createMockVideoInfo, S3UploadFunction} from '#test/integration/helpers/mock-youtube'
+import {createMockVideoInfo} from '#test/integration/helpers/mock-youtube'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
-import {createS3Upload} from '#lib/vendor/AWS/S3'
-
-// Type assertion for createS3Upload to match S3UploadFunction signature
-const s3UploadFn = createS3Upload as S3UploadFunction
 
 const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
 
-const mockFormat = createMockVideoFormat({format_id: '18', ext: 'mp4', filesize: 5242880})
+// Mock file size for download response
+const MOCK_FILE_SIZE = 5242880
 
 // FetchVideoInfoResult type for the new safe fetchVideoInfo API
 type FetchVideoInfoResult = {success: boolean; info?: typeof mockVideoInfo; error?: Error; isCookieError?: boolean}
@@ -45,8 +43,12 @@ type FetchVideoInfoResult = {success: boolean; info?: typeof mockVideoInfo; erro
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
   // fetchVideoInfo now returns a result object {success, info, error}
   fetchVideoInfo: jest.fn<() => Promise<FetchVideoInfoResult>>().mockResolvedValue({success: true, info: mockVideoInfo}),
-  chooseVideoFormat: jest.fn<() => typeof mockFormat>().mockReturnValue(mockFormat),
-  streamVideoToS3: createMockStreamVideoToS3WithRealUpload(s3UploadFn)
+  // downloadVideoToS3 replaces the old streamVideoToS3 - returns fileSize, s3Url, duration
+  downloadVideoToS3: jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>().mockResolvedValue({
+    fileSize: MOCK_FILE_SIZE,
+    s3Url: `s3://${TEST_BUCKET}/test-video-123.mp4`,
+    duration: 180
+  })
 }))
 
 jest.unstable_mockModule('#util/github-helpers', () => ({
@@ -93,21 +95,19 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     const response = JSON.parse(result.body)
     expect(response.body.fileId).toBe(fileId)
     expect(response.body.status).toBe('Success')
-    expect(response.body.fileSize).toBe(5242880)
+    expect(response.body.fileSize).toBe(MOCK_FILE_SIZE)
 
     const file = await getFile(fileId)
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe(fileId)
     expect(file!.status).toBe(FileStatus.Available)
-    expect(file!.size).toBe(5242880)
+    expect(file!.size).toBe(MOCK_FILE_SIZE)
     expect(file!.key).toBe('test-video-123.mp4')
     expect(file!.title).toBe('Integration Test Video')
     expect(file!.authorName).toBe('Test Channel')
     expect(file!.contentType).toBe('video/mp4')
 
-    const s3Metadata = await getObjectMetadata(TEST_BUCKET, 'test-video-123.mp4')
-    expect(s3Metadata).not.toBeNull()
-    expect(s3Metadata!.contentLength).toBe(5242880)
-    expect(s3Metadata!.contentType).toBe('video/mp4')
+    // Note: S3 upload is mocked in this orchestration test.
+    // S3 integration is validated in YouTube.ts unit tests.
   }, 30000)
 })

@@ -2,29 +2,12 @@
  * Better Auth ElectroDB Adapter
  *
  * Custom database adapter for Better Auth that uses ElectroDB with DynamoDB single-table design.
- * This is the first ElectroDB adapter for Better Auth - a reference implementation for the community.
+ * Uses Better Auth's createAdapterFactory for proper integration.
  *
- * Architecture:
- * - Better Auth Framework
- *   ↓
- * - ElectroDB Adapter (this file)
- *   ↓
- * - ElectroDB Entities (type-safe)
- *   ↓
- * - DynamoDB Single Table (existing MediaDownloader table)
- *
- * Benefits:
- * - Zero additional infrastructure cost (uses existing DynamoDB table)
- * - Type-safe throughout (Better Auth → Adapter → ElectroDB → DynamoDB)
- * - Leverages existing GSIs for efficient queries
- * - Single-table design (consistent with project architecture)
- * - Reusable across any DynamoDB + ElectroDB project
- *
- * @see https://www.better-auth.com/docs/adapters for adapter interface specification
+ * @see https://www.better-auth.com/docs/guides/create-a-db-adapter
  */
 
-import type {Account, Session, User} from 'better-auth'
-import type {EntityItem} from 'electrodb'
+import {createAdapterFactory} from 'better-auth/adapters'
 import {Users} from '#entities/Users'
 import {Sessions} from '#entities/Sessions'
 import {Accounts} from '#entities/Accounts'
@@ -32,457 +15,417 @@ import {VerificationTokens} from '#entities/VerificationTokens'
 import {v4 as uuidv4} from 'uuid'
 import {logDebug, logError} from '#util/lambda-helpers'
 
-/**
- * ElectroDB entity response types - what we get back from database queries
- * ElectroDB's EntityItem doesn't include auto-generated fields, so we extend it
- * @internal
- */
-type ElectroUserItem = EntityItem<typeof Users> & {createdAt?: number; updatedAt?: number}
-
-/** @internal */
-type ElectroSessionItem = EntityItem<typeof Sessions> & {createdAt: number; updatedAt: number}
-
-/** @internal */
-type ElectroAccountItem = EntityItem<typeof Accounts> & {createdAt: number; updatedAt: number}
+type ModelName = 'user' | 'session' | 'account' | 'verification'
 
 /**
- * Identity provider data structure (from Sign in with Apple)
- * This matches the ElectroDB schema for the identityProviders map field
+ * Primary key field for each model
  */
-type IdentityProvidersData = {
-  userId: string
-  email: string
-  emailVerified: boolean
-  isPrivateEmail: boolean
-  accessToken: string
-  refreshToken: string
-  tokenType: string
-  expiresAt: number
+const primaryKeyFields: Record<ModelName, string> = {
+  user: 'userId',
+  session: 'sessionId',
+  account: 'accountId',
+  verification: 'token'
 }
 
 /**
- * ElectroDB create types - what we send to database creates
- * Required fields must be present, optional fields can be omitted
- * @internal
+ * Transform input data from Better Auth format to ElectroDB format
  */
-type ElectroUserCreate = {
-  userId: string
-  email: string
-  emailVerified: boolean
-  firstName: string
-  lastName: string
-  identityProviders: IdentityProvidersData // ElectroDB requires all fields
-}
+function transformInputData(model: string, data: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  const pkField = primaryKeyFields[model as ModelName]
 
-/** @internal */
-type ElectroSessionCreate = {sessionId: string; userId: string; expiresAt: number; token: string; ipAddress?: string; userAgent?: string; deviceId?: string}
+  for (const [key, value] of Object.entries(data)) {
+    // Map 'id' to the appropriate primary key field
+    const mappedKey = key === 'id' ? pkField : key
 
-/** @internal */
-type ElectroAccountCreate = {
-  accountId: string
-  userId: string
-  providerId: string
-  providerAccountId: string
-  accessToken?: string
-  refreshToken?: string
-  expiresAt?: number
-  scope?: string
-  tokenType?: string
-  idToken?: string
-}
-
-/**
- * ElectroDB update types - partial updates for set() operations
- * Only include fields that can be updated
- * @internal
- */
-type ElectroUserUpdate = Partial<Pick<ElectroUserCreate, 'email' | 'emailVerified' | 'firstName' | 'lastName'>>
-/** @internal */
-type ElectroSessionUpdate = Partial<Pick<ElectroSessionCreate, 'expiresAt' | 'token' | 'ipAddress' | 'userAgent'>>
-
-/**
- * Extended Account type that includes OAuth token metadata we store in ElectroDB
- * Better Auth's base Account type doesn't include these fields, but we persist them
- */
-export type ExtendedAccount = Account & {scope?: string | null; tokenType?: string | null; expiresAt?: number | null}
-
-/**
- * Splits a full name into first and last name parts.
- * Handles edge cases like empty strings and single names.
- *
- * @param fullName - The full name to split (e.g., "John Doe Smith")
- * @returns Object with firstName and lastName
- *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Adapter-Design#name-splitting-utility | Name Splitting Examples}
- */
-export function splitFullName(fullName?: string): {firstName: string; lastName: string} {
-  const parts = (fullName || '').split(' ')
-  return {firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || ''}
-}
-
-/**
- * Transforms ElectroDB user entity to Better Auth user format
- * Accepts partial data from update operations
- */
-function transformUserToAuth(electroUser: Partial<ElectroUserItem>): User {
-  return {
-    id: electroUser.userId!,
-    email: electroUser.email!,
-    emailVerified: electroUser.emailVerified ?? false,
-    name: `${electroUser.firstName ?? ''} ${electroUser.lastName ?? ''}`.trim(),
-    createdAt: new Date(electroUser.createdAt ?? Date.now()),
-    updatedAt: new Date(electroUser.updatedAt ?? Date.now())
-  }
-}
-
-/**
- * Transforms ElectroDB session entity to Better Auth session format
- * Accepts partial data from update operations
- */
-function transformSessionToAuth(electroSession: Partial<ElectroSessionItem>): Session {
-  return {
-    id: electroSession.sessionId!,
-    userId: electroSession.userId!,
-    expiresAt: new Date(electroSession.expiresAt!),
-    token: electroSession.token!,
-    ipAddress: electroSession.ipAddress ?? undefined,
-    userAgent: electroSession.userAgent ?? undefined,
-    createdAt: new Date(electroSession.createdAt ?? Date.now()),
-    updatedAt: new Date(electroSession.updatedAt ?? Date.now())
-  }
-}
-
-/**
- * Transforms ElectroDB account entity to Better Auth account format
- * Returns ExtendedAccount which includes OAuth metadata we persist
- */
-function transformAccountToAuth(electroAccount: ElectroAccountItem): ExtendedAccount {
-  return {
-    id: electroAccount.accountId,
-    userId: electroAccount.userId,
-    accountId: electroAccount.providerAccountId, // Better Auth uses 'accountId', we store as 'providerAccountId'
-    providerId: electroAccount.providerId,
-    accessToken: electroAccount.accessToken ?? null,
-    refreshToken: electroAccount.refreshToken ?? null,
-    idToken: electroAccount.idToken ?? null,
-    scope: electroAccount.scope ?? null,
-    tokenType: electroAccount.tokenType ?? null,
-    expiresAt: electroAccount.expiresAt ?? null,
-    createdAt: new Date(electroAccount.createdAt),
-    updatedAt: new Date(electroAccount.updatedAt)
-  }
-}
-
-/**
- * Transforms Better Auth user format to ElectroDB user create data
- */
-function transformUserFromAuth(authUser: Partial<User> & {id?: string}): ElectroUserCreate {
-  const {firstName, lastName} = splitFullName(authUser.name)
-  // ElectroDB requires all fields in identityProviders map, so we provide defaults
-  const identityProviders: IdentityProvidersData = {
-    userId: '',
-    email: '',
-    emailVerified: false,
-    isPrivateEmail: false,
-    accessToken: '',
-    refreshToken: '',
-    tokenType: '',
-    expiresAt: 0
+    // Convert Date objects or ISO strings to timestamps for ElectroDB
+    if (value instanceof Date) {
+      result[mappedKey] = value.getTime()
+    } else if (typeof value === 'string' && (key === 'createdAt' || key === 'updatedAt' || key === 'expiresAt')) {
+      // Handle ISO date strings from Better Auth
+      const parsed = Date.parse(value)
+      result[mappedKey] = isNaN(parsed) ? value : parsed
+    } else {
+      result[mappedKey] = value
+    }
   }
 
-  return {
-    userId: authUser.id || uuidv4(),
-    email: authUser.email!, // Required by Better Auth
-    emailVerified: authUser.emailVerified ?? false,
-    firstName,
-    lastName,
-    identityProviders // Provide complete object with required fields
+  // Ensure primary key is set
+  if (!result[pkField]) {
+    result[pkField] = uuidv4()
   }
-}
 
-/**
- * Transforms Better Auth user update to ElectroDB update fields
- */
-function transformUserUpdateFromAuth(authUpdate: Partial<User>): ElectroUserUpdate {
-  const updates: ElectroUserUpdate = {}
-  if (authUpdate.email) {
-    updates.email = authUpdate.email
+  // Handle user-specific fields
+  if (model === 'user') {
+    if (typeof result['name'] === 'string') {
+      const parts = (result['name'] as string).split(' ')
+      result['firstName'] = parts[0] || ''
+      result['lastName'] = parts.slice(1).join(' ') || ''
+      delete result['name']
+    }
+    if (!result['firstName']) result['firstName'] = ''
+    if (!result['lastName']) result['lastName'] = ''
+    if (!result['identityProviders']) {
+      result['identityProviders'] = {
+        userId: '',
+        email: '',
+        emailVerified: false,
+        isPrivateEmail: false,
+        accessToken: '',
+        refreshToken: '',
+        tokenType: '',
+        expiresAt: 0
+      }
+    }
   }
-  if (authUpdate.emailVerified !== undefined) {
-    updates.emailVerified = authUpdate.emailVerified
-  }
-  if (authUpdate.name) {
-    const {firstName, lastName} = splitFullName(authUpdate.name)
-    updates.firstName = firstName
-    updates.lastName = lastName
-  }
-  return updates
-}
 
-/**
- * Transforms Better Auth session format to ElectroDB session create data
- * Converts null to undefined for ElectroDB compatibility
- * Note: deviceId is conditionally included to support sparse GSI indexing
- */
-function transformSessionFromAuth(authSession: Partial<Session> & {id?: string; deviceId?: string}): ElectroSessionCreate {
-  const result: ElectroSessionCreate = {
-    sessionId: authSession.id || uuidv4(),
-    userId: authSession.userId!, // Required by Better Auth
-    expiresAt: authSession.expiresAt ? authSession.expiresAt.getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000,
-    token: authSession.token || uuidv4(),
-    ipAddress: authSession.ipAddress ?? undefined,
-    userAgent: authSession.userAgent ?? undefined
+  // Handle account field mapping
+  if (model === 'account' && result['accountId'] && !result['providerAccountId']) {
+    result['providerAccountId'] = result['accountId']
   }
-  // Only include deviceId if provided - enables sparse GSI indexing
-  if (authSession.deviceId) {
-    result.deviceId = authSession.deviceId
-  }
+
   return result
 }
 
 /**
- * Transforms Better Auth session update to ElectroDB update fields
- * Converts null to undefined for ElectroDB compatibility
+ * Transform output data from ElectroDB format to Better Auth format
  */
-function transformSessionUpdateFromAuth(authUpdate: Partial<Session>): ElectroSessionUpdate {
-  const updates: ElectroSessionUpdate = {}
-  if (authUpdate.expiresAt) {
-    updates.expiresAt = authUpdate.expiresAt.getTime()
+function transformOutputData(model: string, data: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!data) return null
+
+  const result: Record<string, unknown> = {...data}
+  const pkField = primaryKeyFields[model as ModelName]
+
+  // Map primary key back to 'id'
+  if (pkField && result[pkField]) {
+    result['id'] = result[pkField]
   }
-  if (authUpdate.token) {
-    updates.token = authUpdate.token
+
+  // Convert timestamps to Date objects
+  if (typeof result['createdAt'] === 'number') {
+    result['createdAt'] = new Date(result['createdAt'] as number)
   }
-  if (authUpdate.ipAddress !== undefined && authUpdate.ipAddress !== null) {
-    updates.ipAddress = authUpdate.ipAddress
+  if (typeof result['updatedAt'] === 'number') {
+    result['updatedAt'] = new Date(result['updatedAt'] as number)
   }
-  if (authUpdate.userAgent !== undefined && authUpdate.userAgent !== null) {
-    updates.userAgent = authUpdate.userAgent
+  if (typeof result['expiresAt'] === 'number') {
+    result['expiresAt'] = new Date(result['expiresAt'] as number)
   }
-  return updates
+
+  // Combine firstName/lastName into name for user model
+  if (model === 'user' && (result['firstName'] || result['lastName'])) {
+    result['name'] = `${result['firstName'] || ''} ${result['lastName'] || ''}`.trim()
+  }
+
+  // Map account fields back
+  if (model === 'account' && result['providerAccountId']) {
+    result['accountId'] = result['providerAccountId']
+  }
+
+  return result
 }
 
-/**
- * Transforms Better Auth account format to ElectroDB account create data
- * Note: Better Auth passes 'accountId' field, we store as 'providerAccountId'
- */
-function transformAccountFromAuth(authAccount: Partial<ExtendedAccount> & {id?: string}): ElectroAccountCreate {
-  return {
-    accountId: authAccount.id || uuidv4(),
-    userId: authAccount.userId!, // Required by Better Auth
-    providerId: authAccount.providerId!, // Required by Better Auth
-    providerAccountId: authAccount.accountId || '', // Better Auth uses 'accountId', we store as 'providerAccountId'
-    accessToken: authAccount.accessToken ?? undefined,
-    refreshToken: authAccount.refreshToken ?? undefined,
-    expiresAt: authAccount.expiresAt ?? undefined,
-    scope: authAccount.scope ?? undefined,
-    tokenType: authAccount.tokenType ?? undefined,
-    idToken: authAccount.idToken ?? undefined
-  }
-}
+// Type for where clause
+type WhereClause = Array<{field: string; value: unknown; operator?: string}>
 
 /**
  * Creates a Better Auth adapter for ElectroDB/DynamoDB.
- *
- * This adapter implements Better Auth's expected interface and maps operations
- * to ElectroDB entities, providing type-safe database access.
- *
- * @returns Better Auth adapter instance
- *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/ElectroDB-Adapter-Design#adapter-interface | ElectroDB Adapter Usage}
  */
-export function createElectroDBAdapter() {
-  const adapter = {
-    id: 'electrodb',
-
-    /**
-     * User Operations
-     * Maps Better Auth user operations to ElectroDB Users entity
-     */
-    async createUser(data: Partial<User> & {id?: string}): Promise<User> {
-      logDebug('ElectroDB Adapter: createUser', {data})
-
-      const userData = transformUserFromAuth(data)
-      const result = await Users.create(userData).go()
-
-      return transformUserToAuth(result.data)
-    },
-
-    async getUser(userId: string): Promise<User | null> {
-      logDebug('ElectroDB Adapter: getUser', {userId})
+export const electroDBAdapter = createAdapterFactory({
+  config: {
+    adapterId: 'electrodb',
+    adapterName: 'ElectroDB',
+    supportsJSON: true,
+    supportsDates: false,
+    supportsBooleans: true,
+    supportsNumericIds: false
+  },
+  adapter: () => ({
+    async create<T>({model, data}: {model: string; data: Record<string, unknown>}): Promise<T> {
+      logDebug('ElectroDB Adapter: create', {model, data})
+      const transformedData = transformInputData(model, data)
 
       try {
-        const result = await Users.get({userId}).go()
-        if (!result.data) {
-          return null
+        let result: {data: Record<string, unknown>}
+
+        switch (model) {
+          case 'user':
+            result = await Users.create(transformedData as Parameters<typeof Users.create>[0]).go()
+            break
+          case 'session':
+            result = await Sessions.create(transformedData as Parameters<typeof Sessions.create>[0]).go()
+            break
+          case 'account':
+            result = await Accounts.create(transformedData as Parameters<typeof Accounts.create>[0]).go()
+            break
+          case 'verification':
+            result = await VerificationTokens.create(transformedData as Parameters<typeof VerificationTokens.create>[0]).go()
+            break
+          default:
+            throw new Error(`Unknown model: ${model}`)
         }
 
-        return transformUserToAuth(result.data)
+        return transformOutputData(model, result.data) as T
       } catch (error) {
-        logError('ElectroDB Adapter: getUser failed', {userId, error})
+        logError('ElectroDB Adapter: create failed', {model, error})
+        throw error
+      }
+    },
+
+    async findOne<T>({model, where}: {model: string; where: WhereClause}): Promise<T | null> {
+      logDebug('ElectroDB Adapter: findOne', {model, where})
+      const pkField = primaryKeyFields[model as ModelName]
+      const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
+
+      try {
+        // Handle by model type
+        switch (model) {
+          case 'user': {
+            if (pkCondition) {
+              const result = await Users.get({userId: pkCondition.value as string}).go()
+              if (!result.data) return null
+              return transformOutputData(model, result.data as Record<string, unknown>) as T
+            }
+            const emailCondition = where.find((w) => w.field === 'email')
+            if (emailCondition) {
+              const result = await Users.query.byEmail({email: emailCondition.value as string}).go()
+              if (!result.data || result.data.length === 0) return null
+              return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
+            }
+            break
+          }
+          case 'session': {
+            if (pkCondition) {
+              const result = await Sessions.get({sessionId: pkCondition.value as string}).go()
+              if (!result.data) return null
+              return transformOutputData(model, result.data as Record<string, unknown>) as T
+            }
+            const tokenCondition = where.find((w) => w.field === 'token')
+            const userIdCondition = where.find((w) => w.field === 'userId')
+            // Better Auth often looks up sessions by token alone
+            if (tokenCondition) {
+              const result = await Sessions.query.byToken({token: tokenCondition.value as string}).go()
+              if (!result.data || result.data.length === 0) return null
+              return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
+            }
+            if (userIdCondition) {
+              const result = await Sessions.query.byUser({userId: userIdCondition.value as string}).go()
+              if (!result.data || result.data.length === 0) return null
+              return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
+            }
+            break
+          }
+          case 'account': {
+            if (pkCondition) {
+              const result = await Accounts.get({accountId: pkCondition.value as string}).go()
+              if (!result.data) return null
+              return transformOutputData(model, result.data as Record<string, unknown>) as T
+            }
+            const providerIdCondition = where.find((w) => w.field === 'providerId')
+            const accountIdCondition = where.find((w) => w.field === 'accountId' || w.field === 'providerAccountId')
+            if (providerIdCondition && accountIdCondition) {
+              logDebug('ElectroDB Adapter: querying account by provider', {
+                providerId: providerIdCondition.value,
+                providerAccountId: accountIdCondition.value
+              })
+              const result = await Accounts.query
+                .byProvider({
+                  providerId: providerIdCondition.value as string,
+                  providerAccountId: accountIdCondition.value as string
+                })
+                .go()
+              logDebug('ElectroDB Adapter: account by provider result', {
+                found: result.data?.length || 0,
+                data: result.data?.[0] ? {accountId: result.data[0].accountId, providerId: result.data[0].providerId} : null
+              })
+              if (!result.data || result.data.length === 0) return null
+              return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
+            }
+            const userIdCondition = where.find((w) => w.field === 'userId')
+            if (userIdCondition) {
+              const result = await Accounts.query.byUser({userId: userIdCondition.value as string}).go()
+              if (!result.data || result.data.length === 0) return null
+              // Filter by other conditions if present
+              if (providerIdCondition) {
+                const match = result.data.find((a) => a.providerId === providerIdCondition.value)
+                if (!match) return null
+                return transformOutputData(model, match as Record<string, unknown>) as T
+              }
+              return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
+            }
+            break
+          }
+          case 'verification': {
+            const tokenCondition = where.find((w) => w.field === 'token' || w.field === 'id')
+            if (tokenCondition) {
+              const result = await VerificationTokens.get({token: tokenCondition.value as string}).go()
+              if (!result.data) return null
+              return transformOutputData(model, result.data as Record<string, unknown>) as T
+            }
+            break
+          }
+        }
+
+        logDebug('ElectroDB Adapter: findOne - no matching query pattern', {model, where})
+        return null
+      } catch (error) {
+        logError('ElectroDB Adapter: findOne failed', {model, where, error})
         return null
       }
     },
 
-    async getUserByEmail(email: string): Promise<User | null> {
-      logDebug('ElectroDB Adapter: getUserByEmail', {email})
+    async findMany<T>({model, where}: {model: string; where?: WhereClause}): Promise<T[]> {
+      logDebug('ElectroDB Adapter: findMany', {model, where})
 
       try {
-        // Use byEmail GSI for efficient lookup
-        const result = await Users.query.byEmail({email}).go()
-
-        if (!result.data || result.data.length === 0) {
-          return null
+        switch (model) {
+          case 'session': {
+            const userIdCondition = where?.find((w) => w.field === 'userId')
+            if (userIdCondition) {
+              const result = await Sessions.query.byUser({userId: userIdCondition.value as string}).go()
+              return (result.data || []).map((item) => transformOutputData(model, item as Record<string, unknown>)).filter(Boolean) as T[]
+            }
+            break
+          }
+          case 'account': {
+            const userIdCondition = where?.find((w) => w.field === 'userId')
+            if (userIdCondition) {
+              const result = await Accounts.query.byUser({userId: userIdCondition.value as string}).go()
+              return (result.data || []).map((item) => transformOutputData(model, item as Record<string, unknown>)).filter(Boolean) as T[]
+            }
+            break
+          }
         }
 
-        return transformUserToAuth(result.data[0])
+        return []
       } catch (error) {
-        logError('ElectroDB Adapter: getUserByEmail failed', {email, error})
+        logError('ElectroDB Adapter: findMany failed', {model, where, error})
+        return []
+      }
+    },
+
+    async update<T>({model, where, update}: {model: string; where: WhereClause; update: T}): Promise<T | null> {
+      logDebug('ElectroDB Adapter: update', {model, where, update})
+      const pkField = primaryKeyFields[model as ModelName]
+      const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
+
+      if (!pkCondition) {
+        logError('ElectroDB Adapter: update requires id in where clause', {model, where})
+        return null
+      }
+
+      const transformedUpdate = transformInputData(model, update as Record<string, unknown>)
+      delete transformedUpdate[pkField] // Remove PK from update data
+
+      try {
+        let result: {data: Record<string, unknown>}
+
+        switch (model) {
+          case 'user':
+            result = await Users.update({userId: pkCondition.value as string})
+              .set(transformedUpdate as Parameters<ReturnType<typeof Users.update>['set']>[0])
+              .go()
+            break
+          case 'session':
+            result = await Sessions.update({sessionId: pkCondition.value as string})
+              .set(transformedUpdate as Parameters<ReturnType<typeof Sessions.update>['set']>[0])
+              .go()
+            break
+          case 'account':
+            result = await Accounts.update({accountId: pkCondition.value as string})
+              .set(transformedUpdate as Parameters<ReturnType<typeof Accounts.update>['set']>[0])
+              .go()
+            break
+          case 'verification':
+            result = await VerificationTokens.update({token: pkCondition.value as string})
+              .set(transformedUpdate as Parameters<ReturnType<typeof VerificationTokens.update>['set']>[0])
+              .go()
+            break
+          default:
+            return null
+        }
+
+        return transformOutputData(model, result.data) as T
+      } catch (error) {
+        logError('ElectroDB Adapter: update failed', {model, where, error})
         return null
       }
     },
 
-    async updateUser(userId: string, data: Partial<User>): Promise<User> {
-      logDebug('ElectroDB Adapter: updateUser', {userId, data})
-
-      const updates = transformUserUpdateFromAuth(data)
-      const result = await Users.update({userId}).set(updates).go()
-
-      return transformUserToAuth(result.data)
+    async updateMany(): Promise<number> {
+      // ElectroDB doesn't support batch updates directly
+      return 0
     },
 
-    async deleteUser(userId: string): Promise<void> {
-      logDebug('ElectroDB Adapter: deleteUser', {userId})
+    async delete({model, where}: {model: string; where: WhereClause}): Promise<void> {
+      logDebug('ElectroDB Adapter: delete', {model, where})
+      const pkField = primaryKeyFields[model as ModelName]
+      const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
 
-      await Users.delete({userId}).go()
-    },
-
-    /**
-     * Session Operations
-     * Maps Better Auth session operations to ElectroDB Sessions entity
-     */
-    async createSession(data: Partial<Session> & {id?: string; deviceId?: string}): Promise<Session> {
-      logDebug('ElectroDB Adapter: createSession', {data})
-
-      const sessionData = transformSessionFromAuth(data)
-      const result = await Sessions.create(sessionData).go()
-
-      return transformSessionToAuth(result.data)
-    },
-
-    async getSession(sessionId: string): Promise<Session | null> {
-      logDebug('ElectroDB Adapter: getSession', {sessionId})
+      if (!pkCondition) {
+        logError('ElectroDB Adapter: delete requires id in where clause', {model, where})
+        return
+      }
 
       try {
-        const result = await Sessions.get({sessionId}).go()
-        if (!result.data) {
-          return null
+        switch (model) {
+          case 'user':
+            await Users.delete({userId: pkCondition.value as string}).go()
+            break
+          case 'session':
+            await Sessions.delete({sessionId: pkCondition.value as string}).go()
+            break
+          case 'account':
+            await Accounts.delete({accountId: pkCondition.value as string}).go()
+            break
+          case 'verification':
+            await VerificationTokens.delete({token: pkCondition.value as string}).go()
+            break
         }
-
-        return transformSessionToAuth(result.data)
       } catch (error) {
-        logError('ElectroDB Adapter: getSession failed', {sessionId, error})
-        return null
+        logError('ElectroDB Adapter: delete failed', {model, where, error})
       }
     },
 
-    async updateSession(sessionId: string, data: Partial<Session>): Promise<Session> {
-      logDebug('ElectroDB Adapter: updateSession', {sessionId, data})
+    async deleteMany({model, where}: {model: string; where: WhereClause}): Promise<number> {
+      logDebug('ElectroDB Adapter: deleteMany', {model, where})
 
-      const updates = transformSessionUpdateFromAuth(data)
-      const result = await Sessions.update({sessionId}).set(updates).go()
-
-      return transformSessionToAuth(result.data)
-    },
-
-    async deleteSession(sessionId: string): Promise<void> {
-      logDebug('ElectroDB Adapter: deleteSession', {sessionId})
-
-      await Sessions.delete({sessionId}).go()
-    },
-
-    /**
-     * Account Operations (OAuth Providers)
-     * Maps Better Auth account operations to ElectroDB Accounts entity
-     */
-    async createAccount(data: Partial<ExtendedAccount> & {id?: string}): Promise<ExtendedAccount> {
-      logDebug('ElectroDB Adapter: createAccount', {data})
-
-      const accountData = transformAccountFromAuth(data)
-      const result = await Accounts.create(accountData).go()
-
-      return transformAccountToAuth(result.data)
-    },
-
-    async getAccount(accountId: string): Promise<ExtendedAccount | null> {
-      logDebug('ElectroDB Adapter: getAccount', {accountId})
-
-      try {
-        const result = await Accounts.get({accountId}).go()
-        if (!result.data) {
-          return null
+      if (model === 'session') {
+        const userIdCondition = where.find((w) => w.field === 'userId')
+        if (userIdCondition) {
+          const sessions = await Sessions.query.byUser({userId: userIdCondition.value as string}).go()
+          let count = 0
+          for (const session of sessions.data || []) {
+            await Sessions.delete({sessionId: session.sessionId}).go()
+            count++
+          }
+          return count
         }
-
-        return transformAccountToAuth(result.data)
-      } catch (error) {
-        logError('ElectroDB Adapter: getAccount failed', {accountId, error})
-        return null
       }
+
+      return 0
     },
 
-    async linkAccount(userId: string, accountId: string): Promise<void> {
-      logDebug('ElectroDB Adapter: linkAccount', {userId, accountId})
+    async count({model, where}: {model: string; where?: WhereClause}): Promise<number> {
+      logDebug('ElectroDB Adapter: count', {model, where})
 
-      // ElectroDB entities already link via userId composite key
-      // No additional operation needed - account is already linked via createAccount
-    },
-
-    /**
-     * Verification Token Operations
-     * Maps Better Auth verification token operations to ElectroDB VerificationTokens entity
-     */
-    async createVerificationToken(data: {identifier: string; token: string; expiresAt: Date}): Promise<void> {
-      logDebug('ElectroDB Adapter: createVerificationToken', {data})
-
-      await VerificationTokens.create({identifier: data.identifier, token: data.token, expiresAt: data.expiresAt.getTime()}).go()
-    },
-
-    async getVerificationToken(token: string): Promise<{identifier: string; token: string; expiresAt: Date} | null> {
-      logDebug('ElectroDB Adapter: getVerificationToken', {token})
-
-      try {
-        const result = await VerificationTokens.get({token}).go()
-        if (!result.data) {
-          return null
+      if (model === 'session' && where) {
+        const userIdCondition = where.find((w) => w.field === 'userId')
+        if (userIdCondition) {
+          const sessions = await Sessions.query.byUser({userId: userIdCondition.value as string}).go()
+          return sessions.data?.length || 0
         }
-
-        return {identifier: result.data.identifier, token: result.data.token, expiresAt: new Date(result.data.expiresAt)}
-      } catch (error) {
-        logError('ElectroDB Adapter: getVerificationToken failed', {token, error})
-        return null
       }
-    },
 
-    async deleteVerificationToken(token: string): Promise<void> {
-      logDebug('ElectroDB Adapter: deleteVerificationToken', {token})
-
-      await VerificationTokens.delete({token}).go()
+      return 0
     }
-  }
-
-  return adapter
-}
+  })
+})
 
 /**
- * Exported transformer functions for testing
- * These allow integration tests to validate transformation logic against real DynamoDB
+ * Splits a full name into first and last name parts.
  */
-export {
-  transformAccountFromAuth,
-  transformAccountToAuth,
-  transformSessionFromAuth,
-  transformSessionToAuth,
-  transformSessionUpdateFromAuth,
-  transformUserFromAuth,
-  transformUserToAuth,
-  transformUserUpdateFromAuth
+export function splitFullName(fullName?: string): {firstName: string; lastName: string} {
+  const parts = (fullName || '').split(' ')
+  return {firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || ''}
 }

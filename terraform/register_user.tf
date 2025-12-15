@@ -4,14 +4,20 @@ resource "aws_iam_role" "RegisterUserRole" {
 }
 
 data "aws_iam_policy_document" "RegisterUser" {
-  # Scan base table to find user by Apple ID (no GSI for nested field)
-  # PutItem on base table to create new User
+  # Better Auth adapter needs full CRUD on base table for user/session/account/verification
   statement {
     actions = [
-      "dynamodb:Scan",
-      "dynamodb:PutItem"
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan"
     ]
-    resources = [aws_dynamodb_table.MediaDownloader.arn]
+    resources = [
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
+    ]
   }
 }
 
@@ -72,6 +78,7 @@ resource "aws_lambda_function" "RegisterUser" {
       ApplicationUrl        = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
       DynamoDBTableName     = aws_dynamodb_table.MediaDownloader.name
       SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
+      BetterAuthSecret      = data.sops_file.secrets.data["platform.key"]
     }
   }
 }

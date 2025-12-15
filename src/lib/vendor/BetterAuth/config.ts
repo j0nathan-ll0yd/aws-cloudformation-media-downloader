@@ -6,7 +6,7 @@
  */
 
 import {betterAuth} from 'better-auth'
-import {createElectroDBAdapter} from './electrodb-adapter'
+import {electroDBAdapter} from './electrodb-adapter'
 import {logDebug} from '#util/lambda-helpers'
 import {getRequiredEnv} from '#util/env-validation'
 
@@ -26,7 +26,10 @@ import {getRequiredEnv} from '#util/env-validation'
  * token verification - Better Auth verifies ID tokens using Apple's public keys).
  */
 export const auth = betterAuth({
-  database: createElectroDBAdapter(),
+  database: electroDBAdapter,
+
+  // Secret for signing tokens and sessions
+  secret: getRequiredEnv('BetterAuthSecret'),
 
   // Base URL for OAuth callbacks (from environment)
   baseURL: getRequiredEnv('ApplicationUrl'),
