@@ -1,1 +1,4 @@
-/Users/jlloyd/Repositories/aws-cloudformation-media-downloader/.sops.yaml
+creation_rules:
+  # YAML and JSON files
+  - path_regex: secrets\.yaml
+    age: age18jlkflydzmmclcds8h5lrn8em6y8kldvuh4wf8zdsvdsyx6uaddsnavfhv

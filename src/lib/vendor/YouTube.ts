@@ -10,6 +10,24 @@ import {createS3Upload} from '../vendor/AWS/S3'
 import {getRequiredEnv} from '#util/env-validation'
 
 /**
+ * yt-dlp configuration constants
+ */
+const YTDLP_CONFIG = {
+  /** Cookies source path (read-only in Lambda) */
+  COOKIES_SOURCE: '/opt/cookies/youtube-cookies.txt',
+  /** Cookies destination path (writable in Lambda) */
+  COOKIES_DEST: '/tmp/youtube-cookies.txt',
+  /** Common extractor args to work around YouTube restrictions */
+  EXTRACTOR_ARGS: 'youtube:player_client=default',
+  /** Format selection: best mp4 video + m4a audio, fallback to best mp4 or best available */
+  FORMAT_SELECTOR: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+  /** Output container format */
+  MERGE_FORMAT: 'mp4',
+  /** Number of concurrent fragment downloads for speed */
+  CONCURRENT_FRAGMENTS: '4'
+} as const
+
+/**
  * Check if an error message indicates cookie expiration or bot detection
  * @param errorMessage - Error message from yt-dlp
  * @returns true if error is related to cookie expiration
@@ -56,24 +74,15 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
   try {
     const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
 
-    // Copy cookies from read-only /opt to writable /tmp
-    // yt-dlp needs write access to update cookies after use
+    // Copy cookies from read-only /opt to writable /tmp (yt-dlp needs write access)
     const fs = await import('fs')
-    const cookiesSource = '/opt/cookies/youtube-cookies.txt'
-    const cookiesDest = '/tmp/youtube-cookies.txt'
-    await fs.promises.copyFile(cookiesSource, cookiesDest)
+    await fs.promises.copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
 
-    // Configure yt-dlp with flags to work around restrictions
-    // - player_client=default: Use alternate extraction method
-    // - no-warnings: Suppress format selection warnings
-    // - cookies: Use authentication cookies from /tmp (writable)
-    // - ignore-errors: Don't fail completely on unavailable videos
+    // Configure yt-dlp with flags to work around YouTube restrictions
     const ytdlpFlags = [
-      '--extractor-args',
-      'youtube:player_client=default',
+      '--extractor-args', YTDLP_CONFIG.EXTRACTOR_ARGS,
       '--no-warnings',
-      '--cookies',
-      cookiesDest,
+      '--cookies', YTDLP_CONFIG.COOKIES_DEST,
       '--ignore-errors'
     ]
 
@@ -238,8 +247,6 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
 export async function downloadVideoToS3(uri: string, bucket: string, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
   const tempFile = `/tmp/${key}`
-  const cookiesSource = '/opt/cookies/youtube-cookies.txt'
-  const cookiesDest = '/tmp/youtube-cookies.txt'
 
   logDebug('downloadVideoToS3 =>', {uri, bucket, key, tempFile})
 
@@ -247,19 +254,18 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
   try {
     // Copy cookies from read-only /opt to writable /tmp
-    await copyFile(cookiesSource, cookiesDest)
+    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
 
-    // Phase 1: Download to temp file with proper merging
-    // yt-dlp will use ffmpeg internally to merge video+audio streams
+    // Phase 1: Download to temp file with proper merging (yt-dlp uses ffmpeg internally)
     const ytdlpArgs = [
-      '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-      '--merge-output-format', 'mp4',
-      '--cookies', cookiesDest,
-      '--extractor-args', 'youtube:player_client=default',
+      '-f', YTDLP_CONFIG.FORMAT_SELECTOR,
+      '--merge-output-format', YTDLP_CONFIG.MERGE_FORMAT,
+      '--cookies', YTDLP_CONFIG.COOKIES_DEST,
+      '--extractor-args', YTDLP_CONFIG.EXTRACTOR_ARGS,
       '--no-warnings',
-      '--concurrent-fragments', '4', // Parallel fragment downloads (2-4x faster)
-      '--progress', // Force progress output even without TTY
-      '--newline', // Print progress to newlines (easier to parse in Lambda logs)
+      '--concurrent-fragments', YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
+      '--progress',
+      '--newline',
       '-o', tempFile,
       uri
     ]

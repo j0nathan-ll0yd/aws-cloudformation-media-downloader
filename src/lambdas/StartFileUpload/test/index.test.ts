@@ -7,7 +7,7 @@ import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {FetchVideoInfoResult} from '#lib/vendor/YouTube'
 
-// Mock YouTube functions - downloadVideoToS3 replaces streamVideoToS3 (no format selection needed)
+// Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<FetchVideoInfoResult>>()
 const downloadVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
