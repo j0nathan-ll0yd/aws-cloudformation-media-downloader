@@ -19,16 +19,14 @@ const excludedSourceVariables = {
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
   Connection: 1, // HTTP header
-  Upgrade: 1, // HTTP header
-  // Notification type literals (not env vars)
-  MetadataNotification: 1,
-  DownloadReadyNotification: 1
+  Upgrade: 1 // HTTP header
 }
 
-// Patterns that indicate library operation types, not environment variables
+// Patterns that indicate library operation types or domain literals, not environment variables
 // These are verb+noun patterns commonly used in ORMs and libraries (e.g., ElectroDB)
 const operationTypePatterns = [
-  /^(Create|Delete|Update|Get|Put|Scan|Query|Batch|Find|List|Remove|Insert|Upsert)(One|Many|Item|Items|All)?$/
+  /^(Create|Delete|Update|Get|Put|Scan|Query|Batch|Find|List|Remove|Insert|Upsert)(One|Many|Item|Items|All)?$/,
+  /Notification$/ // Type literals like MetadataNotification, DownloadReadyNotification
 ]
 
 function isOperationType(variable: string): boolean {
@@ -37,7 +35,8 @@ function isOperationType(variable: string): boolean {
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
-    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable) && !isOperationType(variable)
+    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable) &&
+      !isOperationType(variable)
   })
 }
 
