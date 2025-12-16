@@ -100,6 +100,65 @@ query_dependencies({
 })                                                      // Get all transitive dependencies
 ```
 
+### 5. query_conventions
+Search project conventions and wiki documentation.
+
+```typescript
+// Examples:
+query_conventions({ query: "list" })                    // List all conventions by severity
+query_conventions({ query: "search", term: "mock" })    // Search conventions and wiki
+query_conventions({ query: "category", category: "testing" }) // Filter by category
+query_conventions({ query: "enforcement", severity: "CRITICAL" }) // Get critical rules
+query_conventions({ query: "detail", convention: "AWS SDK" }) // Get full convention details
+query_conventions({ query: "wiki" })                    // List all wiki pages
+```
+
+### 6. validate_pattern
+Validate code against project conventions using AST analysis.
+
+```typescript
+// Examples:
+validate_pattern({ query: "rules" })                    // List all validation rules
+validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "all" }) // Full validation
+validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "aws-sdk" }) // Check SDK encapsulation
+validate_pattern({ file: "src/lambdas/ListFiles/test/index.test.ts", query: "electrodb" }) // Check ElectroDB mocking
+validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "summary" }) // Concise summary
+```
+
+### 7. check_coverage
+Analyze which dependencies need mocking for Jest tests.
+
+```typescript
+// Examples:
+check_coverage({ file: "src/lambdas/ListFiles/src/index.ts", query: "required" }) // List mocks needed
+check_coverage({ file: "src/lambdas/ListFiles/src/index.ts", query: "missing" })  // Compare to existing test
+check_coverage({ file: "src/lambdas/ListFiles/src/index.ts", query: "all" })      // Full analysis
+check_coverage({ file: "src/lambdas/ListFiles/src/index.ts", query: "summary" })  // Quick summary
+```
+
+### 8. lambda_impact
+Show what's affected by changing a file.
+
+```typescript
+// Examples:
+lambda_impact({ file: "src/entities/Files.ts", query: "dependents" })  // Direct dependents
+lambda_impact({ file: "src/entities/Files.ts", query: "cascade" })     // Full cascade
+lambda_impact({ file: "src/entities/Files.ts", query: "tests" })       // Tests to update
+lambda_impact({ file: "src/entities/Files.ts", query: "infrastructure" }) // Terraform files
+lambda_impact({ file: "src/util/lambda-helpers.ts", query: "all" })    // Comprehensive analysis
+```
+
+### 9. suggest_tests
+Generate test file scaffolding with all required mocks.
+
+```typescript
+// Examples:
+suggest_tests({ file: "src/lambdas/ListFiles/src/index.ts", query: "scaffold" }) // Complete test file
+suggest_tests({ file: "src/lambdas/ListFiles/src/index.ts", query: "mocks" })    // Just mock setup
+suggest_tests({ file: "src/lambdas/ListFiles/src/index.ts", query: "fixtures" }) // Suggested fixtures
+suggest_tests({ file: "src/lambdas/ListFiles/src/index.ts", query: "structure" }) // Test structure outline
+```
+
 ## Usage Examples
 
 ### Understanding Entity Relationships

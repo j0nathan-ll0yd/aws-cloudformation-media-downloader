@@ -6,6 +6,9 @@
  * - Lambda function configurations
  * - AWS infrastructure queries
  * - Dependency graph analysis
+ * - Project conventions and patterns
+ * - Code validation and coverage analysis
+ * - Impact analysis and test scaffolding
  */
 
 import {Server} from '@modelcontextprotocol/sdk/server/index.js'
@@ -14,9 +17,21 @@ import {CallToolRequestSchema, ListToolsRequestSchema} from '@modelcontextprotoc
 import {handleElectroDBQuery} from './handlers/electrodb.js'
 import {handleLambdaQuery} from './handlers/lambda.js'
 import {handleInfrastructureQuery} from './handlers/infrastructure.js'
+import {ConventionQueryArgs, handleConventionsQuery} from './handlers/conventions.js'
+import {CoverageQueryArgs, handleCoverageQuery} from './handlers/coverage.js'
+import {handleValidationQuery, ValidationQueryArgs} from './handlers/validation.js'
+import {handleImpactQuery, ImpactQueryArgs} from './handlers/impact.js'
+import {handleTestScaffoldQuery, TestScaffoldQueryArgs} from './handlers/test-scaffold.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
+
+/**
+ * Wrap handler result in MCP content format
+ */
+function wrapResult(result: unknown) {
+  return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
+}
 
 // Define available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -81,6 +96,81 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['query']
         }
+      },
+      {
+        name: 'query_conventions',
+        description: 'Search project conventions from conventions-tracking.md and wiki documentation',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type (list, search, category, enforcement, detail, wiki)',
+              enum: ['list', 'search', 'category', 'enforcement', 'detail', 'wiki']
+            },
+            term: {type: 'string', description: 'Search term for search/wiki queries'},
+            category: {type: 'string', description: 'Category filter (testing, aws, typescript, git, infrastructure, security, meta, patterns)'},
+            severity: {type: 'string', description: 'Severity filter (CRITICAL, HIGH, MEDIUM, LOW)', enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']},
+            convention: {type: 'string', description: 'Convention name for detail query'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'validate_pattern',
+        description: 'Validate code against project conventions using AST analysis',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'File path to validate'},
+            query: {
+              type: 'string',
+              description: 'Validation type (all, aws-sdk, electrodb, imports, response, rules, summary)',
+              enum: ['all', 'aws-sdk', 'electrodb', 'imports', 'response', 'rules', 'summary']
+            }
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'check_coverage',
+        description: 'Analyze which dependencies need mocking for Jest tests',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'File path to analyze'},
+            query: {type: 'string', description: 'Query type (required, missing, all, summary)', enum: ['required', 'missing', 'all', 'summary']}
+          },
+          required: ['file', 'query']
+        }
+      },
+      {
+        name: 'lambda_impact',
+        description: 'Show what is affected by changing a file (dependents, tests, infrastructure)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'File path to analyze'},
+            query: {
+              type: 'string',
+              description: 'Query type (dependents, cascade, tests, infrastructure, all)',
+              enum: ['dependents', 'cascade', 'tests', 'infrastructure', 'all']
+            }
+          },
+          required: ['file', 'query']
+        }
+      },
+      {
+        name: 'suggest_tests',
+        description: 'Generate test file scaffolding with all required mocks',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'Source file to generate tests for'},
+            query: {type: 'string', description: 'Query type (scaffold, mocks, fixtures, structure)', enum: ['scaffold', 'mocks', 'fixtures', 'structure']}
+          },
+          required: ['file', 'query']
+        }
       }
     ]
   }
@@ -103,6 +193,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'query_dependencies':
         return await handleDependencyQuery(args as {file?: string; query: string})
+
+      case 'query_conventions':
+        return wrapResult(await handleConventionsQuery(args as unknown as ConventionQueryArgs))
+
+      case 'validate_pattern':
+        return wrapResult(await handleValidationQuery(args as unknown as ValidationQueryArgs))
+
+      case 'check_coverage':
+        return wrapResult(await handleCoverageQuery(args as unknown as CoverageQueryArgs))
+
+      case 'lambda_impact':
+        return wrapResult(await handleImpactQuery(args as unknown as ImpactQueryArgs))
+
+      case 'suggest_tests':
+        return wrapResult(await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs))
 
       default:
         throw new Error(`Unknown tool: ${name}`)

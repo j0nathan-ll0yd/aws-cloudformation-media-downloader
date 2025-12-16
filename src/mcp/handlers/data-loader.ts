@@ -3,12 +3,15 @@
  * Reads from the same sources as GraphRAG for consistency:
  * - build/graph.json for dependencies
  * - graphrag/metadata.json for semantic info
+ * - docs/conventions-tracking.md for conventions
+ * - docs/wiki/ for detailed documentation
  * - Filesystem for Lambda/Entity discovery
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
+import {parseConventions, type Convention} from '../parsers/convention-parser'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -50,7 +53,11 @@ interface Metadata {
 // Cache for loaded data
 let cachedMetadata: Metadata | null = null
 let cachedDepGraph: DependencyGraph | null = null
+let cachedConventions: Convention[] | null = null
+let cachedWikiPages: string[] | null = null
 let cacheTime = 0
+let conventionCacheTime = 0
+let wikiCacheTime = 0
 const CACHE_TTL = 60000 // 1 minute cache
 
 /**
@@ -181,4 +188,91 @@ export async function getAwsServices(): Promise<ServiceMetadata[]> {
   return metadata.awsServices
 }
 
-export { DependencyGraph, EntityRelationship, LambdaMetadata, Metadata, ServiceMetadata }
+/**
+ * Load conventions from docs/conventions-tracking.md
+ */
+export async function loadConventions(): Promise<Convention[]> {
+  const now = Date.now()
+  if (cachedConventions && now - conventionCacheTime < CACHE_TTL) {
+    return cachedConventions
+  }
+
+  const conventionsPath = path.join(projectRoot, 'docs', 'conventions-tracking.md')
+  const content = await fs.readFile(conventionsPath, 'utf-8')
+  const parsed = parseConventions(content)
+  cachedConventions = parsed.conventions
+  conventionCacheTime = now
+  return cachedConventions
+}
+
+/**
+ * Load a specific wiki page by relative path
+ */
+export async function loadWikiPage(relativePath: string): Promise<string> {
+  const wikiPath = path.join(projectRoot, relativePath)
+  return fs.readFile(wikiPath, 'utf-8')
+}
+
+/**
+ * Discover all wiki pages in docs/wiki/
+ */
+export async function discoverWikiPages(): Promise<string[]> {
+  const now = Date.now()
+  if (cachedWikiPages && now - wikiCacheTime < CACHE_TTL) {
+    return cachedWikiPages
+  }
+
+  const wikiDir = path.join(projectRoot, 'docs', 'wiki')
+  const pages: string[] = []
+
+  async function walkDir(dir: string): Promise<void> {
+    const entries = await fs.readdir(dir, {withFileTypes: true})
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await walkDir(fullPath)
+      } else if (entry.name.endsWith('.md')) {
+        // Return relative path from project root
+        pages.push(path.relative(projectRoot, fullPath))
+      }
+    }
+  }
+
+  await walkDir(wikiDir)
+  cachedWikiPages = pages.sort()
+  wikiCacheTime = now
+  return cachedWikiPages
+}
+
+/**
+ * Search wiki pages for a term (searches file names and content)
+ */
+export async function searchWikiPages(term: string): Promise<Array<{path: string; matches: string[]}>> {
+  const pages = await discoverWikiPages()
+  const results: Array<{path: string; matches: string[]}> = []
+  const termLower = term.toLowerCase()
+
+  for (const pagePath of pages) {
+    const content = await loadWikiPage(pagePath)
+
+    // Check filename
+    const fileNameMatch = pagePath.toLowerCase().includes(termLower)
+
+    // Find content matches (lines containing the term)
+    const lines = content.split('\n')
+    const matchingLines: string[] = []
+    for (const line of lines) {
+      if (line.toLowerCase().includes(termLower)) {
+        matchingLines.push(line.trim())
+      }
+    }
+
+    if (fileNameMatch || matchingLines.length > 0) {
+      results.push({path: pagePath, matches: matchingLines.slice(0, 5)}) // Limit to 5 matches per file
+    }
+  }
+
+  return results
+}
+
+export type { Convention, DependencyGraph, EntityRelationship, LambdaMetadata, Metadata, ServiceMetadata }

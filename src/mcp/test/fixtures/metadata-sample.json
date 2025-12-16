@@ -1,0 +1,34 @@
+{
+  "$schema": "./metadata.schema.json",
+  "description": "Test fixture for MCP handler tests",
+  "lambdas": {
+    "TestLambda": {
+      "trigger": "API Gateway",
+      "purpose": "Test Lambda for unit tests"
+    },
+    "AnotherLambda": {
+      "trigger": "CloudWatch Events",
+      "purpose": "Another test Lambda"
+    },
+    "ScheduledLambda": {
+      "trigger": "CloudWatch Events",
+      "purpose": "Scheduled background job"
+    }
+  },
+  "externalServices": [
+    { "name": "TestService", "type": "api", "description": "Test external service" },
+    { "name": "APNS", "type": "notification", "description": "Apple Push Notification Service" }
+  ],
+  "awsServices": [
+    { "name": "DynamoDB", "type": "database", "vendorPath": "AWS/DynamoDB" },
+    { "name": "S3", "type": "storage", "vendorPath": "AWS/S3" },
+    { "name": "Lambda", "type": "compute", "vendorPath": "AWS/Lambda" }
+  ],
+  "entityRelationships": [
+    { "from": "Users", "to": "Files", "via": "UserFiles", "type": "many-to-many" },
+    { "from": "Users", "to": "Devices", "via": "UserDevices", "type": "many-to-many" }
+  ],
+  "lambdaInvocations": [
+    { "from": "ScheduledLambda", "to": "TestLambda", "via": "Lambda.invokeFunction" }
+  ]
+}
