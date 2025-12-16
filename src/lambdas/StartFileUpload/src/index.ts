@@ -1,9 +1,10 @@
 import {Context} from 'aws-lambda'
 import {downloadVideoToS3, fetchVideoInfo, FetchVideoInfoResult} from '#lib/vendor/YouTube'
 import {DynamoDBFile, StartFileUploadParams} from '#types/main'
+import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
-import {assertIsError} from '#util/transformers'
+import {assertIsError, createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
@@ -11,6 +12,8 @@ import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#util/video-error-classifier'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
+import {UserFiles} from '#entities/UserFiles'
+import {sendMessage} from '#lib/vendor/AWS/SQS'
 
 /**
  * Fetch video info with X-Ray tracing.
@@ -91,6 +94,39 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
     }).go()
   }
+}
+
+/**
+ * Dispatch MetadataNotification to all users waiting for this file.
+ * Sends notifications via SQS to the push notification queue.
+ * @param fileId - The video ID
+ * @param videoInfo - Video metadata from yt-dlp
+ */
+async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVideoInfo): Promise<void> {
+  const queueUrl = getRequiredEnv('SNSQueueUrl')
+
+  // Get all users waiting for this file
+  const userFilesResponse = await UserFiles.query.byFile({fileId}).go()
+  const userIds = userFilesResponse.data?.map((uf) => uf.userId) || []
+
+  if (userIds.length === 0) {
+    logDebug('No users waiting for file, skipping MetadataNotification')
+    return
+  }
+
+  // Send MetadataNotification to each user
+  await Promise.all(
+    userIds.map((userId) => {
+      const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
+      return sendMessage({
+        QueueUrl: queueUrl,
+        MessageBody: messageBody,
+        MessageAttributes: messageAttributes
+      })
+    })
+  )
+
+  logInfo('Dispatched MetadataNotifications', {fileId, userCount: userIds.length})
 }
 
 /**
@@ -224,6 +260,9 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
   const videoInfo = videoInfoResult.info
   logDebug('fetchVideoInfo =>', videoInfo)
+
+  // Dispatch MetadataNotification to all users waiting for this file
+  await dispatchMetadataNotifications(fileId, videoInfo)
 
   // Step 2: Prepare for download
   // Always use .mp4 extension - yt-dlp will merge to mp4 container

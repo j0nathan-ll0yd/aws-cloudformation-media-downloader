@@ -4,7 +4,7 @@ import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '#types/main'
 import {logDebug} from '#util/lambda-helpers'
-import {assertIsError, createFileNotificationAttributes} from '#util/transformers'
+import {assertIsError, createDownloadReadyNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
@@ -42,18 +42,18 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
 }
 
 /**
- * Returns a promise to send a DynamoDBFile to a user
- * @param file - The DynamoDBFile you want to send
+ * Dispatches DownloadReadyNotification to a user via SQS
+ * @param file - The DynamoDBFile that is now ready to download
  * @param userId - The UUID of the user
  * @notExported
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
-  const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
-    MessageBody: 'FileNotification',
+  const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
+  const sendMessageParams: SendMessageRequest = {
+    MessageBody: messageBody,
     MessageAttributes: messageAttributes,
     QueueUrl: getRequiredEnv('SNSQueueUrl')
-  } as SendMessageRequest
+  }
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }

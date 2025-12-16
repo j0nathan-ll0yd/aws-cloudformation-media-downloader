@@ -783,6 +783,7 @@ export interface FluffyVariables {
     DynamoDBTableName:   DynamoDBTableName;
     GithubPersonalToken: string;
     PATH:                string;
+    SNSQueueUrl:         string;
     YtdlpBinaryPath:     string;
 }
 
@@ -1758,6 +1759,7 @@ const typeMap: any = {
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: r("DynamoDBTableName") },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: "" },
         { json: "PATH", js: "PATH", typ: "" },
+        { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: "" },
         { json: "YtdlpBinaryPath", js: "YtdlpBinaryPath", typ: "" },
     ], false),
     "EphemeralStorage": o([

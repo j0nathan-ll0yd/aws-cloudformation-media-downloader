@@ -113,6 +113,30 @@ interface ClientFile {
   url: string
 }
 
+// Push notification types for two-phase notification flow
+export type FileNotificationType = 'MetadataNotification' | 'DownloadReadyNotification'
+
+// Full metadata - sent when video info is first fetched (before download starts)
+export interface MetadataNotification {
+  fileId: string
+  key: string
+  title: string
+  authorName: string
+  authorUser: string
+  description: string
+  publishDate: string
+  contentType: string
+  status: 'pending'
+}
+
+// Minimal download info - sent when file is ready to download
+export interface DownloadReadyNotification {
+  fileId: string
+  key: string
+  size: number
+  url: string
+}
+
 interface UserRegistration {
   idToken: string
   email: string

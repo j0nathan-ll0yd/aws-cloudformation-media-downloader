@@ -27,6 +27,19 @@ jest.unstable_mockModule('#entities/FileDownloads', () => ({
   DownloadStatus // Re-export the real enum
 }))
 
+// Mock ElectroDB UserFiles entity (for querying users waiting for a file)
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+
+// Mock SQS sendMessage for MetadataNotification dispatch
+const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
+jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
+  sendMessage: sendMessageMock,
+  // Re-export helpers used by transformers.ts
+  stringAttribute: (value: string) => ({DataType: 'String', StringValue: value}),
+  numberAttribute: (value: number) => ({DataType: 'Number', StringValue: String(value)})
+}))
+
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
@@ -66,11 +79,18 @@ describe('#StartFileUpload', () => {
     fileDownloadsMock.mocks.create.mockResolvedValue({data: {}})
     filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
+    // Mock UserFiles.query.byFile for MetadataNotification dispatch
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-123'}]})
+
+    // Mock SQS sendMessage
+    sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
+
     // Set environment variables
     process.env.Bucket = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
     process.env.DynamoDBTableName = 'test-table'
     process.env.CloudfrontDomain = 'test-cdn.cloudfront.net'
+    process.env.SNSQueueUrl = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
   })
 
   test('should successfully download video to S3', async () => {
@@ -224,5 +244,42 @@ describe('#StartFileUpload', () => {
     const parsedBody = JSON.parse(output.body)
     expect(parsedBody.error.message.status).toEqual('failed')
     expect(parsedBody.error.message.category).toEqual('cookie_expired')
+  })
+
+  test('should dispatch MetadataNotifications to all waiting users after fetchVideoInfo', async () => {
+    // Mock multiple users waiting for the file
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-1'}, {userId: 'user-2'}, {userId: 'user-3'}]})
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id', title: 'Test Video', uploader: 'Test Uploader'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+
+    // Verify UserFiles.query.byFile was called
+    expect(userFilesMock.mocks.query.byFile!.go).toHaveBeenCalled()
+
+    // Verify sendMessage was called 3 times (once per user)
+    expect(sendMessageMock).toHaveBeenCalledTimes(3)
+
+    // Verify sendMessage was called with correct parameters
+    const firstCall = sendMessageMock.mock.calls[0] as unknown as [{QueueUrl: string; MessageBody: string; MessageAttributes: {notificationType: {StringValue: string}}}]
+    expect(firstCall[0].QueueUrl).toBe('https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification')
+    expect(firstCall[0].MessageBody).toContain('MetadataNotification')
+    expect(firstCall[0].MessageAttributes.notificationType.StringValue).toBe('MetadataNotification')
+  })
+
+  test('should skip MetadataNotification when no users are waiting', async () => {
+    // No users waiting for the file
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+
+    // Verify sendMessage was NOT called (no users to notify)
+    expect(sendMessageMock).not.toHaveBeenCalled()
   })
 })

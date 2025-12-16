@@ -114,6 +114,16 @@ data "aws_iam_policy_document" "MultipartUpload" {
     actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
+  # Query FileCollection GSI to find users waiting for file (for MetadataNotification)
+  statement {
+    actions   = ["dynamodb:Query"]
+    resources = ["${aws_dynamodb_table.MediaDownloader.arn}/index/FileCollection"]
+  }
+  # Send MetadataNotification to push notification queue
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
+  }
   statement {
     actions = [
       "s3:PutObject",
@@ -320,6 +330,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       Bucket              = aws_s3_bucket.Files.id
       DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
       CloudfrontDomain    = aws_cloudfront_distribution.media_files.domain_name
+      SNSQueueUrl         = aws_sqs_queue.SendPushNotification.id
       YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
       PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
