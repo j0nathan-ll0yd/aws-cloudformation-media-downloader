@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {Device} from '#types/main'
 
 // Mock Octokit
-const mockIssuesCreate = jest.fn<() => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
+const mockIssuesCreate = jest.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
 
 class MockOctokit {
   public rest: {issues: {create: typeof mockIssuesCreate}}

@@ -27,26 +27,26 @@ export interface Data {
 }
 
 export interface ArchiveFile {
-    ApiGatewayAuthorizer: StartFileUploadElement[];
-    CloudfrontMiddleware: StartFileUploadElement[];
+    ApiGatewayAuthorizer: SendPushNotificationElement[];
+    CloudfrontMiddleware: SendPushNotificationElement[];
     FfmpegLayer:          Layer[];
-    FileCoordinator:      StartFileUploadElement[];
-    ListFiles:            StartFileUploadElement[];
-    LogClientEvent:       StartFileUploadElement[];
-    LoginUser:            StartFileUploadElement[];
-    PruneDevices:         StartFileUploadElement[];
-    RegisterDevice:       StartFileUploadElement[];
-    RegisterUser:         StartFileUploadElement[];
-    S3ObjectCreated:      StartFileUploadElement[];
-    SendPushNotification: StartFileUploadElement[];
-    StartFileUpload:      StartFileUploadElement[];
-    UserDelete:           StartFileUploadElement[];
-    UserSubscribe:        StartFileUploadElement[];
-    WebhookFeedly:        StartFileUploadElement[];
+    FileCoordinator:      SendPushNotificationElement[];
+    ListFiles:            SendPushNotificationElement[];
+    LogClientEvent:       SendPushNotificationElement[];
+    LoginUser:            SendPushNotificationElement[];
+    PruneDevices:         SendPushNotificationElement[];
+    RegisterDevice:       SendPushNotificationElement[];
+    RegisterUser:         SendPushNotificationElement[];
+    S3ObjectCreated:      SendPushNotificationElement[];
+    SendPushNotification: SendPushNotificationElement[];
+    StartFileUpload:      SendPushNotificationElement[];
+    UserDelete:           SendPushNotificationElement[];
+    UserSubscribe:        SendPushNotificationElement[];
+    WebhookFeedly:        SendPushNotificationElement[];
     YtDlpLayer:           Layer[];
 }
 
-export interface StartFileUploadElement {
+export interface SendPushNotificationElement {
     output_path: string;
     source_file: string;
     type:        APIGatewayAuthorizerType;
@@ -684,15 +684,15 @@ export interface AwsLambdaEventSourceMappingSendPushNotification {
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
     CloudfrontMiddleware: AwsLambdaFunctionAPIGatewayAuthorizer[];
-    FileCoordinator:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    ListFiles:            AwsLambdaFunctionAPIGatewayAuthorizer[];
+    FileCoordinator:      SendPushNotificationClass[];
+    ListFiles:            ListFile[];
     LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
     LoginUser:            AwsLambdaFunctionAPIGatewayAuthorizer[];
     PruneDevices:         AwsLambdaFunctionAPIGatewayAuthorizer[];
     RegisterDevice:       AwsLambdaFunctionAPIGatewayAuthorizer[];
     RegisterUser:         AwsLambdaFunctionAPIGatewayAuthorizer[];
     S3ObjectCreated:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    SendPushNotification: AwsLambdaFunctionAPIGatewayAuthorizer[];
+    SendPushNotification: SendPushNotificationClass[];
     StartFileUpload:      StartFileUpload[];
     UserDelete:           AwsLambdaFunctionAPIGatewayAuthorizer[];
     UserSubscribe:        AwsLambdaFunctionAPIGatewayAuthorizer[];
@@ -713,6 +713,7 @@ export interface AwsLambdaFunctionAPIGatewayAuthorizer {
     provider?:        string;
     publish?:         boolean;
     timeout?:         number;
+    memory_size?:     number;
 }
 
 export interface APIGatewayAuthorizerEnvironment {
@@ -720,13 +721,9 @@ export interface APIGatewayAuthorizerEnvironment {
 }
 
 export interface PurpleVariables {
-    DynamoDBTableName?:            DynamoDBTableName;
+    DynamoDBTableName?:            string;
     MultiAuthenticationPathParts?: string;
     ReservedClientIp?:             string;
-    DefaultFileContentType?:       string;
-    DefaultFileName?:              string;
-    DefaultFileSize?:              number;
-    DefaultFileUrl?:               string;
     ApplicationUrl?:               string;
     BetterAuthSecret?:             string;
     SignInWithAppleConfig?:        string;
@@ -738,10 +735,6 @@ export interface PurpleVariables {
     PushNotificationTopicArn?:     string;
     SNSQueueUrl?:                  string;
     GithubPersonalToken?:          string;
-}
-
-export enum DynamoDBTableName {
-    AwsDynamodbTableMediaDownloaderName = "${aws_dynamodb_table.MediaDownloader.name}",
 }
 
 export enum Runtime {
@@ -756,31 +749,80 @@ export enum Mode {
     Active = "Active",
 }
 
-export interface StartFileUpload {
-    depends_on:        string[];
-    description:       string;
-    environment:       StartFileUploadEnvironment[];
-    ephemeral_storage: EphemeralStorage[];
-    filename:          string;
-    function_name:     string;
-    handler:           string;
-    layers:            string[];
-    memory_size:       number;
-    role:              string;
-    runtime:           Runtime;
-    source_code_hash:  string;
-    timeout:           number;
-    tracing_config:    TracingConfig[];
+export interface SendPushNotificationClass {
+    depends_on:       string[];
+    description:      string;
+    environment:      FileCoordinatorEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    memory_size?:     number;
+    role:             string;
+    runtime:          Runtime;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
 }
 
-export interface StartFileUploadEnvironment {
+export interface FileCoordinatorEnvironment {
     variables: FluffyVariables;
 }
 
 export interface FluffyVariables {
+    DynamoDBTableName: string;
+}
+
+export interface ListFile {
+    depends_on:       string[];
+    description:      string;
+    environment:      ListFileEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    memory_size:      number;
+    role:             string;
+    runtime:          Runtime;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface ListFileEnvironment {
+    variables: TentacledVariables;
+}
+
+export interface TentacledVariables {
+    DefaultFileContentType: string;
+    DefaultFileName:        string;
+    DefaultFileSize:        number;
+    DefaultFileUrl:         string;
+    DynamoDBTableName:      string;
+}
+
+export interface StartFileUpload {
+    depends_on:                     string[];
+    description:                    string;
+    environment:                    StartFileUploadEnvironment[];
+    ephemeral_storage:              EphemeralStorage[];
+    filename:                       string;
+    function_name:                  string;
+    handler:                        string;
+    layers:                         string[];
+    memory_size:                    number;
+    reserved_concurrent_executions: number;
+    role:                           string;
+    runtime:                        Runtime;
+    source_code_hash:               string;
+    timeout:                        number;
+    tracing_config:                 TracingConfig[];
+}
+
+export interface StartFileUploadEnvironment {
+    variables: StickyVariables;
+}
+
+export interface StickyVariables {
     Bucket:              string;
     CloudfrontDomain:    string;
-    DynamoDBTableName:   DynamoDBTableName;
+    DynamoDBTableName:   string;
     GithubPersonalToken: string;
     PATH:                string;
     SNSQueueUrl:         string;
@@ -1132,25 +1174,25 @@ const typeMap: any = {
         { json: "sops_file", js: "sops_file", typ: r("SopsFile") },
     ], false),
     "ArchiveFile": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("StartFileUploadElement")) },
-        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("StartFileUploadElement")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("SendPushNotificationElement")) },
+        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("SendPushNotificationElement")) },
         { json: "FfmpegLayer", js: "FfmpegLayer", typ: a(r("Layer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("StartFileUploadElement")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("StartFileUploadElement")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("StartFileUploadElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("StartFileUploadElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("StartFileUploadElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("StartFileUploadElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("StartFileUploadElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("StartFileUploadElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("StartFileUploadElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("StartFileUploadElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("StartFileUploadElement")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("StartFileUploadElement")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("StartFileUploadElement")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("SendPushNotificationElement")) },
+        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("SendPushNotificationElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("SendPushNotificationElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("SendPushNotificationElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("SendPushNotificationElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("SendPushNotificationElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("SendPushNotificationElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotificationElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("SendPushNotificationElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("SendPushNotificationElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("SendPushNotificationElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("SendPushNotificationElement")) },
         { json: "YtDlpLayer", js: "YtDlpLayer", typ: a(r("Layer")) },
     ], false),
-    "StartFileUploadElement": o([
+    "SendPushNotificationElement": o([
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_file", js: "source_file", typ: "" },
         { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
@@ -1679,15 +1721,15 @@ const typeMap: any = {
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationClass")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("ListFile")) },
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotificationClass")) },
         { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("StartFileUpload")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
@@ -1707,18 +1749,15 @@ const typeMap: any = {
         { json: "provider", js: "provider", typ: u(undefined, "") },
         { json: "publish", js: "publish", typ: u(undefined, true) },
         { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
     ], false),
     "APIGatewayAuthorizerEnvironment": o([
         { json: "variables", js: "variables", typ: r("PurpleVariables") },
     ], false),
     "PurpleVariables": o([
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, r("DynamoDBTableName")) },
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, "") },
         { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
         { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
-        { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: u(undefined, "") },
-        { json: "DefaultFileName", js: "DefaultFileName", typ: u(undefined, "") },
-        { json: "DefaultFileSize", js: "DefaultFileSize", typ: u(undefined, 0) },
-        { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: u(undefined, "") },
         { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
         { json: "BetterAuthSecret", js: "BetterAuthSecret", typ: u(undefined, "") },
         { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
@@ -1734,6 +1773,48 @@ const typeMap: any = {
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
+    "SendPushNotificationClass": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("FileCoordinatorEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "FileCoordinatorEnvironment": o([
+        { json: "variables", js: "variables", typ: r("FluffyVariables") },
+    ], false),
+    "FluffyVariables": o([
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
+    ], false),
+    "ListFile": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("ListFileEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "memory_size", js: "memory_size", typ: 0 },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "ListFileEnvironment": o([
+        { json: "variables", js: "variables", typ: r("TentacledVariables") },
+    ], false),
+    "TentacledVariables": o([
+        { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: "" },
+        { json: "DefaultFileName", js: "DefaultFileName", typ: "" },
+        { json: "DefaultFileSize", js: "DefaultFileSize", typ: 0 },
+        { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: "" },
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
+    ], false),
     "StartFileUpload": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
@@ -1744,6 +1825,7 @@ const typeMap: any = {
         { json: "handler", js: "handler", typ: "" },
         { json: "layers", js: "layers", typ: a("") },
         { json: "memory_size", js: "memory_size", typ: 0 },
+        { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: 0 },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
@@ -1751,12 +1833,12 @@ const typeMap: any = {
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "StartFileUploadEnvironment": o([
-        { json: "variables", js: "variables", typ: r("FluffyVariables") },
+        { json: "variables", js: "variables", typ: r("StickyVariables") },
     ], false),
-    "FluffyVariables": o([
+    "StickyVariables": o([
         { json: "Bucket", js: "Bucket", typ: "" },
         { json: "CloudfrontDomain", js: "CloudfrontDomain", typ: "" },
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: r("DynamoDBTableName") },
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: "" },
         { json: "PATH", js: "PATH", typ: "" },
         { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: "" },
@@ -1891,9 +1973,6 @@ const typeMap: any = {
     "AttributeType": [
         "N",
         "S",
-    ],
-    "DynamoDBTableName": [
-        "${aws_dynamodb_table.MediaDownloader.name}",
     ],
     "Runtime": [
         "nodejs22.x",

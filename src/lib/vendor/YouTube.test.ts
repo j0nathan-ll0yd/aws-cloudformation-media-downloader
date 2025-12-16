@@ -30,9 +30,9 @@ function createMockProcess(): MockProcess {
 }
 
 // Mock fs - for temp file operations
-const mockCopyFile = jest.fn<() => Promise<void>>()
-const mockStat = jest.fn<() => Promise<{size: number}>>()
-const mockUnlink = jest.fn<() => Promise<void>>()
+const mockCopyFile = jest.fn<(src: string, dest: string) => Promise<void>>()
+const mockStat = jest.fn<(path: string) => Promise<{size: number}>>()
+const mockUnlink = jest.fn<(path: string) => Promise<void>>()
 const mockCreateReadStream = jest.fn()
 jest.unstable_mockModule('fs/promises', () => ({
   copyFile: mockCopyFile,
@@ -45,7 +45,7 @@ jest.unstable_mockModule('fs', () => ({
 
 // Mock S3 Upload - simplified (no EventEmitter progress tracking needed)
 const mockUploadDone = jest.fn<() => Promise<{Location: string}>>()
-const mockCreateS3Upload = jest.fn(() => ({done: mockUploadDone}))
+const mockCreateS3Upload = jest.fn<(bucket: string, key: string, body: unknown, contentType: string, options?: object) => {done: typeof mockUploadDone}>(() => ({done: mockUploadDone}))
 
 jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
   createS3Upload: mockCreateS3Upload
