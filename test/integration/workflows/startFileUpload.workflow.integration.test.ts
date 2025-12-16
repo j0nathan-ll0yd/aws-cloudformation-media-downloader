@@ -19,6 +19,7 @@ process.env.Bucket = TEST_BUCKET
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.CloudfrontDomain = 'test.cloudfront.net'
+process.env.SNSQueueUrl = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
@@ -63,6 +64,18 @@ jest.unstable_mockModule('#entities/FileDownloads', () => ({
   DownloadStatus // Re-export the real enum
 }))
 
+// Mock UserFiles entity for MetadataNotification dispatch
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+
+// Mock SQS sendMessage for MetadataNotification
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+  () => ({
+    sendMessage: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+  }))
+
 // Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
 
@@ -83,6 +96,8 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Return empty user list for MetadataNotification dispatch (no users waiting)
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
   })
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {

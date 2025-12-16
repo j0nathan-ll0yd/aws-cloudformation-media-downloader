@@ -81,15 +81,28 @@ export function createMockDevice(deviceId: string, endpointArn?: string) {
  * @param userId - User ID to send notification to
  * @param fileId - File ID for the notification
  * @param partial - Partial file data to override defaults in message attributes
+ * @param notificationType - Notification type (default: 'DownloadReadyNotification')
  */
-export function createMockSQSFileNotificationEvent(userId: string, fileId: string, partial?: {title?: string; size?: number; url?: string}): SQSEvent {
+export function createMockSQSFileNotificationEvent(
+  userId: string,
+  fileId: string,
+  partial?: {title?: string; size?: number; url?: string},
+  notificationType = 'DownloadReadyNotification'
+): SQSEvent {
   const file = createMockFile(fileId, FileStatus.Available, partial)
+
+  // Body must be JSON matching what createDownloadReadyNotification produces
+  // SendPushNotification parses this with JSON.parse in transformToAPNSNotification
+  const messageBody = JSON.stringify({
+    file: {fileId, key: file.key || `${fileId}.mp4`, size: file.size || 5242880, url: file.url || `https://example.com/${fileId}.mp4`},
+    notificationType
+  })
 
   return {
     Records: [{
       messageId: `test-message-${fileId}`,
       receiptHandle: `test-receipt-${fileId}`,
-      body: 'FileNotification',
+      body: messageBody,
       attributes: {
         ApproximateReceiveCount: '1',
         SentTimestamp: String(Date.now()),
@@ -97,6 +110,7 @@ export function createMockSQSFileNotificationEvent(userId: string, fileId: strin
         ApproximateFirstReceiveTimestamp: String(Date.now())
       },
       messageAttributes: {
+        notificationType: {stringValue: notificationType, dataType: 'String'},
         userId: {stringValue: userId, dataType: 'String'},
         fileId: {stringValue: fileId, dataType: 'String'},
         key: {stringValue: file.key || `${fileId}.mp4`, dataType: 'String'},

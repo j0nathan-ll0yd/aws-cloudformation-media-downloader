@@ -33,12 +33,7 @@ const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
 // Helper to insert a FileDownloads record for testing
 async function insertFileDownload(fileId: string, status: DownloadStatus, retryAfter?: number) {
   const {FileDownloads} = await import('#entities/FileDownloads')
-  await FileDownloads.create({
-    fileId,
-    status,
-    retryAfter,
-    sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
-  }).go()
+  await FileDownloads.create({fileId, status, retryAfter, sourceUrl: `https://www.youtube.com/watch?v=${fileId}`}).go()
 }
 
 // Helper to clear FileDownloads table

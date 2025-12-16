@@ -21,8 +21,6 @@ import {FileStatus} from '#types/enums'
 import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
 import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
 
 interface FileInvocationPayload {
   fileId: string
@@ -33,24 +31,20 @@ type SQSCallArgs = [
 
 const {default: apiGatewayEventFixture} = await import('../../../src/lambdas/WebhookFeedly/test/fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const sqsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SQS')
-const lambdaModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Lambda')
-const youtubeModulePath = resolve(__dirname, '../../../src/lib/vendor/YouTube')
-
+// Use path aliases matching handler imports for proper mock resolution
 const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule(sqsModulePath, () => ({
-  sendMessage: sendMessageMock, // fmt: multiline
-  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+  () => ({
+    sendMessage: sendMessageMock,
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+  }))
 
 const invokeLambdaMock = jest.fn<(name: string, payload: FileInvocationPayload) => Promise<{StatusCode: number}>>()
-jest.unstable_mockModule(lambdaModulePath, () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
-jest.unstable_mockModule(youtubeModulePath, () => ({
-  getVideoID: jest.fn((url: string) => { // fmt: multiline
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
+  getVideoID: jest.fn((url: string) => {
     const match = url.match(/v=([^&]+)/)
     return match ? match[1] : 'test-video-id'
   })
@@ -133,7 +127,10 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     const messageParams = (sendMessageMock.mock.calls as unknown as SQSCallArgs[])[0][0]
     expect(messageParams.QueueUrl).toBe(TEST_SQS_QUEUE_URL)
-    expect(messageParams.MessageBody).toBe('FileNotification')
+    // Verify message body is JSON with DownloadReadyNotification format
+    const messageBody = JSON.parse(messageParams.MessageBody)
+    expect(messageBody.notificationType).toBe('DownloadReadyNotification')
+    expect(messageBody.file.fileId).toBe('existing-video')
 
     expect(invokeLambdaMock).not.toHaveBeenCalled()
 

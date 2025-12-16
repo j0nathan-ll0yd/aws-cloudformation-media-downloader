@@ -27,23 +27,15 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
-const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevices')
-const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
-
+// Use path aliases matching handler imports for proper mock resolution
 const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule(snsModulePath, () => ({publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock}))
+jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock}))
 
 const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule(userDevicesModulePath, () => ({UserDevices: userDevicesMock.entity}))
+jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(devicesModulePath, () => ({Devices: devicesMock.entity}))
+jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
 
