@@ -15,7 +15,7 @@ const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
-const {validateSessionToken, createUserSession, revokeSession, revokeAllUserSessions, refreshSession} = await import('./better-auth-helpers')
+const {validateSessionToken, refreshSession} = await import('./better-auth-helpers')
 const {Sessions} = await import('../entities/Sessions')
 
 /**
@@ -105,78 +105,6 @@ describe('Better Auth Helpers', () => {
 
       await expect(validateSessionToken('expired-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('expired-token')).rejects.toThrow('Session expired')
-    })
-  })
-
-  describe('createUserSession', () => {
-    it('should create a new session with device tracking', async () => {
-      const mockSession = createMockSession({
-        sessionId: 'session-new',
-        token: 'new-token',
-        deviceId: 'device-123',
-        ipAddress: '1.2.3.4',
-        userAgent: 'Mozilla/5.0'
-      })
-
-      sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
-
-      const result = await createUserSession('user-123', 'device-123', '1.2.3.4', 'Mozilla/5.0')
-
-      expect(result).toEqual({token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number)})
-
-      expect(Sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({userId: 'user-123', deviceId: 'device-123', ipAddress: '1.2.3.4', userAgent: 'Mozilla/5.0'})
-      )
-    })
-
-    it('should create session without optional parameters', async () => {
-      const mockSession = createMockSession({sessionId: 'session-minimal', userId: 'user-456', token: 'minimal-token'})
-
-      sessionsMock.mocks.create.mockResolvedValue({data: mockSession})
-
-      const result = await createUserSession('user-456')
-
-      expect(result).toEqual({token: expect.any(String), sessionId: expect.any(String), expiresAt: expect.any(Number)})
-
-      expect(Sessions.create).toHaveBeenCalledWith(
-        expect.objectContaining({userId: 'user-456', deviceId: undefined, ipAddress: undefined, userAgent: undefined})
-      )
-    })
-  })
-
-  describe('revokeSession', () => {
-    it('should revoke a session by ID', async () => {
-      sessionsMock.mocks.delete.mockResolvedValue(undefined)
-
-      await revokeSession('session-123')
-
-      expect(Sessions.delete).toHaveBeenCalledWith({sessionId: 'session-123'})
-    })
-  })
-
-  describe('revokeAllUserSessions', () => {
-    it('should revoke all sessions for a user', async () => {
-      const mockSessions = [
-        {sessionId: 'session-1', userId: 'user-123'}, // fmt: multiline
-        {sessionId: 'session-2', userId: 'user-123'},
-        {sessionId: 'session-3', userId: 'user-123'}
-      ]
-
-      // Mock query operation
-      if (sessionsMock.mocks.query.byUser) {
-        sessionsMock.mocks.query.byUser.go.mockResolvedValue({data: mockSessions})
-      }
-
-      // Mock delete operation
-      sessionsMock.mocks.delete.mockResolvedValue(undefined)
-
-      await revokeAllUserSessions('user-123')
-
-      expect(Sessions.query.byUser).toHaveBeenCalledWith({userId: 'user-123'})
-      expect(Sessions.delete).toHaveBeenCalledTimes(3)
-      expect(Sessions.delete).toHaveBeenCalledWith({sessionId: 'session-1'})
-      expect(Sessions.delete).toHaveBeenCalledWith({sessionId: 'session-2'})
-      expect(Sessions.delete).toHaveBeenCalledWith({sessionId: 'session-3'})
     })
   })
 

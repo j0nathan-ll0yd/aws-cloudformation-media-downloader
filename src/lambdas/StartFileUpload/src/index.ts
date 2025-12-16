@@ -1,9 +1,10 @@
 import {Context} from 'aws-lambda'
-import {chooseVideoFormat, fetchVideoInfo, FetchVideoInfoResult, streamVideoToS3} from '#lib/vendor/YouTube'
+import {downloadVideoToS3, fetchVideoInfo, FetchVideoInfoResult} from '#lib/vendor/YouTube'
 import {DynamoDBFile, StartFileUploadParams} from '#types/main'
+import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
-import {assertIsError} from '#util/transformers'
+import {assertIsError, createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
@@ -11,6 +12,8 @@ import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#util/video-error-classifier'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
+import {UserFiles} from '#entities/UserFiles'
+import {sendMessage} from '#lib/vendor/AWS/SQS'
 
 /**
  * Fetch video info with X-Ray tracing.
@@ -33,15 +36,15 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
 }
 
 /**
- * Stream video to S3 with X-Ray tracing.
- * Wraps streamVideoToS3 and handles subsegment lifecycle including error capture.
+ * Download video to S3 with X-Ray tracing.
+ * Wraps downloadVideoToS3 and handles subsegment lifecycle including error capture.
  */
-async function streamVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
+async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const segment = getSegment()
-  const subsegment = segment?.addNewSubsegment('yt-dlp-stream-to-s3')
+  const subsegment = segment?.addNewSubsegment('yt-dlp-download-to-s3')
 
   try {
-    const result = await streamVideoToS3(fileUrl, bucket, fileName)
+    const result = await downloadVideoToS3(fileUrl, bucket, fileName)
     if (subsegment) {
       subsegment.addAnnotation('s3Bucket', bucket)
       subsegment.addAnnotation('s3Key', fileName)
@@ -91,6 +94,39 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
     }).go()
   }
+}
+
+/**
+ * Dispatch MetadataNotification to all users waiting for this file.
+ * Sends notifications via SQS to the push notification queue.
+ * @param fileId - The video ID
+ * @param videoInfo - Video metadata from yt-dlp
+ */
+async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVideoInfo): Promise<void> {
+  const queueUrl = getRequiredEnv('SNSQueueUrl')
+
+  // Get all users waiting for this file
+  const userFilesResponse = await UserFiles.query.byFile({fileId}).go()
+  const userIds = userFilesResponse.data?.map((uf) => uf.userId) || []
+
+  if (userIds.length === 0) {
+    logDebug('No users waiting for file, skipping MetadataNotification')
+    return
+  }
+
+  // Send MetadataNotification to each user
+  await Promise.all(
+    userIds.map((userId) => {
+      const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
+      return sendMessage({
+        QueueUrl: queueUrl,
+        MessageBody: messageBody,
+        MessageAttributes: messageAttributes
+      })
+    })
+  )
+
+  logInfo('Dispatched MetadataNotifications', {fileId, userCount: userIds.length})
 }
 
 /**
@@ -225,31 +261,28 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   const videoInfo = videoInfoResult.info
   logDebug('fetchVideoInfo =>', videoInfo)
 
-  // Step 2: Choose format and prepare metadata
-  let selectedFormat
-  try {
-    selectedFormat = chooseVideoFormat(videoInfo)
-  } catch (error) {
-    assertIsError(error)
-    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
-  }
-  logDebug('chooseVideoFormat =>', selectedFormat)
+  // Dispatch MetadataNotification to all users waiting for this file
+  await dispatchMetadataNotifications(fileId, videoInfo)
 
-  const fileName = `${videoInfo.id}.${selectedFormat.ext}`
+  // Step 2: Prepare for download
+  // Always use .mp4 extension - yt-dlp will merge to mp4 container
+  const fileName = `${videoInfo.id}.mp4`
   const bucket = getRequiredEnv('Bucket')
 
-  // Step 3: Stream video to S3
-  logDebug('streamVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
+  // Step 3: Download video to S3 (two-phase: temp file -> S3 stream)
+  // yt-dlp handles format selection internally (best video + best audio, merged)
+  logDebug('downloadVideoToS3 <=', {url: fileUrl, bucket, key: fileName})
   let uploadResult
   try {
-    uploadResult = await streamVideoToS3Traced(fileUrl, bucket, fileName)
+    uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName)
   } catch (error) {
     assertIsError(error)
     return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
   }
-  logDebug('streamVideoToS3 =>', uploadResult)
+  logDebug('downloadVideoToS3 =>', uploadResult)
 
   // Step 4: Update permanent File entity with metadata (only on success)
+  const cloudfrontDomain = getRequiredEnv('CloudfrontDomain')
   const fileData: DynamoDBFile = {
     fileId: videoInfo.id,
     key: fileName,
@@ -260,7 +293,8 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     description: videoInfo.description || '',
     publishDate: videoInfo.upload_date || new Date().toISOString(),
     contentType: 'video/mp4',
-    status: FileStatus.Available
+    status: FileStatus.Available,
+    url: `https://${cloudfrontDomain}/${fileName}`
   }
 
   logDebug('upsertFile <=', fileData)

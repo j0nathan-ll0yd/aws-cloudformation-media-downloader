@@ -32,8 +32,11 @@ describe('#S3ObjectCreated', () => {
     const output = await handler(event, testContext)
     expect(output).toBeUndefined()
   })
-  test('should throw an error if the file does not exist', async () => {
+  test('should handle missing file gracefully and continue processing', async () => {
+    // With batch processing, errors are caught and logged rather than thrown
+    // This allows remaining records to be processed even if one fails
     filesMock.mocks.query.byKey!.go.mockResolvedValue({data: []})
-    await expect(handler(event, testContext)).rejects.toThrow(Error)
+    const output = await handler(event, testContext)
+    expect(output).toBeUndefined()
   })
 })

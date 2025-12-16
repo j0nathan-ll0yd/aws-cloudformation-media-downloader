@@ -18,8 +18,6 @@ export interface SessionPayload {
   expiresAt: number
 }
 
-type SessionResult = {token: string; expiresAt: number; sessionId: string}
-
 /**
  * Validates a session token and returns the session payload.
  *
@@ -61,59 +59,6 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
 }
 
 /**
- * Creates a new session for a user after successful authentication.
- *
- * @param userId - The user ID to create a session for
- * @param deviceId - Optional device ID for device tracking
- * @param ipAddress - Optional IP address for security auditing
- * @param userAgent - Optional user agent for device identification
- * @returns Session token and expiration
- */
-export async function createUserSession(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string): Promise<SessionResult> {
-  logDebug('createUserSession: creating session', {userId, deviceId})
-
-  // Manual token generation since we're using ElectroDB adapter instead of Better Auth's built-in session management
-  const token = generateSecureToken()
-  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
-
-  const result = await Sessions.create({sessionId: generateSessionId(), userId, token, expiresAt, deviceId, ipAddress, userAgent}).go()
-
-  logDebug('createUserSession: session created', {sessionId: result.data.sessionId, expiresAt})
-
-  return {token, sessionId: result.data.sessionId, expiresAt}
-}
-
-/**
- * Revokes a session by ID.
- *
- * @param sessionId - The session ID to revoke
- */
-export async function revokeSession(sessionId: string): Promise<void> {
-  logDebug('revokeSession: revoking session', {sessionId})
-
-  await Sessions.delete({sessionId}).go()
-
-  logDebug('revokeSession: session revoked')
-}
-
-/**
- * Revokes all sessions for a user (logout from all devices).
- *
- * @param userId - The user ID to revoke all sessions for
- */
-export async function revokeAllUserSessions(userId: string): Promise<void> {
-  logDebug('revokeAllUserSessions: revoking all sessions', {userId})
-
-  const result = await Sessions.query.byUser({userId}).go()
-
-  for (const session of result.data) {
-    await Sessions.delete({sessionId: session.sessionId}).go()
-  }
-
-  logDebug('revokeAllUserSessions: revoked sessions', {count: result.data.length})
-}
-
-/**
  * Refreshes a session by extending its expiration.
  *
  * @param sessionId - The session ID to refresh
@@ -129,19 +74,4 @@ export async function refreshSession(sessionId: string): Promise<{expiresAt: num
   logDebug('refreshSession: session refreshed', {expiresAt})
 
   return {expiresAt}
-}
-
-/**
- * Generates a cryptographically secure random session token.
- */
-function generateSecureToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return Buffer.from(bytes).toString('base64url')
-}
-
-/**
- * Generates a unique session ID.
- */
-function generateSessionId(): string {
-  return crypto.randomUUID()
 }

@@ -2,20 +2,18 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
 import {StartFileUploadParams} from '#types/main'
 import {DownloadStatus} from '#types/enums'
-import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
+import {YtDlpVideoInfo} from '#types/youtube'
 import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {FetchVideoInfoResult} from '#lib/vendor/YouTube'
 
-// Mock YouTube functions - fetchVideoInfo now returns a result object
+// Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<() => Promise<FetchVideoInfoResult>>()
-const chooseVideoFormatMock = jest.fn<() => YtDlpFormat>()
-const streamVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
+const downloadVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
   fetchVideoInfo: fetchVideoInfoMock,
-  chooseVideoFormat: chooseVideoFormatMock,
-  streamVideoToS3: streamVideoToS3Mock
+  downloadVideoToS3: downloadVideoToS3Mock
 }))
 
 // Mock ElectroDB Files entity (for permanent metadata)
@@ -27,6 +25,19 @@ const fileDownloadsMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/FileDownloads', () => ({
   FileDownloads: fileDownloadsMock.entity,
   DownloadStatus // Re-export the real enum
+}))
+
+// Mock ElectroDB UserFiles entity (for querying users waiting for a file)
+const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+
+// Mock SQS sendMessage for MetadataNotification dispatch
+const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
+jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
+  sendMessage: sendMessageMock,
+  // Re-export helpers used by transformers.ts
+  stringAttribute: (value: string) => ({DataType: 'String', StringValue: value}),
+  numberAttribute: (value: number) => ({DataType: 'Number', StringValue: String(value)})
 }))
 
 const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
@@ -68,28 +79,23 @@ describe('#StartFileUpload', () => {
     fileDownloadsMock.mocks.create.mockResolvedValue({data: {}})
     filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
 
+    // Mock UserFiles.query.byFile for MetadataNotification dispatch
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-123'}]})
+
+    // Mock SQS sendMessage
+    sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
+
     // Set environment variables
     process.env.Bucket = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
     process.env.DynamoDBTableName = 'test-table'
+    process.env.CloudfrontDomain = 'test-cdn.cloudfront.net'
+    process.env.SNSQueueUrl = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
   })
 
-  test('should successfully stream video to S3', async () => {
-    const mockFormat = {
-      format_id: '22',
-      url: 'https://example.com/video.mp4',
-      ext: 'mp4',
-      filesize: 44992120,
-      width: 1280,
-      height: 720,
-      vcodec: 'avc1.64001F',
-      acodec: 'mp4a.40.2',
-      tbr: 1080
-    } as YtDlpFormat
-
-    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id', formats: [mockFormat]}))
-    chooseVideoFormatMock.mockReturnValue(mockFormat)
-    streamVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+  test('should successfully download video to S3', async () => {
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
     const output = await handler(event, context)
 
@@ -106,26 +112,14 @@ describe('#StartFileUpload', () => {
     // Verify FileDownloads was updated (status changes: in_progress -> completed)
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
 
-    // Verify streamVideoToS3 was called with correct parameters
-    expect(streamVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
+    // Verify downloadVideoToS3 was called with correct parameters (no format ID - yt-dlp handles selection)
+    expect(downloadVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
   })
 
-  test('should handle HLS/DASH streaming formats', async () => {
-    const hlsFormat = {
-      format_id: 'hls-720',
-      url: 'https://manifest.googlevideo.com/api/manifest.m3u8',
-      ext: 'mp4',
-      filesize: undefined,
-      width: 1280,
-      height: 720,
-      vcodec: 'avc1.64001F',
-      acodec: 'mp4a.40.2',
-      tbr: 1080
-    } as YtDlpFormat
-
-    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-hls', title: 'Test HLS Video', formats: [hlsFormat]}))
-    chooseVideoFormatMock.mockReturnValue(hlsFormat)
-    streamVideoToS3Mock.mockResolvedValue({fileSize: 104857600, s3Url: 's3://test-bucket/test-video.mp4', duration: 120})
+  test('should handle large video files', async () => {
+    // Test that large files (e.g., 100MB) are handled correctly
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-large', title: 'Large Video'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 104857600, s3Url: 's3://test-bucket/test-video.mp4', duration: 120})
 
     const output = await handler(event, context)
 
@@ -135,26 +129,13 @@ describe('#StartFileUpload', () => {
     expect(parsedBody.body.fileSize).toEqual(104857600)
     expect(parsedBody.body.duration).toEqual(120)
 
-    // Verify Files.upsert was called with Downloaded status
+    // Verify Files.upsert was called with success
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
   })
 
-  test('should schedule retry for transient streaming errors', async () => {
-    const mockFormat = {
-      format_id: '22',
-      url: 'https://example.com/video.mp4',
-      ext: 'mp4',
-      filesize: 44992120,
-      width: 1280,
-      height: 720,
-      vcodec: 'avc1.64001F',
-      acodec: 'mp4a.40.2',
-      tbr: 1080
-    } as YtDlpFormat
-
-    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-error', formats: [mockFormat]}))
-    chooseVideoFormatMock.mockReturnValue(mockFormat)
-    streamVideoToS3Mock.mockRejectedValue(new Error('Stream upload failed'))
+  test('should schedule retry for transient download errors', async () => {
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-error'}))
+    downloadVideoToS3Mock.mockRejectedValue(new Error('Download failed'))
 
     const output = await handler(event, context)
 
@@ -263,5 +244,42 @@ describe('#StartFileUpload', () => {
     const parsedBody = JSON.parse(output.body)
     expect(parsedBody.error.message.status).toEqual('failed')
     expect(parsedBody.error.message.category).toEqual('cookie_expired')
+  })
+
+  test('should dispatch MetadataNotifications to all waiting users after fetchVideoInfo', async () => {
+    // Mock multiple users waiting for the file
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-1'}, {userId: 'user-2'}, {userId: 'user-3'}]})
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id', title: 'Test Video', uploader: 'Test Uploader'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+
+    // Verify UserFiles.query.byFile was called
+    expect(userFilesMock.mocks.query.byFile!.go).toHaveBeenCalled()
+
+    // Verify sendMessage was called 3 times (once per user)
+    expect(sendMessageMock).toHaveBeenCalledTimes(3)
+
+    // Verify sendMessage was called with correct parameters
+    const firstCall = sendMessageMock.mock.calls[0] as unknown as [{QueueUrl: string; MessageBody: string; MessageAttributes: {notificationType: {StringValue: string}}}]
+    expect(firstCall[0].QueueUrl).toBe('https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification')
+    expect(firstCall[0].MessageBody).toContain('MetadataNotification')
+    expect(firstCall[0].MessageAttributes.notificationType.StringValue).toBe('MetadataNotification')
+  })
+
+  test('should skip MetadataNotification when no users are waiting', async () => {
+    // No users waiting for the file
+    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
+    downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
+
+    const output = await handler(event, context)
+
+    expect(output.statusCode).toEqual(200)
+
+    // Verify sendMessage was NOT called (no users to notify)
+    expect(sendMessageMock).not.toHaveBeenCalled()
   })
 })

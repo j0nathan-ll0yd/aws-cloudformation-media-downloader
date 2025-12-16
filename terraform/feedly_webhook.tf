@@ -67,6 +67,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   role             = aws_iam_role.WebhookFeedlyRole.arn
   handler          = "WebhookFeedly.handler"
   runtime          = "nodejs22.x"
+  memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
@@ -113,6 +114,16 @@ data "aws_iam_policy_document" "MultipartUpload" {
   statement {
     actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
+  }
+  # Query FileCollection GSI to find users waiting for file (for MetadataNotification)
+  statement {
+    actions   = ["dynamodb:Query"]
+    resources = ["${aws_dynamodb_table.MediaDownloader.arn}/index/FileCollection"]
+  }
+  # Send MetadataNotification to push notification queue
+  statement {
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.SendPushNotification.arn]
   }
   statement {
     actions = [
@@ -219,6 +230,41 @@ resource "null_resource" "DownloadYtDlpBinary" {
   }
 }
 
+resource "null_resource" "DownloadFfmpegBinary" {
+  triggers = {
+    # Re-download if ffmpeg binary doesn't exist
+    ffmpeg_exists = fileexists("${path.module}/../layers/ffmpeg/bin/ffmpeg") ? "exists" : "missing"
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -e
+
+      # ffmpeg now in separate layer directory
+      LAYER_BIN_DIR="${path.module}/../layers/ffmpeg/bin"
+      FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+
+      if [ -f "$${LAYER_BIN_DIR}/ffmpeg" ]; then
+        echo "✅ ffmpeg binary already exists, skipping download"
+        exit 0
+      fi
+
+      echo "Downloading ffmpeg static build from John Van Sickle..."
+      mkdir -p "$${LAYER_BIN_DIR}"
+      cd "$${LAYER_BIN_DIR}"
+
+      wget -q "$${FFMPEG_URL}" -O ffmpeg-release-amd64-static.tar.xz
+      tar xf ffmpeg-release-amd64-static.tar.xz
+      mv ffmpeg-*-amd64-static/ffmpeg .
+      rm -rf ffmpeg-*-amd64-static* ffmpeg-release-amd64-static.tar.xz
+
+      chmod +x ffmpeg
+      echo "✅ ffmpeg downloaded successfully"
+    EOT
+  }
+}
+
+# yt-dlp layer (binary + cookies only, ~34MB compressed - direct upload)
 data "archive_file" "YtDlpLayer" {
   type        = "zip"
   source_dir  = "./../layers/yt-dlp"
@@ -230,24 +276,52 @@ data "archive_file" "YtDlpLayer" {
 resource "aws_lambda_layer_version" "YtDlp" {
   filename            = data.archive_file.YtDlpLayer.output_path
   layer_name          = "yt-dlp"
-  compatible_runtimes = ["nodejs22.x"]
   source_code_hash    = data.archive_file.YtDlpLayer.output_base64sha256
+  compatible_runtimes = ["nodejs22.x"]
 
-  description = "yt-dlp binary (Linux x86_64) and YouTube cookies for authenticated video downloading"
+  description = "yt-dlp binary and YouTube cookies for video downloading"
+}
+
+# ffmpeg layer (binary only, ~29MB compressed - direct upload)
+# Source: John Van Sickle's static builds (https://johnvansickle.com/ffmpeg/)
+data "archive_file" "FfmpegLayer" {
+  type        = "zip"
+  source_dir  = "./../layers/ffmpeg"
+  output_path = "./../build/layers/ffmpeg.zip"
+
+  depends_on = [null_resource.DownloadFfmpegBinary]
+}
+
+resource "aws_lambda_layer_version" "Ffmpeg" {
+  filename            = data.archive_file.FfmpegLayer.output_path
+  layer_name          = "ffmpeg"
+  source_code_hash    = data.archive_file.FfmpegLayer.output_base64sha256
+  compatible_runtimes = ["nodejs22.x"]
+
+  description = "ffmpeg binary (John Van Sickle static build) for video merging"
 }
 
 resource "aws_lambda_function" "StartFileUpload" {
-  description      = "Streams video downloads directly to S3 using yt-dlp"
-  function_name    = "StartFileUpload"
-  role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "StartFileUpload.handler"
-  runtime          = "nodejs22.x"
-  depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  timeout          = 900
-  memory_size      = 2048
-  filename         = data.archive_file.StartFileUpload.output_path
-  source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
-  layers           = [aws_lambda_layer_version.YtDlp.arn]
+  description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
+  function_name                  = "StartFileUpload"
+  role                           = aws_iam_role.MultipartUploadRole.arn
+  handler                        = "StartFileUpload.handler"
+  runtime                        = "nodejs22.x"
+  depends_on                     = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
+  timeout                        = 900
+  memory_size                    = 2048
+  reserved_concurrent_executions = 10 # Prevent YouTube rate limiting
+  filename                       = data.archive_file.StartFileUpload.output_path
+  source_code_hash               = data.archive_file.StartFileUpload.output_base64sha256
+  layers = [
+    aws_lambda_layer_version.YtDlp.arn,
+    aws_lambda_layer_version.Ffmpeg.arn
+  ]
+
+  # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)
+  ephemeral_storage {
+    size = 10240
+  }
 
   tracing_config {
     mode = "Active"
@@ -257,6 +331,8 @@ resource "aws_lambda_function" "StartFileUpload" {
     variables = {
       Bucket              = aws_s3_bucket.Files.id
       DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
+      CloudfrontDomain    = aws_cloudfront_distribution.media_files.domain_name
+      SNSQueueUrl         = aws_sqs_queue.SendPushNotification.id
       YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
       PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]

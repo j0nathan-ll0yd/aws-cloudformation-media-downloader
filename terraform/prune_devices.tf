@@ -18,9 +18,12 @@ data "aws_iam_policy_document" "PruneDevices" {
       "${aws_dynamodb_table.MediaDownloader.arn}/index/DeviceCollection"
     ]
   }
-  statement {
-    actions   = ["sns:DeleteEndpoint"]
-    resources = [length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""]
+  dynamic "statement" {
+    for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
+    content {
+      actions   = ["sns:DeleteEndpoint"]
+      resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+    }
   }
 }
 

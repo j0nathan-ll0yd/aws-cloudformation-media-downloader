@@ -95,11 +95,21 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
 
     // Check for failures before deleting parent
     const failures = childResults.filter((r) => r.status === 'rejected')
-    if (failures.length > 0) {
+    const hasPartialFailure = failures.length > 0
+
+    if (hasPartialFailure) {
       logError('Cascade deletion partial failure', failures)
+      // Don't delete parent if children failed - prevents orphaned records
+      const partialResult = response(context, 207, {
+        message: 'Partial deletion - some child records could not be removed',
+        failedOperations: failures.length,
+        totalOperations: childResults.length
+      })
+      logOutgoingFixture(partialResult)
+      return partialResult
     }
 
-    // Delete parent LAST
+    // Delete parent LAST - only if all children succeeded
     await deleteUser(userId)
     logDebug('deleteUser completed')
 

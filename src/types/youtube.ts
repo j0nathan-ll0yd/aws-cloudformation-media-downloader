@@ -36,4 +36,8 @@ export interface YtDlpFormat {
   abr?: number
   vbr?: number
   tbr?: number
+  /** Audio file extension - 'none' for HLS/DASH where audio is in separate stream */
+  audio_ext?: string
+  /** Streaming protocol - e.g., 'https', 'm3u8_native', 'http_dash_segments' */
+  protocol?: string
 }

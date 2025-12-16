@@ -36,9 +36,12 @@ data "aws_iam_policy_document" "SendPushNotification" {
       "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
     ]
   }
-  statement {
-    actions   = ["sns:Publish"]
-    resources = [length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""]
+  dynamic "statement" {
+    for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
+    content {
+      actions   = ["sns:Publish"]
+      resources = [aws_sns_platform_application.OfflineMediaDownloader[0].arn]
+    }
   }
 }
 

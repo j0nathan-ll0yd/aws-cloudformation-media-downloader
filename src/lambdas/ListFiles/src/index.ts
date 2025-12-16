@@ -75,7 +75,9 @@ export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerE
 
   try {
     const files = await getFilesByUser(userId as string)
-    myResponse.contents = files.filter((file) => file.status === FileStatus.Available)
+    myResponse.contents = files
+      .filter((file) => file.status === FileStatus.Available)
+      .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
     myResponse.keyCount = myResponse.contents.length
     const result = response(context, 200, myResponse)
     logOutgoingFixture(result)

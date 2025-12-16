@@ -41,6 +41,21 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
       "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*/usage"
     ]
   }
+  # Better Auth session validation requires DynamoDB access (including UpdateItem for session refresh)
+  statement {
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan"
+    ]
+    resources = [
+      aws_dynamodb_table.MediaDownloader.arn,
+      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizerRolePolicy" {

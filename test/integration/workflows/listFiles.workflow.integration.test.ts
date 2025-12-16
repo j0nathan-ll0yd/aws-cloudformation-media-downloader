@@ -120,10 +120,12 @@ describe('ListFiles Workflow Integration Tests', () => {
     })
 
     // Files.get now uses BATCH get - returns array of files with unprocessed
+    // Note: ListFiles sorts by publishDate descending (most recent first)
+    // So video-1 needs a later publishDate to appear first in results
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('video-1', FileStatus.Available, {title: 'Video 1'}),
-        createMockFile('video-2', FileStatus.Available, {title: 'Video 2', size: 10485760}),
+        createMockFile('video-1', FileStatus.Available, {title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'}),
+        createMockFile('video-2', FileStatus.Available, {title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'}),
         createMockFile('video-3', FileStatus.Pending, {title: 'Video 3 (not ready)'})
       ],
       unprocessed: []
@@ -236,9 +238,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) =>
-        createMockFile(fileId, index % 2 === 0 ? FileStatus.Available : FileStatus.Pending, {title: `Video ${index}`})
-      ),
+      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Available : FileStatus.Pending, {title: `Video ${index}`})),
       unprocessed: []
     })
 

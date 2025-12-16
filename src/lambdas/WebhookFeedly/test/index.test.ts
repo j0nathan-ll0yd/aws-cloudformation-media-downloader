@@ -32,8 +32,9 @@ jest.unstable_mockModule('yt-dlp-wrap', () => ({default: MockYTDlpWrap}))
 // Mock child_process for YouTube spawn operations
 jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
 
-// Mock fs for YouTube cookie operations
-jest.unstable_mockModule('fs', () => ({promises: {copyFile: jest.fn()}}))
+// Mock fs for YouTube operations (createReadStream for S3 upload, promises for cookie/cleanup)
+jest.unstable_mockModule('fs', () => ({createReadStream: jest.fn()}))
+jest.unstable_mockModule('fs/promises', () => ({copyFile: jest.fn(), stat: jest.fn(), unlink: jest.fn()}))
 
 // Mock S3 vendor wrapper for YouTube
 jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({

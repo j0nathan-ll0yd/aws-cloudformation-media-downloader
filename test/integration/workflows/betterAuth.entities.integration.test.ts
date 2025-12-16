@@ -4,7 +4,7 @@
  * Tests Better Auth ElectroDB entities (Users, Sessions, Accounts, VerificationTokens)
  * against LocalStack DynamoDB to validate:
  * - Entity CRUD operations
- * - GSI queries (byEmail, byUser, byDevice, byProvider)
+ * - GSI queries (byEmail, byUser, byToken, byProvider)
  * - Collections queries (userSessions, userAccounts)
  * - Complete authentication flows
  */
@@ -29,15 +29,7 @@ const {MediaDownloaderService} = await import('../../../src/entities/Collections
 const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import(
   '../../helpers/better-auth-test-data'
 )
-const {
-  transformUserFromAuth,
-  transformSessionFromAuth,
-  transformAccountFromAuth,
-  transformUserToAuth,
-  transformSessionToAuth,
-  transformAccountToAuth,
-  splitFullName
-} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
+const {splitFullName} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
 
 // Type helpers for ElectroDB service collections
 // ElectroDB collections return an object with entity-named arrays (using the keys from service creation)
@@ -174,23 +166,6 @@ describe('Better Auth Entities Integration Tests', () => {
       for (let i = 0; i < result.data.length - 1; i++) {
         expect(result.data[i].expiresAt).toBeLessThanOrEqual(result.data[i + 1].expiresAt)
       }
-    })
-
-    it('should query sessions by device using byDevice GSI', async () => {
-      const deviceId = 'device-multi-session'
-
-      await Sessions.create(
-        createMockSession({sessionId: 'device-session-1', userId: 'user-1', deviceId, token: 'token-1', expiresAt: Date.now() + 86400000})
-      ).go()
-
-      await Sessions.create(
-        createMockSession({sessionId: 'device-session-2', userId: 'user-2', deviceId, token: 'token-2', expiresAt: Date.now() + 86400000})
-      ).go()
-
-      const result = await Sessions.query.byDevice({deviceId}).go()
-
-      expect(result.data).toHaveLength(2)
-      expect(result.data.every((s) => s.deviceId === deviceId)).toBe(true)
     })
 
     it('should update session expiration', async () => {
@@ -409,149 +384,13 @@ describe('Better Auth Entities Integration Tests', () => {
     })
   })
 
-  describe('Transformer Validation (Better Auth ↔ ElectroDB)', () => {
-    it('should correctly transform and round-trip User data', async () => {
-      // Better Auth format
-      const betterAuthUser = {id: 'user-transform-1', email: 'transform@example.com', name: 'Transform Test', emailVerified: true}
-
-      // Transform to ElectroDB format
-      const electroUser = transformUserFromAuth(betterAuthUser)
-
-      // Verify transformation splits name correctly
-      expect(electroUser.firstName).toBe('Transform')
-      expect(electroUser.lastName).toBe('Test')
-
-      // Store in DynamoDB
-      await Users.create(electroUser).go()
-
-      // Retrieve from DynamoDB
-      const result = await Users.get({userId: 'user-transform-1'}).go()
-
-      // Transform back to Better Auth format
-      const roundTripped = transformUserToAuth(result.data!)
-
-      // Verify round-trip preserves data
-      expect(roundTripped.id).toBe(betterAuthUser.id)
-      expect(roundTripped.email).toBe(betterAuthUser.email)
-      expect(roundTripped.name).toBe(betterAuthUser.name)
-      expect(roundTripped.emailVerified).toBe(betterAuthUser.emailVerified)
-      expect(roundTripped.createdAt).toBeInstanceOf(Date)
-      expect(roundTripped.updatedAt).toBeInstanceOf(Date)
-    })
-
-    it('should correctly transform and round-trip Session data', async () => {
-      const expiresAt = new Date(Date.now() + 86400000)
-
-      // Better Auth format
-      const betterAuthSession = {
-        id: 'session-transform-1',
-        userId: 'user-session-transform',
-        expiresAt,
-        token: 'transform-token',
-        ipAddress: '10.0.0.1',
-        userAgent: 'Test Agent'
-      }
-
-      // Transform to ElectroDB format
-      const electroSession = transformSessionFromAuth(betterAuthSession)
-
-      // Verify transformation converts Date to timestamp
-      expect(typeof electroSession.expiresAt).toBe('number')
-      expect(electroSession.expiresAt).toBe(expiresAt.getTime())
-
-      // Store in DynamoDB
-      await Sessions.create(electroSession).go()
-
-      // Retrieve from DynamoDB
-      const result = await Sessions.get({sessionId: 'session-transform-1'}).go()
-
-      // Transform back to Better Auth format
-      const roundTripped = transformSessionToAuth(result.data!)
-
-      // Verify round-trip preserves data
-      expect(roundTripped.id).toBe(betterAuthSession.id)
-      expect(roundTripped.userId).toBe(betterAuthSession.userId)
-      expect(roundTripped.expiresAt).toBeInstanceOf(Date)
-      expect(roundTripped.expiresAt.getTime()).toBe(expiresAt.getTime())
-      expect(roundTripped.token).toBe(betterAuthSession.token)
-      expect(roundTripped.ipAddress).toBe(betterAuthSession.ipAddress)
-      expect(roundTripped.userAgent).toBe(betterAuthSession.userAgent)
-    })
-
-    it('should correctly transform and round-trip Account data', async () => {
-      // Better Auth format (note: 'accountId' field is provider's ID)
-      const betterAuthAccount = {
-        id: 'account-transform-1',
-        userId: 'user-account-transform',
-        providerId: 'apple',
-        accountId: 'apple-transform-123', // This is providerAccountId in ElectroDB
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        expiresAt: Date.now() + 3600000,
-        scope: 'email profile',
-        tokenType: 'Bearer'
-      }
-
-      // Transform to ElectroDB format
-      const electroAccount = transformAccountFromAuth(betterAuthAccount)
-
-      // Verify field name mapping
-      expect(electroAccount.accountId).toBe('account-transform-1')
-      expect(electroAccount.providerAccountId).toBe('apple-transform-123')
-
-      // Store in DynamoDB
-      await Accounts.create(electroAccount).go()
-
-      // Retrieve from DynamoDB
-      const result = await Accounts.get({accountId: 'account-transform-1'}).go()
-
-      // Transform back to Better Auth format
-      const roundTripped = transformAccountToAuth(result.data!)
-
-      // Verify round-trip preserves data and field mapping
-      expect(roundTripped.id).toBe(betterAuthAccount.id)
-      expect(roundTripped.userId).toBe(betterAuthAccount.userId)
-      expect(roundTripped.providerId).toBe(betterAuthAccount.providerId)
-      expect(roundTripped.accountId).toBe('apple-transform-123') // Mapped back correctly
-      expect(roundTripped.accessToken).toBe(betterAuthAccount.accessToken)
-      expect(roundTripped.createdAt).toBeInstanceOf(Date)
-      expect(roundTripped.updatedAt).toBeInstanceOf(Date)
-    })
-
+  describe('Helper Functions', () => {
     it('should handle name splitting edge cases', () => {
       expect(splitFullName('John Doe')).toEqual({firstName: 'John', lastName: 'Doe'})
       expect(splitFullName('John')).toEqual({firstName: 'John', lastName: ''})
       expect(splitFullName('')).toEqual({firstName: '', lastName: ''})
       expect(splitFullName('John Doe Smith')).toEqual({firstName: 'John', lastName: 'Doe Smith'})
       expect(splitFullName('Jean-Claude Van Damme')).toEqual({firstName: 'Jean-Claude', lastName: 'Van Damme'})
-    })
-
-    it('should handle null to undefined conversion for optional fields', async () => {
-      // Better Auth may provide null for optional fields
-      const betterAuthSession = {
-        id: 'session-null-test',
-        userId: 'user-null-test',
-        expiresAt: new Date(Date.now() + 86400000),
-        token: 'null-test-token',
-        ipAddress: null as string | null, // Better Auth uses null
-        userAgent: null as string | null
-      }
-
-      // Transform to ElectroDB format
-      const electroSession = transformSessionFromAuth(betterAuthSession)
-
-      // Verify null converted to undefined (ElectroDB compatibility)
-      expect(electroSession.ipAddress).toBeUndefined()
-      expect(electroSession.userAgent).toBeUndefined()
-
-      // Store in DynamoDB
-      await Sessions.create(electroSession).go()
-
-      // Retrieve and verify undefined fields are handled
-      const result = await Sessions.get({sessionId: 'session-null-test'}).go()
-      expect(result.data).toBeDefined()
-      expect(result.data?.ipAddress).toBeUndefined()
-      expect(result.data?.userAgent).toBeUndefined()
     })
   })
 })

@@ -4,7 +4,7 @@ import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '#types/main'
 import {logDebug} from '#util/lambda-helpers'
-import {assertIsError, createFileNotificationAttributes} from '#util/transformers'
+import {assertIsError, createDownloadReadyNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
@@ -42,18 +42,18 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
 }
 
 /**
- * Returns a promise to send a DynamoDBFile to a user
- * @param file - The DynamoDBFile you want to send
+ * Dispatches DownloadReadyNotification to a user via SQS
+ * @param file - The DynamoDBFile that is now ready to download
  * @param userId - The UUID of the user
  * @notExported
  */
 function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
-  const messageAttributes = createFileNotificationAttributes(file, userId)
-  const sendMessageParams = {
-    MessageBody: 'FileNotification',
+  const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
+  const sendMessageParams: SendMessageRequest = {
+    MessageBody: messageBody,
     MessageAttributes: messageAttributes,
     QueueUrl: getRequiredEnv('SNSQueueUrl')
-  } as SendMessageRequest
+  }
   logDebug('sendMessage <=', sendMessageParams)
   return sendMessage(sendMessageParams)
 }
@@ -64,15 +64,18 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  */
 export const handler = withXRay(async (event: S3Event): Promise<void> => {
   logDebug('event', event)
-  try {
-    const record = event.Records[0]
-    const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
-    const file = await getFileByFilename(fileName)
-    const userIds = await getUsersOfFile(file)
-    const notifications = userIds.map((userId) => dispatchFileNotificationToUser(file, userId))
-    await Promise.all(notifications)
-  } catch (error) {
-    assertIsError(error)
-    throw new UnexpectedError(error.message)
+  // Process all S3 records - S3 can batch up to 100 records per event
+  for (const record of event.Records) {
+    try {
+      const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
+      const file = await getFileByFilename(fileName)
+      const userIds = await getUsersOfFile(file)
+      // Use allSettled to continue processing even if some notifications fail
+      await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+    } catch (error) {
+      assertIsError(error)
+      // Log error but continue processing remaining records
+      logDebug('Error processing record', {key: record.s3.object.key, error: error.message})
+    }
   }
 })
