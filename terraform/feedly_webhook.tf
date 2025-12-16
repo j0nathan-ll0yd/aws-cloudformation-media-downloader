@@ -67,6 +67,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   role             = aws_iam_role.WebhookFeedlyRole.arn
   handler          = "WebhookFeedly.handler"
   runtime          = "nodejs22.x"
+  memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
@@ -301,16 +302,17 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
 }
 
 resource "aws_lambda_function" "StartFileUpload" {
-  description      = "Downloads videos to temp file then streams to S3 using yt-dlp"
-  function_name    = "StartFileUpload"
-  role             = aws_iam_role.MultipartUploadRole.arn
-  handler          = "StartFileUpload.handler"
-  runtime          = "nodejs22.x"
-  depends_on       = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
-  timeout          = 900
-  memory_size      = 2048
-  filename         = data.archive_file.StartFileUpload.output_path
-  source_code_hash = data.archive_file.StartFileUpload.output_base64sha256
+  description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
+  function_name                  = "StartFileUpload"
+  role                           = aws_iam_role.MultipartUploadRole.arn
+  handler                        = "StartFileUpload.handler"
+  runtime                        = "nodejs22.x"
+  depends_on                     = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
+  timeout                        = 900
+  memory_size                    = 2048
+  reserved_concurrent_executions = 10 # Prevent YouTube rate limiting
+  filename                       = data.archive_file.StartFileUpload.output_path
+  source_code_hash               = data.archive_file.StartFileUpload.output_base64sha256
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
     aws_lambda_layer_version.Ffmpeg.arn

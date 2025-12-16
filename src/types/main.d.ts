@@ -1,5 +1,3 @@
-import {SQSMessageAttribute, SQSMessageAttributes} from '#lib/vendor/AWS/SQS'
-import {Author, videoFormat} from 'ytdl-core'
 import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {FileStatus, UserStatus} from './enums'
 import {
@@ -11,23 +9,6 @@ import {
   APIGatewayProxyEventStageVariables
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
-
-interface Metadata {
-  videoId: string
-  fileName: string
-  escapedTitle: string
-  description: string
-  formats: videoFormat[]
-  mimeType: string
-  ext: string
-  imageUri?: string
-  viewCount?: number
-  timestamp?: number
-  keywords?: string[]
-  author: Author
-  title: string
-  published: number // time in milliseconds
-}
 
 interface StartFileUploadParams {
   fileId: string
@@ -93,24 +74,6 @@ interface SignInWithAppleConfig {
 interface UserEventDetails {
   userId?: string
   userStatus: UserStatus
-}
-
-export class FileNotification implements SQSMessageAttributes {
-  [name: string]: SQSMessageAttribute
-  size: SQSMessageAttribute
-  publishDate: SQSMessageAttribute
-  key: SQSMessageAttribute
-  url: SQSMessageAttribute
-  userId: SQSMessageAttribute
-}
-
-// The shape of a file when send via push notification
-interface ClientFile {
-  fileId: string
-  key: string
-  publishDate: string
-  size: number
-  url: string
 }
 
 // Push notification types for two-phase notification flow

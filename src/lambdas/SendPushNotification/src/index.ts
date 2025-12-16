@@ -52,13 +52,13 @@ export const handler = withXRay(async (event: SQSEvent): Promise<void> => {
     const notificationType = record.messageAttributes.notificationType?.stringValue as FileNotificationType
     if (!SUPPORTED_NOTIFICATION_TYPES.includes(notificationType)) {
       logInfo('Skipping unsupported notification type', notificationType)
-      return
+      continue
     }
     const userId = record.messageAttributes.userId.stringValue as string
     const deviceIds = await getUserDevicesByUserId(userId)
     if (deviceIds.length == 0) {
       logInfo('No devices registered for user', userId)
-      return
+      continue
     }
     logInfo('Sending messages to devices <=', deviceIds)
     for (const deviceId of deviceIds) {

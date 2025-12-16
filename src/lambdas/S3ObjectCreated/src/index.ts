@@ -64,15 +64,18 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  */
 export const handler = withXRay(async (event: S3Event): Promise<void> => {
   logDebug('event', event)
-  try {
-    const record = event.Records[0]
-    const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
-    const file = await getFileByFilename(fileName)
-    const userIds = await getUsersOfFile(file)
-    const notifications = userIds.map((userId) => dispatchFileNotificationToUser(file, userId))
-    await Promise.all(notifications)
-  } catch (error) {
-    assertIsError(error)
-    throw new UnexpectedError(error.message)
+  // Process all S3 records - S3 can batch up to 100 records per event
+  for (const record of event.Records) {
+    try {
+      const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
+      const file = await getFileByFilename(fileName)
+      const userIds = await getUsersOfFile(file)
+      // Use allSettled to continue processing even if some notifications fail
+      await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+    } catch (error) {
+      assertIsError(error)
+      // Log error but continue processing remaining records
+      logDebug('Error processing record', {key: record.s3.object.key, error: error.message})
+    }
   }
 })

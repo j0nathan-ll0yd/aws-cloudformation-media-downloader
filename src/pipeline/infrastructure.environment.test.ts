@@ -19,7 +19,10 @@ const excludedSourceVariables = {
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
   Connection: 1, // HTTP header
-  Upgrade: 1 // HTTP header
+  Upgrade: 1, // HTTP header
+  // Notification type literals (not env vars)
+  MetadataNotification: 1,
+  DownloadReadyNotification: 1
 }
 
 // Patterns that indicate library operation types, not environment variables
