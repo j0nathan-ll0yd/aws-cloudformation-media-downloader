@@ -19,7 +19,11 @@ const excludedSourceVariables = {
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
   Connection: 1, // HTTP header
-  Upgrade: 1 // HTTP header
+  Upgrade: 1, // HTTP header
+  // better-auth library model/type names (matched by minified function call pattern)
+  Account: 1, // better-auth Account model
+  Session: 1, // better-auth Session model
+  ZodSuccess: 1 // Zod brand/success type
 }
 
 // Patterns that indicate library operation types or domain literals, not environment variables

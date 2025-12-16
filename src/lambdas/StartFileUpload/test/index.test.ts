@@ -8,8 +8,8 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {FetchVideoInfoResult} from '#lib/vendor/YouTube'
 
 // Mock YouTube functions
-const fetchVideoInfoMock = jest.fn<() => Promise<FetchVideoInfoResult>>()
-const downloadVideoToS3Mock = jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>()
+const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
+const downloadVideoToS3Mock = jest.fn<(url: string, bucket: string, key: string) => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
   fetchVideoInfo: fetchVideoInfoMock,

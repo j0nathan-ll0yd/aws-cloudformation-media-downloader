@@ -87,7 +87,7 @@ describe('#FileCoordinator', () => {
       const message = 'AWS request failed'
       // First call (pending) returns undefined - simulating failure
       fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce(undefined)
-      await expect(handler(event, context)).rejects.toThrowError(message)
+      await expect(handler(event, context)).rejects.toThrow(message)
     })
 
     test('should throw error when scheduled query fails', async () => {
@@ -96,7 +96,7 @@ describe('#FileCoordinator', () => {
       fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
         .mockResolvedValueOnce({data: []})
         .mockResolvedValueOnce(undefined)
-      await expect(handler(event, context)).rejects.toThrowError(message)
+      await expect(handler(event, context)).rejects.toThrow(message)
     })
   })
 })
