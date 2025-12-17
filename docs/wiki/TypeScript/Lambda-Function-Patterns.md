@@ -28,6 +28,8 @@ import {logInfo, response} from '../../../util/lambda-helpers'
 
 ## Handler Pattern
 
+Lambda handlers use wrapper functions that eliminate boilerplate and ensure consistency:
+
 ```typescript
 // Helper functions first
 async function processFile(fileId: string): Promise<void> {
@@ -35,18 +37,27 @@ async function processFile(fileId: string): Promise<void> {
   // Process...
 }
 
-// Handler with X-Ray wrapper at bottom
-export const handler = withXRay(async (event, context, {traceId}) => {
-  logInfo('event <=', event)
-
-  try {
-    await processFile(event.fileId)
-    return response(context, 200, {success: true})
-  } catch (error) {
-    return lambdaErrorResponse(context, error)
-  }
-})
+// Handler with wrappers - business logic only, no try-catch needed
+export const handler = withXRay(wrapApiHandler(async (event, context, _metadata) => {
+  await processFile(event.fileId)
+  return response(context, 200, {success: true})
+  // Errors automatically converted to 500 responses
+}))
 ```
+
+### Available Handler Wrappers
+
+| Wrapper | Use Case | Error Handling |
+|---------|----------|----------------|
+| `wrapApiHandler` | API Gateway endpoints | Catches errors → 500 response |
+| `wrapAuthorizer` | API Gateway authorizers | Propagates `Error('Unauthorized')` → 401 |
+| `wrapEventHandler` | S3/SQS batch processing | Per-record error handling |
+| `wrapScheduledHandler` | CloudWatch scheduled events | Logs and rethrows errors |
+
+All wrappers provide:
+- Automatic event logging via `logInfo`
+- Fixture logging for test data extraction
+- `WrapperMetadata` with traceId passed to handler
 
 ## Response Format (REQUIRED)
 
@@ -76,51 +87,77 @@ return {
 
 ### API Gateway Handler
 ```typescript
-export const handler = withXRay(async (
-  event: APIGatewayProxyEvent,
-  context: Context,
-  {traceId}
-): Promise<APIGatewayProxyResult> => {
-  const {userId} = event.requestContext.authorizer
-  // Handler logic
-})
+import {wrapApiHandler, response} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+export const handler = withXRay(wrapApiHandler(async (event, context, _metadata) => {
+  const {userId} = getUserDetailsFromEvent(event)
+  // Business logic - just throw errors, wrapper handles conversion
+  if (!userId) throw new UnauthorizedError('Login required')
+  return response(context, 200, {data: result})
+}))
+```
+
+### API Gateway Authorizer
+```typescript
+import {wrapAuthorizer} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+export const handler = withXRay(wrapAuthorizer(async (event, _context, _metadata) => {
+  // Throw Error('Unauthorized') for 401 response
+  if (!isValid) throw new Error('Unauthorized')
+  return generateAllow(userId, event.methodArn)
+}))
 ```
 
 ### S3 Event Handler
 ```typescript
-export const handler = withXRay(async (
-  event: S3Event,
-  context: Context,
-  {traceId}
-) => {
-  for (const record of event.Records) {
-    await processS3Object(record.s3)
-  }
-})
+import {wrapEventHandler, s3Records} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+// Process individual records - errors don't stop other records
+async function processS3Record(record: S3EventRecord, _context: Context, _metadata: WrapperMetadata) {
+  const key = record.s3.object.key
+  await processFile(key)
+}
+
+export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s3Records}))
 ```
 
 ### SQS Handler
 ```typescript
-export const handler = withXRay(async (
-  event: SQSEvent,
-  context: Context,
-  {traceId}
-) => {
-  const results = await Promise.allSettled(
-    event.Records.map(record => processMessage(record))
-  )
-  // Check for failures
-})
+import {wrapEventHandler, sqsRecords} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+// Process individual messages - errors logged but don't stop processing
+async function processSQSRecord(record: SQSRecord, _context: Context, _metadata: WrapperMetadata) {
+  const body = JSON.parse(record.body)
+  await handleMessage(body)
+}
+
+export const handler = withXRay(wrapEventHandler(processSQSRecord, {getRecords: sqsRecords}))
 ```
+
+### Scheduled Event Handler
+```typescript
+import {wrapScheduledHandler} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+export const handler = withXRay(wrapScheduledHandler(async (_event, _context, _metadata) => {
+  // Scheduled task logic - errors propagate to CloudWatch
+  await pruneOldRecords()
+  return {pruned: count}
+}))
 
 ## Best Practices
 
-✅ Use withXRay wrapper for tracing
-✅ Log incoming events with `logInfo('event <=', event)`
-✅ Use vendor wrappers for AWS SDK
-✅ Return proper API Gateway format
-✅ Handle errors with lambdaErrorResponse
+✅ Use `withXRay` wrapper for tracing
+✅ Use appropriate handler wrapper (`wrapApiHandler`, `wrapAuthorizer`, etc.)
+✅ Use vendor wrappers for AWS SDK (never import AWS SDK directly)
+✅ Return responses using `response()` helper
+✅ Throw errors instead of manual try-catch (wrapper handles it)
 ✅ Keep handler at bottom of file
+✅ Define record processing functions separately for event handlers
 
 ## Testing
 

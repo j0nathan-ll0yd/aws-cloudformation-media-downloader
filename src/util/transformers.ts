@@ -1,6 +1,5 @@
 import {DynamoDBFile, DownloadReadyNotification, MetadataNotification} from '#types/main'
 import {YtDlpVideoInfo} from '#types/youtube'
-import {logError} from './lambda-helpers'
 import {PublishInput} from '#lib/vendor/AWS/SNS'
 import {MessageAttributeValue, stringAttribute} from '#lib/vendor/AWS/SQS'
 
@@ -8,13 +7,6 @@ const MAX_DESCRIPTION_LENGTH = 500
 
 // Re-export for backwards compatibility
 export { unknownErrorToString } from './lambda-helpers'
-
-export function assertIsError(error: unknown): asserts error is Error {
-  logError('error', error)
-  if (!(error instanceof Error)) {
-    throw error
-  }
-}
 
 /**
  * Truncates description to MAX_DESCRIPTION_LENGTH to fit within APNS payload limits

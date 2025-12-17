@@ -1,6 +1,6 @@
 import {APIGatewayProxyResult, Context, ScheduledEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {logDebug, logInfo, putMetrics, response} from '#util/lambda-helpers'
+import {logDebug, logInfo, putMetrics, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -75,9 +75,7 @@ async function processFilesInBatches(fileIds: string[]): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening every X minutes
  * @param context - An AWS Context object
  */
-export const handler = withXRay(async (event: ScheduledEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logInfo('event', event)
-
+export const handler = withXRay(wrapApiHandler(async (_event: ScheduledEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
   // Query both pending and scheduled files in parallel
   const [pendingFileIds, scheduledFileIds] = await Promise.all([getPendingFileIds(), getScheduledFileIds()])
 
@@ -103,4 +101,4 @@ export const handler = withXRay(async (event: ScheduledEvent, context: Context):
 
   logInfo('All files processed', {total: allFileIds.length})
   return response(context, 200, {processed: allFileIds.length, pending: pendingFileIds.length, scheduled: scheduledFileIds.length})
-})
+}))

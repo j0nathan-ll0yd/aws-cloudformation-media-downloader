@@ -54,7 +54,9 @@ export default [
       semi: [2, 'never'],
       eofline: 0,
       'comma-dangle': ['error', 'never'],
-      'tsdoc/syntax': 'warn'
+      'tsdoc/syntax': 'warn',
+      // Allow underscore-prefixed params to indicate intentionally unused (common pattern for wrapper handlers)
+      '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_', varsIgnorePattern: '^_'}]
     }
   }
 ]

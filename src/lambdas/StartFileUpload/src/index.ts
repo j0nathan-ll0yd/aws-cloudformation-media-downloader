@@ -4,7 +4,7 @@ import {DynamoDBFile, StartFileUploadParams} from '#types/main'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
-import {assertIsError, createMetadataNotification} from '#util/transformers'
+import {createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
@@ -189,8 +189,8 @@ async function handleDownloadFailure(
   try {
     await upsertFile({fileId, status: FileStatus.Unavailable} as DynamoDBFile)
   } catch (updateError) {
-    assertIsError(updateError)
-    logDebug('Failed to update File entity status', updateError.message)
+    const message = updateError instanceof Error ? updateError.message : String(updateError)
+    logDebug('Failed to update File entity status', message)
   }
 
   await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
@@ -276,8 +276,8 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   try {
     uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName)
   } catch (error) {
-    assertIsError(error)
-    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+    const err = error instanceof Error ? error : new Error(String(error))
+    return handleDownloadFailure(fileId, fileUrl, err, videoInfoResult, existingRetryCount, existingMaxRetries, context)
   }
   logDebug('downloadVideoToS3 =>', uploadResult)
 

@@ -83,20 +83,22 @@ describe('#FileCoordinator', () => {
   })
 
   describe('#AWSFailure', () => {
-    test('should throw error when pending query fails', async () => {
-      const message = 'AWS request failed'
+    test('should return 500 when pending query fails', async () => {
       // First call (pending) returns undefined - simulating failure
       fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce(undefined)
-      await expect(handler(event, context)).rejects.toThrow(message)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      expect(JSON.parse(output.body).error.message).toEqual('AWS request failed')
     })
 
-    test('should throw error when scheduled query fails', async () => {
-      const message = 'AWS request failed'
+    test('should return 500 when scheduled query fails', async () => {
       // First call (pending) succeeds, second call (scheduled) fails
       fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
         .mockResolvedValueOnce({data: []})
         .mockResolvedValueOnce(undefined)
-      await expect(handler(event, context)).rejects.toThrow(message)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      expect(JSON.parse(output.body).error.message).toEqual('AWS request failed')
     })
   })
 })

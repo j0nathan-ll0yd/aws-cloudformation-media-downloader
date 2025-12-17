@@ -5,7 +5,6 @@ import {copyFile, stat, unlink} from 'fs/promises'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {logDebug, logError, putMetrics} from '#util/lambda-helpers'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
-import {assertIsError} from '#util/transformers'
 import {createS3Upload} from '../vendor/AWS/S3'
 import {getRequiredEnv} from '#util/env-validation'
 
@@ -99,15 +98,15 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
 
     return {success: true, info}
   } catch (error) {
-    assertIsError(error)
-    logDebug('fetchVideoInfo error', {uri, error: error.message})
+    const err = error instanceof Error ? error : new Error(String(error))
+    logDebug('fetchVideoInfo error', {uri, error: err.message})
 
-    const cookieError = isCookieExpirationError(error.message)
+    const cookieError = isCookieExpirationError(err.message)
     if (cookieError) {
-      logError('Cookie expiration detected', {message: error.message})
+      logError('Cookie expiration detected', {message: err.message})
     }
 
-    return {success: false, error, isCookieError: cookieError}
+    return {success: false, error: err, isCookieError: cookieError}
   }
 }
 
@@ -310,7 +309,6 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
     return {fileSize, s3Url, duration}
   } catch (error) {
-    assertIsError(error)
     logError('downloadVideoToS3 error', error)
 
     // Always try to clean up temp file
@@ -329,10 +327,11 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
     }
 
     // Check if error message contains cookie expiration indicators
-    if (isCookieExpirationError(error.message)) {
-      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${error.message}`)
+    const message = error instanceof Error ? error.message : String(error)
+    if (isCookieExpirationError(message)) {
+      throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${message}`)
     }
 
-    throw new UnexpectedError(`Failed to download video to S3: ${error.message}`)
+    throw new UnexpectedError(`Failed to download video to S3: ${message}`)
   }
 }

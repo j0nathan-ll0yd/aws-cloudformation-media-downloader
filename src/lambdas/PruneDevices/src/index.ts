@@ -1,11 +1,10 @@
-import {ScheduledEvent} from 'aws-lambda'
+import {Context, ScheduledEvent} from 'aws-lambda'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo, wrapScheduledHandler, WrapperMetadata} from '#util/lambda-helpers'
 import {UnexpectedError} from '#util/errors'
 import {ApplePushNotificationResponse, Device} from '#types/main'
 import {deleteDevice} from '#util/shared'
-import {assertIsError} from '#util/transformers'
 import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Apns2Error} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -96,8 +95,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * @returns PruneDevicesResult with counts of devices checked, pruned, and any errors
  * @notExported
  */
-export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevicesResult> => {
-  logInfo('event <=', event)
+export const handler = withXRay(wrapScheduledHandler(async (_event: ScheduledEvent, _context: Context, _metadata: WrapperMetadata): Promise<PruneDevicesResult> => {
   const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()
@@ -127,8 +125,8 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
         }
         result.devicesPruned++
       } catch (error) {
-        assertIsError(error)
-        const errorMessage = `Failed to properly remove device ${deviceId}: ${error.message}`
+        const message = error instanceof Error ? error.message : String(error)
+        const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
         logError(errorMessage)
         result.errors.push(errorMessage)
         // TODO: Trigger severe alarm with device details and requestId so it can be manually deleted later
@@ -138,4 +136,4 @@ export const handler = withXRay(async (event: ScheduledEvent): Promise<PruneDevi
 
   logInfo('PruneDevices completed', result)
   return result
-})
+}))
