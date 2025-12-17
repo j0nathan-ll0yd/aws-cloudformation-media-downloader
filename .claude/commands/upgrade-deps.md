@@ -6,7 +6,7 @@ Perform a full dependency upgrade workflow: update all packages, fix breaking ch
 
 1. First, list all open dependabot PRs:
 ```bash
-unset GITHUB_TOKEN && gh pr list --author "app/dependabot" --state open --json number,title,headRefName
+gh pr list --author "app/dependabot" --state open --json number,title,headRefName
 ```
 
 2. Check outdated packages:
@@ -99,7 +99,7 @@ git push -u origin chore/upgrade-dependencies
 ### Phase 6: Create PR
 
 ```bash
-unset GITHUB_TOKEN && gh pr create \
+gh pr create \
   --title "chore(deps): comprehensive dependency upgrade" \
   --body '## Summary
 - Upgrades all outdated dependencies to latest versions
@@ -115,10 +115,10 @@ unset GITHUB_TOKEN && gh pr create \
 
 ```bash
 # Watch CI status
-unset GITHUB_TOKEN && gh pr checks --watch
+gh pr checks --watch
 
 # After all checks pass, merge with squash
-unset GITHUB_TOKEN && gh pr merge --squash --delete-branch
+gh pr merge --squash --delete-branch
 ```
 
 ### Phase 8: Close Dependabot PRs
@@ -126,7 +126,7 @@ unset GITHUB_TOKEN && gh pr merge --squash --delete-branch
 Close each superseded dependabot PR:
 
 ```bash
-unset GITHUB_TOKEN && gh pr close <PR_NUMBER> --comment "Superseded by comprehensive dependency upgrade in #<NEW_PR>"
+gh pr close <PR_NUMBER> --comment "Superseded by comprehensive dependency upgrade in #<NEW_PR>"
 ```
 
 ### Phase 9: Cleanup
@@ -150,7 +150,6 @@ git worktree list
 
 ## Notes
 
-- **GitHub auth**: If you see 401 errors, the `GITHUB_TOKEN` env var may be invalid. Use `unset GITHUB_TOKEN` to fall back to keyring auth.
 - **AWS SDK alignment**: Per `docs/wiki/Methodologies/Dependabot-Resolution.md`, all AWS SDK packages must be updated together.
 - **Major version upgrades**: Check changelogs for Jest, Joi, glob, and other major bumps before proceeding.
 - **Pre-push hook**: The project runs `ci:local:full` on push, which includes integration tests with LocalStack.
