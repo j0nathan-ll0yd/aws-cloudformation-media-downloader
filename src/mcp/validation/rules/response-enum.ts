@@ -40,7 +40,9 @@ export const responseEnumRule: ValidationRule = {
       if (MAGIC_STATUS_STRINGS.includes(value)) {
         // Check context - is this in a response object?
         const parent = literal.getParent()
-        if (!parent) continue
+        if (!parent) {
+          continue
+        }
 
         // Check if part of a property assignment like { status: 'success' }
         if (parent.getKind() === SyntaxKind.PropertyAssignment) {
@@ -50,7 +52,8 @@ export const responseEnumRule: ValidationRule = {
           // Only flag if the property is 'status' or similar
           if (propName === 'status' || propName === 'state' || propName === 'result') {
             violations.push(
-              createViolation(RULE_NAME, SEVERITY, literal.getStartLineNumber(), `Magic string '${value}' used for ${propName}. Use ResponseStatus enum instead.`, {
+              createViolation(RULE_NAME, SEVERITY, literal.getStartLineNumber(),
+                `Magic string '${value}' used for ${propName}. Use ResponseStatus enum instead.`, {
                 suggestion: `Import ResponseStatus from '#types/main' and use ResponseStatus.${capitalize(value)}`,
                 codeSnippet: parent.getText()
               })

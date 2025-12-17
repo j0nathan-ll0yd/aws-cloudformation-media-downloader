@@ -8,7 +8,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 | Method | Count | Conventions |
 |--------|-------|-------------|
-| **MCP Rules** | 12 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting |
+| **MCP Rules** | 13 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync |
 | **Git Hooks** | 2 | AI attribution (commit-msg), direct master push (pre-push) |
 | **ESLint** | 3 | naming conventions, import order, unused vars |
 | **CI Workflows** | 2 | script validation, type checking |
@@ -31,6 +31,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 | import-order | imports | MEDIUM | Import grouping order |
 | response-enum | enum | MEDIUM | Magic status strings |
 | mock-formatting | mock | MEDIUM | Chained mock returns |
+| doc-sync | docs | HIGH | Documentation drift detection |
 
 ---
 
@@ -142,6 +143,17 @@ _No pending conventions - all conventions are documented._
 
 
 ## ✅ Recently Documented
+
+### Documented: 2025-12-17
+
+1. **Documentation Sync Validation** (Rule)
+   - **What**: Automated validation ensures AGENTS.md, wiki, GraphRAG metadata, and MCP rules stay in sync with source code
+   - **Why**: Prevents documentation drift that causes confusion for developers and AI assistants
+   - **Enforcement**: CI validation via `pnpm run validate:doc-sync` and MCP `doc-sync` rule
+   - **Checks**: Entity count, Lambda count, MCP rule count, path existence, stale patterns, GraphRAG metadata, wiki links
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Related Files**: bin/validate-doc-sync.sh, docs/doc-code-mapping.json, src/mcp/validation/rules/doc-sync.ts
 
 ### Documented: 2025-12-16
 
@@ -330,6 +342,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-12-16
-- **Total Conventions**: 30 detected, 30 documented, 0 pending
+- **Last Updated**: 2025-12-17
+- **Total Conventions**: 31 detected, 31 documented, 0 pending
 - **Convention Capture System**: Active

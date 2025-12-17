@@ -52,7 +52,9 @@ export const cascadeSafetyRule: ValidationRule = {
       // Check for Promise.all
       if (expressionText === 'Promise.all') {
         const args = call.getArguments()
-        if (args.length === 0) continue
+        if (args.length === 0) {
+          continue
+        }
 
         const firstArg = args[0]
         const argText = firstArg.getText()
@@ -63,16 +65,11 @@ export const cascadeSafetyRule: ValidationRule = {
         if (hasDeleteOps) {
           const line = call.getStartLineNumber()
           violations.push(
-            createViolation(
-              RULE_NAME,
-              SEVERITY,
-              line,
-              'Promise.all with delete operations detected. Use Promise.allSettled for cascade deletions to handle partial failures gracefully.',
-              {
-                suggestion: 'Replace Promise.all with Promise.allSettled and check results for rejected promises',
-                codeSnippet: call.getText().substring(0, 100)
-              }
-            )
+            createViolation(RULE_NAME, SEVERITY, line,
+              'Promise.all with delete operations detected. Use Promise.allSettled for cascade deletions to handle partial failures gracefully.', {
+              suggestion: 'Replace Promise.all with Promise.allSettled and check results for rejected promises',
+              codeSnippet: call.getText().substring(0, 100)
+            })
           )
         }
       }
@@ -108,23 +105,20 @@ export const cascadeSafetyRule: ValidationRule = {
 
       // Check if this is a parent entity
       const children = ENTITY_HIERARCHY[current.entity]
-      if (!children) continue
+      if (!children) {
+        continue
+      }
 
       // Check if any child deletions come AFTER this parent deletion
       for (let j = i + 1; j < deleteSequence.length; j++) {
         const later = deleteSequence[j]
         if (children.includes(later.entity)) {
           violations.push(
-            createViolation(
-              RULE_NAME,
-              SEVERITY,
-              current.line,
-              `Incorrect cascade order: ${current.entity} deleted before ${later.entity}. Delete child entities first.`,
-              {
-                suggestion: `Delete ${later.entity} before ${current.entity} to maintain referential integrity`,
-                codeSnippet: `${current.entity} deleted at line ${current.line}, ${later.entity} at line ${later.line}`
-              }
-            )
+            createViolation(RULE_NAME, SEVERITY, current.line,
+              `Incorrect cascade order: ${current.entity} deleted before ${later.entity}. Delete child entities first.`, {
+              suggestion: `Delete ${later.entity} before ${current.entity} to maintain referential integrity`,
+              codeSnippet: `${current.entity} deleted at line ${current.line}, ${later.entity} at line ${later.line}`
+            })
           )
         }
       }

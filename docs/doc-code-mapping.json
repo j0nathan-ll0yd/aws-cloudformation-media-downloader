@@ -1,0 +1,125 @@
+{
+  "$schema": "./doc-code-mapping.schema.json",
+  "version": "1.0.0",
+  "description": "Maps documentation claims to filesystem paths for validation. Used by bin/validate-doc-sync.sh",
+
+  "entityValidation": {
+    "documentedIn": "AGENTS.md",
+    "sourceDirectory": "src/entities",
+    "pattern": "*.ts",
+    "excludePatterns": ["*.test.ts", "index.ts"],
+    "assertion": "count-match",
+    "description": "Entity count in AGENTS.md project structure must match src/entities/*.ts files"
+  },
+
+  "lambdaValidation": {
+    "documentedIn": "AGENTS.md",
+    "sourceDirectory": "src/lambdas",
+    "tableSection": "### Lambda Trigger Patterns",
+    "assertion": "count-match",
+    "description": "Lambda count in trigger table must match src/lambdas/* directories"
+  },
+
+  "mcpRuleValidation": {
+    "documentedIn": ["src/mcp/validation/index.ts", "docs/wiki/MCP/Convention-Tools.md"],
+    "sourceDirectory": "src/mcp/validation/rules",
+    "pattern": "*.ts",
+    "excludePatterns": ["*.test.ts", "index.ts", "types.ts"],
+    "assertion": "count-match",
+    "description": "MCP validation rule files must match registered rules in index.ts"
+  },
+
+  "pathValidations": [
+    {
+      "documentedPath": "src/lib/vendor/AWS/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md", "docs/wiki/AWS/SDK-Encapsulation-Policy.md"]
+    },
+    {
+      "documentedPath": "src/lib/vendor/BetterAuth/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md"]
+    },
+    {
+      "documentedPath": "src/lib/vendor/ElectroDB/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md"]
+    },
+    {
+      "documentedPath": "src/mcp/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md"]
+    },
+    {
+      "documentedPath": "src/mcp/validation/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md", "docs/wiki/MCP/Convention-Tools.md"]
+    },
+    {
+      "documentedPath": "test/helpers/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md", "docs/wiki/Testing/ElectroDB-Testing-Patterns.md"]
+    },
+    {
+      "documentedPath": "graphrag/",
+      "mustExist": true,
+      "documentedIn": ["AGENTS.md"]
+    }
+  ],
+
+  "contentValidations": [
+    {
+      "file": "AGENTS.md",
+      "mustContain": "dprint",
+      "mustNotContain": "Prettier",
+      "description": "AGENTS.md must reference dprint (not Prettier)"
+    },
+    {
+      "file": "AGENTS.md",
+      "mustContain": "src/lib/vendor/",
+      "description": "AGENTS.md must use correct vendor path with src/ prefix"
+    }
+  ],
+
+  "relationshipValidations": [
+    {
+      "source": "graphrag/metadata.json",
+      "target": "src/entities",
+      "assertion": "entities-documented",
+      "description": "All entities in src/entities must appear in graphrag metadata entityRelationships"
+    }
+  ],
+
+  "wikiLinkValidation": {
+    "directory": "docs/wiki",
+    "pattern": "**/*.md",
+    "assertion": "links-resolve",
+    "description": "All relative markdown links in wiki must resolve to existing files"
+  },
+
+  "autoFixSuggestions": {
+    "entityCountMismatch": {
+      "command": "find src/entities -name '*.ts' ! -name '*.test.ts' ! -name 'index.ts' -exec basename {} \\;",
+      "action": "Update AGENTS.md project structure to include all entity files",
+      "severity": "HIGH"
+    },
+    "lambdaCountMismatch": {
+      "command": "find src/lambdas -mindepth 1 -maxdepth 1 -type d -exec basename {} \\;",
+      "action": "Update AGENTS.md Lambda Trigger Patterns table",
+      "severity": "HIGH"
+    },
+    "graphragMissing": {
+      "command": "pnpm run graphrag:extract",
+      "action": "Regenerate GraphRAG knowledge graph",
+      "severity": "MEDIUM"
+    },
+    "stalePattern": {
+      "patterns": {
+        "Prettier": "dprint",
+        "lib/vendor/AWS": "src/lib/vendor/AWS"
+      },
+      "action": "Replace outdated references in documentation",
+      "severity": "HIGH"
+    }
+  }
+}

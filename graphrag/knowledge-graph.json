@@ -444,6 +444,11 @@
       "relationship": "has_many"
     },
     {
+      "source": "entity:Files",
+      "target": "entity:FileDownloads",
+      "relationship": "has_many"
+    },
+    {
       "source": "entity:Devices",
       "target": "entity:UserDevices",
       "relationship": "has_many"
@@ -475,6 +480,21 @@
     },
     {
       "source": "entity:Accounts",
+      "target": "entity:Users",
+      "relationship": "belongs_to"
+    },
+    {
+      "source": "entity:FileDownloads",
+      "target": "entity:Files",
+      "relationship": "belongs_to"
+    },
+    {
+      "source": "entity:Users",
+      "target": "entity:VerificationTokens",
+      "relationship": "has_many"
+    },
+    {
+      "source": "entity:VerificationTokens",
       "target": "entity:Users",
       "relationship": "belongs_to"
     },

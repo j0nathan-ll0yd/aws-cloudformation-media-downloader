@@ -56,6 +56,9 @@ jobs:
     - name: Validate documented scripts exist
       run: ./bin/validate-docs.sh
 
+    - name: Validate documentation sync
+      run: pnpm run validate:doc-sync
+
     - name: Validate configuration enforcement
       run: pnpm run validate:config
 

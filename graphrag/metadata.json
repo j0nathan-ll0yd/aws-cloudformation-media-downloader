@@ -93,13 +93,17 @@
     { "from": "Users", "to": "Sessions", "type": "has_many" },
     { "from": "Users", "to": "Accounts", "type": "has_many" },
     { "from": "Files", "to": "UserFiles", "type": "has_many" },
+    { "from": "Files", "to": "FileDownloads", "type": "has_many" },
     { "from": "Devices", "to": "UserDevices", "type": "has_many" },
     { "from": "UserFiles", "to": "Users", "type": "belongs_to" },
     { "from": "UserFiles", "to": "Files", "type": "belongs_to" },
     { "from": "UserDevices", "to": "Users", "type": "belongs_to" },
     { "from": "UserDevices", "to": "Devices", "type": "belongs_to" },
     { "from": "Sessions", "to": "Users", "type": "belongs_to" },
-    { "from": "Accounts", "to": "Users", "type": "belongs_to" }
+    { "from": "Accounts", "to": "Users", "type": "belongs_to" },
+    { "from": "FileDownloads", "to": "Files", "type": "belongs_to" },
+    { "from": "Users", "to": "VerificationTokens", "type": "has_many" },
+    { "from": "VerificationTokens", "to": "Users", "type": "belongs_to" }
   ],
   "lambdaInvocations": [
     { "from": "FileCoordinator", "to": "StartFileUpload", "via": "Lambda invokeAsync" },

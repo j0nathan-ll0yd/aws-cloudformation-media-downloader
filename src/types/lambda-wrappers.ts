@@ -16,29 +16,13 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from './main'
 export type WrapperMetadata = {traceId: string}
 
 /** Parameters passed to wrapped API Gateway handlers */
-export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
-  event: TEvent
-  context: Context
-  metadata: WrapperMetadata
-}
+export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {event: TEvent; context: Context; metadata: WrapperMetadata}
 
 /** Parameters passed to wrapped authorizer handlers */
-export type AuthorizerParams = {
-  event: APIGatewayRequestAuthorizerEvent
-  context: Context
-  metadata: WrapperMetadata
-}
+export type AuthorizerParams = {event: APIGatewayRequestAuthorizerEvent; context: Context; metadata: WrapperMetadata}
 
 /** Parameters passed to wrapped event handlers (S3, SQS) */
-export type EventHandlerParams<TRecord> = {
-  record: TRecord
-  context: Context
-  metadata: WrapperMetadata
-}
+export type EventHandlerParams<TRecord> = {record: TRecord; context: Context; metadata: WrapperMetadata}
 
 /** Parameters passed to wrapped scheduled handlers */
-export type ScheduledHandlerParams = {
-  event: ScheduledEvent
-  context: Context
-  metadata: WrapperMetadata
-}
+export type ScheduledHandlerParams = {event: ScheduledEvent; context: Context; metadata: WrapperMetadata}

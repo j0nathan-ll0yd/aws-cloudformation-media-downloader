@@ -54,11 +54,7 @@ describe('types-location rule', () => {
 
   describe('detects exported type alias', () => {
     test('should detect exported type alias in util file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-type-alias.ts',
-        'export type FooConfig = { bar: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-type-alias.ts', 'export type FooConfig = { bar: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/foo-helpers.ts')
 
@@ -68,13 +64,9 @@ describe('types-location rule', () => {
     })
 
     test('should detect multiple exported type aliases', () => {
-      const sourceFile = project.createSourceFile(
-        'test-multi-types.ts',
-        `export type Config = { value: string }
+      const sourceFile = project.createSourceFile('test-multi-types.ts', `export type Config = { value: string }
 export type Options = { enabled: boolean }
-export type Params = { id: number }`,
-        {overwrite: true}
-      )
+export type Params = { id: number }`, {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.ts')
 
@@ -84,11 +76,7 @@ export type Params = { id: number }`,
 
   describe('detects exported interface', () => {
     test('should detect exported interface in util file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-interface.ts',
-        'export interface BarResult { success: boolean }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-interface.ts', 'export interface BarResult { success: boolean }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/bar-helpers.ts')
 
@@ -97,11 +85,7 @@ export type Params = { id: number }`,
     })
 
     test('should detect exported interface in lambda file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-lambda-interface.ts',
-        'export interface HandlerParams { event: object }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-lambda-interface.ts', 'export interface HandlerParams { event: object }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/lambdas/MyLambda/src/index.ts')
 
@@ -111,11 +95,7 @@ export type Params = { id: number }`,
 
   describe('detects exported enum', () => {
     test('should detect exported enum in util file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-enum.ts',
-        'export enum Status { Pending = "pending", Active = "active" }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-enum.ts', 'export enum Status { Pending = "pending", Active = "active" }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/status.ts')
 
@@ -126,13 +106,9 @@ export type Params = { id: number }`,
 
   describe('allows types in src/types/ directory', () => {
     test('should allow exported types in types directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-types-allowed.ts',
-        `export type Config = { value: string }
+      const sourceFile = project.createSourceFile('test-types-allowed.ts', `export type Config = { value: string }
 export interface Options { enabled: boolean }
-export enum Status { Active }`,
-        {overwrite: true}
-      )
+export enum Status { Active }`, {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/types/main.ts')
 
@@ -140,11 +116,7 @@ export enum Status { Active }`,
     })
 
     test('should allow nested types in types directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-types-nested.ts',
-        'export type VendorConfig = { apiKey: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-types-nested.ts', 'export type VendorConfig = { apiKey: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/types/vendor/aws.ts')
 
@@ -154,12 +126,8 @@ export enum Status { Active }`,
 
   describe('allows entity-derived types in entities directory', () => {
     test('should allow types in entities directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-entity-types.ts',
-        `export type FileItem = { fileId: string }
-export interface UserItem { userId: string }`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-entity-types.ts', `export type FileItem = { fileId: string }
+export interface UserItem { userId: string }`, {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/entities/Files.ts')
 
@@ -169,12 +137,8 @@ export interface UserItem { userId: string }`,
 
   describe('allows MCP types in mcp directory', () => {
     test('should allow types in mcp directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-mcp-types.ts',
-        `export type Violation = { rule: string }
-export interface ValidationRule { name: string }`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-mcp-types.ts', `export type Violation = { rule: string }
+export interface ValidationRule { name: string }`, {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/mcp/validation/types.ts')
 
@@ -184,11 +148,7 @@ export interface ValidationRule { name: string }`,
 
   describe('allows types in vendor directory', () => {
     test('should allow types in vendor directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-vendor-types.ts',
-        'export type S3UploadResult = { bucket: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-vendor-types.ts', 'export type S3UploadResult = { bucket: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/lib/vendor/AWS/S3.ts')
 
@@ -198,11 +158,7 @@ export interface ValidationRule { name: string }`,
 
   describe('ignores non-exported types', () => {
     test('should ignore internal type alias', () => {
-      const sourceFile = project.createSourceFile(
-        'test-internal-type.ts',
-        'type InternalConfig = { value: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-internal-type.ts', 'type InternalConfig = { value: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.ts')
 
@@ -210,11 +166,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should ignore internal interface', () => {
-      const sourceFile = project.createSourceFile(
-        'test-internal-interface.ts',
-        'interface InternalOptions { enabled: boolean }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-internal-interface.ts', 'interface InternalOptions { enabled: boolean }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.ts')
 
@@ -222,11 +174,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should ignore internal enum', () => {
-      const sourceFile = project.createSourceFile(
-        'test-internal-enum.ts',
-        'enum InternalStatus { Active }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-internal-enum.ts', 'enum InternalStatus { Active }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.ts')
 
@@ -236,11 +184,7 @@ export interface ValidationRule { name: string }`,
 
   describe('ignores test files', () => {
     test('should ignore types in test files', () => {
-      const sourceFile = project.createSourceFile(
-        'test-in-test.ts',
-        'export type MockConfig = { value: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-in-test.ts', 'export type MockConfig = { value: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.test.ts')
 
@@ -248,11 +192,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should ignore types in test directory', () => {
-      const sourceFile = project.createSourceFile(
-        'test-in-test-dir.ts',
-        'export interface TestFixture { data: object }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-in-test-dir.ts', 'export interface TestFixture { data: object }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'test/helpers/fixtures.ts')
 
@@ -262,11 +202,7 @@ export interface ValidationRule { name: string }`,
 
   describe('provides helpful suggestions', () => {
     test('should suggest lambda-wrappers.ts for lambda-helpers file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-suggestion-lambda.ts',
-        'export type HandlerParams = { event: object }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-suggestion-lambda.ts', 'export type HandlerParams = { event: object }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/lambda-helpers.ts')
 
@@ -274,11 +210,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should suggest video.ts for video-error-classifier file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-suggestion-video.ts',
-        'export type VideoError = { message: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-suggestion-video.ts', 'export type VideoError = { message: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/video-error-classifier.ts')
 
@@ -286,11 +218,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should suggest util.ts for retry file', () => {
-      const sourceFile = project.createSourceFile(
-        'test-suggestion-retry.ts',
-        'export interface RetryConfig { maxRetries: number }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-suggestion-retry.ts', 'export interface RetryConfig { maxRetries: number }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/retry.ts')
 
@@ -298,11 +226,7 @@ export interface ValidationRule { name: string }`,
     })
 
     test('should suggest main.ts for unknown files', () => {
-      const sourceFile = project.createSourceFile(
-        'test-suggestion-unknown.ts',
-        'export type SomeType = { value: string }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-suggestion-unknown.ts', 'export type SomeType = { value: string }', {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/unknown.ts')
 
@@ -312,11 +236,9 @@ export interface ValidationRule { name: string }`,
 
   describe('includes code context', () => {
     test('should include code snippet in violation', () => {
-      const sourceFile = project.createSourceFile(
-        'test-snippet.ts',
-        'export type ConfigWithLongName = { value: string; enabled: boolean }',
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-snippet.ts', 'export type ConfigWithLongName = { value: string; enabled: boolean }', {
+        overwrite: true
+      })
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/helpers.ts')
 

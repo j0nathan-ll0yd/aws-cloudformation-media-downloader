@@ -30,12 +30,8 @@ describe('scan-pagination rule', () => {
     test('should detect scan property access pattern', () => {
       // The rule looks for .scan property access followed by .go()
       // This test verifies the rule can identify scan patterns
-      const sourceFile = project.createSourceFile(
-        'test-scan.ts',
-        `const scanOp = Users.scan
-const items = await scanOp.go()`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-scan.ts', `const scanOp = Users.scan
+const items = await scanOp.go()`, {overwrite: true})
 
       const violations = scanPaginationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

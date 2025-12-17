@@ -42,11 +42,20 @@ const ALLOWED_ESLINT_IGNORES = [
 /**
  * TSConfig strict mode settings that should never be disabled
  */
-const STRICT_TSCONFIG_SETTINGS = ['strict', 'noUnusedLocals', 'noUnusedParameters', 'noImplicitAny', 'noImplicitThis', 'noImplicitReturns', 'noFallthroughCasesInSwitch']
+const STRICT_TSCONFIG_SETTINGS = [
+  'strict',
+  'noUnusedLocals',
+  'noUnusedParameters',
+  'noImplicitAny',
+  'noImplicitThis',
+  'noImplicitReturns',
+  'noFallthroughCasesInSwitch'
+]
 
 export const configEnforcementRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Detects configuration changes that weaken project enforcement standards. Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused _vars"',
+  description:
+    'Detects configuration changes that weaken project enforcement standards. Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused _vars"',
   severity: SEVERITY,
   appliesTo: ['eslint.config.mjs', 'tsconfig.json', 'dprint.json'],
   excludes: [],
@@ -82,9 +91,12 @@ function validateEslintConfig(text: string): Violation[] {
     if (pattern.test(text)) {
       const lineNumber = findLineNumber(text, pattern)
       violations.push(
-        createViolation(RULE_NAME, SEVERITY, lineNumber, `Underscore ignore pattern "${name}" detected in no-unused-vars rule. This violates AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused _vars"`, {
-          suggestion: 'Use object destructuring in function signatures instead of underscore-prefixed unused parameters. For wrappers, use ApiHandlerParams/AuthorizerParams/EventHandlerParams types.'
-        })
+        createViolation(RULE_NAME, SEVERITY, lineNumber,
+          `Underscore ignore pattern "${name}" detected in no-unused-vars rule. This violates AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused _vars"`,
+          {
+            suggestion:
+              'Use object destructuring in function signatures instead of underscore-prefixed unused parameters. For wrappers, use ApiHandlerParams/AuthorizerParams/EventHandlerParams types.'
+          })
       )
     }
   }
@@ -121,7 +133,8 @@ function validateTsConfig(text: string): Violation[] {
     for (const setting of STRICT_TSCONFIG_SETTINGS) {
       if (setting in compilerOptions && compilerOptions[setting] === false) {
         violations.push(
-          createViolation(RULE_NAME, SEVERITY, findLineNumberForString(text, `"${setting}"`), `Strict TypeScript setting "${setting}" is disabled. This weakens type safety.`, {
+          createViolation(RULE_NAME, SEVERITY, findLineNumberForString(text, `"${setting}"`),
+            `Strict TypeScript setting "${setting}" is disabled. This weakens type safety.`, {
             suggestion: `Set "${setting}": true to maintain type safety standards`
           })
         )
@@ -143,7 +156,8 @@ function validateDprintConfig(text: string): Violation[] {
     // Check for excessively wide line width (relaxation from project standards)
     if (config.lineWidth && config.lineWidth > 200) {
       violations.push(
-        createViolation(RULE_NAME, 'MEDIUM', findLineNumberForString(text, '"lineWidth"'), `Line width ${config.lineWidth} exceeds recommended maximum of 200 characters`, {
+        createViolation(RULE_NAME, 'MEDIUM', findLineNumberForString(text, '"lineWidth"'),
+          `Line width ${config.lineWidth} exceeds recommended maximum of 200 characters`, {
           suggestion: 'Keep line width at or below 200 characters for readability'
         })
       )
@@ -152,7 +166,9 @@ function validateDprintConfig(text: string): Violation[] {
     // Check for tabs (project standardized on spaces)
     if (config.useTabs === true) {
       violations.push(
-        createViolation(RULE_NAME, 'MEDIUM', findLineNumberForString(text, '"useTabs"'), 'Tab indentation is not allowed (project standardized on spaces)', {suggestion: 'Set "useTabs": false'})
+        createViolation(RULE_NAME, 'MEDIUM', findLineNumberForString(text, '"useTabs"'), 'Tab indentation is not allowed (project standardized on spaces)', {
+          suggestion: 'Set "useTabs": false'
+        })
       )
     }
   } catch {
@@ -164,12 +180,16 @@ function validateDprintConfig(text: string): Violation[] {
 
 function findLineNumber(text: string, pattern: RegExp): number {
   const match = text.match(pattern)
-  if (!match || match.index === undefined) return 1
+  if (!match || match.index === undefined) {
+    return 1
+  }
   return text.substring(0, match.index).split('\n').length
 }
 
 function findLineNumberForString(text: string, searchString: string): number {
   const index = text.indexOf(searchString)
-  if (index === -1) return 1
+  if (index === -1) {
+    return 1
+  }
   return text.substring(0, index).split('\n').length
 }

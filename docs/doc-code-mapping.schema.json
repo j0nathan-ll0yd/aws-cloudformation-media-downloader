@@ -1,0 +1,219 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "doc-code-mapping.schema.json",
+  "title": "Documentation-Code Mapping",
+  "description": "Schema for mapping documentation assertions to filesystem paths for validation",
+  "type": "object",
+  "required": ["version", "description"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the mapping file"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the mapping file purpose"
+    },
+    "entityValidation": {
+      "$ref": "#/definitions/countValidation",
+      "description": "Validates entity file count matches documentation"
+    },
+    "lambdaValidation": {
+      "$ref": "#/definitions/countValidation",
+      "description": "Validates Lambda directory count matches documentation"
+    },
+    "mcpRuleValidation": {
+      "$ref": "#/definitions/countValidation",
+      "description": "Validates MCP validation rule count matches documentation"
+    },
+    "pathValidations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/pathValidation"
+      },
+      "description": "List of paths that must exist in filesystem"
+    },
+    "contentValidations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/contentValidation"
+      },
+      "description": "Content pattern validations for documentation files"
+    },
+    "relationshipValidations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/relationshipValidation"
+      },
+      "description": "Cross-file relationship validations"
+    },
+    "wikiLinkValidation": {
+      "$ref": "#/definitions/wikiLinkValidation",
+      "description": "Wiki internal link validation configuration"
+    },
+    "autoFixSuggestions": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/autoFixSuggestion"
+      },
+      "description": "Auto-fix suggestions for common validation failures"
+    }
+  },
+  "definitions": {
+    "countValidation": {
+      "type": "object",
+      "required": ["documentedIn", "sourceDirectory", "assertion"],
+      "properties": {
+        "documentedIn": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "File(s) where the count is documented"
+        },
+        "sourceDirectory": {
+          "type": "string",
+          "description": "Directory to count items from"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Glob pattern for files to count"
+        },
+        "excludePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns to exclude from count"
+        },
+        "tableSection": {
+          "type": "string",
+          "description": "Markdown section header containing the count table"
+        },
+        "assertion": {
+          "type": "string",
+          "enum": ["count-match"],
+          "description": "Type of assertion to perform"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this validation"
+        }
+      }
+    },
+    "pathValidation": {
+      "type": "object",
+      "required": ["documentedPath", "mustExist", "documentedIn"],
+      "properties": {
+        "documentedPath": {
+          "type": "string",
+          "description": "Path that is referenced in documentation"
+        },
+        "mustExist": {
+          "type": "boolean",
+          "description": "Whether the path must exist in filesystem"
+        },
+        "documentedIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Documentation files that reference this path"
+        }
+      }
+    },
+    "contentValidation": {
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "File to check content in"
+        },
+        "mustContain": {
+          "type": "string",
+          "description": "Pattern that must be present in the file"
+        },
+        "mustNotContain": {
+          "type": "string",
+          "description": "Pattern that must NOT be present in the file"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this validation"
+        }
+      }
+    },
+    "relationshipValidation": {
+      "type": "object",
+      "required": ["source", "target", "assertion"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Source file to check"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target directory or file to validate against"
+        },
+        "assertion": {
+          "type": "string",
+          "enum": ["entities-documented", "lambdas-documented", "all-referenced"],
+          "description": "Type of relationship assertion"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this validation"
+        }
+      }
+    },
+    "wikiLinkValidation": {
+      "type": "object",
+      "required": ["directory", "pattern", "assertion"],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "Root directory for wiki files"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Glob pattern for wiki files"
+        },
+        "assertion": {
+          "type": "string",
+          "enum": ["links-resolve"],
+          "description": "Type of link assertion"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        }
+      }
+    },
+    "autoFixSuggestion": {
+      "type": "object",
+      "required": ["action", "severity"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Shell command to help diagnose or fix the issue"
+        },
+        "patterns": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Find/replace patterns for stale content"
+        },
+        "action": {
+          "type": "string",
+          "description": "Human-readable action to take"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+          "description": "Severity of the issue"
+        }
+      }
+    }
+  }
+}

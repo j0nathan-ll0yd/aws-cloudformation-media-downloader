@@ -32,6 +32,7 @@
     "ci:local": "./bin/ci-local.sh",
     "ci:local:full": "./bin/ci-local-full.sh",
     "validate:docs": "./bin/validate-docs.sh",
+    "validate:doc-sync": "./bin/validate-doc-sync.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "validate:config": "node --disable-warning=DEP0180 --import tsx scripts/validateConfig.ts",
     "lint:workflows": "actionlint",

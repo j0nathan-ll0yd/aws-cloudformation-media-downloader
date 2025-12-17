@@ -40,12 +40,8 @@ describe('env-validation rule', () => {
 
   describe('detects direct process.env access', () => {
     test('should detect process.env.VARIABLE_NAME', () => {
-      const sourceFile = project.createSourceFile(
-        'test-env.ts',
-        `const region = process.env.AWS_REGION
-export const handler = () => region`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-env.ts', `const region = process.env.AWS_REGION
+export const handler = () => region`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -55,13 +51,9 @@ export const handler = () => region`,
     })
 
     test('should detect multiple process.env accesses', () => {
-      const sourceFile = project.createSourceFile(
-        'test-multi-env.ts',
-        `const region = process.env.AWS_REGION
+      const sourceFile = project.createSourceFile('test-multi-env.ts', `const region = process.env.AWS_REGION
 const bucket = process.env.S3_BUCKET_NAME
-const table = process.env.DYNAMODB_TABLE_NAME`,
-        {overwrite: true}
-      )
+const table = process.env.DYNAMODB_TABLE_NAME`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -69,13 +61,9 @@ const table = process.env.DYNAMODB_TABLE_NAME`,
     })
 
     test('should detect process.env in function body', () => {
-      const sourceFile = project.createSourceFile(
-        'test-func-env.ts',
-        `export function getConfig() {
+      const sourceFile = project.createSourceFile('test-func-env.ts', `export function getConfig() {
   return process.env.MY_CONFIG
-}`,
-        {overwrite: true}
-      )
+}`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -105,12 +93,8 @@ const table = process.env.DYNAMODB_TABLE_NAME`,
 
   describe('allows valid patterns', () => {
     test('should allow getRequiredEnv() helper', () => {
-      const sourceFile = project.createSourceFile(
-        'test-valid.ts',
-        `import {getRequiredEnv} from '#util/env-validation'
-const region = getRequiredEnv('AWS_REGION')`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-valid.ts', `import {getRequiredEnv} from '#util/env-validation'
+const region = getRequiredEnv('AWS_REGION')`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -118,12 +102,8 @@ const region = getRequiredEnv('AWS_REGION')`,
     })
 
     test('should allow getRequiredEnvNumber() helper', () => {
-      const sourceFile = project.createSourceFile(
-        'test-valid-number.ts',
-        `import {getRequiredEnvNumber} from '#util/env-validation'
-const timeout = getRequiredEnvNumber('TIMEOUT_MS')`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-valid-number.ts', `import {getRequiredEnvNumber} from '#util/env-validation'
+const timeout = getRequiredEnvNumber('TIMEOUT_MS')`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -131,14 +111,10 @@ const timeout = getRequiredEnvNumber('TIMEOUT_MS')`,
     })
 
     test('should allow code without process.env', () => {
-      const sourceFile = project.createSourceFile(
-        'test-no-env.ts',
-        `import {Users} from '#entities/Users'
+      const sourceFile = project.createSourceFile('test-no-env.ts', `import {Users} from '#entities/Users'
 export const handler = async () => {
   return await Users.get({userId: '123'}).go()
-}`,
-        {overwrite: true}
-      )
+}`, {overwrite: true})
 
       const violations = envValidationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

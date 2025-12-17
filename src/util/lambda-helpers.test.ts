@@ -300,12 +300,9 @@ describe('lambda-helpers', () => {
     it('should process all records successfully', async () => {
       const {wrapEventHandler} = await import('./lambda-helpers')
       const processedRecords: string[] = []
-      const handler = wrapEventHandler(
-        async ({record}: {record: {id: string}; context: Context; metadata: {traceId: string}}) => {
-          processedRecords.push(record.id)
-        },
-        {getRecords: (event: {records: {id: string}[]}) => event.records}
-      )
+      const handler = wrapEventHandler(async ({record}: {record: {id: string}; context: Context; metadata: {traceId: string}}) => {
+        processedRecords.push(record.id)
+      }, {getRecords: (event: {records: {id: string}[]}) => event.records})
 
       await handler({records: [{id: '1'}, {id: '2'}, {id: '3'}]}, mockContext)
 
@@ -316,15 +313,12 @@ describe('lambda-helpers', () => {
       const {wrapEventHandler} = await import('./lambda-helpers')
       const processedRecords: string[] = []
       type RecordType = {id: string; shouldFail?: boolean}
-      const handler = wrapEventHandler(
-        async ({record}: {record: RecordType; context: Context; metadata: {traceId: string}}) => {
-          if (record.shouldFail) {
-            throw new Error(`Record ${record.id} failed`)
-          }
-          processedRecords.push(record.id)
-        },
-        {getRecords: (event: {records: RecordType[]}) => event.records}
-      )
+      const handler = wrapEventHandler(async ({record}: {record: RecordType; context: Context; metadata: {traceId: string}}) => {
+        if (record.shouldFail) {
+          throw new Error(`Record ${record.id} failed`)
+        }
+        processedRecords.push(record.id)
+      }, {getRecords: (event: {records: RecordType[]}) => event.records})
 
       await handler({records: [{id: '1'}, {id: '2', shouldFail: true}, {id: '3'}]}, mockContext)
 
