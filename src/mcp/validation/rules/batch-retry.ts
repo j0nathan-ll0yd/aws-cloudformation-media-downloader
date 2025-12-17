@@ -64,7 +64,8 @@ export const batchRetryRule: ValidationRule = {
 
           if (!isWrapped && !hasRetryNearby) {
             violations.push(
-              createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(), `Batch operation '${pattern}' without retry handling. Wrap with retryUnprocessed() to handle unprocessed items.`, {
+              createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
+                `Batch operation '${pattern}' without retry handling. Wrap with retryUnprocessed() to handle unprocessed items.`, {
                 suggestion: `Use retryUnprocessed(${pattern}(...)) from '#util/retry'`,
                 codeSnippet: callText.substring(0, 80)
               })

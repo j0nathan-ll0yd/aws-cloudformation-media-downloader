@@ -44,17 +44,27 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │   ├── entities/          # ElectroDB entity definitions (single-table design)
 │   │   ├── Collections.ts # Service combining entities for JOIN-like queries
 │   │   ├── Files.ts       # File entity
+│   │   ├── FileDownloads.ts # Download tracking entity
 │   │   ├── Users.ts       # User entity
 │   │   ├── Devices.ts     # Device entity
 │   │   ├── UserFiles.ts   # User-File relationships
-│   │   └── UserDevices.ts # User-Device relationships
-│   └── lambdas/           # Lambda functions (each subdirectory = one Lambda)
-│       └── [lambda-name]/
-│           ├── src/index.ts         # Lambda handler
-│           └── test/index.test.ts  # Unit tests
-├── lib/vendor/            # 3rd party API wrappers & AWS SDK encapsulation
-│   ├── AWS/               # AWS SDK vendor wrappers
-│   └── ElectroDB/         # ElectroDB configuration & service
+│   │   ├── UserDevices.ts # User-Device relationships
+│   │   ├── Sessions.ts    # Better Auth session entity
+│   │   ├── Accounts.ts    # Better Auth OAuth account entity
+│   │   └── VerificationTokens.ts # Better Auth verification tokens
+│   ├── lambdas/           # Lambda functions (each subdirectory = one Lambda)
+│   │   └── [lambda-name]/
+│   │       ├── src/index.ts         # Lambda handler
+│   │       └── test/index.test.ts   # Unit tests
+│   ├── lib/vendor/        # 3rd party API wrappers & AWS SDK encapsulation
+│   │   ├── AWS/           # AWS SDK vendor wrappers (src/lib/vendor/AWS/)
+│   │   ├── BetterAuth/    # Better Auth configuration & ElectroDB adapter
+│   │   ├── ElectroDB/     # ElectroDB configuration & service
+│   │   └── YouTube.ts     # YouTube/yt-dlp wrapper
+│   └── mcp/               # Model Context Protocol server & validation
+│       ├── server.ts      # MCP server entry point
+│       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
+│       └── validation/    # AST-based convention enforcement (13 rules)
 ├── test/helpers/          # Test utilities
 │   └── electrodb-mock.ts  # ElectroDB mock helper for unit tests
 ├── types/                 # TypeScript type definitions
@@ -118,7 +128,10 @@ graph TD
 erDiagram
     USERS ||--o{ USER_FILES : has
     USERS ||--o{ USER_DEVICES : owns
+    USERS ||--o{ SESSIONS : has
+    USERS ||--o{ ACCOUNTS : has
     FILES ||--o{ USER_FILES : shared_with
+    FILES ||--o{ FILE_DOWNLOADS : tracks
     DEVICES ||--o{ USER_DEVICES : registered_to
 
     USERS {
@@ -137,11 +150,39 @@ erDiagram
         timestamp createdAt
     }
 
+    FILE_DOWNLOADS {
+        string downloadId PK
+        string fileId FK
+        string status
+        timestamp startedAt
+        timestamp completedAt
+    }
+
     DEVICES {
         string deviceId PK
         string deviceToken
         string platform
         timestamp lastActive
+    }
+
+    SESSIONS {
+        string sessionId PK
+        string userId FK
+        string token
+        timestamp expiresAt
+    }
+
+    ACCOUNTS {
+        string accountId PK
+        string userId FK
+        string provider
+        string providerAccountId
+    }
+
+    VERIFICATION_TOKENS {
+        string token PK
+        string identifier
+        timestamp expiresAt
     }
 
     USER_FILES {
@@ -289,8 +330,16 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 ### Entity Relationships
 - **Users** ↔ **Files**: Many-to-many via UserFiles entity
 - **Users** ↔ **Devices**: Many-to-many via UserDevices entity
+- **Users** ↔ **Sessions**: One-to-many (Better Auth sessions)
+- **Users** ↔ **Accounts**: One-to-many (Better Auth OAuth accounts)
+- **Files** ↔ **FileDownloads**: One-to-many (download tracking)
+
+### Collections (JOIN-like Queries)
 - **Collections.userResources**: Query all files & devices for a user in one call
 - **Collections.fileUsers**: Get all users associated with a file (for notifications)
+- **Collections.deviceUsers**: Get all users associated with a device (for cleanup)
+- **Collections.userSessions**: Get all sessions for a user (Better Auth)
+- **Collections.userAccounts**: Get all OAuth accounts for a user (Better Auth)
 
 ### Testing with ElectroDB
 - **ALWAYS** use `test/helpers/electrodb-mock.ts` for mocking entities
@@ -326,7 +375,7 @@ pnpm run precheck       # TypeScript type checking and lint (run before commits)
 pnpm run build          # Build Lambda functions with webpack
 pnpm run test           # Run unit tests
 pnpm run deploy         # Deploy infrastructure with OpenTofu
-pnpm run format         # Auto-format with Prettier (250 char lines)
+pnpm run format         # Auto-format with dprint (157 char lines)
 
 # Local CI (run before pushing)
 pnpm run ci:local                # Fast CI checks (~2-3 min, no integration)

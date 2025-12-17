@@ -1,4 +1,15 @@
-import {APIGatewayProxyEventHeaders, APIGatewayProxyResult, APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, S3Event, S3EventRecord, ScheduledEvent, SQSEvent, SQSRecord} from 'aws-lambda'
+import {
+  APIGatewayProxyEventHeaders,
+  APIGatewayProxyResult,
+  APIGatewayRequestAuthorizerEvent,
+  Context,
+  CustomAuthorizerResult,
+  S3Event,
+  S3EventRecord,
+  ScheduledEvent,
+  SQSEvent,
+  SQSRecord
+} from 'aws-lambda'
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'

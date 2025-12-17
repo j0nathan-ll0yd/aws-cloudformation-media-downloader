@@ -53,12 +53,8 @@ describe('mock-formatting rule', () => {
 
   describe('allows valid patterns', () => {
     test('should allow separate mock statements', () => {
-      const sourceFile = project.createSourceFile(
-        'test-separate.ts',
-        `mockFn.mockResolvedValueOnce(a)
-mockFn.mockResolvedValueOnce(b)`,
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('test-separate.ts', `mockFn.mockResolvedValueOnce(a)
+mockFn.mockResolvedValueOnce(b)`, {overwrite: true})
 
       const violations = mockFormattingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 

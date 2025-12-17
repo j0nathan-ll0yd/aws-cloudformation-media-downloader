@@ -54,16 +54,10 @@ export const scanPaginationRule: ValidationRule = {
 
           if (!isWrapped) {
             violations.push(
-              createViolation(
-                RULE_NAME,
-                SEVERITY,
-                lineNum,
-                'Scan operation without pagination handling. DynamoDB returns max 1MB per request.',
-                {
-                  suggestion: "Use scanAllPages(Entity.scan) from '#util/pagination' for complete results",
-                  codeSnippet: fullText.substring(0, 80)
-                }
-              )
+              createViolation(RULE_NAME, SEVERITY, lineNum, 'Scan operation without pagination handling. DynamoDB returns max 1MB per request.', {
+                suggestion: "Use scanAllPages(Entity.scan) from '#util/pagination' for complete results",
+                codeSnippet: fullText.substring(0, 80)
+              })
             )
           }
         }

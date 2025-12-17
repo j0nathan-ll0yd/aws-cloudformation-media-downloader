@@ -23,8 +23,9 @@ import {batchRetryRule} from './rules/batch-retry'
 import {scanPaginationRule} from './rules/scan-pagination'
 import {responseEnumRule} from './rules/response-enum'
 import {mockFormattingRule} from './rules/mock-formatting'
+import {docSyncRule} from './rules/doc-sync'
 
-// Export all rules (12 total: 6 existing + 6 new)
+// Export all rules (13 total: 6 CRITICAL + 4 HIGH + 3 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -40,7 +41,9 @@ export const allRules: ValidationRule[] = [
   // MEDIUM
   importOrderRule,
   responseEnumRule,
-  mockFormattingRule
+  mockFormattingRule,
+  // HIGH (documentation)
+  docSyncRule
 ]
 
 // Export rules by name for selective validation
@@ -71,23 +74,27 @@ export const rulesByName: Record<string, ValidationRule> = {
   'response-enum': responseEnumRule,
   enum: responseEnumRule, // alias
   'mock-formatting': mockFormattingRule,
-  mock: mockFormattingRule // alias
+  mock: mockFormattingRule, // alias
+  // HIGH (documentation) rules
+  'doc-sync': docSyncRule,
+  docs: docSyncRule // alias
 }
 
 // Export individual rules
 export {
   awsSdkEncapsulationRule,
-  electrodbMockingRule,
-  importOrderRule,
-  responseHelpersRule,
-  configEnforcementRule,
-  typesLocationRule,
-  envValidationRule,
-  cascadeSafetyRule,
   batchRetryRule,
-  scanPaginationRule,
+  cascadeSafetyRule,
+  configEnforcementRule,
+  docSyncRule,
+  electrodbMockingRule,
+  envValidationRule,
+  importOrderRule,
+  mockFormattingRule,
   responseEnumRule,
-  mockFormattingRule
+  responseHelpersRule,
+  scanPaginationRule,
+  typesLocationRule
 }
 
 // Export types

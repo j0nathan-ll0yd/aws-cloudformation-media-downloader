@@ -76,13 +76,13 @@ SOURCE_DIR=main/docs/wiki
 ```
 
 #### Link Transformation
-Internal links are automatically transformed:
+Internal links are automatically transformed (path removed, extension stripped):
 ```markdown
 # In source file
 [See Error Handling](../TypeScript/Error-Handling.md)
 
 # After transformation in wiki
-[See Error Handling](TypeScript-Error-Handling)
+[See Error Handling](Error-Handling)
 ```
 
 ## Scripts

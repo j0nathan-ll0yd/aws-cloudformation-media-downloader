@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "metadata.schema.json",
+  "title": "GraphRAG Metadata",
+  "description": "Schema for semantic metadata that cannot be auto-derived from code analysis. Used by graphrag/extract.ts to generate knowledge-graph.json",
+  "type": "object",
+  "required": ["description", "lambdas", "externalServices", "awsServices", "entityRelationships"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of this metadata file"
+    },
+    "lambdas": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/lambdaMetadata"
+      },
+      "description": "Lambda function metadata keyed by function name"
+    },
+    "externalServices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/externalService"
+      },
+      "description": "External services the system integrates with"
+    },
+    "awsServices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/awsService"
+      },
+      "description": "AWS services used by the system"
+    },
+    "entityRelationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/entityRelationship"
+      },
+      "description": "Relationships between ElectroDB entities"
+    },
+    "lambdaInvocations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/lambdaInvocation"
+      },
+      "description": "Lambda-to-Lambda invocation chains"
+    },
+    "serviceToServiceEdges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/serviceEdge"
+      },
+      "description": "Service-level trigger relationships"
+    }
+  },
+  "definitions": {
+    "lambdaMetadata": {
+      "type": "object",
+      "required": ["trigger", "purpose"],
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "enum": [
+            "API Gateway",
+            "CloudFront",
+            "CloudWatch Events",
+            "S3 Event",
+            "SQS",
+            "SNS",
+            "Lambda Invoke",
+            "Step Functions",
+            "EventBridge"
+          ],
+          "description": "What triggers this Lambda function"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Human-readable description of what this Lambda does"
+        }
+      }
+    },
+    "externalService": {
+      "type": "object",
+      "required": ["name", "type", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the external service"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["content", "media", "notification", "auth", "integration", "storage"],
+          "description": "Category of the external service"
+        },
+        "description": {
+          "type": "string",
+          "description": "What the service is used for"
+        }
+      }
+    },
+    "awsService": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "AWS service name"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "database",
+            "storage",
+            "notification",
+            "queue",
+            "compute",
+            "monitoring",
+            "secrets",
+            "orchestration",
+            "tracing",
+            "api",
+            "cdn"
+          ],
+          "description": "Category of the AWS service"
+        },
+        "vendorPath": {
+          "type": ["string", "null"],
+          "description": "Path to vendor wrapper in src/lib/vendor/AWS/, or null if no wrapper"
+        }
+      }
+    },
+    "entityRelationship": {
+      "type": "object",
+      "required": ["from", "to", "type"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source entity name"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target entity name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["has_many", "belongs_to", "has_one"],
+          "description": "Type of relationship"
+        }
+      }
+    },
+    "lambdaInvocation": {
+      "type": "object",
+      "required": ["from", "to", "via"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source Lambda function name"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target Lambda function name"
+        },
+        "via": {
+          "type": "string",
+          "description": "Invocation mechanism (e.g., 'Lambda invokeAsync', 'SQS', 'SNS')"
+        }
+      }
+    },
+    "serviceEdge": {
+      "type": "object",
+      "required": ["from", "to", "relationship"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source service name"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target service name"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": ["triggers", "invokes", "reads", "writes"],
+          "description": "Type of relationship"
+        },
+        "event": {
+          "type": "string",
+          "description": "Specific event type (e.g., 's3:ObjectCreated', 'scheduled')"
+        }
+      }
+    }
+  }
+}

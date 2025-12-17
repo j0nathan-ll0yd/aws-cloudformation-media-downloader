@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(12)
+      expect(allRules.length).toBe(13)
     })
 
     test('should contain all expected rules', () => {
@@ -46,6 +46,7 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('types-location')
       expect(ruleNames).toContain('batch-retry')
       expect(ruleNames).toContain('scan-pagination')
+      expect(ruleNames).toContain('doc-sync')
       // MEDIUM rules
       expect(ruleNames).toContain('import-order')
       expect(ruleNames).toContain('response-enum')
@@ -66,6 +67,7 @@ describe('validation exports', () => {
       expect(rulesByName['types-location']).toBeDefined()
       expect(rulesByName['batch-retry']).toBeDefined()
       expect(rulesByName['scan-pagination']).toBeDefined()
+      expect(rulesByName['doc-sync']).toBeDefined()
       // MEDIUM rules
       expect(rulesByName['import-order']).toBeDefined()
       expect(rulesByName['response-enum']).toBeDefined()
@@ -84,6 +86,7 @@ describe('validation exports', () => {
       expect(rulesByName['types']).toBe(rulesByName['types-location'])
       expect(rulesByName['batch']).toBe(rulesByName['batch-retry'])
       expect(rulesByName['scan']).toBe(rulesByName['scan-pagination'])
+      expect(rulesByName['docs']).toBe(rulesByName['doc-sync'])
       // MEDIUM aliases
       expect(rulesByName['imports']).toBe(rulesByName['import-order'])
       expect(rulesByName['enum']).toBe(rulesByName['response-enum'])

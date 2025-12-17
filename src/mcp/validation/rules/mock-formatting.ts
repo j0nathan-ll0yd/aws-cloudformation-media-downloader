@@ -57,16 +57,11 @@ export const mockFormattingRule: ValidationRule = {
 
           if (methodName && CHAINABLE_MOCK_METHODS.includes(methodName)) {
             violations.push(
-              createViolation(
-                RULE_NAME,
-                SEVERITY,
-                call.getStartLineNumber(),
-                `Chained mock return values detected (${chainCount} calls). Use separate statements for readability.`,
-                {
-                  suggestion: 'Split into separate statements:\nmock.mockResolvedValueOnce(a)\nmock.mockResolvedValueOnce(b)',
-                  codeSnippet: callText.substring(0, 100)
-                }
-              )
+              createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
+                `Chained mock return values detected (${chainCount} calls). Use separate statements for readability.`, {
+                suggestion: 'Split into separate statements:\nmock.mockResolvedValueOnce(a)\nmock.mockResolvedValueOnce(b)',
+                codeSnippet: callText.substring(0, 100)
+              })
             )
           }
         }

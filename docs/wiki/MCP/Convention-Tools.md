@@ -62,6 +62,8 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
   - `types` - Check exported type location
   - `batch` - Check batch operation retry handling
   - `scan` - Check scan pagination handling
+- **HIGH Rules (documentation):**
+  - `docs` - Check documentation sync with codebase
 - **MEDIUM Rules:**
   - `imports` - Check import ordering
   - `enum` - Check ResponseStatus enum usage
@@ -71,7 +73,7 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 
 | Rule | Alias | Severity | Description |
 |------|-------|----------|-------------|
-| aws-sdk-encapsulation | aws-sdk | CRITICAL | No direct AWS SDK imports outside lib/vendor/AWS/ |
+| aws-sdk-encapsulation | aws-sdk | CRITICAL | No direct AWS SDK imports outside src/lib/vendor/AWS/ |
 | electrodb-mocking | electrodb | CRITICAL | Test files must use createElectroDBEntityMock() |
 | config-enforcement | config | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
 | env-validation | env | CRITICAL | Raw process.env access must use getRequiredEnv() wrapper |
@@ -83,6 +85,7 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 | import-order | imports | MEDIUM | Imports grouped: node → aws-lambda → external → entities → vendor → types → utilities → relative |
 | response-enum | enum | MEDIUM | Use ResponseStatus enum instead of magic strings |
 | mock-formatting | mock | MEDIUM | Sequential mock returns should be separate statements |
+| doc-sync | docs | HIGH | Documentation stays in sync with codebase |
 
 **Examples:**
 ```typescript
@@ -202,15 +205,16 @@ src/mcp/
         ├── aws-sdk-encapsulation.ts  # CRITICAL
         ├── electrodb-mocking.ts      # CRITICAL
         ├── config-enforcement.ts     # CRITICAL
-        ├── env-validation.ts         # CRITICAL (NEW)
-        ├── cascade-safety.ts         # CRITICAL (NEW)
+        ├── env-validation.ts         # CRITICAL
+        ├── cascade-safety.ts         # CRITICAL
         ├── response-helpers.ts       # HIGH
         ├── types-location.ts         # HIGH
-        ├── batch-retry.ts            # HIGH (NEW)
-        ├── scan-pagination.ts        # HIGH (NEW)
+        ├── batch-retry.ts            # HIGH
+        ├── scan-pagination.ts        # HIGH
+        ├── doc-sync.ts               # HIGH (documentation)
         ├── import-order.ts           # MEDIUM
-        ├── response-enum.ts          # MEDIUM (NEW)
-        └── mock-formatting.ts        # MEDIUM (NEW)
+        ├── response-enum.ts          # MEDIUM
+        └── mock-formatting.ts        # MEDIUM
 ```
 
 ## Related Documentation

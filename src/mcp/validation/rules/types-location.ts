@@ -19,9 +19,15 @@ const SEVERITY = 'HIGH' as const
  */
 function getSuggestedTypeFile(filePath: string): string {
   // Map common utility files to their type files
-  if (filePath.includes('lambda-helpers')) return 'src/types/lambda-wrappers.ts'
-  if (filePath.includes('video-error-classifier') || filePath.includes('YouTube')) return 'src/types/video.ts'
-  if (filePath.includes('retry') || filePath.includes('better-auth')) return 'src/types/util.ts'
+  if (filePath.includes('lambda-helpers')) {
+    return 'src/types/lambda-wrappers.ts'
+  }
+  if (filePath.includes('video-error-classifier') || filePath.includes('YouTube')) {
+    return 'src/types/video.ts'
+  }
+  if (filePath.includes('retry') || filePath.includes('better-auth')) {
+    return 'src/types/util.ts'
+  }
 
   // For lambdas, suggest a domain-specific type file
   if (filePath.includes('/lambdas/')) {

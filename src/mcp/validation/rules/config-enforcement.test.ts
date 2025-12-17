@@ -34,15 +34,11 @@ describe('config-enforcement rule', () => {
 
   describe('ESLint config validation', () => {
     test('should detect argsIgnorePattern with underscore', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint.config.mjs', `export default [{
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}]
   }
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
@@ -52,15 +48,11 @@ describe('config-enforcement rule', () => {
     })
 
     test('should detect varsIgnorePattern with underscore', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint2.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint2.config.mjs', `export default [{
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', {varsIgnorePattern: '^_'}]
   }
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
@@ -69,13 +61,9 @@ describe('config-enforcement rule', () => {
     })
 
     test('should detect unauthorized ignores', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint3.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint3.config.mjs', `export default [{
   ignores: ['**/node_modules', '**/secret-backdoor']
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
@@ -85,13 +73,9 @@ describe('config-enforcement rule', () => {
     })
 
     test('should allow valid ignores', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint4.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint4.config.mjs', `export default [{
   ignores: ['**/node_modules', '**/dist', '**/build']
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
@@ -100,16 +84,12 @@ describe('config-enforcement rule', () => {
     })
 
     test('should allow valid config without underscore patterns', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint5.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint5.config.mjs', `export default [{
   rules: {
     'quotes': [2, 'single'],
     'semi': [2, 'never']
   }
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
@@ -147,17 +127,8 @@ describe('config-enforcement rule', () => {
     })
 
     test('should allow valid strict config', () => {
-      const sourceFile = project.createSourceFile(
-        'tsconfig4.json',
-        JSON.stringify({
-          compilerOptions: {
-            strict: true,
-            noUnusedLocals: true,
-            noUnusedParameters: true
-          }
-        }),
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('tsconfig4.json',
+        JSON.stringify({compilerOptions: {strict: true, noUnusedLocals: true, noUnusedParameters: true}}), {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'tsconfig.json')
 
@@ -194,15 +165,7 @@ describe('config-enforcement rule', () => {
     })
 
     test('should allow valid dprint config', () => {
-      const sourceFile = project.createSourceFile(
-        'dprint3.json',
-        JSON.stringify({
-          lineWidth: 157,
-          useTabs: false,
-          indentWidth: 2
-        }),
-        {overwrite: true}
-      )
+      const sourceFile = project.createSourceFile('dprint3.json', JSON.stringify({lineWidth: 157, useTabs: false, indentWidth: 2}), {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'dprint.json')
 
@@ -220,15 +183,11 @@ describe('config-enforcement rule', () => {
 
   describe('provides helpful suggestions', () => {
     test('should suggest object destructuring for underscore pattern', () => {
-      const sourceFile = project.createSourceFile(
-        'eslint-suggestion.config.mjs',
-        `export default [{
+      const sourceFile = project.createSourceFile('eslint-suggestion.config.mjs', `export default [{
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}]
   }
-}]`,
-        {overwrite: true}
-      )
+}]`, {overwrite: true})
 
       const violations = configEnforcementRule.validate(sourceFile, 'eslint.config.mjs')
 
