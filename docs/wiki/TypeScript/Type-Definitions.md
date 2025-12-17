@@ -27,7 +27,8 @@
 
 ```
 src/types/
-├── main.ts              # Core domain types (DynamoDBFile, User, etc.)
+├── domain-models.ts     # Core domain types (User, Device, etc.)
+├── persistence-types.ts # DynamoDB record types (FileRecord, UserDeviceRecord)
 ├── enums.ts             # Shared enumerations
 ├── lambda-wrappers.ts   # Lambda handler wrapper types
 ├── video.ts             # Video processing types
@@ -179,7 +180,7 @@ interface UserProfile {
 }
 
 // Type aliases use PascalCase
-type FileStatus = 'pending' | 'complete' | 'failed'
+type FileStatus = 'Queued' | 'Downloading' | 'Downloaded' | 'Failed'
 
 // Generic type parameters use single uppercase letter
 function map<T, R>(items: T[], fn: (item: T) => R): R[] {

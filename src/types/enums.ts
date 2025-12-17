@@ -10,14 +10,16 @@ export enum UserStatus {
  * These are FINAL states only - all transient/orchestration states
  * (retries, scheduling, in_progress) are in DownloadStatus.
  *
- * - pending: File record exists, download not yet complete
- * - available: Successfully downloaded, ready for users
- * - unavailable: Permanently failed, will not be available
+ * - Queued: File record exists, download not yet complete
+ * - Downloading: Currently being downloaded
+ * - Downloaded: Successfully downloaded, ready for users
+ * - Failed: Permanently failed, will not be available
  */
 export enum FileStatus {
-  Pending = 'pending',
-  Available = 'available',
-  Unavailable = 'unavailable'
+  Queued = 'Queued',
+  Downloading = 'Downloading',
+  Downloaded = 'Downloaded',
+  Failed = 'Failed'
 }
 
 /**

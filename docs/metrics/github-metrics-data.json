@@ -1,0 +1,187 @@
+{
+  "generated": "2025-11-30T00:00:00Z",
+  "repository": {
+    "name": "aws-cloudformation-media-downloader",
+    "firstCommit": "2019-03-09",
+    "totalCommits": 162,
+    "ageInMonths": 80
+  },
+  "periods": {
+    "claudeEra": {
+      "label": "Claude Era (Nov 15-30)",
+      "start": "2025-11-15",
+      "end": "2025-11-30",
+      "days": 15,
+      "commits": 38,
+      "linesAdded": 75706,
+      "linesRemoved": 48557,
+      "netLines": 27149,
+      "filesModified": 358,
+      "commitsPerDay": 2.53,
+      "commitsPerMonthProrated": 76
+    },
+    "historical": {
+      "label": "Historical (Mar 2019 - Nov 14, 2025)",
+      "start": "2019-03-09",
+      "end": "2025-11-14",
+      "months": 80,
+      "commits": 124,
+      "linesAdded": 144433,
+      "linesRemoved": 112560,
+      "netLines": 31873,
+      "commitsPerMonth": 3.76
+    },
+    "year2025": {
+      "label": "2025 YTD",
+      "commits": 46,
+      "percentOfAllTime": 28.4
+    }
+  },
+  "multipliers": {
+    "commitVelocity": 20.2,
+    "netLinesPerMonth": 136.4,
+    "description": "Claude era vs historical monthly average"
+  },
+  "monthly": [
+    { "month": "2019-03", "commits": 2 },
+    { "month": "2019-05", "commits": 3 },
+    { "month": "2019-07", "commits": 8 },
+    { "month": "2019-11", "commits": 17 },
+    { "month": "2019-12", "commits": 21 },
+    { "month": "2020-01", "commits": 2 },
+    { "month": "2020-02", "commits": 2 },
+    { "month": "2020-03", "commits": 7 },
+    { "month": "2020-04", "commits": 6 },
+    { "month": "2020-05", "commits": 1 },
+    { "month": "2020-06", "commits": 3 },
+    { "month": "2020-07", "commits": 4 },
+    { "month": "2020-08", "commits": 5 },
+    { "month": "2020-11", "commits": 6 },
+    { "month": "2020-12", "commits": 1 },
+    { "month": "2021-01", "commits": 2 },
+    { "month": "2021-02", "commits": 3 },
+    { "month": "2021-04", "commits": 7 },
+    { "month": "2021-05", "commits": 1 },
+    { "month": "2021-06", "commits": 1 },
+    { "month": "2021-07", "commits": 1 },
+    { "month": "2022-07", "commits": 4 },
+    { "month": "2022-08", "commits": 1 },
+    { "month": "2022-09", "commits": 1 },
+    { "month": "2023-07", "commits": 1 },
+    { "month": "2023-10", "commits": 1 },
+    { "month": "2023-11", "commits": 1 },
+    { "month": "2024-05", "commits": 2 },
+    { "month": "2024-08", "commits": 1 },
+    { "month": "2024-11", "commits": 1 },
+    { "month": "2025-02", "commits": 1 },
+    { "month": "2025-09", "commits": 3 },
+    { "month": "2025-11", "commits": 42 }
+  ],
+  "yearly": [
+    { "year": "2019", "commits": 51 },
+    { "year": "2020", "commits": 37 },
+    { "year": "2021", "commits": 15 },
+    { "year": "2022", "commits": 6 },
+    { "year": "2023", "commits": 3 },
+    { "year": "2024", "commits": 4 },
+    { "year": "2025", "commits": 46 }
+  ],
+  "dailyClaudeEra": [
+    { "date": "2025-11-16", "commits": 1 },
+    { "date": "2025-11-18", "commits": 4 },
+    { "date": "2025-11-19", "commits": 1 },
+    { "date": "2025-11-20", "commits": 1 },
+    { "date": "2025-11-21", "commits": 3 },
+    { "date": "2025-11-23", "commits": 10 },
+    { "date": "2025-11-27", "commits": 2 },
+    { "date": "2025-11-28", "commits": 9 },
+    { "date": "2025-11-29", "commits": 6 },
+    { "date": "2025-11-30", "commits": 1 }
+  ],
+  "commitTypes": {
+    "claudeEra": {
+      "feat": 14,
+      "fix": 11,
+      "chore": 6,
+      "docs": 4,
+      "build": 2
+    },
+    "allTime": {
+      "feat": 29,
+      "chore": 27,
+      "fix": 11,
+      "docs": 7,
+      "build": 6,
+      "refactor": 1
+    }
+  },
+  "fileTypes": {
+    "ts": 127,
+    "md": 100,
+    "json": 42,
+    "yaml": 19,
+    "sh": 19,
+    "tf": 16,
+    "yml": 9,
+    "mjs": 4,
+    "js": 4
+  },
+  "coverage": {
+    "lambdaFunctionsTouched": 18,
+    "totalLambdaFunctions": 18,
+    "entitiesModified": 10,
+    "wikiPages": 51,
+    "testFilesTouched": 37,
+    "infrastructureFiles": 16
+  },
+  "authors": {
+    "JonathanLloyd": 557,
+    "copilotSweAgentBot": 70,
+    "dependabotBot": 14,
+    "Copilot": 9,
+    "JohnOgle": 1
+  },
+  "recentCommits": [
+    { "hash": "ce009e9", "date": "2025-11-30", "message": "feat: implement self-healing workflows for scheduled video handling (#141)" },
+    { "hash": "12fc754", "date": "2025-11-29", "message": "chore(ci): add automated DEP0180 deprecation monitoring (#140)" },
+    { "hash": "68b5e91", "date": "2025-11-29", "message": "feat: add local CI testing scripts and workflow decomposition (#139)" },
+    { "hash": "8e20ccf", "date": "2025-11-29", "message": "chore: migrate from Prettier to dprint for fine-grained formatting control (#136)" },
+    { "hash": "95620e0", "date": "2025-11-29", "message": "fix: comprehensive production stability and developer experience improvements (#135)" },
+    { "hash": "bf8d5fb", "date": "2025-11-29", "message": "fix: address code quality issues from thorough review (#133)" },
+    { "hash": "01b0607", "date": "2025-11-29", "message": "docs: fix TSDoc warnings by linking examples to Wiki (#134)" },
+    { "hash": "4076db0", "date": "2025-11-28", "message": "feat: enhance codebase communication with MCP, GraphRAG, and dependency validation (#127)" },
+    { "hash": "518b633", "date": "2025-11-28", "message": "chore: pre-production cleanup with TypeScript strictness improvements (#128)" },
+    { "hash": "1bd559a", "date": "2025-11-28", "message": "feat: automated fixture extraction from CloudWatch and ElectroDB integration testing (#124)" }
+  ],
+  "majorMigrations": [
+    "JWT to Better Auth (session-based authentication)",
+    "Prettier to dprint (formatting)",
+    "npm to pnpm (package manager)",
+    "ElectroDB ORM adoption",
+    "Terraform to OpenTofu"
+  ],
+  "topCommitsBySize": [
+    {
+      "hash": "518b633",
+      "files": 77,
+      "insertions": 5015,
+      "deletions": 1915,
+      "message": "chore: pre-production cleanup with TypeScript strictness improvements (#128)"
+    },
+    { "hash": "911e528", "files": 38, "insertions": 3306, "deletions": 4216, "message": "feat: complete 100% of wiki documentation (39 pages) (#117)" },
+    {
+      "hash": "4076db0",
+      "files": 19,
+      "insertions": 3981,
+      "deletions": 22,
+      "message": "feat: enhance codebase communication with MCP, GraphRAG, and dependency validation (#127)"
+    },
+    {
+      "hash": "95620e0",
+      "files": 44,
+      "insertions": 2085,
+      "deletions": 193,
+      "message": "fix: comprehensive production stability and developer experience improvements (#135)"
+    }
+  ]
+}

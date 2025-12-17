@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
-import {StartFileUploadParams} from '#types/main'
+import {StartFileUploadParams} from '#types/infrastructure-types'
 import {DownloadStatus} from '#types/enums'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {testContext} from '#util/jest-setup'

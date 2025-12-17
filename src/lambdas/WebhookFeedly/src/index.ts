@@ -4,7 +4,7 @@ import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
-import {DynamoDBFile} from '#types/main'
+import {FileRecord} from '#types/persistence-types'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
@@ -56,7 +56,7 @@ async function addFile(fileId: string, sourceUrl?: string) {
   const fileResponse = await Files.create({
     fileId,
     size: 0,
-    status: FileStatus.Pending,
+    status: FileStatus.Queued,
     authorName: '',
     authorUser: '',
     publishDate: new Date().toISOString(),
@@ -79,11 +79,11 @@ async function addFile(fileId: string, sourceUrl?: string) {
  * @param fileId - The unique file identifier
  * @notExported
  */
-async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
+async function getFile(fileId: string): Promise<FileRecord | undefined> {
   logDebug('getFile <=', fileId)
   const fileResponse = await Files.get({fileId}).go()
   logDebug('getFile =>', fileResponse)
-  return fileResponse.data as DynamoDBFile | undefined
+  return fileResponse.data as FileRecord | undefined
 }
 
 /**
@@ -92,7 +92,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
  * @param userId - The UUID of the user
  * @notExported
  */
-async function sendFileNotification(file: DynamoDBFile, userId: string) {
+async function sendFileNotification(file: FileRecord, userId: string) {
   const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
   const sendMessageParams: SendMessageRequest = {MessageBody: messageBody, MessageAttributes: messageAttributes, QueueUrl: getRequiredEnv('SNSQueueUrl')}
   logDebug('sendMessage <=', sendMessageParams)
@@ -119,7 +119,7 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
   }
   // Parallelize independent operations for ~60% latency reduction
   const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
-  if (file && file.status == FileStatus.Available) {
+  if (file && file.status == FileStatus.Downloaded) {
     // File already downloaded - send notification to user
     await sendFileNotification(file, userId)
     return response(context, 200, {status: ResponseStatus.Dispatched})

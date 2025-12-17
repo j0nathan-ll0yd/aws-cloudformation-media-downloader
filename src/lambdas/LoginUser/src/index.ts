@@ -11,7 +11,7 @@
  */
 
 import {APIGatewayProxyResult} from 'aws-lambda'
-import {UserLogin} from '#types/main'
+import {UserLoginInput} from '#types/request-types'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
@@ -37,7 +37,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  */
 export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   // 1. Validate request body
-  const requestBody = getPayloadFromEvent(event) as UserLogin
+  const requestBody = getPayloadFromEvent(event) as UserLoginInput
   validateRequest(requestBody, loginUserSchema)
 
   // 2. Sign in using Better Auth with ID token from iOS app

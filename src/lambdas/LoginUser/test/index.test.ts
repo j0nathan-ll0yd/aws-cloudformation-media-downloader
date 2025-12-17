@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 

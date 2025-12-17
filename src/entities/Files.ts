@@ -9,9 +9,10 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
  * - FileDownloads = transient orchestration state (retries, scheduling, errors)
  *
  * Status values are minimal and final:
- * - pending: File record created, download not yet complete
- * - available: Successfully downloaded, ready for users
- * - unavailable: Permanently failed, will not be available
+ * - Queued: File record created, download not yet complete
+ * - Downloading: Download in progress
+ * - Downloaded: Successfully downloaded, ready for users
+ * - Failed: Permanently failed, will not be available
  *
  * All orchestration (retries, scheduling, error tracking) is in FileDownloads.
  *
@@ -40,8 +41,8 @@ export const Files = new Entity({
     contentType: {type: 'string', required: true},
     /** Video title */
     title: {type: 'string', required: true},
-    /** Final status: pending (awaiting download), available (ready), unavailable (failed) */
-    status: {type: ['pending', 'available', 'unavailable'] as const, required: true, default: 'pending'}
+    /** Final status: Queued (awaiting download), Downloading (in progress), Downloaded (ready), Failed (failed) */
+    status: {type: ['Queued', 'Downloading', 'Downloaded', 'Failed'] as const, required: true, default: 'Queued'}
   },
   indexes: {
     primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},

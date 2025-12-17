@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {Device} from '#types/main'
+import {Device} from '#types/domain-models'
 
 // Mock Octokit
 const mockIssuesCreate = jest.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()

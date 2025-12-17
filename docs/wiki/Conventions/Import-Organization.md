@@ -39,7 +39,8 @@ import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
 import {createS3Upload, headObject} from '../../../lib/vendor/AWS/S3'
 
 // 3. Type imports (types/*)
-import type {DynamoDBFile, UserProfile} from '../../../types/main'
+import type {FileRecord} from '../../../types/persistence-types'
+import type {User} from '../../../types/domain-models'
 import type {FileStatus} from '../../../types/enums'
 
 // 4. Utility imports (util/*)

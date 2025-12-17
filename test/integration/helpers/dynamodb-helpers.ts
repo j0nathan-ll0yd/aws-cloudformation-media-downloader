@@ -5,7 +5,7 @@
  */
 
 import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
-import {DynamoDBFile} from '#types/main'
+import {FileRecord} from '#types/persistence-types'
 import {FileStatus} from '#types/enums'
 import {createMockFile} from './test-data'
 
@@ -103,11 +103,11 @@ export const deleteUserFilesTable = deleteMediaDownloaderTable
  * Uses createMockFile for consistent defaults across all tests
  * This ensures proper entity metadata is added for ElectroDB compatibility
  */
-export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
+export async function insertFile(file: Partial<FileRecord>): Promise<void> {
   const {Files} = await import('../../../src/entities/Files')
 
   // Get consistent defaults from createMockFile, then apply user overrides
-  const defaults = createMockFile(file.fileId!, file.status || FileStatus.Pending, file)
+  const defaults = createMockFile(file.fileId!, file.status || FileStatus.Queued, file)
 
   // ElectroDB requires all fields - createMockFile provides them all
   await Files.create({
@@ -128,7 +128,7 @@ export async function insertFile(file: Partial<DynamoDBFile>): Promise<void> {
 /**
  * Get a file record from DynamoDB using ElectroDB
  */
-export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | null> {
+export async function getFile(fileId: string): Promise<Partial<FileRecord> | null> {
   const {Files} = await import('../../../src/entities/Files')
 
   const response = await Files.get({fileId}).go()
@@ -137,5 +137,5 @@ export async function getFile(fileId: string): Promise<Partial<DynamoDBFile> | n
     return null
   }
 
-  return response.data as Partial<DynamoDBFile>
+  return response.data as Partial<FileRecord>
 }

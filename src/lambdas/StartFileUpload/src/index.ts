@@ -1,7 +1,8 @@
 import {Context} from 'aws-lambda'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {FetchVideoInfoResult} from '#types/video'
-import {DynamoDBFile, StartFileUploadParams} from '#types/main'
+import {FileRecord} from '#types/persistence-types'
+import {StartFileUploadParams} from '#types/infrastructure-types'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
@@ -183,7 +184,7 @@ async function handleDownloadFailure(
 
   // Also update File entity to reflect permanent failure
   try {
-    await upsertFile({fileId, status: FileStatus.Unavailable} as DynamoDBFile)
+    await upsertFile({fileId, status: FileStatus.Failed} as FileRecord)
   } catch (updateError) {
     const message = updateError instanceof Error ? updateError.message : String(updateError)
     logDebug('Failed to update File entity status', message)
@@ -279,7 +280,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
   // Step 4: Update permanent File entity with metadata (only on success)
   const cloudfrontDomain = getRequiredEnv('CloudfrontDomain')
-  const fileData: DynamoDBFile = {
+  const fileData: FileRecord = {
     fileId: videoInfo.id,
     key: fileName,
     size: uploadResult.fileSize,
@@ -289,7 +290,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
     description: videoInfo.description || '',
     publishDate: videoInfo.upload_date || new Date().toISOString(),
     contentType: 'video/mp4',
-    status: FileStatus.Available,
+    status: FileStatus.Downloaded,
     url: `https://${cloudfrontDomain}/${fileName}`
   }
 

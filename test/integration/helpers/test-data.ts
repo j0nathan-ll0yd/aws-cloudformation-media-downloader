@@ -7,7 +7,7 @@
 
 import {ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import {DynamoDBFile} from '#types/main'
+import {FileRecord} from '#types/persistence-types'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -16,8 +16,8 @@ import {DynamoDBFile} from '#types/main'
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults
  */
-export function createMockFile(id: string, status: FileStatus, partial?: Partial<DynamoDBFile>): Partial<DynamoDBFile> {
-  const base: Partial<DynamoDBFile> = {
+export function createMockFile(id: string, status: FileStatus, partial?: Partial<FileRecord>): Partial<FileRecord> {
+  const base: Partial<FileRecord> = {
     fileId: id,
     status,
     title: `Test Video ${id}`,
@@ -30,8 +30,8 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
     key: `${id}.mp4`
   }
 
-  // Add Available-specific fields (downloaded files)
-  if (status === FileStatus.Available) {
+  // Add Downloaded-specific fields (downloaded files)
+  if (status === FileStatus.Downloaded) {
     base.size = 5242880
     base.url = `https://example.com/${id}.mp4`
   }
@@ -45,7 +45,7 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
  * @param status - Status for all files
  * @param idPrefix - Prefix for file IDs (default: 'video')
  */
-export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<DynamoDBFile>[] {
+export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<FileRecord>[] {
   return Array.from({length: count}, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
 }
 
@@ -89,7 +89,7 @@ export function createMockSQSFileNotificationEvent(
   partial?: {title?: string; size?: number; url?: string},
   notificationType = 'DownloadReadyNotification'
 ): SQSEvent {
-  const file = createMockFile(fileId, FileStatus.Available, partial)
+  const file = createMockFile(fileId, FileStatus.Downloaded, partial)
 
   // Body must be JSON matching what createDownloadReadyNotification produces
   // SendPushNotification parses this with JSON.parse in transformToAPNSNotification
