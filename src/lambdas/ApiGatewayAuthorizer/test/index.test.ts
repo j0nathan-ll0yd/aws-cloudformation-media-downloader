@@ -4,7 +4,7 @@ import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#util/errors'
 import {testContext} from '#util/jest-setup'
-import type {SessionPayload} from '#util/better-auth-helpers'
+import type {SessionPayload} from '#types/util'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')

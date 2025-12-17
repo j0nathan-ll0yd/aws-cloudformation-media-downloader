@@ -1,14 +1,15 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
-import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
+import {DynamoDBFile} from '#types/main'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {getUserDetailsFromEvent, logDebug, response, wrapApiHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
@@ -116,45 +117,32 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
-  logIncomingFixture(event)
-
-  let requestBody
-  try {
-    requestBody = getPayloadFromEvent(event) as Webhook
-    validateRequest(requestBody, feedlyEventSchema)
-    const fileId = getVideoID(requestBody.articleURL)
-    const {userId} = getUserDetailsFromEvent(event)
-    if (!userId) {
-      throw new UnexpectedError(providerFailureErrorMessage)
-    }
-    // Parallelize independent operations for ~60% latency reduction
-    const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
-    let result: APIGatewayProxyResult
-    if (file && file.status == FileStatus.Available) {
-      // File already downloaded - send notification to user
-      await sendFileNotification(file, userId)
-      result = response(context, 200, {status: ResponseStatus.Dispatched})
-    } else {
-      if (!file) {
-        // New file - create Files and FileDownloads records
-        await addFile(fileId, requestBody.articleURL)
-      }
-      if (!requestBody.backgroundMode) {
-        // Foreground mode - initiate download immediately
-        await initiateFileDownload(fileId)
-        result = response(context, 202, {status: ResponseStatus.Initiated})
-      } else {
-        // Background mode - FileCoordinator will pick it up
-        result = response(context, 202, {status: ResponseStatus.Accepted})
-      }
-    }
-    logOutgoingFixture(result)
-    return result
-  } catch (error) {
-    const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult)
-    return errorResult
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+  const requestBody = getPayloadFromEvent(event) as Webhook
+  validateRequest(requestBody, feedlyEventSchema)
+  const fileId = getVideoID(requestBody.articleURL)
+  const {userId} = getUserDetailsFromEvent(event)
+  if (!userId) {
+    throw new UnexpectedError(providerFailureErrorMessage)
   }
-})
+  // Parallelize independent operations for ~60% latency reduction
+  const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
+  if (file && file.status == FileStatus.Available) {
+    // File already downloaded - send notification to user
+    await sendFileNotification(file, userId)
+    return response(context, 200, {status: ResponseStatus.Dispatched})
+  } else {
+    if (!file) {
+      // New file - create Files and FileDownloads records
+      await addFile(fileId, requestBody.articleURL)
+    }
+    if (!requestBody.backgroundMode) {
+      // Foreground mode - initiate download immediately
+      await initiateFileDownload(fileId)
+      return response(context, 202, {status: ResponseStatus.Initiated})
+    } else {
+      // Background mode - FileCoordinator will pick it up
+      return response(context, 202, {status: ResponseStatus.Accepted})
+    }
+  }
+}))

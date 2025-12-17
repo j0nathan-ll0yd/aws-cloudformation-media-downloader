@@ -1,4 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
+import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
 
 describe('lambda-helpers', () => {
   let consoleLogSpy: jest.SpiedFunction<typeof console.log>
@@ -179,6 +180,235 @@ describe('lambda-helpers', () => {
       expect(loggedData.data.items[0].token).toBe('[REDACTED]')
       expect(loggedData.data.items[1].id).toBe('2')
       expect(loggedData.data.items[1].token).toBe('[REDACTED]')
+    })
+  })
+
+  describe('wrapApiHandler', () => {
+    const mockContext = {awsRequestId: 'test-request-id'} as Context
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type TestEvent = any
+
+    it('should return handler result on success', async () => {
+      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {success: true}))
+
+      const result = await handler({httpMethod: 'GET'}, mockContext)
+
+      expect(result.statusCode).toBe(200)
+    })
+
+    it('should return 500 error response when handler throws', async () => {
+      const {wrapApiHandler} = await import('./lambda-helpers')
+      const handler = wrapApiHandler<TestEvent>(async () => {
+        throw new Error('Test error')
+      })
+
+      const result = await handler({}, mockContext)
+
+      expect(result.statusCode).toBe(500)
+      expect(JSON.parse(result.body).error.message).toBe('Test error')
+    })
+
+    it('should pass metadata with traceId to handler', async () => {
+      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      let receivedMetadata: {traceId: string} | undefined
+      const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
+        receivedMetadata = metadata
+        return response(context, 200, {})
+      })
+
+      await handler({}, mockContext)
+
+      expect(receivedMetadata?.traceId).toBe('test-request-id')
+    })
+
+    it('should use provided metadata traceId when available', async () => {
+      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      let receivedMetadata: {traceId: string} | undefined
+      const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
+        receivedMetadata = metadata
+        return response(context, 200, {})
+      })
+
+      await handler({}, mockContext, {traceId: 'custom-trace-id'})
+
+      expect(receivedMetadata?.traceId).toBe('custom-trace-id')
+    })
+
+    it('should log fixtures for incoming event and outgoing result', async () => {
+      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {data: 'test'}))
+
+      await handler({testField: 'value'}, mockContext)
+
+      // Should have at least 2 fixture logs (incoming and outgoing)
+      const fixtureLogs = consoleLogSpy.mock.calls.filter((call) => {
+        try {
+          const logData = JSON.parse(call[0] as string)
+          return logData.__FIXTURE_MARKER__
+        } catch {
+          return false // Skip non-JSON logs
+        }
+      })
+      expect(fixtureLogs.length).toBe(2)
+    })
+  })
+
+  describe('wrapAuthorizer', () => {
+    const mockContext = {awsRequestId: 'auth-request-id'} as Context
+    const mockEvent = {
+      methodArn: 'arn:aws:execute-api:us-east-1:123456789:api/GET/resource',
+      requestContext: {identity: {sourceIp: '127.0.0.1'}}
+    } as APIGatewayRequestAuthorizerEvent
+
+    it('should return policy result on success', async () => {
+      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const mockPolicy: CustomAuthorizerResult = {
+        principalId: 'user123',
+        policyDocument: {Version: '2012-10-17', Statement: [{Effect: 'Allow', Action: 'execute-api:Invoke', Resource: '*'}]}
+      }
+      const handler = wrapAuthorizer(async () => mockPolicy)
+
+      const result = await handler(mockEvent, mockContext)
+
+      expect(result.principalId).toBe('user123')
+    })
+
+    it('should propagate Unauthorized error for 401', async () => {
+      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const handler = wrapAuthorizer(async () => {
+        throw new Error('Unauthorized')
+      })
+
+      await expect(handler(mockEvent, mockContext)).rejects.toThrow('Unauthorized')
+    })
+
+    it('should rethrow other errors after logging', async () => {
+      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const handler = wrapAuthorizer(async () => {
+        throw new Error('Database connection failed')
+      })
+
+      await expect(handler(mockEvent, mockContext)).rejects.toThrow('Database connection failed')
+    })
+  })
+
+  describe('wrapEventHandler', () => {
+    const mockContext = {awsRequestId: 'event-request-id'} as Context
+
+    it('should process all records successfully', async () => {
+      const {wrapEventHandler} = await import('./lambda-helpers')
+      const processedRecords: string[] = []
+      const handler = wrapEventHandler(
+        async ({record}: {record: {id: string}; context: Context; metadata: {traceId: string}}) => {
+          processedRecords.push(record.id)
+        },
+        {getRecords: (event: {records: {id: string}[]}) => event.records}
+      )
+
+      await handler({records: [{id: '1'}, {id: '2'}, {id: '3'}]}, mockContext)
+
+      expect(processedRecords).toEqual(['1', '2', '3'])
+    })
+
+    it('should continue processing even when some records fail', async () => {
+      const {wrapEventHandler} = await import('./lambda-helpers')
+      const processedRecords: string[] = []
+      type RecordType = {id: string; shouldFail?: boolean}
+      const handler = wrapEventHandler(
+        async ({record}: {record: RecordType; context: Context; metadata: {traceId: string}}) => {
+          if (record.shouldFail) {
+            throw new Error(`Record ${record.id} failed`)
+          }
+          processedRecords.push(record.id)
+        },
+        {getRecords: (event: {records: RecordType[]}) => event.records}
+      )
+
+      await handler({records: [{id: '1'}, {id: '2', shouldFail: true}, {id: '3'}]}, mockContext)
+
+      // Should process records 1 and 3, skip 2
+      expect(processedRecords).toEqual(['1', '3'])
+    })
+  })
+
+  describe('wrapScheduledHandler', () => {
+    const mockContext = {awsRequestId: 'scheduled-request-id'} as Context
+    const mockEvent = {
+      version: '0',
+      id: 'test-event-id',
+      'detail-type': 'Scheduled Event',
+      source: 'aws.events',
+      account: '123456789',
+      time: '2024-01-01T00:00:00Z',
+      region: 'us-east-1',
+      resources: [],
+      detail: {}
+    } as ScheduledEvent
+
+    it('should return result on success', async () => {
+      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      const handler = wrapScheduledHandler(async () => ({pruned: 5}))
+
+      const result = await handler(mockEvent, mockContext)
+
+      expect(result).toEqual({pruned: 5})
+    })
+
+    it('should rethrow errors after logging', async () => {
+      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      const handler = wrapScheduledHandler(async () => {
+        throw new Error('Scheduled task failed')
+      })
+
+      await expect(handler(mockEvent, mockContext)).rejects.toThrow('Scheduled task failed')
+    })
+
+    it('should pass metadata with traceId to handler', async () => {
+      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      let receivedMetadata: {traceId: string} | undefined
+      const handler = wrapScheduledHandler(async ({metadata}) => {
+        receivedMetadata = metadata
+      })
+
+      await handler(mockEvent, mockContext)
+
+      expect(receivedMetadata?.traceId).toBe('scheduled-request-id')
+    })
+  })
+
+  describe('s3Records', () => {
+    it('should extract records from S3Event', async () => {
+      const {s3Records} = await import('./lambda-helpers')
+      const mockS3Event = {
+        Records: [
+          {s3: {object: {key: 'file1.mp4'}}},
+          {s3: {object: {key: 'file2.mp4'}}}
+        ]
+      } as unknown as S3Event
+
+      const records = s3Records(mockS3Event)
+
+      expect(records.length).toBe(2)
+      expect(records[0].s3.object.key).toBe('file1.mp4')
+    })
+  })
+
+  describe('sqsRecords', () => {
+    it('should extract records from SQSEvent', async () => {
+      const {sqsRecords} = await import('./lambda-helpers')
+      const mockSQSEvent = {
+        Records: [
+          {body: '{"message": "test1"}'},
+          {body: '{"message": "test2"}'}
+        ]
+      } as unknown as SQSEvent
+
+      const records = sqsRecords(mockSQSEvent)
+
+      expect(records.length).toBe(2)
+      expect(records[0].body).toBe('{"message": "test1"}')
     })
   })
 })

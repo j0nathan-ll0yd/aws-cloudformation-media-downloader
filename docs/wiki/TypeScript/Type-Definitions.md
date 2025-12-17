@@ -2,15 +2,64 @@
 
 ## Quick Reference
 - **When to use**: Defining TypeScript types and interfaces
-- **Enforcement**: Required - maintain type safety and organization
-- **Impact if violated**: MEDIUM - Type sprawl, duplication, poor IDE experience
+- **Enforcement**: Required - MCP `types-location` rule validates on push
+- **Impact if violated**: HIGH - Type sprawl, duplication, poor IDE experience
+
+## Exported Type Location (HIGH Priority)
+
+**Rule**: All exported type definitions (type aliases, interfaces, enums) must be in the `src/types/` directory.
+
+**Why**: Separation of concerns, discoverability, and maintainability. Types scattered across implementation files are hard to find and lead to duplication.
+
+**Enforcement**: MCP `types-location` rule (HIGH severity) detects violations in CI.
+
+### Allowed Exceptions
+
+| Location | Reason |
+|----------|--------|
+| `src/types/**/*.ts` | Canonical location for types |
+| `src/entities/**/*.ts` | Entity-derived types from ElectroDB |
+| `src/mcp/**/*.ts` | Self-contained MCP module |
+| `**/*.test.ts`, `test/**/*.ts` | Test-only types |
+| `src/lib/vendor/**/*.ts` | Internal vendor wrapper types |
+
+### Type File Organization
+
+```
+src/types/
+├── main.ts              # Core domain types (DynamoDBFile, User, etc.)
+├── enums.ts             # Shared enumerations
+├── lambda-wrappers.ts   # Lambda handler wrapper types
+├── video.ts             # Video processing types
+├── util.ts              # Utility function types
+├── youtube.ts           # YouTube/yt-dlp types
+└── vendor/              # Third-party integration types
+    └── IFTTT/
+```
+
+### Examples
+
+```typescript
+// ✅ CORRECT - Export from src/types/
+// src/types/lambda-wrappers.ts
+export type WrapperMetadata = {traceId: string}
+export type ApiHandlerParams<TEvent> = {event: TEvent; context: Context; metadata: WrapperMetadata}
+
+// ✅ CORRECT - Import from types directory
+// src/lambdas/ListFiles/src/index.ts
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
+
+// ❌ WRONG - Exporting type from implementation file
+// src/util/helpers.ts
+export type HelperConfig = {maxRetries: number}  // Should be in src/types/util.ts
+```
 
 ## The Rules
 
-1. **Inline Types for Single-Use Cases** - Define types inline when only used within a single file
-2. **Shared Types in `types/` Directory** - Move types to `types/` when used across multiple files
+1. **Exported Types in `types/` Directory** - All exported types must be in `src/types/`
+2. **Inline Types for Single-Use Cases** - Define internal (non-exported) types inline
 3. **Entity Types with Entities** - ElectroDB entity types stay with entity definitions
-4. **Avoid Type-Only Files Unless Necessary** - Don't create files that only export types unless shared across many modules
+4. **Use `import type` Syntax** - Better tree-shaking and clearer intent
 
 ## Examples
 

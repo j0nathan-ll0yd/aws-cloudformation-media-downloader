@@ -1,18 +1,9 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
-import {
-  generateUnauthorizedError,
-  getUserDetailsFromEvent,
-  lambdaErrorResponse,
-  logDebug,
-  logError,
-  logIncomingFixture,
-  logInfo,
-  logOutgoingFixture,
-  response
-} from '#util/lambda-helpers'
-import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import {generateUnauthorizedError, getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
+import {DynamoDBFile} from '#types/main'
 import {FileStatus, UserStatus} from '#types/enums'
 import {defaultFile} from '#util/constants'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -52,39 +43,24 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logInfo('event <=', event)
-  logIncomingFixture(event)
-
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
 
   if (userStatus == UserStatus.Unauthenticated) {
-    const errorResult = lambdaErrorResponse(context, generateUnauthorizedError())
-    logOutgoingFixture(errorResult)
-    return errorResult
+    throw generateUnauthorizedError()
   }
 
   if (userStatus == UserStatus.Anonymous) {
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
-    const result = response(context, 200, myResponse)
-    logOutgoingFixture(result)
-    return result
+    return response(context, 200, myResponse)
   }
 
-  try {
-    const files = await getFilesByUser(userId as string)
-    myResponse.contents = files
-      .filter((file) => file.status === FileStatus.Available)
-      .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
-    myResponse.keyCount = myResponse.contents.length
-    const result = response(context, 200, myResponse)
-    logOutgoingFixture(result)
-    return result
-  } catch (error) {
-    const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult)
-    return errorResult
-  }
-})
+  const files = await getFilesByUser(userId as string)
+  myResponse.contents = files
+    .filter((file) => file.status === FileStatus.Available)
+    .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+  myResponse.keyCount = myResponse.contents.length
+  return response(context, 200, myResponse)
+}))

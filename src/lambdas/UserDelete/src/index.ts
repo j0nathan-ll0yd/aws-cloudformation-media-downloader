@@ -1,13 +1,13 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import {getUserDetailsFromEvent, lambdaErrorResponse, logDebug, logError, logIncomingFixture, logOutgoingFixture, response} from '#util/lambda-helpers'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import {getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
 import {deleteDevice, getUserDevices} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '#types/main'
-import {assertIsError} from '#util/transformers'
+import {Device} from '#types/main'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {retryUnprocessedDelete} from '#util/retry'
@@ -51,77 +51,62 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logIncomingFixture(event)
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   const {userId} = getUserDetailsFromEvent(event)
   if (!userId) {
     // This should never happen; enforced by the API Gateway Authorizer
-    const error = new UnexpectedError('No userId found')
-    const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult)
-    return errorResult
+    throw new UnexpectedError('No userId found')
   }
   const deletableDevices: Device[] = []
-  try {
-    const userDevices = await getUserDevices(userId)
-    /* c8 ignore else */
-    logDebug('Found userDevices', userDevices.length.toString())
-    if (userDevices.length > 0) {
-      const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
-      const {data: devices, unprocessed} = await retryUnprocessed(() => Devices.get(deviceKeys).go({concurrency: 5}))
-      logDebug('Found devices', devices.length.toString())
-      if (unprocessed.length > 0) {
-        logError('getDevices: failed to fetch all items after retries', unprocessed)
-      }
-      if (!devices || devices.length === 0) {
-        throw new UnexpectedError(providerFailureErrorMessage)
-      }
-      deletableDevices.push(...(devices as Device[]))
+
+  const userDevices = await getUserDevices(userId)
+  /* c8 ignore else */
+  logDebug('Found userDevices', userDevices.length.toString())
+  if (userDevices.length > 0) {
+    const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
+    const {data: devices, unprocessed} = await retryUnprocessed(() => Devices.get(deviceKeys).go({concurrency: 5}))
+    logDebug('Found devices', devices.length.toString())
+    if (unprocessed.length > 0) {
+      logError('getDevices: failed to fetch all items after retries', unprocessed)
     }
-  } catch (error) {
-    assertIsError(error)
-    const errorResult = lambdaErrorResponse(context, new UnexpectedError('Service unavailable; try again later'))
-    logOutgoingFixture(errorResult)
-    return errorResult
+    if (!devices || devices.length === 0) {
+      throw new UnexpectedError(providerFailureErrorMessage)
+    }
+    deletableDevices.push(...(devices as Device[]))
   }
+
+  // Delete children FIRST (correct cascade order), then parent LAST
+  const childResults = await Promise.allSettled([
+    deleteUserFiles(userId),
+    deleteUserDevices(userId),
+    ...deletableDevices.map((device) => deleteDevice(device))
+  ])
+  logDebug('Promise.allSettled (children)', childResults)
+
+  // Check for failures before deleting parent
+  const failures = childResults.filter((r) => r.status === 'rejected')
+  const hasPartialFailure = failures.length > 0
+
+  if (hasPartialFailure) {
+    logError('Cascade deletion partial failure', failures)
+    // Don't delete parent if children failed - prevents orphaned records
+    return response(context, 207, {
+      message: 'Partial deletion - some child records could not be removed',
+      failedOperations: failures.length,
+      totalOperations: childResults.length
+    })
+  }
+
+  // Delete parent LAST - only if all children succeeded
   try {
-    // Delete children FIRST (correct cascade order), then parent LAST
-    const childResults = await Promise.allSettled([
-      deleteUserFiles(userId),
-      deleteUserDevices(userId),
-      ...deletableDevices.map((device) => deleteDevice(device))
-    ])
-    logDebug('Promise.allSettled (children)', childResults)
-
-    // Check for failures before deleting parent
-    const failures = childResults.filter((r) => r.status === 'rejected')
-    const hasPartialFailure = failures.length > 0
-
-    if (hasPartialFailure) {
-      logError('Cascade deletion partial failure', failures)
-      // Don't delete parent if children failed - prevents orphaned records
-      const partialResult = response(context, 207, {
-        message: 'Partial deletion - some child records could not be removed',
-        failedOperations: failures.length,
-        totalOperations: childResults.length
-      })
-      logOutgoingFixture(partialResult)
-      return partialResult
-    }
-
-    // Delete parent LAST - only if all children succeeded
     await deleteUser(userId)
     logDebug('deleteUser completed')
-
-    const successResult = response(context, 204)
-    logOutgoingFixture(successResult)
-    return successResult
   } catch (error) {
-    assertIsError(error)
-    logError(`Failed to properly remove user ${userId}`, error.message)
-    await createFailedUserDeletionIssue(userId, deletableDevices, error, context.awsRequestId)
-    const errorResult = lambdaErrorResponse(context, new UnexpectedError('Operation failed unexpectedly; but logged for resolution'))
-    logOutgoingFixture(errorResult)
-    return errorResult
+    const err = error instanceof Error ? error : new Error(String(error))
+    logError(`Failed to properly remove user ${userId}`, err.message)
+    await createFailedUserDeletionIssue(userId, deletableDevices, err, context.awsRequestId)
+    throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
   }
-})
+
+  return response(context, 204)
+}))

@@ -10,11 +10,12 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '#types/main'
+import {APIGatewayProxyResult} from 'aws-lambda'
+import {UserLogin} from '#types/main'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
-import {lambdaErrorResponse, logIncomingFixture, logInfo, logOutgoingFixture, response} from '#util/lambda-helpers'
+import {logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -34,64 +35,53 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  logIncomingFixture(event)
-  let requestBody: UserLogin
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+  // 1. Validate request body
+  const requestBody = getPayloadFromEvent(event) as UserLogin
+  validateRequest(requestBody, loginUserSchema)
 
-  try {
-    // 1. Validate request body
-    requestBody = getPayloadFromEvent(event) as UserLogin
-    validateRequest(requestBody, loginUserSchema)
+  // 2. Sign in using Better Auth with ID token from iOS app
+  // Better Auth handles:
+  // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
+  // - User lookup by Apple ID
+  // - Session creation with device tracking
+  // - Account linking if needed
+  const ipAddress = event.requestContext?.identity?.sourceIp
+  const userAgent = event.headers?.['User-Agent'] || ''
 
-    // 2. Sign in using Better Auth with ID token from iOS app
-    // Better Auth handles:
-    // - ID token verification (signature, expiration, issuer using Apple's public JWKS)
-    // - User lookup by Apple ID
-    // - Session creation with device tracking
-    // - Account linking if needed
-    const ipAddress = event.requestContext?.identity?.sourceIp
-    const userAgent = event.headers?.['User-Agent'] || ''
-
-    const rawResult = await auth.api.signInSocial({
-      headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
-      body: {
-        provider: 'apple',
-        idToken: {
-          token: requestBody.idToken
-          // No accessToken needed - we only have the ID token from iOS
-        }
+  const rawResult = await auth.api.signInSocial({
+    headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
+    body: {
+      provider: 'apple',
+      idToken: {
+        token: requestBody.idToken
+        // No accessToken needed - we only have the ID token from iOS
       }
-    })
-
-    // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
-    // Since we're using ID token authentication, we expect a token response
-    if ('url' in rawResult && rawResult.url) {
-      throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
     }
+  })
 
-    // Type narrow to token response
-    const result = rawResult as {
-      redirect: boolean
-      token: string
-      url: undefined
-      user: {id: string; createdAt: Date; email: string; name: string}
-      session?: {id: string; expiresAt: number}
-    }
-
-    logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
-
-    // 3. Return session token (Better Auth format)
-    const successResult = response(context, 200, {
-      token: result.token,
-      expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
-      sessionId: result.session?.id,
-      userId: result.user?.id
-    })
-    logOutgoingFixture(successResult)
-    return successResult
-  } catch (error) {
-    const errorResult = lambdaErrorResponse(context, error)
-    logOutgoingFixture(errorResult)
-    return errorResult
+  // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
+  // Since we're using ID token authentication, we expect a token response
+  if ('url' in rawResult && rawResult.url) {
+    throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
   }
-})
+
+  // Type narrow to token response
+  const result = rawResult as {
+    redirect: boolean
+    token: string
+    url: undefined
+    user: {id: string; createdAt: Date; email: string; name: string}
+    session?: {id: string; expiresAt: number}
+  }
+
+  logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
+
+  // 3. Return session token (Better Auth format)
+  return response(context, 200, {
+    token: result.token,
+    expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
+    sessionId: result.session?.id,
+    userId: result.user?.id
+  })
+}))

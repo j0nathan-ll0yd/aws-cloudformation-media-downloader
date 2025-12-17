@@ -1,10 +1,11 @@
-import {S3Event} from 'aws-lambda'
+import {S3EventRecord} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '#types/main'
-import {logDebug} from '#util/lambda-helpers'
-import {assertIsError, createDownloadReadyNotification} from '#util/transformers'
+import type {EventHandlerParams} from '#types/lambda-wrappers'
+import {logDebug, s3Records, wrapEventHandler} from '#util/lambda-helpers'
+import {createDownloadReadyNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
@@ -59,23 +60,19 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
 }
 
 /**
+ * Process a single S3 record - dispatch notifications to all users of the file
+ * @notExported
+ */
+async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Promise<void> {
+  const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
+  const file = await getFileByFilename(fileName)
+  const userIds = await getUsersOfFile(file)
+  // Use allSettled to continue processing even if some notifications fail
+  await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+}
+
+/**
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(async (event: S3Event): Promise<void> => {
-  logDebug('event', event)
-  // Process all S3 records - S3 can batch up to 100 records per event
-  for (const record of event.Records) {
-    try {
-      const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
-      const file = await getFileByFilename(fileName)
-      const userIds = await getUsersOfFile(file)
-      // Use allSettled to continue processing even if some notifications fail
-      await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
-    } catch (error) {
-      assertIsError(error)
-      // Log error but continue processing remaining records
-      logDebug('Error processing record', {key: record.s3.object.key, error: error.message})
-    }
-  }
-})
+export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s3Records}))

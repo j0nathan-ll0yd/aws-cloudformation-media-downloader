@@ -4,6 +4,8 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+_No pending conventions - all conventions are documented._
+
 ### Detected: 2025-11-28
 
 1. **Production Fixture Logging** (Testing Pattern)
@@ -108,6 +110,32 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 
 ## ✅ Recently Documented
+
+### Documented: 2025-12-16
+
+1. **Type Definitions Location** (Rule)
+   - **What**: Exported type definitions (type aliases, interfaces, enums) must be in src/types/ directory
+   - **Why**: Separation of concerns, discoverability, and maintainability
+   - **Exceptions**: Entity-derived types (src/entities/), MCP types (src/mcp/), internal types
+   - **Documented**: docs/wiki/TypeScript/Type-Definitions.md
+   - **Priority**: HIGH
+   - **Enforcement**: MCP `types-location` rule (HIGH severity); CI validates on push
+
+2. **No Underscore-Prefixed Unused Variables** (Rule)
+   - **What**: Never use underscore-prefixed variables (`_event`, `_context`, `_metadata`) to suppress unused variable warnings
+   - **Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`"
+   - **Solution**: Use object destructuring in function signatures to extract only needed properties
+   - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: CRITICAL
+   - **Enforcement**: MCP `config-enforcement` rule validates ESLint config; CI validates on push
+
+3. **Configuration Drift Detection** (Pattern)
+   - **What**: MCP validation rules detect configuration changes that weaken project enforcement
+   - **Why**: Configuration files can silently weaken enforcement standards
+   - **Detected Patterns**: ESLint underscore ignore patterns, disabled TSConfig strict settings
+   - **Documented**: docs/wiki/MCP/Convention-Tools.md
+   - **Priority**: HIGH
+   - **Enforcement**: MCP `config-enforcement` rule; CI validates on every push
 
 ### Documented: 2025-11-29
 
@@ -270,6 +298,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-11-29
-- **Total Conventions**: 27 detected, 27 documented, 0 pending
+- **Last Updated**: 2025-12-16
+- **Total Conventions**: 30 detected, 30 documented, 0 pending
 - **Convention Capture System**: Active

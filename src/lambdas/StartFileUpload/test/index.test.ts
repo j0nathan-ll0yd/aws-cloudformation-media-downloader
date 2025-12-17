@@ -5,7 +5,7 @@ import {DownloadStatus} from '#types/enums'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
-import {FetchVideoInfoResult} from '#lib/vendor/YouTube'
+import type {FetchVideoInfoResult} from '#types/video'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()

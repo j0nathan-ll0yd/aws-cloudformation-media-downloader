@@ -1,5 +1,6 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import type {AuthorizerParams} from '#types/lambda-wrappers'
+import {logDebug, logError, logInfo, wrapAuthorizer} from '#util/lambda-helpers'
 import {ApiKey, getApiKeys, getUsage, getUsagePlans, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {validateSessionToken} from '#util/better-auth-helpers'
@@ -131,8 +132,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
  * - Returns callback(Error) ... translated into 500
  * @notExported
  */
-export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent): Promise<CustomAuthorizerResult> => {
-  logInfo('event <=', event)
+export const handler = withXRay(wrapAuthorizer(async ({event}: AuthorizerParams): Promise<CustomAuthorizerResult> => {
   const queryStringParameters = event.queryStringParameters
   if (!queryStringParameters || !('ApiKey' in queryStringParameters)) {
     logInfo('No API key found')
@@ -185,4 +185,4 @@ export const handler = withXRay(async (event: APIGatewayRequestAuthorizerEvent):
     }
   }
   return generateAllow(principalId, event.methodArn, apiKeyValue)
-})
+}))

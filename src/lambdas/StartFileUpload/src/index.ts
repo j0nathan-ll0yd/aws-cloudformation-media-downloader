@@ -1,16 +1,18 @@
 import {Context} from 'aws-lambda'
-import {downloadVideoToS3, fetchVideoInfo, FetchVideoInfoResult} from '#lib/vendor/YouTube'
+import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
+import type {FetchVideoInfoResult} from '#types/video'
 import {DynamoDBFile, StartFileUploadParams} from '#types/main'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
-import {assertIsError, createMetadataNotification} from '#util/transformers'
+import {createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
 import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
-import {classifyVideoError, isRetryExhausted, VideoErrorClassification} from '#util/video-error-classifier'
+import type {VideoErrorClassification} from '#types/video'
+import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
@@ -189,8 +191,8 @@ async function handleDownloadFailure(
   try {
     await upsertFile({fileId, status: FileStatus.Unavailable} as DynamoDBFile)
   } catch (updateError) {
-    assertIsError(updateError)
-    logDebug('Failed to update File entity status', updateError.message)
+    const message = updateError instanceof Error ? updateError.message : String(updateError)
+    logDebug('Failed to update File entity status', message)
   }
 
   await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
@@ -276,8 +278,8 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
   try {
     uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName)
   } catch (error) {
-    assertIsError(error)
-    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+    const err = error instanceof Error ? error : new Error(String(error))
+    return handleDownloadFailure(fileId, fileUrl, err, videoInfoResult, existingRetryCount, existingMaxRetries, context)
   }
   logDebug('downloadVideoToS3 =>', uploadResult)
 
