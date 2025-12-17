@@ -24,8 +24,9 @@ import {scanPaginationRule} from './rules/scan-pagination'
 import {responseEnumRule} from './rules/response-enum'
 import {mockFormattingRule} from './rules/mock-formatting'
 import {docSyncRule} from './rules/doc-sync'
+import {namingConventionsRule} from './rules/naming-conventions'
 
-// Export all rules (13 total: 6 CRITICAL + 4 HIGH + 3 MEDIUM)
+// Export all rules (14 total: 6 CRITICAL + 5 HIGH + 3 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -43,7 +44,9 @@ export const allRules: ValidationRule[] = [
   responseEnumRule,
   mockFormattingRule,
   // HIGH (documentation)
-  docSyncRule
+  docSyncRule,
+  // HIGH (naming)
+  namingConventionsRule
 ]
 
 // Export rules by name for selective validation
@@ -77,7 +80,10 @@ export const rulesByName: Record<string, ValidationRule> = {
   mock: mockFormattingRule, // alias
   // HIGH (documentation) rules
   'doc-sync': docSyncRule,
-  docs: docSyncRule // alias
+  docs: docSyncRule, // alias
+  // HIGH (naming) rules
+  'naming-conventions': namingConventionsRule,
+  naming: namingConventionsRule // alias
 }
 
 // Export individual rules
@@ -91,6 +97,7 @@ export {
   envValidationRule,
   importOrderRule,
   mockFormattingRule,
+  namingConventionsRule,
   responseEnumRule,
   responseHelpersRule,
   scanPaginationRule,
