@@ -8,7 +8,7 @@
  * - Mutation inputs: Create*Input, Update*Input
  * - Request payloads: *Input suffix
  * - Response types: *Response suffix
- * - Records: *Record suffix (FileRecord, UserDeviceRecord)
+ * - Relationship types: Simple nouns (UserDevice, UserFile)
  * - Enums: PascalCase values
  *
  * @see docs/wiki/Conventions/Naming-Conventions.md
@@ -22,7 +22,7 @@ const SEVERITY = 'HIGH' as const
 
 // Forbidden prefixes that indicate old patterns
 const FORBIDDEN_PREFIXES = [
-  {prefix: 'DynamoDB', message: 'Use *Record suffix (e.g., FileRecord) instead of DynamoDB* prefix', autoFix: (name: string) => name.replace(/^DynamoDB/, '') + 'Record'},
+  {prefix: 'DynamoDB', message: 'Use domain model names (e.g., File, User) instead of DynamoDB* prefix', autoFix: (name: string) => name.replace(/^DynamoDB/, '')},
   {prefix: 'I', message: "Don't use 'I' prefix for interfaces (e.g., use User instead of IUser)", autoFix: (name: string) => name.slice(1)},
   {prefix: 'T', message: "Don't use 'T' prefix for types (e.g., use Status instead of TStatus)", autoFix: (name: string) => name.slice(1)}
 ]

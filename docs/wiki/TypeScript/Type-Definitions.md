@@ -28,7 +28,7 @@
 ```
 src/types/
 ├── domain-models.ts     # Core domain types (User, Device, etc.)
-├── persistence-types.ts # DynamoDB record types (FileRecord, UserDeviceRecord)
+├── persistence-types.ts # Relationship types (UserDevice, UserFile)
 ├── enums.ts             # Shared enumerations
 ├── lambda-wrappers.ts   # Lambda handler wrapper types
 ├── video.ts             # Video processing types

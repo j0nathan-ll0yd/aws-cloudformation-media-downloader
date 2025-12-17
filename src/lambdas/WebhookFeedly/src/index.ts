@@ -4,7 +4,7 @@ import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
-import {FileRecord} from '#types/persistence-types'
+import {File} from '#types/domain-models'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
@@ -79,11 +79,11 @@ async function addFile(fileId: string, sourceUrl?: string) {
  * @param fileId - The unique file identifier
  * @notExported
  */
-async function getFile(fileId: string): Promise<FileRecord | undefined> {
+async function getFile(fileId: string): Promise<File | undefined> {
   logDebug('getFile <=', fileId)
   const fileResponse = await Files.get({fileId}).go()
   logDebug('getFile =>', fileResponse)
-  return fileResponse.data as FileRecord | undefined
+  return fileResponse.data as File | undefined
 }
 
 /**
@@ -92,7 +92,7 @@ async function getFile(fileId: string): Promise<FileRecord | undefined> {
  * @param userId - The UUID of the user
  * @notExported
  */
-async function sendFileNotification(file: FileRecord, userId: string) {
+async function sendFileNotification(file: File, userId: string) {
   const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
   const sendMessageParams: SendMessageRequest = {MessageBody: messageBody, MessageAttributes: messageAttributes, QueueUrl: getRequiredEnv('SNSQueueUrl')}
   logDebug('sendMessage <=', sendMessageParams)

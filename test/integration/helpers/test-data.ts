@@ -7,7 +7,7 @@
 
 import {ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import {FileRecord} from '#types/persistence-types'
+import {File} from '#types/domain-models'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -16,8 +16,8 @@ import {FileRecord} from '#types/persistence-types'
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults
  */
-export function createMockFile(id: string, status: FileStatus, partial?: Partial<FileRecord>): Partial<FileRecord> {
-  const base: Partial<FileRecord> = {
+export function createMockFile(id: string, status: FileStatus, partial?: Partial<File>): Partial<File> {
+  const base: Partial<File> = {
     fileId: id,
     status,
     title: `Test Video ${id}`,
@@ -45,7 +45,7 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
  * @param status - Status for all files
  * @param idPrefix - Prefix for file IDs (default: 'video')
  */
-export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<FileRecord>[] {
+export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<File>[] {
   return Array.from({length: count}, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
 }
 

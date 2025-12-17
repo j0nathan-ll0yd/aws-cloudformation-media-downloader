@@ -28,7 +28,7 @@ process.env.DefaultFileContentType = 'video/mp4'
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
-import type {FileRecord} from '../../../src/types/persistence-types'
+import type {File} from '../../../src/types/domain-models'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
@@ -226,7 +226,7 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.contents[0].status).toBe(FileStatus.Downloaded)
     expect(response.body.contents[1].status).toBe(FileStatus.Downloaded)
 
-    const fileIds = response.body.contents.map((file: Partial<FileRecord>) => file.fileId).sort()
+    const fileIds = response.body.contents.map((file: Partial<File>) => file.fileId).sort()
     expect(fileIds).toEqual(['downloaded-1', 'downloaded-2'])
   })
 
@@ -251,7 +251,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: Partial<FileRecord>) => file.status === FileStatus.Downloaded)).toBe(true)
+    expect(response.body.contents.every((file: Partial<File>) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {

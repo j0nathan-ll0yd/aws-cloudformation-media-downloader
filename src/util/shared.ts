@@ -5,8 +5,8 @@ import {Files} from '#entities/Files'
 import {Users} from '#entities/Users'
 import type {EntityItem} from '#lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
-import {FileRecord, UserDeviceRecord} from '#types/persistence-types'
-import {Device, User} from '#types/domain-models'
+import {UserDevice} from '#types/persistence-types'
+import {Device, File, User} from '#types/domain-models'
 import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
 import axios, {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '#lib/vendor/AWS/Lambda'
@@ -48,14 +48,14 @@ export async function deleteDevice(device: Device): Promise<void> {
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
  */
-export async function getUserDevices(userId: string): Promise<UserDeviceRecord[]> {
+export async function getUserDevices(userId: string): Promise<UserDevice[]> {
   logDebug('getUserDevices <=', userId)
   const response = await UserDevices.query.byUser({userId}).go()
   logDebug('getUserDevices =>', response)
   if (!response || !response.data) {
     return []
   }
-  return response.data as UserDeviceRecord[]
+  return response.data as UserDevice[]
 }
 
 /**
@@ -78,7 +78,7 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
  * @param item - The DynamoDB item to be added
  * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
  */
-export async function upsertFile(item: FileRecord) {
+export async function upsertFile(item: File) {
   logDebug('upsertFile <=', item)
   const updateResponse = await Files.upsert(item).go()
   logDebug('upsertFile =>', updateResponse)

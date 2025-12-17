@@ -1,7 +1,7 @@
 import {Context} from 'aws-lambda'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {FetchVideoInfoResult} from '#types/video'
-import {FileRecord} from '#types/persistence-types'
+import {File} from '#types/domain-models'
 import {StartFileUploadParams} from '#types/infrastructure-types'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
@@ -184,7 +184,7 @@ async function handleDownloadFailure(
 
   // Also update File entity to reflect permanent failure
   try {
-    await upsertFile({fileId, status: FileStatus.Failed} as FileRecord)
+    await upsertFile({fileId, status: FileStatus.Failed} as File)
   } catch (updateError) {
     const message = updateError instanceof Error ? updateError.message : String(updateError)
     logDebug('Failed to update File entity status', message)
@@ -280,7 +280,7 @@ export const handler = withXRay(async (event: StartFileUploadParams, context: Co
 
   // Step 4: Update permanent File entity with metadata (only on success)
   const cloudfrontDomain = getRequiredEnv('CloudfrontDomain')
-  const fileData: FileRecord = {
+  const fileData: File = {
     fileId: videoInfo.id,
     key: fileName,
     size: uploadResult.fileSize,

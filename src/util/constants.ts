@@ -1,4 +1,4 @@
-import {FileRecord} from '#types/persistence-types'
+import {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 
@@ -14,4 +14,4 @@ export const defaultFile = {
   contentType: getRequiredEnv('DefaultFileContentType'),
   title: 'Welcome! Tap to download.',
   status: FileStatus.Downloaded
-} as FileRecord
+} as File

@@ -78,10 +78,10 @@ jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
 
 ```typescript
 import {createElectroDBEntityMock} from '../../../test/helpers/electrodb-mock'
-import type {FileRecord} from '../../../types/persistence-types'
+import type {File} from '../../../types/domain-models'
 
 // Create mock before mocking module
-const filesMock = createElectroDBEntityMock<FileRecord>()
+const filesMock = createElectroDBEntityMock<File>()
 
 // Mock the entity module
 jest.unstable_mockModule('../../../entities/Files', () => ({

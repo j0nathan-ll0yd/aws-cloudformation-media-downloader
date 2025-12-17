@@ -1,4 +1,4 @@
-import {FileRecord} from '#types/persistence-types'
+import {File} from '#types/domain-models'
 import {DownloadReadyNotification, MetadataNotification} from '#types/notification-types'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {PublishInput} from '#lib/vendor/AWS/SNS'
@@ -56,7 +56,7 @@ export function createMetadataNotification(
  * @returns SQS message body and attributes for routing
  */
 export function createDownloadReadyNotification(
-  dbFile: FileRecord,
+  dbFile: File,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
   const file: DownloadReadyNotification = {fileId: dbFile.fileId, key: dbFile.key, size: dbFile.size, url: dbFile.url!}

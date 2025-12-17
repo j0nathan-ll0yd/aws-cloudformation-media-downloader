@@ -1,28 +1,8 @@
-import {FileStatus} from './enums'
-
 /**
- * Permanent media file metadata.
- *
- * This contains ONLY permanent metadata about the media file.
- * Transient download state (retries, scheduling, errors) is in FileDownloads entity.
- *
- * Status values: 'Queued' | 'Downloading' | 'Downloaded' | 'Failed'
+ * Persistence/relationship types for DynamoDB join tables
  */
-export interface FileRecord {
-  fileId: string
-  size: number
-  authorName: string
-  authorUser: string
-  publishDate: string
-  description: string
-  key: string
-  url?: string
-  contentType: string
-  title: string
-  status: FileStatus
-}
 
-export interface UserDeviceRecord {
+export interface UserDevice {
   userId: string
   deviceId: string
 }
