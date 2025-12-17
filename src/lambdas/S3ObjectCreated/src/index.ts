@@ -1,9 +1,9 @@
-import {Context, S3EventRecord} from 'aws-lambda'
+import {S3EventRecord} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {DynamoDBFile} from '#types/main'
-import {logDebug, s3Records, wrapEventHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {EventHandlerParams, logDebug, s3Records, wrapEventHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -62,7 +62,7 @@ function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
  * Process a single S3 record - dispatch notifications to all users of the file
  * @notExported
  */
-async function processS3Record(record: S3EventRecord, _context: Context, _metadata: WrapperMetadata): Promise<void> {
+async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Promise<void> {
   const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
   const file = await getFileByFilename(fileName)
   const userIds = await getUsersOfFile(file)

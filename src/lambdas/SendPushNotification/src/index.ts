@@ -1,9 +1,9 @@
-import {Context, SQSRecord} from 'aws-lambda'
+import {SQSRecord} from 'aws-lambda'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
 import {PublishInput, publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import {Device, FileNotificationType} from '#types/main'
-import {logDebug, logError, logInfo, sqsRecords, wrapEventHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {EventHandlerParams, logDebug, logError, logInfo, sqsRecords, wrapEventHandler} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {transformToAPNSNotification} from '#util/transformers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -45,7 +45,7 @@ async function getDevice(deviceId: string): Promise<Device> {
  * Process a single SQS record - send push notifications to all user devices
  * @notExported
  */
-async function processSQSRecord(record: SQSRecord, _context: Context, _metadata: WrapperMetadata): Promise<void> {
+async function processSQSRecord({record}: EventHandlerParams<SQSRecord>): Promise<void> {
   const notificationType = record.messageAttributes.notificationType?.stringValue as FileNotificationType
   if (!SUPPORTED_NOTIFICATION_TYPES.includes(notificationType)) {
     logInfo('Skipping unsupported notification type', notificationType)

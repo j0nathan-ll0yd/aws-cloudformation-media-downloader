@@ -33,6 +33,7 @@
     "ci:local:full": "./bin/ci-local-full.sh",
     "validate:docs": "./bin/validate-docs.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
+    "validate:config": "node --disable-warning=DEP0180 --import tsx scripts/validateConfig.ts",
     "lint:workflows": "actionlint",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",

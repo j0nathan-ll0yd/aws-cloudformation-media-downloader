@@ -1,12 +1,12 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import {getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
 import {deleteDevice, getUserDevices} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, Device} from '#types/main'
+import {Device} from '#types/main'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {retryUnprocessedDelete} from '#util/retry'
@@ -50,7 +50,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(wrapApiHandler(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   const {userId} = getUserDetailsFromEvent(event)
   if (!userId) {
     // This should never happen; enforced by the API Gateway Authorizer

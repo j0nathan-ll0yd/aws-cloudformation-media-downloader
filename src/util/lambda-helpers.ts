@@ -237,6 +237,34 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
  */
 export type WrapperMetadata = {traceId: string}
 
+/** Parameters passed to wrapped API Gateway handlers */
+export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
+  event: TEvent
+  context: Context
+  metadata: WrapperMetadata
+}
+
+/** Parameters passed to wrapped authorizer handlers */
+export type AuthorizerParams = {
+  event: APIGatewayRequestAuthorizerEvent
+  context: Context
+  metadata: WrapperMetadata
+}
+
+/** Parameters passed to wrapped event handlers (S3, SQS) */
+export type EventHandlerParams<TRecord> = {
+  record: TRecord
+  context: Context
+  metadata: WrapperMetadata
+}
+
+/** Parameters passed to wrapped scheduled handlers */
+export type ScheduledHandlerParams = {
+  event: ScheduledEvent
+  context: Context
+  metadata: WrapperMetadata
+}
+
 /**
  * Wraps an API Gateway handler with automatic error handling and fixture logging.
  * Eliminates try-catch boilerplate and ensures consistent error responses.
@@ -246,7 +274,7 @@ export type WrapperMetadata = {traceId: string}
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapApiHandler(async (event, context) => {
+ * export const handler = withXRay(wrapApiHandler(async ({event, context}) => {
  *   // Business logic - just throw on error
  *   if (!valid) throw new UnauthorizedError('Invalid')
  *   return response(context, 200, data)
@@ -254,14 +282,14 @@ export type WrapperMetadata = {traceId: string}
  * ```
  */
 export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
-  handler: (event: TEvent, context: Context, metadata: WrapperMetadata) => Promise<APIGatewayProxyResult>
+  handler: (params: ApiHandlerParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
     logInfo('event <=', event as object)
     logIncomingFixture(event)
     try {
-      const result = await handler(event, context, {traceId})
+      const result = await handler({event, context, metadata: {traceId}})
       logOutgoingFixture(result)
       return result
     } catch (error) {
@@ -281,20 +309,20 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapAuthorizer(async (event, context) => {
+ * export const handler = withXRay(wrapAuthorizer(async ({event}) => {
  *   if (!valid) throw new Error('Unauthorized')  // → 401
  *   return generateAllow(userId, event.methodArn)
  * }))
  * ```
  */
 export function wrapAuthorizer(
-  handler: (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata: WrapperMetadata) => Promise<CustomAuthorizerResult>
+  handler: (params: AuthorizerParams) => Promise<CustomAuthorizerResult>
 ): (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata) => Promise<CustomAuthorizerResult> {
   return async (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata): Promise<CustomAuthorizerResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
     logInfo('event <=', event)
     try {
-      const result = await handler(event, context, {traceId})
+      const result = await handler({event, context, metadata: {traceId}})
       logDebug('response ==', result)
       return result
     } catch (error) {
@@ -320,7 +348,7 @@ export function wrapAuthorizer(
  * @example
  * ```typescript
  * export const handler = withXRay(wrapEventHandler(
- *   async (record, context) => {
+ *   async ({record}) => {
  *     // Process single S3 record
  *     await processFile(record.s3.object.key)
  *   },
@@ -329,7 +357,7 @@ export function wrapAuthorizer(
  * ```
  */
 export function wrapEventHandler<TEvent, TRecord>(
-  handler: (record: TRecord, context: Context, metadata: WrapperMetadata) => Promise<void>,
+  handler: (params: EventHandlerParams<TRecord>) => Promise<void>,
   options: {getRecords: (event: TEvent) => TRecord[]}
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<void> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<void> => {
@@ -340,7 +368,7 @@ export function wrapEventHandler<TEvent, TRecord>(
 
     for (const record of records) {
       try {
-        await handler(record, context, {traceId})
+        await handler({record, context, metadata: {traceId}})
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         logError('record processing error', {record, error: err.message})
@@ -363,20 +391,20 @@ export function wrapEventHandler<TEvent, TRecord>(
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapScheduledHandler(async (event, context) => {
+ * export const handler = withXRay(wrapScheduledHandler(async () => {
  *   // Scheduled task logic
  *   await pruneOldRecords()
  * }))
  * ```
  */
 export function wrapScheduledHandler<TResult = void>(
-  handler: (event: ScheduledEvent, context: Context, metadata: WrapperMetadata) => Promise<TResult>
+  handler: (params: ScheduledHandlerParams) => Promise<TResult>
 ): (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
   return async (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
     logInfo('scheduled event <=', event)
     try {
-      const result = await handler(event, context, {traceId})
+      const result = await handler({event, context, metadata: {traceId}})
       logInfo('scheduled result =>', result as object)
       return result
     } catch (error) {

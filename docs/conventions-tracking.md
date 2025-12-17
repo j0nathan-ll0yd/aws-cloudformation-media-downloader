@@ -4,6 +4,29 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-12-16
+
+1. **No Underscore-Prefixed Unused Variables** (Rule)
+   - **What**: Never use underscore-prefixed variables (`_event`, `_context`, `_metadata`) to suppress unused variable warnings
+   - **Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`"
+   - **Solution**: Use object destructuring in function signatures to extract only needed properties
+   - **Example**: `({event, context}: ApiHandlerParams)` instead of `(event, context, _metadata)`
+   - **Detected**: During Lambda wrapper refactoring
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: CRITICAL
+   - **Status**: Pending documentation
+   - **Enforcement**: MCP config-enforcement rule validates eslint.config.mjs; CI runs validate:config
+
+2. **Configuration Drift Detection** (Pattern)
+   - **What**: MCP validation rules detect configuration changes that weaken project enforcement
+   - **Why**: Configuration files can silently weaken enforcement standards (e.g., adding ignore patterns)
+   - **Detected Patterns**: ESLint underscore ignore patterns, disabled TSConfig strict settings, excessive dprint line width
+   - **Detected**: During MCP tooling expansion
+   - **Target**: docs/wiki/Infrastructure/MCP-Validation-Rules.md
+   - **Priority**: HIGH
+   - **Status**: Pending documentation
+   - **Enforcement**: CI validates on every push (unit-tests.yml)
+
 ### Detected: 2025-11-28
 
 1. **Production Fixture Logging** (Testing Pattern)
@@ -270,6 +293,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-11-29
-- **Total Conventions**: 27 detected, 27 documented, 0 pending
+- **Last Updated**: 2025-12-16
+- **Total Conventions**: 29 detected, 27 documented, 2 pending
 - **Convention Capture System**: Active

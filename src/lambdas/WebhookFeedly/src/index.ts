@@ -1,14 +1,14 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
-import {CustomAPIGatewayRequestAuthorizerEvent, DynamoDBFile} from '#types/main'
+import {DynamoDBFile} from '#types/main'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {getUserDetailsFromEvent, logDebug, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, getUserDetailsFromEvent, logDebug, response, wrapApiHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
@@ -116,7 +116,7 @@ async function sendFileNotification(file: DynamoDBFile, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   const requestBody = getPayloadFromEvent(event) as Webhook
   validateRequest(requestBody, feedlyEventSchema)
   const fileId = getVideoID(requestBody.articleURL)

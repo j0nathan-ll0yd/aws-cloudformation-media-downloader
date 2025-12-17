@@ -1,8 +1,8 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserSubscribe} from '#types/main'
+import {APIGatewayProxyResult} from 'aws-lambda'
+import {UserSubscribe} from '#types/main'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'
-import {response, verifyPlatformConfiguration, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, response, verifyPlatformConfiguration, wrapApiHandler} from '#util/lambda-helpers'
 import {subscribeEndpointToTopic} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -14,7 +14,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as UserSubscribe
   validateRequest(requestBody, userSubscribeSchema)

@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(4)
+      expect(allRules.length).toBe(5)
     })
 
     test('should contain all expected rules', () => {
@@ -39,6 +39,7 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('electrodb-mocking')
       expect(ruleNames).toContain('import-order')
       expect(ruleNames).toContain('response-helpers')
+      expect(ruleNames).toContain('config-enforcement')
     })
   })
 
@@ -48,6 +49,7 @@ describe('validation exports', () => {
       expect(rulesByName['electrodb-mocking']).toBeDefined()
       expect(rulesByName['import-order']).toBeDefined()
       expect(rulesByName['response-helpers']).toBeDefined()
+      expect(rulesByName['config-enforcement']).toBeDefined()
     })
 
     test('should have aliases', () => {
@@ -55,6 +57,7 @@ describe('validation exports', () => {
       expect(rulesByName['electrodb']).toBe(rulesByName['electrodb-mocking'])
       expect(rulesByName['imports']).toBe(rulesByName['import-order'])
       expect(rulesByName['response']).toBe(rulesByName['response-helpers'])
+      expect(rulesByName['config']).toBe(rulesByName['config-enforcement'])
     })
   })
 

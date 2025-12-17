@@ -1,12 +1,12 @@
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayProxyResult} from 'aws-lambda'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '#lib/vendor/AWS/SNS'
-import {CustomAPIGatewayRequestAuthorizerEvent, Device, DeviceRegistrationRequest} from '#types/main'
+import {Device, DeviceRegistrationRequest} from '#types/main'
 import {UserStatus} from '#types/enums'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerDeviceSchema} from '#util/constraints'
-import {getUserDetailsFromEvent, logDebug, response, verifyPlatformConfiguration, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, getUserDetailsFromEvent, logDebug, response, verifyPlatformConfiguration, wrapApiHandler} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '#util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -100,7 +100,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
   validateRequest(requestBody, registerDeviceSchema)

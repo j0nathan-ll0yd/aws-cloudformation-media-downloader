@@ -8,8 +8,8 @@
  * Response: 200 with token, expiresAt, sessionId; 401 for invalid session; 500 for errors
  */
 
-import {APIGatewayProxyEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {logDebug, logError, logInfo, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
+import {ApiHandlerParams, logDebug, logError, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -23,7 +23,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  * @param context - Lambda context
  * @returns API Gateway proxy result with refreshed session info
  */
-export const handler = withXRay(wrapApiHandler(async (event: APIGatewayProxyEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
   // Extract and validate Authorization header
   const authHeader = event.headers?.Authorization || event.headers?.authorization
   if (!authHeader) {

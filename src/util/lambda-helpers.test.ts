@@ -191,7 +191,7 @@ describe('lambda-helpers', () => {
 
     it('should return handler result on success', async () => {
       const {wrapApiHandler, response} = await import('./lambda-helpers')
-      const handler = wrapApiHandler<TestEvent>(async (_event, context) => response(context, 200, {success: true}))
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {success: true}))
 
       const result = await handler({httpMethod: 'GET'}, mockContext)
 
@@ -213,7 +213,7 @@ describe('lambda-helpers', () => {
     it('should pass metadata with traceId to handler', async () => {
       const {wrapApiHandler, response} = await import('./lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
-      const handler = wrapApiHandler<TestEvent>(async (_event, context, metadata) => {
+      const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
         return response(context, 200, {})
       })
@@ -226,7 +226,7 @@ describe('lambda-helpers', () => {
     it('should use provided metadata traceId when available', async () => {
       const {wrapApiHandler, response} = await import('./lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
-      const handler = wrapApiHandler<TestEvent>(async (_event, context, metadata) => {
+      const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
         return response(context, 200, {})
       })
@@ -238,7 +238,7 @@ describe('lambda-helpers', () => {
 
     it('should log fixtures for incoming event and outgoing result', async () => {
       const {wrapApiHandler, response} = await import('./lambda-helpers')
-      const handler = wrapApiHandler<TestEvent>(async (_event, context) => response(context, 200, {data: 'test'}))
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {data: 'test'}))
 
       await handler({testField: 'value'}, mockContext)
 
@@ -301,7 +301,7 @@ describe('lambda-helpers', () => {
       const {wrapEventHandler} = await import('./lambda-helpers')
       const processedRecords: string[] = []
       const handler = wrapEventHandler(
-        async (record: {id: string}) => {
+        async ({record}: {record: {id: string}; context: Context; metadata: {traceId: string}}) => {
           processedRecords.push(record.id)
         },
         {getRecords: (event: {records: {id: string}[]}) => event.records}
@@ -315,14 +315,15 @@ describe('lambda-helpers', () => {
     it('should continue processing even when some records fail', async () => {
       const {wrapEventHandler} = await import('./lambda-helpers')
       const processedRecords: string[] = []
+      type RecordType = {id: string; shouldFail?: boolean}
       const handler = wrapEventHandler(
-        async (record: {id: string; shouldFail?: boolean}) => {
+        async ({record}: {record: RecordType; context: Context; metadata: {traceId: string}}) => {
           if (record.shouldFail) {
             throw new Error(`Record ${record.id} failed`)
           }
           processedRecords.push(record.id)
         },
-        {getRecords: (event: {records: {id: string; shouldFail?: boolean}[]}) => event.records}
+        {getRecords: (event: {records: RecordType[]}) => event.records}
       )
 
       await handler({records: [{id: '1'}, {id: '2', shouldFail: true}, {id: '3'}]}, mockContext)
@@ -367,7 +368,7 @@ describe('lambda-helpers', () => {
     it('should pass metadata with traceId to handler', async () => {
       const {wrapScheduledHandler} = await import('./lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
-      const handler = wrapScheduledHandler(async (_event, _context, metadata) => {
+      const handler = wrapScheduledHandler(async ({metadata}) => {
         receivedMetadata = metadata
       })
 

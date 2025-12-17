@@ -10,11 +10,11 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserLogin} from '#types/main'
+import {APIGatewayProxyResult} from 'aws-lambda'
+import {UserLogin} from '#types/main'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
-import {logInfo, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -34,7 +34,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async (event: CustomAPIGatewayRequestAuthorizerEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
   // 1. Validate request body
   const requestBody = getPayloadFromEvent(event) as UserLogin
   validateRequest(requestBody, loginUserSchema)

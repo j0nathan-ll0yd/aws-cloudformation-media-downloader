@@ -1,7 +1,6 @@
-import {Context, ScheduledEvent} from 'aws-lambda'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {logDebug, logError, logInfo, wrapScheduledHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo, wrapScheduledHandler} from '#util/lambda-helpers'
 import {UnexpectedError} from '#util/errors'
 import {ApplePushNotificationResponse, Device} from '#types/main'
 import {deleteDevice} from '#util/shared'
@@ -95,7 +94,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * @returns PruneDevicesResult with counts of devices checked, pruned, and any errors
  * @notExported
  */
-export const handler = withXRay(wrapScheduledHandler(async (_event: ScheduledEvent, _context: Context, _metadata: WrapperMetadata): Promise<PruneDevicesResult> => {
+export const handler = withXRay(wrapScheduledHandler(async (): Promise<PruneDevicesResult> => {
   const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()

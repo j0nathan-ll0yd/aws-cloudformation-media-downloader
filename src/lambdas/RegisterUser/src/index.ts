@@ -15,11 +15,11 @@
  * This is only populated on first sign-in, so we cache it for new user registration.
  */
 
-import {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {UserRegistration} from '#types/main'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerUserSchema} from '#util/constraints'
-import {logInfo, response, wrapApiHandler, WrapperMetadata} from '#util/lambda-helpers'
+import {ApiHandlerParams, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {Users} from '#entities/Users'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -40,7 +40,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async (event: APIGatewayEvent, context: Context, _metadata: WrapperMetadata): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
   // 1. Validate request
   const requestBody = getPayloadFromEvent(event) as UserRegistration
   validateRequest(requestBody, registerUserSchema)
