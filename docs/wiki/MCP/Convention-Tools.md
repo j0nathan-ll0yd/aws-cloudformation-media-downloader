@@ -52,6 +52,8 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 - `all` - Run all applicable validations on a file
 - `aws-sdk` - Check AWS SDK encapsulation (CRITICAL)
 - `electrodb` - Check ElectroDB mocking patterns (CRITICAL)
+- `config` - Check for configuration drift (CRITICAL)
+- `types` - Check exported type location (HIGH)
 - `imports` - Check import ordering (MEDIUM)
 - `response` - Check response helper usage (HIGH)
 - `summary` - Concise validation summary
@@ -62,6 +64,8 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 |------|----------|-------------|
 | aws-sdk-encapsulation | CRITICAL | No direct AWS SDK imports outside lib/vendor/AWS/ |
 | electrodb-mocking | CRITICAL | Test files must use createElectroDBEntityMock() |
+| config-enforcement | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
+| types-location | HIGH | Exported types must be in src/types/ directory |
 | response-helpers | HIGH | Lambda handlers must use response() helper |
 | import-order | MEDIUM | Imports grouped: node → aws-lambda → external → entities → vendor → types → utilities → relative |
 
@@ -182,6 +186,8 @@ src/mcp/
     └── rules/
         ├── aws-sdk-encapsulation.ts
         ├── electrodb-mocking.ts
+        ├── config-enforcement.ts
+        ├── types-location.ts
         ├── import-order.ts
         └── response-helpers.ts
 ```

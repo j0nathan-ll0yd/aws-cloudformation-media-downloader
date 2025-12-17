@@ -1,8 +1,9 @@
 import {APIGatewayProxyResult} from 'aws-lambda'
 import {UserSubscribe} from '#types/main'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'
-import {ApiHandlerParams, response, verifyPlatformConfiguration, wrapApiHandler} from '#util/lambda-helpers'
+import {response, verifyPlatformConfiguration, wrapApiHandler} from '#util/lambda-helpers'
 import {subscribeEndpointToTopic} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 

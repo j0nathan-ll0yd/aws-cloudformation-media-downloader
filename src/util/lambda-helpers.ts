@@ -232,38 +232,7 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
 // Lambda Handler Wrappers
 // ============================================================================
 
-/**
- * Metadata passed to wrapped handlers
- */
-export type WrapperMetadata = {traceId: string}
-
-/** Parameters passed to wrapped API Gateway handlers */
-export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
-  event: TEvent
-  context: Context
-  metadata: WrapperMetadata
-}
-
-/** Parameters passed to wrapped authorizer handlers */
-export type AuthorizerParams = {
-  event: APIGatewayRequestAuthorizerEvent
-  context: Context
-  metadata: WrapperMetadata
-}
-
-/** Parameters passed to wrapped event handlers (S3, SQS) */
-export type EventHandlerParams<TRecord> = {
-  record: TRecord
-  context: Context
-  metadata: WrapperMetadata
-}
-
-/** Parameters passed to wrapped scheduled handlers */
-export type ScheduledHandlerParams = {
-  event: ScheduledEvent
-  context: Context
-  metadata: WrapperMetadata
-}
+import type {ApiHandlerParams, AuthorizerParams, EventHandlerParams, ScheduledHandlerParams, WrapperMetadata} from '#types/lambda-wrappers'
 
 /**
  * Wraps an API Gateway handler with automatic error handling and fixture logging.

@@ -38,7 +38,7 @@ async function processFile(fileId: string): Promise<void> {
 }
 
 // Handler with wrappers - business logic only, no try-catch needed
-export const handler = withXRay(wrapApiHandler(async (event, context, _metadata) => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   await processFile(event.fileId)
   return response(context, 200, {success: true})
   // Errors automatically converted to 500 responses
@@ -85,12 +85,35 @@ return {
 
 ## Common Patterns
 
+## No Underscore-Prefixed Unused Variables (CRITICAL)
+
+**Rule**: Never use underscore-prefixed variables (`_event`, `_context`, `_metadata`) to suppress unused variable warnings.
+
+**Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`". This pattern hides poor API design and creates maintenance debt.
+
+**Solution**: Use object destructuring to extract only the properties you need:
+
+```typescript
+// ❌ WRONG - Underscore-prefixed unused parameters
+export const handler = wrapApiHandler(async (event, context, _metadata) => {
+  // _metadata is unused but accepted to satisfy signature
+})
+
+// ✅ CORRECT - Object destructuring extracts only what's needed
+export const handler = wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
+  // Only event and context are destructured
+})
+```
+
+**Enforcement**: MCP `config-enforcement` rule validates that ESLint config doesn't allow underscore-prefixed variables.
+
 ### API Gateway Handler
 ```typescript
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {wrapApiHandler, response} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
-export const handler = withXRay(wrapApiHandler(async (event, context, _metadata) => {
+export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   const {userId} = getUserDetailsFromEvent(event)
   // Business logic - just throw errors, wrapper handles conversion
   if (!userId) throw new UnauthorizedError('Login required')
@@ -100,10 +123,11 @@ export const handler = withXRay(wrapApiHandler(async (event, context, _metadata)
 
 ### API Gateway Authorizer
 ```typescript
+import type {AuthorizerParams} from '#types/lambda-wrappers'
 import {wrapAuthorizer} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
-export const handler = withXRay(wrapAuthorizer(async (event, _context, _metadata) => {
+export const handler = withXRay(wrapAuthorizer(async ({event}: AuthorizerParams) => {
   // Throw Error('Unauthorized') for 401 response
   if (!isValid) throw new Error('Unauthorized')
   return generateAllow(userId, event.methodArn)
@@ -112,11 +136,12 @@ export const handler = withXRay(wrapAuthorizer(async (event, _context, _metadata
 
 ### S3 Event Handler
 ```typescript
+import type {EventHandlerParams} from '#types/lambda-wrappers'
 import {wrapEventHandler, s3Records} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
 // Process individual records - errors don't stop other records
-async function processS3Record(record: S3EventRecord, _context: Context, _metadata: WrapperMetadata) {
+async function processS3Record({record}: EventHandlerParams<S3EventRecord>) {
   const key = record.s3.object.key
   await processFile(key)
 }
@@ -126,11 +151,12 @@ export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s
 
 ### SQS Handler
 ```typescript
+import type {EventHandlerParams} from '#types/lambda-wrappers'
 import {wrapEventHandler, sqsRecords} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
 // Process individual messages - errors logged but don't stop processing
-async function processSQSRecord(record: SQSRecord, _context: Context, _metadata: WrapperMetadata) {
+async function processSQSRecord({record}: EventHandlerParams<SQSRecord>) {
   const body = JSON.parse(record.body)
   await handleMessage(body)
 }
@@ -140,10 +166,11 @@ export const handler = withXRay(wrapEventHandler(processSQSRecord, {getRecords: 
 
 ### Scheduled Event Handler
 ```typescript
+import type {ScheduledHandlerParams} from '#types/lambda-wrappers'
 import {wrapScheduledHandler} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
-export const handler = withXRay(wrapScheduledHandler(async (_event, _context, _metadata) => {
+export const handler = withXRay(wrapScheduledHandler(async ({}: ScheduledHandlerParams) => {
   // Scheduled task logic - errors propagate to CloudWatch
   await pruneOldRecords()
   return {pruned: count}

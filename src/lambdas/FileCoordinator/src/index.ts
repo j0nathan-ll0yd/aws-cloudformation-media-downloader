@@ -1,6 +1,7 @@
 import {APIGatewayProxyResult, ScheduledEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {ApiHandlerParams, logDebug, logInfo, putMetrics, response, wrapApiHandler} from '#util/lambda-helpers'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import {logDebug, logInfo, putMetrics, response, wrapApiHandler} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'

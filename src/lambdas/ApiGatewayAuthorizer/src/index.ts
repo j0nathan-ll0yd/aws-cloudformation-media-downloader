@@ -1,5 +1,6 @@
 import {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {AuthorizerParams, logDebug, logError, logInfo, wrapAuthorizer} from '#util/lambda-helpers'
+import type {AuthorizerParams} from '#types/lambda-wrappers'
+import {logDebug, logError, logInfo, wrapAuthorizer} from '#util/lambda-helpers'
 import {ApiKey, getApiKeys, getUsage, getUsagePlans, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {validateSessionToken} from '#util/better-auth-helpers'

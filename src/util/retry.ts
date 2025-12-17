@@ -1,11 +1,5 @@
 import {logDebug} from './logging'
-
-export interface RetryConfig {
-  maxRetries?: number
-  initialDelayMs?: number
-  multiplier?: number
-  maxDelayMs?: number
-}
+import type {RetryConfig} from '#types/util'
 
 const DEFAULT_CONFIG: Required<RetryConfig> = {
   maxRetries: 3,

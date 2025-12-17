@@ -46,15 +46,7 @@ export function isCookieExpirationError(errorMessage: string): boolean {
   return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
 }
 
-/**
- * Result of fetching video info - either success with info or failure with error details
- */
-export interface FetchVideoInfoResult {
-  success: boolean
-  info?: YtDlpVideoInfo
-  error?: Error
-  isCookieError?: boolean
-}
+import type {FetchVideoInfoResult} from '#types/video'
 
 /**
  * Safely fetch video metadata using yt-dlp.

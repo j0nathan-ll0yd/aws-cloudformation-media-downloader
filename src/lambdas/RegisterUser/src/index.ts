@@ -17,9 +17,10 @@
 
 import {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {UserRegistration} from '#types/main'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerUserSchema} from '#util/constraints'
-import {ApiHandlerParams, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {Users} from '#entities/Users'
 import {withXRay} from '#lib/vendor/AWS/XRay'

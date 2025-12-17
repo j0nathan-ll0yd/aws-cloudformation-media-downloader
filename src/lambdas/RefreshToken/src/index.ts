@@ -9,7 +9,8 @@
  */
 
 import {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
-import {ApiHandlerParams, logDebug, logError, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import {logDebug, logError, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 

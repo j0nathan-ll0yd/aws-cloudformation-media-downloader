@@ -16,9 +16,10 @@ import {electrodbMockingRule} from './rules/electrodb-mocking'
 import {importOrderRule} from './rules/import-order'
 import {responseHelpersRule} from './rules/response-helpers'
 import {configEnforcementRule} from './rules/config-enforcement'
+import {typesLocationRule} from './rules/types-location'
 
 // Export all rules
-export const allRules: ValidationRule[] = [awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule]
+export const allRules: ValidationRule[] = [awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule, typesLocationRule]
 
 // Export rules by name for selective validation
 export const rulesByName: Record<string, ValidationRule> = {
@@ -31,11 +32,13 @@ export const rulesByName: Record<string, ValidationRule> = {
   'response-helpers': responseHelpersRule,
   response: responseHelpersRule, // alias
   'config-enforcement': configEnforcementRule,
-  config: configEnforcementRule // alias
+  config: configEnforcementRule, // alias
+  'types-location': typesLocationRule,
+  types: typesLocationRule // alias
 }
 
 // Export individual rules
-export {awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule}
+export {awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule, typesLocationRule}
 
 // Export types
 export * from './types'

@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {APIGatewayProxyEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {SessionPayload} from '#util/better-auth-helpers'
+import type {SessionPayload} from '#types/util'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 

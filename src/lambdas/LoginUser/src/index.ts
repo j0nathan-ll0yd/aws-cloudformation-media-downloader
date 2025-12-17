@@ -12,9 +12,10 @@
 
 import {APIGatewayProxyResult} from 'aws-lambda'
 import {UserLogin} from '#types/main'
+import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
-import {ApiHandlerParams, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 

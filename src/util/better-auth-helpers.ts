@@ -8,15 +8,7 @@
 import {Sessions} from '#entities/Sessions'
 import {logDebug, logError} from './lambda-helpers'
 import {UnauthorizedError} from './errors'
-
-/**
- * Session payload extracted from token
- */
-export interface SessionPayload {
-  userId: string
-  sessionId: string
-  expiresAt: number
-}
+import type {SessionPayload} from '#types/util'
 
 /**
  * Validates a session token and returns the session payload.
