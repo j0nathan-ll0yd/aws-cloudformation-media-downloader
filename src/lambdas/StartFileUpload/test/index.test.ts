@@ -11,10 +11,7 @@ import type {FetchVideoInfoResult} from '#types/video'
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
 const downloadVideoToS3Mock = jest.fn<(url: string, bucket: string, key: string) => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
-  fetchVideoInfo: fetchVideoInfoMock,
-  downloadVideoToS3: downloadVideoToS3Mock
-}))
+jest.unstable_mockModule('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
 // Mock ElectroDB Files entity (for permanent metadata)
 const filesMock = createElectroDBEntityMock()
@@ -263,7 +260,9 @@ describe('#StartFileUpload', () => {
     expect(sendMessageMock).toHaveBeenCalledTimes(3)
 
     // Verify sendMessage was called with correct parameters
-    const firstCall = sendMessageMock.mock.calls[0] as unknown as [{QueueUrl: string; MessageBody: string; MessageAttributes: {notificationType: {StringValue: string}}}]
+    const firstCall = sendMessageMock.mock.calls[0] as unknown as [
+      {QueueUrl: string; MessageBody: string; MessageAttributes: {notificationType: {StringValue: string}}}
+    ]
     expect(firstCall[0].QueueUrl).toBe('https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification')
     expect(firstCall[0].MessageBody).toContain('MetadataNotification')
     expect(firstCall[0].MessageAttributes.notificationType.StringValue).toBe('MetadataNotification')

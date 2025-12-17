@@ -40,21 +40,16 @@ export default [
     languageOptions: {parser: tsParser},
 
     rules: {
-      quotes: [2, 'single', {avoidEscape: true}],
+      // Code quality rules (dprint doesn't handle these)
+      'new-parens': 'error',
+      'no-caller': 'error',
+      'no-bitwise': 'error',
+      'no-cond-assign': 'error',
 
-      'max-len': ['error', {code: 250, ignoreUrls: true}],
-
-      'new-parens': 2,
-      'no-caller': 2,
-      'no-bitwise': 2,
-      'no-string-throw': 0,
-      'no-cond-assign': 2,
-      'no-consecutive-blank-lines': 0,
-      'no-console': [0, 'log', 'error', 'warn', 'info'],
-      semi: [2, 'never'],
-      eofline: 0,
-      'comma-dangle': ['error', 'never'],
+      // Documentation
       'tsdoc/syntax': 'warn'
+      // NOTE: Formatting rules (quotes, semi, comma-dangle, max-len) removed.
+      // dprint handles all formatting via dprint.json
     }
   }
 ]

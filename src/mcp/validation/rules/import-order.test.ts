@@ -56,7 +56,7 @@ import type {APIGatewayProxyEvent} from 'aws-lambda'`, {overwrite: true})
     })
 
     test('should skip files with less than 2 imports', () => {
-      const sourceFile = project.createSourceFile('test-single.ts', 'import {Users} from \'#entities/Users\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-single.ts', "import {Users} from '#entities/Users'", {overwrite: true})
 
       const violations = importOrderRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

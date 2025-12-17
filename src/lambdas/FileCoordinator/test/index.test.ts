@@ -40,9 +40,9 @@ describe('#FileCoordinator', () => {
 
   test('should handle scheduled event (with 1 pending download)', async () => {
     // Mock: first call (pending) returns 1 file, second call (scheduled) returns 0
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
-      .mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]})
-      .mockResolvedValueOnce({data: []})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockResolvedValueOnce({
+      data: []
+    })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
     const output = await handler(event, context)
@@ -53,9 +53,9 @@ describe('#FileCoordinator', () => {
 
   test('should process scheduled retries from FileDownloads', async () => {
     // Mock: first call (pending) returns 0, second call (scheduled) returns 1
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
-      .mockResolvedValueOnce({data: []})
-      .mockResolvedValueOnce({data: [{fileId: 'scheduled-retry-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce({
+      data: [{fileId: 'scheduled-retry-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+    })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
     const output = await handler(event, context)
@@ -68,9 +68,9 @@ describe('#FileCoordinator', () => {
 
   test('should process both pending downloads and scheduled retries', async () => {
     // Mock: first call (pending) returns 1, second call (scheduled) returns 1
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
-      .mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]})
-      .mockResolvedValueOnce({data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockResolvedValueOnce({
+      data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+    })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
     const output = await handler(event, context)
@@ -93,9 +93,7 @@ describe('#FileCoordinator', () => {
 
     test('should return 500 when scheduled query fails', async () => {
       // First call (pending) succeeds, second call (scheduled) fails
-      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go
-        .mockResolvedValueOnce({data: []})
-        .mockResolvedValueOnce(undefined)
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       expect(JSON.parse(output.body).error.message).toEqual('AWS request failed')

@@ -41,7 +41,9 @@ async function getScheduledFileIds(): Promise<string[]> {
   const nowSeconds = Math.floor(Date.now() / 1000)
 
   // Query FileDownloads with status='scheduled' and retryAfter <= now
-  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Scheduled}).where(({retryAfter}, {lte}) => lte(retryAfter, nowSeconds)).go()
+  const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Scheduled}).where(({retryAfter}, {lte}) =>
+    lte(retryAfter, nowSeconds)
+  ).go()
 
   logDebug('getScheduledFileIds =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {

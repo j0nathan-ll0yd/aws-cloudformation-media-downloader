@@ -20,12 +20,7 @@ type ModelName = 'user' | 'session' | 'account' | 'verification'
 /**
  * Primary key field for each model
  */
-const primaryKeyFields: Record<ModelName, string> = {
-  user: 'userId',
-  session: 'sessionId',
-  account: 'accountId',
-  verification: 'token'
-}
+const primaryKeyFields: Record<ModelName, string> = {user: 'userId', session: 'sessionId', account: 'accountId', verification: 'token'}
 
 /**
  * Transform input data from Better Auth format to ElectroDB format
@@ -63,8 +58,12 @@ function transformInputData(model: string, data: Record<string, unknown>): Recor
       result['lastName'] = parts.slice(1).join(' ') || ''
       delete result['name']
     }
-    if (!result['firstName']) result['firstName'] = ''
-    if (!result['lastName']) result['lastName'] = ''
+    if (!result['firstName']) {
+      result['firstName'] = ''
+    }
+    if (!result['lastName']) {
+      result['lastName'] = ''
+    }
     if (!result['identityProviders']) {
       result['identityProviders'] = {
         userId: '',
@@ -91,7 +90,9 @@ function transformInputData(model: string, data: Record<string, unknown>): Recor
  * Transform output data from ElectroDB format to Better Auth format
  */
 function transformOutputData(model: string, data: Record<string, unknown> | null): Record<string, unknown> | null {
-  if (!data) return null
+  if (!data) {
+    return null
+  }
 
   const result: Record<string, unknown> = {...data}
   const pkField = primaryKeyFields[model as ModelName]
@@ -132,14 +133,7 @@ type WhereClause = Array<{field: string; value: unknown; operator?: string}>
  * Creates a Better Auth adapter for ElectroDB/DynamoDB.
  */
 export const electroDBAdapter = createAdapterFactory({
-  config: {
-    adapterId: 'electrodb',
-    adapterName: 'ElectroDB',
-    supportsJSON: true,
-    supportsDates: false,
-    supportsBooleans: true,
-    supportsNumericIds: false
-  },
+  config: {adapterId: 'electrodb', adapterName: 'ElectroDB', supportsJSON: true, supportsDates: false, supportsBooleans: true, supportsNumericIds: false},
   adapter: () => ({
     async create<T>({model, data}: {model: string; data: Record<string, unknown>}): Promise<T> {
       logDebug('ElectroDB Adapter: create', {model, data})
@@ -183,13 +177,17 @@ export const electroDBAdapter = createAdapterFactory({
           case 'user': {
             if (pkCondition) {
               const result = await Users.get({userId: pkCondition.value as string}).go()
-              if (!result.data) return null
+              if (!result.data) {
+                return null
+              }
               return transformOutputData(model, result.data as Record<string, unknown>) as T
             }
             const emailCondition = where.find((w) => w.field === 'email')
             if (emailCondition) {
               const result = await Users.query.byEmail({email: emailCondition.value as string}).go()
-              if (!result.data || result.data.length === 0) return null
+              if (!result.data || result.data.length === 0) {
+                return null
+              }
               return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
             }
             break
@@ -197,7 +195,9 @@ export const electroDBAdapter = createAdapterFactory({
           case 'session': {
             if (pkCondition) {
               const result = await Sessions.get({sessionId: pkCondition.value as string}).go()
-              if (!result.data) return null
+              if (!result.data) {
+                return null
+              }
               return transformOutputData(model, result.data as Record<string, unknown>) as T
             }
             const tokenCondition = where.find((w) => w.field === 'token')
@@ -205,12 +205,16 @@ export const electroDBAdapter = createAdapterFactory({
             // Better Auth often looks up sessions by token alone
             if (tokenCondition) {
               const result = await Sessions.query.byToken({token: tokenCondition.value as string}).go()
-              if (!result.data || result.data.length === 0) return null
+              if (!result.data || result.data.length === 0) {
+                return null
+              }
               return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
             }
             if (userIdCondition) {
               const result = await Sessions.query.byUser({userId: userIdCondition.value as string}).go()
-              if (!result.data || result.data.length === 0) return null
+              if (!result.data || result.data.length === 0) {
+                return null
+              }
               return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
             }
             break
@@ -218,7 +222,9 @@ export const electroDBAdapter = createAdapterFactory({
           case 'account': {
             if (pkCondition) {
               const result = await Accounts.get({accountId: pkCondition.value as string}).go()
-              if (!result.data) return null
+              if (!result.data) {
+                return null
+              }
               return transformOutputData(model, result.data as Record<string, unknown>) as T
             }
             const providerIdCondition = where.find((w) => w.field === 'providerId')
@@ -228,27 +234,31 @@ export const electroDBAdapter = createAdapterFactory({
                 providerId: providerIdCondition.value,
                 providerAccountId: accountIdCondition.value
               })
-              const result = await Accounts.query
-                .byProvider({
-                  providerId: providerIdCondition.value as string,
-                  providerAccountId: accountIdCondition.value as string
-                })
-                .go()
+              const result = await Accounts.query.byProvider({
+                providerId: providerIdCondition.value as string,
+                providerAccountId: accountIdCondition.value as string
+              }).go()
               logDebug('ElectroDB Adapter: account by provider result', {
                 found: result.data?.length || 0,
                 data: result.data?.[0] ? {accountId: result.data[0].accountId, providerId: result.data[0].providerId} : null
               })
-              if (!result.data || result.data.length === 0) return null
+              if (!result.data || result.data.length === 0) {
+                return null
+              }
               return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
             }
             const userIdCondition = where.find((w) => w.field === 'userId')
             if (userIdCondition) {
               const result = await Accounts.query.byUser({userId: userIdCondition.value as string}).go()
-              if (!result.data || result.data.length === 0) return null
+              if (!result.data || result.data.length === 0) {
+                return null
+              }
               // Filter by other conditions if present
               if (providerIdCondition) {
                 const match = result.data.find((a) => a.providerId === providerIdCondition.value)
-                if (!match) return null
+                if (!match) {
+                  return null
+                }
                 return transformOutputData(model, match as Record<string, unknown>) as T
               }
               return transformOutputData(model, result.data[0] as Record<string, unknown>) as T
@@ -259,7 +269,9 @@ export const electroDBAdapter = createAdapterFactory({
             const tokenCondition = where.find((w) => w.field === 'token' || w.field === 'id')
             if (tokenCondition) {
               const result = await VerificationTokens.get({token: tokenCondition.value as string}).go()
-              if (!result.data) return null
+              if (!result.data) {
+                return null
+              }
               return transformOutputData(model, result.data as Record<string, unknown>) as T
             }
             break
@@ -322,24 +334,24 @@ export const electroDBAdapter = createAdapterFactory({
 
         switch (model) {
           case 'user':
-            result = await Users.update({userId: pkCondition.value as string})
-              .set(transformedUpdate as Parameters<ReturnType<typeof Users.update>['set']>[0])
-              .go()
+            result = await Users.update({userId: pkCondition.value as string}).set(
+              transformedUpdate as Parameters<ReturnType<typeof Users.update>['set']>[0]
+            ).go()
             break
           case 'session':
-            result = await Sessions.update({sessionId: pkCondition.value as string})
-              .set(transformedUpdate as Parameters<ReturnType<typeof Sessions.update>['set']>[0])
-              .go()
+            result = await Sessions.update({sessionId: pkCondition.value as string}).set(
+              transformedUpdate as Parameters<ReturnType<typeof Sessions.update>['set']>[0]
+            ).go()
             break
           case 'account':
-            result = await Accounts.update({accountId: pkCondition.value as string})
-              .set(transformedUpdate as Parameters<ReturnType<typeof Accounts.update>['set']>[0])
-              .go()
+            result = await Accounts.update({accountId: pkCondition.value as string}).set(
+              transformedUpdate as Parameters<ReturnType<typeof Accounts.update>['set']>[0]
+            ).go()
             break
           case 'verification':
-            result = await VerificationTokens.update({token: pkCondition.value as string})
-              .set(transformedUpdate as Parameters<ReturnType<typeof VerificationTokens.update>['set']>[0])
-              .go()
+            result = await VerificationTokens.update({token: pkCondition.value as string}).set(
+              transformedUpdate as Parameters<ReturnType<typeof VerificationTokens.update>['set']>[0]
+            ).go()
             break
           default:
             return null

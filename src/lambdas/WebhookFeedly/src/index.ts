@@ -68,11 +68,7 @@ async function addFile(fileId: string, sourceUrl?: string) {
   logDebug('addFile Files.create =>', fileResponse)
 
   // Create FileDownloads record to track download orchestration
-  const downloadResponse = await FileDownloads.create({
-    fileId,
-    status: DownloadStatus.Pending,
-    sourceUrl
-  }).go()
+  const downloadResponse = await FileDownloads.create({fileId, status: DownloadStatus.Pending, sourceUrl}).go()
   logDebug('addFile FileDownloads.create =>', downloadResponse)
 
   return fileResponse
@@ -98,11 +94,7 @@ async function getFile(fileId: string): Promise<DynamoDBFile | undefined> {
  */
 async function sendFileNotification(file: DynamoDBFile, userId: string) {
   const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
-  const sendMessageParams: SendMessageRequest = {
-    MessageBody: messageBody,
-    MessageAttributes: messageAttributes,
-    QueueUrl: getRequiredEnv('SNSQueueUrl')
-  }
+  const sendMessageParams: SendMessageRequest = {MessageBody: messageBody, MessageAttributes: messageAttributes, QueueUrl: getRequiredEnv('SNSQueueUrl')}
   logDebug('sendMessage <=', sendMessageParams)
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)

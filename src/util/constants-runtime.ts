@@ -6,12 +6,7 @@
  */
 
 /** Default retry configuration for DynamoDB batch operations */
-export const DEFAULT_RETRY_CONFIG = {
-  MAX_RETRIES: 5,
-  INITIAL_DELAY_MS: 100,
-  MULTIPLIER: 2,
-  MAX_DELAY_MS: 20000
-} as const
+export const DEFAULT_RETRY_CONFIG = {MAX_RETRIES: 5, INITIAL_DELAY_MS: 100, MULTIPLIER: 2, MAX_DELAY_MS: 20000} as const
 
 /** Batch processing configuration */
 export const BATCH_PROCESSING = {
