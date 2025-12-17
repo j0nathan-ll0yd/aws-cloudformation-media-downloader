@@ -50,24 +50,39 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 **Query Types:**
 - `rules` - List all available validation rules
 - `all` - Run all applicable validations on a file
-- `aws-sdk` - Check AWS SDK encapsulation (CRITICAL)
-- `electrodb` - Check ElectroDB mocking patterns (CRITICAL)
-- `config` - Check for configuration drift (CRITICAL)
-- `types` - Check exported type location (HIGH)
-- `imports` - Check import ordering (MEDIUM)
-- `response` - Check response helper usage (HIGH)
 - `summary` - Concise validation summary
+- **CRITICAL Rules:**
+  - `aws-sdk` - Check AWS SDK encapsulation
+  - `electrodb` - Check ElectroDB mocking patterns
+  - `config` - Check for configuration drift
+  - `env` - Check environment variable validation
+  - `cascade` - Check cascade deletion safety
+- **HIGH Rules:**
+  - `response` - Check response helper usage
+  - `types` - Check exported type location
+  - `batch` - Check batch operation retry handling
+  - `scan` - Check scan pagination handling
+- **MEDIUM Rules:**
+  - `imports` - Check import ordering
+  - `enum` - Check ResponseStatus enum usage
+  - `mock` - Check mock formatting patterns
 
 **Validation Rules:**
 
-| Rule | Severity | Description |
-|------|----------|-------------|
-| aws-sdk-encapsulation | CRITICAL | No direct AWS SDK imports outside lib/vendor/AWS/ |
-| electrodb-mocking | CRITICAL | Test files must use createElectroDBEntityMock() |
-| config-enforcement | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
-| types-location | HIGH | Exported types must be in src/types/ directory |
-| response-helpers | HIGH | Lambda handlers must use response() helper |
-| import-order | MEDIUM | Imports grouped: node → aws-lambda → external → entities → vendor → types → utilities → relative |
+| Rule | Alias | Severity | Description |
+|------|-------|----------|-------------|
+| aws-sdk-encapsulation | aws-sdk | CRITICAL | No direct AWS SDK imports outside lib/vendor/AWS/ |
+| electrodb-mocking | electrodb | CRITICAL | Test files must use createElectroDBEntityMock() |
+| config-enforcement | config | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
+| env-validation | env | CRITICAL | Raw process.env access must use getRequiredEnv() wrapper |
+| cascade-safety | cascade | CRITICAL | Promise.all with delete operations must use Promise.allSettled |
+| response-helpers | response | HIGH | Lambda handlers must use response() helper |
+| types-location | types | HIGH | Exported types must be in src/types/ directory |
+| batch-retry | batch | HIGH | Batch operations must use retryUnprocessed() wrapper |
+| scan-pagination | scan | HIGH | Scan operations must use scanAllPages() wrapper |
+| import-order | imports | MEDIUM | Imports grouped: node → aws-lambda → external → entities → vendor → types → utilities → relative |
+| response-enum | enum | MEDIUM | Use ResponseStatus enum instead of magic strings |
+| mock-formatting | mock | MEDIUM | Sequential mock returns should be separate statements |
 
 **Examples:**
 ```typescript
@@ -184,12 +199,18 @@ src/mcp/
     ├── types.ts           # Shared validation types
     ├── index.ts           # Unified validation interface
     └── rules/
-        ├── aws-sdk-encapsulation.ts
-        ├── electrodb-mocking.ts
-        ├── config-enforcement.ts
-        ├── types-location.ts
-        ├── import-order.ts
-        └── response-helpers.ts
+        ├── aws-sdk-encapsulation.ts  # CRITICAL
+        ├── electrodb-mocking.ts      # CRITICAL
+        ├── config-enforcement.ts     # CRITICAL
+        ├── env-validation.ts         # CRITICAL (NEW)
+        ├── cascade-safety.ts         # CRITICAL (NEW)
+        ├── response-helpers.ts       # HIGH
+        ├── types-location.ts         # HIGH
+        ├── batch-retry.ts            # HIGH (NEW)
+        ├── scan-pagination.ts        # HIGH (NEW)
+        ├── import-order.ts           # MEDIUM
+        ├── response-enum.ts          # MEDIUM (NEW)
+        └── mock-formatting.ts        # MEDIUM (NEW)
 ```
 
 ## Related Documentation

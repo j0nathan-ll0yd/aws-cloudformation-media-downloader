@@ -17,28 +17,78 @@ import {importOrderRule} from './rules/import-order'
 import {responseHelpersRule} from './rules/response-helpers'
 import {configEnforcementRule} from './rules/config-enforcement'
 import {typesLocationRule} from './rules/types-location'
+import {envValidationRule} from './rules/env-validation'
+import {cascadeSafetyRule} from './rules/cascade-safety'
+import {batchRetryRule} from './rules/batch-retry'
+import {scanPaginationRule} from './rules/scan-pagination'
+import {responseEnumRule} from './rules/response-enum'
+import {mockFormattingRule} from './rules/mock-formatting'
 
-// Export all rules
-export const allRules: ValidationRule[] = [awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule, typesLocationRule]
+// Export all rules (12 total: 6 existing + 6 new)
+export const allRules: ValidationRule[] = [
+  // CRITICAL
+  awsSdkEncapsulationRule,
+  electrodbMockingRule,
+  configEnforcementRule,
+  envValidationRule,
+  cascadeSafetyRule,
+  // HIGH
+  responseHelpersRule,
+  typesLocationRule,
+  batchRetryRule,
+  scanPaginationRule,
+  // MEDIUM
+  importOrderRule,
+  responseEnumRule,
+  mockFormattingRule
+]
 
 // Export rules by name for selective validation
 export const rulesByName: Record<string, ValidationRule> = {
+  // CRITICAL rules
   'aws-sdk-encapsulation': awsSdkEncapsulationRule,
   'aws-sdk': awsSdkEncapsulationRule, // alias
   'electrodb-mocking': electrodbMockingRule,
   electrodb: electrodbMockingRule, // alias
-  'import-order': importOrderRule,
-  imports: importOrderRule, // alias
-  'response-helpers': responseHelpersRule,
-  response: responseHelpersRule, // alias
   'config-enforcement': configEnforcementRule,
   config: configEnforcementRule, // alias
+  'env-validation': envValidationRule,
+  env: envValidationRule, // alias
+  'cascade-safety': cascadeSafetyRule,
+  cascade: cascadeSafetyRule, // alias
+  // HIGH rules
+  'response-helpers': responseHelpersRule,
+  response: responseHelpersRule, // alias
   'types-location': typesLocationRule,
-  types: typesLocationRule // alias
+  types: typesLocationRule, // alias
+  'batch-retry': batchRetryRule,
+  batch: batchRetryRule, // alias
+  'scan-pagination': scanPaginationRule,
+  scan: scanPaginationRule, // alias
+  // MEDIUM rules
+  'import-order': importOrderRule,
+  imports: importOrderRule, // alias
+  'response-enum': responseEnumRule,
+  enum: responseEnumRule, // alias
+  'mock-formatting': mockFormattingRule,
+  mock: mockFormattingRule // alias
 }
 
 // Export individual rules
-export {awsSdkEncapsulationRule, electrodbMockingRule, importOrderRule, responseHelpersRule, configEnforcementRule, typesLocationRule}
+export {
+  awsSdkEncapsulationRule,
+  electrodbMockingRule,
+  importOrderRule,
+  responseHelpersRule,
+  configEnforcementRule,
+  typesLocationRule,
+  envValidationRule,
+  cascadeSafetyRule,
+  batchRetryRule,
+  scanPaginationRule,
+  responseEnumRule,
+  mockFormattingRule
+}
 
 // Export types
 export * from './types'
