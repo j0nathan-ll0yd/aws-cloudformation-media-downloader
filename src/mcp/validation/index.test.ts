@@ -30,37 +30,64 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(6)
+      expect(allRules.length).toBe(12)
     })
 
     test('should contain all expected rules', () => {
       const ruleNames = allRules.map((r) => r.name)
+      // CRITICAL rules
       expect(ruleNames).toContain('aws-sdk-encapsulation')
       expect(ruleNames).toContain('electrodb-mocking')
-      expect(ruleNames).toContain('import-order')
-      expect(ruleNames).toContain('response-helpers')
       expect(ruleNames).toContain('config-enforcement')
+      expect(ruleNames).toContain('env-validation')
+      expect(ruleNames).toContain('cascade-safety')
+      // HIGH rules
+      expect(ruleNames).toContain('response-helpers')
       expect(ruleNames).toContain('types-location')
+      expect(ruleNames).toContain('batch-retry')
+      expect(ruleNames).toContain('scan-pagination')
+      // MEDIUM rules
+      expect(ruleNames).toContain('import-order')
+      expect(ruleNames).toContain('response-enum')
+      expect(ruleNames).toContain('mock-formatting')
     })
   })
 
   describe('rulesByName', () => {
     test('should have all rules by name', () => {
+      // CRITICAL rules
       expect(rulesByName['aws-sdk-encapsulation']).toBeDefined()
       expect(rulesByName['electrodb-mocking']).toBeDefined()
-      expect(rulesByName['import-order']).toBeDefined()
-      expect(rulesByName['response-helpers']).toBeDefined()
       expect(rulesByName['config-enforcement']).toBeDefined()
+      expect(rulesByName['env-validation']).toBeDefined()
+      expect(rulesByName['cascade-safety']).toBeDefined()
+      // HIGH rules
+      expect(rulesByName['response-helpers']).toBeDefined()
       expect(rulesByName['types-location']).toBeDefined()
+      expect(rulesByName['batch-retry']).toBeDefined()
+      expect(rulesByName['scan-pagination']).toBeDefined()
+      // MEDIUM rules
+      expect(rulesByName['import-order']).toBeDefined()
+      expect(rulesByName['response-enum']).toBeDefined()
+      expect(rulesByName['mock-formatting']).toBeDefined()
     })
 
     test('should have aliases', () => {
+      // CRITICAL aliases
       expect(rulesByName['aws-sdk']).toBe(rulesByName['aws-sdk-encapsulation'])
       expect(rulesByName['electrodb']).toBe(rulesByName['electrodb-mocking'])
-      expect(rulesByName['imports']).toBe(rulesByName['import-order'])
-      expect(rulesByName['response']).toBe(rulesByName['response-helpers'])
       expect(rulesByName['config']).toBe(rulesByName['config-enforcement'])
+      expect(rulesByName['env']).toBe(rulesByName['env-validation'])
+      expect(rulesByName['cascade']).toBe(rulesByName['cascade-safety'])
+      // HIGH aliases
+      expect(rulesByName['response']).toBe(rulesByName['response-helpers'])
       expect(rulesByName['types']).toBe(rulesByName['types-location'])
+      expect(rulesByName['batch']).toBe(rulesByName['batch-retry'])
+      expect(rulesByName['scan']).toBe(rulesByName['scan-pagination'])
+      // MEDIUM aliases
+      expect(rulesByName['imports']).toBe(rulesByName['import-order'])
+      expect(rulesByName['enum']).toBe(rulesByName['response-enum'])
+      expect(rulesByName['mock']).toBe(rulesByName['mock-formatting'])
     })
   })
 

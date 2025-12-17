@@ -170,7 +170,70 @@ Brief description of changes
 - [ ] Tests added/updated
 ```
 
+## Worktree Workflow
+
+### 🚨 CRITICAL: Never Work Directly on Master
+
+**All development work MUST be done in a git worktree on a feature branch.**
+
+```bash
+# 1. Create worktree with feature branch
+git worktree add -b feature/my-feature ~/wt/project-name/feature/my-feature master
+
+# 2. Navigate to worktree
+cd ~/wt/project-name/feature/my-feature
+
+# 3. Set up symlinks (for credentials and state)
+ln -s ~/.env .env
+ln -s ~/project/terraform/terraform.tfstate terraform/terraform.tfstate
+
+# 4. Work on feature branch
+# ... make changes, commit, test ...
+
+# 5. Push branch to remote
+git push -u origin feature/my-feature
+
+# 6. Create PR via GitHub
+gh pr create --title "feat: description" --body "..."
+
+# 7. After merge, cleanup
+cd ~/project  # Return to main repo
+git worktree remove ~/wt/project-name/feature/my-feature
+git branch -d feature/my-feature
+```
+
+### Worktree Benefits
+
+- **Isolation**: Changes don't affect master until merged
+- **Multiple features**: Work on several features simultaneously
+- **Safe experimentation**: Easy to discard failed attempts
+- **Clean history**: Squash-and-merge keeps master clean
+
 ## Enforcement
+
+### Automated Git Hooks
+
+| Hook | File | What It Blocks |
+|------|------|----------------|
+| `commit-msg` | `.husky/commit-msg` | AI attribution patterns in commit messages |
+| `pre-push` | `.husky/pre-push` | Direct pushes to master/main branch |
+
+#### commit-msg Hook
+
+Blocks commits containing:
+- "Generated with Claude"
+- "Co-Authored-By: Claude"
+- "Co-Authored-By:.*Anthropic"
+- "AI-generated"
+- Robot emoji (🤖)
+
+#### pre-push Hook
+
+Prevents pushing directly to protected branches:
+```bash
+ERROR: Direct push to 'master' is blocked.
+Use a feature branch and create a pull request instead.
+```
 
 ### Code Review Checklist
 
@@ -179,6 +242,7 @@ Brief description of changes
 - [ ] Clean, professional messages
 - [ ] All tests pass
 - [ ] Code formatted
+- [ ] Work done in worktree (not master)
 
 ## Common Mistakes
 

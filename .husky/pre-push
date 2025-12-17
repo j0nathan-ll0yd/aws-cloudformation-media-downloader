@@ -1,8 +1,28 @@
 #!/usr/bin/env bash
-# pre-push hook: Run full local CI checks before pushing
-# This ensures broken code never reaches the remote repository
+# pre-push hook: Block direct master pushes and run CI checks
+# This enforces the worktree workflow and ensures code quality
 #
 # To bypass (emergency only): git push --no-verify
+
+# Get the current branch name
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Block direct pushes to master
+if [ "$CURRENT_BRANCH" = "master" ] || [ "$CURRENT_BRANCH" = "main" ]; then
+  echo ""
+  echo "ERROR: Direct push to '$CURRENT_BRANCH' is blocked."
+  echo ""
+  echo "This project requires the worktree workflow:"
+  echo "  1. Create a worktree with a feature branch"
+  echo "  2. Make changes in the worktree"
+  echo "  3. Push the feature branch"
+  echo "  4. Create a PR and merge via squash-and-merge"
+  echo ""
+  echo "See: docs/wiki/Conventions/Git-Workflow.md"
+  echo ""
+  echo "To bypass (emergency only): git push --no-verify"
+  exit 1
+fi
 
 echo "Running pre-push checks (ci:local:full)..."
 echo "This may take 5-10 minutes. Use 'git push --no-verify' to bypass in emergencies."

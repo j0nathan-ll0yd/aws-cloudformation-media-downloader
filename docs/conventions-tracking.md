@@ -2,6 +2,38 @@
 
 This document tracks all conventions, patterns, rules, and methodologies detected during development work. It serves as a central registry ensuring no institutional knowledge is lost to conversation history.
 
+## 📊 Enforcement Summary
+
+### Automated Enforcement Methods
+
+| Method | Count | Conventions |
+|--------|-------|-------------|
+| **MCP Rules** | 12 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting |
+| **Git Hooks** | 2 | AI attribution (commit-msg), direct master push (pre-push) |
+| **ESLint** | 3 | naming conventions, import order, unused vars |
+| **CI Workflows** | 2 | script validation, type checking |
+| **Build-Time** | 1 | pnpm lifecycle script protection (.npmrc) |
+| **Manual Review** | ~10 | code comments, test methodology, architectural patterns |
+
+### MCP Validation Rules by Severity
+
+| Rule | Alias | Severity | What It Checks |
+|------|-------|----------|----------------|
+| aws-sdk-encapsulation | aws-sdk | CRITICAL | Direct AWS SDK imports |
+| electrodb-mocking | electrodb | CRITICAL | Manual entity mocks in tests |
+| config-enforcement | config | CRITICAL | ESLint/TSConfig drift |
+| env-validation | env | CRITICAL | Raw process.env access |
+| cascade-safety | cascade | CRITICAL | Promise.all with deletes |
+| response-helpers | response | HIGH | Raw response objects |
+| types-location | types | HIGH | Types outside src/types/ |
+| batch-retry | batch | HIGH | Unprotected batch ops |
+| scan-pagination | scan | HIGH | Unpaginated scans |
+| import-order | imports | MEDIUM | Import grouping order |
+| response-enum | enum | MEDIUM | Magic status strings |
+| mock-formatting | mock | MEDIUM | Chained mock returns |
+
+---
+
 ## 🟡 Pending Documentation
 
 _No pending conventions - all conventions are documented._
