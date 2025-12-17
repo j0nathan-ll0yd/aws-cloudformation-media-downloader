@@ -1,12 +1,7 @@
 import {logDebug} from './logging'
 import type {RetryConfig} from '#types/util'
 
-const DEFAULT_CONFIG: Required<RetryConfig> = {
-  maxRetries: 3,
-  initialDelayMs: 100,
-  multiplier: 2,
-  maxDelayMs: 20000
-}
+const DEFAULT_CONFIG: Required<RetryConfig> = {maxRetries: 3, initialDelayMs: 100, multiplier: 2, maxDelayMs: 20000}
 
 type RetryResult<T> = {data: T[]; unprocessed: unknown[]}
 type DeleteResult = {unprocessed: unknown[]}
@@ -83,12 +78,7 @@ async function retryWithBackoff<TResult extends {unprocessed: unknown[]}>(
  */
 export async function retryUnprocessed<T>(operation: RetryOperation<T>, config?: RetryConfig): Promise<RetryResult<T>> {
   const mergedConfig = {...DEFAULT_CONFIG, ...config}
-  return retryWithBackoff(
-    operation,
-    mergedConfig,
-    (prev, next) => ({data: [...prev.data, ...next.data], unprocessed: next.unprocessed}),
-    'retryUnprocessed'
-  )
+  return retryWithBackoff(operation, mergedConfig, (prev, next) => ({data: [...prev.data, ...next.data], unprocessed: next.unprocessed}), 'retryUnprocessed')
 }
 
 /**

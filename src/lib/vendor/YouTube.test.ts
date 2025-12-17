@@ -34,28 +34,19 @@ const mockCopyFile = jest.fn<(src: string, dest: string) => Promise<void>>()
 const mockStat = jest.fn<(path: string) => Promise<{size: number}>>()
 const mockUnlink = jest.fn<(path: string) => Promise<void>>()
 const mockCreateReadStream = jest.fn()
-jest.unstable_mockModule('fs/promises', () => ({
-  copyFile: mockCopyFile,
-  stat: mockStat,
-  unlink: mockUnlink
-}))
-jest.unstable_mockModule('fs', () => ({
-  createReadStream: mockCreateReadStream
-}))
+jest.unstable_mockModule('fs/promises', () => ({copyFile: mockCopyFile, stat: mockStat, unlink: mockUnlink}))
+jest.unstable_mockModule('fs', () => ({createReadStream: mockCreateReadStream}))
 
 // Mock S3 Upload - simplified (no EventEmitter progress tracking needed)
 const mockUploadDone = jest.fn<() => Promise<{Location: string}>>()
-const mockCreateS3Upload = jest.fn<(bucket: string, key: string, body: unknown, contentType: string, options?: object) => {done: typeof mockUploadDone}>(() => ({done: mockUploadDone}))
+const mockCreateS3Upload = jest.fn<(bucket: string, key: string, body: unknown, contentType: string, options?: object) => {done: typeof mockUploadDone}>(
+  () => ({done: mockUploadDone})
+)
 
-jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
-  createS3Upload: mockCreateS3Upload
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({createS3Upload: mockCreateS3Upload}))
 
 // Mock CloudWatch vendor wrapper
-jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({
-  putMetricData: jest.fn(),
-  getStandardUnit: (unit?: string) => unit || 'None'
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({putMetricData: jest.fn(), getStandardUnit: (unit?: string) => unit || 'None'}))
 
 // Set up environment variable before importing
 process.env.YtdlpBinaryPath = '/opt/bin/yt-dlp_linux'
@@ -87,27 +78,22 @@ describe('#Vendor:YouTube', () => {
       const result = await resultPromise
 
       // Verify yt-dlp was called with file output (NOT -o -)
-      expect(mockSpawn).toHaveBeenCalledWith(
-        '/opt/bin/yt-dlp_linux',
+      expect(mockSpawn).toHaveBeenCalledWith('/opt/bin/yt-dlp_linux',
         expect.arrayContaining(['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best', '--merge-output-format', 'mp4', '-o', '/tmp/test123.mp4']),
-        {cwd: '/tmp'}
-      )
+        {cwd: '/tmp'})
 
       // Verify cookies were copied
       expect(mockCopyFile).toHaveBeenCalledWith('/opt/cookies/youtube-cookies.txt', '/tmp/youtube-cookies.txt')
 
       // Verify temp file was read and uploaded
       expect(mockCreateReadStream).toHaveBeenCalledWith('/tmp/test123.mp4')
-      expect(mockCreateS3Upload).toHaveBeenCalledWith('test-bucket', 'test123.mp4', expect.any(Object), 'video/mp4', expect.objectContaining({partSize: 10 * 1024 * 1024}))
+      expect(mockCreateS3Upload).toHaveBeenCalledWith('test-bucket', 'test123.mp4', expect.any(Object), 'video/mp4',
+        expect.objectContaining({partSize: 10 * 1024 * 1024}))
 
       // Verify cleanup
       expect(mockUnlink).toHaveBeenCalledWith('/tmp/test123.mp4')
 
-      expect(result).toEqual({
-        fileSize: 52428800,
-        s3Url: 's3://test-bucket/test123.mp4',
-        duration: expect.any(Number)
-      })
+      expect(result).toEqual({fileSize: 52428800, s3Url: 's3://test-bucket/test123.mp4', duration: expect.any(Number)})
     })
 
     test('should clean up temp file on yt-dlp failure', async () => {

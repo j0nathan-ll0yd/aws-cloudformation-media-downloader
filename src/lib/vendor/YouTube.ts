@@ -71,9 +71,11 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
 
     // Configure yt-dlp with flags to work around YouTube restrictions
     const ytdlpFlags = [
-      '--extractor-args', YTDLP_CONFIG.EXTRACTOR_ARGS,
+      '--extractor-args',
+      YTDLP_CONFIG.EXTRACTOR_ARGS,
       '--no-warnings',
-      '--cookies', YTDLP_CONFIG.COOKIES_DEST,
+      '--cookies',
+      YTDLP_CONFIG.COOKIES_DEST,
       '--ignore-errors'
     ]
 
@@ -132,12 +134,7 @@ function parseProgressLine(line: string): {percent?: number; size?: string; spee
   // Match download progress line
   const progressMatch = line.match(/\[download\]\s+(\d+\.?\d*)%\s+of\s+~?(\S+)\s+at\s+(\S+)\s+ETA\s+(\S+)/)
   if (progressMatch) {
-    return {
-      percent: parseFloat(progressMatch[1]),
-      size: progressMatch[2],
-      speed: progressMatch[3],
-      eta: progressMatch[4]
-    }
+    return {percent: parseFloat(progressMatch[1]), size: progressMatch[2], speed: progressMatch[3], eta: progressMatch[4]}
   }
 
   // Match merger line
@@ -177,18 +174,12 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
           const timeSinceLastLog = now - lastLogTime
 
           // Log if: 10% progress milestone, 30s elapsed, or merging started
-          const shouldLog =
-            (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 10) ||
+          const shouldLog = (progress.percent !== undefined && progress.percent >= lastLoggedPercent + 10) ||
             timeSinceLastLog >= LOG_INTERVAL_MS ||
             (progress.percent === 100)
 
           if (shouldLog && progress.percent !== undefined) {
-            logDebug('yt-dlp progress', {
-              percent: `${progress.percent.toFixed(1)}%`,
-              size: progress.size,
-              speed: progress.speed,
-              eta: progress.eta
-            })
+            logDebug('yt-dlp progress', {percent: `${progress.percent.toFixed(1)}%`, size: progress.size, speed: progress.speed, eta: progress.eta})
             lastLoggedPercent = Math.floor(progress.percent / 10) * 10
             lastLogTime = now
           }
@@ -249,15 +240,21 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
     // Phase 1: Download to temp file with proper merging (yt-dlp uses ffmpeg internally)
     const ytdlpArgs = [
-      '-f', YTDLP_CONFIG.FORMAT_SELECTOR,
-      '--merge-output-format', YTDLP_CONFIG.MERGE_FORMAT,
-      '--cookies', YTDLP_CONFIG.COOKIES_DEST,
-      '--extractor-args', YTDLP_CONFIG.EXTRACTOR_ARGS,
+      '-f',
+      YTDLP_CONFIG.FORMAT_SELECTOR,
+      '--merge-output-format',
+      YTDLP_CONFIG.MERGE_FORMAT,
+      '--cookies',
+      YTDLP_CONFIG.COOKIES_DEST,
+      '--extractor-args',
+      YTDLP_CONFIG.EXTRACTOR_ARGS,
       '--no-warnings',
-      '--concurrent-fragments', YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
+      '--concurrent-fragments',
+      YTDLP_CONFIG.CONCURRENT_FRAGMENTS,
       '--progress',
       '--newline',
-      '-o', tempFile,
+      '-o',
+      tempFile,
       uri
     ]
 

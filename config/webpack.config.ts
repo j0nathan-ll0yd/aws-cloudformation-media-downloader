@@ -55,11 +55,7 @@ const config: webpack.Configuration = {
     ],
     // Force dynamic imports to be eager (included in main bundle, not separate chunks)
     // This prevents dependencies like better-auth/kysely from creating async chunks
-    parser: {
-      javascript: {
-        dynamicImportMode: 'eager'
-      }
-    }
+    parser: {javascript: {dynamicImportMode: 'eager'}}
   },
   plugins: [
     new ForkTsCheckerWebpackPlugin({typescript: {configOverwrite: {exclude: ['**/*.test.ts', '**/test/**']}}}),

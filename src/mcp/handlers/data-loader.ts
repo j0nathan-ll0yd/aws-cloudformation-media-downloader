@@ -11,7 +11,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
-import {parseConventions, type Convention} from '../parsers/convention-parser'
+import {type Convention, parseConventions} from '../parsers/convention-parser'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

@@ -58,9 +58,9 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
   }
 
   const files = await getFilesByUser(userId as string)
-  myResponse.contents = files
-    .filter((file) => file.status === FileStatus.Available)
-    .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+  myResponse.contents = files.filter((file) => file.status === FileStatus.Available).sort((a, b) =>
+    new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
+  )
   myResponse.keyCount = myResponse.contents.length
   return response(context, 200, myResponse)
 }))

@@ -1,4 +1,4 @@
-import {DynamoDBFile, DownloadReadyNotification, MetadataNotification} from '#types/main'
+import {DownloadReadyNotification, DynamoDBFile, MetadataNotification} from '#types/main'
 import {YtDlpVideoInfo} from '#types/youtube'
 import {PublishInput} from '#lib/vendor/AWS/SNS'
 import {MessageAttributeValue, stringAttribute} from '#lib/vendor/AWS/SQS'
@@ -12,7 +12,9 @@ export { unknownErrorToString } from './lambda-helpers'
  * Truncates description to MAX_DESCRIPTION_LENGTH to fit within APNS payload limits
  */
 export function truncateDescription(description: string): string {
-  if (!description || description.length <= MAX_DESCRIPTION_LENGTH) return description || ''
+  if (!description || description.length <= MAX_DESCRIPTION_LENGTH) {
+    return description || ''
+  }
   return description.substring(0, MAX_DESCRIPTION_LENGTH - 3) + '...'
 }
 
@@ -42,10 +44,7 @@ export function createMetadataNotification(
 
   return {
     messageBody: JSON.stringify({file, notificationType: 'MetadataNotification'}),
-    messageAttributes: {
-      userId: stringAttribute(userId),
-      notificationType: stringAttribute('MetadataNotification')
-    }
+    messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('MetadataNotification')}
   }
 }
 
@@ -59,19 +58,11 @@ export function createDownloadReadyNotification(
   dbFile: DynamoDBFile,
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
-  const file: DownloadReadyNotification = {
-    fileId: dbFile.fileId,
-    key: dbFile.key,
-    size: dbFile.size,
-    url: dbFile.url!
-  }
+  const file: DownloadReadyNotification = {fileId: dbFile.fileId, key: dbFile.key, size: dbFile.size, url: dbFile.url!}
 
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadReadyNotification'}),
-    messageAttributes: {
-      userId: stringAttribute(userId),
-      notificationType: stringAttribute('DownloadReadyNotification')
-    }
+    messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadReadyNotification')}
   }
 }
 
@@ -87,11 +78,7 @@ export function transformToAPNSNotification(messageBody: string, targetArn: stri
 
   return {
     Message: JSON.stringify({
-      APNS_SANDBOX: JSON.stringify({
-        aps: {'content-available': 1},
-        notificationType: payload.notificationType,
-        file: payload.file
-      }),
+      APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, notificationType: payload.notificationType, file: payload.file}),
       default: 'Default message'
     }),
     MessageAttributes: {

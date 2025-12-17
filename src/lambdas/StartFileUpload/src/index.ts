@@ -117,16 +117,10 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
   }
 
   // Send MetadataNotification to each user
-  await Promise.all(
-    userIds.map((userId) => {
-      const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
-      return sendMessage({
-        QueueUrl: queueUrl,
-        MessageBody: messageBody,
-        MessageAttributes: messageAttributes
-      })
-    })
-  )
+  await Promise.all(userIds.map((userId) => {
+    const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
+    return sendMessage({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes})
+  }))
 
   logInfo('Dispatched MetadataNotifications', {fileId, userCount: userIds.length})
 }

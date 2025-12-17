@@ -38,7 +38,7 @@ describe('aws-sdk-encapsulation rule', () => {
 
   describe('detects direct AWS SDK imports', () => {
     test('should detect @aws-sdk/client-dynamodb import', () => {
-      const sourceFile = project.createSourceFile('test-dynamodb.ts', 'import {DynamoDBClient} from \'@aws-sdk/client-dynamodb\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-dynamodb.ts', "import {DynamoDBClient} from '@aws-sdk/client-dynamodb'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -48,7 +48,7 @@ describe('aws-sdk-encapsulation rule', () => {
     })
 
     test('should detect @aws-sdk/client-s3 import', () => {
-      const sourceFile = project.createSourceFile('test-s3.ts', 'import {S3Client, PutObjectCommand} from \'@aws-sdk/client-s3\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-s3.ts', "import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -57,7 +57,7 @@ describe('aws-sdk-encapsulation rule', () => {
     })
 
     test('should detect @aws-sdk/lib-dynamodb import', () => {
-      const sourceFile = project.createSourceFile('test-lib.ts', 'import {DynamoDBDocumentClient} from \'@aws-sdk/lib-dynamodb\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-lib.ts', "import {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -66,7 +66,7 @@ describe('aws-sdk-encapsulation rule', () => {
     })
 
     test('should detect @aws-sdk/client-sns import', () => {
-      const sourceFile = project.createSourceFile('test-sns.ts', 'import {SNSClient} from \'@aws-sdk/client-sns\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-sns.ts', "import {SNSClient} from '@aws-sdk/client-sns'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -74,7 +74,7 @@ describe('aws-sdk-encapsulation rule', () => {
     })
 
     test('should detect @aws-sdk/client-lambda import', () => {
-      const sourceFile = project.createSourceFile('test-lambda.ts', 'import {LambdaClient} from \'@aws-sdk/client-lambda\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-lambda.ts', "import {LambdaClient} from '@aws-sdk/client-lambda'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -94,7 +94,7 @@ import {SNSClient} from '@aws-sdk/client-sns'`, {overwrite: true})
 
   describe('detects dynamic AWS SDK imports', () => {
     test('should detect dynamic import of AWS SDK', () => {
-      const sourceFile = project.createSourceFile('test-dynamic.ts', 'const sdk = await import(\'@aws-sdk/client-dynamodb\')', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-dynamic.ts', "const sdk = await import('@aws-sdk/client-dynamodb')", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -134,7 +134,7 @@ import {Users} from '#entities/Users'`, {overwrite: true})
 
   describe('skips vendor files', () => {
     test('should skip files in lib/vendor/AWS/', () => {
-      const sourceFile = project.createSourceFile('test-vendor-internal.ts', 'import {DynamoDBClient} from \'@aws-sdk/client-dynamodb\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-vendor-internal.ts', "import {DynamoDBClient} from '@aws-sdk/client-dynamodb'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lib/vendor/AWS/DynamoDB.ts')
 
@@ -142,7 +142,7 @@ import {Users} from '#entities/Users'`, {overwrite: true})
     })
 
     test('should skip files in lib/vendor/', () => {
-      const sourceFile = project.createSourceFile('test-vendor-root.ts', 'import {S3Client} from \'@aws-sdk/client-s3\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-vendor-root.ts', "import {S3Client} from '@aws-sdk/client-s3'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lib/vendor/AWS/S3.ts')
 
@@ -152,7 +152,7 @@ import {Users} from '#entities/Users'`, {overwrite: true})
 
   describe('provides helpful suggestions', () => {
     test('should suggest DynamoDB vendor wrapper', () => {
-      const sourceFile = project.createSourceFile('test-suggestion-dynamodb.ts', 'import {DynamoDBClient} from \'@aws-sdk/client-dynamodb\'', {
+      const sourceFile = project.createSourceFile('test-suggestion-dynamodb.ts', "import {DynamoDBClient} from '@aws-sdk/client-dynamodb'", {
         overwrite: true
       })
 
@@ -162,7 +162,7 @@ import {Users} from '#entities/Users'`, {overwrite: true})
     })
 
     test('should suggest S3 vendor wrapper', () => {
-      const sourceFile = project.createSourceFile('test-suggestion-s3.ts', 'import {S3Client} from \'@aws-sdk/client-s3\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-suggestion-s3.ts', "import {S3Client} from '@aws-sdk/client-s3'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -172,7 +172,7 @@ import {Users} from '#entities/Users'`, {overwrite: true})
 
   describe('includes code context', () => {
     test('should include code snippet in violation', () => {
-      const sourceFile = project.createSourceFile('test-snippet.ts', 'import {DynamoDBClient} from \'@aws-sdk/client-dynamodb\'', {overwrite: true})
+      const sourceFile = project.createSourceFile('test-snippet.ts', "import {DynamoDBClient} from '@aws-sdk/client-dynamodb'", {overwrite: true})
 
       const violations = awsSdkEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

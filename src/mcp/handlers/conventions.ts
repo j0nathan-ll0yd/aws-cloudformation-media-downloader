@@ -8,7 +8,7 @@
  */
 
 import {discoverWikiPages, loadConventions, loadWikiPage, searchWikiPages} from './data-loader.js'
-import {filterByCategory, filterBySeverity, searchConventions, type ConventionCategory, type ConventionSeverity} from '../parsers/convention-parser.js'
+import {type ConventionCategory, type ConventionSeverity, filterByCategory, filterBySeverity, searchConventions} from '../parsers/convention-parser.js'
 
 export type ConventionQueryType = 'list' | 'search' | 'category' | 'enforcement' | 'detail' | 'wiki'
 

@@ -17,40 +17,37 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
  *
  * @see FileDownloads for download orchestration state
  */
-export const Files = new Entity(
-  {
-    model: {entity: 'File', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      /** YouTube video ID - primary identifier */
-      fileId: {type: 'string', required: true, readOnly: true},
-      /** File size in bytes (0 until downloaded) */
-      size: {type: 'number', required: true, default: 0},
-      /** Channel/author display name */
-      authorName: {type: 'string', required: true},
-      /** Channel/author username or ID */
-      authorUser: {type: 'string', required: true},
-      /** Video publish date (ISO string or timestamp) */
-      publishDate: {type: 'string', required: true},
-      /** Video description */
-      description: {type: 'string', required: true},
-      /** S3 object key */
-      key: {type: 'string', required: true},
-      /** Original source URL (YouTube URL) */
-      url: {type: 'string', required: false},
-      /** MIME type (e.g., video/mp4) */
-      contentType: {type: 'string', required: true},
-      /** Video title */
-      title: {type: 'string', required: true},
-      /** Final status: pending (awaiting download), available (ready), unavailable (failed) */
-      status: {type: ['pending', 'available', 'unavailable'] as const, required: true, default: 'pending'}
-    },
-    indexes: {
-      primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
-      byKey: {index: 'KeyIndex', pk: {field: 'gsi5pk', composite: ['key'] as const}}
-    }
-  } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
-)
+export const Files = new Entity({
+  model: {entity: 'File', version: '1', service: 'MediaDownloader'},
+  attributes: {
+    /** YouTube video ID - primary identifier */
+    fileId: {type: 'string', required: true, readOnly: true},
+    /** File size in bytes (0 until downloaded) */
+    size: {type: 'number', required: true, default: 0},
+    /** Channel/author display name */
+    authorName: {type: 'string', required: true},
+    /** Channel/author username or ID */
+    authorUser: {type: 'string', required: true},
+    /** Video publish date (ISO string or timestamp) */
+    publishDate: {type: 'string', required: true},
+    /** Video description */
+    description: {type: 'string', required: true},
+    /** S3 object key */
+    key: {type: 'string', required: true},
+    /** Original source URL (YouTube URL) */
+    url: {type: 'string', required: false},
+    /** MIME type (e.g., video/mp4) */
+    contentType: {type: 'string', required: true},
+    /** Video title */
+    title: {type: 'string', required: true},
+    /** Final status: pending (awaiting download), available (ready), unavailable (failed) */
+    status: {type: ['pending', 'available', 'unavailable'] as const, required: true, default: 'pending'}
+  },
+  indexes: {
+    primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
+    byKey: {index: 'KeyIndex', pk: {field: 'gsi5pk', composite: ['key'] as const}}
+  }
+} as const, {table: process.env.DynamoDBTableName, client: documentClient})
 
 // Type exports for use in application code
 export type FileItem = ReturnType<typeof Files.parse>
