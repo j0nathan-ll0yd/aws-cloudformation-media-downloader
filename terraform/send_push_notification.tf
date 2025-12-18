@@ -21,7 +21,8 @@ data "aws_iam_policy_document" "SendPushNotification" {
       "sqs:GetQueueAttributes"
     ]
     resources = [
-      aws_sqs_queue.SendPushNotification.arn
+      aws_sqs_queue.SendPushNotification.arn,
+      aws_sqs_queue.SendPushNotificationDLQ.arn
     ]
   }
   # Query UserCollection to get user's devices
@@ -92,18 +93,36 @@ resource "aws_lambda_function" "SendPushNotification" {
   }
 }
 
+# Dead Letter Queue for failed push notifications
+resource "aws_sqs_queue" "SendPushNotificationDLQ" {
+  name                      = "SendPushNotification-DLQ"
+  message_retention_seconds = 1209600 # 14 days for investigation
+  tags = {
+    Environment = "production"
+    Purpose     = "Dead letter queue for failed push notifications"
+  }
+}
+
 resource "aws_sqs_queue" "SendPushNotification" {
-  name                      = "SendPushNotification"
-  delay_seconds             = 0
-  max_message_size          = 262144
-  message_retention_seconds = 345600
-  receive_wait_time_seconds = 0
+  name                       = "SendPushNotification"
+  delay_seconds              = 0
+  max_message_size           = 262144
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 0
+  visibility_timeout_seconds = 60 # 6x Lambda timeout
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.SendPushNotificationDLQ.arn
+    maxReceiveCount     = 3
+  })
+
   tags = {
     Environment = "production"
   }
 }
 
 resource "aws_lambda_event_source_mapping" "SendPushNotification" {
-  event_source_arn = aws_sqs_queue.SendPushNotification.arn
-  function_name    = aws_lambda_function.SendPushNotification.arn
+  event_source_arn        = aws_sqs_queue.SendPushNotification.arn
+  function_name           = aws_lambda_function.SendPushNotification.arn
+  function_response_types = ["ReportBatchItemFailures"]
 }

@@ -223,6 +223,32 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     projection_type = "ALL"
   }
 
+  # GSI6: Query FileDownloads by status and retryAfter
+  # Access pattern: "Find downloads ready for retry"
+  # Used by: FileCoordinator
+  attribute {
+    name = "gsi6pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi6sk"
+    type = "N"
+  }
+
+  global_secondary_index {
+    name            = "GSI6"
+    hash_key        = "gsi6pk"
+    range_key       = "gsi6sk"
+    projection_type = "ALL"
+  }
+
+  # TTL for automatic cleanup of completed/failed FileDownloads
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
   tags = {
     Name        = "MediaDownloader"
     Description = "Single-table design for all entities"

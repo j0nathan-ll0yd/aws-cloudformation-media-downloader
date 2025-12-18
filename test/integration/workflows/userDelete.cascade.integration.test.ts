@@ -55,22 +55,21 @@ const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 const githubHelpersPath = resolve(__dirname, '../../../src/util/github-helpers')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createFailedUserDeletionIssueMock = jest.fn<any>()
-jest.unstable_mockModule(githubHelpersPath, () => ({
-  createFailedUserDeletionIssue: createFailedUserDeletionIssueMock
-}))
+jest.unstable_mockModule(githubHelpersPath, () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
 // Mock SNS operations (for device deletion)
 const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const deleteEndpointMock = jest.fn<any>()
-jest.unstable_mockModule(snsModulePath, () => ({
-  deleteEndpoint: deleteEndpointMock,
-  createPlatformEndpoint: jest.fn(),
-  listSubscriptionsByTopic: jest.fn(),
-  unsubscribe: jest.fn(),
-  subscribe: jest.fn(),
-  publishSnsEvent: jest.fn()
-}))
+jest.unstable_mockModule(snsModulePath,
+  () => ({
+    deleteEndpoint: deleteEndpointMock,
+    createPlatformEndpoint: jest.fn(),
+    listSubscriptionsByTopic: jest.fn(),
+    unsubscribe: jest.fn(),
+    subscribe: jest.fn(),
+    publishSnsEvent: jest.fn()
+  }))
 
 // Create entity mocks
 const usersMock = createElectroDBEntityMock()
@@ -112,12 +111,7 @@ function createUserDeleteEvent(userId: string): CustomAPIGatewayRequestAuthorize
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/users',
-      authorizer: {
-        principalId: userId,
-        userId,
-        userStatus: UserStatus.Authenticated,
-        integrationLatency: 342
-      },
+      authorizer: {principalId: userId, userId, userStatus: UserStatus.Authenticated, integrationLatency: 342},
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/users'
@@ -149,20 +143,13 @@ describe('UserDelete Cascade Integration Tests', () => {
     const deviceIds = ['device-1', 'device-2']
 
     // Mock UserDevices query - returns user's device associations
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: deviceIds.map((deviceId) => createMockUserDevice(userId, deviceId))
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: deviceIds.map((deviceId) => createMockUserDevice(userId, deviceId))})
 
     // Mock Devices.get batch - returns actual device records
-    devicesMock.mocks.get.mockResolvedValue({
-      data: deviceIds.map((deviceId) => createMockDevice(deviceId)),
-      unprocessed: []
-    })
+    devicesMock.mocks.get.mockResolvedValue({data: deviceIds.map((deviceId) => createMockDevice(deviceId)), unprocessed: []})
 
     // Mock UserFiles query
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: fileIds.map((fileId) => createMockUserFile(userId, fileId))
-    })
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: fileIds.map((fileId) => createMockUserFile(userId, fileId))})
 
     // Mock delete operations
     userFilesMock.mocks.delete.mockResolvedValue({unprocessed: []})
@@ -192,15 +179,10 @@ describe('UserDelete Cascade Integration Tests', () => {
     const userId = 'user-partial-failure'
 
     // Mock UserDevices query
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice(userId, 'device-1')]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, 'device-1')]})
 
     // Mock Devices.get batch
-    devicesMock.mocks.get.mockResolvedValue({
-      data: [createMockDevice('device-1')],
-      unprocessed: []
-    })
+    devicesMock.mocks.get.mockResolvedValue({data: [createMockDevice('device-1')], unprocessed: []})
 
     // Mock UserFiles query - simulate failure
     userFilesMock.mocks.query.byUser!.go.mockRejectedValue(new Error('DynamoDB error'))
@@ -286,12 +268,7 @@ describe('UserDelete Cascade Integration Tests', () => {
         requestTimeEpoch: Date.now(),
         resourceId: 'test-resource',
         resourcePath: '/users',
-        authorizer: {
-          principalId: 'unknown',
-          userId: undefined,
-          userStatus: UserStatus.Unauthenticated,
-          integrationLatency: 342
-        },
+        authorizer: {principalId: 'unknown', userId: undefined, userStatus: UserStatus.Unauthenticated, integrationLatency: 342},
         identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
       },
       resource: '/users'
@@ -312,15 +289,10 @@ describe('UserDelete Cascade Integration Tests', () => {
     ]
 
     // Mock UserDevices query
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: devices.map((d) => createMockUserDevice(userId, d.deviceId))
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: devices.map((d) => createMockUserDevice(userId, d.deviceId))})
 
     // Mock Devices.get batch
-    devicesMock.mocks.get.mockResolvedValue({
-      data: devices,
-      unprocessed: []
-    })
+    devicesMock.mocks.get.mockResolvedValue({data: devices, unprocessed: []})
 
     // Mock empty UserFiles
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})

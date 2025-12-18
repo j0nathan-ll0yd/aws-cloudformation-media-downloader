@@ -47,30 +47,24 @@ const __dirname = dirname(__filename)
 // Mock FileDownloads entity
 const fileDownloadsModulePath = resolve(__dirname, '../../../src/entities/FileDownloads')
 const fileDownloadsMock = createElectroDBEntityMock({queryIndexes: ['byStatusRetryAfter']})
-jest.unstable_mockModule(fileDownloadsModulePath, () => ({
-  FileDownloads: fileDownloadsMock.entity,
-  DownloadStatus: {Pending: 'pending', Scheduled: 'scheduled', InProgress: 'in-progress', Completed: 'completed', Failed: 'failed'}
-}))
+jest.unstable_mockModule(fileDownloadsModulePath,
+  () => ({
+    FileDownloads: fileDownloadsMock.entity,
+    DownloadStatus: {Pending: 'pending', Scheduled: 'scheduled', InProgress: 'in-progress', Completed: 'completed', Failed: 'failed'}
+  }))
 
 // Mock shared utilities (initiateFileDownload)
 const sharedModulePath = resolve(__dirname, '../../../src/util/shared')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const initiateFileDownloadMock = jest.fn<any>()
-jest.unstable_mockModule(sharedModulePath, () => ({
-  initiateFileDownload: initiateFileDownloadMock,
-  getUserDevices: jest.fn(),
-  subscribeEndpointToTopic: jest.fn(),
-  deleteDevice: jest.fn()
-}))
+jest.unstable_mockModule(sharedModulePath,
+  () => ({initiateFileDownload: initiateFileDownloadMock, getUserDevices: jest.fn(), subscribeEndpointToTopic: jest.fn(), deleteDevice: jest.fn()}))
 
 // Mock CloudWatch metrics
 const cloudwatchModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/CloudWatch')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const putMetricDataMock = jest.fn<any>()
-jest.unstable_mockModule(cloudwatchModulePath, () => ({
-  putMetricData: putMetricDataMock,
-  getStandardUnit: jest.fn().mockReturnValue('Count')
-}))
+jest.unstable_mockModule(cloudwatchModulePath, () => ({putMetricData: putMetricDataMock, getStandardUnit: jest.fn().mockReturnValue('Count')}))
 
 // Import handler after mocking
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
@@ -83,12 +77,7 @@ interface FileDownload {
 }
 
 function createMockFileDownload(fileId: string, status: string, retryAfter?: number): FileDownload {
-  return {
-    fileId,
-    status,
-    retryAfter,
-    attemptCount: status === 'scheduled' ? 1 : 0
-  }
+  return {fileId, status, retryAfter, attemptCount: status === 'scheduled' ? 1 : 0}
 }
 
 describe('File Retry Integration Tests', () => {
@@ -119,9 +108,7 @@ describe('File Retry Integration Tests', () => {
     })
 
     // Mock scheduled files query (empty)
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: []
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     const event = createMockScheduledEvent('test-event-1')
     const result = await handler(event, mockContext)
@@ -132,10 +119,10 @@ describe('File Retry Integration Tests', () => {
     expect(response.body.pending).toBe(3)
     expect(response.body.scheduled).toBe(0)
 
-    // Verify initiateFileDownload called for each file
+    // Verify initiateFileDownload called for each file (with correlationId)
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(3)
     pendingFiles.forEach((fileId) => {
-      expect(initiateFileDownloadMock).toHaveBeenCalledWith(fileId)
+      expect(initiateFileDownloadMock).toHaveBeenCalledWith(fileId, undefined)
     })
   })
 
@@ -147,14 +134,10 @@ describe('File Retry Integration Tests', () => {
     ]
 
     // Mock pending files query (empty)
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: []
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     // Mock scheduled files query
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: scheduledFiles
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: scheduledFiles})
 
     const event = createMockScheduledEvent('test-event-2')
     const result = await handler(event, mockContext)
@@ -172,9 +155,7 @@ describe('File Retry Integration Tests', () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Mock pending files
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-pending-1', 'pending')]
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-pending-1', 'pending')]})
 
     // Mock scheduled files
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
@@ -191,17 +172,15 @@ describe('File Retry Integration Tests', () => {
     expect(response.body.scheduled).toBe(1)
 
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(2)
-    expect(initiateFileDownloadMock).toHaveBeenCalledWith('file-pending-1')
-    expect(initiateFileDownloadMock).toHaveBeenCalledWith('file-retry-1')
+    expect(initiateFileDownloadMock).toHaveBeenCalledWith('file-pending-1', undefined)
+    expect(initiateFileDownloadMock).toHaveBeenCalledWith('file-retry-1', undefined)
   })
 
   test('should deduplicate file IDs', async () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Same file appears in both pending and scheduled (edge case)
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-duplicate', 'pending')]
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-duplicate', 'pending')]})
 
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
       data: [createMockFileDownload('file-duplicate', 'scheduled', nowSeconds - 100)]
@@ -220,9 +199,7 @@ describe('File Retry Integration Tests', () => {
 
   test('should return 200 with zero processed when no files to process', async () => {
     // Both queries return empty
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({
-      data: []
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({data: []})
 
     const event = createMockScheduledEvent('test-event-5')
     const result = await handler(event, mockContext)
@@ -236,9 +213,7 @@ describe('File Retry Integration Tests', () => {
   })
 
   test('should publish CloudWatch metrics', async () => {
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-1', 'pending')]
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-1', 'pending')]})
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
       data: [createMockFileDownload('file-2', 'scheduled', Math.floor(Date.now() / 1000) - 100)]
     })
@@ -251,9 +226,7 @@ describe('File Retry Integration Tests', () => {
   })
 
   test('should handle DynamoDB query failure gracefully', async () => {
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValue(
-      new Error('DynamoDB service unavailable')
-    )
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValue(new Error('DynamoDB service unavailable'))
 
     const event = createMockScheduledEvent('test-event-7')
     const result = await handler(event, mockContext)
@@ -265,12 +238,8 @@ describe('File Retry Integration Tests', () => {
     // Create more files than BATCH_SIZE (5)
     const fileIds = Array.from({length: 12}, (_, i) => `file-batch-${i}`)
 
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))
-    })
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: []
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     const event = createMockScheduledEvent('test-event-8')
     const result = await handler(event, mockContext)
@@ -286,18 +255,11 @@ describe('File Retry Integration Tests', () => {
   test('should fail entire batch when any file download fails (Promise.all behavior)', async () => {
     const fileIds = ['file-ok-1', 'file-fail', 'file-ok-2']
 
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))
-    })
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: []
-    })
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     // Make middle file fail
-    initiateFileDownloadMock
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('Download failed'))
-      .mockResolvedValueOnce(undefined)
+    initiateFileDownloadMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Download failed')).mockResolvedValueOnce(undefined)
 
     const event = createMockScheduledEvent('test-event-9')
     const result = await handler(event, mockContext)

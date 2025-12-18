@@ -83,13 +83,7 @@ async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
       // Match model definition
       const modelMatch = line.match(/^(?:\/\*\*[\s\S]*?\*\/\s*)?model\s+(\w+)\s*\{/)
       if (modelMatch) {
-        currentModel = {
-          name: modelMatch[1],
-          kind: 'model',
-          properties: [],
-          file: tspPath,
-          line: lineNum
-        }
+        currentModel = {name: modelMatch[1], kind: 'model', properties: [], file: tspPath, line: lineNum}
         braceDepth = 1
         continue
       }
@@ -97,13 +91,7 @@ async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
       // Match enum definition
       const enumMatch = line.match(/^(?:\/\*\*[\s\S]*?\*\/\s*)?enum\s+(\w+)\s*\{/)
       if (enumMatch) {
-        currentModel = {
-          name: enumMatch[1],
-          kind: 'enum',
-          properties: [],
-          file: tspPath,
-          line: lineNum
-        }
+        currentModel = {name: enumMatch[1], kind: 'enum', properties: [], file: tspPath, line: lineNum}
         braceDepth = 1
         continue
       }
@@ -116,11 +104,7 @@ async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
         // Match property
         const propMatch = line.match(/^\s*(\w+)(\?)?:\s*(.+?);?\s*$/)
         if (propMatch && braceDepth === 1) {
-          currentModel.properties.push({
-            name: propMatch[1],
-            type: propMatch[3].replace(/;$/, '').trim(),
-            optional: propMatch[2] === '?'
-          })
+          currentModel.properties.push({name: propMatch[1], type: propMatch[3].replace(/;$/, '').trim(), optional: propMatch[2] === '?'})
         }
 
         // End of model
@@ -151,30 +135,14 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
     for (const iface of sourceFile.getInterfaces()) {
       const properties: PropertyDefinition[] = []
       for (const prop of iface.getProperties()) {
-        properties.push({
-          name: prop.getName(),
-          type: prop.getType().getText(),
-          optional: prop.hasQuestionToken()
-        })
+        properties.push({name: prop.getName(), type: prop.getType().getText(), optional: prop.hasQuestionToken()})
       }
-      types.push({
-        name: iface.getName(),
-        kind: 'interface',
-        properties,
-        file: filePath,
-        line: iface.getStartLineNumber()
-      })
+      types.push({name: iface.getName(), kind: 'interface', properties, file: filePath, line: iface.getStartLineNumber()})
     }
 
     // Get type aliases with object structure
     for (const typeAlias of sourceFile.getTypeAliases()) {
-      types.push({
-        name: typeAlias.getName(),
-        kind: 'type',
-        properties: [],
-        file: filePath,
-        line: typeAlias.getStartLineNumber()
-      })
+      types.push({name: typeAlias.getName(), kind: 'type', properties: [], file: filePath, line: typeAlias.getStartLineNumber()})
     }
 
     // Get enums
@@ -182,19 +150,9 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
       const properties: PropertyDefinition[] = []
       for (const member of enumDecl.getMembers()) {
         const initializer = member.getInitializer()
-        properties.push({
-          name: member.getName(),
-          type: initializer ? initializer.getText().replace(/['"]/g, '') : member.getName(),
-          optional: false
-        })
+        properties.push({name: member.getName(), type: initializer ? initializer.getText().replace(/['"]/g, '') : member.getName(), optional: false})
       }
-      types.push({
-        name: enumDecl.getName(),
-        kind: 'enum',
-        properties,
-        file: filePath,
-        line: enumDecl.getStartLineNumber()
-      })
+      types.push({name: enumDecl.getName(), kind: 'enum', properties, file: filePath, line: enumDecl.getStartLineNumber()})
     }
   } catch {
     // File parsing error
@@ -206,12 +164,9 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
 /**
  * Check alignment between TypeScript types and TypeSpec models
  */
-export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 'check' | 'list' | 'all'}): Promise<{
-  aligned: boolean
-  issues: AlignmentIssue[]
-  typeSpecModels: string[]
-  typeScriptTypes: string[]
-}> {
+export async function handleTypeAlignmentQuery(
+  args: {typeName?: string; query: 'check' | 'list' | 'all'}
+): Promise<{aligned: boolean; issues: AlignmentIssue[]; typeSpecModels: string[]; typeScriptTypes: string[]}> {
   const {typeName, query} = args
   const tspPath = path.join(projectRoot, 'tsp/models/models.tsp')
   const typesDirs = [
@@ -238,12 +193,7 @@ export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 
   const issues: AlignmentIssue[] = []
 
   if (query === 'list') {
-    return {
-      aligned: true,
-      issues: [],
-      typeSpecModels: typeSpecModels.map((m) => m.name),
-      typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
-    }
+    return {aligned: true, issues: [], typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
   }
 
   // Check specific type or all types
@@ -321,22 +271,15 @@ export async function handleTypeAlignmentQuery(args: {typeName?: string; query: 
     }
   }
 
-  return {
-    aligned: issues.length === 0,
-    issues,
-    typeSpecModels: typeSpecModels.map((m) => m.name),
-    typeScriptTypes: allTypeScriptTypes.map((t) => t.name)
-  }
+  return {aligned: issues.length === 0, issues, typeSpecModels: typeSpecModels.map((m) => m.name), typeScriptTypes: allTypeScriptTypes.map((t) => t.name)}
 }
 
 /**
  * Validate naming conventions across files
  */
-export async function handleNamingValidationQuery(args: {file?: string; query: 'validate' | 'suggest' | 'all'}): Promise<{
-  valid: boolean
-  violations: NamingViolation[]
-  suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[]
-}> {
+export async function handleNamingValidationQuery(
+  args: {file?: string; query: 'validate' | 'suggest' | 'all'}
+): Promise<{valid: boolean; violations: NamingViolation[]; suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[]}> {
   const {file, query} = args
   const violations: NamingViolation[] = []
   const suggestions: {file: string; fixes: {current: string; suggested: string; reason: string}[]}[] = []
@@ -381,8 +324,11 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
       // Check forbidden prefixes
       for (const rule of NAMING_RULES.forbiddenPrefixes) {
         if (name.startsWith(rule.prefix) && name.length > rule.prefix.length) {
-          const suggestedName =
-            rule.prefix === 'DynamoDB' ? name.replace(/^DynamoDB/, '') + 'Record' : rule.prefix === 'I' || rule.prefix === 'T' ? name.slice(1) : name + rule.replacement
+          const suggestedName = rule.prefix === 'DynamoDB'
+            ? name.replace(/^DynamoDB/, '') + 'Record'
+            : rule.prefix === 'I' || rule.prefix === 'T'
+            ? name.slice(1)
+            : name + rule.replacement
 
           violations.push({
             name,
@@ -395,11 +341,7 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
             suggestedName
           })
 
-          fileFixes.push({
-            current: name,
-            suggested: suggestedName,
-            reason: rule.message
-          })
+          fileFixes.push({current: name, suggested: suggestedName, reason: rule.message})
         }
       }
     }
@@ -411,8 +353,11 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
 
       for (const rule of NAMING_RULES.forbiddenPrefixes) {
         if (name.startsWith(rule.prefix) && name.length > rule.prefix.length) {
-          const suggestedName =
-            rule.prefix === 'DynamoDB' ? name.replace(/^DynamoDB/, '') + 'Record' : rule.prefix === 'I' || rule.prefix === 'T' ? name.slice(1) : name + rule.replacement
+          const suggestedName = rule.prefix === 'DynamoDB'
+            ? name.replace(/^DynamoDB/, '') + 'Record'
+            : rule.prefix === 'I' || rule.prefix === 'T'
+            ? name.slice(1)
+            : name + rule.replacement
 
           violations.push({
             name,
@@ -425,11 +370,7 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
             suggestedName
           })
 
-          fileFixes.push({
-            current: name,
-            suggested: suggestedName,
-            reason: rule.message
-          })
+          fileFixes.push({current: name, suggested: suggestedName, reason: rule.message})
         }
       }
     }
@@ -473,9 +414,5 @@ export async function handleNamingValidationQuery(args: {file?: string; query: '
     }
   }
 
-  return {
-    valid: violations.length === 0,
-    violations,
-    suggestions: query === 'suggest' || query === 'all' ? suggestions : []
-  }
+  return {valid: violations.length === 0, violations, suggestions: query === 'suggest' || query === 'all' ? suggestions : []}
 }

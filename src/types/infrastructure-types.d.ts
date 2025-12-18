@@ -11,6 +11,8 @@ import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
 
 export interface StartFileUploadParams {
   fileId: string
+  /** Correlation ID for end-to-end request tracing */
+  correlationId?: string
 }
 
 export interface ApplePushNotificationResponse {

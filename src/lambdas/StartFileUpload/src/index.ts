@@ -18,6 +18,20 @@ import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 
+/** TTL retention period for completed/failed downloads (7 days in seconds) */
+const TTL_SECONDS = 7 * 24 * 60 * 60
+
+/**
+ * Calculate TTL timestamp for DynamoDB TTL cleanup.
+ * Only returns a TTL for completed/failed statuses.
+ */
+function calculateTTL(status: DownloadStatus): number | undefined {
+  if (status === DownloadStatus.Completed || status === DownloadStatus.Failed) {
+    return Math.floor(Date.now() / 1000) + TTL_SECONDS
+  }
+  return undefined
+}
+
 /**
  * Fetch video info with X-Ray tracing.
  * Wraps fetchVideoInfo and handles subsegment lifecycle.
@@ -68,9 +82,16 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
 /**
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
+ * TTL is automatically set for completed/failed statuses.
  */
 async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}
+
+  // Set TTL for completed/failed downloads (auto-cleanup after 7 days)
+  const ttl = calculateTTL(status)
+  if (ttl !== undefined) {
+    update.ttl = ttl
+  }
 
   if (classification) {
     update.errorCategory = classification.category
@@ -94,7 +115,8 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       errorCategory: classification?.category,
       lastError: classification?.reason,
       retryAfter: classification?.retryAfter,
-      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
+      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
+      ttl
     }).go()
   }
 }
@@ -226,7 +248,9 @@ async function handleDownloadFailure(
  * @notExported
  */
 export const handler = withXRay(async (event: StartFileUploadParams, context: Context) => {
-  logInfo('event <=', event)
+  const correlationId = event.correlationId || context.awsRequestId
+  logInfo('event <=', {...event, correlationId})
+
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 

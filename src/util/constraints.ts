@@ -16,20 +16,11 @@ export const registerDeviceSchema = z.object({
   systemVersion: z.string().min(1)
 })
 
-export const userSubscribeSchema = z.object({
-  endpointArn: z.string().min(1),
-  topicArn: z.string().min(1)
-})
+export const userSubscribeSchema = z.object({endpointArn: z.string().min(1), topicArn: z.string().min(1)})
 
-export const registerUserSchema = z.object({
-  idToken: z.string().min(1),
-  firstName: z.string().optional(),
-  lastName: z.string().optional()
-})
+export const registerUserSchema = z.object({idToken: z.string().min(1), firstName: z.string().optional(), lastName: z.string().optional()})
 
-export const loginUserSchema = z.object({
-  idToken: z.string().min(1)
-})
+export const loginUserSchema = z.object({idToken: z.string().min(1)})
 
 // Type exports inferred from schemas
 export type FeedlyEventInput = z.infer<typeof feedlyEventSchema>
