@@ -248,7 +248,15 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
 // Lambda Handler Wrappers
 // ============================================================================
 
-import type {ApiHandlerParams, AuthenticatedApiParams, AuthorizerParams, EventHandlerParams, OptionalAuthApiParams, ScheduledHandlerParams, WrapperMetadata} from '#types/lambda-wrappers'
+import type {
+  ApiHandlerParams,
+  AuthenticatedApiParams,
+  AuthorizerParams,
+  EventHandlerParams,
+  OptionalAuthApiParams,
+  ScheduledHandlerParams,
+  WrapperMetadata
+} from '#types/lambda-wrappers'
 
 /**
  * Wraps an API Gateway handler with automatic error handling and fixture logging.
@@ -507,3 +515,53 @@ export const s3Records = (event: S3Event): S3EventRecord[] => event.Records
  * Convenience extractor for SQS event records
  */
 export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records
+
+// ============================================================================
+// Powertools Middleware Wrapper
+// ============================================================================
+
+import middy from '@middy/core'
+import {injectLambdaContext} from '@aws-lambda-powertools/logger/middleware'
+import {captureLambdaHandler} from '@aws-lambda-powertools/tracer/middleware'
+import {logMetrics} from '@aws-lambda-powertools/metrics/middleware'
+import {logger, metrics, tracer} from '#lib/vendor/Powertools'
+
+/**
+ * Wraps a Lambda handler with AWS Powertools middleware stack.
+ * Provides enhanced observability with structured logging, tracing, and metrics.
+ *
+ * Features:
+ * - Structured JSON logging with automatic context enrichment
+ * - X-Ray tracing with enhanced annotations
+ * - Automatic cold start metric tracking
+ * - Correlation IDs through all logs
+ *
+ * Use this as a replacement for `withXRay()` for enhanced observability.
+ *
+ * @param handler - Lambda handler function
+ * @returns Wrapped handler with Powertools middleware
+ *
+ * @example
+ * ```typescript
+ * // Replace withXRay with withPowertools for enhanced observability
+ * export const handler = withPowertools(wrapAuthenticatedHandler(
+ *   async ({event, context, userId}) => {
+ *     const files = await getFilesByUser(userId)
+ *     return response(context, 200, files)
+ *   }
+ * ))
+ * ```
+ */
+export function withPowertools<TEvent, TResult>(
+  handler: (event: TEvent, context: Context) => Promise<TResult>
+): (event: TEvent, context: Context) => Promise<TResult> {
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer)).use(
+    logMetrics(metrics, {captureColdStartMetric: true})
+  )
+
+  return middyHandler as unknown as (event: TEvent, context: Context) => Promise<TResult>
+}
+
+// Re-export Powertools utilities for direct access
+export { logger, metrics, tracer } from '#lib/vendor/Powertools'
+export { MetricUnit } from '@aws-lambda-powertools/metrics'

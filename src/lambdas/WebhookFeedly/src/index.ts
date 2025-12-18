@@ -11,12 +11,13 @@ import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {logDebug, logInfo, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo, response, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
+import {makeIdempotent} from '@aws-lambda-powertools/idempotency'
+import {createPersistenceStore, defaultIdempotencyConfig} from '#lib/vendor/Powertools/idempotency'
 
 /**
  * Associates a File to a User by creating a UserFile record
@@ -103,15 +104,76 @@ async function sendFileNotification(file: File, userId: string) {
   return sendMessageResponse
 }
 
+interface WebhookProcessingInput {
+  fileId: string
+  userId: string
+  articleURL: string
+  backgroundMode?: boolean
+  correlationId: string
+}
+
+interface WebhookProcessingResult {
+  statusCode: number
+  status: ResponseStatus
+}
+
+/**
+ * Core webhook processing logic - wrapped with idempotency
+ * This function handles the actual file processing and returns the result
+ * Idempotency ensures duplicate webhook calls return the same response
+ */
+async function processWebhookRequest(input: WebhookProcessingInput): Promise<WebhookProcessingResult> {
+  const {fileId, userId, articleURL, backgroundMode, correlationId} = input
+
+  // Parallelize independent operations for ~60% latency reduction
+  const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
+
+  if (file && file.status == FileStatus.Downloaded) {
+    // File already downloaded - send notification to user
+    await sendFileNotification(file, userId)
+    return {statusCode: 200, status: ResponseStatus.Dispatched}
+  } else {
+    if (!file) {
+      // New file - create Files and FileDownloads records with correlationId
+      await addFile(fileId, articleURL, correlationId)
+    }
+    if (!backgroundMode) {
+      // Foreground mode - initiate download immediately with correlationId
+      await initiateFileDownload(fileId, correlationId)
+      return {statusCode: 202, status: ResponseStatus.Initiated}
+    } else {
+      // Background mode - FileCoordinator will pick it up
+      return {statusCode: 202, status: ResponseStatus.Accepted}
+    }
+  }
+}
+
+// Idempotent wrapper for webhook processing
+// Lazy initialization to ensure environment variables are available
+let idempotentProcessor: ((input: WebhookProcessingInput) => Promise<WebhookProcessingResult>) | null = null
+
+function getIdempotentProcessor() {
+  if (!idempotentProcessor) {
+    idempotentProcessor = makeIdempotent(processWebhookRequest, {
+      persistenceStore: createPersistenceStore(),
+      config: defaultIdempotencyConfig,
+      dataIndexArgument: 0
+    })
+  }
+  return idempotentProcessor
+}
+
 /**
  * Receives a webhook to download a file from Feedly.
  *
  * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
  * - If the file doesn't exist: it is associated with the requesting user and queued for download.
  *
+ * Uses Powertools Idempotency to prevent duplicate processing of the same webhook request.
+ *
  * @notExported
  */
-export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
   // Generate correlation ID for end-to-end request tracing
   const correlationId = randomUUID()
   logInfo('Processing request', {correlationId, requestId: context.awsRequestId})
@@ -119,24 +181,15 @@ export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context,
   const requestBody = getPayloadFromEvent(event) as Webhook
   validateRequest(requestBody, feedlyEventSchema)
   const fileId = getVideoID(requestBody.articleURL)
-  // Parallelize independent operations for ~60% latency reduction
-  const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
-  if (file && file.status == FileStatus.Downloaded) {
-    // File already downloaded - send notification to user
-    await sendFileNotification(file, userId)
-    return response(context, 200, {status: ResponseStatus.Dispatched})
-  } else {
-    if (!file) {
-      // New file - create Files and FileDownloads records with correlationId
-      await addFile(fileId, requestBody.articleURL, correlationId)
-    }
-    if (!requestBody.backgroundMode) {
-      // Foreground mode - initiate download immediately with correlationId
-      await initiateFileDownload(fileId, correlationId)
-      return response(context, 202, {status: ResponseStatus.Initiated})
-    } else {
-      // Background mode - FileCoordinator will pick it up
-      return response(context, 202, {status: ResponseStatus.Accepted})
-    }
-  }
+
+  // Process webhook with idempotency protection
+  const result = await getIdempotentProcessor()({
+    fileId,
+    userId,
+    articleURL: requestBody.articleURL,
+    backgroundMode: requestBody.backgroundMode,
+    correlationId
+  })
+
+  return response(context, result.statusCode, {status: result.status})
 }))

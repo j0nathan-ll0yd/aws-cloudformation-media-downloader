@@ -75,8 +75,8 @@ export const authenticatedHandlerEnforcementRule: ValidationRule = {
 
     // Check for UserStatus checks
     const hasAnonymousCheck = AUTH_PATTERNS.userStatusCheck.test(fileText) && fileText.includes('Anonymous')
-    const hasUnauthenticatedCheck =
-      AUTH_PATTERNS.userStatusCheck.test(fileText) && (fileText.includes('Unauthenticated') || AUTH_PATTERNS.userIdCheck.test(fileText))
+    const hasUnauthenticatedCheck = AUTH_PATTERNS.userStatusCheck.test(fileText) &&
+      (fileText.includes('Unauthenticated') || AUTH_PATTERNS.userIdCheck.test(fileText))
 
     // Check if already using the new wrappers
     const usesAuthenticatedWrapper = fileText.includes('wrapAuthenticatedHandler')
@@ -86,15 +86,10 @@ export const authenticatedHandlerEnforcementRule: ValidationRule = {
       // Already using new wrappers - check if getUserDetailsFromEvent is still present (shouldn't be)
       if (hasGetUserDetails) {
         violations.push(
-          createViolation(
-            RULE_NAME,
-            SEVERITY,
-            getUserDetailsLine,
-            'Redundant getUserDetailsFromEvent call - wrapAuthenticatedHandler/wrapOptionalAuthHandler already handles this',
-            {
-              suggestion: 'Remove getUserDetailsFromEvent call and use userId/userStatus from wrapper params'
-            }
-          )
+          createViolation(RULE_NAME, SEVERITY, getUserDetailsLine,
+            'Redundant getUserDetailsFromEvent call - wrapAuthenticatedHandler/wrapOptionalAuthHandler already handles this', {
+            suggestion: 'Remove getUserDetailsFromEvent call and use userId/userStatus from wrapper params'
+          })
         )
       }
       return violations
