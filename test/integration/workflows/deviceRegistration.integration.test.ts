@@ -288,7 +288,42 @@ describe('Device Registration Integration Tests', () => {
     })
 
     const body: DeviceRegistrationBody = {deviceId, token}
-    const event = createRegisterDeviceEvent(body, undefined, UserStatus.Unauthenticated)
+    // Create event with Authorization header but invalid/no userId
+    // getUserDetailsFromEvent returns Unauthenticated when there's an auth header but no userId
+    const event = {
+      body: JSON.stringify(body),
+      headers: {Authorization: 'Bearer invalid-token'},
+      multiValueHeaders: {},
+      httpMethod: 'POST',
+      isBase64Encoded: false,
+      path: '/devices',
+      pathParameters: null,
+      queryStringParameters: null,
+      multiValueQueryStringParameters: null,
+      stageVariables: null,
+      requestContext: {
+        accountId: '123456789012',
+        apiId: 'test-api',
+        protocol: 'HTTP/1.1',
+        httpMethod: 'POST',
+        path: '/devices',
+        stage: 'test',
+        requestId: 'test-request',
+        requestTime: '01/Jan/2024:00:00:00 +0000',
+        requestTimeEpoch: Date.now(),
+        resourceId: 'test-resource',
+        resourcePath: '/devices',
+        authorizer: {
+          principalId: 'unknown',
+          userId: undefined,
+          userStatus: UserStatus.Unauthenticated,
+          integrationLatency: 342
+        },
+        identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
+      },
+      resource: '/devices'
+    } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+
     const result = await handler(event, mockContext)
 
     expect(result.statusCode).toBe(401)

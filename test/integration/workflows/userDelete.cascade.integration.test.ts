@@ -67,7 +67,9 @@ jest.unstable_mockModule(snsModulePath, () => ({
   deleteEndpoint: deleteEndpointMock,
   createPlatformEndpoint: jest.fn(),
   listSubscriptionsByTopic: jest.fn(),
-  unsubscribe: jest.fn()
+  unsubscribe: jest.fn(),
+  subscribe: jest.fn(),
+  publishSnsEvent: jest.fn()
 }))
 
 // Create entity mocks

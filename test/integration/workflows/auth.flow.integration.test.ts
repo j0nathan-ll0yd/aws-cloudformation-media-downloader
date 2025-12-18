@@ -268,32 +268,17 @@ describe('Auth Flow Integration Tests', () => {
       expect(usersMock.entity.update).not.toHaveBeenCalled()
     })
 
-    test('should register without name if not provided', async () => {
-      const userId = 'user-no-name'
-      const sessionId = 'session-no-name'
-      const token = 'no-name-token'
-
-      signInSocialMock.mockResolvedValue({
-        redirect: false,
-        token,
-        url: undefined,
-        user: {
-          id: userId,
-          createdAt: new Date(),
-          email: 'noname@example.com',
-          name: ''
-        },
-        session: {id: sessionId, expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000}
-      })
-
+    test('should return 400 when required name fields are missing', async () => {
+      // registerUserSchema requires firstName and lastName
       const body: AuthRequestBody = {idToken: 'valid-apple-id-token'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
-      expect(result.statusCode).toBe(200)
+      // Schema validation should fail
+      expect(result.statusCode).toBe(400)
 
-      // Should NOT call update if no name provided
-      expect(usersMock.entity.update).not.toHaveBeenCalled()
+      // Better Auth should NOT be called due to validation failure
+      expect(signInSocialMock).not.toHaveBeenCalled()
     })
 
     test('should validate request body - missing idToken', async () => {
@@ -307,7 +292,8 @@ describe('Auth Flow Integration Tests', () => {
     test('should handle Better Auth failure', async () => {
       signInSocialMock.mockRejectedValue(new Error('Apple verification failed'))
 
-      const body: AuthRequestBody = {idToken: 'bad-token'}
+      // Must include firstName/lastName to pass schema validation
+      const body: AuthRequestBody = {idToken: 'bad-token', firstName: 'Test', lastName: 'User'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 

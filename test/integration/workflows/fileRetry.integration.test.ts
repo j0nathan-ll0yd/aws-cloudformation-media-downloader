@@ -68,7 +68,8 @@ const cloudwatchModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/Clo
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const putMetricDataMock = jest.fn<any>()
 jest.unstable_mockModule(cloudwatchModulePath, () => ({
-  putMetricData: putMetricDataMock
+  putMetricData: putMetricDataMock,
+  getStandardUnit: jest.fn().mockReturnValue('Count')
 }))
 
 // Import handler after mocking
