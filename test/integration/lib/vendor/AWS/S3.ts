@@ -10,11 +10,10 @@ import {
   DeleteBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
-  GetObjectCommandOutput,
   HeadObjectCommand,
-  HeadObjectCommandOutput,
   ListObjectsV2Command
 } from '@aws-sdk/client-s3'
+import type {GetObjectCommandOutput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
 import {createS3Client} from '#lib/vendor/AWS/clients'
 
 const s3Client = createS3Client()
