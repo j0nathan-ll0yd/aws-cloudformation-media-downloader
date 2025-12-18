@@ -1,19 +1,21 @@
 import {
-  CreateEndpointResponse,
   CreatePlatformEndpointCommand,
-  CreatePlatformEndpointInput,
   DeleteEndpointCommand,
-  DeleteEndpointInput,
   ListSubscriptionsByTopicCommand,
+  PublishCommand,
+  SubscribeCommand,
+  UnsubscribeCommand
+} from '@aws-sdk/client-sns'
+import type {
+  CreateEndpointResponse,
+  CreatePlatformEndpointInput,
+  DeleteEndpointInput,
   ListSubscriptionsByTopicInput,
   ListSubscriptionsByTopicResponse,
-  PublishCommand,
   PublishInput,
   PublishResponse,
-  SubscribeCommand,
   SubscribeInput,
   SubscribeResponse,
-  UnsubscribeCommand,
   UnsubscribeInput
 } from '@aws-sdk/client-sns'
 import {createSNSClient} from './clients'

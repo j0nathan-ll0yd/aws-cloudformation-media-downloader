@@ -2,9 +2,10 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "target": "esnext",
+    "target": "ES2024",
     "outDir": "./dist",
     "strict": true,
+    "verbatimModuleSyntax": true,
     "types": ["node", "jest"],
     "moduleResolution": "bundler",
     "baseUrl": ".",

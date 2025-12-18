@@ -1,5 +1,5 @@
-import {APIGatewayProxyResult} from 'aws-lambda'
-import {UserSubscribeInput} from '#types/request-types'
+import type {APIGatewayProxyResult} from 'aws-lambda'
+import type {UserSubscribeInput} from '#types/request-types'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'

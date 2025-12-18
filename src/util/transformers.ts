@@ -1,8 +1,9 @@
-import {File} from '#types/domain-models'
-import {DownloadReadyNotification, MetadataNotification} from '#types/notification-types'
-import {YtDlpVideoInfo} from '#types/youtube'
-import {PublishInput} from '#lib/vendor/AWS/SNS'
-import {MessageAttributeValue, stringAttribute} from '#lib/vendor/AWS/SQS'
+import type {File} from '#types/domain-models'
+import type {DownloadReadyNotification, MetadataNotification} from '#types/notification-types'
+import type {YtDlpVideoInfo} from '#types/youtube'
+import type {PublishInput} from '#lib/vendor/AWS/SNS'
+import {stringAttribute} from '#lib/vendor/AWS/SQS'
+import type {MessageAttributeValue} from '#lib/vendor/AWS/SQS'
 
 const MAX_DESCRIPTION_LENGTH = 500
 

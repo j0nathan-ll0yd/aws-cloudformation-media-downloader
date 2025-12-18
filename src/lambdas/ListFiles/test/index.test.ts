@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)

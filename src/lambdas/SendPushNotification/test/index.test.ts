@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {SQSEvent} from 'aws-lambda'
+import type {SQSEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'

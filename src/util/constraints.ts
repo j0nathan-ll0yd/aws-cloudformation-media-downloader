@@ -1,38 +1,56 @@
-import Joi from 'joi'
-import {logInfo} from './lambda-helpers'
+import {z} from 'zod'
 
-export const feedlyEventSchema = Joi.object({
-  articleURL: Joi.string().required().pattern(
-    new RegExp(
-      '^((?:https?:)?\\/\\/)?((?:www|m)\\.)?((?:youtube(?:-nocookie)?\\.com|youtu.be))(\\/(?:[\\w\\-]+\\?v=|embed\\/|live\\/|v\\/)?)([\\w\\-]+)(\\S+)?$'
-    )
-  ).message('is not a valid YouTube URL')
+// YouTube URL regex pattern
+const youtubeUrlPattern = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(?:-nocookie)?\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|live\/|v\/)?)([\w-]+)(\S+)?$/
+
+export const feedlyEventSchema = z.object({
+  articleURL: z.string().regex(youtubeUrlPattern, 'is not a valid YouTube URL'),
+  backgroundMode: z.boolean().optional()
 })
 
-export const registerDeviceSchema = Joi.object({token: Joi.string().required()})
+export const registerDeviceSchema = z.object({
+  deviceId: z.string().min(1),
+  token: z.string().min(1),
+  name: z.string().min(1),
+  systemName: z.string().min(1),
+  systemVersion: z.string().min(1)
+})
 
-export const userSubscribeSchema = Joi.object({endpointArn: Joi.string().required(), topicArn: Joi.string().required()})
+export const userSubscribeSchema = z.object({
+  endpointArn: z.string().min(1),
+  topicArn: z.string().min(1)
+})
 
-export const registerUserSchema = Joi.object({idToken: Joi.string().required(), firstName: Joi.string().required(), lastName: Joi.string().required()})
+export const registerUserSchema = z.object({
+  idToken: z.string().min(1),
+  firstName: z.string().optional(),
+  lastName: z.string().optional()
+})
 
-export const loginUserSchema = Joi.object({idToken: Joi.string().required()})
+export const loginUserSchema = z.object({
+  idToken: z.string().min(1)
+})
+
+// Type exports inferred from schemas
+export type FeedlyEventInput = z.infer<typeof feedlyEventSchema>
+export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>
+export type UserSubscribeInput = z.infer<typeof userSubscribeSchema>
+export type RegisterUserInput = z.infer<typeof registerUserSchema>
+export type LoginUserInput = z.infer<typeof loginUserSchema>
 
 // Helper function to validate data against a schema
-export const validateSchema = (schema: Joi.ObjectSchema, data: unknown) => {
-  const options = {abortEarly: false, allowUnknown: true, errors: {wrap: {label: ''}}}
-
-  const {error} = schema.validate(data, options)
-  if (error) {
-    const errorHash: {[key: string]: [string]} = {}
-    error.details.map((detail) => {
-      logInfo('Error detail', detail)
-      const label = detail.context?.label ?? 'unknown'
-      if (!errorHash[label]) {
-        errorHash[label] = [detail.message]
+export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): {errors: Record<string, string[]>} | null {
+  const result = schema.safeParse(data)
+  if (!result.success) {
+    const errorHash: Record<string, string[]> = {}
+    for (const issue of result.error.issues) {
+      const path = issue.path.join('.') || 'unknown'
+      if (!errorHash[path]) {
+        errorHash[path] = [issue.message]
       } else {
-        errorHash[label].push(detail.message)
+        errorHash[path].push(issue.message)
       }
-    })
+    }
     return {errors: errorHash}
   }
   return null

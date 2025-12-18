@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
+import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#util/errors'

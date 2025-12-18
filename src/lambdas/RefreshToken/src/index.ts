@@ -8,7 +8,7 @@
  * Response: 200 with token, expiresAt, sessionId; 401 for invalid session; 500 for errors
  */
 
-import {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
+import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {logDebug, logError, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'

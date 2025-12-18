@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
-import {InfrastructureD} from '#types/infrastructure'
+import type {InfrastructureD} from '#types/infrastructure'
 import {logDebug} from '#util/lambda-helpers'
 import path from 'path'
 import {fileURLToPath} from 'url'

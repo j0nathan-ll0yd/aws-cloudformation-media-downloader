@@ -1,19 +1,6 @@
 import AWSXRay from 'aws-xray-sdk-core'
 import type {Context} from 'aws-lambda'
 
-let xrayClient: typeof AWSXRay | undefined
-
-/**
- * Gets the X-Ray client instance using lazy initialization
- * This prevents aws-xray-sdk-core from loading during Jest module validation
- */
-function getXRayClient(): typeof AWSXRay {
-  if (!xrayClient) {
-    xrayClient = AWSXRay
-  }
-  return xrayClient
-}
-
 /**
  * Check if X-Ray tracing is enabled
  * X-Ray is disabled for LocalStack (unsupported) and when ENABLE_XRAY=false
@@ -25,19 +12,18 @@ function isXRayEnabled(): boolean {
 
 /**
  * Gets the current X-Ray segment for the Lambda invocation
- * Returns undefined if X-Ray tracing is not active or disabled
+ * Returns null if X-Ray tracing is not active or disabled
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/X-Ray-Integration#custom-subsegments | X-Ray Custom Subsegments}
  */
-export function getSegment() {
+export function getSegment(): AWSXRay.Segment | AWSXRay.Subsegment | null {
   if (!isXRayEnabled()) {
-    return undefined
+    return null
   }
   try {
-    const xray = getXRayClient()
-    return xray.getSegment()
+    return AWSXRay.getSegment() ?? null
   } catch {
-    return undefined
+    return null
   }
 }
 
@@ -54,8 +40,7 @@ export function captureAWSClient<T extends {middlewareStack: {remove: unknown; u
   if (!isXRayEnabled()) {
     return client
   }
-  const xray = getXRayClient()
-  return xray.captureAWSv3Client(client)
+  return AWSXRay.captureAWSv3Client(client)
 }
 
 /**
@@ -75,10 +60,9 @@ export function withXRay<TEvent = unknown, TResult = unknown>(handler: (event: T
     // This prevents errors during Jest tests where X-Ray context doesn't exist
     if (isXRayEnabled()) {
       try {
-        const xray = getXRayClient()
-        const segment = xray.getSegment()
+        const segment = AWSXRay.getSegment()
         // X-Ray segment has trace_id property but it's not in the type definitions
-        traceId = (segment as {trace_id?: string} | undefined)?.trace_id || context.awsRequestId
+        traceId = (segment as {trace_id?: string})?.trace_id ?? context.awsRequestId
       } catch {
         // X-Ray segment not available, use request ID
       }

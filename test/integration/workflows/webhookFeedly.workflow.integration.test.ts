@@ -18,7 +18,7 @@ process.env.USE_LOCALSTACK = 'true'
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 

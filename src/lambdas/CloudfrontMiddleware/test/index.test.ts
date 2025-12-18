@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {CloudFrontRequestEvent} from 'aws-lambda'
+import type {CloudFrontRequestEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import * as crypto from 'crypto'
 

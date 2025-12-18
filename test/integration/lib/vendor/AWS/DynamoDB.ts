@@ -5,7 +5,8 @@
  * This wrapper exists to maintain the AWS SDK Encapsulation Policy even in test code.
  */
 
-import {CreateTableCommand, CreateTableCommandInput, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
+import {CreateTableCommand, DeleteTableCommand} from '@aws-sdk/client-dynamodb'
+import type {CreateTableCommandInput} from '@aws-sdk/client-dynamodb'
 import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
 
 const dynamoDBClient = createDynamoDBClient()

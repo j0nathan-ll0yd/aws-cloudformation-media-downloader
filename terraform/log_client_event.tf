@@ -35,7 +35,7 @@ resource "aws_lambda_function" "LogClientEvent" {
   function_name    = "LogClientEvent"
   role             = aws_iam_role.LogClientEventRole.arn
   handler          = "LogClientEvent.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path
   source_code_hash = data.archive_file.LogClientEvent.output_base64sha256

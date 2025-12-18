@@ -16,4 +16,4 @@ const dynamoDBClient = createDynamoDBClient()
  * Shared DynamoDB DocumentClient instance.
  * Used by all ElectroDB entities to ensure consistent X-Ray tracing.
  */
-export const documentClient = DynamoDBDocument.from(dynamoDBClient)
+export const documentClient: DynamoDBDocument = DynamoDBDocument.from(dynamoDBClient)

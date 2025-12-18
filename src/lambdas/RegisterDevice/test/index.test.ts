@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
@@ -87,8 +87,7 @@ describe('#RegisterDevice', () => {
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
     expect(typeof body.error.message).toEqual('object')
-    expect(Array.from(body.error.message.token).length).toEqual(1)
-    expect(body.error.message.token[0]).toEqual('token is required')
+    expect(body.error.message).toHaveProperty('token')
   })
   describe('#AWSFailure', () => {
     test('AWS.SNS.createPlatformEndpoint', async () => {

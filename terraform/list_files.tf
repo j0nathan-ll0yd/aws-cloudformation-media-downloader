@@ -62,7 +62,7 @@ resource "aws_lambda_function" "ListFiles" {
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
   handler          = "ListFiles.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path

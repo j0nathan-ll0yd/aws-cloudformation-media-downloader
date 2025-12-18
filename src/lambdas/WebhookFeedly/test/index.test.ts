@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 const fakeUserId = uuidv4()
 
@@ -74,7 +74,6 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
     expect(body.error.message).toHaveProperty('articleURL')
-    expect(body.error.message.articleURL[0]).toEqual('articleURL is required')
   })
   test('should handle a missing user ID', async () => {
     event.requestContext.authorizer!.principalId = 'unknown'

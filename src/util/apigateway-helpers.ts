@@ -1,16 +1,13 @@
-import Joi from 'joi'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {DeviceRegistrationRequest, UserLoginInput, UserRegistrationInput, UserSubscribeInput} from '#types/request-types'
-import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
+import type {z} from 'zod'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
-import {APIGatewayEvent} from 'aws-lambda'
+import type {APIGatewayEvent} from 'aws-lambda'
 import {validateSchema} from './constraints'
 
-type RequestPayload = Webhook | DeviceRegistrationRequest | UserRegistrationInput | UserSubscribeInput | UserLoginInput
 type PayloadEvent = CustomAPIGatewayRequestAuthorizerEvent | APIGatewayEvent
 
-export function validateRequest(requestBody: RequestPayload, schema: Joi.ObjectSchema): void {
+export function validateRequest<T>(requestBody: unknown, schema: z.ZodSchema<T>): void {
   const validationResult = validateSchema(schema, requestBody)
   if (validationResult && validationResult.errors) {
     logError('validateRequest =>', validationResult.errors)
@@ -18,7 +15,7 @@ export function validateRequest(requestBody: RequestPayload, schema: Joi.ObjectS
   }
 }
 
-export function getPayloadFromEvent(event: PayloadEvent): RequestPayload {
+export function getPayloadFromEvent(event: PayloadEvent): unknown {
   if ('body' in event) {
     if (typeof event.body === 'string') {
       logDebug('getPayloadFromEvent.event.body <=', event.body)

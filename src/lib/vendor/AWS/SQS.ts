@@ -1,5 +1,6 @@
-import {MessageAttributeValue, SendMessageCommand, SendMessageRequest, SendMessageResult} from '@aws-sdk/client-sqs'
-import {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
+import {SendMessageCommand} from '@aws-sdk/client-sqs'
+import type {MessageAttributeValue, SendMessageRequest, SendMessageResult} from '@aws-sdk/client-sqs'
+import type {SQSMessageAttribute, SQSMessageAttributes} from 'aws-lambda'
 import {createSQSClient} from './clients'
 
 const sqs = createSQSClient()

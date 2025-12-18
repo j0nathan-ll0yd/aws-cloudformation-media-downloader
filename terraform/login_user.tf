@@ -63,7 +63,7 @@ resource "aws_lambda_function" "LoginUser" {
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
   handler          = "LoginUser.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   timeout          = 30
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path
