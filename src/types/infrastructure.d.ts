@@ -30,6 +30,7 @@ export interface Data {
 export interface ArchiveFile {
     ApiGatewayAuthorizer: SendPushNotificationElement[];
     CloudfrontMiddleware: SendPushNotificationElement[];
+    DeleteFile:           SendPushNotificationElement[];
     FfmpegLayer:          Layer[];
     FileCoordinator:      SendPushNotificationElement[];
     ListFiles:            SendPushNotificationElement[];
@@ -77,6 +78,7 @@ export interface AwsIamPolicyDocument {
     ApiGatewayCloudwatchRole:       APIGatewayCloudwatchRole[];
     CommonLambdaLogging:            APIGatewayAuthorizerRolePolicyElement[];
     CommonLambdaXRay:               APIGatewayAuthorizerRolePolicyElement[];
+    DeleteFile:                     APIGatewayAuthorizerRolePolicyElement[];
     FileCoordinator:                APIGatewayAuthorizerRolePolicyElement[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
@@ -326,17 +328,18 @@ export interface ResponseTemplates {
 }
 
 export interface AwsAPIGatewayIntegration {
-    ListFilesGet:       AwsAPIGatewayIntegrationListFilesGet[];
-    LogClientEventPost: AwsAPIGatewayIntegrationListFilesGet[];
-    LoginUserPost:      AwsAPIGatewayIntegrationListFilesGet[];
-    RegisterDevicePost: AwsAPIGatewayIntegrationListFilesGet[];
-    RegisterUserPost:   AwsAPIGatewayIntegrationListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayIntegrationListFilesGet[];
-    UserSubscribePost:  AwsAPIGatewayIntegrationListFilesGet[];
-    WebhookFeedlyPost:  AwsAPIGatewayIntegrationListFilesGet[];
+    DeleteFileDelete:   AwsAPIGatewayIntegrationDeleteFileDelete[];
+    ListFilesGet:       AwsAPIGatewayIntegrationDeleteFileDelete[];
+    LogClientEventPost: AwsAPIGatewayIntegrationDeleteFileDelete[];
+    LoginUserPost:      AwsAPIGatewayIntegrationDeleteFileDelete[];
+    RegisterDevicePost: AwsAPIGatewayIntegrationDeleteFileDelete[];
+    RegisterUserPost:   AwsAPIGatewayIntegrationDeleteFileDelete[];
+    UserDeletePost:     AwsAPIGatewayIntegrationDeleteFileDelete[];
+    UserSubscribePost:  AwsAPIGatewayIntegrationDeleteFileDelete[];
+    WebhookFeedlyPost:  AwsAPIGatewayIntegrationDeleteFileDelete[];
 }
 
-export interface AwsAPIGatewayIntegrationListFilesGet {
+export interface AwsAPIGatewayIntegrationDeleteFileDelete {
     http_method:             string;
     integration_http_method: string;
     resource_id:             string;
@@ -346,17 +349,18 @@ export interface AwsAPIGatewayIntegrationListFilesGet {
 }
 
 export interface AwsAPIGatewayMethod {
-    ListFilesGet:       AwsAPIGatewayMethodListFilesGet[];
-    LogClientEventPost: AwsAPIGatewayMethodListFilesGet[];
-    LoginUserPost:      AwsAPIGatewayMethodListFilesGet[];
-    RegisterDevicePost: AwsAPIGatewayMethodListFilesGet[];
-    RegisterUserPost:   AwsAPIGatewayMethodListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayMethodListFilesGet[];
-    UserSubscribePost:  AwsAPIGatewayMethodListFilesGet[];
-    WebhookFeedlyPost:  AwsAPIGatewayMethodListFilesGet[];
+    DeleteFileDelete:   AwsAPIGatewayMethodDeleteFileDelete[];
+    ListFilesGet:       AwsAPIGatewayMethodDeleteFileDelete[];
+    LogClientEventPost: AwsAPIGatewayMethodDeleteFileDelete[];
+    LoginUserPost:      AwsAPIGatewayMethodDeleteFileDelete[];
+    RegisterDevicePost: AwsAPIGatewayMethodDeleteFileDelete[];
+    RegisterUserPost:   AwsAPIGatewayMethodDeleteFileDelete[];
+    UserDeletePost:     AwsAPIGatewayMethodDeleteFileDelete[];
+    UserSubscribePost:  AwsAPIGatewayMethodDeleteFileDelete[];
+    WebhookFeedlyPost:  AwsAPIGatewayMethodDeleteFileDelete[];
 }
 
-export interface AwsAPIGatewayMethodListFilesGet {
+export interface AwsAPIGatewayMethodDeleteFileDelete {
     api_key_required: boolean;
     authorization:    string;
     authorizer_id?:   string;
@@ -385,6 +389,7 @@ export interface Setting {
 export interface AwsAPIGatewayResource {
     Feedly:         Feedly[];
     Files:          Feedly[];
+    FilesFileId:    Feedly[];
     LogEvent:       Feedly[];
     Login:          Feedly[];
     RegisterDevice: Feedly[];
@@ -642,6 +647,7 @@ export interface AwsIamPolicy {
     ApiGatewayAuthorizerRolePolicy: RolePolicy[];
     CommonLambdaLogging:            CommonLambda[];
     CommonLambdaXRay:               CommonLambda[];
+    DeleteFileRolePolicy:           RolePolicy[];
     FileCoordinatorRolePolicy:      RolePolicy[];
     ListFilesRolePolicy:            RolePolicy[];
     LoginUserRolePolicy:            RolePolicy[];
@@ -700,6 +706,7 @@ export interface AwsLambdaEventSourceMappingSendPushNotification {
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
     CloudfrontMiddleware: AwsLambdaFunctionAPIGatewayAuthorizer[];
+    DeleteFile:           DeleteFile[];
     FileCoordinator:      SendPushNotificationClass[];
     ListFiles:            ListFile[];
     LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
@@ -765,6 +772,29 @@ export enum Mode {
     Active = "Active",
 }
 
+export interface DeleteFile {
+    depends_on:       string[];
+    description:      string;
+    environment:      DeleteFileEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    memory_size:      number;
+    role:             string;
+    runtime:          Runtime;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface DeleteFileEnvironment {
+    variables: FluffyVariables;
+}
+
+export interface FluffyVariables {
+    DynamoDBTableName: string;
+    S3BucketName:      string;
+}
+
 export interface SendPushNotificationClass {
     depends_on:       string[];
     description:      string;
@@ -780,10 +810,10 @@ export interface SendPushNotificationClass {
 }
 
 export interface FileCoordinatorEnvironment {
-    variables: FluffyVariables;
+    variables: TentacledVariables;
 }
 
-export interface FluffyVariables {
+export interface TentacledVariables {
     DynamoDBTableName: string;
 }
 
@@ -802,10 +832,10 @@ export interface ListFile {
 }
 
 export interface ListFileEnvironment {
-    variables: TentacledVariables;
+    variables: StickyVariables;
 }
 
-export interface TentacledVariables {
+export interface StickyVariables {
     DefaultFileContentType: string;
     DefaultFileName:        string;
     DefaultFileSize:        number;
@@ -832,10 +862,10 @@ export interface StartFileUpload {
 }
 
 export interface StartFileUploadEnvironment {
-    variables: StickyVariables;
+    variables: IndigoVariables;
 }
 
-export interface StickyVariables {
+export interface IndigoVariables {
     Bucket:              string;
     CloudfrontDomain:    string;
     DynamoDBTableName:   string;
@@ -1193,6 +1223,7 @@ const typeMap: any = {
     "ArchiveFile": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("SendPushNotificationElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("SendPushNotificationElement")) },
+        { json: "DeleteFile", js: "DeleteFile", typ: a(r("SendPushNotificationElement")) },
         { json: "FfmpegLayer", js: "FfmpegLayer", typ: a(r("Layer")) },
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationElement")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("SendPushNotificationElement")) },
@@ -1231,6 +1262,7 @@ const typeMap: any = {
         { json: "ApiGatewayCloudwatchRole", js: "ApiGatewayCloudwatchRole", typ: a(r("APIGatewayCloudwatchRole")) },
         { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "DeleteFile", js: "DeleteFile", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
@@ -1439,16 +1471,17 @@ const typeMap: any = {
         { json: "application/json", js: "application/json", typ: "" },
     ], false),
     "AwsAPIGatewayIntegration": o([
-        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
+        { json: "DeleteFileDelete", js: "DeleteFileDelete", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
+        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayIntegrationDeleteFileDelete")) },
     ], false),
-    "AwsAPIGatewayIntegrationListFilesGet": o([
+    "AwsAPIGatewayIntegrationDeleteFileDelete": o([
         { json: "http_method", js: "http_method", typ: "" },
         { json: "integration_http_method", js: "integration_http_method", typ: "" },
         { json: "resource_id", js: "resource_id", typ: "" },
@@ -1457,16 +1490,17 @@ const typeMap: any = {
         { json: "uri", js: "uri", typ: "" },
     ], false),
     "AwsAPIGatewayMethod": o([
-        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
+        { json: "DeleteFileDelete", js: "DeleteFileDelete", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
+        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayMethodDeleteFileDelete")) },
     ], false),
-    "AwsAPIGatewayMethodListFilesGet": o([
+    "AwsAPIGatewayMethodDeleteFileDelete": o([
         { json: "api_key_required", js: "api_key_required", typ: true },
         { json: "authorization", js: "authorization", typ: "" },
         { json: "authorizer_id", js: "authorizer_id", typ: u(undefined, "") },
@@ -1491,6 +1525,7 @@ const typeMap: any = {
     "AwsAPIGatewayResource": o([
         { json: "Feedly", js: "Feedly", typ: a(r("Feedly")) },
         { json: "Files", js: "Files", typ: a(r("Feedly")) },
+        { json: "FilesFileId", js: "FilesFileId", typ: a(r("Feedly")) },
         { json: "LogEvent", js: "LogEvent", typ: a(r("Feedly")) },
         { json: "Login", js: "Login", typ: a(r("Feedly")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("Feedly")) },
@@ -1701,6 +1736,7 @@ const typeMap: any = {
         { json: "ApiGatewayAuthorizerRolePolicy", js: "ApiGatewayAuthorizerRolePolicy", typ: a(r("RolePolicy")) },
         { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("CommonLambda")) },
         { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("CommonLambda")) },
+        { json: "DeleteFileRolePolicy", js: "DeleteFileRolePolicy", typ: a(r("RolePolicy")) },
         { json: "FileCoordinatorRolePolicy", js: "FileCoordinatorRolePolicy", typ: a(r("RolePolicy")) },
         { json: "ListFilesRolePolicy", js: "ListFilesRolePolicy", typ: a(r("RolePolicy")) },
         { json: "LoginUserRolePolicy", js: "LoginUserRolePolicy", typ: a(r("RolePolicy")) },
@@ -1750,6 +1786,7 @@ const typeMap: any = {
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "DeleteFile", js: "DeleteFile", typ: a(r("DeleteFile")) },
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationClass")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("ListFile")) },
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
@@ -1802,6 +1839,26 @@ const typeMap: any = {
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
+    "DeleteFile": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("DeleteFileEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "memory_size", js: "memory_size", typ: 0 },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "DeleteFileEnvironment": o([
+        { json: "variables", js: "variables", typ: r("FluffyVariables") },
+    ], false),
+    "FluffyVariables": o([
+        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
+        { json: "S3BucketName", js: "S3BucketName", typ: "" },
+    ], false),
     "SendPushNotificationClass": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
@@ -1816,9 +1873,9 @@ const typeMap: any = {
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "FileCoordinatorEnvironment": o([
-        { json: "variables", js: "variables", typ: r("FluffyVariables") },
+        { json: "variables", js: "variables", typ: r("TentacledVariables") },
     ], false),
-    "FluffyVariables": o([
+    "TentacledVariables": o([
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
     ], false),
     "ListFile": o([
@@ -1835,9 +1892,9 @@ const typeMap: any = {
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "ListFileEnvironment": o([
-        { json: "variables", js: "variables", typ: r("TentacledVariables") },
+        { json: "variables", js: "variables", typ: r("StickyVariables") },
     ], false),
-    "TentacledVariables": o([
+    "StickyVariables": o([
         { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: "" },
         { json: "DefaultFileName", js: "DefaultFileName", typ: "" },
         { json: "DefaultFileSize", js: "DefaultFileSize", typ: 0 },
@@ -1862,9 +1919,9 @@ const typeMap: any = {
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "StartFileUploadEnvironment": o([
-        { json: "variables", js: "variables", typ: r("StickyVariables") },
+        { json: "variables", js: "variables", typ: r("IndigoVariables") },
     ], false),
-    "StickyVariables": o([
+    "IndigoVariables": o([
         { json: "Bucket", js: "Bucket", typ: "" },
         { json: "CloudfrontDomain", js: "CloudfrontDomain", typ: "" },
         { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
