@@ -87,16 +87,18 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   // - }("EnvVarName") for IIFE patterns (immediately invoked function expressions)
   // - $("EnvVarName") where $ is used as minified function name ($ is not a word char in regex)
   // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
-  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
+  // Allow digits in env var names (e.g., S3BucketName, EC2InstanceId)
+  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z0-9]{2,})["']\)/g
   const envValidationMatches = functionSource.match(envValidationRegex)
   logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {
     const extracted = envValidationMatches.map((match: string) => {
       // Extract the variable name from patterns like X("VarName") or }("VarName")
-      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
+      // Allow digits in env var names (e.g., S3BucketName, EC2InstanceId)
+      const varMatch = match.match(/\(["']([A-Z][A-Za-z0-9]{2,})["']\)/)
       return varMatch ? varMatch[1] : ''
-    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
-      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v))
+    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars) and crypto algorithm names
+      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA', 'Ed25519'].includes(v))
     environmentVariablesSource.push(...extracted)
   }
 
@@ -127,7 +129,8 @@ describe('#Infrastructure', () => {
           if (cloudFrontDistributionNames[functionName]) {
             expect(environmentVariable).toMatch(/^x-[a-z-]+$/)
           } else {
-            expect(environmentVariable).toMatch(/^[A-Z][A-Za-z]*$/)
+            // Allow digits in env var names (e.g., S3BucketName, EC2InstanceId)
+            expect(environmentVariable).toMatch(/^[A-Z][A-Za-z0-9]*$/)
           }
         })
       }
