@@ -68,9 +68,15 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
 /**
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
+ * TTL is automatically set for completed/failed statuses.
  */
 async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}
+
+  // Set TTL for completed/failed downloads (auto-cleanup after 7 days)
+  if (status === DownloadStatus.Completed || status === DownloadStatus.Failed) {
+    update.ttl = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+  }
 
   if (classification) {
     update.errorCategory = classification.category
@@ -94,7 +100,8 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       errorCategory: classification?.category,
       lastError: classification?.reason,
       retryAfter: classification?.retryAfter,
-      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
+      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
+      ttl: update.ttl as number | undefined
     }).go()
   }
 }
@@ -226,7 +233,9 @@ async function handleDownloadFailure(
  * @notExported
  */
 export const handler = withXRay(async (event: StartFileUploadParams, context: Context) => {
-  logInfo('event <=', event)
+  const correlationId = event.correlationId || context.awsRequestId
+  logInfo('event <=', {...event, correlationId})
+
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 

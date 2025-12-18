@@ -36,33 +36,39 @@ describe('#SendPushNotification', () => {
     devicesMock.mocks.get.mockResolvedValue({data: getDeviceResponse})
     const {default: publishSnsEventResponse} = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
     publishSnsEventMock.mockReturnValue(publishSnsEventResponse)
-    const notificationsSent = await handler(event, testContext)
-    expect(notificationsSent).toBeUndefined()
+    const result = await handler(event, testContext)
+    expect(result).toEqual({batchItemFailures: []})
+    expect(publishSnsEventMock).toHaveBeenCalled()
   })
   test('should exit gracefully if no devices exist', async () => {
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-    const notificationsSent = await handler(event, testContext)
-    expect(notificationsSent).toBeUndefined()
+    const result = await handler(event, testContext)
+    expect(result).toEqual({batchItemFailures: []})
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   test('should exit if its a different notification type', async () => {
-    const modifiedEvent = event
-    modifiedEvent.Records[0].body = 'OtherNotification'
-    const notificationsSent = await handler(event, testContext)
-    expect(notificationsSent).toBeUndefined()
+    const modifiedEvent = JSON.parse(JSON.stringify(event)) as SQSEvent
+    modifiedEvent.Records[0].messageAttributes.notificationType = {
+      stringValue: 'OtherNotification',
+      stringListValues: [],
+      binaryListValues: [],
+      dataType: 'String'
+    }
+    const result = await handler(modifiedEvent, testContext)
+    expect(result).toEqual({batchItemFailures: []})
     expect(publishSnsEventMock.mock.calls.length).toBe(0)
   })
   describe('#AWSFailure', () => {
     test('ElectroDB UserDevices.query returns no data', async () => {
       userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-      const notificationsSent = await handler(event, testContext)
-      expect(notificationsSent).toBeUndefined()
+      const result = await handler(event, testContext)
+      expect(result).toEqual({batchItemFailures: []})
     })
     test('ElectroDB Devices.get fails', async () => {
       userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: getUserDevicesByUserIdResponse})
       devicesMock.mocks.get.mockResolvedValue(undefined)
-      const notificationsSent = await handler(event, testContext)
-      expect(notificationsSent).toBeUndefined()
+      const result = await handler(event, testContext)
+      expect(result).toEqual({batchItemFailures: [{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}]})
       expect(publishSnsEventMock.mock.calls.length).toBe(0)
     })
   })

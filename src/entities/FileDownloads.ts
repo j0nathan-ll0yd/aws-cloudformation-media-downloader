@@ -1,7 +1,7 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 // Re-export DownloadStatus enum from enums for consumers of this module
-export {DownloadStatus} from '#types/enums'
+export { DownloadStatus } from '#types/enums'
 
 /**
  * ElectroDB entity schema for tracking download attempts.
@@ -44,7 +44,11 @@ export const FileDownloads = new Entity({
     /** Timestamp when download was first initiated */
     createdAt: {type: 'number', required: true, default: () => Math.floor(Date.now() / 1000)},
     /** Timestamp when download state was last updated */
-    updatedAt: {type: 'number', required: true, default: () => Math.floor(Date.now() / 1000), watch: '*'}
+    updatedAt: {type: 'number', required: true, default: () => Math.floor(Date.now() / 1000), watch: '*'},
+    /** Correlation ID for end-to-end request tracing across Lambda chain */
+    correlationId: {type: 'string', required: false},
+    /** Unix timestamp (seconds) for DynamoDB TTL - auto-delete completed/failed records */
+    ttl: {type: 'number', required: false}
   },
   indexes: {
     primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},

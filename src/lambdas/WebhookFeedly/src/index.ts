@@ -1,4 +1,5 @@
 import type {APIGatewayProxyResult} from 'aws-lambda'
+import {randomUUID} from 'node:crypto'
 import {Files} from '#entities/Files'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
@@ -10,7 +11,7 @@ import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {logDebug, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
@@ -48,9 +49,10 @@ export async function associateFileToUser(fileId: string, userId: string) {
  *
  * @param fileId - The unique file identifier (YouTube video ID)
  * @param sourceUrl - The original YouTube URL for the video
+ * @param correlationId - Correlation ID for end-to-end request tracing
  */
-async function addFile(fileId: string, sourceUrl?: string) {
-  logDebug('addFile <=', {fileId, sourceUrl})
+async function addFile(fileId: string, sourceUrl?: string, correlationId?: string) {
+  logDebug('addFile <=', {fileId, sourceUrl, correlationId})
 
   // Create placeholder Files record (will be updated with real metadata on successful download)
   const fileResponse = await Files.create({
@@ -68,7 +70,7 @@ async function addFile(fileId: string, sourceUrl?: string) {
   logDebug('addFile Files.create =>', fileResponse)
 
   // Create FileDownloads record to track download orchestration
-  const downloadResponse = await FileDownloads.create({fileId, status: DownloadStatus.Pending, sourceUrl}).go()
+  const downloadResponse = await FileDownloads.create({fileId, status: DownloadStatus.Pending, sourceUrl, correlationId}).go()
   logDebug('addFile FileDownloads.create =>', downloadResponse)
 
   return fileResponse
@@ -110,6 +112,10 @@ async function sendFileNotification(file: File, userId: string) {
  * @notExported
  */
 export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
+  // Generate correlation ID for end-to-end request tracing
+  const correlationId = randomUUID()
+  logInfo('Processing request', {correlationId, requestId: context.awsRequestId})
+
   const requestBody = getPayloadFromEvent(event) as Webhook
   validateRequest(requestBody, feedlyEventSchema)
   const fileId = getVideoID(requestBody.articleURL)
@@ -121,12 +127,12 @@ export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context,
     return response(context, 200, {status: ResponseStatus.Dispatched})
   } else {
     if (!file) {
-      // New file - create Files and FileDownloads records
-      await addFile(fileId, requestBody.articleURL)
+      // New file - create Files and FileDownloads records with correlationId
+      await addFile(fileId, requestBody.articleURL, correlationId)
     }
     if (!requestBody.backgroundMode) {
-      // Foreground mode - initiate download immediately
-      await initiateFileDownload(fileId)
+      // Foreground mode - initiate download immediately with correlationId
+      await initiateFileDownload(fileId, correlationId)
       return response(context, 202, {status: ResponseStatus.Initiated})
     } else {
       // Background mode - FileCoordinator will pick it up

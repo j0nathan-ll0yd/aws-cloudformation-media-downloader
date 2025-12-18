@@ -130,11 +130,11 @@ export interface LambdaAssumeRoleStatement {
 }
 
 export interface PruneDevice {
-    dynamic:   Dynamic;
+    dynamic:   PruneDeviceDynamic;
     statement: Ent[];
 }
 
-export interface Dynamic {
+export interface PruneDeviceDynamic {
     statement: DynamicStatement[];
 }
 
@@ -240,6 +240,7 @@ export interface Resource {
     aws_cloudwatch_event_rule:            AwsCloudwatchEventRule;
     aws_cloudwatch_event_target:          AwsCloudwatchEventTarget;
     aws_cloudwatch_log_group:             { [key: string]: AwsCloudwatchLogGroup[] };
+    aws_cloudwatch_metric_alarm:          AwsCloudwatchMetricAlarm;
     aws_dynamodb_table:                   AwsDynamodbTable;
     aws_iam_policy:                       AwsIamPolicy;
     aws_iam_role:                         { [key: string]: AwsIamRole[] };
@@ -602,6 +603,75 @@ export interface AwsCloudwatchLogGroup {
     retention_in_days: number;
 }
 
+export interface AwsCloudwatchMetricAlarm {
+    lambda_errors:    Lambda[];
+    lambda_throttles: Lambda[];
+    sqs_dlq_messages: SqsAge[];
+    sqs_queue_age:    SqsAge[];
+}
+
+export interface Lambda {
+    alarm_description:   string;
+    alarm_name:          string;
+    comparison_operator: string;
+    dynamic:             LambdaErrorDynamic;
+    evaluation_periods:  number;
+    metric_query:        LambdaErrorMetricQuery[];
+    threshold:           number;
+    treat_missing_data:  string;
+}
+
+export interface LambdaErrorDynamic {
+    metric_query: DynamicMetricQuery[];
+}
+
+export interface DynamicMetricQuery {
+    content:  Content[];
+    for_each: string;
+}
+
+export interface Content {
+    id:     string;
+    metric: Metric[];
+}
+
+export interface Metric {
+    dimensions:  MetricDimensions;
+    metric_name: string;
+    namespace:   string;
+    period:      number;
+    stat:        string;
+}
+
+export interface MetricDimensions {
+    FunctionName: string;
+}
+
+export interface LambdaErrorMetricQuery {
+    expression:  string;
+    id:          string;
+    label:       string;
+    return_data: boolean;
+}
+
+export interface SqsAge {
+    alarm_description:   string;
+    alarm_name:          string;
+    comparison_operator: string;
+    dimensions:          SqsDlqMessageDimensions;
+    evaluation_periods:  number;
+    metric_name:         string;
+    namespace:           string;
+    period:              number;
+    statistic:           string;
+    threshold:           number;
+    treat_missing_data:  string;
+}
+
+export interface SqsDlqMessageDimensions {
+    QueueName: string;
+}
+
 export interface AwsDynamodbTable {
     MediaDownloader: MediaDownloader[];
 }
@@ -614,6 +684,7 @@ export interface MediaDownloader {
     name:                   string;
     range_key:              string;
     tags:                   MediaDownloaderTags;
+    ttl:                    TTL[];
 }
 
 export interface Attribute {
@@ -636,6 +707,11 @@ export interface GlobalSecondaryIndex {
 export interface MediaDownloaderTags {
     Description: string;
     Name:        string;
+}
+
+export interface TTL {
+    attribute_name: string;
+    enabled:        boolean;
 }
 
 export interface AwsIamPolicy {
@@ -693,8 +769,9 @@ export interface AwsLambdaEventSourceMapping {
 }
 
 export interface AwsLambdaEventSourceMappingSendPushNotification {
-    event_source_arn: string;
-    function_name:    string;
+    event_source_arn:        string;
+    function_name:           string;
+    function_response_types: string[];
 }
 
 export interface AwsLambdaFunction {
@@ -946,20 +1023,34 @@ export interface PushNotification {
 }
 
 export interface AwsSqsQueue {
-    SendPushNotification: AwsSqsQueueSendPushNotification[];
+    SendPushNotification:    AwsSqsQueueSendPushNotification[];
+    SendPushNotificationDLQ: SendPushNotificationDLQ[];
 }
 
 export interface AwsSqsQueueSendPushNotification {
-    delay_seconds:             number;
-    max_message_size:          number;
-    message_retention_seconds: number;
-    name:                      string;
-    receive_wait_time_seconds: number;
-    tags:                      SendPushNotificationTags;
+    delay_seconds:              number;
+    max_message_size:           number;
+    message_retention_seconds:  number;
+    name:                       string;
+    receive_wait_time_seconds:  number;
+    redrive_policy:             string;
+    tags:                       SendPushNotificationTags;
+    visibility_timeout_seconds: number;
 }
 
 export interface SendPushNotificationTags {
     Environment: string;
+}
+
+export interface SendPushNotificationDLQ {
+    message_retention_seconds: number;
+    name:                      string;
+    tags:                      SendPushNotificationDLQTags;
+}
+
+export interface SendPushNotificationDLQTags {
+    Environment: string;
+    Purpose:     string;
 }
 
 export interface NullResource {
@@ -1276,10 +1367,10 @@ const typeMap: any = {
         { json: "principals", js: "principals", typ: a(r("PrincipalElement")) },
     ], false),
     "PruneDevice": o([
-        { json: "dynamic", js: "dynamic", typ: r("Dynamic") },
+        { json: "dynamic", js: "dynamic", typ: r("PruneDeviceDynamic") },
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
-    "Dynamic": o([
+    "PruneDeviceDynamic": o([
         { json: "statement", js: "statement", typ: a(r("DynamicStatement")) },
     ], false),
     "DynamicStatement": o([
@@ -1367,6 +1458,7 @@ const typeMap: any = {
         { json: "aws_cloudwatch_event_rule", js: "aws_cloudwatch_event_rule", typ: r("AwsCloudwatchEventRule") },
         { json: "aws_cloudwatch_event_target", js: "aws_cloudwatch_event_target", typ: r("AwsCloudwatchEventTarget") },
         { json: "aws_cloudwatch_log_group", js: "aws_cloudwatch_log_group", typ: m(a(r("AwsCloudwatchLogGroup"))) },
+        { json: "aws_cloudwatch_metric_alarm", js: "aws_cloudwatch_metric_alarm", typ: r("AwsCloudwatchMetricAlarm") },
         { json: "aws_dynamodb_table", js: "aws_dynamodb_table", typ: r("AwsDynamodbTable") },
         { json: "aws_iam_policy", js: "aws_iam_policy", typ: r("AwsIamPolicy") },
         { json: "aws_iam_role", js: "aws_iam_role", typ: m(a(r("AwsIamRole"))) },
@@ -1671,6 +1763,65 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
         { json: "retention_in_days", js: "retention_in_days", typ: 0 },
     ], false),
+    "AwsCloudwatchMetricAlarm": o([
+        { json: "lambda_errors", js: "lambda_errors", typ: a(r("Lambda")) },
+        { json: "lambda_throttles", js: "lambda_throttles", typ: a(r("Lambda")) },
+        { json: "sqs_dlq_messages", js: "sqs_dlq_messages", typ: a(r("SqsAge")) },
+        { json: "sqs_queue_age", js: "sqs_queue_age", typ: a(r("SqsAge")) },
+    ], false),
+    "Lambda": o([
+        { json: "alarm_description", js: "alarm_description", typ: "" },
+        { json: "alarm_name", js: "alarm_name", typ: "" },
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "dynamic", js: "dynamic", typ: r("LambdaErrorDynamic") },
+        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
+        { json: "metric_query", js: "metric_query", typ: a(r("LambdaErrorMetricQuery")) },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+    ], false),
+    "LambdaErrorDynamic": o([
+        { json: "metric_query", js: "metric_query", typ: a(r("DynamicMetricQuery")) },
+    ], false),
+    "DynamicMetricQuery": o([
+        { json: "content", js: "content", typ: a(r("Content")) },
+        { json: "for_each", js: "for_each", typ: "" },
+    ], false),
+    "Content": o([
+        { json: "id", js: "id", typ: "" },
+        { json: "metric", js: "metric", typ: a(r("Metric")) },
+    ], false),
+    "Metric": o([
+        { json: "dimensions", js: "dimensions", typ: r("MetricDimensions") },
+        { json: "metric_name", js: "metric_name", typ: "" },
+        { json: "namespace", js: "namespace", typ: "" },
+        { json: "period", js: "period", typ: 0 },
+        { json: "stat", js: "stat", typ: "" },
+    ], false),
+    "MetricDimensions": o([
+        { json: "FunctionName", js: "FunctionName", typ: "" },
+    ], false),
+    "LambdaErrorMetricQuery": o([
+        { json: "expression", js: "expression", typ: "" },
+        { json: "id", js: "id", typ: "" },
+        { json: "label", js: "label", typ: "" },
+        { json: "return_data", js: "return_data", typ: true },
+    ], false),
+    "SqsAge": o([
+        { json: "alarm_description", js: "alarm_description", typ: "" },
+        { json: "alarm_name", js: "alarm_name", typ: "" },
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "dimensions", js: "dimensions", typ: r("SqsDlqMessageDimensions") },
+        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
+        { json: "metric_name", js: "metric_name", typ: "" },
+        { json: "namespace", js: "namespace", typ: "" },
+        { json: "period", js: "period", typ: 0 },
+        { json: "statistic", js: "statistic", typ: "" },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+    ], false),
+    "SqsDlqMessageDimensions": o([
+        { json: "QueueName", js: "QueueName", typ: "" },
+    ], false),
     "AwsDynamodbTable": o([
         { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloader")) },
     ], false),
@@ -1682,6 +1833,7 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
         { json: "range_key", js: "range_key", typ: "" },
         { json: "tags", js: "tags", typ: r("MediaDownloaderTags") },
+        { json: "ttl", js: "ttl", typ: a(r("TTL")) },
     ], false),
     "Attribute": o([
         { json: "name", js: "name", typ: "" },
@@ -1696,6 +1848,10 @@ const typeMap: any = {
     "MediaDownloaderTags": o([
         { json: "Description", js: "Description", typ: "" },
         { json: "Name", js: "Name", typ: "" },
+    ], false),
+    "TTL": o([
+        { json: "attribute_name", js: "attribute_name", typ: "" },
+        { json: "enabled", js: "enabled", typ: true },
     ], false),
     "AwsIamPolicy": o([
         { json: "ApiGatewayAuthorizerRolePolicy", js: "ApiGatewayAuthorizerRolePolicy", typ: a(r("RolePolicy")) },
@@ -1746,6 +1902,7 @@ const typeMap: any = {
     "AwsLambdaEventSourceMappingSendPushNotification": o([
         { json: "event_source_arn", js: "event_source_arn", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
+        { json: "function_response_types", js: "function_response_types", typ: a("") },
     ], false),
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
@@ -1948,6 +2105,7 @@ const typeMap: any = {
     ], false),
     "AwsSqsQueue": o([
         { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsSqsQueueSendPushNotification")) },
+        { json: "SendPushNotificationDLQ", js: "SendPushNotificationDLQ", typ: a(r("SendPushNotificationDLQ")) },
     ], false),
     "AwsSqsQueueSendPushNotification": o([
         { json: "delay_seconds", js: "delay_seconds", typ: 0 },
@@ -1955,10 +2113,21 @@ const typeMap: any = {
         { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
         { json: "name", js: "name", typ: "" },
         { json: "receive_wait_time_seconds", js: "receive_wait_time_seconds", typ: 0 },
+        { json: "redrive_policy", js: "redrive_policy", typ: "" },
         { json: "tags", js: "tags", typ: r("SendPushNotificationTags") },
+        { json: "visibility_timeout_seconds", js: "visibility_timeout_seconds", typ: 0 },
     ], false),
     "SendPushNotificationTags": o([
         { json: "Environment", js: "Environment", typ: "" },
+    ], false),
+    "SendPushNotificationDLQ": o([
+        { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
+        { json: "name", js: "name", typ: "" },
+        { json: "tags", js: "tags", typ: r("SendPushNotificationDLQTags") },
+    ], false),
+    "SendPushNotificationDLQTags": o([
+        { json: "Environment", js: "Environment", typ: "" },
+        { json: "Purpose", js: "Purpose", typ: "" },
     ], false),
     "NullResource": o([
         { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadFfmpegBinary")) },

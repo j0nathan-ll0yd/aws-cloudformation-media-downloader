@@ -67,14 +67,14 @@ const config: webpack.Configuration = {
     // Bundle analyzer - only enabled when ANALYZE=true
     ...(process.env['ANALYZE'] === 'true'
       ? [
-          new BundleAnalyzerPlugin({
-            analyzerMode: 'static',
-            reportFilename: path.resolve(__dirname, '../build/reports/bundle-analysis.html'),
-            openAnalyzer: false,
-            generateStatsFile: true,
-            statsFilename: path.resolve(__dirname, '../build/reports/bundle-stats.json')
-          })
-        ]
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: path.resolve(__dirname, '../build/reports/bundle-analysis.html'),
+          openAnalyzer: false,
+          generateStatsFile: true,
+          statsFilename: path.resolve(__dirname, '../build/reports/bundle-stats.json')
+        })
+      ]
       : [])
   ],
   watch: false

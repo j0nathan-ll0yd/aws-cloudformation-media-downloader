@@ -23,7 +23,11 @@ const SEVERITY = 'HIGH' as const
 
 // Forbidden prefixes that indicate old patterns
 const FORBIDDEN_PREFIXES = [
-  {prefix: 'DynamoDB', message: 'Use domain model names (e.g., File, User) instead of DynamoDB* prefix', autoFix: (name: string) => name.replace(/^DynamoDB/, '')},
+  {
+    prefix: 'DynamoDB',
+    message: 'Use domain model names (e.g., File, User) instead of DynamoDB* prefix',
+    autoFix: (name: string) => name.replace(/^DynamoDB/, '')
+  },
   {prefix: 'I', message: "Don't use 'I' prefix for interfaces (e.g., use User instead of IUser)", autoFix: (name: string) => name.slice(1)},
   {prefix: 'T', message: "Don't use 'T' prefix for types (e.g., use Status instead of TStatus)", autoFix: (name: string) => name.slice(1)}
 ]
@@ -44,10 +48,7 @@ function isPascalCase(str: string): boolean {
 function toPascalCase(str: string): string {
   // Handle snake_case
   if (str.includes('_')) {
-    return str
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-      .join('')
+    return str.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join('')
   }
   // Handle already lowercase
   if (str === str.toLowerCase()) {
@@ -153,10 +154,9 @@ export const namingConventionsRule: ValidationRule = {
         if (propName.includes('_') && !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp')) {
           violations.push(
             createViolation(RULE_NAME, 'MEDIUM', propLine, `Property '${containerName}.${propName}' uses snake_case, should be camelCase`, {
-              suggestion: `Rename to '${propName
-                .split('_')
-                .map((p, i) => (i === 0 ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()))
-                .join('')}'`
+              suggestion: `Rename to '${
+                propName.split('_').map((p, i) => (i === 0 ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())).join('')
+              }'`
             })
           )
         }

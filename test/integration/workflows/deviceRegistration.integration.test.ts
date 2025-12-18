@@ -61,13 +61,14 @@ const unsubscribeMock = jest.fn<any>()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const subscribeMock = jest.fn<any>()
 
-jest.unstable_mockModule(snsModulePath, () => ({
-  createPlatformEndpoint: createPlatformEndpointMock,
-  listSubscriptionsByTopic: listSubscriptionsByTopicMock,
-  unsubscribe: unsubscribeMock,
-  subscribe: subscribeMock,
-  deleteEndpoint: jest.fn()
-}))
+jest.unstable_mockModule(snsModulePath,
+  () => ({
+    createPlatformEndpoint: createPlatformEndpointMock,
+    listSubscriptionsByTopic: listSubscriptionsByTopicMock,
+    unsubscribe: unsubscribeMock,
+    subscribe: subscribeMock,
+    deleteEndpoint: jest.fn()
+  }))
 
 // Create entity mocks
 const devicesMock = createElectroDBEntityMock()
@@ -82,9 +83,14 @@ const {handler} = await import('../../../src/lambdas/RegisterDevice/src/index')
 interface DeviceRegistrationBody {
   deviceId: string
   token: string
-  name?: string
-  systemName?: string
-  systemVersion?: string
+  name: string
+  systemName: string
+  systemVersion: string
+}
+
+/** Create a complete device registration body with required fields */
+function createDeviceBody(deviceId: string, token: string): DeviceRegistrationBody {
+  return {deviceId, token, name: 'Test Device', systemName: 'iOS', systemVersion: '17.0'}
 }
 
 function createRegisterDeviceEvent(
@@ -115,12 +121,7 @@ function createRegisterDeviceEvent(
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/devices',
-      authorizer: {
-        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
-        userId,
-        userStatus,
-        integrationLatency: 342
-      },
+      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/devices'
@@ -154,27 +155,15 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {...createMockDevice(deviceId, endpointArn), token}
-    })
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
 
     // Mock userDevice upsert
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({
-      data: createMockUserDevice(userId, deviceId)
-    })
+    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
 
     // Mock getUserDevices - first device (length === 1)
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice(userId, deviceId)]
-    })
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, deviceId)]})
 
-    const body: DeviceRegistrationBody = {
-      deviceId,
-      token,
-      name: 'iPhone 15',
-      systemName: 'iOS',
-      systemVersion: '17.0'
-    }
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
@@ -183,10 +172,7 @@ describe('Device Registration Integration Tests', () => {
     expect(response.body.endpointArn).toBe(endpointArn)
 
     // Verify SNS endpoint created
-    expect(createPlatformEndpointMock).toHaveBeenCalledWith({
-      PlatformApplicationArn: process.env.PlatformApplicationArn,
-      Token: token
-    })
+    expect(createPlatformEndpointMock).toHaveBeenCalledWith({PlatformApplicationArn: process.env.PlatformApplicationArn, Token: token})
 
     // Verify device stored
     expect(devicesMock.entity.upsert).toHaveBeenCalled()
@@ -205,14 +191,10 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert - idempotent
-    devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {...createMockDevice(deviceId, endpointArn), token}
-    })
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
 
     // Mock userDevice upsert - idempotent
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({
-      data: createMockUserDevice(userId, deviceId)
-    })
+    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
 
     // Mock getUserDevices - user already has this device (length > 1 means existing)
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
@@ -224,15 +206,12 @@ describe('Device Registration Integration Tests', () => {
 
     // Mock listSubscriptionsByTopic for unsubscribe flow
     listSubscriptionsByTopicMock.mockResolvedValue({
-      Subscriptions: [{
-        Endpoint: endpointArn,
-        SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-123'
-      }]
+      Subscriptions: [{Endpoint: endpointArn, SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-123'}]
     })
 
     unsubscribeMock.mockResolvedValue(undefined)
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
@@ -252,16 +231,12 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {...createMockDevice(deviceId, endpointArn), token}
-    })
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
 
     // Mock subscribe for anonymous user
-    subscribeMock.mockResolvedValue({
-      SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'
-    })
+    subscribeMock.mockResolvedValue({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
 
@@ -283,11 +258,9 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {...createMockDevice(deviceId, endpointArn), token}
-    })
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     // Create event with Authorization header but invalid/no userId
     // getUserDetailsFromEvent returns Unauthenticated when there's an auth header but no userId
     const event = {
@@ -313,12 +286,7 @@ describe('Device Registration Integration Tests', () => {
         requestTimeEpoch: Date.now(),
         resourceId: 'test-resource',
         resourcePath: '/devices',
-        authorizer: {
-          principalId: 'unknown',
-          userId: undefined,
-          userStatus: UserStatus.Unauthenticated,
-          integrationLatency: 342
-        },
+        authorizer: {principalId: 'unknown', userId: undefined, userStatus: UserStatus.Unauthenticated, integrationLatency: 342},
         identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
       },
       resource: '/devices'
@@ -349,7 +317,7 @@ describe('Device Registration Integration Tests', () => {
     // Mock SNS failure
     createPlatformEndpointMock.mockResolvedValue(undefined as unknown as {EndpointArn: string})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
@@ -364,29 +332,12 @@ describe('Device Registration Integration Tests', () => {
 
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
     devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {
-        deviceId,
-        endpointArn,
-        token,
-        name: 'iPhone 15 Pro Max',
-        systemName: 'iOS',
-        systemVersion: '17.2'
-      }
+      data: {deviceId, endpointArn, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
     })
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({
-      data: createMockUserDevice(userId, deviceId)
-    })
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice(userId, deviceId)]
-    })
+    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
+    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, deviceId)]})
 
-    const body: DeviceRegistrationBody = {
-      deviceId,
-      token,
-      name: 'iPhone 15 Pro Max',
-      systemName: 'iOS',
-      systemVersion: '17.2'
-    }
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 

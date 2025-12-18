@@ -6,6 +6,12 @@ import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
+/** Minimal download info needed for processing */
+interface DownloadInfo {
+  fileId: string
+  correlationId?: string
+}
+
 /** Maximum number of files to process concurrently per batch */
 const BATCH_SIZE = 5
 
@@ -13,30 +19,30 @@ const BATCH_SIZE = 5
 const BATCH_DELAY_MS = 10000
 
 /**
- * Returns an array of fileIds from FileDownloads with status='pending'.
+ * Returns download info for FileDownloads with status='pending'.
  * These are new downloads (from WebhookFeedly) that haven't been attempted yet.
  * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
  */
-async function getPendingFileIds(): Promise<string[]> {
+async function getPendingDownloads(): Promise<DownloadInfo[]> {
   logDebug('Querying for pending downloads ready to start')
 
   // Query FileDownloads with status='pending' - these are new downloads
   // Note: pending downloads don't have retryAfter set, so we just query by status
   const queryResponse = await FileDownloads.query.byStatusRetryAfter({status: DownloadStatus.Pending}).go()
 
-  logDebug('getPendingFileIds =>', {count: queryResponse?.data?.length ?? 0})
+  logDebug('getPendingDownloads =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return queryResponse.data.map((download) => download.fileId)
+  return queryResponse.data.map((download) => ({fileId: download.fileId, correlationId: download.correlationId}))
 }
 
 /**
- * Returns an array of fileIds from FileDownloads scheduled for retry.
+ * Returns download info for FileDownloads scheduled for retry.
  * These are downloads that failed but are retryable (scheduled videos, transient errors).
  * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
  */
-async function getScheduledFileIds(): Promise<string[]> {
+async function getScheduledDownloads(): Promise<DownloadInfo[]> {
   logDebug('Querying for scheduled downloads ready for retry')
   const nowSeconds = Math.floor(Date.now() / 1000)
 
@@ -45,27 +51,27 @@ async function getScheduledFileIds(): Promise<string[]> {
     lte(retryAfter, nowSeconds)
   ).go()
 
-  logDebug('getScheduledFileIds =>', {count: queryResponse?.data?.length ?? 0})
+  logDebug('getScheduledDownloads =>', {count: queryResponse?.data?.length ?? 0})
   if (!queryResponse || !queryResponse.data) {
     throw new UnexpectedError(providerFailureErrorMessage)
   }
-  return queryResponse.data.map((download) => download.fileId)
+  return queryResponse.data.map((download) => ({fileId: download.fileId, correlationId: download.correlationId}))
 }
 
 /**
- * Process files in batches with delays between batches
+ * Process downloads in batches with delays between batches
  * Prevents overwhelming YouTube/yt-dlp with concurrent requests
  */
-async function processFilesInBatches(fileIds: string[]): Promise<void> {
-  for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
-    const batch = fileIds.slice(i, i + BATCH_SIZE)
-    logInfo(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}`, {batchSize: batch.length, remaining: fileIds.length - i - batch.length})
+async function processDownloadsInBatches(downloads: DownloadInfo[]): Promise<void> {
+  for (let i = 0; i < downloads.length; i += BATCH_SIZE) {
+    const batch = downloads.slice(i, i + BATCH_SIZE)
+    logInfo(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}`, {batchSize: batch.length, remaining: downloads.length - i - batch.length})
 
-    // Process batch concurrently
-    await Promise.all(batch.map((fileId) => initiateFileDownload(fileId)))
+    // Process batch concurrently, passing correlationId for tracing
+    await Promise.all(batch.map(({fileId, correlationId}) => initiateFileDownload(fileId, correlationId)))
 
     // Add delay between batches (except for the last batch)
-    if (i + BATCH_SIZE < fileIds.length) {
+    if (i + BATCH_SIZE < downloads.length) {
       logDebug(`Waiting ${BATCH_DELAY_MS}ms before next batch`)
       await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS))
     }
@@ -79,29 +85,36 @@ async function processFilesInBatches(fileIds: string[]): Promise<void> {
  * @param context - An AWS Context object
  */
 export const handler = withXRay(wrapApiHandler(async ({context}: ApiHandlerParams<ScheduledEvent>): Promise<APIGatewayProxyResult> => {
-  // Query both pending and scheduled files in parallel
-  const [pendingFileIds, scheduledFileIds] = await Promise.all([getPendingFileIds(), getScheduledFileIds()])
+  // Query both pending and scheduled downloads in parallel
+  const [pendingDownloads, scheduledDownloads] = await Promise.all([getPendingDownloads(), getScheduledDownloads()])
 
-  // Combine and deduplicate (shouldn't have duplicates, but safety first)
-  const allFileIds = [...new Set([...pendingFileIds, ...scheduledFileIds])]
+  // Combine downloads, deduplicate by fileId
+  const seenFileIds = new Set<string>()
+  const allDownloads: DownloadInfo[] = []
+  for (const download of [...pendingDownloads, ...scheduledDownloads]) {
+    if (!seenFileIds.has(download.fileId)) {
+      seenFileIds.add(download.fileId)
+      allDownloads.push(download)
+    }
+  }
 
-  logInfo('Files to process', {pending: pendingFileIds.length, scheduled: scheduledFileIds.length, total: allFileIds.length})
+  logInfo('Files to process', {pending: pendingDownloads.length, scheduled: scheduledDownloads.length, total: allDownloads.length})
 
   // Publish metrics for monitoring
   await putMetrics([
-    {name: 'PendingFilesFound', value: pendingFileIds.length, unit: 'Count'},
-    {name: 'ScheduledFilesFound', value: scheduledFileIds.length, unit: 'Count'},
-    {name: 'TotalFilesToProcess', value: allFileIds.length, unit: 'Count'}
+    {name: 'PendingFilesFound', value: pendingDownloads.length, unit: 'Count'},
+    {name: 'ScheduledFilesFound', value: scheduledDownloads.length, unit: 'Count'},
+    {name: 'TotalFilesToProcess', value: allDownloads.length, unit: 'Count'}
   ])
 
-  if (allFileIds.length === 0) {
+  if (allDownloads.length === 0) {
     logInfo('No files to process')
     return response(context, 200, {processed: 0})
   }
 
-  // Process files in batches to avoid overwhelming yt-dlp
-  await processFilesInBatches(allFileIds)
+  // Process downloads in batches to avoid overwhelming yt-dlp
+  await processDownloadsInBatches(allDownloads)
 
-  logInfo('All files processed', {total: allFileIds.length})
-  return response(context, 200, {processed: allFileIds.length, pending: pendingFileIds.length, scheduled: scheduledFileIds.length})
+  logInfo('All files processed', {total: allDownloads.length})
+  return response(context, 200, {processed: allDownloads.length, pending: pendingDownloads.length, scheduled: scheduledDownloads.length})
 }))

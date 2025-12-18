@@ -3,7 +3,7 @@
     {
       "messageId": "ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f",
       "receiptHandle": "AQEBX+1t2tc8M6+I1NnnGShhNhfNCDOaKse+/MI00CQ91vZPvZ1jW9OT1HF6mOGx8F74/pzjkW/VkDSQ3HmxB8UWQbtwAgklHb+k09nJAqn00fHfcTyW8OgTp8DMEmfHvgQ4ORtOPw30VS6LcRPFZPEGGLRDTiugi6KRFkZ1Uy5drpNcBGQORklMMT9bjCOlrFlD0ERH7BULB0Kto33BHoCV8j7RswXk9BGISDkWGe4p3QnB5kTT1mqT5sWQ/xyCdjlbJc/zGqM87ralc9GdZgAL2819x3k62nRHwslC72DuAp+3zk8qRPSHON4Gmh1PLOz1lTTDfvIfnjHqrMBeJFxLKxOhgSWUO1EixM9Uawd1q/W12lfuNTYRM0uQEsPXiZRc1UnaXNVlb1stM196r7TT3w==",
-      "body": "FileNotification",
+      "body": "{\"notificationType\":\"DownloadReadyNotification\",\"file\":{\"fileId\":\"CGYBu-3Oi24\",\"key\":\"20221017-[Philip DeFranco].mp4\",\"size\":62928924,\"url\":\"https://lifegames-media-downloader-files.s3.amazonaws.com/20221017-%5BPhilip%20DeFranco%5D.mp4\"}}",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "AWSTraceHeader": "Root=1-634e1136-6755b75b0d21dc054b886912;Parent=4d07ef8044f97306;Sampled=0",
@@ -12,6 +12,12 @@
         "ApproximateFirstReceiveTimestamp": "1666060600632"
       },
       "messageAttributes": {
+        "notificationType": {
+          "stringValue": "DownloadReadyNotification",
+          "stringListValues": [],
+          "binaryListValues": [],
+          "dataType": "String"
+        },
         "size": {
           "stringValue": "62928924",
           "stringListValues": [],

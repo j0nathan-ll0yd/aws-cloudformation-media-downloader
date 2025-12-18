@@ -1,12 +1,11 @@
-import type {SQSRecord} from 'aws-lambda'
+import type {SQSBatchResponse, SQSEvent, SQSRecord} from 'aws-lambda'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {FileNotificationType} from '#types/notification-types'
-import type {EventHandlerParams} from '#types/lambda-wrappers'
-import {logDebug, logError, logInfo, sqsRecords, wrapEventHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {transformToAPNSNotification} from '#util/transformers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -45,10 +44,11 @@ async function getDevice(deviceId: string): Promise<Device> {
 }
 
 /**
- * Process a single SQS record - send push notifications to all user devices
+ * Process a single SQS record - send push notifications to all user devices.
+ * Throws on failure to enable batch item failure reporting.
  * @notExported
  */
-async function processSQSRecord({record}: EventHandlerParams<SQSRecord>): Promise<void> {
+async function processSQSRecord(record: SQSRecord): Promise<void> {
   const notificationType = record.messageAttributes.notificationType?.stringValue as FileNotificationType
   if (!SUPPORTED_NOTIFICATION_TYPES.includes(notificationType)) {
     logInfo('Skipping unsupported notification type', notificationType)
@@ -62,25 +62,48 @@ async function processSQSRecord({record}: EventHandlerParams<SQSRecord>): Promis
   }
   logInfo('Sending messages to devices <=', deviceIds)
   for (const deviceId of deviceIds) {
-    try {
-      logInfo('Sending messages to deviceId <=', deviceId)
-      const device = await getDevice(deviceId)
-      const targetArn = device.endpointArn as string
-      logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-      const publishParams = transformToAPNSNotification(record.body, targetArn) as PublishInput
-      logDebug('publishSnsEvent <=', publishParams)
-      const publishResponse = await publishSnsEvent(publishParams)
-      logDebug('publishSnsEvent =>', publishResponse)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logError('publishSnsEvent error', message)
-    }
+    logInfo('Sending messages to deviceId <=', deviceId)
+    const device = await getDevice(deviceId)
+    const targetArn = device.endpointArn as string
+    logInfo(`Sending ${notificationType} to targetArn`, targetArn)
+    const publishParams = transformToAPNSNotification(record.body, targetArn) as PublishInput
+    logDebug('publishSnsEvent <=', publishParams)
+    const publishResponse = await publishSnsEvent(publishParams)
+    logDebug('publishSnsEvent =>', publishResponse)
   }
 }
 
 /**
- * Dispatches push notifications to all user devices
- * Supports MetadataNotification and DownloadReadyNotification types
+ * Dispatches push notifications to all user devices.
+ * Supports MetadataNotification and DownloadReadyNotification types.
+ *
+ * Returns SQSBatchResponse with failed message IDs for partial batch failure handling.
+ * Failed messages will be retried by SQS and eventually sent to DLQ after maxReceiveCount.
+ *
  * @notExported
  */
-export const handler = withXRay(wrapEventHandler(processSQSRecord, {getRecords: sqsRecords}))
+export const handler = withXRay(async (event: SQSEvent): Promise<SQSBatchResponse> => {
+  logInfo('event <=', {recordCount: event.Records.length})
+
+  const batchItemFailures: {itemIdentifier: string}[] = []
+
+  for (const record of event.Records) {
+    try {
+      await processSQSRecord(record)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logError('Failed to process record', {messageId: record.messageId, error: message})
+      batchItemFailures.push({itemIdentifier: record.messageId})
+    }
+  }
+
+  if (batchItemFailures.length > 0) {
+    logInfo('Batch processing completed with failures', {
+      total: event.Records.length,
+      failed: batchItemFailures.length,
+      succeeded: event.Records.length - batchItemFailures.length
+    })
+  }
+
+  return {batchItemFailures}
+})

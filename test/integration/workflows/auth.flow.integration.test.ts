@@ -45,13 +45,7 @@ const betterAuthConfigPath = resolve(__dirname, '../../../src/lib/vendor/BetterA
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const signInSocialMock = jest.fn<any>()
 
-jest.unstable_mockModule(betterAuthConfigPath, () => ({
-  auth: {
-    api: {
-      signInSocial: signInSocialMock
-    }
-  }
-}))
+jest.unstable_mockModule(betterAuthConfigPath, () => ({auth: {api: {signInSocial: signInSocialMock}}}))
 
 // Mock Users entity for RegisterUser name update
 const usersModulePath = resolve(__dirname, '../../../src/entities/Users')
@@ -72,10 +66,7 @@ interface AuthRequestBody {
 function createAuthEvent(body: AuthRequestBody, path: string): any {
   return {
     body: JSON.stringify(body),
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'iOS/17.0 TestApp/1.0'
-    },
+    headers: {'Content-Type': 'application/json', 'User-Agent': 'iOS/17.0 TestApp/1.0'},
     multiValueHeaders: {},
     httpMethod: 'POST',
     isBase64Encoded: false,
@@ -153,14 +144,7 @@ describe('Auth Flow Integration Tests', () => {
       expect(response.body.sessionId).toBe(sessionId)
 
       // Verify Better Auth was called with correct params
-      expect(signInSocialMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          body: {
-            provider: 'apple',
-            idToken: {token: 'valid-apple-id-token'}
-          }
-        })
-      )
+      expect(signInSocialMock).toHaveBeenCalledWith(expect.objectContaining({body: {provider: 'apple', idToken: {token: 'valid-apple-id-token'}}}))
     })
 
     test('should return error for invalid ID token', async () => {
@@ -218,11 +202,7 @@ describe('Auth Flow Integration Tests', () => {
         session: {id: sessionId, expiresAt}
       })
 
-      const body: AuthRequestBody = {
-        idToken: 'valid-apple-id-token',
-        firstName: 'John',
-        lastName: 'Doe'
-      }
+      const body: AuthRequestBody = {idToken: 'valid-apple-id-token', firstName: 'John', lastName: 'Doe'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
@@ -254,11 +234,7 @@ describe('Auth Flow Integration Tests', () => {
         session: {id: sessionId, expiresAt}
       })
 
-      const body: AuthRequestBody = {
-        idToken: 'valid-apple-id-token',
-        firstName: 'Should',
-        lastName: 'NotUpdate'
-      }
+      const body: AuthRequestBody = {idToken: 'valid-apple-id-token', firstName: 'Should', lastName: 'NotUpdate'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
@@ -270,6 +246,19 @@ describe('Auth Flow Integration Tests', () => {
 
     test('should allow registration without optional name fields', async () => {
       // registerUserSchema has firstName and lastName as optional
+      const userId = 'user-no-name-123'
+      const sessionId = 'session-no-name'
+      const token = 'no-name-session-token'
+      const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+
+      signInSocialMock.mockResolvedValue({
+        redirect: false,
+        token,
+        url: undefined,
+        user: {id: userId, createdAt: new Date(), email: 'noname@example.com', name: ''},
+        session: {id: sessionId, expiresAt}
+      })
+
       const body: AuthRequestBody = {idToken: 'valid-apple-id-token'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
@@ -317,12 +306,7 @@ describe('Auth Flow Integration Tests', () => {
       await loginHandler(event, mockContext)
 
       expect(signInSocialMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            'user-agent': 'iOS/17.0 TestApp/1.0',
-            'x-forwarded-for': '127.0.0.1'
-          })
-        })
+        expect.objectContaining({headers: expect.objectContaining({'user-agent': 'iOS/17.0 TestApp/1.0', 'x-forwarded-for': '127.0.0.1'})})
       )
     })
 
