@@ -5,9 +5,9 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import {ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import {File} from '#types/domain-models'
+import type {File} from '#types/domain-models'
 
 /**
  * Creates a mock file object with sensible defaults

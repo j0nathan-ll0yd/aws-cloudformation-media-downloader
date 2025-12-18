@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {APIGatewayProxyEvent} from 'aws-lambda'
+import type {APIGatewayProxyEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {SessionPayload} from '#types/util'

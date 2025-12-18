@@ -2,7 +2,7 @@
   "name": "aws-cloudformation-media-downloader",
   "version": "1.0.0",
   "engines": {
-    "node": ">=22.0.0",
+    "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
   },
   "packageManager": "pnpm@10.0.0",
@@ -11,7 +11,7 @@
     "preinstall": "npx only-allow pnpm",
     "precheck": "pnpm run check-types && pnpm run lint",
     "check-types": "tsc --project ./tsconfig.json",
-    "generate-graph": "node --disable-warning=DEP0180 --import tsx scripts/generateDependencyGraph.ts",
+    "generate-graph": "node --experimental-strip-types scripts/generateDependencyGraph.ts",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "document-api": "./bin/document-api.sh",
@@ -37,6 +37,8 @@
     "validate:doc-sync": "./bin/validate-doc-sync.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "validate:config": "node --disable-warning=DEP0180 --import tsx scripts/validateConfig.ts",
+    "typespec:compile": "tsp compile tsp/",
+    "typespec:check": "tsp compile tsp/ --no-emit",
     "lint:workflows": "actionlint",
     "test-remote-list": "./bin/test-list.sh",
     "test-remote-hook": "./bin/test-hook.sh",
@@ -78,11 +80,11 @@
     "axios": "^1.13.2",
     "better-auth": "1.4.7",
     "electrodb": "3.5.0",
-    "joi": "^18.0.2",
     "jose": "^6.1.3",
     "uuid": "^13.0.0",
     "yt-dlp-wrap": "^2.3.12",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "^4.11.5",
+    "zod": "^4.2.1"
   },
   "sideEffects": false,
   "imports": {

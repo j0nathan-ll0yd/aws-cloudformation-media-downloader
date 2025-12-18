@@ -1,4 +1,4 @@
-import {
+import type {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyResult,
   APIGatewayRequestAuthorizerEvent,
@@ -12,7 +12,7 @@ import {
 } from 'aws-lambda'
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
 import {logDebug, logError, logInfo} from './logging'

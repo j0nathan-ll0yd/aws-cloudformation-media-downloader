@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-
 import {Project, SourceFile, SyntaxKind} from 'ts-morph'
 import {writeFileSync, mkdirSync} from 'fs'
 import {dirname, relative, resolve, join} from 'path'

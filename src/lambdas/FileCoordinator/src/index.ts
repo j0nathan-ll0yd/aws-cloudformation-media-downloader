@@ -1,4 +1,4 @@
-import {APIGatewayProxyResult, ScheduledEvent} from 'aws-lambda'
+import type {APIGatewayProxyResult, ScheduledEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {logDebug, logInfo, putMetrics, response, wrapApiHandler} from '#util/lambda-helpers'

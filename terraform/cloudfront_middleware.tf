@@ -29,7 +29,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
   handler          = "CloudfrontMiddleware.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   publish          = true
   provider         = aws.us_east_1
   filename         = data.archive_file.CloudfrontMiddleware.output_path

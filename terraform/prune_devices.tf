@@ -82,7 +82,7 @@ resource "aws_lambda_function" "PruneDevices" {
   function_name    = "PruneDevices"
   role             = aws_iam_role.PruneDevicesRole.arn
   handler          = "PruneDevices.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256

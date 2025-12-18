@@ -5,7 +5,7 @@
  */
 
 import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
-import {File} from '#types/domain-models'
+import type {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {createMockFile} from './test-data'
 

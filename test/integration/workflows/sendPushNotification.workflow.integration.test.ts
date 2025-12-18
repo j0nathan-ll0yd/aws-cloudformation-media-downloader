@@ -19,7 +19,7 @@ process.env.DynamoDBTableName = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {SQSEvent} from 'aws-lambda'
+import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'

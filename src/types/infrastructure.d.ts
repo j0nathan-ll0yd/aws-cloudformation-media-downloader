@@ -754,7 +754,7 @@ export interface PurpleVariables {
 }
 
 export enum Runtime {
-    Nodejs22X = "nodejs22.x",
+    Nodejs24X = "nodejs24.x",
 }
 
 export interface TracingConfig {
@@ -2004,7 +2004,7 @@ const typeMap: any = {
         "S",
     ],
     "Runtime": [
-        "nodejs22.x",
+        "nodejs24.x",
     ],
     "Mode": [
         "Active",

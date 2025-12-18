@@ -4,7 +4,7 @@
  * Creates mock AWS Lambda Context objects for integration tests
  */
 
-import {Context} from 'aws-lambda'
+import type {Context} from 'aws-lambda'
 
 /**
  * Create a mock Lambda context for testing

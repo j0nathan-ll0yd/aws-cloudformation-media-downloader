@@ -66,7 +66,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   function_name    = "WebhookFeedly"
   role             = aws_iam_role.WebhookFeedlyRole.arn
   handler          = "WebhookFeedly.handler"
-  runtime          = "nodejs22.x"
+  runtime          = "nodejs24.x"
   memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
@@ -277,7 +277,7 @@ resource "aws_lambda_layer_version" "YtDlp" {
   filename            = data.archive_file.YtDlpLayer.output_path
   layer_name          = "yt-dlp"
   source_code_hash    = data.archive_file.YtDlpLayer.output_base64sha256
-  compatible_runtimes = ["nodejs22.x"]
+  compatible_runtimes = ["nodejs24.x"]
 
   description = "yt-dlp binary and YouTube cookies for video downloading"
 }
@@ -296,7 +296,7 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
   filename            = data.archive_file.FfmpegLayer.output_path
   layer_name          = "ffmpeg"
   source_code_hash    = data.archive_file.FfmpegLayer.output_base64sha256
-  compatible_runtimes = ["nodejs22.x"]
+  compatible_runtimes = ["nodejs24.x"]
 
   description = "ffmpeg binary (John Van Sickle static build) for video merging"
 }
@@ -306,7 +306,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   function_name                  = "StartFileUpload"
   role                           = aws_iam_role.MultipartUploadRole.arn
   handler                        = "StartFileUpload.handler"
-  runtime                        = "nodejs22.x"
+  runtime                        = "nodejs24.x"
   depends_on                     = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout                        = 900
   memory_size                    = 2048

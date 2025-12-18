@@ -8,13 +8,20 @@
  * maintaining the AWS SDK Encapsulation Policy.
  */
 
-import {S3Client, S3ClientConfig} from '@aws-sdk/client-s3'
-import {DynamoDBClient, DynamoDBClientConfig} from '@aws-sdk/client-dynamodb'
-import {SNSClient, SNSClientConfig} from '@aws-sdk/client-sns'
-import {SQSClient, SQSClientConfig} from '@aws-sdk/client-sqs'
-import {LambdaClient, LambdaClientConfig} from '@aws-sdk/client-lambda'
-import {CloudWatchClient, CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
-import {APIGateway, APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
+import {S3Client} from '@aws-sdk/client-s3'
+import type {S3ClientConfig} from '@aws-sdk/client-s3'
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import type {DynamoDBClientConfig} from '@aws-sdk/client-dynamodb'
+import {SNSClient} from '@aws-sdk/client-sns'
+import type {SNSClientConfig} from '@aws-sdk/client-sns'
+import {SQSClient} from '@aws-sdk/client-sqs'
+import type {SQSClientConfig} from '@aws-sdk/client-sqs'
+import {LambdaClient} from '@aws-sdk/client-lambda'
+import type {LambdaClientConfig} from '@aws-sdk/client-lambda'
+import {CloudWatchClient} from '@aws-sdk/client-cloudwatch'
+import type {CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
+import {APIGateway} from '@aws-sdk/client-api-gateway'
+import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
 import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'

@@ -8,9 +8,10 @@
  * - Future tooling
  */
 
-import {Project, SourceFile} from 'ts-morph'
+import {Project} from 'ts-morph'
+import type {SourceFile} from 'ts-morph'
 import * as path from 'node:path'
-import {ValidationResult, ValidationRule, Violation} from './types'
+import type {ValidationResult, ValidationRule, Violation} from './types'
 import {awsSdkEncapsulationRule} from './rules/aws-sdk-encapsulation'
 import {electrodbMockingRule} from './rules/electrodb-mocking'
 import {importOrderRule} from './rules/import-order'

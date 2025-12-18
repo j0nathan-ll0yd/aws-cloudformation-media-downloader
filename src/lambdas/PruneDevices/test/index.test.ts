@@ -1,5 +1,5 @@
 import {describe, expect, jest, test} from '@jest/globals'
-import {ScheduledEvent} from 'aws-lambda'
+import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#util/errors'

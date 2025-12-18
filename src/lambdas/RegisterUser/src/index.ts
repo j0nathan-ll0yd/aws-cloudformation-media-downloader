@@ -15,8 +15,8 @@
  * This is only populated on first sign-in, so we cache it for new user registration.
  */
 
-import {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
-import {UserRegistrationInput} from '#types/request-types'
+import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
+import type {UserRegistrationInput} from '#types/request-types'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerUserSchema} from '#util/constraints'

@@ -29,16 +29,17 @@ echo ""
 echo "This runs the same checks as GitHub Actions CI:"
 echo "  1. Environment verification"
 echo "  2. Dependency installation"
-echo "  3. Build dependencies (Terraform types)"
-echo "  4. Webpack build"
-echo "  5. Type checking"
-echo "  6. Linting"
-echo "  7. ESLint local rules tests"
-echo "  8. Documentation validation"
-echo "  9. Dependency rules check"
-echo "  10. GraphRAG validation"
-echo "  11. Documentation sync validation"
-echo "  12. Unit tests"
+echo "  3. TypeSpec compilation"
+echo "  4. Build dependencies (Terraform types)"
+echo "  5. Webpack build"
+echo "  6. Type checking"
+echo "  7. Linting"
+echo "  8. ESLint local rules tests"
+echo "  9. Documentation validation"
+echo "  10. Dependency rules check"
+echo "  11. GraphRAG validation"
+echo "  12. Documentation sync validation"
+echo "  13. Unit tests"
 echo ""
 echo -e "${BLUE}Note: Integration tests skipped. Use 'pnpm run ci:local:full' for complete CI.${NC}"
 echo ""
@@ -46,10 +47,10 @@ echo ""
 cd "$PROJECT_ROOT"
 
 # Step 1: Environment checks
-echo -e "${YELLOW}[1/12] Checking prerequisites...${NC}"
+echo -e "${YELLOW}[1/13] Checking prerequisites...${NC}"
 
 # Check Node.js version
-REQUIRED_NODE_MAJOR=22
+REQUIRED_NODE_MAJOR=24
 CURRENT_NODE_VERSION=$(node -v | sed 's/v//' | cut -d'.' -f1)
 if [ "$CURRENT_NODE_VERSION" -lt "$REQUIRED_NODE_MAJOR" ]; then
   echo -e "${RED}Error: Node.js $REQUIRED_NODE_MAJOR+ required (found: $(node -v))${NC}"
@@ -77,65 +78,71 @@ echo -e "${GREEN}  Prerequisites satisfied${NC}"
 echo ""
 
 # Step 2: Create build directory and install dependencies
-echo -e "${YELLOW}[2/12] Installing dependencies...${NC}"
+echo -e "${YELLOW}[2/13] Installing dependencies...${NC}"
 mkdir -p build
 pnpm install --frozen-lockfile
 echo -e "${GREEN}  Dependencies installed${NC}"
 echo ""
 
-# Step 3: Build dependencies (Terraform types)
-echo -e "${YELLOW}[3/12] Building dependencies (Terraform types)...${NC}"
+# Step 3: TypeSpec compilation
+echo -e "${YELLOW}[3/13] Compiling TypeSpec...${NC}"
+pnpm run typespec:check
+echo -e "${GREEN}  TypeSpec compilation passed${NC}"
+echo ""
+
+# Step 4: Build dependencies (Terraform types)
+echo -e "${YELLOW}[4/13] Building dependencies (Terraform types)...${NC}"
 pnpm run build-dependencies
 echo -e "${GREEN}  Build dependencies complete${NC}"
 echo ""
 
-# Step 4: Webpack build
-echo -e "${YELLOW}[4/12] Running webpack build...${NC}"
+# Step 5: Webpack build
+echo -e "${YELLOW}[5/13] Running webpack build...${NC}"
 pnpm run build
 echo -e "${GREEN}  Build complete${NC}"
 echo ""
 
-# Step 5: Type checking
-echo -e "${YELLOW}[5/12] Running type checks...${NC}"
+# Step 6: Type checking
+echo -e "${YELLOW}[6/13] Running type checks...${NC}"
 pnpm run check-types
 echo -e "${GREEN}  Type checks passed${NC}"
 echo ""
 
-# Step 6: Linting
-echo -e "${YELLOW}[6/12] Running linter...${NC}"
+# Step 7: Linting
+echo -e "${YELLOW}[7/13] Running linter...${NC}"
 pnpm run lint
 echo -e "${GREEN}  Linting passed${NC}"
 echo ""
 
-# Step 7: ESLint local rules tests
-echo -e "${YELLOW}[7/12] Testing ESLint local rules...${NC}"
+# Step 8: ESLint local rules tests
+echo -e "${YELLOW}[8/13] Testing ESLint local rules...${NC}"
 pnpm run test:eslint-rules
 echo -e "${GREEN}  ESLint local rules tests passed${NC}"
 echo ""
 
-# Step 8: Documentation validation
-echo -e "${YELLOW}[8/12] Validating documented scripts...${NC}"
+# Step 9: Documentation validation
+echo -e "${YELLOW}[9/13] Validating documented scripts...${NC}"
 ./bin/validate-docs.sh
 echo ""
 
-# Step 9: Dependency rules check
-echo -e "${YELLOW}[9/12] Checking dependency rules...${NC}"
+# Step 10: Dependency rules check
+echo -e "${YELLOW}[10/13] Checking dependency rules...${NC}"
 pnpm run deps:check
 echo -e "${GREEN}  Dependency rules passed${NC}"
 echo ""
 
-# Step 10: GraphRAG validation
-echo -e "${YELLOW}[10/12] Validating GraphRAG...${NC}"
+# Step 11: GraphRAG validation
+echo -e "${YELLOW}[11/13] Validating GraphRAG...${NC}"
 ./bin/validate-graphrag.sh
 echo ""
 
-# Step 11: Documentation sync validation
-echo -e "${YELLOW}[11/12] Validating documentation sync...${NC}"
+# Step 12: Documentation sync validation
+echo -e "${YELLOW}[12/13] Validating documentation sync...${NC}"
 ./bin/validate-doc-sync.sh
 echo ""
 
-# Step 12: Unit tests
-echo -e "${YELLOW}[12/12] Running unit tests...${NC}"
+# Step 13: Unit tests
+echo -e "${YELLOW}[13/13] Running unit tests...${NC}"
 pnpm test
 echo -e "${GREEN}  Unit tests passed${NC}"
 echo ""
@@ -154,7 +161,7 @@ echo ""
 echo "All checks passed in ${MINUTES}m ${SECONDS}s"
 echo ""
 echo "What was checked:"
-echo "  Environment, dependencies, build, types, lint, ESLint local rules,"
+echo "  Environment, dependencies, TypeSpec, build, types, lint, ESLint local rules,"
 echo "  documentation, dependency rules, GraphRAG, documentation sync, unit tests"
 echo ""
 echo "What was NOT checked (run ci:local:full for these):"

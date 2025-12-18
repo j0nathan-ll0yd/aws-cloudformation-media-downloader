@@ -1,4 +1,4 @@
-import {File} from '#types/domain-models'
+import type {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 

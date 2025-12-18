@@ -1,7 +1,7 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 // Re-export DownloadStatus enum from enums for consumers of this module
-export { DownloadStatus } from '#types/enums'
+export {DownloadStatus} from '#types/enums'
 
 /**
  * ElectroDB entity schema for tracking download attempts.

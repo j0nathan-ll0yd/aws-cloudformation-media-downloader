@@ -7,7 +7,7 @@
 
 import {Readable} from 'stream'
 import {jest} from '@jest/globals'
-import {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
+import type {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
 
 /**
  * Create mock video info for testing

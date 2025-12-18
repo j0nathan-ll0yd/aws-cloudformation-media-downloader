@@ -35,6 +35,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
+    - name: Compile TypeSpec
+      run: pnpm run typespec:check
+
     - name: Setup directories
       id: setup
       run: mkdir build

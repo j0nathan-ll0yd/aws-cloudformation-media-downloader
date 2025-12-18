@@ -6,7 +6,8 @@
  */
 
 import type {SourceFile} from 'ts-morph'
-import {createViolation, ValidationRule, Violation} from '../types'
+import {createViolation} from '../types'
+import type {ValidationRule, Violation} from '../types'
 
 const RULE_NAME = 'import-order'
 const SEVERITY = 'MEDIUM' as const
