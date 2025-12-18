@@ -10,12 +10,14 @@ resource "aws_api_gateway_rest_api" "Main" {
 
 resource "aws_api_gateway_deployment" "Main" {
   depends_on = [
-    aws_api_gateway_integration.ListFilesGet
+    aws_api_gateway_integration.ListFilesGet,
+    aws_api_gateway_integration.DeleteFileDelete
   ]
   rest_api_id = aws_api_gateway_rest_api.Main.id
   triggers = {
     redeployment = sha1(join(",", tolist([
       jsonencode(aws_api_gateway_integration.ListFilesGet),
+      jsonencode(aws_api_gateway_integration.DeleteFileDelete),
       jsonencode(aws_api_gateway_integration.LogClientEventPost),
       jsonencode(aws_api_gateway_integration.LoginUserPost),
       jsonencode(aws_api_gateway_integration.RegisterDevicePost),
@@ -23,6 +25,7 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_integration.WebhookFeedlyPost),
       jsonencode(aws_api_gateway_integration.UserSubscribePost),
       jsonencode(aws_api_gateway_method.ListFilesGet),
+      jsonencode(aws_api_gateway_method.DeleteFileDelete),
       jsonencode(aws_api_gateway_method.LogClientEventPost),
       jsonencode(aws_api_gateway_method.LoginUserPost),
       jsonencode(aws_api_gateway_method.RegisterDevicePost),

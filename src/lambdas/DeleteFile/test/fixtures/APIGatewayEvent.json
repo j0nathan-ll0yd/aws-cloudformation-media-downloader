@@ -1,0 +1,68 @@
+{
+  "resource": "/files/{fileId}",
+  "path": "/files/test-file-id",
+  "httpMethod": "DELETE",
+  "headers": {
+    "Accept-Encoding": "gzip",
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c",
+    "Content-Type": "application/json",
+    "Host": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "User-Agent": "OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0",
+    "X-API-Key": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"
+  },
+  "multiValueHeaders": {
+    "Accept-Encoding": ["gzip"],
+    "Authorization": [
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1N2M0YmYyMy1mZjBmLTQwMGMtOTMwMS01MzNlNzlkZmZjMzYiLCJpYXQiOjE3MTExMzk1NDcsImV4cCI6MTcxMTEzOTg0N30.XOyRccUrV96GvJIH00pF7aDVAaYcyiE_cccK0FuBY-c"
+    ],
+    "Content-Type": ["application/json"],
+    "Host": ["naf24gu6t6.execute-api.us-west-2.amazonaws.com"],
+    "User-Agent": ["OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0"],
+    "X-API-Key": ["NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk"]
+  },
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": {
+    "fileId": "test-file-id"
+  },
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "3pdr46",
+    "authorizer": {
+      "principalId": "unknown",
+      "integrationLatency": 2078
+    },
+    "resourcePath": "/files/{fileId}",
+    "httpMethod": "DELETE",
+    "extendedRequestId": "cJ31QETpvHcEh8A=",
+    "requestTime": "07/Aug/2024:20:04:36 +0000",
+    "path": "/prod/files/test-file-id",
+    "accountId": "203465012143",
+    "protocol": "HTTP/1.1",
+    "stage": "prod",
+    "domainPrefix": "naf24gu6t6",
+    "requestTimeEpoch": 1723061076591,
+    "requestId": "2126f4ef-9fd2-4ffb-8816-c1f889921e9a",
+    "identity": {
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "apiKey": "NDuhGgLp5s43aMXXYyymD8mJoNdU7RT55MfY8GIk",
+      "principalOrgId": null,
+      "cognitoAuthenticationType": null,
+      "userArn": null,
+      "apiKeyId": "meptp2mf8d",
+      "userAgent": "OfflineMediaDownloader/1 CFNetwork/1496.0.7 Darwin/23.5.0",
+      "accountId": null,
+      "caller": null,
+      "sourceIp": "104.1.88.244",
+      "accessKey": null,
+      "cognitoAuthenticationProvider": null,
+      "user": null
+    },
+    "domainName": "naf24gu6t6.execute-api.us-west-2.amazonaws.com",
+    "deploymentId": "ebluyy",
+    "apiId": "naf24gu6t6"
+  },
+  "body": null,
+  "isBase64Encoded": false
+}

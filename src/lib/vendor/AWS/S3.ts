@@ -1,4 +1,4 @@
-import {HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
+import {DeleteObjectCommand, DeleteObjectCommandInput, DeleteObjectCommandOutput, HeadObjectCommand, HeadObjectCommandInput, HeadObjectCommandOutput} from '@aws-sdk/client-s3'
 import {Options as UploadOptions, Upload} from '@aws-sdk/lib-storage'
 import {Readable} from 'stream'
 import {createS3Client} from './clients'
@@ -43,5 +43,19 @@ export function createS3Upload(
     partSize: options?.partSize || 5 * 1024 * 1024, // 5MB default
     ...options
   })
+}
+/* c8 ignore stop */
+
+/**
+ * Delete an object from S3
+ * @param bucket - S3 bucket name
+ * @param key - S3 object key
+ * @returns DeleteObjectCommandOutput
+ */
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+export async function deleteObject(bucket: string, key: string): Promise<DeleteObjectCommandOutput> {
+  const params: DeleteObjectCommandInput = {Bucket: bucket, Key: key}
+  const command = new DeleteObjectCommand(params)
+  return s3Client.send(command)
 }
 /* c8 ignore stop */
