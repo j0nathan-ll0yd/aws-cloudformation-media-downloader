@@ -6,7 +6,7 @@ import {generateUnauthorizedError, getUserDetailsFromEvent, logDebug, logError, 
 import {UserStatus} from '#types/enums'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {deleteObject} from '#lib/vendor/AWS/S3'
-import {UnexpectedError} from '#util/errors'
+import {getRequiredEnv} from '#util/env-validation'
 
 /**
  * Deletes a file for a user.
@@ -70,12 +70,7 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
 
     if (fileResponse && fileResponse.data) {
       const file = fileResponse.data
-      const bucket = process.env.S3BucketName
-
-      if (!bucket) {
-        logError('DeleteFile: S3BucketName environment variable not set')
-        throw new UnexpectedError('S3BucketName environment variable not set')
-      }
+      const bucket = getRequiredEnv('S3BucketName')
 
       // Delete from S3
       try {
