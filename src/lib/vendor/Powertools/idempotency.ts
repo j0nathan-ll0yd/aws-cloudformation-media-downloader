@@ -5,6 +5,7 @@
  */
 import {IdempotencyConfig} from '@aws-lambda-powertools/idempotency'
 import {DynamoDBPersistenceLayer} from '@aws-lambda-powertools/idempotency/dynamodb'
+import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
 
 /**
  * Get the idempotency table name from environment
@@ -21,9 +22,13 @@ function getTableName(): string {
 /**
  * DynamoDB persistence layer for idempotency records
  * Automatically manages record creation, expiration, and cleanup via TTL
+ * Uses project's LocalStack-aware DynamoDB client for testing compatibility
  */
 export function createPersistenceStore(): DynamoDBPersistenceLayer {
-  return new DynamoDBPersistenceLayer({tableName: getTableName()})
+  return new DynamoDBPersistenceLayer({
+    tableName: getTableName(),
+    awsSdkV3Client: createDynamoDBClient()
+  })
 }
 
 /**
