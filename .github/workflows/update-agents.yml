@@ -1,0 +1,48 @@
+name: Update AGENTS.md
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-agents:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update AGENTS.md with recent PRs
+        run: pnpm run update:agents-prs
+        env:
+          CI: true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to push"
+          else
+            git push
+          fi
