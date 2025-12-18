@@ -69,22 +69,30 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(500)
   })
   test('should handle an invalid request body', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify({})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
     expect(body.error.message).toHaveProperty('articleURL')
   })
-  test('should handle a missing user ID', async () => {
+  test('should return 401 when user ID is missing (unauthenticated)', async () => {
+    // With Authorization header but unknown principalId = Unauthenticated
     event.requestContext.authorizer!.principalId = 'unknown'
     event.body = JSON.stringify(handleFeedlyEventResponse)
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(500)
-    const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-5XX-generic')
-    expect(body.error.message).toEqual('AWS request failed')
+    expect(output.statusCode).toEqual(401)
+  })
+  test('should return 401 for anonymous users (no auth header)', async () => {
+    // Without Authorization header = Anonymous
+    delete event.headers.Authorization
+    event.requestContext.authorizer!.principalId = 'unknown'
+    event.body = JSON.stringify(handleFeedlyEventResponse)
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(401)
   })
   test('should handle an invalid event body', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
     event.body = 'hello'
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)

@@ -268,17 +268,17 @@ describe('Auth Flow Integration Tests', () => {
       expect(usersMock.entity.update).not.toHaveBeenCalled()
     })
 
-    test('should return 400 when required name fields are missing', async () => {
-      // registerUserSchema requires firstName and lastName
+    test('should allow registration without optional name fields', async () => {
+      // registerUserSchema has firstName and lastName as optional
       const body: AuthRequestBody = {idToken: 'valid-apple-id-token'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
-      // Schema validation should fail
-      expect(result.statusCode).toBe(400)
+      // Schema validation should pass (firstName/lastName are optional)
+      expect(result.statusCode).toBe(200)
 
-      // Better Auth should NOT be called due to validation failure
-      expect(signInSocialMock).not.toHaveBeenCalled()
+      // Better Auth should be called
+      expect(signInSocialMock).toHaveBeenCalled()
     })
 
     test('should validate request body - missing idToken', async () => {

@@ -12,6 +12,7 @@
  * Phase 2 (HIGH):
  *   - response-helpers: Enforce response() helper usage
  *   - env-validation: Enforce getRequiredEnv() usage
+ *   - authenticated-handler-enforcement: Enforce centralized auth wrappers
  */
 
 const noDirectAwsSdkImport = require('./rules/no-direct-aws-sdk-import.cjs')
@@ -19,6 +20,7 @@ const cascadeDeleteOrder = require('./rules/cascade-delete-order.cjs')
 const useElectrodbMockHelper = require('./rules/use-electrodb-mock-helper.cjs')
 const responseHelpers = require('./rules/response-helpers.cjs')
 const envValidation = require('./rules/env-validation.cjs')
+const authenticatedHandlerEnforcement = require('./rules/authenticated-handler-enforcement.cjs')
 
 module.exports = {
   rules: {
@@ -28,6 +30,7 @@ module.exports = {
     'use-electrodb-mock-helper': useElectrodbMockHelper,
     // Phase 2: HIGH
     'response-helpers': responseHelpers,
-    'env-validation': envValidation
+    'env-validation': envValidation,
+    'authenticated-handler-enforcement': authenticatedHandlerEnforcement
   }
 }

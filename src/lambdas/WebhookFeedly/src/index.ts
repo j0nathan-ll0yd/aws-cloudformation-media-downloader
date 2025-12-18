@@ -7,14 +7,13 @@ import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {getUserDetailsFromEvent, logDebug, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logDebug, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
-import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 
@@ -110,14 +109,10 @@ async function sendFileNotification(file: File, userId: string) {
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
   const requestBody = getPayloadFromEvent(event) as Webhook
   validateRequest(requestBody, feedlyEventSchema)
   const fileId = getVideoID(requestBody.articleURL)
-  const {userId} = getUserDetailsFromEvent(event)
-  if (!userId) {
-    throw new UnexpectedError(providerFailureErrorMessage)
-  }
   // Parallelize independent operations for ~60% latency reduction
   const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
   if (file && file.status == FileStatus.Downloaded) {

@@ -8,7 +8,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 | Method | Count | Conventions |
 |--------|-------|-------------|
-| **MCP Rules** | 13 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync |
+| **MCP Rules** | 15 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement |
 | **Git Hooks** | 2 | AI attribution (commit-msg), direct master push (pre-push) |
 | **ESLint** | 3 | naming conventions, import order, unused vars |
 | **CI Workflows** | 2 | script validation, type checking |
@@ -32,12 +32,25 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 | response-enum | enum | MEDIUM | Magic status strings |
 | mock-formatting | mock | MEDIUM | Chained mock returns |
 | doc-sync | docs | HIGH | Documentation drift detection |
+| naming-conventions | naming | HIGH | Type and enum naming patterns |
+| authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
 
 ---
 
 ## 🟡 Pending Documentation
 
 _No pending conventions - all conventions are documented._
+
+### Detected: 2025-12-18
+
+1. **Centralized Auth Handler Wrappers** (Security Pattern)
+   - **What**: Use `wrapAuthenticatedHandler` for endpoints requiring authentication (rejects Unauthenticated + Anonymous) or `wrapOptionalAuthHandler` for endpoints allowing anonymous access (rejects only Unauthenticated)
+   - **Why**: Eliminates boilerplate `getUserDetailsFromEvent()` + `UserStatus` checks; provides type-safe `userId` (guaranteed string in authenticated wrapper); fixes security vulnerabilities from missing auth checks
+   - **Detected**: During security audit of Lambda handlers
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: MCP `authenticated-handler-enforcement` rule, ESLint `local-rules/authenticated-handler-enforcement`
 
 ### Detected: 2025-11-28
 

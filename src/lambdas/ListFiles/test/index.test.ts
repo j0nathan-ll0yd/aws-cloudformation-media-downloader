@@ -26,18 +26,34 @@ describe('#ListFiles', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
+    // Default to authenticated user
+    event.requestContext.authorizer!.principalId = fakeUserId
+  })
+  test('(anonymous) should return default file for anonymous users', async () => {
+    // Without Authorization header = Anonymous
+    delete event.headers.Authorization
+    event.requestContext.authorizer!.principalId = 'unknown'
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(200)
+    const body = JSON.parse(output.body)
+    expect(body.body.keyCount).toEqual(1)
+    expect(body.body.contents[0].key).toEqual('test-default-file.mp4')
+  })
+  test('(unauthenticated) should return 401 for unauthenticated users', async () => {
+    // With Authorization header but unknown principalId = Unauthenticated
+    event.requestContext.authorizer!.principalId = 'unknown'
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(401)
+  })
+  test('(authenticated) should return empty list when user has no files', async () => {
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(200)
+    const body = JSON.parse(output.body)
+    expect(body.body.keyCount).toEqual(0)
   })
   describe('#AWSFailure', () => {
-    test('should return empty list when user has no files', async () => {
-      event.requestContext.authorizer!.principalId = fakeUserId
-      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-      const output = await handler(event, context)
-      expect(output.statusCode).toEqual(200)
-      const body = JSON.parse(output.body)
-      expect(body.body.keyCount).toEqual(0)
-    })
     test('should return 500 error when batch file retrieval fails', async () => {
-      event.requestContext.authorizer!.principalId = fakeUserId
       const userFileData = queryStubReturnObject.Items || []
       userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})
       filesMock.mocks.get.mockResolvedValue(undefined)

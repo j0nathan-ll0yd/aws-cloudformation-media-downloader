@@ -77,11 +77,17 @@ describe('#RegisterDevice', () => {
     expect(body.body).toHaveProperty('endpointArn')
   })
   test('should return a valid response if APNS is not configured', async () => {
+    // Set up as anonymous user (not unauthenticated) to test APNS config check
+    delete event.headers['Authorization']
+    event.requestContext.authorizer!.principalId = 'unknown'
     process.env.PlatformApplicationArn = ''
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(503)
   })
   test('should handle an invalid request (no token)', async () => {
+    // Set up as anonymous user to test validation
+    delete event.headers['Authorization']
+    event.requestContext.authorizer!.principalId = 'unknown'
     event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
@@ -91,6 +97,9 @@ describe('#RegisterDevice', () => {
   })
   describe('#AWSFailure', () => {
     test('AWS.SNS.createPlatformEndpoint', async () => {
+      // Set up as anonymous user to test AWS failure
+      delete event.headers['Authorization']
+      event.requestContext.authorizer!.principalId = 'unknown'
       createPlatformEndpointMock.mockReturnValue(undefined)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
