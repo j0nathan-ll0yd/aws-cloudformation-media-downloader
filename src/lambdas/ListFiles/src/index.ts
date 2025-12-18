@@ -3,7 +3,7 @@ import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {generateUnauthorizedError, getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
-import {DynamoDBFile} from '#types/main'
+import {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {defaultFile} from '#util/constants'
 import {withXRay} from '#lib/vendor/AWS/XRay'
@@ -15,7 +15,7 @@ import {retryUnprocessed} from '#util/retry'
  * @param userId - The User ID
  * @notExported
  */
-async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
+async function getFilesByUser(userId: string): Promise<File[]> {
   logDebug('getFilesByUser <=', userId)
   const userFilesResponse = await UserFiles.query.byUser({userId}).go()
   logDebug('getFilesByUser.userFiles =>', userFilesResponse)
@@ -32,7 +32,7 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
     logError('getFilesByUser: failed to fetch all items after retries', unprocessed)
   }
 
-  return files as DynamoDBFile[]
+  return files as File[]
 }
 
 /**
@@ -44,7 +44,7 @@ async function getFilesByUser(userId: string): Promise<DynamoDBFile[]> {
  * @notExported
  */
 export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
-  const myResponse = {contents: [] as DynamoDBFile[], keyCount: 0}
+  const myResponse = {contents: [] as File[], keyCount: 0}
   const {userId, userStatus} = getUserDetailsFromEvent(event)
 
   if (userStatus == UserStatus.Unauthenticated) {
@@ -58,7 +58,7 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
   }
 
   const files = await getFilesByUser(userId as string)
-  myResponse.contents = files.filter((file) => file.status === FileStatus.Available).sort((a, b) =>
+  myResponse.contents = files.filter((file) => file.status === FileStatus.Downloaded).sort((a, b) =>
     new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
   )
   myResponse.keyCount = myResponse.contents.length

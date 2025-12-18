@@ -1,12 +1,13 @@
 import Joi from 'joi'
-import {CustomAPIGatewayRequestAuthorizerEvent, DeviceRegistrationRequest, UserLogin, UserRegistration, UserSubscribe} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import {DeviceRegistrationRequest, UserLoginInput, UserRegistrationInput, UserSubscribeInput} from '#types/request-types'
 import {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {ValidationError} from './errors'
 import {logDebug, logError} from './lambda-helpers'
 import {APIGatewayEvent} from 'aws-lambda'
 import {validateSchema} from './constraints'
 
-type RequestPayload = Webhook | DeviceRegistrationRequest | UserRegistration | UserSubscribe | UserLogin
+type RequestPayload = Webhook | DeviceRegistrationRequest | UserRegistrationInput | UserSubscribeInput | UserLoginInput
 type PayloadEvent = CustomAPIGatewayRequestAuthorizerEvent | APIGatewayEvent
 
 export function validateRequest(requestBody: RequestPayload, schema: Joi.ObjectSchema): void {

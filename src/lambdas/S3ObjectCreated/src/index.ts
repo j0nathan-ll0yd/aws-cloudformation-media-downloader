@@ -2,7 +2,7 @@ import {S3EventRecord} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage, SendMessageRequest} from '#lib/vendor/AWS/SQS'
-import {DynamoDBFile} from '#types/main'
+import {File} from '#types/domain-models'
 import type {EventHandlerParams} from '#types/lambda-wrappers'
 import {logDebug, s3Records, wrapEventHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
@@ -15,12 +15,12 @@ import {getRequiredEnv} from '#util/env-validation'
  * @param fileName - The S3 object key to search for
  * @notExported
  */
-async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
+async function getFileByFilename(fileName: string): Promise<File> {
   logDebug('query file by key <=', fileName)
   const queryResponse = await Files.query.byKey({key: fileName}).go()
   logDebug('query file by key =>', queryResponse)
   if (queryResponse.data && queryResponse.data.length > 0) {
-    return queryResponse.data[0] as DynamoDBFile
+    return queryResponse.data[0] as File
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
@@ -32,7 +32,7 @@ async function getFileByFilename(fileName: string): Promise<DynamoDBFile> {
  * @param file - The DynamoDBFile you want to search for
  * @notExported
  */
-async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
+async function getUsersOfFile(file: File): Promise<string[]> {
   logDebug('query users by fileId <=', file.fileId)
   const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
   logDebug('query users by fileId =>', queryResponse)
@@ -48,7 +48,7 @@ async function getUsersOfFile(file: DynamoDBFile): Promise<string[]> {
  * @param userId - The UUID of the user
  * @notExported
  */
-function dispatchFileNotificationToUser(file: DynamoDBFile, userId: string) {
+function dispatchFileNotificationToUser(file: File, userId: string) {
   const {messageBody, messageAttributes} = createDownloadReadyNotification(file, userId)
   const sendMessageParams: SendMessageRequest = {MessageBody: messageBody, MessageAttributes: messageAttributes, QueueUrl: getRequiredEnv('SNSQueueUrl')}
   logDebug('sendMessage <=', sendMessageParams)

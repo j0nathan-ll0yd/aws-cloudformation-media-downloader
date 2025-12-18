@@ -10,7 +10,7 @@
  */
 
 import type {APIGatewayRequestAuthorizerEvent, Context, ScheduledEvent} from 'aws-lambda'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from './main'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from './infrastructure-types'
 
 /** Metadata passed to all wrapped handlers */
 export type WrapperMetadata = {traceId: string}

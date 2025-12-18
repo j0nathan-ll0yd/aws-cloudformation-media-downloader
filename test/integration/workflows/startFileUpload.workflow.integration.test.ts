@@ -115,7 +115,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     const file = await getFile(fileId)
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe(fileId)
-    expect(file!.status).toBe(FileStatus.Available)
+    expect(file!.status).toBe(FileStatus.Downloaded)
     expect(file!.size).toBe(MOCK_FILE_SIZE)
     expect(file!.key).toBe('test-video-123.mp4')
     expect(file!.title).toBe('Integration Test Video')

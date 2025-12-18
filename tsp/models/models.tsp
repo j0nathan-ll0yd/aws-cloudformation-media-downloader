@@ -30,19 +30,6 @@ enum FileStatus {
 }
 
 /**
- * S3 Storage class enumeration
- */
-enum StorageClass {
-  Standard: "STANDARD",
-  ReducedRedundancy: "REDUCED_REDUNDANCY",
-  Glacier: "GLACIER",
-  StandardIA: "STANDARD_IA",
-  OnezoneIA: "ONEZONE_IA",
-  IntelligentTiering: "INTELLIGENT_TIERING",
-  DeepArchive: "DEEP_ARCHIVE",
-}
-
-/**
  * A media file available for download
  */
 model File {
@@ -58,24 +45,9 @@ model File {
   key?: string;
 
   /**
-   * The date the file was last modified
-   */
-  lastModified?: utcDateTime;
-
-  /**
-   * The entity tag is an MD5 hash of the object
-   */
-  eTag?: string;
-
-  /**
    * Size in bytes of the file
    */
   size?: int64;
-
-  /**
-   * S3 storage class
-   */
-  storageClass?: StorageClass;
 
   /**
    * Current status of the file
@@ -88,14 +60,34 @@ model File {
   title?: string;
 
   /**
-   * Thumbnail URL for the media
+   * Video publish date
    */
-  thumbnail?: url;
+  publishDate?: string;
 
   /**
-   * Duration of the media in seconds
+   * Channel/author display name
    */
-  duration?: int32;
+  authorName?: string;
+
+  /**
+   * Channel/author username or ID
+   */
+  authorUser?: string;
+
+  /**
+   * MIME type (e.g., video/mp4)
+   */
+  contentType?: string;
+
+  /**
+   * Video description
+   */
+  description?: string;
+
+  /**
+   * CloudFront URL for downloading the file
+   */
+  url?: url;
 }
 
 /**

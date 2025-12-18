@@ -10,6 +10,7 @@
 
 export interface InfrastructureD {
     data:      Data;
+    locals:    Local[];
     output:    Output;
     provider:  Provider;
     resource:  Resource;
@@ -184,12 +185,17 @@ export interface Secret {
     source_file: string;
 }
 
+export interface Local {
+    lambda_functions: string[];
+}
+
 export interface Output {
     api_gateway_api_key:            APIGatewayAPIKey[];
     api_gateway_stage:              APIGatewayStage[];
     api_gateway_subdomain:          APIGatewayStage[];
     cloudfront_distribution_domain: APIGatewayStage[];
     cloudfront_media_files_domain:  APIGatewayStage[];
+    cloudwatch_dashboard_url:       APIGatewayStage[];
     public_ip:                      APIGatewayStage[];
 }
 
@@ -230,6 +236,7 @@ export interface Resource {
     aws_api_gateway_usage_plan_key:       AwsAPIGatewayUsagePlanKey;
     aws_cloudfront_distribution:          AwsCloudfrontDistribution;
     aws_cloudfront_origin_access_control: AwsCloudfrontOriginAccessControl;
+    aws_cloudwatch_dashboard:             AwsCloudwatchDashboard;
     aws_cloudwatch_event_rule:            AwsCloudwatchEventRule;
     aws_cloudwatch_event_target:          AwsCloudwatchEventTarget;
     aws_cloudwatch_log_group:             { [key: string]: AwsCloudwatchLogGroup[] };
@@ -558,6 +565,15 @@ export interface MediaFilesOac {
     origin_access_control_origin_type: string;
     signing_behavior:                  string;
     signing_protocol:                  string;
+}
+
+export interface AwsCloudwatchDashboard {
+    main: Main[];
+}
+
+export interface Main {
+    dashboard_body: string;
+    dashboard_name: string;
 }
 
 export interface AwsCloudwatchEventRule {
@@ -1159,6 +1175,7 @@ function r(name: string) {
 const typeMap: any = {
     "InfrastructureD": o([
         { json: "data", js: "data", typ: r("Data") },
+        { json: "locals", js: "locals", typ: a(r("Local")) },
         { json: "output", js: "output", typ: r("Output") },
         { json: "provider", js: "provider", typ: r("Provider") },
         { json: "resource", js: "resource", typ: r("Resource") },
@@ -1301,12 +1318,16 @@ const typeMap: any = {
     "Secret": o([
         { json: "source_file", js: "source_file", typ: "" },
     ], false),
+    "Local": o([
+        { json: "lambda_functions", js: "lambda_functions", typ: a("") },
+    ], false),
     "Output": o([
         { json: "api_gateway_api_key", js: "api_gateway_api_key", typ: a(r("APIGatewayAPIKey")) },
         { json: "api_gateway_stage", js: "api_gateway_stage", typ: a(r("APIGatewayStage")) },
         { json: "api_gateway_subdomain", js: "api_gateway_subdomain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_distribution_domain", js: "cloudfront_distribution_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_media_files_domain", js: "cloudfront_media_files_domain", typ: a(r("APIGatewayStage")) },
+        { json: "cloudwatch_dashboard_url", js: "cloudwatch_dashboard_url", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
     ], false),
     "APIGatewayAPIKey": o([
@@ -1342,6 +1363,7 @@ const typeMap: any = {
         { json: "aws_api_gateway_usage_plan_key", js: "aws_api_gateway_usage_plan_key", typ: r("AwsAPIGatewayUsagePlanKey") },
         { json: "aws_cloudfront_distribution", js: "aws_cloudfront_distribution", typ: r("AwsCloudfrontDistribution") },
         { json: "aws_cloudfront_origin_access_control", js: "aws_cloudfront_origin_access_control", typ: r("AwsCloudfrontOriginAccessControl") },
+        { json: "aws_cloudwatch_dashboard", js: "aws_cloudwatch_dashboard", typ: r("AwsCloudwatchDashboard") },
         { json: "aws_cloudwatch_event_rule", js: "aws_cloudwatch_event_rule", typ: r("AwsCloudwatchEventRule") },
         { json: "aws_cloudwatch_event_target", js: "aws_cloudwatch_event_target", typ: r("AwsCloudwatchEventTarget") },
         { json: "aws_cloudwatch_log_group", js: "aws_cloudwatch_log_group", typ: m(a(r("AwsCloudwatchLogGroup"))) },
@@ -1620,6 +1642,13 @@ const typeMap: any = {
         { json: "origin_access_control_origin_type", js: "origin_access_control_origin_type", typ: "" },
         { json: "signing_behavior", js: "signing_behavior", typ: "" },
         { json: "signing_protocol", js: "signing_protocol", typ: "" },
+    ], false),
+    "AwsCloudwatchDashboard": o([
+        { json: "main", js: "main", typ: a(r("Main")) },
+    ], false),
+    "Main": o([
+        { json: "dashboard_body", js: "dashboard_body", typ: "" },
+        { json: "dashboard_name", js: "dashboard_name", typ: "" },
     ], false),
     "AwsCloudwatchEventRule": o([
         { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsCloudwatchEventRuleFileCoordinator")) },

@@ -1,4 +1,4 @@
-import {DynamoDBFile} from '#types/main'
+import {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 
@@ -13,5 +13,5 @@ export const defaultFile = {
   url: getRequiredEnv('DefaultFileUrl'),
   contentType: getRequiredEnv('DefaultFileContentType'),
   title: 'Welcome! Tap to download.',
-  status: FileStatus.Available
-} as DynamoDBFile
+  status: FileStatus.Downloaded
+} as File
