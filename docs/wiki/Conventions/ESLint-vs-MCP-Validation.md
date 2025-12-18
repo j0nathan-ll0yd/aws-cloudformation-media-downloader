@@ -34,13 +34,13 @@ This project uses two validation systems with complementary strengths:
 | `electrodb-mocking` | ✅ Yes | ✅ Done | Jest mock pattern detection |
 | `cascade-safety` | ⚠️ Partial | ✅ Partial | Promise.all detection works; entity hierarchy analysis not portable |
 | `config-enforcement` | ❌ No | — | Checks ESLint/TSConfig itself; circular dependency |
-| `env-validation` | ⚠️ Partial | — | Can detect `process.env.X`; context awareness limited |
+| `env-validation` | ⚠️ Partial | ✅ Done | Detects `process.env.X` in Lambda/util files |
 
 ### HIGH Rules (5)
 
 | MCP Rule | ESLint Portable? | Implemented? | Notes |
 |----------|------------------|--------------|-------|
-| `response-helpers` | ✅ Yes | — | Return pattern detection; good candidate |
+| `response-helpers` | ✅ Yes | ✅ Done | Detects raw `{statusCode, body}` returns |
 | `types-location` | ⚠️ Partial | — | Import checks possible; file path logic complex |
 | `batch-retry` | ⚠️ Partial | — | Can detect `batchWrite`; retry pattern harder |
 | `scan-pagination` | ⚠️ Partial | — | Can detect `scan()`; pagination check complex |
@@ -75,12 +75,12 @@ These provide significant value as real-time feedback:
    - Promise.all with deletes is common mistake
    - Entity hierarchy check stays in MCP
 
-4. **response-helpers** (Recommended)
+4. **response-helpers** ✅ (Done)
    - Catches raw response objects
    - Clear fix: use `response()` helper
    - High developer friction without it
 
-5. **env-validation** (Recommended)
+5. **env-validation** ✅ (Done)
    - `process.env.X` is easy to detect
    - Immediate feedback on missing validation
 
@@ -230,14 +230,14 @@ describe('ESLint and MCP parity', () => {
 
 ## Implementation Priorities
 
-### Phase 1: Current (Done)
+### Phase 1: CRITICAL (Done)
 - ✅ `no-direct-aws-sdk-import`
 - ✅ `cascade-delete-order`
 - ✅ `use-electrodb-mock-helper`
 
-### Phase 2: High Value (Recommended)
-- `response-helpers` - Very common mistake
-- `env-validation` - Prevents silent failures
+### Phase 2: HIGH (Done)
+- ✅ `response-helpers` - Detects raw `{statusCode, body}` returns
+- ✅ `env-validation` - Detects direct `process.env.X` access
 
 ### Phase 3: Nice to Have
 - `response-enum` - Style enforcement

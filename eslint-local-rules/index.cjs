@@ -3,16 +3,31 @@
  * Project-specific ESLint rules for in-editor convention enforcement
  *
  * These rules mirror MCP validation rules to provide immediate feedback in the editor.
+ *
+ * Phase 1 (CRITICAL):
+ *   - no-direct-aws-sdk-import: Block direct AWS SDK imports
+ *   - cascade-delete-order: Detect Promise.all with deletes
+ *   - use-electrodb-mock-helper: Enforce mock helper usage
+ *
+ * Phase 2 (HIGH):
+ *   - response-helpers: Enforce response() helper usage
+ *   - env-validation: Enforce getRequiredEnv() usage
  */
 
 const noDirectAwsSdkImport = require('./rules/no-direct-aws-sdk-import.cjs')
 const cascadeDeleteOrder = require('./rules/cascade-delete-order.cjs')
 const useElectrodbMockHelper = require('./rules/use-electrodb-mock-helper.cjs')
+const responseHelpers = require('./rules/response-helpers.cjs')
+const envValidation = require('./rules/env-validation.cjs')
 
 module.exports = {
   rules: {
+    // Phase 1: CRITICAL
     'no-direct-aws-sdk-import': noDirectAwsSdkImport,
     'cascade-delete-order': cascadeDeleteOrder,
-    'use-electrodb-mock-helper': useElectrodbMockHelper
+    'use-electrodb-mock-helper': useElectrodbMockHelper,
+    // Phase 2: HIGH
+    'response-helpers': responseHelpers,
+    'env-validation': envValidation
   }
 }
