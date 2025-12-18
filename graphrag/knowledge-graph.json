@@ -19,6 +19,15 @@
       }
     },
     {
+      "id": "lambda:DeleteFile",
+      "type": "Lambda",
+      "properties": {
+        "name": "DeleteFile",
+        "trigger": "API Gateway",
+        "purpose": "Delete a file for a user and remove from S3 if no other users reference it"
+      }
+    },
+    {
       "id": "lambda:FileCoordinator",
       "type": "Lambda",
       "properties": {
@@ -350,6 +359,11 @@
     {
       "source": "service:CloudFront",
       "target": "lambda:CloudfrontMiddleware",
+      "relationship": "triggers"
+    },
+    {
+      "source": "service:API Gateway",
+      "target": "lambda:DeleteFile",
       "relationship": "triggers"
     },
     {
