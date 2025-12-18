@@ -1,6 +1,7 @@
 import * as glob from 'glob'
 import webpack from 'webpack'
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin'
+import {BundleAnalyzerPlugin} from 'webpack-bundle-analyzer'
 import path from 'path'
 import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)
@@ -62,7 +63,19 @@ const config: webpack.Configuration = {
     // Note: kysely must be bundled - Better Auth requires it at runtime even with custom adapters
     // Limit chunks to match entry count - prevents any async/shared chunks from being created
     // Dynamic computation ensures this stays in sync when adding new Lambdas
-    new webpack.optimize.LimitChunkCountPlugin({maxChunks: lambdaEntryFiles.length})
+    new webpack.optimize.LimitChunkCountPlugin({maxChunks: lambdaEntryFiles.length}),
+    // Bundle analyzer - only enabled when ANALYZE=true
+    ...(process.env['ANALYZE'] === 'true'
+      ? [
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: path.resolve(__dirname, '../build/reports/bundle-analysis.html'),
+            openAnalyzer: false,
+            generateStatsFile: true,
+            statsFilename: path.resolve(__dirname, '../build/reports/bundle-stats.json')
+          })
+        ]
+      : [])
   ],
   watch: false
 }
