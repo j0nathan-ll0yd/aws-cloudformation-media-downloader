@@ -49,7 +49,9 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
 
 | Wrapper | Use Case | Error Handling |
 |---------|----------|----------------|
-| `wrapApiHandler` | API Gateway endpoints | Catches errors → 500 response |
+| `wrapApiHandler` | Public API endpoints | Catches errors → 500 response |
+| `wrapAuthenticatedHandler` | Auth-required endpoints | Rejects Unauthenticated + Anonymous → 401 |
+| `wrapOptionalAuthHandler` | Mixed auth endpoints | Rejects only Unauthenticated → 401 |
 | `wrapAuthorizer` | API Gateway authorizers | Propagates `Error('Unauthorized')` → 401 |
 | `wrapEventHandler` | S3/SQS batch processing | Per-record error handling |
 | `wrapScheduledHandler` | CloudWatch scheduled events | Logs and rethrows errors |
@@ -107,17 +109,50 @@ export const handler = wrapApiHandler(async ({event, context}: ApiHandlerParams)
 
 **Enforcement**: MCP `config-enforcement` rule validates that ESLint config doesn't allow underscore-prefixed variables.
 
-### API Gateway Handler
+### Public API Gateway Handler
 ```typescript
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {wrapApiHandler, response} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
+// Public endpoints - no authentication required
 export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
-  const {userId} = getUserDetailsFromEvent(event)
   // Business logic - just throw errors, wrapper handles conversion
-  if (!userId) throw new UnauthorizedError('Login required')
   return response(context, 200, {data: result})
+}))
+```
+
+### Authenticated API Gateway Handler (PREFERRED)
+```typescript
+import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
+import {wrapAuthenticatedHandler, response} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+
+// Authenticated endpoints - userId guaranteed by wrapper
+// Rejects both Unauthenticated AND Anonymous users with 401
+export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
+  // userId is guaranteed to be a string - no need to check
+  await deleteUser(userId)
+  return response(context, 204)
+}))
+```
+
+### Optional Auth API Gateway Handler
+```typescript
+import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
+import {wrapOptionalAuthHandler, response} from '#util/lambda-helpers'
+import {withXRay} from '#lib/vendor/AWS/XRay'
+import {UserStatus} from '#types/enums'
+
+// Optional auth endpoints - allows anonymous but rejects invalid tokens
+// Rejects only Unauthenticated (invalid token) with 401
+// Anonymous users (no token) are allowed
+export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {
+  if (userStatus === UserStatus.Anonymous) {
+    return response(context, 200, {demo: true})
+  }
+  // userId is defined when Authenticated
+  return response(context, 200, {userId})
 }))
 ```
 

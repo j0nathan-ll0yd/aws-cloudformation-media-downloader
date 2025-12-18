@@ -40,7 +40,7 @@ import {createMockDevice, createMockUserDevice, createMockUserFile} from '../hel
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -299,7 +299,8 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     const result = await handler(event, mockContext)
 
-    expect(result.statusCode).toBe(500)
+    // wrapAuthenticatedHandler rejects Unauthenticated users with 401
+    expect(result.statusCode).toBe(401)
   })
 
   test('should handle multiple devices with SNS endpoint deletion', async () => {

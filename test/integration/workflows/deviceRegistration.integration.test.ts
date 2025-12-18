@@ -41,7 +41,7 @@ import {createMockDevice, createMockUserDevice} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -232,7 +232,7 @@ describe('Device Registration Integration Tests', () => {
 
     unsubscribeMock.mockResolvedValue(undefined)
 
-    const body: DeviceRegistrationBody = {deviceId, token}
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
@@ -261,7 +261,7 @@ describe('Device Registration Integration Tests', () => {
       SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'
     })
 
-    const body: DeviceRegistrationBody = {deviceId, token}
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
     const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
 
@@ -287,7 +287,7 @@ describe('Device Registration Integration Tests', () => {
       data: {...createMockDevice(deviceId, endpointArn), token}
     })
 
-    const body: DeviceRegistrationBody = {deviceId, token}
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
     // Create event with Authorization header but invalid/no userId
     // getUserDetailsFromEvent returns Unauthenticated when there's an auth header but no userId
     const event = {
@@ -349,7 +349,7 @@ describe('Device Registration Integration Tests', () => {
     // Mock SNS failure
     createPlatformEndpointMock.mockResolvedValue(undefined as unknown as {EndpointArn: string})
 
-    const body: DeviceRegistrationBody = {deviceId, token}
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 

@@ -64,7 +64,8 @@ export default [
       'local-rules/use-electrodb-mock-helper': 'error',
       // Phase 2: HIGH
       'local-rules/response-helpers': 'warn',
-      'local-rules/env-validation': 'error'
+      'local-rules/env-validation': 'error',
+      'local-rules/authenticated-handler-enforcement': 'warn'
     }
   }
 ]

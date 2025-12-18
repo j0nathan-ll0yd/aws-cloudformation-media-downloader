@@ -104,10 +104,18 @@ describe('#UserDelete', () => {
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })
-    test('should return 500 error when user ID is missing', async () => {
+    test('should return 401 error when user ID is missing (unauthenticated)', async () => {
+      // With Authorization header but unknown principalId = Unauthenticated
       event.requestContext.authorizer!.principalId = 'unknown'
       const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
+      expect(output.statusCode).toEqual(401)
+    })
+    test('should return 401 error for anonymous users (no auth header)', async () => {
+      // Without Authorization header = Anonymous
+      delete event.headers.Authorization
+      event.requestContext.authorizer!.principalId = 'unknown'
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(401)
     })
   })
 })

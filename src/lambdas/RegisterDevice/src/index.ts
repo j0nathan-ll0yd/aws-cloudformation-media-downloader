@@ -5,11 +5,11 @@ import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '#li
 import type {Device} from '#types/domain-models'
 import type {DeviceRegistrationRequest} from '#types/request-types'
 import {UserStatus} from '#types/enums'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerDeviceSchema} from '#util/constraints'
-import {getUserDetailsFromEvent, logDebug, response, verifyPlatformConfiguration, wrapApiHandler} from '#util/lambda-helpers'
-import {providerFailureErrorMessage, UnauthorizedError, UnexpectedError} from '#util/errors'
+import {logDebug, response, verifyPlatformConfiguration, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '#util/shared'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
@@ -100,9 +100,11 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
 
 /**
  * Registers a Device (e.g. iPhone) to receive push notifications via AWS SNS
+ * Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}: OptionalAuthApiParams): Promise<APIGatewayProxyResult> => {
+  // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
   validateRequest(requestBody, registerDeviceSchema)
@@ -110,7 +112,6 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
   const pushNotificationTopicArn = getRequiredEnv('PushNotificationTopicArn')
   const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-  const {userId, userStatus} = getUserDetailsFromEvent(event)
   // Store the device details, regardless of user status
   await upsertDevice(device)
   /* c8 ignore else */
@@ -131,9 +132,6 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
   } else if (userStatus === UserStatus.Anonymous) {
     // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
-  } else if (userStatus === UserStatus.Unauthenticated) {
-    // If the user is unauthenticated, then need to authenticate
-    throw new UnauthorizedError('Unauthenticated -- please login')
   }
   return response(context, 200, {endpointArn: device.endpointArn})
 }))

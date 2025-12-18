@@ -1,8 +1,8 @@
 import type {APIGatewayProxyResult} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {generateUnauthorizedError, getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
+import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
+import {logDebug, logError, response, wrapOptionalAuthHandler} from '#util/lambda-helpers'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {defaultFile} from '#util/constants'
@@ -39,19 +39,16 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  * Returns a list of files available to the user.
  *
  * - In an authenticated state, returns the files the user has available
- * - In an unauthenticated state, returns a single demo file (for training purposes)
+ * - In an anonymous state, returns a single demo file (for training purposes)
+ * - Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams): Promise<APIGatewayProxyResult> => {
+  // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   const myResponse = {contents: [] as File[], keyCount: 0}
-  const {userId, userStatus} = getUserDetailsFromEvent(event)
 
-  if (userStatus == UserStatus.Unauthenticated) {
-    throw generateUnauthorizedError()
-  }
-
-  if (userStatus == UserStatus.Anonymous) {
+  if (userStatus === UserStatus.Anonymous) {
     myResponse.contents = [defaultFile]
     myResponse.keyCount = myResponse.contents.length
     return response(context, 200, myResponse)

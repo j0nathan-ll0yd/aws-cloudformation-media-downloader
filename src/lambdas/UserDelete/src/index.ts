@@ -3,8 +3,8 @@ import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {getUserDetailsFromEvent, logDebug, logError, response, wrapApiHandler} from '#util/lambda-helpers'
+import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
+import {logDebug, logError, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {deleteDevice, getUserDevices} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import type {Device} from '#types/domain-models'
@@ -51,12 +51,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
-  const {userId} = getUserDetailsFromEvent(event)
-  if (!userId) {
-    // This should never happen; enforced by the API Gateway Authorizer
-    throw new UnexpectedError('No userId found')
-  }
+export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
   const deletableDevices: Device[] = []
 
   const userDevices = await getUserDevices(userId)

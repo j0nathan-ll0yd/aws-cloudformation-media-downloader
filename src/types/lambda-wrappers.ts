@@ -11,6 +11,7 @@
 
 import type {APIGatewayRequestAuthorizerEvent, Context, ScheduledEvent} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from './infrastructure-types'
+import type {UserStatus} from './enums'
 
 /** Metadata passed to all wrapped handlers */
 export type WrapperMetadata = {traceId: string}
@@ -26,3 +27,28 @@ export type EventHandlerParams<TRecord> = {record: TRecord; context: Context; me
 
 /** Parameters passed to wrapped scheduled handlers */
 export type ScheduledHandlerParams = {event: ScheduledEvent; context: Context; metadata: WrapperMetadata}
+
+/**
+ * Parameters passed to authenticated API handlers.
+ * userId is guaranteed to be a string (not optional) - the wrapper enforces this
+ * by rejecting Unauthenticated and Anonymous users before the handler runs.
+ */
+export type AuthenticatedApiParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
+  event: TEvent
+  context: Context
+  metadata: WrapperMetadata
+  userId: string
+}
+
+/**
+ * Parameters passed to optional-auth API handlers.
+ * Allows both Anonymous and Authenticated users (rejects only Unauthenticated).
+ * Handler receives userStatus to differentiate behavior.
+ */
+export type OptionalAuthApiParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
+  event: TEvent
+  context: Context
+  metadata: WrapperMetadata
+  userId: string | undefined
+  userStatus: UserStatus
+}

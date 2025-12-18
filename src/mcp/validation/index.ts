@@ -26,8 +26,9 @@ import {responseEnumRule} from './rules/response-enum'
 import {mockFormattingRule} from './rules/mock-formatting'
 import {docSyncRule} from './rules/doc-sync'
 import {namingConventionsRule} from './rules/naming-conventions'
+import {authenticatedHandlerEnforcementRule} from './rules/authenticated-handler-enforcement'
 
-// Export all rules (14 total: 6 CRITICAL + 5 HIGH + 3 MEDIUM)
+// Export all rules (15 total: 6 CRITICAL + 6 HIGH + 3 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -47,7 +48,9 @@ export const allRules: ValidationRule[] = [
   // HIGH (documentation)
   docSyncRule,
   // HIGH (naming)
-  namingConventionsRule
+  namingConventionsRule,
+  // HIGH (auth)
+  authenticatedHandlerEnforcementRule
 ]
 
 // Export rules by name for selective validation
@@ -84,11 +87,15 @@ export const rulesByName: Record<string, ValidationRule> = {
   docs: docSyncRule, // alias
   // HIGH (naming) rules
   'naming-conventions': namingConventionsRule,
-  naming: namingConventionsRule // alias
+  naming: namingConventionsRule, // alias
+  // HIGH (auth) rules
+  'authenticated-handler-enforcement': authenticatedHandlerEnforcementRule,
+  auth: authenticatedHandlerEnforcementRule // alias
 }
 
 // Export individual rules
 export {
+  authenticatedHandlerEnforcementRule,
   awsSdkEncapsulationRule,
   batchRetryRule,
   cascadeSafetyRule,
