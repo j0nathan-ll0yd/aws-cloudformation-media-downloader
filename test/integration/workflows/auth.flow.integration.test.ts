@@ -246,6 +246,19 @@ describe('Auth Flow Integration Tests', () => {
 
     test('should allow registration without optional name fields', async () => {
       // registerUserSchema has firstName and lastName as optional
+      const userId = 'user-no-name-123'
+      const sessionId = 'session-no-name'
+      const token = 'no-name-session-token'
+      const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+
+      signInSocialMock.mockResolvedValue({
+        redirect: false,
+        token,
+        url: undefined,
+        user: {id: userId, createdAt: new Date(), email: 'noname@example.com', name: ''},
+        session: {id: sessionId, expiresAt}
+      })
+
       const body: AuthRequestBody = {idToken: 'valid-apple-id-token'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
