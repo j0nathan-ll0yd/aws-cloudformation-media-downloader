@@ -367,6 +367,50 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
+## Anti-Patterns to Avoid
+
+The following patterns have caused issues in this project and should be avoided:
+
+### 1. Direct AWS SDK Imports (CRITICAL)
+**Wrong**: `import {DynamoDBClient} from '@aws-sdk/client-dynamodb'`
+**Right**: `import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'`
+**Why**: Breaks encapsulation, makes testing difficult, loses type safety benefits
+
+### 2. Manual ElectroDB Entity Mocks (CRITICAL)
+**Wrong**: Hand-crafted mock objects for entities in tests
+**Right**: `const mock = createElectroDBEntityMock({queryIndexes: ['byUser']})`
+**Why**: Inconsistent mocking leads to false positives and maintenance burden
+
+### 3. Promise.all for Cascade Deletions (CRITICAL)
+**Wrong**: `await Promise.all([deleteUser(), deleteUserFiles()])`
+**Right**: `await Promise.allSettled([deleteUserFiles(), deleteUser()])`
+**Why**: Partial failures leave orphaned data; children must be deleted before parents
+
+### 4. Try-Catch for Required Environment Variables (CRITICAL)
+**Wrong**: `try { config = JSON.parse(process.env.Config) } catch { return fallback }`
+**Right**: `const config = getRequiredEnv('Config')` - let it fail fast
+**Why**: Silent failures hide configuration errors that should break at cold start
+
+### 5. Underscore-Prefixed Unused Variables (HIGH)
+**Wrong**: `handler(event, _context, _callback)` to suppress warnings
+**Right**: `handler({body}: APIGatewayProxyEvent)` - destructure only what you need
+**Why**: Backwards-compatibility hacks obscure intent and violate project conventions
+
+### 6. AI Attribution in Commits (CRITICAL)
+**Wrong**: Commit messages with "Generated with Claude", emojis, "Co-Authored-By: AI"
+**Right**: Clean commit messages following commitlint format: `feat: add new feature`
+**Why**: Professional commits, code ownership clarity, industry standard
+
+### 7. Module-Level Environment Variable Validation (HIGH)
+**Wrong**: `const config = getRequiredEnv('Config')` at top of module
+**Right**: Call `getRequiredEnv()` inside functions (lazy evaluation)
+**Why**: Module-level calls break tests that need to set up mocks before import
+
+### 8. Raw Response Objects in Lambdas (HIGH)
+**Wrong**: `return {statusCode: 200, body: JSON.stringify(data)}`
+**Right**: `return response(200, data)`
+**Why**: Inconsistent formatting, missing headers, no type safety
+
 ## Type Naming Patterns
 
 | Pattern | Usage | Examples |

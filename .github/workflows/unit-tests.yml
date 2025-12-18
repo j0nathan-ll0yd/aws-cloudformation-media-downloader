@@ -53,6 +53,9 @@ jobs:
     - name: Lint code
       run: pnpm run lint
 
+    - name: Test ESLint local rules
+      run: pnpm run test:eslint-rules
+
     - name: Validate documented scripts exist
       run: ./bin/validate-docs.sh
 

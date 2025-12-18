@@ -36,7 +36,8 @@ const ALLOWED_ESLINT_IGNORES = [
   'src/types/infrastructure.d.ts',
   'eslint.config.mjs',
   '.dependency-cruiser.cjs',
-  'src/mcp/test/fixtures/**/*'
+  'src/mcp/test/fixtures/**/*',
+  'eslint-local-rules/**/*'
 ]
 
 /**
