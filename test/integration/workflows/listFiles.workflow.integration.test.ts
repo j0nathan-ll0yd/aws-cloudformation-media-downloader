@@ -28,7 +28,7 @@ process.env.DefaultFileContentType = 'video/mp4'
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
-import type {DynamoDBFile} from '../../../src/types/main'
+import type {File} from '../../../src/types/domain-models'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
@@ -38,7 +38,7 @@ import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -124,9 +124,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     // So video-1 needs a later publishDate to appear first in results
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('video-1', FileStatus.Available, {title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'}),
-        createMockFile('video-2', FileStatus.Available, {title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'}),
-        createMockFile('video-3', FileStatus.Pending, {title: 'Video 3 (not ready)'})
+        createMockFile('video-1', FileStatus.Downloaded, {title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'}),
+        createMockFile('video-2', FileStatus.Downloaded, {title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'}),
+        createMockFile('video-3', FileStatus.Queued, {title: 'Video 3 (not ready)'})
       ],
       unprocessed: []
     })
@@ -205,11 +205,11 @@ describe('ListFiles Workflow Integration Tests', () => {
     // Files.get now uses BATCH get - returns array of all files
     filesMock.mocks.get.mockResolvedValue({
       data: [
-        createMockFile('downloaded-1', FileStatus.Available, {title: 'Downloaded 1'}),
-        createMockFile('downloaded-2', FileStatus.Available, {title: 'Downloaded 2'}),
-        createMockFile('pending-1', FileStatus.Pending, {title: 'Pending 1'}),
-        createMockFile('failed-1', FileStatus.Unavailable, {title: 'Failed 1'}),
-        createMockFile('pending-download-1', FileStatus.Pending, {title: 'Pending Download 1'})
+        createMockFile('downloaded-1', FileStatus.Downloaded, {title: 'Downloaded 1'}),
+        createMockFile('downloaded-2', FileStatus.Downloaded, {title: 'Downloaded 2'}),
+        createMockFile('pending-1', FileStatus.Queued, {title: 'Pending 1'}),
+        createMockFile('failed-1', FileStatus.Failed, {title: 'Failed 1'}),
+        createMockFile('pending-download-1', FileStatus.Queued, {title: 'Pending Download 1'})
       ],
       unprocessed: []
     })
@@ -223,10 +223,10 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(2)
     expect(response.body.contents).toHaveLength(2)
-    expect(response.body.contents[0].status).toBe(FileStatus.Available)
-    expect(response.body.contents[1].status).toBe(FileStatus.Available)
+    expect(response.body.contents[0].status).toBe(FileStatus.Downloaded)
+    expect(response.body.contents[1].status).toBe(FileStatus.Downloaded)
 
-    const fileIds = response.body.contents.map((file: Partial<DynamoDBFile>) => file.fileId).sort()
+    const fileIds = response.body.contents.map((file: Partial<File>) => file.fileId).sort()
     expect(fileIds).toEqual(['downloaded-1', 'downloaded-2'])
   })
 
@@ -238,7 +238,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     // Files.get now uses BATCH get - returns array of all 50 files at once
     filesMock.mocks.get.mockResolvedValue({
-      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Available : FileStatus.Pending, {title: `Video ${index}`})),
+      data: fileIds.map((fileId, index) => createMockFile(fileId, index % 2 === 0 ? FileStatus.Downloaded : FileStatus.Queued, {title: `Video ${index}`})),
       unprocessed: []
     })
 
@@ -251,7 +251,7 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: Partial<DynamoDBFile>) => file.status === FileStatus.Available)).toBe(true)
+    expect(response.body.contents.every((file: Partial<File>) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should handle DynamoDB errors gracefully', async () => {

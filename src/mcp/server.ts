@@ -22,6 +22,7 @@ import {CoverageQueryArgs, handleCoverageQuery} from './handlers/coverage.js'
 import {handleValidationQuery, ValidationQueryArgs} from './handlers/validation.js'
 import {handleImpactQuery, ImpactQueryArgs} from './handlers/impact.js'
 import {handleTestScaffoldQuery, TestScaffoldQueryArgs} from './handlers/test-scaffold.js'
+import {handleNamingValidationQuery, handleTypeAlignmentQuery} from './handlers/naming.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
@@ -171,6 +172,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['file', 'query']
         }
+      },
+      {
+        name: 'check_type_alignment',
+        description: 'Check alignment between TypeScript types and TypeSpec API definitions',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            typeName: {type: 'string', description: 'Specific type name to check (optional, checks all if omitted)'},
+            query: {type: 'string', description: 'Query type (check, list, all)', enum: ['check', 'list', 'all']}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'validate_naming',
+        description: 'Validate type naming conventions (no DynamoDB* prefix, PascalCase enums, proper suffixes)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'Specific file to validate (optional, validates all type files if omitted)'},
+            query: {type: 'string', description: 'Query type (validate, suggest, all)', enum: ['validate', 'suggest', 'all']}
+          },
+          required: ['query']
+        }
       }
     ]
   }
@@ -208,6 +233,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'suggest_tests':
         return wrapResult(await handleTestScaffoldQuery(args as unknown as TestScaffoldQueryArgs))
+
+      case 'check_type_alignment':
+        return wrapResult(await handleTypeAlignmentQuery(args as {typeName?: string; query: 'check' | 'list' | 'all'}))
+
+      case 'validate_naming':
+        return wrapResult(await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'}))
 
       default:
         throw new Error(`Unknown tool: ${name}`)

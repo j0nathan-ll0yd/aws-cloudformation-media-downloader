@@ -12,7 +12,7 @@ import {
 } from 'aws-lambda'
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
-import {CustomAPIGatewayRequestAuthorizerEvent, UserEventDetails} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
 import {logDebug, logError, logInfo} from './logging'
@@ -86,6 +86,11 @@ export function lambdaErrorResponse(context: Context, error: unknown): APIGatewa
 
 export function generateUnauthorizedError() {
   return new UnauthorizedError('Invalid Authentication token; login')
+}
+
+interface UserEventDetails {
+  userId?: string
+  userStatus: UserStatus
 }
 
 export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {

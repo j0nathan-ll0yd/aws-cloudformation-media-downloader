@@ -1,7 +1,7 @@
 import {CloudFrontRequestEvent, CloudFrontResponse, CloudFrontResultResponse, Context} from 'aws-lambda'
 import {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {logDebug, logInfo} from '#util/lambda-helpers'
-import {CustomCloudFrontRequest} from '#types/main'
+import {CustomCloudFrontRequest} from '#types/infrastructure-types'
 
 type CloudFrontHandlerResult = CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse
 // Note: Lambda@Edge does not support externalized modules (no layers) and has strict size limits

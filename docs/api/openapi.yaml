@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: aws-cloudformation-media-downloader
+  title: Offline Media Downloader API
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 1.0.0
+  version: 0.0.0
 tags:
   - name: Files
   - name: Devices
@@ -515,21 +515,10 @@ components:
         key:
           type: string
           description: The filename or key in S3 storage
-        lastModified:
-          type: string
-          format: date-time
-          description: The date the file was last modified
-        eTag:
-          type: string
-          description: The entity tag is an MD5 hash of the object
         size:
           type: integer
           format: int64
           description: Size in bytes of the file
-        storageClass:
-          allOf:
-            - $ref: '#/components/schemas/Models.StorageClass'
-          description: S3 storage class
         status:
           allOf:
             - $ref: '#/components/schemas/Models.FileStatus'
@@ -537,14 +526,25 @@ components:
         title:
           type: string
           description: Title of the media file
-        thumbnail:
+        publishDate:
+          type: string
+          description: Video publish date
+        authorName:
+          type: string
+          description: Channel/author display name
+        authorUser:
+          type: string
+          description: Channel/author username or ID
+        contentType:
+          type: string
+          description: MIME type (e.g., video/mp4)
+        description:
+          type: string
+          description: Video description
+        url:
           type: string
           format: uri
-          description: Thumbnail URL for the media
-        duration:
-          type: integer
-          format: int32
-          description: Duration of the media in seconds
+          description: CloudFront URL for downloading the file
       description: A media file available for download
     Models.FileListResponse:
       type: object
@@ -570,17 +570,6 @@ components:
         - Downloaded
         - Failed
       description: File status enumeration
-    Models.StorageClass:
-      type: string
-      enum:
-        - STANDARD
-        - REDUCED_REDUNDANCY
-        - GLACIER
-        - STANDARD_IA
-        - ONEZONE_IA
-        - INTELLIGENT_TIERING
-        - DEEP_ARCHIVE
-      description: S3 Storage class enumeration
     Models.UserLogin:
       type: object
       required:

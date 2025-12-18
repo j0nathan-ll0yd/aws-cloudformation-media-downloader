@@ -411,6 +411,34 @@ The following patterns have caused issues in this project and should be avoided:
 **Right**: `return response(200, data)`
 **Why**: Inconsistent formatting, missing headers, no type safety
 
+## Type Naming Patterns
+
+| Pattern | Usage | Examples |
+|---------|-------|----------|
+| Simple nouns | Domain entities | `User`, `File`, `Device`, `Session` |
+| `*Item` | ElectroDB parsed types | `UserItem`, `FileItem`, `DeviceItem` |
+| `*Input` | Request payloads & mutations | `UserLoginInput`, `CreateFileInput` |
+| `*Response` | API response wrappers | `FileResponse`, `LoginResponse` |
+| `*Error` | Error classes | `AuthorizationError`, `ValidationError` |
+
+### File Organization (`src/types/`)
+
+| File | Contents |
+|------|----------|
+| `domain-models.d.ts` | User, File, Device, IdentityProvider |
+| `request-types.d.ts` | *Input types for API requests |
+| `notification-types.d.ts` | Push notification payloads |
+| `persistence-types.d.ts` | Relationship types (UserDevice, UserFile) |
+| `infrastructure-types.d.ts` | AWS/API Gateway types |
+| `enums.ts` | FileStatus, UserStatus, ResponseStatus |
+
+### Enum Values (PascalCase)
+
+```typescript
+// FileStatus values (aligned with iOS)
+Queued | Downloading | Downloaded | Failed
+```
+
 ## Development Workflow
 
 ### Essential Commands

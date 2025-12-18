@@ -18,7 +18,7 @@ process.env.USE_LOCALSTACK = 'true'
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/main'
+import {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
@@ -97,7 +97,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     const file = await getFile('new-video-123')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('new-video-123')
-    expect(file!.status).toBe(FileStatus.Pending)
+    expect(file!.status).toBe(FileStatus.Queued)
 
     expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
     expect(invokeLambdaMock.mock.calls[0][1].fileId).toBe('new-video-123')
@@ -108,7 +108,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   test('should send notification without re-downloading for existing file', async () => {
     await insertFile({
       fileId: 'existing-video',
-      status: FileStatus.Available,
+      status: FileStatus.Downloaded,
       key: 'existing-video.mp4',
       size: 5242880,
       title: 'Existing Video',
@@ -135,7 +135,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(invokeLambdaMock).not.toHaveBeenCalled()
 
     const file = await getFile('existing-video')
-    expect(file!.status).toBe(FileStatus.Available)
+    expect(file!.status).toBe(FileStatus.Downloaded)
   })
 
   test('should handle backgroundMode without immediate download', async () => {
@@ -150,7 +150,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     const file = await getFile('background-video')
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('background-video')
-    expect(file!.status).toBe(FileStatus.Pending)
+    expect(file!.status).toBe(FileStatus.Queued)
 
     // FileCoordinator will pick up this file later
     expect(invokeLambdaMock).not.toHaveBeenCalled()
@@ -175,7 +175,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should associate file with multiple users', async () => {
-    await insertFile({fileId: 'shared-video', status: FileStatus.Available, key: 'shared-video.mp4', size: 5242880, title: 'Shared Video'})
+    await insertFile({fileId: 'shared-video', status: FileStatus.Downloaded, key: 'shared-video.mp4', size: 5242880, title: 'Shared Video'})
 
     const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
     const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')

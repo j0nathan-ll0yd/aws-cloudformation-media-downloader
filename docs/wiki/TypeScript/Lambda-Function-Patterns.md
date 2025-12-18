@@ -18,7 +18,7 @@ import {Files} from '../../../entities/Files'
 import {createS3Upload} from '../../../lib/vendor/AWS/S3'
 
 // 4. Type imports
-import type {DynamoDBFile} from '../../../types/main'
+import type {File} from '../../../types/domain-models'
 
 // 5. Utilities
 import {logInfo, response} from '../../../util/lambda-helpers'
