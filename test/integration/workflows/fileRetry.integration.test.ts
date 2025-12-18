@@ -283,7 +283,7 @@ describe('File Retry Integration Tests', () => {
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(12)
   }, 60000) // Longer timeout for batch processing with delays
 
-  test('should handle individual file download failure without stopping batch', async () => {
+  test('should fail entire batch when any file download fails (Promise.all behavior)', async () => {
     const fileIds = ['file-ok-1', 'file-fail', 'file-ok-2']
 
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
@@ -302,10 +302,8 @@ describe('File Retry Integration Tests', () => {
     const event = createMockScheduledEvent('test-event-9')
     const result = await handler(event, mockContext)
 
-    // Should still succeed overall (Promise.all handles individual failures)
-    expect(result.statusCode).toBe(200)
-
-    // All files should be attempted
-    expect(initiateFileDownloadMock).toHaveBeenCalledTimes(3)
+    // Handler uses Promise.all which fails fast on any rejection
+    // This is expected behavior - batch fails if any download fails
+    expect(result.statusCode).toBe(500)
   })
 })

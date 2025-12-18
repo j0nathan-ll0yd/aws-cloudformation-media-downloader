@@ -178,8 +178,8 @@ describe('UserDelete Cascade Integration Tests', () => {
     // Verify cascade order: UserFiles queried
     expect(userFilesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
 
-    // Verify UserDevices queried
-    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
+    // Verify UserDevices queried (getUserDevices + deleteUserDevices = 2 calls)
+    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(2)
 
     // Verify Devices batch get called
     expect(devicesMock.mocks.get).toHaveBeenCalledTimes(1)
@@ -252,8 +252,10 @@ describe('UserDelete Cascade Integration Tests', () => {
     usersMock.mocks.delete.mockRejectedValue(new Error('Failed to delete user'))
 
     const event = createUserDeleteEvent(userId)
+    const result = await handler(event, mockContext)
 
-    await expect(handler(event, mockContext)).rejects.toThrow()
+    // Handler catches error and returns 500 after creating GitHub issue
+    expect(result.statusCode).toBe(500)
 
     // Verify GitHub issue was created
     expect(createFailedUserDeletionIssueMock).toHaveBeenCalledWith(userId, [], expect.any(Error), expect.any(String))
