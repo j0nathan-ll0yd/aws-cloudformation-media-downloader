@@ -274,6 +274,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
+| DeleteFile | API Gateway | DELETE /files/{fileId} | Delete file for user, remove from S3 if no other users |
 | FileCoordinator | CloudWatch Events | Scheduled | Orchestrate pending file downloads |
 | ListFiles | API Gateway | GET /files | List user's available files |
 | LogClientEvent | API Gateway | POST /events | Log client-side events |
