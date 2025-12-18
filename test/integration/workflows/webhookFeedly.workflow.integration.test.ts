@@ -10,16 +10,18 @@
 
 const TEST_TABLE = 'test-files-webhook'
 const TEST_SQS_QUEUE_URL = 'http://localhost:4566/000000000000/test-notifications'
+const TEST_IDEMPOTENCY_TABLE = 'test-idempotency-webhook'
 
 process.env.DynamoDBTableName = TEST_TABLE
 process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
+process.env.IdempotencyTableName = TEST_IDEMPOTENCY_TABLE
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createFilesTable, deleteFilesTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
+import {createFilesTable, createIdempotencyTable, deleteFilesTable, deleteIdempotencyTable, getFile, insertFile} from '../helpers/dynamodb-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
 interface FileInvocationPayload {
@@ -63,13 +65,13 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   let mockContext: Context
 
   beforeAll(async () => {
-    await createFilesTable()
+    await Promise.all([createFilesTable(), createIdempotencyTable()])
     await new Promise((resolve) => setTimeout(resolve, 1000))
     mockContext = createMockContext()
   })
 
   afterAll(async () => {
-    await deleteFilesTable()
+    await Promise.all([deleteFilesTable(), deleteIdempotencyTable()])
   })
 
   beforeEach(async () => {
@@ -80,8 +82,9 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     sendMessageMock.mockResolvedValue({MessageId: 'test-message-id'})
     invokeLambdaMock.mockResolvedValue({StatusCode: 202})
 
-    await deleteFilesTable()
-    await createFilesTable()
+    // Recreate tables for clean state each test
+    await Promise.all([deleteFilesTable(), deleteIdempotencyTable()])
+    await Promise.all([createFilesTable(), createIdempotencyTable()])
     await new Promise((resolve) => setTimeout(resolve, 500))
   })
 
