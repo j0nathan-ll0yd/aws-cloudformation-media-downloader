@@ -33,7 +33,23 @@ module.exports = {
       return {}
     }
 
+    // Track variables created with createElectroDBEntityMock
+    const helperVariables = new Set()
+
     return {
+      VariableDeclarator(node) {
+        // Track: const fooMock = createElectroDBEntityMock(...)
+        if (
+          node.init &&
+          node.init.type === 'CallExpression' &&
+          node.init.callee.type === 'Identifier' &&
+          node.init.callee.name === 'createElectroDBEntityMock' &&
+          node.id.type === 'Identifier'
+        ) {
+          helperVariables.add(node.id.name)
+        }
+      },
+
       CallExpression(node) {
         const callee = node.callee
 
@@ -55,7 +71,11 @@ module.exports = {
                 const sourceCode = context.sourceCode || context.getSourceCode()
                 const mockImpl = sourceCode.getText(node.arguments[1])
 
-                if (!mockImpl.includes('createElectroDBEntityMock')) {
+                // Check if mock uses createElectroDBEntityMock directly or via a tracked variable
+                const usesHelper = mockImpl.includes('createElectroDBEntityMock')
+                const usesHelperVariable = Array.from(helperVariables).some((varName) => mockImpl.includes(varName + '.entity'))
+
+                if (!usesHelper && !usesHelperVariable) {
                   context.report({
                     node,
                     messageId: 'manualMock',

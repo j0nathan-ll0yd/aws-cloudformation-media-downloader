@@ -48,6 +48,14 @@ ruleTester.run('use-electrodb-mock-helper', rule, {
         queryIndexes: ['byStatus']
       }))`,
       filename: 'src/lambdas/FileCoordinator/test/index.test.ts'
+    },
+    // Allowed: Variable assigned from createElectroDBEntityMock, then .entity used
+    {
+      code: `const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const filesMock = createElectroDBEntityMock()
+jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))`,
+      filename: 'src/lambdas/ListFiles/test/index.test.ts'
     }
   ],
   invalid: [

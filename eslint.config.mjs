@@ -61,8 +61,7 @@ export default [
       // Phase 1: CRITICAL
       'local-rules/no-direct-aws-sdk-import': 'error',
       'local-rules/cascade-delete-order': 'warn',
-      // Note: Set to 'warn' due to pre-existing violations; upgrade to 'error' after fixing
-      'local-rules/use-electrodb-mock-helper': 'warn',
+      'local-rules/use-electrodb-mock-helper': 'error',
       // Phase 2: HIGH
       'local-rules/response-helpers': 'warn',
       'local-rules/env-validation': 'error'
