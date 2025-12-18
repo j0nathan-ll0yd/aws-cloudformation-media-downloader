@@ -367,6 +367,34 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
+## Type Naming Patterns
+
+| Pattern | Usage | Examples |
+|---------|-------|----------|
+| Simple nouns | Domain entities | `User`, `File`, `Device`, `Session` |
+| `*Item` | ElectroDB parsed types | `UserItem`, `FileItem`, `DeviceItem` |
+| `*Input` | Request payloads & mutations | `UserLoginInput`, `CreateFileInput` |
+| `*Response` | API response wrappers | `FileResponse`, `LoginResponse` |
+| `*Error` | Error classes | `AuthorizationError`, `ValidationError` |
+
+### File Organization (`src/types/`)
+
+| File | Contents |
+|------|----------|
+| `domain-models.d.ts` | User, File, Device, IdentityProvider |
+| `request-types.d.ts` | *Input types for API requests |
+| `notification-types.d.ts` | Push notification payloads |
+| `persistence-types.d.ts` | Relationship types (UserDevice, UserFile) |
+| `infrastructure-types.d.ts` | AWS/API Gateway types |
+| `enums.ts` | FileStatus, UserStatus, ResponseStatus |
+
+### Enum Values (PascalCase)
+
+```typescript
+// FileStatus values (aligned with iOS)
+Queued | Downloading | Downloaded | Failed
+```
+
 ## Development Workflow
 
 ### Essential Commands
