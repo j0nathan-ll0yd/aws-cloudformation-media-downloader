@@ -83,9 +83,14 @@ const {handler} = await import('../../../src/lambdas/RegisterDevice/src/index')
 interface DeviceRegistrationBody {
   deviceId: string
   token: string
-  name?: string
-  systemName?: string
-  systemVersion?: string
+  name: string
+  systemName: string
+  systemVersion: string
+}
+
+/** Create a complete device registration body with required fields */
+function createDeviceBody(deviceId: string, token: string): DeviceRegistrationBody {
+  return {deviceId, token, name: 'Test Device', systemName: 'iOS', systemVersion: '17.0'}
 }
 
 function createRegisterDeviceEvent(
@@ -206,7 +211,7 @@ describe('Device Registration Integration Tests', () => {
 
     unsubscribeMock.mockResolvedValue(undefined)
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
@@ -231,7 +236,7 @@ describe('Device Registration Integration Tests', () => {
     // Mock subscribe for anonymous user
     subscribeMock.mockResolvedValue({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
 
@@ -255,7 +260,7 @@ describe('Device Registration Integration Tests', () => {
     // Mock device upsert
     devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     // Create event with Authorization header but invalid/no userId
     // getUserDetailsFromEvent returns Unauthenticated when there's an auth header but no userId
     const event = {
@@ -312,7 +317,7 @@ describe('Device Registration Integration Tests', () => {
     // Mock SNS failure
     createPlatformEndpointMock.mockResolvedValue(undefined as unknown as {EndpointArn: string})
 
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
+    const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 

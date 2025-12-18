@@ -18,20 +18,6 @@ import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 
-/** TTL retention period for completed/failed downloads (7 days in seconds) */
-const TTL_SECONDS = 7 * 24 * 60 * 60
-
-/**
- * Calculate TTL timestamp for DynamoDB TTL cleanup.
- * Only returns a TTL for completed/failed statuses.
- */
-function calculateTTL(status: DownloadStatus): number | undefined {
-  if (status === DownloadStatus.Completed || status === DownloadStatus.Failed) {
-    return Math.floor(Date.now() / 1000) + TTL_SECONDS
-  }
-  return undefined
-}
-
 /**
  * Fetch video info with X-Ray tracing.
  * Wraps fetchVideoInfo and handles subsegment lifecycle.
@@ -88,9 +74,8 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
   const update: Record<string, unknown> = {status, retryCount}
 
   // Set TTL for completed/failed downloads (auto-cleanup after 7 days)
-  const ttl = calculateTTL(status)
-  if (ttl !== undefined) {
-    update.ttl = ttl
+  if (status === DownloadStatus.Completed || status === DownloadStatus.Failed) {
+    update.ttl = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
   }
 
   if (classification) {
@@ -116,7 +101,7 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       lastError: classification?.reason,
       retryAfter: classification?.retryAfter,
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
-      ttl
+      ttl: update.ttl as number | undefined
     }).go()
   }
 }
