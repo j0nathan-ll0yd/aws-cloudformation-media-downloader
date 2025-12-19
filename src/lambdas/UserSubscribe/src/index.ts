@@ -1,8 +1,12 @@
-import type {UserSubscribeInput} from '../types'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'
 import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {subscribeEndpointToTopic} from '#util/device-helpers'
+
+interface UserSubscribeInput {
+  endpointArn: string
+  topicArn: string
+}
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

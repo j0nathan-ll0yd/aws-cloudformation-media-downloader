@@ -2,15 +2,22 @@ import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
-import type {DeviceRegistrationRequest} from '../types'
 import {UserStatus} from '#types/enums'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerDeviceSchema} from '#util/constraints'
-import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import {logDebug} from '#util/logging'
-import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#util/device-helpers'
 import {getRequiredEnv} from '#util/env-validation'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {logDebug} from '#util/logging'
+
+interface DeviceRegistrationRequest {
+  name: string
+  token: string
+  systemVersion: string
+  deviceId: string
+  systemName: string
+}
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)

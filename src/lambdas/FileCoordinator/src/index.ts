@@ -4,7 +4,12 @@ import {logDebug, logError, logInfo} from '#util/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/lambda-invoke-helpers'
 import {getOptionalEnvNumber} from '#util/env-validation'
-import type {DownloadInfo} from '../types'
+
+/** Minimal download info needed for processing */
+interface DownloadInfo {
+  fileId: string
+  correlationId?: string
+}
 
 /** Maximum number of files to process concurrently per batch (configurable via FILE_COORDINATOR_BATCH_SIZE) */
 const BATCH_SIZE = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_SIZE', 5)

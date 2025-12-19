@@ -1,23 +1,27 @@
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
-import type {FetchVideoInfoResult} from '#types/video'
-import type {File} from '#types/domain-models'
-import type {YtDlpVideoInfo} from '#types/youtube'
-import type {StartFileUploadParams} from '../types'
-import {FileStatus, ResponseStatus} from '#types/enums'
-import {buildApiResponse, putMetric, putMetrics, withPowertools, wrapLambdaInvokeHandler} from '#util/lambda-helpers'
-import {logDebug, logInfo} from '#util/logging'
-import {createMetadataNotification} from '#util/transformers'
-import {UnexpectedError} from '#util/errors'
-import {upsertFile} from './file-helpers'
-import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
-import {getSegment} from '#lib/vendor/AWS/XRay'
-import {getRequiredEnv} from '#util/env-validation'
-import type {VideoErrorClassification} from '#types/video'
-import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
+import {getSegment} from '#lib/vendor/AWS/XRay'
+import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
+import type {File} from '#types/domain-models'
+import {FileStatus, ResponseStatus} from '#types/enums'
+import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
+import type {YtDlpVideoInfo} from '#types/youtube'
+import {getRequiredEnv} from '#util/env-validation'
+import {UnexpectedError} from '#util/errors'
+import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
+import {buildApiResponse, putMetric, putMetrics, withPowertools, wrapLambdaInvokeHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo} from '#util/logging'
+import {createMetadataNotification} from '#util/transformers'
+import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
+import {upsertFile} from './file-helpers'
+
+interface StartFileUploadParams {
+  fileId: string
+  /** Correlation ID for end-to-end request tracing */
+  correlationId?: string
+}
 
 /**
  * Fetch video info with X-Ray tracing.

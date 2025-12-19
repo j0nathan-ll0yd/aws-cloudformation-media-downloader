@@ -10,12 +10,15 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import type {UserLoginInput} from '../types'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
 import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {logInfo} from '#util/logging'
 import {auth} from '#lib/vendor/BetterAuth/config'
+
+interface UserLoginInput {
+  idToken: string
+}
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.

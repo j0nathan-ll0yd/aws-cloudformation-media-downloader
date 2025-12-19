@@ -157,6 +157,16 @@ _No pending conventions - all conventions are documented._
 
 ## ✅ Recently Documented
 
+### Documented: 2025-12-19
+
+1. **Lambda Types Directory Threshold** (Convention)
+   - **What**: Create `types/` directory in a lambda only when 3+ types, types are re-exported, or types are complex (5+ properties)
+   - **Why**: Reduces directory proliferation while maintaining organization for substantial type collections; small inline types are easier to understand next to their usage
+   - **Rule**: Use inline types for 1-2 simple, non-exported types; use types/ directory for 3+ types or re-exported types
+   - **Documented**: docs/wiki/TypeScript/Type-Definitions.md (Lambda-Specific Types section)
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+
 ### Documented: 2025-12-17
 
 1. **Documentation Sync Validation** (Rule)
