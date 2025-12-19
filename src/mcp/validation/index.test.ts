@@ -14,7 +14,7 @@ let allRules: typeof import('./index').allRules
 let rulesByName: typeof import('./index').rulesByName
 let awsSdkEncapsulationRule: typeof import('./index').awsSdkEncapsulationRule
 
-const fixturesDir = join(process.cwd(), 'src/mcp/test/fixtures/validation')
+const fixturesDir = join(process.cwd(), 'src/mcp/test/fixtures')
 
 beforeAll(async () => {
   const module = await import('./index')
@@ -114,17 +114,17 @@ describe('validation exports', () => {
 
 describe('validateFile', () => {
   test('should validate a valid handler file', async () => {
-    const result = await validateFile(join(fixturesDir, 'valid-handler.ts'), {projectRoot: process.cwd()})
+    const result = await validateFile(join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), {projectRoot: process.cwd()})
 
     // File path should be relative
-    expect(result.file).toContain('valid-handler.ts')
+    expect(result.file).toContain('valid/aws-sdk-vendor-wrapper.fixture.ts')
     // Should have no critical violations for valid code
     // Note: Some rules may skip this file if it's not in the right location
     expect(result.skipped.length + result.passed.length).toBeGreaterThan(0)
   })
 
   test('should detect AWS SDK violation', async () => {
-    const result = await validateFile(join(fixturesDir, 'invalid-aws-sdk.ts'), {projectRoot: process.cwd()})
+    const result = await validateFile(join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts'), {projectRoot: process.cwd()})
 
     // Should find the AWS SDK violation
     const awsViolations = result.violations.filter((v) => v.rule === 'aws-sdk-encapsulation')
@@ -142,7 +142,7 @@ describe('validateFile', () => {
   })
 
   test('should run specific rules when specified', async () => {
-    const result = await validateFile(join(fixturesDir, 'invalid-aws-sdk.ts'), {projectRoot: process.cwd(), rules: ['aws-sdk-encapsulation']})
+    const result = await validateFile(join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts'), {projectRoot: process.cwd(), rules: ['aws-sdk-encapsulation']})
 
     // Only the specified rule should run (others skipped)
     const nonAwsViolations = result.violations.filter((v) => v.rule !== 'aws-sdk-encapsulation' && v.rule !== 'file-parse')
@@ -150,14 +150,14 @@ describe('validateFile', () => {
   })
 
   test('should skip rules that dont apply', async () => {
-    const result = await validateFile(join(fixturesDir, 'valid-handler.ts'), {projectRoot: process.cwd()})
+    const result = await validateFile(join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), {projectRoot: process.cwd()})
 
     // Some rules should be skipped (file not in right location)
     expect(result.skipped.length).toBeGreaterThan(0)
   })
 
   test('should track passed rules', async () => {
-    const result = await validateFile(join(fixturesDir, 'valid-handler.ts'), {projectRoot: process.cwd()})
+    const result = await validateFile(join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), {projectRoot: process.cwd()})
 
     // Some rules should pass
     expect(result.passed.length + result.skipped.length).toBeGreaterThan(0)
@@ -166,17 +166,17 @@ describe('validateFile', () => {
 
 describe('validateFiles', () => {
   test('should validate multiple files', async () => {
-    const results = await validateFiles([join(fixturesDir, 'valid-handler.ts'), join(fixturesDir, 'invalid-aws-sdk.ts')], {projectRoot: process.cwd()})
+    const results = await validateFiles([join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts')], {projectRoot: process.cwd()})
 
     expect(results).toHaveLength(2)
     expect(results.every((r) => r.file)).toBe(true)
   })
 
   test('should return results in same order as input', async () => {
-    const results = await validateFiles([join(fixturesDir, 'invalid-aws-sdk.ts'), join(fixturesDir, 'valid-handler.ts')], {projectRoot: process.cwd()})
+    const results = await validateFiles([join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts'), join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts')], {projectRoot: process.cwd()})
 
-    expect(results[0].file).toContain('invalid-aws-sdk.ts')
-    expect(results[1].file).toContain('valid-handler.ts')
+    expect(results[0].file).toContain('invalid/aws-sdk-direct-dynamodb.fixture.ts')
+    expect(results[1].file).toContain('valid/aws-sdk-vendor-wrapper.fixture.ts')
   })
 
   test('should handle empty array', async () => {
@@ -188,7 +188,7 @@ describe('validateFiles', () => {
 
 describe('getValidationSummary', () => {
   test('should compute correct totals', async () => {
-    const results = await validateFiles([join(fixturesDir, 'valid-handler.ts'), join(fixturesDir, 'invalid-aws-sdk.ts')], {projectRoot: process.cwd()})
+    const results = await validateFiles([join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts')], {projectRoot: process.cwd()})
 
     const summary = getValidationSummary(results)
 
@@ -199,7 +199,7 @@ describe('getValidationSummary', () => {
   })
 
   test('should count violations by severity', async () => {
-    const results = await validateFiles([join(fixturesDir, 'invalid-aws-sdk.ts')], {projectRoot: process.cwd()})
+    const results = await validateFiles([join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts')], {projectRoot: process.cwd()})
 
     const summary = getValidationSummary(results)
 
@@ -209,7 +209,7 @@ describe('getValidationSummary', () => {
   })
 
   test('should count violations by rule', async () => {
-    const results = await validateFiles([join(fixturesDir, 'invalid-aws-sdk.ts')], {projectRoot: process.cwd()})
+    const results = await validateFiles([join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts')], {projectRoot: process.cwd()})
 
     const summary = getValidationSummary(results)
 
@@ -244,7 +244,7 @@ describe('getValidationSummary', () => {
 describe('rule applicability', () => {
   test('should apply aws-sdk rule to src/**/*.ts files', async () => {
     // The invalid-aws-sdk fixture is in a non-standard path but still a .ts file
-    const result = await validateFile(join(fixturesDir, 'invalid-aws-sdk.ts'), {projectRoot: process.cwd(), rules: ['aws-sdk-encapsulation']})
+    const result = await validateFile(join(fixturesDir, 'invalid/aws-sdk-direct-dynamodb.fixture.ts'), {projectRoot: process.cwd(), rules: ['aws-sdk-encapsulation']})
 
     // Rule should apply (not skipped) for .ts files in src/
     const applied = !result.skipped.includes('aws-sdk-encapsulation')
@@ -253,7 +253,7 @@ describe('rule applicability', () => {
 
   test('should skip rules for excluded paths', async () => {
     // Test file should be skipped by response-helpers rule
-    const result = await validateFile(join(fixturesDir, 'valid-handler.ts'), {projectRoot: process.cwd(), rules: ['response-helpers']})
+    const result = await validateFile(join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), {projectRoot: process.cwd(), rules: ['response-helpers']})
 
     // response-helpers only applies to src/lambdas/**/src/index.ts
     expect(result.skipped).toContain('response-helpers')
@@ -262,14 +262,14 @@ describe('rule applicability', () => {
 
 describe('edge cases', () => {
   test('should handle relative file paths', async () => {
-    const relativePath = 'src/mcp/test/fixtures/validation/valid-handler.ts'
+    const relativePath = 'src/mcp/test/fixtures/valid/aws-sdk-vendor-wrapper.fixture.ts'
     const result = await validateFile(relativePath, {projectRoot: process.cwd()})
 
     expect(result.file).toBe(relativePath)
   })
 
   test('should handle unknown rule names gracefully', async () => {
-    const result = await validateFile(join(fixturesDir, 'valid-handler.ts'), {projectRoot: process.cwd(), rules: ['nonexistent-rule']})
+    const result = await validateFile(join(fixturesDir, 'valid/aws-sdk-vendor-wrapper.fixture.ts'), {projectRoot: process.cwd(), rules: ['nonexistent-rule']})
 
     // Should not crash, just no rules run
     expect(result).toBeDefined()
