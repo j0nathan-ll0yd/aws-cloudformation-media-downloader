@@ -31,7 +31,7 @@ echo "  1. Environment verification"
 echo "  2. Dependency installation"
 echo "  3. TypeSpec compilation"
 echo "  4. Build dependencies (Terraform types)"
-echo "  5. Webpack build"
+echo "  5. esbuild build"
 echo "  6. Type checking"
 echo "  7. Linting"
 echo "  8. ESLint local rules tests"
@@ -96,8 +96,8 @@ pnpm run build-dependencies
 echo -e "${GREEN}  Build dependencies complete${NC}"
 echo ""
 
-# Step 5: Webpack build
-echo -e "${YELLOW}[5/13] Running webpack build...${NC}"
+# Step 5: esbuild build
+echo -e "${YELLOW}[5/13] Running esbuild build...${NC}"
 pnpm run build
 echo -e "${GREEN}  Build complete${NC}"
 echo ""

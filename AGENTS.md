@@ -444,7 +444,7 @@ Queued | Downloading | Downloaded | Failed
 ### Essential Commands
 ```bash
 pnpm run precheck       # TypeScript type checking and lint (run before commits)
-pnpm run build          # Build Lambda functions with webpack
+pnpm run build          # Build Lambda functions with esbuild
 pnpm run test           # Run unit tests
 pnpm run deploy         # Deploy infrastructure with OpenTofu
 pnpm run format         # Auto-format with dprint (157 char lines)
@@ -469,7 +469,7 @@ pnpm run document-source         # Generate TSDoc documentation
 ### Pre-Commit Checklist
 1. Run `pnpm run precheck` - TypeScript type checking and lint
 2. Run `pnpm run format` - Auto-format code
-3. Run `pnpm run build` - Compile with webpack
+3. Run `pnpm run build` - Compile with esbuild
 4. Run `pnpm test` - Ensure all tests pass
 5. Verify NO AI references in commit message
 6. Stage changes: `git add -A`
@@ -502,7 +502,7 @@ pnpm run document-source         # Generate TSDoc documentation
 3. Write tests in `test/index.test.ts` with fixtures
 4. Mock ALL transitive dependencies (see Wiki)
 5. Define Lambda resource in OpenTofu
-6. Add webpack entry point if needed
+6. Verify esbuild discovers new Lambda entry point
 7. Configure appropriate IAM permissions
 8. Import utilities from `util/` directory
 

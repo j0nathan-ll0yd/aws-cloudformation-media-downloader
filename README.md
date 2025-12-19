@@ -92,7 +92,7 @@ npm install -g pnpm
 # Install dependencies
 pnpm install
 
-# Build the AWS Lambda functions (using webpack)
+# Build the AWS Lambda functions (using esbuild)
 pnpm run build
 
 # Run the tests to ensure everything is working
