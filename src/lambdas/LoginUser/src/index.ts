@@ -10,14 +10,11 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import type {UserLoginInput} from '#types/request-types'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
-import {logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.
@@ -35,7 +32,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
   // 1. Validate request body
   const requestBody = getPayloadFromEvent(event) as UserLoginInput
   validateRequest(requestBody, loginUserSchema)

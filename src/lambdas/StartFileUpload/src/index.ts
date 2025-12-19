@@ -5,12 +5,12 @@ import type {File} from '#types/domain-models'
 import type {StartFileUploadParams} from '#types/infrastructure-types'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {logDebug, logInfo, putMetric, putMetrics, response} from '#util/lambda-helpers'
+import {logDebug, logInfo, putMetric, putMetrics, response, withPowertools} from '#util/lambda-helpers'
 import {createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
 import {upsertFile} from '#util/shared'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
-import {getSegment, withXRay} from '#lib/vendor/AWS/XRay'
+import {getSegment} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 import type {VideoErrorClassification} from '#types/video'
 import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
@@ -232,7 +232,7 @@ async function handleDownloadFailure(
  * @param context - AWS Lambda context
  * @notExported
  */
-export const handler = withXRay(async (event: StartFileUploadParams, context: Context) => {
+export const handler = withPowertools(async (event: StartFileUploadParams, context: Context) => {
   const correlationId = event.correlationId || context.awsRequestId
   logInfo('event <=', {...event, correlationId})
 

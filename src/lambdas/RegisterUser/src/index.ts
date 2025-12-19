@@ -20,10 +20,9 @@ import type {UserRegistrationInput} from '#types/request-types'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerUserSchema} from '#util/constraints'
-import {logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {Users} from '#entities/Users'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
@@ -41,7 +40,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
   // 1. Validate request
   const requestBody = getPayloadFromEvent(event) as UserRegistrationInput
   validateRequest(requestBody, registerUserSchema)

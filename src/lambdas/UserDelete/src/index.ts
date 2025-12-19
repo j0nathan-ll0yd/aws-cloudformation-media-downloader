@@ -1,15 +1,12 @@
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
-import {logDebug, logError, response, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logError, response, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {deleteDevice, getUserDevices} from '#util/shared'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import type {Device} from '#types/domain-models'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {retryUnprocessedDelete} from '#util/retry'
 import {retryUnprocessed} from '#util/retry'
 
@@ -51,7 +48,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
  * @param event - An AWS ScheduledEvent; happening daily
  * @param context - An AWS Context object
  */
-export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, userId}) => {
   const deletableDevices: Device[] = []
 
   const userDevices = await getUserDevices(userId)

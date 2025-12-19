@@ -1,17 +1,14 @@
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {DeviceRegistrationRequest} from '#types/request-types'
 import {UserStatus} from '#types/enums'
-import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerDeviceSchema} from '#util/constraints'
-import {logDebug, response, verifyPlatformConfiguration, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {logDebug, response, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {getUserDevices, subscribeEndpointToTopic} from '#util/shared'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 
 /**
@@ -103,8 +100,8 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
  * @notExported
  */
-export const handler = withXRay(
-  wrapOptionalAuthHandler(async ({event, context, userId, userStatus}: OptionalAuthApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(
+  wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
     // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
     verifyPlatformConfiguration()
     const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest

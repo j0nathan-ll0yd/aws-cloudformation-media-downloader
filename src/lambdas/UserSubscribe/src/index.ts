@@ -1,11 +1,8 @@
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import type {UserSubscribeInput} from '#types/request-types'
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'
-import {response, verifyPlatformConfiguration, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {response, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {subscribeEndpointToTopic} from '#util/shared'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic
@@ -16,7 +13,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  *
  * @notExported
  */
-export const handler = withXRay(wrapAuthenticatedHandler(async ({event, context}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context}) => {
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as UserSubscribeInput
   validateRequest(requestBody, userSubscribeSchema)

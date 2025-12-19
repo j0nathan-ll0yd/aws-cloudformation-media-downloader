@@ -1,4 +1,3 @@
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import {randomUUID} from 'node:crypto'
 import {Files} from '#entities/Files'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
@@ -8,7 +7,6 @@ import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
 import {logDebug, logInfo, response, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
@@ -172,7 +170,7 @@ function getIdempotentProcessor() {
  *
  * @notExported
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId}: AuthenticatedApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId}) => {
   // Generate correlation ID for end-to-end request tracing
   const correlationId = randomUUID()
   logInfo('Processing request', {correlationId, requestId: context.awsRequestId})

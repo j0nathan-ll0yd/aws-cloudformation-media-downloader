@@ -1,12 +1,9 @@
-import type {APIGatewayProxyResult} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
-import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
-import {logDebug, logError, response, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {logDebug, logError, response, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {defaultFile} from '#util/constants'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {retryUnprocessed} from '#util/retry'
 
 /**
@@ -44,7 +41,7 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  *
  * @notExported
  */
-export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus}) => {
   // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   const myResponse = {contents: [] as File[], keyCount: 0}
 

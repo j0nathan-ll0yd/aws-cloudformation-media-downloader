@@ -5,10 +5,9 @@ import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {FileNotificationType} from '#types/notification-types'
-import {logDebug, logError, logInfo} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo, withPowertools} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {transformToAPNSNotification} from '#util/transformers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 
 const SUPPORTED_NOTIFICATION_TYPES: FileNotificationType[] = ['MetadataNotification', 'DownloadReadyNotification']
 
@@ -82,7 +81,7 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
  *
  * @notExported
  */
-export const handler = withXRay(async (event: SQSEvent): Promise<SQSBatchResponse> => {
+export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchResponse> => {
   logInfo('event <=', {recordCount: event.Records.length})
 
   const batchItemFailures: {itemIdentifier: string}[] = []
