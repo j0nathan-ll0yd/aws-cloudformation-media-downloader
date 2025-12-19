@@ -21,6 +21,8 @@ interface ElectroDBEntityMock<TData> {
       byEmail?: jest.Mock
       byProvider?: jest.Mock
       byIdentifier?: jest.Mock
+      byToken?: jest.Mock
+      byAppleDeviceId?: jest.Mock
     }
     create: jest.Mock
     upsert: jest.Mock
@@ -41,6 +43,8 @@ interface ElectroDBEntityMock<TData> {
       byEmail?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byProvider?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
       byIdentifier?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
+      byToken?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
+      byAppleDeviceId?: {go: jest.Mock<() => Promise<{data: TData[]} | undefined>>; where: jest.Mock}
     }
     create: jest.Mock<() => Promise<{data: TData}>>
     upsert: {go: jest.Mock<() => Promise<{data: TData}>>}
@@ -70,6 +74,8 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     | 'byEmail'
     | 'byProvider'
     | 'byIdentifier'
+    | 'byToken'
+    | 'byAppleDeviceId'
   >
 }): ElectroDBEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
@@ -93,6 +99,8 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     | 'byEmail'
     | 'byProvider'
     | 'byIdentifier'
+    | 'byToken'
+    | 'byAppleDeviceId'
   const queryEntity: Partial<Record<QueryIndexName, jest.Mock>> = {}
   const queryMocks: Partial<Record<QueryIndexName, {go: jest.Mock; where: jest.Mock}>> = {}
 

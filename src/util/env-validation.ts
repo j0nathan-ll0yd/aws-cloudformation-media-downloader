@@ -50,3 +50,18 @@ export function getRequiredEnvNumber(name: string): number {
   }
   return parsed
 }
+
+/**
+ * Gets an optional numeric environment variable with a default value
+ * @param name - Environment variable name
+ * @param defaultValue - Default value if not set or invalid
+ * @returns The parsed number or default value
+ */
+export function getOptionalEnvNumber(name: string, defaultValue: number): number {
+  const value = process.env[name]
+  if (!value) {
+    return defaultValue
+  }
+  const parsed = parseInt(value, 10)
+  return isNaN(parsed) ? defaultValue : parsed
+}

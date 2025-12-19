@@ -3,7 +3,6 @@ import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {Files} from '#entities/Files'
 import {Users} from '#entities/Users'
-import type {EntityItem} from '#lib/vendor/ElectroDB/entity'
 import {logDebug} from './lambda-helpers'
 import type {UserDevice} from '#types/persistence-types'
 import type {Device, File, User} from '#types/domain-models'
@@ -11,7 +10,6 @@ import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
 import axios from 'axios'
 import type {AxiosRequestConfig} from 'axios'
 import {invokeAsync} from '#lib/vendor/AWS/Lambda'
-import {scanAllPages} from './pagination'
 
 /**
  * Disassociates a deviceId from a User by deleting the UserDevice record
@@ -87,7 +85,7 @@ export async function upsertFile(item: File) {
 }
 
 /**
- * Searches for a User record via their Apple Device ID using paginated scan
+ * Searches for a User record via their Apple Device ID using GSI query
  * @param userDeviceId - The subject registered claim that identifies the principal user.
  * @see {@link lambdas/RegisterUser/src!#handler | RegisterUser }
  * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
@@ -95,18 +93,11 @@ export async function upsertFile(item: File) {
 export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
   logDebug('getUsersByAppleDeviceIdentifier <=', userDeviceId)
 
-  type UserEntity = EntityItem<typeof Users>
-  const allUsers = await scanAllPages<UserEntity>(async (cursor) => {
-    const scanResponse = await Users.scan.go({cursor})
-    return {data: scanResponse.data || [], cursor: scanResponse.cursor ?? null}
-  })
+  // Use GSI for O(1) lookup instead of table scan
+  const result = await Users.query.byAppleDeviceId({appleDeviceId: userDeviceId}).go()
 
-  logDebug('getUsersByAppleDeviceIdentifier: scanned users', {count: allUsers.length})
-
-  // Filter in memory since we can't query on nested identity provider field
-  const usersWithAppleId = allUsers.filter((user) => user.identityProviders?.userId === userDeviceId)
-  logDebug('getUsersByAppleDeviceIdentifier =>', {matchCount: usersWithAppleId.length})
-  return usersWithAppleId as User[]
+  logDebug('getUsersByAppleDeviceIdentifier =>', {matchCount: result.data.length})
+  return result.data as User[]
 }
 
 /**

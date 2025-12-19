@@ -9,7 +9,7 @@ import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Apns2Error} from '#util/errors'
 import {scanAllPages} from '#util/pagination'
 import {retryUnprocessedDelete} from '#util/retry'
-import {getRequiredEnv} from '#util/env-validation'
+import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
 
 /**
  * Result of the PruneDevices operation
@@ -49,7 +49,7 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
     keyId: getRequiredEnv('ApnsKeyId'),
     signingKey: getRequiredEnv('ApnsSigningKey'),
     defaultTopic: getRequiredEnv('ApnsDefaultTopic'),
-    host: 'api.sandbox.push.apple.com'
+    host: getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
   })
   const healthCheckNotification = new Notification(token, {
     contentAvailable: true,

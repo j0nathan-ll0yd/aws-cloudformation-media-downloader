@@ -21,8 +21,8 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
   logDebug('validateSessionToken: validating token')
 
   try {
-    // Note: Using scan instead of index lookup - consider adding token GSI if this becomes a bottleneck
-    const result = await Sessions.scan.where(({token: tokenAttr}, {eq}) => eq(tokenAttr, token)).go()
+    // Use GSI for O(1) lookup instead of table scan
+    const result = await Sessions.query.byToken({token}).go()
 
     if (!result.data || result.data.length === 0) {
       logError('validateSessionToken: session not found')

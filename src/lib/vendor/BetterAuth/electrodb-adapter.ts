@@ -76,6 +76,11 @@ function transformInputData(model: string, data: Record<string, unknown>): Recor
         expiresAt: 0
       }
     }
+    // Set flattened appleDeviceId for GSI lookup (denormalized from identityProviders.userId)
+    const identityProviders = result['identityProviders'] as {userId?: string} | undefined
+    if (identityProviders?.userId) {
+      result['appleDeviceId'] = identityProviders.userId
+    }
   }
 
   // Handle account field mapping

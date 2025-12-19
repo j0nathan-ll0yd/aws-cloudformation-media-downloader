@@ -231,20 +231,17 @@ erDiagram
 The `build/graph.json` file contains comprehensive dependency information. Key queries:
 
 ```bash
-# Get all dependencies for a Lambda function
+# Get all transitive dependencies for a Lambda function
 cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/index.ts"]'
 
 # Find all files that import a specific module
-cat build/graph.json | jq '.graph | to_entries[] | select(.value.imports[] | contains("entities/Files")) | .key'
+cat build/graph.json | jq '.files | to_entries[] | select(.value.imports[]? | contains("entities/Files")) | .key'
 
 # List all Lambda entry points
-cat build/graph.json | jq '.graph | keys[] | select(contains("src/lambdas") and contains("/src/index.ts"))'
-
-# Find circular dependencies (if any)
-cat build/graph.json | jq '.circularDependencies'
+cat build/graph.json | jq '.files | keys[] | select(contains("src/lambdas") and contains("/src/index.ts"))'
 
 # Get import count for complexity analysis
-cat build/graph.json | jq '.graph | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
+cat build/graph.json | jq '.files | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
 ```
 
 ### Keeping MCP & GraphRAG in Sync

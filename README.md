@@ -84,7 +84,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ```bash
 # Ensure the correct version of NodeJS (via NVM)
-nvm use lts/jod
+nvm use lts/hydrogen
 
 # Install pnpm globally
 npm install -g pnpm
@@ -113,8 +113,8 @@ pnpm run test-remote-hook
 ```bash
 # Install system dependencies and configure
 brew install awscli graphviz jq nvm quicktype opentofu terraform-docs
-nvm install lts/jod
-nvm use lts/jod
+nvm install lts/hydrogen
+nvm use lts/hydrogen
 npm install -g pnpm
 aws configure
 
@@ -136,8 +136,8 @@ pnpm run test-remote-list
 
 ```bash
 brew install nvm
-nvm install lts/jod
-nvm use lts/jod
+nvm install lts/hydrogen
+nvm use lts/hydrogen
 ```
 
 * Install the [Official Amazon AWS command-line interface](https://aws.amazon.com/cli/). [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html) for your AWS account.
