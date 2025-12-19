@@ -7,7 +7,8 @@ const fakeUserId = uuidv4()
 const subscribeMock = jest.fn()
 jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
   deleteEndpoint: jest.fn(), // fmt: multiline
-  subscribe: subscribeMock
+  subscribe: subscribeMock,
+  unsubscribe: jest.fn()
 }))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})

@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 
 // Mock the errors module before importing the classifier
-jest.unstable_mockModule('./errors', () => ({
+jest.unstable_mockModule('../errors', () => ({
   CookieExpirationError: class CookieExpirationError extends Error {
     constructor(message: string) {
       super(message)
@@ -10,8 +10,8 @@ jest.unstable_mockModule('./errors', () => ({
   }
 }))
 
-const {CookieExpirationError} = await import('./errors')
-const {classifyVideoError, calculateExponentialBackoff, isRetryExhausted} = await import('./video-error-classifier')
+const {CookieExpirationError} = await import('../errors')
+const {classifyVideoError, calculateExponentialBackoff, isRetryExhausted} = await import('../video-error-classifier')
 
 describe('video-error-classifier', () => {
   beforeEach(() => {

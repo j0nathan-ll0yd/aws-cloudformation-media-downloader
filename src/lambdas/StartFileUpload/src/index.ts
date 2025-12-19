@@ -1,14 +1,15 @@
-import type {Context} from 'aws-lambda'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {File} from '#types/domain-models'
-import type {StartFileUploadParams} from '#types/infrastructure-types'
 import type {YtDlpVideoInfo} from '#types/youtube'
+import type {StartFileUploadParams} from '../types'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {logDebug, logInfo, putMetric, putMetrics, response, withPowertools} from '#util/lambda-helpers'
+import {buildApiResponse, putMetric, putMetrics, withPowertools, wrapLambdaInvokeHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo} from '#util/logging'
 import {createMetadataNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
-import {upsertFile} from '#util/shared'
+import {upsertFile} from './file-helpers'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
 import {getSegment} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
@@ -125,12 +126,14 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
   }
 
   // Send MetadataNotification to each user
-  await Promise.all(userIds.map((userId) => {
+  // Use Promise.allSettled so one SQS error doesn't stop other user notifications
+  const results = await Promise.allSettled(userIds.map((userId) => {
     const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
     return sendMessage({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes})
   }))
+  const failed = results.filter((r) => r.status === 'rejected').length
 
-  logInfo('Dispatched MetadataNotifications', {fileId, userCount: userIds.length})
+  logInfo('Dispatched MetadataNotifications', {fileId, succeeded: userIds.length - failed, failed})
 }
 
 /**
@@ -177,7 +180,7 @@ async function handleDownloadFailure(
     })
 
     // Return success - scheduling a retry is expected behavior, not a failure
-    return response(context, 200, {
+    return buildApiResponse(context, 200, {
       fileId,
       status: DownloadStatus.Scheduled,
       retryAfter: classification.retryAfter,
@@ -210,7 +213,7 @@ async function handleDownloadFailure(
     logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
   }
 
-  return response(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
+  return buildApiResponse(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
 }
 
 /**
@@ -232,9 +235,9 @@ async function handleDownloadFailure(
  * @param context - AWS Lambda context
  * @notExported
  */
-export const handler = withPowertools(async (event: StartFileUploadParams, context: Context) => {
+export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadParams, APIGatewayProxyResult>(async ({event, context}) => {
   const correlationId = event.correlationId || context.awsRequestId
-  logInfo('event <=', {...event, correlationId})
+  logInfo('Processing request', {correlationId, fileId: event.fileId})
 
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
@@ -305,12 +308,11 @@ export const handler = withPowertools(async (event: StartFileUploadParams, conte
 
   logDebug('upsertFile <=', fileData)
   await upsertFile(fileData)
-  logDebug('upsertFile =>')
 
   // Step 5: Mark download as completed
   await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
   await putMetric('LambdaExecutionSuccess', 1)
 
-  return response(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
-})
+  return buildApiResponse(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
+}))

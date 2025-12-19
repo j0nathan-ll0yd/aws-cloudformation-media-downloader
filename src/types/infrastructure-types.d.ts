@@ -1,4 +1,3 @@
-import {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import {
   APIGatewayProxyEventHeaders,
   APIGatewayProxyEventMultiValueHeaders,
@@ -8,23 +7,6 @@ import {
   APIGatewayProxyEventStageVariables
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
-
-export interface StartFileUploadParams {
-  fileId: string
-  /** Correlation ID for end-to-end request tracing */
-  correlationId?: string
-}
-
-export interface ApplePushNotificationResponse {
-  statusCode: number
-  reason?: string
-}
-
-export type CustomCloudFrontOrigin = {custom: CloudFrontCustomOrigin}
-export interface CustomCloudFrontRequest extends CloudFrontRequest {
-  clientIp: string
-  origin: CustomCloudFrontOrigin
-}
 
 // TODO: This has to be a custom event, because the actual event does NOT contain the requestContext.identity.clientCert field
 export interface CustomAPIGatewayRequestAuthorizerEvent {

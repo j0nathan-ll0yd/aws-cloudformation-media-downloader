@@ -17,7 +17,7 @@ describe('lambda-helpers', () => {
 
   describe('logIncomingFixture', () => {
     it('should log incoming fixture with manual type', async () => {
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {httpMethod: 'POST', body: '{"test":"data"}', headers: {Authorization: 'Bearer token123'}}
 
       logIncomingFixture(mockEvent, 'test-fixture')
@@ -34,7 +34,7 @@ describe('lambda-helpers', () => {
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent)
@@ -47,7 +47,7 @@ describe('lambda-helpers', () => {
     it('should use manual override when provided', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'ListFiles'
 
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent, 'CustomName')
@@ -60,7 +60,7 @@ describe('lambda-helpers', () => {
     it('should fallback to UnknownLambda when no name available', async () => {
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {httpMethod: 'POST'}
 
       logIncomingFixture(mockEvent)
@@ -73,7 +73,7 @@ describe('lambda-helpers', () => {
 
   describe('logOutgoingFixture', () => {
     it('should log outgoing fixture with manual type', async () => {
-      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const {logOutgoingFixture} = await import('../lambda-helpers')
       const mockResponse = {statusCode: 200, body: JSON.stringify({success: true}), headers: {'Content-Type': 'application/json'}}
 
       logOutgoingFixture(mockResponse, 'test-fixture')
@@ -89,7 +89,7 @@ describe('lambda-helpers', () => {
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
-      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const {logOutgoingFixture} = await import('../lambda-helpers')
       const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse)
@@ -102,7 +102,7 @@ describe('lambda-helpers', () => {
     it('should use manual override when provided', async () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = 'WebhookFeedly'
 
-      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const {logOutgoingFixture} = await import('../lambda-helpers')
       const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse, 'CustomName')
@@ -115,7 +115,7 @@ describe('lambda-helpers', () => {
     it('should fallback to UnknownLambda when no name available', async () => {
       delete process.env.AWS_LAMBDA_FUNCTION_NAME
 
-      const {logOutgoingFixture} = await import('./lambda-helpers')
+      const {logOutgoingFixture} = await import('../lambda-helpers')
       const mockResponse = {statusCode: 200}
 
       logOutgoingFixture(mockResponse)
@@ -128,7 +128,7 @@ describe('lambda-helpers', () => {
 
   describe('sanitization', () => {
     it('should redact sensitive fields', async () => {
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {
         authorization: 'Bearer secret',
         Authorization: 'Bearer secret2',
@@ -154,7 +154,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle nested objects', async () => {
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {
         headers: {Authorization: 'Bearer secret', 'Content-Type': 'application/json'},
         body: {user: {password: 'secret123', email: 'test@example.com'}}
@@ -170,7 +170,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should handle arrays', async () => {
-      const {logIncomingFixture} = await import('./lambda-helpers')
+      const {logIncomingFixture} = await import('../lambda-helpers')
       const mockEvent = {items: [{id: '1', token: 'secret1'}, {id: '2', token: 'secret2'}]}
 
       logIncomingFixture(mockEvent, 'test-fixture')
@@ -190,8 +190,8 @@ describe('lambda-helpers', () => {
     type TestEvent = any
 
     it('should return handler result on success', async () => {
-      const {wrapApiHandler, response} = await import('./lambda-helpers')
-      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {success: true}))
+      const {wrapApiHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {success: true}))
 
       const result = await handler({httpMethod: 'GET'}, mockContext)
 
@@ -199,7 +199,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 500 error response when handler throws', async () => {
-      const {wrapApiHandler} = await import('./lambda-helpers')
+      const {wrapApiHandler} = await import('../lambda-helpers')
       const handler = wrapApiHandler<TestEvent>(async () => {
         throw new Error('Test error')
       })
@@ -211,11 +211,11 @@ describe('lambda-helpers', () => {
     })
 
     it('should pass metadata with traceId to handler', async () => {
-      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      const {wrapApiHandler, buildApiResponse} = await import('../lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler({}, mockContext)
@@ -224,11 +224,11 @@ describe('lambda-helpers', () => {
     })
 
     it('should use provided metadata traceId when available', async () => {
-      const {wrapApiHandler, response} = await import('./lambda-helpers')
+      const {wrapApiHandler, buildApiResponse} = await import('../lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler({}, mockContext, {traceId: 'custom-trace-id'})
@@ -237,8 +237,8 @@ describe('lambda-helpers', () => {
     })
 
     it('should log fixtures for incoming event and outgoing result', async () => {
-      const {wrapApiHandler, response} = await import('./lambda-helpers')
-      const handler = wrapApiHandler<TestEvent>(async ({context}) => response(context, 200, {data: 'test'}))
+      const {wrapApiHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {data: 'test'}))
 
       await handler({testField: 'value'}, mockContext)
 
@@ -279,8 +279,8 @@ describe('lambda-helpers', () => {
     const anonymousEvent: TestEvent = {httpMethod: 'GET', headers: {}, requestContext: {authorizer: {principalId: 'unknown'}}}
 
     it('should return handler result for authenticated user', async () => {
-      const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => response(context, 200, {userId}))
+      const {wrapAuthenticatedHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => buildApiResponse(context, 200, {userId}))
 
       const result = await handler(authenticatedEvent, mockContext)
 
@@ -290,11 +290,11 @@ describe('lambda-helpers', () => {
     })
 
     it('should provide guaranteed userId to handler', async () => {
-      const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
+      const {wrapAuthenticatedHandler, buildApiResponse} = await import('../lambda-helpers')
       let receivedUserId: string | undefined
       const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => {
         receivedUserId = userId
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -304,8 +304,8 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 401 for unauthenticated user (invalid token)', async () => {
-      const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => response(context, 200, {}))
+      const {wrapAuthenticatedHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
 
       const result = await handler(unauthenticatedEvent, mockContext)
 
@@ -313,8 +313,8 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 401 for anonymous user (no token)', async () => {
-      const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => response(context, 200, {}))
+      const {wrapAuthenticatedHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
 
       const result = await handler(anonymousEvent, mockContext)
 
@@ -322,11 +322,11 @@ describe('lambda-helpers', () => {
     })
 
     it('should pass metadata with traceId to handler', async () => {
-      const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
+      const {wrapAuthenticatedHandler, buildApiResponse} = await import('../lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -335,7 +335,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 500 when handler throws', async () => {
-      const {wrapAuthenticatedHandler} = await import('./lambda-helpers')
+      const {wrapAuthenticatedHandler} = await import('../lambda-helpers')
       const handler = wrapAuthenticatedHandler<TestEvent>(async () => {
         throw new Error('Internal error')
       })
@@ -371,8 +371,8 @@ describe('lambda-helpers', () => {
     const anonymousEvent: TestEvent = {httpMethod: 'GET', headers: {}, requestContext: {authorizer: {principalId: 'unknown'}}}
 
     it('should return handler result for authenticated user', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
-      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId}) => response(context, 200, {userId}))
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId}) => buildApiResponse(context, 200, {userId}))
 
       const result = await handler(authenticatedEvent, mockContext)
 
@@ -382,13 +382,13 @@ describe('lambda-helpers', () => {
     })
 
     it('should return handler result for anonymous user', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
       const {UserStatus} = await import('#types/enums')
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userStatus}) => {
         if (userStatus === UserStatus.Anonymous) {
-          return response(context, 200, {demo: true})
+          return buildApiResponse(context, 200, {demo: true})
         }
-        return response(context, 200, {demo: false})
+        return buildApiResponse(context, 200, {demo: false})
       })
 
       const result = await handler(anonymousEvent, mockContext)
@@ -399,8 +399,8 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 401 for unauthenticated user (invalid token)', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
-      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context}) => response(context, 200, {}))
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
+      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
 
       const result = await handler(unauthenticatedEvent, mockContext)
 
@@ -408,14 +408,14 @@ describe('lambda-helpers', () => {
     })
 
     it('should provide userId and userStatus to handler', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
       const {UserStatus} = await import('#types/enums')
       let receivedUserId: string | undefined
       let receivedUserStatus: typeof UserStatus[keyof typeof UserStatus] | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId, userStatus}) => {
         receivedUserId = userId
         receivedUserStatus = userStatus
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -425,14 +425,14 @@ describe('lambda-helpers', () => {
     })
 
     it('should provide undefined userId for anonymous user', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
       const {UserStatus} = await import('#types/enums')
       let receivedUserId: string | undefined
       let receivedUserStatus: typeof UserStatus[keyof typeof UserStatus] | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId, userStatus}) => {
         receivedUserId = userId
         receivedUserStatus = userStatus
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler(anonymousEvent, mockContext)
@@ -442,11 +442,11 @@ describe('lambda-helpers', () => {
     })
 
     it('should pass metadata with traceId to handler', async () => {
-      const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')
+      const {wrapOptionalAuthHandler, buildApiResponse} = await import('../lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return response(context, 200, {})
+        return buildApiResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -455,7 +455,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should return 500 when handler throws', async () => {
-      const {wrapOptionalAuthHandler} = await import('./lambda-helpers')
+      const {wrapOptionalAuthHandler} = await import('../lambda-helpers')
       const handler = wrapOptionalAuthHandler<TestEvent>(async () => {
         throw new Error('Internal error')
       })
@@ -475,7 +475,7 @@ describe('lambda-helpers', () => {
     } as APIGatewayRequestAuthorizerEvent
 
     it('should return policy result on success', async () => {
-      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const {wrapAuthorizer} = await import('../lambda-helpers')
       const mockPolicy: CustomAuthorizerResult = {
         principalId: 'user123',
         policyDocument: {Version: '2012-10-17', Statement: [{Effect: 'Allow', Action: 'execute-api:Invoke', Resource: '*'}]}
@@ -488,7 +488,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should propagate Unauthorized error for 401', async () => {
-      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const {wrapAuthorizer} = await import('../lambda-helpers')
       const handler = wrapAuthorizer(async () => {
         throw new Error('Unauthorized')
       })
@@ -497,7 +497,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should rethrow other errors after logging', async () => {
-      const {wrapAuthorizer} = await import('./lambda-helpers')
+      const {wrapAuthorizer} = await import('../lambda-helpers')
       const handler = wrapAuthorizer(async () => {
         throw new Error('Database connection failed')
       })
@@ -510,7 +510,7 @@ describe('lambda-helpers', () => {
     const mockContext = {awsRequestId: 'event-request-id'} as Context
 
     it('should process all records successfully', async () => {
-      const {wrapEventHandler} = await import('./lambda-helpers')
+      const {wrapEventHandler} = await import('../lambda-helpers')
       const processedRecords: string[] = []
       const handler = wrapEventHandler(async ({record}: {record: {id: string}; context: Context; metadata: {traceId: string}}) => {
         processedRecords.push(record.id)
@@ -522,7 +522,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should continue processing even when some records fail', async () => {
-      const {wrapEventHandler} = await import('./lambda-helpers')
+      const {wrapEventHandler} = await import('../lambda-helpers')
       const processedRecords: string[] = []
       type RecordType = {id: string; shouldFail?: boolean}
       const handler = wrapEventHandler(async ({record}: {record: RecordType; context: Context; metadata: {traceId: string}}) => {
@@ -554,7 +554,7 @@ describe('lambda-helpers', () => {
     } as ScheduledEvent
 
     it('should return result on success', async () => {
-      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      const {wrapScheduledHandler} = await import('../lambda-helpers')
       const handler = wrapScheduledHandler(async () => ({pruned: 5}))
 
       const result = await handler(mockEvent, mockContext)
@@ -563,7 +563,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should rethrow errors after logging', async () => {
-      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      const {wrapScheduledHandler} = await import('../lambda-helpers')
       const handler = wrapScheduledHandler(async () => {
         throw new Error('Scheduled task failed')
       })
@@ -572,7 +572,7 @@ describe('lambda-helpers', () => {
     })
 
     it('should pass metadata with traceId to handler', async () => {
-      const {wrapScheduledHandler} = await import('./lambda-helpers')
+      const {wrapScheduledHandler} = await import('../lambda-helpers')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapScheduledHandler(async ({metadata}) => {
         receivedMetadata = metadata
@@ -586,7 +586,7 @@ describe('lambda-helpers', () => {
 
   describe('s3Records', () => {
     it('should extract records from S3Event', async () => {
-      const {s3Records} = await import('./lambda-helpers')
+      const {s3Records} = await import('../lambda-helpers')
       const mockS3Event = {
         Records: [
           {s3: {object: {key: 'file1.mp4'}}},
@@ -603,7 +603,7 @@ describe('lambda-helpers', () => {
 
   describe('sqsRecords', () => {
     it('should extract records from SQSEvent', async () => {
-      const {sqsRecords} = await import('./lambda-helpers')
+      const {sqsRecords} = await import('../lambda-helpers')
       const mockSQSEvent = {
         Records: [
           {body: '{"message": "test1"}'},

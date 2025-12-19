@@ -28,6 +28,9 @@ export type EventHandlerParams<TRecord> = {record: TRecord; context: Context; me
 /** Parameters passed to wrapped scheduled handlers */
 export type ScheduledHandlerParams = {event: ScheduledEvent; context: Context; metadata: WrapperMetadata}
 
+/** Parameters passed to Lambda-to-Lambda invoke handlers */
+export type LambdaInvokeHandlerParams<TEvent> = {event: TEvent; context: Context; metadata: WrapperMetadata}
+
 /**
  * Parameters passed to authenticated API handlers.
  * userId is guaranteed to be a string (not optional) - the wrapper enforces this

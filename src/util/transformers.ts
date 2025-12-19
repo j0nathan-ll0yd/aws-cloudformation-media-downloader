@@ -7,9 +7,6 @@ import type {MessageAttributeValue} from '#lib/vendor/AWS/SQS'
 
 const MAX_DESCRIPTION_LENGTH = 500
 
-// Re-export for backwards compatibility
-export { unknownErrorToString } from './lambda-helpers'
-
 /**
  * Truncates description to MAX_DESCRIPTION_LENGTH to fit within APNS payload limits
  */

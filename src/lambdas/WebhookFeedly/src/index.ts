@@ -1,7 +1,6 @@
 import {randomUUID} from 'node:crypto'
 import {Files} from '#entities/Files'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {getVideoID} from '#lib/vendor/YouTube'
@@ -9,34 +8,14 @@ import type {File} from '#types/domain-models'
 import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {feedlyEventSchema} from '#util/constraints'
-import {logDebug, logInfo, response, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {initiateFileDownload} from '#util/shared'
+import {initiateFileDownload} from '#util/lambda-invoke-helpers'
+import {associateFileToUser} from '#util/user-file-helpers'
 import {getRequiredEnv} from '#util/env-validation'
 import {makeIdempotent, createPersistenceStore, defaultIdempotencyConfig} from '#lib/vendor/Powertools/idempotency'
-
-/**
- * Associates a File to a User by creating a UserFile record
- * Creates individual record for the user-file relationship
- * Idempotent - returns gracefully if association already exists
- * @param fileId - The unique file identifier
- * @param userId - The UUID of the user
- */
-export async function associateFileToUser(fileId: string, userId: string) {
-  logDebug('associateFileToUser <=', {fileId, userId})
-  try {
-    const response = await UserFiles.create({userId, fileId}).go()
-    logDebug('associateFileToUser =>', response)
-    return response
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('The conditional request failed')) {
-      logDebug('associateFileToUser => already exists (idempotent)')
-      return
-    }
-    throw error
-  }
-}
 
 /**
  * Adds a base File record to DynamoDB with placeholder metadata.
@@ -123,7 +102,12 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
   const {fileId, userId, articleURL, backgroundMode, correlationId} = input
 
   // Parallelize independent operations for ~60% latency reduction
-  const [, file] = await Promise.all([associateFileToUser(fileId, userId), getFile(fileId)])
+  // Use Promise.allSettled to handle partial failures gracefully
+  const [assocResult, fileResult] = await Promise.allSettled([associateFileToUser(fileId, userId), getFile(fileId)])
+  const file = fileResult.status === 'fulfilled' ? fileResult.value : undefined
+  if (assocResult.status === 'rejected') {
+    logError('Failed to associate file to user', {fileId, userId, error: assocResult.reason})
+  }
 
   if (file && file.status == FileStatus.Downloaded) {
     // File already downloaded - send notification to user
@@ -188,5 +172,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
     correlationId
   })
 
-  return response(context, result.statusCode, {status: result.status})
+  return buildApiResponse(context, result.statusCode, {status: result.status})
 }))

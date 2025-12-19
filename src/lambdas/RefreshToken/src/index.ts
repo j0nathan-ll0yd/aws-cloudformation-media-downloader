@@ -10,7 +10,8 @@
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {logDebug, logError, logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
 
 /**
@@ -28,14 +29,14 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const authHeader = event.headers?.Authorization || event.headers?.authorization
   if (!authHeader) {
     logError('RefreshToken: missing Authorization header')
-    return response(context, 401, {error: 'Missing Authorization header'})
+    return buildApiResponse(context, 401, {error: 'Missing Authorization header'})
   }
 
   // Extract token from Bearer format
   const tokenMatch = authHeader.match(/^Bearer (.+)$/)
   if (!tokenMatch) {
     logError('RefreshToken: invalid Authorization header format')
-    return response(context, 401, {error: 'Invalid Authorization header format'})
+    return buildApiResponse(context, 401, {error: 'Invalid Authorization header format'})
   }
 
   const token = tokenMatch[1]
@@ -58,5 +59,5 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
 
   logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
-  return response(context, 200, responseData)
+  return buildApiResponse(context, 200, responseData)
 }))

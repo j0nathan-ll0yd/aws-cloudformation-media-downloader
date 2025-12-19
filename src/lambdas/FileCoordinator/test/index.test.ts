@@ -33,8 +33,7 @@ describe('#FileCoordinator', () => {
 
   test('should handle scheduled event (with no downloads)', async () => {
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
-    const output = await handler(event, context)
-    expect(output.statusCode).toEqual(200)
+    await handler(event, context)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
   })
 
@@ -45,9 +44,8 @@ describe('#FileCoordinator', () => {
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
-    const output = await handler(event, context)
+    await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(1)
   })
 
@@ -58,12 +56,9 @@ describe('#FileCoordinator', () => {
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
-    const output = await handler(event, context)
+    await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(1)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.scheduled).toEqual(1)
   })
 
   test('should process both pending downloads and scheduled retries', async () => {
@@ -73,30 +68,53 @@ describe('#FileCoordinator', () => {
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
-    const output = await handler(event, context)
+    await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
     expect(invokeAsyncMock).toHaveBeenCalledTimes(2)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.pending).toEqual(1)
-    expect(parsedBody.body.scheduled).toEqual(1)
   })
 
-  describe('#AWSFailure', () => {
-    test('should return 500 when pending query fails', async () => {
-      // First call (pending) returns undefined - simulating failure
-      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce(undefined)
-      const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
-      expect(JSON.parse(output.body).error.message).toEqual('AWS request failed')
+  describe('#PartialFailure', () => {
+    test('should handle pending query failure gracefully and continue', async () => {
+      // First call (pending) rejects - simulating failure
+      // Second call (scheduled) succeeds with 1 file
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValueOnce(new Error('DynamoDB error')).mockResolvedValueOnce({
+        data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+      })
+      invokeAsyncMock.mockResolvedValue({StatusCode: 202})
+
+      // Handler should complete successfully (not throw)
+      await handler(event, context)
+
+      // Should still process the scheduled download despite pending query failure
+      expect(invokeAsyncMock).toHaveBeenCalledTimes(1)
     })
 
-    test('should return 500 when scheduled query fails', async () => {
-      // First call (pending) succeeds, second call (scheduled) fails
-      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce(undefined)
-      const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
-      expect(JSON.parse(output.body).error.message).toEqual('AWS request failed')
+    test('should handle scheduled query failure gracefully and continue', async () => {
+      // First call (pending) succeeds with 1 file
+      // Second call (scheduled) rejects - simulating failure
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockRejectedValueOnce(
+        new Error('DynamoDB error')
+      )
+      invokeAsyncMock.mockResolvedValue({StatusCode: 202})
+
+      // Handler should complete successfully (not throw)
+      await handler(event, context)
+
+      // Should still process the pending download despite scheduled query failure
+      expect(invokeAsyncMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('should handle both queries failing gracefully', async () => {
+      // Both queries reject
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValueOnce(new Error('DynamoDB error 1')).mockRejectedValueOnce(
+        new Error('DynamoDB error 2')
+      )
+
+      // Handler should complete successfully (not throw)
+      await handler(event, context)
+
+      // No downloads to process when both queries fail
+      expect(invokeAsyncMock).toHaveBeenCalledTimes(0)
     })
   })
 })

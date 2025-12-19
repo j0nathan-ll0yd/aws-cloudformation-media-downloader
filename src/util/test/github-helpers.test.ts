@@ -19,7 +19,7 @@ mockRenderGithubIssueTemplate.mockImplementation((templateName: string) => `Rend
 
 jest.unstable_mockModule('#util/template-helpers', () => ({renderGithubIssueTemplate: mockRenderGithubIssueTemplate}))
 
-const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('./github-helpers')
+const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('../github-helpers')
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {

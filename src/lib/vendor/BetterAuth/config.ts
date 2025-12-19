@@ -7,7 +7,7 @@
 
 import {betterAuth} from 'better-auth'
 import {electroDBAdapter} from './electrodb-adapter'
-import {logDebug} from '#util/lambda-helpers'
+import {logDebug} from '#util/logging'
 import {getRequiredEnv} from '#util/env-validation'
 
 /**

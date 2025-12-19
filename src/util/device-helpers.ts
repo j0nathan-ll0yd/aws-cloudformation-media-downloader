@@ -1,15 +1,15 @@
-// These are methods that are shared across multiple lambdas
+/**
+ * Device Helper Functions
+ *
+ * Shared utilities for device management across multiple Lambda functions.
+ * Handles device registration, unregistration, and SNS subscriptions.
+ */
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {Files} from '#entities/Files'
-import {Users} from '#entities/Users'
-import {logDebug} from './lambda-helpers'
+import {logDebug} from './logging'
 import type {UserDevice} from '#types/persistence-types'
-import type {Device, File, User} from '#types/domain-models'
-import {deleteEndpoint, subscribe} from '#lib/vendor/AWS/SNS'
-import axios from 'axios'
-import type {AxiosRequestConfig} from 'axios'
-import {invokeAsync} from '#lib/vendor/AWS/Lambda'
+import type {Device} from '#types/domain-models'
+import {deleteEndpoint, subscribe, unsubscribe} from '#lib/vendor/AWS/SNS'
 
 /**
  * Disassociates a deviceId from a User by deleting the UserDevice record
@@ -73,59 +73,13 @@ export async function subscribeEndpointToTopic(endpointArn: string, topicArn: st
 }
 
 /**
- * Upsert a File object in DynamoDB
- * @param item - The DynamoDB item to be added
- * @see {@link lambdas/StartFileUpload/src!#handler | StartFileUpload }
+ * Unsubscribes an endpoint (a client device) from an SNS topic
+ * @param subscriptionArn - The SubscriptionArn of an endpoint+topic
+ * @see {@link lambdas/RegisterDevice/src!#handler | RegisterDevice }
  */
-export async function upsertFile(item: File) {
-  logDebug('upsertFile <=', item)
-  const updateResponse = await Files.upsert(item).go()
-  logDebug('upsertFile =>', updateResponse)
-  return updateResponse
-}
-
-/**
- * Searches for a User record via their Apple Device ID using GSI query
- * @param userDeviceId - The subject registered claim that identifies the principal user.
- * @see {@link lambdas/RegisterUser/src!#handler | RegisterUser }
- * @see {@link lambdas/LoginUser/src!#handler | LoginUser }
- */
-export async function getUsersByAppleDeviceIdentifier(userDeviceId: string): Promise<User[]> {
-  logDebug('getUsersByAppleDeviceIdentifier <=', userDeviceId)
-
-  // Use GSI for O(1) lookup instead of table scan
-  const result = await Users.query.byAppleDeviceId({appleDeviceId: userDeviceId}).go()
-
-  logDebug('getUsersByAppleDeviceIdentifier =>', {matchCount: result.data.length})
-  return result.data as User[]
-}
-
-/**
- * Initiates a file download by invoking the StartFileUpload Lambda
- * Uses asynchronous invocation (Event type) to avoid blocking
- * @param fileId - The YouTube video ID to download
- * @param correlationId - Optional correlation ID for end-to-end request tracing
- * @see {@link lambdas/FileCoordinator/src!#handler | FileCoordinator }
- * @see {@link lambdas/WebhookFeedly/src!#handler | WebhookFeedly }
- */
-export async function initiateFileDownload(fileId: string, correlationId?: string) {
-  logDebug('initiateFileDownload <=', {fileId, correlationId})
-
-  const result = await invokeAsync('StartFileUpload', {fileId, correlationId})
-
-  logDebug('initiateFileDownload =>', {StatusCode: result.StatusCode, fileId, correlationId})
-}
-
-/**
- * Makes an HTTP request via Axios
- * @param options - The [request configuration](https://github.com/axios/axios#request-config)
- */
-export async function makeHttpRequest(options: AxiosRequestConfig) {
-  logDebug('axios <= ', options)
-  logDebug(JSON.stringify(axios))
-  logDebug('axios')
-  const axiosResponse = await axios(options)
-  logDebug('axios.status =>', `${axiosResponse.status} ${axiosResponse.statusText}`)
-  logDebug('axios.headers =>', axiosResponse.headers)
-  return axiosResponse
+export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
+  logDebug('unsubscribeEndpointToTopic <=', subscriptionArn)
+  const response = await unsubscribe({SubscriptionArn: subscriptionArn})
+  logDebug('unsubscribeEndpointToTopic =>', response)
+  return response
 }

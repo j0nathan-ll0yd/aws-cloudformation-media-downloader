@@ -12,9 +12,10 @@ const userDevicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()
-jest.unstable_mockModule('#util/shared', () => ({
+jest.unstable_mockModule('#util/device-helpers', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
-  subscribeEndpointToTopic: jest.fn()
+  subscribeEndpointToTopic: jest.fn(),
+  unsubscribeEndpointToTopic: jest.fn()
 }))
 
 const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {assert: {type: 'json'}})

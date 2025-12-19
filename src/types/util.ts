@@ -5,7 +5,10 @@
  *
  * @see src/util/retry.ts - Retry utilities
  * @see src/util/better-auth-helpers.ts - Authentication helpers
+ * @see src/util/lambda-helpers.ts - Lambda handler utilities
  */
+
+import {UserStatus} from './enums'
 
 /**
  * Configuration options for retry behavior with exponential backoff
@@ -24,4 +27,22 @@ export interface SessionPayload {
   userId: string
   sessionId: string
   expiresAt: number
+}
+
+/**
+ * User details extracted from API Gateway event
+ */
+export interface UserEventDetails {
+  userId?: string
+  userStatus: UserStatus
+}
+
+/**
+ * Input for publishing CloudWatch metrics
+ */
+export type MetricInput = {
+  name: string
+  value: number
+  unit?: string
+  dimensions?: {Name: string; Value: string}[]
 }

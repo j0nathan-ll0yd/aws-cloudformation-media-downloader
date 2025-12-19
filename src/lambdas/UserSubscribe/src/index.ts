@@ -1,8 +1,8 @@
-import type {UserSubscribeInput} from '#types/request-types'
+import type {UserSubscribeInput} from '../types'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {userSubscribeSchema} from '#util/constraints'
-import {response, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {subscribeEndpointToTopic} from '#util/shared'
+import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {subscribeEndpointToTopic} from '#util/device-helpers'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic
@@ -19,5 +19,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
   validateRequest(requestBody, userSubscribeSchema)
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
-  return response(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
+  return buildApiResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
 }))

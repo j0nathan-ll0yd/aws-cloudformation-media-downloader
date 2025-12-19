@@ -1,7 +1,7 @@
 import type {z} from 'zod'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {ValidationError} from './errors'
-import {logDebug, logError} from './lambda-helpers'
+import {logDebug, logError} from './logging'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {validateSchema} from './constraints'
 

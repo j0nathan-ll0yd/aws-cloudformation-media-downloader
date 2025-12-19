@@ -2,8 +2,9 @@ import {Users} from '#entities/Users'
 import {UserFiles} from '#entities/UserFiles'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import {logDebug, logError, response, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {deleteDevice, getUserDevices} from '#util/shared'
+import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logError} from '#util/logging'
+import {deleteDevice, getUserDevices} from '#util/device-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import type {Device} from '#types/domain-models'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
@@ -82,7 +83,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   if (hasPartialFailure) {
     logError('Cascade deletion partial failure', failures)
     // Don't delete parent if children failed - prevents orphaned records
-    return response(context, 207, {
+    return buildApiResponse(context, 207, {
       message: 'Partial deletion - some child records could not be removed',
       failedOperations: failures.length,
       totalOperations: childResults.length
@@ -100,5 +101,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
     throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
   }
 
-  return response(context, 204)
+  return buildApiResponse(context, 204)
 }))
