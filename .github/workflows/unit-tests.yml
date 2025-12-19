@@ -50,6 +50,9 @@ jobs:
       id: build
       run: pnpm run build
 
+    - name: Validate GraphRAG synchronization
+      run: pnpm run validate:graphrag
+
     - name: Check types
       run: pnpm run check-types
 
