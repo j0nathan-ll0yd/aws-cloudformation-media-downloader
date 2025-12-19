@@ -16,8 +16,7 @@ import {createDownloadReadyNotification} from '#util/transformers'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/shared'
 import {getRequiredEnv} from '#util/env-validation'
-import {makeIdempotent} from '@aws-lambda-powertools/idempotency'
-import {createPersistenceStore, defaultIdempotencyConfig} from '#lib/vendor/Powertools/idempotency'
+import {makeIdempotent, createPersistenceStore, defaultIdempotencyConfig} from '#lib/vendor/Powertools/idempotency'
 
 /**
  * Associates a File to a User by creating a UserFile record

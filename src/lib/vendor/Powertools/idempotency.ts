@@ -3,7 +3,7 @@
  * Prevents duplicate processing of webhook requests
  * @see https://docs.aws.amazon.com/powertools/typescript/latest/utilities/idempotency/
  */
-import {IdempotencyConfig} from '@aws-lambda-powertools/idempotency'
+import {IdempotencyConfig, makeIdempotent} from '@aws-lambda-powertools/idempotency'
 import {DynamoDBPersistenceLayer} from '@aws-lambda-powertools/idempotency/dynamodb'
 import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
 
@@ -40,4 +40,4 @@ export const defaultIdempotencyConfig = new IdempotencyConfig({
   expiresAfterSeconds: 3600 // 1 hour
 })
 
-export { IdempotencyConfig }
+export { IdempotencyConfig, makeIdempotent }

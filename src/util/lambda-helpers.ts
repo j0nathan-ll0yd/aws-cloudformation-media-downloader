@@ -521,10 +521,7 @@ export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records
 // ============================================================================
 
 import middy from '@middy/core'
-import {injectLambdaContext} from '@aws-lambda-powertools/logger/middleware'
-import {captureLambdaHandler} from '@aws-lambda-powertools/tracer/middleware'
-import {logMetrics} from '@aws-lambda-powertools/metrics/middleware'
-import {logger, metrics, tracer} from '#lib/vendor/Powertools'
+import {logger, metrics, tracer, injectLambdaContext, captureLambdaHandler, logMetrics} from '#lib/vendor/Powertools'
 
 /**
  * Wraps a Lambda handler with AWS Powertools middleware stack.
@@ -563,5 +560,4 @@ export function withPowertools<TEvent, TResult>(
 }
 
 // Re-export Powertools utilities for direct access
-export { logger, metrics, tracer } from '#lib/vendor/Powertools'
-export { MetricUnit } from '@aws-lambda-powertools/metrics'
+export { logger, metrics, tracer, MetricUnit } from '#lib/vendor/Powertools'

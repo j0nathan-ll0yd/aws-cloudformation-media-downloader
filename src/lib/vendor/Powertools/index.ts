@@ -4,8 +4,11 @@
  * @see https://docs.aws.amazon.com/powertools/typescript/latest/
  */
 import {Logger} from '@aws-lambda-powertools/logger'
+import {injectLambdaContext} from '@aws-lambda-powertools/logger/middleware'
 import {Tracer} from '@aws-lambda-powertools/tracer'
+import {captureLambdaHandler} from '@aws-lambda-powertools/tracer/middleware'
 import {Metrics, MetricUnit} from '@aws-lambda-powertools/metrics'
+import {logMetrics} from '@aws-lambda-powertools/metrics/middleware'
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'SILENT'
 
@@ -31,4 +34,5 @@ export const tracer = new Tracer({serviceName: process.env['AWS_LAMBDA_FUNCTION_
  */
 export const metrics = new Metrics({namespace: 'MediaDownloader', serviceName: process.env['AWS_LAMBDA_FUNCTION_NAME'] || 'MediaDownloader'})
 
-export { MetricUnit }
+// Re-export middleware functions for use with middy
+export { injectLambdaContext, captureLambdaHandler, logMetrics, MetricUnit }
