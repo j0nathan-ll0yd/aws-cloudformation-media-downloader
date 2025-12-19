@@ -33,6 +33,16 @@ ruleTester.run('no-direct-aws-sdk-import', rule, {
     {
       code: "import {S3Client} from '../lib/vendor/AWS/S3'",
       filename: 'src/lambdas/StartFileUpload/src/index.ts'
+    },
+    // Allowed: Powertools vendor directory imports
+    {
+      code: "import {Logger} from '@aws-lambda-powertools/logger'",
+      filename: 'src/lib/vendor/Powertools/index.ts'
+    },
+    // Allowed: internal Powertools vendor wrapper
+    {
+      code: "import {logger, tracer} from '#lib/vendor/Powertools'",
+      filename: 'src/lambdas/WebhookFeedly/src/index.ts'
     }
   ],
   invalid: [
@@ -64,6 +74,24 @@ ruleTester.run('no-direct-aws-sdk-import', rule, {
     {
       code: "import AWS from 'aws-sdk'",
       filename: 'src/lambdas/RegisterUser/src/index.ts',
+      errors: [{messageId: 'forbidden'}]
+    },
+    // Forbidden: direct Powertools Logger import in Lambda
+    {
+      code: "import {Logger} from '@aws-lambda-powertools/logger'",
+      filename: 'src/lambdas/WebhookFeedly/src/index.ts',
+      errors: [{messageId: 'forbidden'}]
+    },
+    // Forbidden: direct Powertools Tracer import
+    {
+      code: "import {Tracer} from '@aws-lambda-powertools/tracer'",
+      filename: 'src/util/lambda-helpers.ts',
+      errors: [{messageId: 'forbidden'}]
+    },
+    // Forbidden: direct Powertools idempotency import
+    {
+      code: "import {makeIdempotent} from '@aws-lambda-powertools/idempotency'",
+      filename: 'src/lambdas/WebhookFeedly/src/index.ts',
       errors: [{messageId: 'forbidden'}]
     }
   ]

@@ -38,9 +38,7 @@ describe('authenticated-handler-enforcement rule', () => {
 
   describe('detects manual auth handling', () => {
     test('should detect getUserDetailsFromEvent call', () => {
-      const sourceFile = project.createSourceFile(
-        'test-manual-auth.ts',
-        `
+      const sourceFile = project.createSourceFile('test-manual-auth.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {wrapApiHandler} from '#util/lambda-helpers'
 
@@ -51,9 +49,7 @@ export const handler = wrapApiHandler(async ({event, context}) => {
   }
   return response(context, 200, {})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -63,9 +59,7 @@ export const handler = wrapApiHandler(async ({event, context}) => {
     })
 
     test('should detect getUserDetailsFromEvent with UserStatus.Unauthenticated check', () => {
-      const sourceFile = project.createSourceFile(
-        'test-unauthenticated-check.ts',
-        `
+      const sourceFile = project.createSourceFile('test-unauthenticated-check.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {UserStatus} from '#types/enums'
 
@@ -76,9 +70,7 @@ export const handler = wrapApiHandler(async ({event}) => {
   }
   return response(context, 200, {})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -87,9 +79,7 @@ export const handler = wrapApiHandler(async ({event}) => {
     })
 
     test('should detect getUserDetailsFromEvent with both Anonymous and Unauthenticated checks', () => {
-      const sourceFile = project.createSourceFile(
-        'test-both-checks.ts',
-        `
+      const sourceFile = project.createSourceFile('test-both-checks.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {UserStatus} from '#types/enums'
 
@@ -103,9 +93,7 @@ export const handler = wrapApiHandler(async ({event}) => {
   }
   return response(context, 200, {})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -116,9 +104,7 @@ export const handler = wrapApiHandler(async ({event}) => {
 
   describe('allows valid patterns', () => {
     test('should allow wrapAuthenticatedHandler usage', () => {
-      const sourceFile = project.createSourceFile(
-        'test-authenticated-wrapper.ts',
-        `
+      const sourceFile = project.createSourceFile('test-authenticated-wrapper.ts', `
 import {wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
 
@@ -127,9 +113,7 @@ export const handler = wrapAuthenticatedHandler(async ({context, userId}: Authen
   await deleteUser(userId)
   return response(context, 204)
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -137,9 +121,7 @@ export const handler = wrapAuthenticatedHandler(async ({context, userId}: Authen
     })
 
     test('should allow wrapOptionalAuthHandler usage', () => {
-      const sourceFile = project.createSourceFile(
-        'test-optional-wrapper.ts',
-        `
+      const sourceFile = project.createSourceFile('test-optional-wrapper.ts', `
 import {wrapOptionalAuthHandler} from '#util/lambda-helpers'
 import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
 import {UserStatus} from '#types/enums'
@@ -150,9 +132,7 @@ export const handler = wrapOptionalAuthHandler(async ({context, userId, userStat
   }
   return response(context, 200, {userId})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -160,18 +140,14 @@ export const handler = wrapOptionalAuthHandler(async ({context, userId, userStat
     })
 
     test('should allow public endpoints without auth', () => {
-      const sourceFile = project.createSourceFile(
-        'test-public.ts',
-        `
+      const sourceFile = project.createSourceFile('test-public.ts', `
 import {wrapApiHandler} from '#util/lambda-helpers'
 
 export const handler = wrapApiHandler(async ({event, context}) => {
   // Public endpoint - no auth needed
   return response(context, 200, {status: 'ok'})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -181,9 +157,7 @@ export const handler = wrapApiHandler(async ({event, context}) => {
 
   describe('detects redundant getUserDetailsFromEvent', () => {
     test('should flag redundant getUserDetailsFromEvent when using new wrapper', () => {
-      const sourceFile = project.createSourceFile(
-        'test-redundant.ts',
-        `
+      const sourceFile = project.createSourceFile('test-redundant.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {wrapAuthenticatedHandler} from '#util/lambda-helpers'
 
@@ -192,9 +166,7 @@ export const handler = wrapAuthenticatedHandler(async ({event, context, userId})
   const {userId: uid} = getUserDetailsFromEvent(event)
   return response(context, 200, {userId: uid})
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
@@ -205,17 +177,13 @@ export const handler = wrapAuthenticatedHandler(async ({event, context, userId})
 
   describe('skips non-Lambda files', () => {
     test('should skip utility files', () => {
-      const sourceFile = project.createSourceFile(
-        'test-util.ts',
-        `
+      const sourceFile = project.createSourceFile('test-util.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 // This is allowed in utility files
 export function helper(event) {
   return getUserDetailsFromEvent(event)
 }
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/util/helpers.ts')
 
@@ -223,14 +191,10 @@ export function helper(event) {
     })
 
     test('should skip files not matching Lambda pattern', () => {
-      const sourceFile = project.createSourceFile(
-        'test-other.ts',
-        `
+      const sourceFile = project.createSourceFile('test-other.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 const x = getUserDetailsFromEvent(event)
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lib/auth.ts')
 
@@ -240,9 +204,7 @@ const x = getUserDetailsFromEvent(event)
 
   describe('provides helpful suggestions', () => {
     test('should suggest wrapAuthenticatedHandler for full auth', () => {
-      const sourceFile = project.createSourceFile(
-        'test-suggest-auth.ts',
-        `
+      const sourceFile = project.createSourceFile('test-suggest-auth.ts', `
 import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {UserStatus} from '#types/enums'
 
@@ -252,9 +214,7 @@ export const handler = wrapApiHandler(async ({event}) => {
     throw new Error('Unauthorized')
   }
 })
-`,
-        {overwrite: true}
-      )
+`, {overwrite: true})
 
       const violations = authenticatedHandlerEnforcementRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

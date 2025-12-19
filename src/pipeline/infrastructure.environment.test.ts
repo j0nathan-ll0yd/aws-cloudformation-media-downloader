@@ -23,14 +23,33 @@ const excludedSourceVariables = {
   // better-auth library model/type names (matched by minified function call pattern)
   Account: 1, // better-auth Account model
   Session: 1, // better-auth Session model
-  ZodSuccess: 1 // Zod brand/success type
+  ZodSuccess: 1, // Zod brand/success type
+  // Web API and library types (esbuild preserves these as string literals)
+  FormData: 1, // Web API
+  Headers: 1, // Web API / HTTP
+  SemVer: 1, // Version handling library type
+  // Lambda function names referenced as strings (not env vars)
+  StartFileUpload: 1, // Lambda function name in invoke calls
+  // Query/ORM library keywords
+  RightJoin: 1, // ElectroDB/SQL join type
+  Using: 1, // Query keyword
+  // CloudWatch metric names (used as string literals, not env vars)
+  CookieAuthenticationFailure: 1,
+  LambdaExecutionFailure: 1,
+  LambdaExecutionSuccess: 1,
+  RetryExhausted: 1
 }
 
 // Patterns that indicate library operation types or domain literals, not environment variables
 // These are verb+noun patterns commonly used in ORMs and libraries (e.g., ElectroDB)
 const operationTypePatterns = [
   /^(Create|Delete|Update|Get|Put|Scan|Query|Batch|Find|List|Remove|Insert|Upsert)(One|Many|Item|Items|All)?$/,
-  /Notification$/ // Type literals like MetadataNotification, DownloadReadyNotification
+  /Notification$/, // Type literals like MetadataNotification, DownloadReadyNotification
+  /Join$/, // SQL join types: InnerJoin, LeftJoin, RightJoin, FullJoin, CrossJoin, etc.
+  /^Lateral/, // SQL lateral joins: LateralLeftJoin, LateralInnerJoin, etc.
+  /Apply$/, // SQL apply types: CrossApply, OuterApply
+  /^Array/, // SQL/ORM array operations: ArrayLocation
+  /^Member$/ // SQL/ORM member access
 ]
 
 function isOperationType(variable: string): boolean {
@@ -86,17 +105,18 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
   // - yn("EnvVarName") where yn is a 2-3 letter minified function name
   // - }("EnvVarName") for IIFE patterns (immediately invoked function expressions)
   // - $("EnvVarName") where $ is used as minified function name ($ is not a word char in regex)
+  // - bF("EnvVarName","default") for two-argument calls like getOptionalEnv (esbuild preserves both args)
   // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
-  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z]{2,})["']\)/g
+  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z]{2,})["'](?:,[^)]+)?\)/g
   const envValidationMatches = functionSource.match(envValidationRegex)
   logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {
     const extracted = envValidationMatches.map((match: string) => {
-      // Extract the variable name from patterns like X("VarName") or }("VarName")
-      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']\)/)
+      // Extract the variable name from patterns like X("VarName") or bF("VarName","default")
+      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']/)
       return varMatch ? varMatch[1] : ''
-    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars) and short crypto terms
-      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v))
+    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars), crypto terms, and library types
+      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v) && !v.startsWith('Zod'))
     environmentVariablesSource.push(...extracted)
   }
 

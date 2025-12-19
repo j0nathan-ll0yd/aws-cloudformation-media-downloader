@@ -10,9 +10,8 @@
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {logDebug, logError, logInfo, response, wrapApiHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 
 /**
  * Lambda handler for refreshing session tokens.
@@ -24,7 +23,7 @@ import {withXRay} from '#lib/vendor/AWS/XRay'
  * @param context - Lambda context
  * @returns API Gateway proxy result with refreshed session info
  */
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
   // Extract and validate Authorization header
   const authHeader = event.headers?.Authorization || event.headers?.authorization
   if (!authHeader) {

@@ -196,6 +196,8 @@ export interface Output {
     cloudfront_distribution_domain: APIGatewayStage[];
     cloudfront_media_files_domain:  APIGatewayStage[];
     cloudwatch_dashboard_url:       APIGatewayStage[];
+    idempotency_table_arn:          APIGatewayStage[];
+    idempotency_table_name:         APIGatewayStage[];
     public_ip:                      APIGatewayStage[];
 }
 
@@ -673,7 +675,38 @@ export interface SqsDlqMessageDimensions {
 }
 
 export interface AwsDynamodbTable {
-    MediaDownloader: MediaDownloader[];
+    IdempotencyTable: IdempotencyTable[];
+    MediaDownloader:  MediaDownloader[];
+}
+
+export interface IdempotencyTable {
+    attribute:    Attribute[];
+    billing_mode: string;
+    hash_key:     string;
+    name:         string;
+    tags:         IdempotencyTableTags;
+    ttl:          TTL[];
+}
+
+export interface Attribute {
+    name: string;
+    type: AttributeType;
+}
+
+export enum AttributeType {
+    N = "N",
+    S = "S",
+}
+
+export interface IdempotencyTableTags {
+    Environment: string;
+    Name:        string;
+    Purpose:     string;
+}
+
+export interface TTL {
+    attribute_name: string;
+    enabled:        boolean;
 }
 
 export interface MediaDownloader {
@@ -687,16 +720,6 @@ export interface MediaDownloader {
     ttl:                    TTL[];
 }
 
-export interface Attribute {
-    name: string;
-    type: AttributeType;
-}
-
-export enum AttributeType {
-    N = "N",
-    S = "S",
-}
-
 export interface GlobalSecondaryIndex {
     hash_key:        string;
     name:            string;
@@ -707,11 +730,6 @@ export interface GlobalSecondaryIndex {
 export interface MediaDownloaderTags {
     Description: string;
     Name:        string;
-}
-
-export interface TTL {
-    attribute_name: string;
-    enabled:        boolean;
 }
 
 export interface AwsIamPolicy {
@@ -828,6 +846,7 @@ export interface PurpleVariables {
     PushNotificationTopicArn?:     string;
     SNSQueueUrl?:                  string;
     GithubPersonalToken?:          string;
+    IdempotencyTableName?:         string;
 }
 
 export enum Runtime {
@@ -1419,6 +1438,8 @@ const typeMap: any = {
         { json: "cloudfront_distribution_domain", js: "cloudfront_distribution_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_media_files_domain", js: "cloudfront_media_files_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudwatch_dashboard_url", js: "cloudwatch_dashboard_url", typ: a(r("APIGatewayStage")) },
+        { json: "idempotency_table_arn", js: "idempotency_table_arn", typ: a(r("APIGatewayStage")) },
+        { json: "idempotency_table_name", js: "idempotency_table_name", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
     ], false),
     "APIGatewayAPIKey": o([
@@ -1823,7 +1844,29 @@ const typeMap: any = {
         { json: "QueueName", js: "QueueName", typ: "" },
     ], false),
     "AwsDynamodbTable": o([
+        { json: "IdempotencyTable", js: "IdempotencyTable", typ: a(r("IdempotencyTable")) },
         { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloader")) },
+    ], false),
+    "IdempotencyTable": o([
+        { json: "attribute", js: "attribute", typ: a(r("Attribute")) },
+        { json: "billing_mode", js: "billing_mode", typ: "" },
+        { json: "hash_key", js: "hash_key", typ: "" },
+        { json: "name", js: "name", typ: "" },
+        { json: "tags", js: "tags", typ: r("IdempotencyTableTags") },
+        { json: "ttl", js: "ttl", typ: a(r("TTL")) },
+    ], false),
+    "Attribute": o([
+        { json: "name", js: "name", typ: "" },
+        { json: "type", js: "type", typ: r("AttributeType") },
+    ], false),
+    "IdempotencyTableTags": o([
+        { json: "Environment", js: "Environment", typ: "" },
+        { json: "Name", js: "Name", typ: "" },
+        { json: "Purpose", js: "Purpose", typ: "" },
+    ], false),
+    "TTL": o([
+        { json: "attribute_name", js: "attribute_name", typ: "" },
+        { json: "enabled", js: "enabled", typ: true },
     ], false),
     "MediaDownloader": o([
         { json: "attribute", js: "attribute", typ: a(r("Attribute")) },
@@ -1835,10 +1878,6 @@ const typeMap: any = {
         { json: "tags", js: "tags", typ: r("MediaDownloaderTags") },
         { json: "ttl", js: "ttl", typ: a(r("TTL")) },
     ], false),
-    "Attribute": o([
-        { json: "name", js: "name", typ: "" },
-        { json: "type", js: "type", typ: r("AttributeType") },
-    ], false),
     "GlobalSecondaryIndex": o([
         { json: "hash_key", js: "hash_key", typ: "" },
         { json: "name", js: "name", typ: "" },
@@ -1848,10 +1887,6 @@ const typeMap: any = {
     "MediaDownloaderTags": o([
         { json: "Description", js: "Description", typ: "" },
         { json: "Name", js: "Name", typ: "" },
-    ], false),
-    "TTL": o([
-        { json: "attribute_name", js: "attribute_name", typ: "" },
-        { json: "enabled", js: "enabled", typ: true },
     ], false),
     "AwsIamPolicy": o([
         { json: "ApiGatewayAuthorizerRolePolicy", js: "ApiGatewayAuthorizerRolePolicy", typ: a(r("RolePolicy")) },
@@ -1955,6 +1990,7 @@ const typeMap: any = {
         { json: "PushNotificationTopicArn", js: "PushNotificationTopicArn", typ: u(undefined, "") },
         { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: u(undefined, "") },
         { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: u(undefined, "") },
+        { json: "IdempotencyTableName", js: "IdempotencyTableName", typ: u(undefined, "") },
     ], false),
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },

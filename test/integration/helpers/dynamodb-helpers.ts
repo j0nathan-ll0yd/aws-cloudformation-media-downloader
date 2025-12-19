@@ -13,6 +13,10 @@ function getMediaDownloaderTable() {
   return process.env.DynamoDBTableName || 'test-media-downloader'
 }
 
+function getIdempotencyTable() {
+  return process.env.IdempotencyTableName || 'test-idempotency'
+}
+
 /**
  * Create MediaDownloader table in LocalStack with single-table design
  * Matches production Terraform configuration with pk/sk and 5 GSIs
@@ -78,6 +82,36 @@ export async function createMediaDownloaderTable(): Promise<void> {
 export async function deleteMediaDownloaderTable(): Promise<void> {
   try {
     await deleteTable(getMediaDownloaderTable())
+  } catch {
+    // Table might not exist
+  }
+}
+
+/**
+ * Create Idempotency table in LocalStack for Powertools Idempotency
+ * Simple partition key table with TTL for automatic cleanup
+ */
+export async function createIdempotencyTable(): Promise<void> {
+  try {
+    await createTable({
+      TableName: getIdempotencyTable(),
+      KeySchema: [{AttributeName: 'id', KeyType: 'HASH'}],
+      AttributeDefinitions: [{AttributeName: 'id', AttributeType: 'S'}],
+      BillingMode: 'PAY_PER_REQUEST'
+    })
+  } catch (error) {
+    if (!(error instanceof Error && error.name === 'ResourceInUseException')) {
+      throw error
+    }
+  }
+}
+
+/**
+ * Delete Idempotency table from LocalStack
+ */
+export async function deleteIdempotencyTable(): Promise<void> {
+  try {
+    await deleteTable(getIdempotencyTable())
   } catch {
     // Table might not exist
   }

@@ -196,7 +196,7 @@ const {handler} = await import('../src')
 
 ### Adding AWS Service Integration
 1. Create vendor wrapper in `lib/vendor/AWS/[Service].ts`
-2. Add AWS SDK package to webpack externals in `config/webpack.config.ts`
+2. Add AWS SDK package to esbuild externals in `config/esbuild.config.ts`
 3. Use X-Ray capture: `const client = captureAWSClient(new ServiceClient(...))`
 4. Export simple functions, not AWS types
 
@@ -210,9 +210,9 @@ const {handler} = await import('../src')
 
 ### Pre-Commit Checklist
 ```bash
-npm run format          # Format with Prettier
-npm run build          # Verify TypeScript/webpack
-npm test               # Run test suite
+pnpm run format        # Format with dprint
+pnpm run build         # Build with esbuild
+pnpm test              # Run test suite
 git add -A
 git commit -m "type: description"  # NO AI references!
 ```
@@ -280,7 +280,7 @@ git commit -m "type: description"  # NO AI references!
 - ❌ Creating manual mocks for ElectroDB entities (use `test/helpers/electrodb-mock.ts`)
 - ❌ Explaining removed code in comments
 - ❌ Using wrong naming convention (camelCase vs PascalCase)
-- ❌ Forgetting to update webpack externals for new AWS SDKs
+- ❌ Forgetting to update esbuild externals for new AWS SDKs
 - ❌ Not running format/build/test before committing
 - ❌ Not reading `build/graph.json` before making changes
 
@@ -294,5 +294,5 @@ When working on this project, always consult:
 - `src/entities/` - ElectroDB entity definitions
 - `test/helpers/electrodb-mock.ts` - ElectroDB testing patterns
 - `package.json` - Dependencies and scripts
-- `config/webpack.config.ts` - Build configuration
+- `config/esbuild.config.ts` - Build configuration
 - `test/integration/README.md` - Integration testing guide

@@ -276,11 +276,7 @@ describe('lambda-helpers', () => {
     }
 
     // Event with no Authorization header (Anonymous)
-    const anonymousEvent: TestEvent = {
-      httpMethod: 'GET',
-      headers: {},
-      requestContext: {authorizer: {principalId: 'unknown'}}
-    }
+    const anonymousEvent: TestEvent = {httpMethod: 'GET', headers: {}, requestContext: {authorizer: {principalId: 'unknown'}}}
 
     it('should return handler result for authenticated user', async () => {
       const {wrapAuthenticatedHandler, response} = await import('./lambda-helpers')
@@ -372,11 +368,7 @@ describe('lambda-helpers', () => {
     }
 
     // Event with no Authorization header (Anonymous)
-    const anonymousEvent: TestEvent = {
-      httpMethod: 'GET',
-      headers: {},
-      requestContext: {authorizer: {principalId: 'unknown'}}
-    }
+    const anonymousEvent: TestEvent = {httpMethod: 'GET', headers: {}, requestContext: {authorizer: {principalId: 'unknown'}}}
 
     it('should return handler result for authenticated user', async () => {
       const {wrapOptionalAuthHandler, response} = await import('./lambda-helpers')

@@ -13,8 +13,8 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 ## Build & Development Scripts
 
 ### `pnpm run build`
-**Purpose**: Compile TypeScript Lambda functions with webpack
-**Dependencies**: ts-node, webpack
+**Purpose**: Compile TypeScript Lambda functions with esbuild
+**Dependencies**: tsx, esbuild
 **CI Coverage**: Yes (unit-tests.yml)
 **Notes**: Automatically runs `generate-graph` first to create dependency analysis
 

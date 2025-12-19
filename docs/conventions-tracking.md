@@ -238,7 +238,7 @@ _No pending conventions - all conventions are documented._
 3. **Lazy Evaluation for Environment Variables** (Pattern)
    - **What**: Call `getRequiredEnv()` inside functions, not at module level
    - **Why**: Avoids test failures from env validation running at import time before mocks are set up
-   - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent webpack tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
+   - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent esbuild tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
    - **Example for functions**: `function getConfig() { return getRequiredEnv('Config') }` (lazy)
    - **Example for constants**: Set `process.env.DefaultFileUrl = 'value'` before import, NOT mock env-validation
    - **Documented**: src/util/constants.ts, src/lib/vendor/YouTube.ts

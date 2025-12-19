@@ -11,6 +11,7 @@ locals {
     "LogClientEvent",
     "LoginUser",
     "PruneDevices",
+    "RefreshToken",
     "RegisterDevice",
     "RegisterUser",
     "S3ObjectCreated",
@@ -19,6 +20,29 @@ locals {
     "UserDelete",
     "UserSubscribe",
     "WebhookFeedly"
+  ]
+
+  # Split lambdas into groups for CloudWatch alarms (max 10 metrics per alarm)
+  lambda_functions_api = [
+    "ApiGatewayAuthorizer",
+    "ListFiles",
+    "LogClientEvent",
+    "LoginUser",
+    "RefreshToken",
+    "RegisterDevice",
+    "RegisterUser",
+    "UserDelete",
+    "UserSubscribe",
+    "WebhookFeedly"
+  ]
+
+  lambda_functions_background = [
+    "CloudfrontMiddleware",
+    "FileCoordinator",
+    "PruneDevices",
+    "S3ObjectCreated",
+    "SendPushNotification",
+    "StartFileUpload"
   ]
 }
 
@@ -282,24 +306,24 @@ output "cloudwatch_dashboard_url" {
 # Note: SNS notification actions deferred - add alarm_actions when SNS configured
 # =============================================================================
 
-# Lambda Errors Alarm - triggers when total errors across all Lambdas exceed threshold
-resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  alarm_name          = "MediaDownloader-Lambda-Errors"
+# Lambda Errors Alarm (API) - triggers when total errors across API Lambdas exceed threshold
+resource "aws_cloudwatch_metric_alarm" "lambda_errors_api" {
+  alarm_name          = "MediaDownloader-Lambda-Errors-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 5
-  alarm_description   = "Lambda errors exceed threshold across all functions"
+  alarm_description   = "Lambda errors exceed threshold across API functions"
   treat_missing_data  = "notBreaching"
 
   metric_query {
     id          = "errors"
-    expression  = join(" + ", [for fn in local.lambda_functions : "m_${replace(fn, "-", "_")}"])
-    label       = "Total Lambda Errors"
+    expression  = join(" + ", [for fn in local.lambda_functions_api : "m_${replace(fn, "-", "_")}"])
+    label       = "Total Lambda Errors (API)"
     return_data = true
   }
 
   dynamic "metric_query" {
-    for_each = local.lambda_functions
+    for_each = local.lambda_functions_api
     content {
       id = "m_${replace(metric_query.value, "-", "_")}"
       metric {
@@ -317,24 +341,94 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   # alarm_actions = [] # Add SNS topic ARN when configured
 }
 
-# Lambda Throttles Alarm - any throttle is concerning
-resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
-  alarm_name          = "MediaDownloader-Lambda-Throttles"
+# Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
+resource "aws_cloudwatch_metric_alarm" "lambda_errors_background" {
+  alarm_name          = "MediaDownloader-Lambda-Errors-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
-  threshold           = 0
-  alarm_description   = "Lambda functions are being throttled"
+  threshold           = 3
+  alarm_description   = "Lambda errors exceed threshold across background functions"
   treat_missing_data  = "notBreaching"
 
   metric_query {
-    id          = "throttles"
-    expression  = join(" + ", [for fn in local.lambda_functions : "m_${replace(fn, "-", "_")}"])
-    label       = "Total Lambda Throttles"
+    id          = "errors"
+    expression  = join(" + ", [for fn in local.lambda_functions_background : "m_${replace(fn, "-", "_")}"])
+    label       = "Total Lambda Errors (Background)"
     return_data = true
   }
 
   dynamic "metric_query" {
-    for_each = local.lambda_functions
+    for_each = local.lambda_functions_background
+    content {
+      id = "m_${replace(metric_query.value, "-", "_")}"
+      metric {
+        metric_name = "Errors"
+        namespace   = "AWS/Lambda"
+        period      = 300
+        stat        = "Sum"
+        dimensions = {
+          FunctionName = metric_query.value
+        }
+      }
+    }
+  }
+
+  # alarm_actions = [] # Add SNS topic ARN when configured
+}
+
+# Lambda Throttles Alarm (API) - any throttle is concerning
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles_api" {
+  alarm_name          = "MediaDownloader-Lambda-Throttles-API"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  threshold           = 0
+  alarm_description   = "API Lambda functions are being throttled"
+  treat_missing_data  = "notBreaching"
+
+  metric_query {
+    id          = "throttles"
+    expression  = join(" + ", [for fn in local.lambda_functions_api : "m_${replace(fn, "-", "_")}"])
+    label       = "Total Lambda Throttles (API)"
+    return_data = true
+  }
+
+  dynamic "metric_query" {
+    for_each = local.lambda_functions_api
+    content {
+      id = "m_${replace(metric_query.value, "-", "_")}"
+      metric {
+        metric_name = "Throttles"
+        namespace   = "AWS/Lambda"
+        period      = 300
+        stat        = "Sum"
+        dimensions = {
+          FunctionName = metric_query.value
+        }
+      }
+    }
+  }
+
+  # alarm_actions = [] # Add SNS topic ARN when configured
+}
+
+# Lambda Throttles Alarm (Background) - any throttle is concerning
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles_background" {
+  alarm_name          = "MediaDownloader-Lambda-Throttles-Background"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  threshold           = 0
+  alarm_description   = "Background Lambda functions are being throttled"
+  treat_missing_data  = "notBreaching"
+
+  metric_query {
+    id          = "throttles"
+    expression  = join(" + ", [for fn in local.lambda_functions_background : "m_${replace(fn, "-", "_")}"])
+    label       = "Total Lambda Throttles (Background)"
+    return_data = true
+  }
+
+  dynamic "metric_query" {
+    for_each = local.lambda_functions_background
     content {
       id = "m_${replace(metric_query.value, "-", "_")}"
       metric {

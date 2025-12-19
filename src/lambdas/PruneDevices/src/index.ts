@@ -1,13 +1,12 @@
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {logDebug, logError, logInfo, wrapScheduledHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo, withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
 import {UnexpectedError} from '#util/errors'
 import type {Device} from '#types/domain-models'
 import type {ApplePushNotificationResponse} from '#types/infrastructure-types'
 import {deleteDevice} from '#util/shared'
 import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Apns2Error} from '#util/errors'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {scanAllPages} from '#util/pagination'
 import {retryUnprocessedDelete} from '#util/retry'
 import {getRequiredEnv} from '#util/env-validation'
@@ -95,7 +94,7 @@ async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
  * @returns PruneDevicesResult with counts of devices checked, pruned, and any errors
  * @notExported
  */
-export const handler = withXRay(wrapScheduledHandler(async (): Promise<PruneDevicesResult> => {
+export const handler = withPowertools(wrapScheduledHandler(async (): Promise<PruneDevicesResult> => {
   const result: PruneDevicesResult = {devicesChecked: 0, devicesPruned: 0, errors: []}
 
   const devices = await getDevices()

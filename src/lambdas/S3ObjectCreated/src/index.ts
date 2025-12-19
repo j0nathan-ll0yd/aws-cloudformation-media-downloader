@@ -5,10 +5,9 @@ import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import type {File} from '#types/domain-models'
 import type {EventHandlerParams} from '#types/lambda-wrappers'
-import {logDebug, s3Records, wrapEventHandler} from '#util/lambda-helpers'
+import {logDebug, s3Records, withPowertools, wrapEventHandler} from '#util/lambda-helpers'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {UnexpectedError} from '#util/errors'
-import {withXRay} from '#lib/vendor/AWS/XRay'
 import {getRequiredEnv} from '#util/env-validation'
 
 /**
@@ -72,4 +71,4 @@ async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Pro
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s3Records}))
+export const handler = withPowertools(wrapEventHandler(processS3Record, {getRecords: s3Records}))

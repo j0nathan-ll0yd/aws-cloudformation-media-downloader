@@ -22,6 +22,16 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     ]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
+  # Powertools Idempotency - read/write to idempotency table
+  statement {
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem"
+    ]
+    resources = [aws_dynamodb_table.IdempotencyTable.arn]
+  }
 }
 
 resource "aws_iam_policy" "WebhookFeedlyRolePolicy" {
@@ -78,8 +88,9 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
+      IdempotencyTableName   = aws_dynamodb_table.IdempotencyTable.name
     }
   }
 }
