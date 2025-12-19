@@ -63,16 +63,17 @@ All wrappers provide:
 
 ## Response Format (REQUIRED)
 
-**Mandatory**: ALWAYS use the `response` and `lambdaErrorResponse` helper functions from `lambda-helpers.ts`. Never return raw API Gateway response objects.
+**Mandatory**: ALWAYS use the `buildApiResponse` helper function from `lambda-helpers.ts`. Never return raw API Gateway response objects.
 
 ```typescript
-// ✅ CORRECT - Use response helper
-return response(context, 200, {
-  data: result,
-  requestId: context.awsRequestId
-})
+// ✅ CORRECT - Use buildApiResponse with status code
+return buildApiResponse(context, 200, {data: result})
 
-// ✅ CORRECT - Use error response helper
+// ✅ CORRECT - Use buildApiResponse with Error object
+return buildApiResponse(context, new ValidationError('Invalid input'))
+
+// ✅ CORRECT - Legacy helpers still work (deprecated but supported)
+return response(context, 200, {data: result})
 return lambdaErrorResponse(context, error)
 
 // ❌ WRONG - Never return raw objects

@@ -209,7 +209,7 @@ export async function handler() {
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
-      expect(violations[0].suggestion).toContain('response')
+      expect(violations[0].suggestion).toContain('buildApiResponse')
     })
 
     test('should suggest importing helper when missing', () => {

@@ -26,24 +26,24 @@ Event-driven Lambdas (SNS, SQS, EventBridge) should throw errors to trigger auto
 ```typescript
 // src/lambdas/ListFiles/src/index.ts
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {lambdaErrorResponse, response, getUserDetailsFromEvent} from '../../../util/lambda-helpers'
-import {withXRay} from '../../../lib/vendor/AWS/XRay'
+import {buildApiResponse, getUserDetailsFromEvent, generateUnauthorizedError} from '../../../util/lambda-helpers'
+import {withPowertools} from '../../../util/lambda-helpers'
 
-export const handler = withXRay(async (event, context, {traceId}): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(async (event, context): Promise<APIGatewayProxyResult> => {
   const {userId, userStatus} = getUserDetailsFromEvent(event)
 
   // Return 401 for unauthenticated users
   if (userStatus == UserStatus.Unauthenticated) {
-    return lambdaErrorResponse(context, generateUnauthorizedError())
+    return buildApiResponse(context, generateUnauthorizedError())
   }
 
   try {
     const files = await getFilesByUser(userId as string)
     // Return 200 with data
-    return response(context, 200, {contents: files, keyCount: files.length})
+    return buildApiResponse(context, 200, {contents: files, keyCount: files.length})
   } catch (error) {
     // Return error response, don't throw
-    return lambdaErrorResponse(context, error)
+    return buildApiResponse(context, error as Error)
   }
 })
 ```
@@ -109,49 +109,49 @@ export const handler = async (event, context) => {
 
 ```typescript
 import {getPayloadFromEvent, validateRequest} from '../../../util/apigateway-helpers'
-import {lambdaErrorResponse, response} from '../../../util/lambda-helpers'
+import {buildApiResponse} from '../../../util/lambda-helpers'
 
-export const handler = withXRay(async (event, context, {traceId}) => {
+export const handler = withPowertools(async (event, context) => {
   let requestBody
   try {
     requestBody = getPayloadFromEvent(event)
     validateRequest(requestBody, registerDeviceSchema)
   } catch (error) {
-    // Validation errors return 400 via lambdaErrorResponse
-    return lambdaErrorResponse(context, error)
+    // Validation errors return 400 via buildApiResponse
+    return buildApiResponse(context, error as Error)
   }
 
   try {
     const device = await registerDevice(requestBody)
-    return response(context, 200, {endpointArn: device.endpointArn})
+    return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
   } catch (error) {
-    return lambdaErrorResponse(context, error)
+    return buildApiResponse(context, error as Error)
   }
 })
 ```
 
 ## HTTP Status Codes
 
-Use the `response` helper from lambda-helpers with appropriate status codes:
+Use the `buildApiResponse` helper from lambda-helpers with appropriate status codes:
 
 ```typescript
 // 200 - Success with data
-return response(context, 200, {contents: files})
+return buildApiResponse(context, 200, {contents: files})
 
 // 201 - Created
-return response(context, 201, {endpointArn: device.endpointArn})
+return buildApiResponse(context, 201, {endpointArn: device.endpointArn})
 
-// 400 - Bad Request (via lambdaErrorResponse)
-throw new BadRequestError('Invalid parameters')
+// 400 - Bad Request (via error object)
+return buildApiResponse(context, new ValidationError('Invalid parameters'))
 
 // 401 - Unauthorized
-return lambdaErrorResponse(context, generateUnauthorizedError())
+return buildApiResponse(context, generateUnauthorizedError())
 
 // 404 - Not Found
-throw new NotFoundError('Resource not found')
+return buildApiResponse(context, new NotFoundError('Resource not found'))
 
 // 500 - Internal Server Error
-return lambdaErrorResponse(context, error)
+return buildApiResponse(context, error as Error)
 ```
 
 ## Error Logging

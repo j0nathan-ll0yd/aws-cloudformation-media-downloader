@@ -15,7 +15,7 @@ const SEVERITY = 'HIGH' as const
 
 export const responseHelpersRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers must use response() and lambdaErrorResponse() helpers from lambda-helpers.ts instead of raw response objects.',
+  description: 'Lambda handlers must use buildApiResponse(), response(), or lambdaErrorResponse() helpers from lambda-helpers.ts instead of raw response objects.',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/**/src/*.ts'],
   excludes: ['**/*.test.ts', 'test/**/*.ts'],
@@ -34,7 +34,7 @@ export const responseHelpersRule: ValidationRule = {
       const moduleSpec = imp.getModuleSpecifierValue()
       if (moduleSpec.includes('lambda-helpers')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
-        return namedImports.includes('response') || namedImports.includes('lambdaErrorResponse')
+        return namedImports.includes('response') || namedImports.includes('lambdaErrorResponse') || namedImports.includes('buildApiResponse')
       }
       return false
     })
@@ -77,10 +77,10 @@ export const responseHelpersRule: ValidationRule = {
           // This looks like a raw Lambda response object
           violations.push(
             createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(),
-              'Raw response object detected. Use response() or lambdaErrorResponse() helper instead.', {
+              'Raw response object detected. Use buildApiResponse(), response(), or lambdaErrorResponse() helper instead.', {
               suggestion: hasResponseImport
-                ? 'Replace with: return response(statusCode, data) or return lambdaErrorResponse(statusCode, error, message)'
-                : "Import {response, lambdaErrorResponse} from '#util/lambda-helpers' and use those helpers",
+                ? 'Replace with: return buildApiResponse(context, statusCode, data) or return buildApiResponse(context, error)'
+                : "Import {buildApiResponse} from '#util/lambda-helpers' and use that helper",
               codeSnippet: returnText.substring(0, 100)
             })
           )
@@ -106,7 +106,7 @@ export const responseHelpersRule: ValidationRule = {
         if (functionText.includes('APIGateway') && functionText.includes('statusCode')) {
           violations.push(
             createViolation(RULE_NAME, SEVERITY, 1, 'Lambda handler does not import response helpers but appears to return API Gateway responses', {
-              suggestion: "import {response, lambdaErrorResponse} from '#util/lambda-helpers'"
+              suggestion: "import {buildApiResponse} from '#util/lambda-helpers'"
             })
           )
         }

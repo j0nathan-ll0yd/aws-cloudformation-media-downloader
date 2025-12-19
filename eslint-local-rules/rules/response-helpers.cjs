@@ -14,7 +14,7 @@ module.exports = {
       recommended: true
     },
     messages: {
-      rawResponse: 'Raw response object detected. Use response(statusCode, data) or lambdaErrorResponse() from lambda-helpers instead.',
+      rawResponse: 'Raw response object detected. Use buildApiResponse(), response(), or lambdaErrorResponse() from lambda-helpers instead.',
       missingImport: 'Lambda handler returns API Gateway responses but does not import response helpers from lambda-helpers.'
     },
     schema: []
@@ -43,7 +43,7 @@ module.exports = {
           for (const spec of specifiers) {
             if (spec.type === 'ImportSpecifier') {
               const name = spec.imported?.name || spec.local?.name
-              if (name === 'response' || name === 'lambdaErrorResponse') {
+              if (name === 'response' || name === 'lambdaErrorResponse' || name === 'buildApiResponse') {
                 hasResponseImport = true
               }
             }

@@ -11,7 +11,7 @@ import type {
   SQSRecord
 } from 'aws-lambda'
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
-import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError, UNAUTHORIZED_ERROR_MESSAGE} from './errors'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
@@ -20,32 +20,41 @@ import {logDebug, logError, logInfo} from './logging'
 // Re-export logging functions for backwards compatibility
 export { logDebug, logError, logInfo }
 
-export function unknownErrorToString(unknownVariable: unknown): string {
-  if (typeof unknownVariable === 'string') {
-    return unknownVariable
-  } else if (Array.isArray(unknownVariable)) {
-    return unknownVariable.map(function(s) {
-      return unknownErrorToString(s)
-    }).join(', ')
-  } else if (typeof unknownVariable === 'object') {
-    return JSON.stringify(unknownVariable)
-  } else {
-    return 'Unknown error'
+/**
+ * Extracts a human-readable message from an unknown error value.
+ * Used as fallback when error is not an Error instance.
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  try {
+    return JSON.stringify(error)
+  } catch {
+    return String(error)
   }
 }
 
-export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
+/** @deprecated Use getErrorMessage instead. Kept for backwards compatibility. */
+export function unknownErrorToString(unknownVariable: unknown): string {
+  return getErrorMessage(unknownVariable)
+}
+
+/**
+ * Internal function to format API Gateway responses.
+ * Automatically detects error vs success based on status code.
+ */
+function formatResponse(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
-  let error = false
+  let isError = false
   const statusCodeString = statusCode.toString()
   if (/^4/.test(statusCodeString)) {
     code = 'custom-4XX-generic'
-    error = true
+    isError = true
   } else if (/^5/.test(statusCodeString)) {
-    error = true
+    isError = true
   }
   // Note: 3xx responses are treated as success (not wrapped in error format)
-  if (error) {
+  if (isError) {
     const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
     return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
@@ -59,6 +68,38 @@ export function response(context: Context, statusCode: number, body?: string | o
   }
 }
 
+/**
+ * Build an API Gateway response from either a status code + body or an Error object.
+ *
+ * @example
+ * // Success response
+ * return buildApiResponse(context, 200, \{data: files\})
+ *
+ * // Error response with status code
+ * return buildApiResponse(context, 404, 'File not found')
+ *
+ * // Error response from Error object (extracts status and message)
+ * return buildApiResponse(context, new ValidationError('Invalid input'))
+ */
+export function buildApiResponse(context: Context, statusCodeOrError: number | Error, body?: string | object): APIGatewayProxyResult {
+  // If first arg is Error, extract status and message
+  if (statusCodeOrError instanceof Error) {
+    const error = statusCodeOrError
+    const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
+    const message = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
+    logError('buildApiResponse', JSON.stringify(error))
+    return formatResponse(context, statusCode, message)
+  }
+
+  // Otherwise use status code directly
+  return formatResponse(context, statusCodeOrError, body)
+}
+
+/** @deprecated Use buildApiResponse instead. Kept for backwards compatibility. */
+export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
+  return formatResponse(context, statusCode, body, headers)
+}
+
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
@@ -68,21 +109,21 @@ export function verifyPlatformConfiguration(): void {
   }
 }
 
+/** @deprecated Use buildApiResponse(context, error) instead. Kept for backwards compatibility. */
 export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
-  const defaultStatusCode = 500
   logError('lambdaErrorResponse', JSON.stringify(error))
   /* c8 ignore else */
   if (error instanceof CustomLambdaError) {
-    return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
+    return formatResponse(context, error.statusCode || 500, error.errors || error.message)
   } else if (error instanceof Error) {
-    return response(context, defaultStatusCode, error.message)
+    return formatResponse(context, 500, error.message)
   } else {
-    return response(context, defaultStatusCode, unknownErrorToString(error))
+    return formatResponse(context, 500, getErrorMessage(error))
   }
 }
 
 export function generateUnauthorizedError() {
-  return new UnauthorizedError('Invalid Authentication token; login')
+  return new UnauthorizedError(UNAUTHORIZED_ERROR_MESSAGE)
 }
 
 interface UserEventDetails {

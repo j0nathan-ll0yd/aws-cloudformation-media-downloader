@@ -84,3 +84,4 @@ export class Apns2Error extends Error {
 }
 
 export const providerFailureErrorMessage = 'AWS request failed'
+export const UNAUTHORIZED_ERROR_MESSAGE = 'Invalid Authentication token; login'

@@ -40,9 +40,9 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
 
   try {
     const octokit = await getOctokitInstance()
-    logDebug('createFailedUserDeletionIssue =>', params)
+    logDebug('createFailedUserDeletionIssue <=', params)
     const response = await octokit.rest.issues.create(params)
-    logDebug('createFailedUserDeletionIssue <=', response)
+    logDebug('createFailedUserDeletionIssue =>', response)
     return response
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails
@@ -59,9 +59,9 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
 
   try {
     const octokit = await getOctokitInstance()
-    logDebug('createVideoDownloadFailureIssue =>', params)
+    logDebug('createVideoDownloadFailureIssue <=', params)
     const response = await octokit.rest.issues.create(params)
-    logDebug('createVideoDownloadFailureIssue <=', response)
+    logDebug('createVideoDownloadFailureIssue =>', response)
     return response
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails
@@ -78,7 +78,7 @@ export async function createCookieExpirationIssue(fileId: string, fileUrl: strin
 
   try {
     const octokit = await getOctokitInstance()
-    logDebug('createCookieExpirationIssue =>', params)
+    logDebug('createCookieExpirationIssue <=', params)
     const response = await octokit.rest.issues.create(params)
     logInfo('Created GitHub issue for cookie expiration', {issueNumber: response.data.number, issueUrl: response.data.html_url})
     return response
