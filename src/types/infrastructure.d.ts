@@ -186,7 +186,9 @@ export interface Secret {
 }
 
 export interface Local {
-    lambda_functions: string[];
+    lambda_functions:            string[];
+    lambda_functions_api:        string[];
+    lambda_functions_background: string[];
 }
 
 export interface Output {
@@ -606,24 +608,26 @@ export interface AwsCloudwatchLogGroup {
 }
 
 export interface AwsCloudwatchMetricAlarm {
-    lambda_errors:    Lambda[];
-    lambda_throttles: Lambda[];
-    sqs_dlq_messages: SqsAge[];
-    sqs_queue_age:    SqsAge[];
+    lambda_errors_api:           Lambda[];
+    lambda_errors_background:    Lambda[];
+    lambda_throttles_api:        Lambda[];
+    lambda_throttles_background: Lambda[];
+    sqs_dlq_messages:            SqsAge[];
+    sqs_queue_age:               SqsAge[];
 }
 
 export interface Lambda {
     alarm_description:   string;
     alarm_name:          string;
     comparison_operator: string;
-    dynamic:             LambdaErrorDynamic;
+    dynamic:             LambdaErrorsAPIDynamic;
     evaluation_periods:  number;
-    metric_query:        LambdaErrorMetricQuery[];
+    metric_query:        LambdaErrorsAPIMetricQuery[];
     threshold:           number;
     treat_missing_data:  string;
 }
 
-export interface LambdaErrorDynamic {
+export interface LambdaErrorsAPIDynamic {
     metric_query: DynamicMetricQuery[];
 }
 
@@ -649,7 +653,7 @@ export interface MetricDimensions {
     FunctionName: string;
 }
 
-export interface LambdaErrorMetricQuery {
+export interface LambdaErrorsAPIMetricQuery {
     expression:  string;
     id:          string;
     label:       string;
@@ -1430,6 +1434,8 @@ const typeMap: any = {
     ], false),
     "Local": o([
         { json: "lambda_functions", js: "lambda_functions", typ: a("") },
+        { json: "lambda_functions_api", js: "lambda_functions_api", typ: a("") },
+        { json: "lambda_functions_background", js: "lambda_functions_background", typ: a("") },
     ], false),
     "Output": o([
         { json: "api_gateway_api_key", js: "api_gateway_api_key", typ: a(r("APIGatewayAPIKey")) },
@@ -1785,8 +1791,10 @@ const typeMap: any = {
         { json: "retention_in_days", js: "retention_in_days", typ: 0 },
     ], false),
     "AwsCloudwatchMetricAlarm": o([
-        { json: "lambda_errors", js: "lambda_errors", typ: a(r("Lambda")) },
-        { json: "lambda_throttles", js: "lambda_throttles", typ: a(r("Lambda")) },
+        { json: "lambda_errors_api", js: "lambda_errors_api", typ: a(r("Lambda")) },
+        { json: "lambda_errors_background", js: "lambda_errors_background", typ: a(r("Lambda")) },
+        { json: "lambda_throttles_api", js: "lambda_throttles_api", typ: a(r("Lambda")) },
+        { json: "lambda_throttles_background", js: "lambda_throttles_background", typ: a(r("Lambda")) },
         { json: "sqs_dlq_messages", js: "sqs_dlq_messages", typ: a(r("SqsAge")) },
         { json: "sqs_queue_age", js: "sqs_queue_age", typ: a(r("SqsAge")) },
     ], false),
@@ -1794,13 +1802,13 @@ const typeMap: any = {
         { json: "alarm_description", js: "alarm_description", typ: "" },
         { json: "alarm_name", js: "alarm_name", typ: "" },
         { json: "comparison_operator", js: "comparison_operator", typ: "" },
-        { json: "dynamic", js: "dynamic", typ: r("LambdaErrorDynamic") },
+        { json: "dynamic", js: "dynamic", typ: r("LambdaErrorsAPIDynamic") },
         { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
-        { json: "metric_query", js: "metric_query", typ: a(r("LambdaErrorMetricQuery")) },
+        { json: "metric_query", js: "metric_query", typ: a(r("LambdaErrorsAPIMetricQuery")) },
         { json: "threshold", js: "threshold", typ: 0 },
         { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
     ], false),
-    "LambdaErrorDynamic": o([
+    "LambdaErrorsAPIDynamic": o([
         { json: "metric_query", js: "metric_query", typ: a(r("DynamicMetricQuery")) },
     ], false),
     "DynamicMetricQuery": o([
@@ -1821,7 +1829,7 @@ const typeMap: any = {
     "MetricDimensions": o([
         { json: "FunctionName", js: "FunctionName", typ: "" },
     ], false),
-    "LambdaErrorMetricQuery": o([
+    "LambdaErrorsAPIMetricQuery": o([
         { json: "expression", js: "expression", typ: "" },
         { json: "id", js: "id", typ: "" },
         { json: "label", js: "label", typ: "" },
