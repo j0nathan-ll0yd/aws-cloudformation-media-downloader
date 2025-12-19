@@ -14,21 +14,25 @@ const RULE_NAME = 'aws-sdk-encapsulation'
 const SEVERITY = 'CRITICAL' as const
 
 /**
- * AWS SDK packages that should never be imported directly
+ * Vendor packages that should never be imported directly
  */
 const FORBIDDEN_PACKAGES = [
+  // AWS SDK v3
   '@aws-sdk/client-',
   '@aws-sdk/lib-',
   '@aws-sdk/util-',
   '@aws-sdk/credential-',
   '@aws-sdk/middleware-',
-  'aws-sdk' // v2
+  'aws-sdk', // v2
+  // AWS Lambda Powertools
+  '@aws-lambda-powertools/'
 ]
 
 /**
  * Suggested vendor wrapper mappings
  */
 const VENDOR_SUGGESTIONS: Record<string, string> = {
+  // AWS SDK
   '@aws-sdk/client-dynamodb': 'lib/vendor/AWS/DynamoDB',
   '@aws-sdk/lib-dynamodb': 'lib/vendor/AWS/DynamoDB',
   '@aws-sdk/client-s3': 'lib/vendor/AWS/S3',
@@ -36,7 +40,13 @@ const VENDOR_SUGGESTIONS: Record<string, string> = {
   '@aws-sdk/client-sns': 'lib/vendor/AWS/SNS',
   '@aws-sdk/client-sqs': 'lib/vendor/AWS/SQS',
   '@aws-sdk/client-cloudwatch-logs': 'lib/vendor/AWS/CloudWatch',
-  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager'
+  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager',
+  // AWS Lambda Powertools
+  '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/tracer': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency',
+  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser'
 }
 
 function getSuggestion(moduleSpecifier: string): string {
@@ -53,13 +63,13 @@ export const awsSdkEncapsulationRule: ValidationRule = {
   description: 'Never import AWS SDK packages directly. Use lib/vendor/AWS/ wrappers for encapsulation, type safety, and testability.',
   severity: SEVERITY,
   appliesTo: ['src/**/*.ts'],
-  excludes: ['src/lib/vendor/AWS/**/*.ts', 'src/**/*.test.ts', 'test/**/*.ts'],
+  excludes: ['src/lib/vendor/AWS/**/*.ts', 'src/lib/vendor/Powertools/**/*.ts', 'src/**/*.test.ts', 'test/**/*.ts'],
 
   validate(sourceFile: SourceFile, filePath: string): Violation[] {
     const violations: Violation[] = []
 
-    // Skip vendor directory - that's where direct imports are allowed
-    if (filePath.includes('lib/vendor/AWS')) {
+    // Skip vendor directories - that's where direct imports are allowed
+    if (filePath.includes('lib/vendor/AWS') || filePath.includes('lib/vendor/Powertools')) {
       return violations
     }
 

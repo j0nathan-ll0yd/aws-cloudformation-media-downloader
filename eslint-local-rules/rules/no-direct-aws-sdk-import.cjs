@@ -6,15 +6,19 @@
  */
 
 const FORBIDDEN_PACKAGES = [
+  // AWS SDK v3
   '@aws-sdk/client-',
   '@aws-sdk/lib-',
   '@aws-sdk/util-',
   '@aws-sdk/credential-',
   '@aws-sdk/middleware-',
-  'aws-sdk'
+  'aws-sdk', // v2
+  // AWS Lambda Powertools
+  '@aws-lambda-powertools/'
 ]
 
 const VENDOR_SUGGESTIONS = {
+  // AWS SDK
   '@aws-sdk/client-dynamodb': 'lib/vendor/AWS/DynamoDB',
   '@aws-sdk/lib-dynamodb': 'lib/vendor/AWS/DynamoDB',
   '@aws-sdk/client-s3': 'lib/vendor/AWS/S3',
@@ -22,7 +26,13 @@ const VENDOR_SUGGESTIONS = {
   '@aws-sdk/client-sns': 'lib/vendor/AWS/SNS',
   '@aws-sdk/client-sqs': 'lib/vendor/AWS/SQS',
   '@aws-sdk/client-cloudwatch-logs': 'lib/vendor/AWS/CloudWatch',
-  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager'
+  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager',
+  // AWS Lambda Powertools
+  '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/tracer': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',
+  '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency',
+  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser'
 }
 
 function getSuggestion(moduleSpecifier) {
@@ -56,10 +66,12 @@ module.exports = {
 
     // Allow imports in vendor directories and integration test helpers
     // - lib/vendor/AWS/ - AWS SDK wrappers
+    // - lib/vendor/Powertools/ - AWS Lambda Powertools wrappers
     // - lib/vendor/ElectroDB/ - ElectroDB service (needs DynamoDB client)
     // - test/integration/helpers/ - LocalStack setup (needs direct client access)
     if (
       filename.includes('lib/vendor/AWS') ||
+      filename.includes('lib/vendor/Powertools') ||
       filename.includes('lib/vendor/ElectroDB') ||
       filename.includes('test/integration/helpers')
     ) {
