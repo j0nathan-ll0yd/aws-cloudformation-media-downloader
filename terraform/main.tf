@@ -243,6 +243,26 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     projection_type = "ALL"
   }
 
+  # AppleDeviceIndex: Query users by Apple device ID
+  # Access pattern: "Find user by Apple Sign-In device identifier"
+  # Used by: LoginUser, RegisterUser
+  attribute {
+    name = "gsi7pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi7sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "AppleDeviceIndex"
+    hash_key        = "gsi7pk"
+    range_key       = "gsi7sk"
+    projection_type = "ALL"
+  }
+
   # TTL for automatic cleanup of completed/failed FileDownloads
   ttl {
     attribute_name = "ttl"

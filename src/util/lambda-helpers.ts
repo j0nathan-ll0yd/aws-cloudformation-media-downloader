@@ -41,13 +41,10 @@ export function response(context: Context, statusCode: number, body?: string | o
   if (/^4/.test(statusCodeString)) {
     code = 'custom-4XX-generic'
     error = true
-  }
-  if (/^3/.test(statusCodeString)) {
-    code = 'custom-3XX-generic'
-    error = true
   } else if (/^5/.test(statusCodeString)) {
     error = true
   }
+  // Note: 3xx responses are treated as success (not wrapped in error format)
   if (error) {
     const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)

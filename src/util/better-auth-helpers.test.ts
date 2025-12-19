@@ -9,7 +9,7 @@ import {UnauthorizedError} from './errors'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Create entity mocks
-const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser', 'byToken']})
 
 // Mock Sessions entity
 jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
@@ -61,15 +61,17 @@ describe('Better Auth Helpers', () => {
     if (sessionsMock.mocks.query.byUser) {
       sessionsMock.mocks.query.byUser.go.mockClear()
     }
+    if (sessionsMock.mocks.query.byToken) {
+      sessionsMock.mocks.query.byToken.go.mockClear()
+    }
   })
 
   describe('validateSessionToken', () => {
     it('should validate a valid session token', async () => {
       const mockSession = createMockSession()
 
-      // Mock scan operation
-      sessionsMock.mocks.scan.where.mockReturnThis()
-      sessionsMock.mocks.scan.go.mockResolvedValue({data: [mockSession]})
+      // Mock query.byToken operation (using GSI instead of scan)
+      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: [mockSession]})
 
       // Mock update operation
       sessionsMock.mocks.update.set.mockReturnThis()
@@ -84,8 +86,7 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should throw UnauthorizedError for non-existent session', async () => {
-      sessionsMock.mocks.scan.where.mockReturnThis()
-      sessionsMock.mocks.scan.go.mockResolvedValue({data: []})
+      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: []})
 
       await expect(validateSessionToken('invalid-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('invalid-token')).rejects.toThrow('Invalid session token')
@@ -100,8 +101,7 @@ describe('Better Auth Helpers', () => {
         updatedAt: now - 31 * 24 * 60 * 60 * 1000
       })
 
-      sessionsMock.mocks.scan.where.mockReturnThis()
-      sessionsMock.mocks.scan.go.mockResolvedValue({data: [mockSession]})
+      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: [mockSession]})
 
       await expect(validateSessionToken('expired-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('expired-token')).rejects.toThrow('Session expired')

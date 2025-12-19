@@ -4,6 +4,7 @@ import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {logDebug, logInfo, putMetrics, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {initiateFileDownload} from '#util/shared'
+import {getOptionalEnvNumber} from '#util/env-validation'
 
 /** Minimal download info needed for processing */
 interface DownloadInfo {
@@ -11,11 +12,11 @@ interface DownloadInfo {
   correlationId?: string
 }
 
-/** Maximum number of files to process concurrently per batch */
-const BATCH_SIZE = 5
+/** Maximum number of files to process concurrently per batch (configurable via FILE_COORDINATOR_BATCH_SIZE) */
+const BATCH_SIZE = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_SIZE', 5)
 
-/** Delay between batches in milliseconds (to avoid overwhelming yt-dlp/YouTube) */
-const BATCH_DELAY_MS = 10000
+/** Delay between batches in milliseconds (configurable via FILE_COORDINATOR_BATCH_DELAY_MS) */
+const BATCH_DELAY_MS = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_DELAY_MS', 10000)
 
 /**
  * Returns download info for FileDownloads with status='pending'.

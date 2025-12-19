@@ -13,6 +13,8 @@ export const Users = new Entity(
       emailVerified: {type: 'boolean', required: true, default: false},
       firstName: {type: 'string', required: true},
       lastName: {type: 'string', required: false},
+      /** Flattened Apple device ID for GSI lookup (denormalized from identityProviders.userId) */
+      appleDeviceId: {type: 'string', required: false},
       identityProviders: {
         type: 'map',
         required: true,
@@ -30,7 +32,8 @@ export const Users = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['userId']}, sk: {field: 'sk', composite: []}},
-      byEmail: {index: 'gsi3', pk: {field: 'gsi3pk', composite: ['email']}, sk: {field: 'gsi3sk', composite: []}}
+      byEmail: {index: 'gsi3', pk: {field: 'gsi3pk', composite: ['email']}, sk: {field: 'gsi3sk', composite: []}},
+      byAppleDeviceId: {index: 'gsi7', pk: {field: 'gsi7pk', composite: ['appleDeviceId']}, sk: {field: 'gsi7sk', composite: []}}
     }
   } as const,
   {table: process.env.DynamoDBTableName, client: documentClient}

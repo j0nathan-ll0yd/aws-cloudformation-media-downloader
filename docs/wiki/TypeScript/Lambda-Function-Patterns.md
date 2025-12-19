@@ -211,6 +211,56 @@ export const handler = withXRay(wrapScheduledHandler(async ({}: ScheduledHandler
   return {pruned: count}
 }))
 
+## Environment Variable Handling
+
+### Lazy Evaluation (Default Pattern)
+**Rule**: Environment variables should be read inside functions, not at module scope.
+
+```typescript
+// ✅ CORRECT - Read inside function (lazy evaluation)
+async function processFile() {
+  const bucketName = getRequiredEnv('BUCKET_NAME')
+  // ...
+}
+
+// ❌ WRONG - Module-level read (breaks test setup)
+const BUCKET_NAME = getRequiredEnv('BUCKET_NAME')  // Throws before tests can mock
+```
+
+**Why**: Module-level reads execute at import time, before test mocks can be configured.
+
+### Acceptable Exceptions
+
+**AWS Powertools initialization** (`src/lib/vendor/Powertools/index.ts`) uses module-level env reads:
+
+```typescript
+// Acceptable - has fallback values, required for framework initialization
+export const logger = new Logger({
+  serviceName: process.env['AWS_LAMBDA_FUNCTION_NAME'] || 'MediaDownloader',
+  logLevel: (process.env['LOG_LEVEL'] as LogLevel) || 'INFO'
+})
+```
+
+This is acceptable because:
+1. All reads have fallback values (won't throw if missing)
+2. Powertools requires initialization at import time for tracing to work correctly
+3. Refactoring would require updating all handler imports with minimal benefit
+
+### Helper Functions
+
+```typescript
+import {getRequiredEnv, getOptionalEnv, getOptionalEnvNumber} from '#util/env-validation'
+
+// Required - throws if missing
+const apiKey = getRequiredEnv('API_KEY')
+
+// Optional with default
+const host = getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
+
+// Optional numeric with default
+const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
+```
+
 ## Best Practices
 
 ✅ Use `withXRay` wrapper for tracing
@@ -220,6 +270,7 @@ export const handler = withXRay(wrapScheduledHandler(async ({}: ScheduledHandler
 ✅ Throw errors instead of manual try-catch (wrapper handles it)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers
+✅ Read environment variables inside functions, not at module scope
 
 ## Testing
 
