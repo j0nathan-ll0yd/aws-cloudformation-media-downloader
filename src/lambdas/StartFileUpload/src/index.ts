@@ -90,10 +90,12 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
 
   try {
     // Try to update existing record first
-    await FileDownloads.update({fileId}).set(update).go()
+    logDebug('FileDownloads.update <=', {fileId, update})
+    const updateResponse = await FileDownloads.update({fileId}).set(update).go()
+    logDebug('FileDownloads.update =>', updateResponse)
   } catch {
     // If record doesn't exist, create it
-    await FileDownloads.create({
+    const createData = {
       fileId,
       status,
       retryCount,
@@ -103,7 +105,10 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       retryAfter: classification?.retryAfter,
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
       ttl: update.ttl as number | undefined
-    }).go()
+    }
+    logDebug('FileDownloads.create <=', createData)
+    const createResponse = await FileDownloads.create(createData).go()
+    logDebug('FileDownloads.create =>', createResponse)
   }
 }
 
@@ -246,7 +251,9 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
   let existingRetryCount = 0
   let existingMaxRetries = 5
   try {
+    logDebug('FileDownloads.get <=', {fileId})
     const {data: existingDownload} = await FileDownloads.get({fileId}).go()
+    logDebug('FileDownloads.get =>', existingDownload ?? 'null')
     if (existingDownload) {
       existingRetryCount = existingDownload.retryCount ?? 0
       existingMaxRetries = existingDownload.maxRetries ?? 5
