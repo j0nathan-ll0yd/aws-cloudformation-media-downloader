@@ -46,7 +46,7 @@ PRS=$(gh pr list --state merged --limit 10 --json number,title,mergedAt,author -
   .[] |
   select(.title | test("^(feat|fix|refactor|perf|docs)")) |
   "- **#\(.number)**: \(.title) (@\(.author.login), \(.mergedAt | split("T")[0]))"
-' 2>/dev/null || echo "")
+' 2> /dev/null || echo "")
 
 if [ -z "$PRS" ]; then
   echo -e "${YELLOW}No significant PRs found or gh CLI not authenticated${NC}"

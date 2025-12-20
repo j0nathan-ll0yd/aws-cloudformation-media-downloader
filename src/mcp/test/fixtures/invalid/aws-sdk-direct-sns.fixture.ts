@@ -8,4 +8,4 @@
 import {SNSClient} from '@aws-sdk/client-sns'
 
 const client = new SNSClient({})
-export {client}
+export { client }

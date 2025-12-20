@@ -26,8 +26,12 @@ export { logDebug, logError, logInfo }
  * Used as fallback when error is not an Error instance.
  */
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === 'string') return error
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (typeof error === 'string') {
+    return error
+  }
   try {
     return JSON.stringify(error)
   } catch {
@@ -580,7 +584,7 @@ export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records
 // ============================================================================
 
 import middy from '@middy/core'
-import {logger, metrics, tracer, injectLambdaContext, captureLambdaHandler, logMetrics} from '#lib/vendor/Powertools'
+import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, tracer} from '#lib/vendor/Powertools'
 
 /**
  * Wraps a Lambda handler with AWS Powertools middleware stack.
@@ -619,4 +623,4 @@ export function withPowertools<TEvent, TResult>(
 }
 
 // Re-export Powertools utilities for direct access
-export { logger, metrics, tracer, MetricUnit } from '#lib/vendor/Powertools'
+export { logger, metrics, MetricUnit, tracer } from '#lib/vendor/Powertools'

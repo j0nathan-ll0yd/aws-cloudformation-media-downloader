@@ -59,6 +59,9 @@ jobs:
     - name: Lint code
       run: pnpm run lint
 
+    - name: Check formatting
+      run: pnpm run format:check
+
     - name: Test ESLint local rules
       run: pnpm run test:eslint-rules
 

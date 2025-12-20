@@ -7,5 +7,5 @@
  * @simulatedPath src/util/bar-helpers.ts
  */
 export interface BarResult {
-	success: boolean
+  success: boolean
 }

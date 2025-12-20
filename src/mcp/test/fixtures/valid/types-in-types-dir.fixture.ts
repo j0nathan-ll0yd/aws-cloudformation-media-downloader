@@ -7,8 +7,8 @@
  */
 export type Config = {value: string}
 export interface Options {
-	enabled: boolean
+  enabled: boolean
 }
 export enum Status {
-	Active
+  Active
 }

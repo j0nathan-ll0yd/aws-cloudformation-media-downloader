@@ -35,4 +35,4 @@ export const tracer = new Tracer({serviceName: process.env['AWS_LAMBDA_FUNCTION_
 export const metrics = new Metrics({namespace: 'MediaDownloader', serviceName: process.env['AWS_LAMBDA_FUNCTION_NAME'] || 'MediaDownloader'})
 
 // Re-export middleware functions for use with middy
-export { injectLambdaContext, captureLambdaHandler, logMetrics, MetricUnit }
+export { captureLambdaHandler, injectLambdaContext, logMetrics, MetricUnit }

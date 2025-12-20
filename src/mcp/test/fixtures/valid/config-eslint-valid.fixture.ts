@@ -6,10 +6,5 @@
  * @simulatedPath eslint.config.mjs
  */
 export default [
-	{
-		rules: {
-			quotes: [2, 'single'],
-			semi: [2, 'never']
-		}
-	}
+  {rules: {quotes: [2, 'single'], semi: [2, 'never']}}
 ]

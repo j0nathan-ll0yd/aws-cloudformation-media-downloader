@@ -6,4 +6,4 @@
  * @expectedViolations 1
  */
 const value = process.env['MY_VAR']
-export {value}
+export { value }

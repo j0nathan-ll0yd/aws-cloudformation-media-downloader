@@ -6,4 +6,4 @@
  */
 import {getRequiredEnvNumber} from '#util/env-validation'
 const timeout = getRequiredEnvNumber('TIMEOUT_MS')
-export {timeout}
+export { timeout }

@@ -6,12 +6,9 @@
  * @expectedViolations 1
  */
 export async function handler() {
-	try {
-		throw new Error('test')
-	} catch (e) {
-		return {
-			statusCode: 500,
-			body: JSON.stringify({error: 'Internal error'})
-		}
-	}
+  try {
+    throw new Error('test')
+  } catch (e) {
+    return {statusCode: 500, body: JSON.stringify({error: 'Internal error'})}
+  }
 }

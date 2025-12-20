@@ -7,5 +7,5 @@
 import {buildApiResponse} from '#util/lambda-helpers'
 
 export async function handler() {
-	return buildApiResponse(200, {success: true})
+  return buildApiResponse(200, {success: true})
 }

@@ -98,35 +98,34 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * @notExported
  */
 export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
-    // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
-    verifyPlatformConfiguration()
-    const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
-    validateRequest(requestBody, registerDeviceSchema)
+  // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
+  verifyPlatformConfiguration()
+  const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
+  validateRequest(requestBody, registerDeviceSchema)
 
-    const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-    const pushNotificationTopicArn = getRequiredEnv('PushNotificationTopicArn')
-    const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
-    // Store the device details, regardless of user status
-    await upsertDevice(device)
-    /* c8 ignore else */
-    if (userStatus === UserStatus.Authenticated && userId) {
-      // Extract the userId and associate them
-      // Store the device details associated with the user
-      await upsertUserDevices(userId, requestBody.deviceId)
-      // Determine if the user already exists
-      const userDevices = await getUserDevices(userId)
-      if (userDevices.length === 1) {
-        return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
-      } else {
-        // Confirm the subscription, and unsubscribe
-        const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
-        await unsubscribeEndpointToTopic(subscriptionArn)
-        return buildApiResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn})
-      }
-    } else if (userStatus === UserStatus.Anonymous) {
-      // If the user hasn't registered; add them to the unregistered topic
-      await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+  const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
+  const pushNotificationTopicArn = getRequiredEnv('PushNotificationTopicArn')
+  const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
+  // Store the device details, regardless of user status
+  await upsertDevice(device)
+  /* c8 ignore else */
+  if (userStatus === UserStatus.Authenticated && userId) {
+    // Extract the userId and associate them
+    // Store the device details associated with the user
+    await upsertUserDevices(userId, requestBody.deviceId)
+    // Determine if the user already exists
+    const userDevices = await getUserDevices(userId)
+    if (userDevices.length === 1) {
+      return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
+    } else {
+      // Confirm the subscription, and unsubscribe
+      const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
+      await unsubscribeEndpointToTopic(subscriptionArn)
+      return buildApiResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn})
     }
-    return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
-  })
-)
+  } else if (userStatus === UserStatus.Anonymous) {
+    // If the user hasn't registered; add them to the unregistered topic
+    await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
+  }
+  return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
+}))

@@ -7,8 +7,8 @@
  */
 type InternalConfig = {value: string}
 interface InternalOptions {
-	enabled: boolean
+  enabled: boolean
 }
 enum InternalStatus {
-	Active
+  Active
 }

@@ -9,9 +9,9 @@ import {getUserDetailsFromEvent} from '#util/apigateway-helpers'
 import {wrapApiHandler} from '#util/lambda-helpers'
 
 export const handler = wrapApiHandler(async ({event, context}) => {
-	const {userId, userStatus} = getUserDetailsFromEvent(event)
-	if (!userId) {
-		throw new Error('Unauthorized')
-	}
-	return response(context, 200, {})
+  const {userId, userStatus} = getUserDetailsFromEvent(event)
+  if (!userId) {
+    throw new Error('Unauthorized')
+  }
+  return response(context, 200, {})
 })

@@ -8,7 +8,7 @@
 # catching ~95% of issues that would fail in CI. For full CI parity including
 # integration tests, use: pnpm run ci:local:full
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

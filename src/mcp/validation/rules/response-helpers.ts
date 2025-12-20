@@ -90,8 +90,10 @@ export const responseHelpersRule: ValidationRule = {
       // Check for Promise.resolve with raw objects
       if (returnText.includes('Promise.resolve') && returnText.includes('statusCode')) {
         violations.push(
-          createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(), 'Promise.resolve with raw response object. Use buildApiResponse() helper directly.',
-            {suggestion: 'The buildApiResponse() helper already returns a proper object, no need for Promise.resolve'})
+          createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(),
+            'Promise.resolve with raw response object. Use buildApiResponse() helper directly.', {
+            suggestion: 'The buildApiResponse() helper already returns a proper object, no need for Promise.resolve'
+          })
         )
       }
     }

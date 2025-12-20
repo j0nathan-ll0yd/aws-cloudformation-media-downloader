@@ -38,11 +38,11 @@ WARNINGS=""
 # Check 1: Entity count matches documentation
 # =============================================================================
 echo -n "  [1/7] Checking entity count... "
-ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2>/dev/null | wc -l | tr -d ' ')
+ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count entity files listed in AGENTS.md between entities/ and lambdas/ sections
 # Each entity file is listed with │   │   ├── or │   │   └──
-DOCUMENTED_ENTITY_COUNT=$(awk '/entities\/.*ElectroDB/,/lambdas\/.*Lambda/' AGENTS.md 2>/dev/null | grep -E '│.*\.ts' | wc -l | tr -d ' ')
+DOCUMENTED_ENTITY_COUNT=$(awk '/entities\/.*ElectroDB/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.ts' | wc -l | tr -d ' ')
 
 if [ "$ENTITY_COUNT" -ne "$DOCUMENTED_ENTITY_COUNT" ]; then
   echo -e "${RED}MISMATCH${NC}"
@@ -55,11 +55,11 @@ fi
 # Check 2: Lambda count matches documentation
 # =============================================================================
 echo -n "  [2/7] Checking Lambda count... "
-LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
 # Skip lines containing "Trigger Type" or "---" (header/separator rows)
-TRIGGER_TABLE_COUNT=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2>/dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -v '\-\-\-' | wc -l | tr -d ' ')
+TRIGGER_TABLE_COUNT=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -v '\-\-\-' | wc -l | tr -d ' ')
 
 if [ "$LAMBDA_COUNT" -ne "$TRIGGER_TABLE_COUNT" ]; then
   echo -e "${RED}MISMATCH${NC}"
@@ -72,11 +72,11 @@ fi
 # Check 3: MCP validation rule count
 # =============================================================================
 echo -n "  [3/7] Checking MCP rule count... "
-MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2>/dev/null | wc -l | tr -d ' ')
+MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
 # This counts the actual rule references in the array
-REGISTERED_RULE_COUNT=$(sed -n '/export const allRules/,/^]/p' src/mcp/validation/index.ts 2>/dev/null | grep -cE '[a-z]Rule,?$' || echo "0")
+REGISTERED_RULE_COUNT=$(sed -n '/export const allRules/,/^]/p' src/mcp/validation/index.ts 2> /dev/null | grep -cE '[a-z]Rule,?$' || echo "0")
 
 if [ "$MCP_RULE_COUNT" -ne "$REGISTERED_RULE_COUNT" ]; then
   echo -e "${RED}MISMATCH${NC}"
@@ -121,14 +121,14 @@ echo -n "  [5/7] Checking for stale patterns... "
 STALE_OK=true
 
 # Check for old Prettier reference (should be dprint)
-if grep -q "Prettier" AGENTS.md 2>/dev/null; then
+if grep -q "Prettier" AGENTS.md 2> /dev/null; then
   ERRORS="$ERRORS\n  - AGENTS.md references 'Prettier' but project uses 'dprint'"
   STALE_OK=false
 fi
 
 # Check for wrong vendor path (lib/vendor without src/ prefix, not in a comment)
 # Only flag if there's NO src/lib/vendor reference anywhere
-if ! grep -q "src/lib/vendor" AGENTS.md 2>/dev/null; then
+if ! grep -q "src/lib/vendor" AGENTS.md 2> /dev/null; then
   ERRORS="$ERRORS\n  - AGENTS.md missing src/lib/vendor reference"
   STALE_OK=false
 fi
@@ -146,11 +146,11 @@ echo -n "  [6/7] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
 # Get entity names from filesystem (excluding Collections.ts which is a service, not entity)
-FS_ENTITIES=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "Collections.ts" -exec basename {} .ts \; 2>/dev/null | sort)
+FS_ENTITIES=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "Collections.ts" -exec basename {} .ts \; 2> /dev/null | sort)
 
 # Check each entity appears in metadata.json entityRelationships
 for entity in $FS_ENTITIES; do
-  if ! grep -q "\"$entity\"" graphrag/metadata.json 2>/dev/null; then
+  if ! grep -q "\"$entity\"" graphrag/metadata.json 2> /dev/null; then
     WARNINGS="$WARNINGS\n  - Entity '$entity' not found in graphrag/metadata.json entityRelationships"
     GRAPHRAG_OK=false
   fi
@@ -196,8 +196,8 @@ while IFS= read -r md_file; do
       BROKEN_LINKS="$BROKEN_LINKS\n  - $md_file: broken link to '$link_path'"
       WIKI_OK=false
     fi
-  done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2>/dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
-done < <(find docs/wiki -name "*.md" 2>/dev/null)
+  done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
+done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
 if [ "$WIKI_OK" = true ]; then
   echo -e "${GREEN}OK${NC}"

@@ -13,7 +13,7 @@ import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '../types'
 
 // Re-export types for external consumers
-export type {PruneDevicesResult} from '../types'
+export type { PruneDevicesResult } from '../types'
 
 /**
  * Returns an array of all devices using paginated scan

@@ -8,4 +8,4 @@
 import {LambdaClient} from '@aws-sdk/client-lambda'
 
 const client = new LambdaClient({})
-export {client}
+export { client }

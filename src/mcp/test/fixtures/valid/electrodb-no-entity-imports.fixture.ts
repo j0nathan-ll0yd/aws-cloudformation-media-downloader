@@ -8,7 +8,7 @@
 import {describe, expect, test} from '@jest/globals'
 
 describe('utility function', () => {
-	test('should work', () => {
-		expect(true).toBe(true)
-	})
+  test('should work', () => {
+    expect(true).toBe(true)
+  })
 })

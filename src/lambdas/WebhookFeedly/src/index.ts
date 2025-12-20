@@ -15,7 +15,7 @@ import {FileStatus, ResponseStatus} from '#types/enums'
 import {initiateFileDownload} from '#util/lambda-invoke-helpers'
 import {associateFileToUser} from '#util/user-file-helpers'
 import {getRequiredEnv} from '#util/env-validation'
-import {makeIdempotent, createPersistenceStore, defaultIdempotencyConfig} from '#lib/vendor/Powertools/idempotency'
+import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 
 /**
  * Adds a base File record to DynamoDB with placeholder metadata.
