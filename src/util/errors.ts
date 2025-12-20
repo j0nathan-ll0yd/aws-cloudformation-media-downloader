@@ -36,7 +36,7 @@ export class ServiceUnavailableError extends CustomLambdaError {
 
 // Called when a lambda can't extract UserID from the header
 export class UnauthorizedError extends CustomLambdaError {
-  constructor(message: string, statusCode = 401, cause?: Error) {
+  constructor(message: string = UNAUTHORIZED_ERROR_MESSAGE, statusCode = 401, cause?: Error) {
     super(message, {cause})
     this.name = 'UnauthorizedError'
     this.statusCode = statusCode

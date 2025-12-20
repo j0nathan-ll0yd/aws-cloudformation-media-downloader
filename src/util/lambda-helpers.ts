@@ -11,7 +11,7 @@ import type {
   SQSRecord
 } from 'aws-lambda'
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
-import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError, UNAUTHORIZED_ERROR_MESSAGE} from './errors'
+import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import type {MetricInput, UserEventDetails} from '#types/util'
 import {UserStatus} from '#types/enums'
@@ -346,11 +346,11 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
 
       // Reject Unauthenticated (invalid token)
       if (userStatus === UserStatus.Unauthenticated) {
-        throw new UnauthorizedError(UNAUTHORIZED_ERROR_MESSAGE)
+        throw new UnauthorizedError()
       }
       // Reject Anonymous (no token at all)
       if (userStatus === UserStatus.Anonymous) {
-        throw new UnauthorizedError(UNAUTHORIZED_ERROR_MESSAGE)
+        throw new UnauthorizedError()
       }
 
       // At this point, userStatus is Authenticated, so userId is guaranteed
@@ -399,7 +399,7 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
 
       // Reject only Unauthenticated (invalid token)
       if (userStatus === UserStatus.Unauthenticated) {
-        throw new UnauthorizedError(UNAUTHORIZED_ERROR_MESSAGE)
+        throw new UnauthorizedError()
       }
 
       // Allow Anonymous and Authenticated through
