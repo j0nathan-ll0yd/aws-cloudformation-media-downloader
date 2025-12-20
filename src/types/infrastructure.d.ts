@@ -225,43 +225,44 @@ export interface Aw {
 }
 
 export interface Resource {
-    aws_api_gateway_account:              AwsAPIGatewayAccount;
-    aws_api_gateway_api_key:              AwsAPIGatewayAPIKey;
-    aws_api_gateway_authorizer:           AwsAPIGatewayAuthorizer;
-    aws_api_gateway_deployment:           AwsAPIGatewayDeployment;
-    aws_api_gateway_gateway_response:     AwsAPIGatewayGatewayResponse;
-    aws_api_gateway_integration:          AwsAPIGatewayIntegration;
-    aws_api_gateway_method:               AwsAPIGatewayMethod;
-    aws_api_gateway_method_settings:      AwsAPIGatewayMethodSettings;
-    aws_api_gateway_resource:             AwsAPIGatewayResource;
-    aws_api_gateway_rest_api:             AwsAPIGatewayRESTAPI;
-    aws_api_gateway_stage:                AwsAPIGatewayStage;
-    aws_api_gateway_usage_plan:           AwsAPIGatewayUsagePlan;
-    aws_api_gateway_usage_plan_key:       AwsAPIGatewayUsagePlanKey;
-    aws_cloudfront_distribution:          AwsCloudfrontDistribution;
-    aws_cloudfront_origin_access_control: AwsCloudfrontOriginAccessControl;
-    aws_cloudwatch_dashboard:             AwsCloudwatchDashboard;
-    aws_cloudwatch_event_rule:            AwsCloudwatchEventRule;
-    aws_cloudwatch_event_target:          AwsCloudwatchEventTarget;
-    aws_cloudwatch_log_group:             { [key: string]: AwsCloudwatchLogGroup[] };
-    aws_cloudwatch_metric_alarm:          AwsCloudwatchMetricAlarm;
-    aws_dynamodb_table:                   AwsDynamodbTable;
-    aws_iam_policy:                       AwsIamPolicy;
-    aws_iam_role:                         { [key: string]: AwsIamRole[] };
-    aws_iam_role_policy:                  AwsIamRolePolicy;
-    aws_iam_role_policy_attachment:       { [key: string]: AwsIamRolePolicyAttachment[] };
-    aws_lambda_event_source_mapping:      AwsLambdaEventSourceMapping;
-    aws_lambda_function:                  AwsLambdaFunction;
-    aws_lambda_layer_version:             AwsLambdaLayerVersion;
-    aws_lambda_permission:                { [key: string]: AwsLambdaPermission[] };
-    aws_s3_bucket:                        AwsS3Bucket;
-    aws_s3_bucket_notification:           AwsS3BucketNotification;
-    aws_s3_bucket_policy:                 AwsS3BucketPolicy;
-    aws_s3_object:                        AwsS3Object;
-    aws_sns_platform_application:         AwsSnsPlatformApplication;
-    aws_sns_topic:                        AwsSnsTopic;
-    aws_sqs_queue:                        AwsSqsQueue;
-    null_resource:                        NullResource;
+    aws_api_gateway_account:                         AwsAPIGatewayAccount;
+    aws_api_gateway_api_key:                         AwsAPIGatewayAPIKey;
+    aws_api_gateway_authorizer:                      AwsAPIGatewayAuthorizer;
+    aws_api_gateway_deployment:                      AwsAPIGatewayDeployment;
+    aws_api_gateway_gateway_response:                AwsAPIGatewayGatewayResponse;
+    aws_api_gateway_integration:                     AwsAPIGatewayIntegration;
+    aws_api_gateway_method:                          AwsAPIGatewayMethod;
+    aws_api_gateway_method_settings:                 AwsAPIGatewayMethodSettings;
+    aws_api_gateway_resource:                        AwsAPIGatewayResource;
+    aws_api_gateway_rest_api:                        AwsAPIGatewayRESTAPI;
+    aws_api_gateway_stage:                           AwsAPIGatewayStage;
+    aws_api_gateway_usage_plan:                      AwsAPIGatewayUsagePlan;
+    aws_api_gateway_usage_plan_key:                  AwsAPIGatewayUsagePlanKey;
+    aws_cloudfront_distribution:                     AwsCloudfrontDistribution;
+    aws_cloudfront_origin_access_control:            AwsCloudfrontOriginAccessControl;
+    aws_cloudwatch_dashboard:                        AwsCloudwatchDashboard;
+    aws_cloudwatch_event_rule:                       AwsCloudwatchEventRule;
+    aws_cloudwatch_event_target:                     AwsCloudwatchEventTarget;
+    aws_cloudwatch_log_group:                        { [key: string]: AwsCloudwatchLogGroup[] };
+    aws_cloudwatch_metric_alarm:                     AwsCloudwatchMetricAlarm;
+    aws_dynamodb_table:                              AwsDynamodbTable;
+    aws_iam_policy:                                  AwsIamPolicy;
+    aws_iam_role:                                    { [key: string]: AwsIamRole[] };
+    aws_iam_role_policy:                             AwsIamRolePolicy;
+    aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
+    aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
+    aws_lambda_function:                             AwsLambdaFunction;
+    aws_lambda_layer_version:                        AwsLambdaLayerVersion;
+    aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
+    aws_s3_bucket:                                   AwsS3Bucket;
+    aws_s3_bucket_intelligent_tiering_configuration: AwsS3BucketIntelligentTieringConfiguration;
+    aws_s3_bucket_notification:                      AwsS3BucketNotification;
+    aws_s3_bucket_policy:                            AwsS3BucketPolicy;
+    aws_s3_object:                                   AwsS3Object;
+    aws_sns_platform_application:                    AwsSnsPlatformApplication;
+    aws_sns_topic:                                   AwsSnsTopic;
+    aws_sqs_queue:                                   AwsSqsQueue;
+    null_resource:                                   NullResource;
 }
 
 export interface AwsAPIGatewayAccount {
@@ -987,6 +988,21 @@ export interface AwsS3BucketFile {
     bucket: string;
 }
 
+export interface AwsS3BucketIntelligentTieringConfiguration {
+    files_tiering: FilesTiering[];
+}
+
+export interface FilesTiering {
+    bucket:  string;
+    name:    string;
+    tiering: Tiering[];
+}
+
+export interface Tiering {
+    access_tier: string;
+    days:        number;
+}
+
 export interface AwsS3BucketNotification {
     Files: AwsS3BucketNotificationFile[];
 }
@@ -1496,6 +1512,7 @@ const typeMap: any = {
         { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("AwsLambdaLayerVersion") },
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
+        { json: "aws_s3_bucket_intelligent_tiering_configuration", js: "aws_s3_bucket_intelligent_tiering_configuration", typ: r("AwsS3BucketIntelligentTieringConfiguration") },
         { json: "aws_s3_bucket_notification", js: "aws_s3_bucket_notification", typ: r("AwsS3BucketNotification") },
         { json: "aws_s3_bucket_policy", js: "aws_s3_bucket_policy", typ: r("AwsS3BucketPolicy") },
         { json: "aws_s3_object", js: "aws_s3_object", typ: r("AwsS3Object") },
@@ -2099,6 +2116,18 @@ const typeMap: any = {
     ], false),
     "AwsS3BucketFile": o([
         { json: "bucket", js: "bucket", typ: "" },
+    ], false),
+    "AwsS3BucketIntelligentTieringConfiguration": o([
+        { json: "files_tiering", js: "files_tiering", typ: a(r("FilesTiering")) },
+    ], false),
+    "FilesTiering": o([
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "name", js: "name", typ: "" },
+        { json: "tiering", js: "tiering", typ: a(r("Tiering")) },
+    ], false),
+    "Tiering": o([
+        { json: "access_tier", js: "access_tier", typ: "" },
+        { json: "days", js: "days", typ: 0 },
     ], false),
     "AwsS3BucketNotification": o([
         { json: "Files", js: "Files", typ: a(r("AwsS3BucketNotificationFile")) },
