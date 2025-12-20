@@ -2,6 +2,21 @@ resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
 }
 
+resource "aws_s3_bucket_intelligent_tiering_configuration" "files_tiering" {
+  bucket = aws_s3_bucket.Files.id
+  name   = "EntireBucket"
+
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
+  }
+
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+}
+
 # Origin Access Control for CloudFront (replaces public-read ACL)
 resource "aws_cloudfront_origin_access_control" "media_files_oac" {
   name                              = "media-files-oac"

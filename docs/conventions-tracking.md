@@ -41,7 +41,18 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 _No pending conventions - all conventions are documented._
 
-### Detected: 2025-12-18
+### Detected: 2025-12-20
+
+1. **Branch-First PR Workflow** (Rule)
+   - **What**: All feature work must follow strict flow: Create Branch -> Commit -> Push -> Create PR -> Wait for Review.
+   - **Why**: Prevents direct commits to main, ensures code review, and maintains a clean history.
+   - **Rule**: NEVER commit directly to main. ALWAYS wait for user approval on PRs.
+   - **Target**: docs/wiki/Conventions/Git-Workflow.md
+   - **Priority**: CRITICAL
+   - **Status**: ✅ Documented
+   - **Enforcement**: Zero-tolerance (Agent must self-correct).
+
+### Detected: 2025-12-19
 
 1. **Centralized Auth Handler Wrappers** (Security Pattern)
    - **What**: Use `wrapAuthenticatedHandler` for endpoints requiring authentication (rejects Unauthenticated + Anonymous) or `wrapOptionalAuthHandler` for endpoints allowing anonymous access (rejects only Unauthenticated)
