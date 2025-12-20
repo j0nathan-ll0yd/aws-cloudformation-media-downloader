@@ -88,9 +88,9 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl            = aws_sqs_queue.SendPushNotification.id
-      IdempotencyTableName   = aws_dynamodb_table.IdempotencyTable.name
+      DynamoDBTableName    = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl          = aws_sqs_queue.SendPushNotification.id
+      IdempotencyTableName = aws_dynamodb_table.IdempotencyTable.name
     }
   }
 }
