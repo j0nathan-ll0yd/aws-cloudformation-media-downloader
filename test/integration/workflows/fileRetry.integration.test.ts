@@ -53,12 +53,11 @@ jest.unstable_mockModule(fileDownloadsModulePath,
     DownloadStatus: {Pending: 'pending', Scheduled: 'scheduled', InProgress: 'in-progress', Completed: 'completed', Failed: 'failed'}
   }))
 
-// Mock shared utilities (initiateFileDownload)
-const sharedModulePath = resolve(__dirname, '../../../src/util/shared')
+// Mock lambda-invoke-helpers (initiateFileDownload)
+const lambdaInvokeHelpersPath = resolve(__dirname, '../../../src/util/lambda-invoke-helpers')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const initiateFileDownloadMock = jest.fn<any>()
-jest.unstable_mockModule(sharedModulePath,
-  () => ({initiateFileDownload: initiateFileDownloadMock, getUserDevices: jest.fn(), subscribeEndpointToTopic: jest.fn(), deleteDevice: jest.fn()}))
+jest.unstable_mockModule(lambdaInvokeHelpersPath, () => ({initiateFileDownload: initiateFileDownloadMock}))
 
 // Mock CloudWatch metrics
 const cloudwatchModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/CloudWatch')
@@ -111,13 +110,8 @@ describe('File Retry Integration Tests', () => {
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     const event = createMockScheduledEvent('test-event-1')
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.processed).toBe(3)
-    expect(response.body.pending).toBe(3)
-    expect(response.body.scheduled).toBe(0)
+    // FileCoordinator is a scheduled handler that returns void
+    await handler(event, mockContext)
 
     // Verify initiateFileDownload called for each file (with correlationId)
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(3)
@@ -140,13 +134,7 @@ describe('File Retry Integration Tests', () => {
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: scheduledFiles})
 
     const event = createMockScheduledEvent('test-event-2')
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.processed).toBe(2)
-    expect(response.body.pending).toBe(0)
-    expect(response.body.scheduled).toBe(2)
+    await handler(event, mockContext)
 
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(2)
   })
@@ -163,13 +151,7 @@ describe('File Retry Integration Tests', () => {
     })
 
     const event = createMockScheduledEvent('test-event-3')
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.processed).toBe(2)
-    expect(response.body.pending).toBe(1)
-    expect(response.body.scheduled).toBe(1)
+    await handler(event, mockContext)
 
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(2)
     expect(initiateFileDownloadMock).toHaveBeenCalledWith('file-pending-1', undefined)
@@ -187,26 +169,19 @@ describe('File Retry Integration Tests', () => {
     })
 
     const event = createMockScheduledEvent('test-event-4')
-    const result = await handler(event, mockContext)
+    await handler(event, mockContext)
 
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
     // Only processed once due to deduplication
-    expect(response.body.processed).toBe(1)
-
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(1)
   })
 
-  test('should return 200 with zero processed when no files to process', async () => {
+  test('should complete successfully when no files to process', async () => {
     // Both queries return empty
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValue({data: []})
 
     const event = createMockScheduledEvent('test-event-5')
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.processed).toBe(0)
+    // Should complete without error
+    await handler(event, mockContext)
 
     // No downloads initiated
     expect(initiateFileDownloadMock).not.toHaveBeenCalled()
@@ -225,13 +200,17 @@ describe('File Retry Integration Tests', () => {
     expect(putMetricDataMock).toHaveBeenCalled()
   })
 
-  test('should handle DynamoDB query failure gracefully', async () => {
+  test('should handle DynamoDB query failure gracefully with Promise.allSettled', async () => {
+    // With Promise.allSettled, query failures are handled gracefully
+    // Handler continues with empty arrays for failed queries
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValue(new Error('DynamoDB service unavailable'))
 
     const event = createMockScheduledEvent('test-event-7')
-    const result = await handler(event, mockContext)
+    // Handler should complete without throwing (logs error internally)
+    await handler(event, mockContext)
 
-    expect(result.statusCode).toBe(500)
+    // No downloads initiated when queries fail
+    expect(initiateFileDownloadMock).not.toHaveBeenCalled()
   })
 
   test('should process files in batches for large queues', async () => {
@@ -242,17 +221,13 @@ describe('File Retry Integration Tests', () => {
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     const event = createMockScheduledEvent('test-event-8')
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.processed).toBe(12)
+    await handler(event, mockContext)
 
     // All 12 files should be processed
     expect(initiateFileDownloadMock).toHaveBeenCalledTimes(12)
   }, 60000) // Longer timeout for batch processing with delays
 
-  test('should fail entire batch when any file download fails (Promise.all behavior)', async () => {
+  test('should continue processing other files when some fail (Promise.allSettled behavior)', async () => {
     const fileIds = ['file-ok-1', 'file-fail', 'file-ok-2']
 
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))})
@@ -262,10 +237,10 @@ describe('File Retry Integration Tests', () => {
     initiateFileDownloadMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Download failed')).mockResolvedValueOnce(undefined)
 
     const event = createMockScheduledEvent('test-event-9')
-    const result = await handler(event, mockContext)
+    // Handler uses Promise.allSettled - completes successfully even with partial failures
+    await handler(event, mockContext)
 
-    // Handler uses Promise.all which fails fast on any rejection
-    // This is expected behavior - batch fails if any download fails
-    expect(result.statusCode).toBe(500)
+    // All 3 files attempted (failed one logged but doesn't stop others)
+    expect(initiateFileDownloadMock).toHaveBeenCalledTimes(3)
   })
 })

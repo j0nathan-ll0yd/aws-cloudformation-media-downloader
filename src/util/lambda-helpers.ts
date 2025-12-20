@@ -13,6 +13,7 @@ import type {
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import {CustomLambdaError, ServiceUnavailableError, UnauthorizedError} from './errors'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {MetricInput, UserEventDetails} from '#types/util'
 import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
 import {logDebug, logError, logInfo} from './logging'
@@ -20,32 +21,41 @@ import {logDebug, logError, logInfo} from './logging'
 // Re-export logging functions for backwards compatibility
 export { logDebug, logError, logInfo }
 
-export function unknownErrorToString(unknownVariable: unknown): string {
-  if (typeof unknownVariable === 'string') {
-    return unknownVariable
-  } else if (Array.isArray(unknownVariable)) {
-    return unknownVariable.map(function(s) {
-      return unknownErrorToString(s)
-    }).join(', ')
-  } else if (typeof unknownVariable === 'object') {
-    return JSON.stringify(unknownVariable)
-  } else {
-    return 'Unknown error'
+/**
+ * Extracts a human-readable message from an unknown error value.
+ * Used as fallback when error is not an Error instance.
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  try {
+    return JSON.stringify(error)
+  } catch {
+    return String(error)
   }
 }
 
-export function response(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
+/** @deprecated Use getErrorMessage instead. Kept for backwards compatibility. */
+export function formatUnknownError(unknownVariable: unknown): string {
+  return getErrorMessage(unknownVariable)
+}
+
+/**
+ * Internal function to format API Gateway responses.
+ * Automatically detects error vs success based on status code.
+ */
+function formatResponse(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
-  let error = false
+  let isError = false
   const statusCodeString = statusCode.toString()
   if (/^4/.test(statusCodeString)) {
     code = 'custom-4XX-generic'
-    error = true
+    isError = true
   } else if (/^5/.test(statusCodeString)) {
-    error = true
+    isError = true
   }
   // Note: 3xx responses are treated as success (not wrapped in error format)
-  if (error) {
+  if (isError) {
     const rawBody = {error: {code, message: body}, requestId: context.awsRequestId}
     logDebug('response ==', rawBody)
     return {body: JSON.stringify(rawBody), headers, statusCode} as APIGatewayProxyResult
@@ -59,6 +69,33 @@ export function response(context: Context, statusCode: number, body?: string | o
   }
 }
 
+/**
+ * Build an API Gateway response from either a status code + body or an Error object.
+ *
+ * @example
+ * // Success response
+ * return buildApiResponse(context, 200, \{data: files\})
+ *
+ * // Error response with status code
+ * return buildApiResponse(context, 404, 'File not found')
+ *
+ * // Error response from Error object (extracts status and message)
+ * return buildApiResponse(context, new ValidationError('Invalid input'))
+ */
+export function buildApiResponse(context: Context, statusCodeOrError: number | Error, body?: string | object): APIGatewayProxyResult {
+  // If first arg is Error, extract status and message
+  if (statusCodeOrError instanceof Error) {
+    const error = statusCodeOrError
+    const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
+    const message = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
+    logError('buildApiResponse', JSON.stringify(error))
+    return formatResponse(context, statusCode, message)
+  }
+
+  // Otherwise use status code directly
+  return formatResponse(context, statusCodeOrError, body)
+}
+
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
@@ -68,26 +105,15 @@ export function verifyPlatformConfiguration(): void {
   }
 }
 
+/** @deprecated Use buildApiResponse(context, error) instead. Kept for backwards compatibility. */
 export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
-  const defaultStatusCode = 500
-  logError('lambdaErrorResponse', JSON.stringify(error))
-  /* c8 ignore else */
-  if (error instanceof CustomLambdaError) {
-    return response(context, error.statusCode || defaultStatusCode, error.errors || error.message)
-  } else if (error instanceof Error) {
-    return response(context, defaultStatusCode, error.message)
-  } else {
-    return response(context, defaultStatusCode, unknownErrorToString(error))
+  // Delegate to buildApiResponse which now handles Error objects directly
+  if (error instanceof Error) {
+    return buildApiResponse(context, error)
   }
-}
-
-export function generateUnauthorizedError() {
-  return new UnauthorizedError('Invalid Authentication token; login')
-}
-
-interface UserEventDetails {
-  userId?: string
-  userStatus: UserStatus
+  // For non-Error types, convert to message and return 500
+  logError('lambdaErrorResponse', JSON.stringify(error))
+  return formatResponse(context, 500, getErrorMessage(error))
 }
 
 export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
@@ -133,8 +159,6 @@ export async function putMetric(metricName: string, value: number, unit?: string
     logError('Failed to publish CloudWatch metric', {metricName, error})
   }
 }
-
-type MetricInput = {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}
 
 /**
  * Publish multiple metrics in a single API call for efficiency
@@ -250,6 +274,7 @@ import type {
   AuthenticatedApiParams,
   AuthorizerParams,
   EventHandlerParams,
+  LambdaInvokeHandlerParams,
   OptionalAuthApiParams,
   ScheduledHandlerParams,
   WrapperMetadata
@@ -321,11 +346,11 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
 
       // Reject Unauthenticated (invalid token)
       if (userStatus === UserStatus.Unauthenticated) {
-        throw generateUnauthorizedError()
+        throw new UnauthorizedError()
       }
       // Reject Anonymous (no token at all)
       if (userStatus === UserStatus.Anonymous) {
-        throw generateUnauthorizedError()
+        throw new UnauthorizedError()
       }
 
       // At this point, userStatus is Authenticated, so userId is guaranteed
@@ -350,14 +375,14 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapOptionalAuthHandler(
- *   async ({event, context, userId, userStatus}) => {
+ * export const handler = withPowertools(wrapOptionalAuthHandler(
+ *   async ({context, userId, userStatus}) => {
  *     if (userStatus === UserStatus.Anonymous) {
- *       return response(context, 200, [defaultFile])
+ *       return buildApiResponse(context, 200, [getDefaultFile()])
  *     }
  *     // userId is available for authenticated users
  *     const files = await getFilesByUser(userId as string)
- *     return response(context, 200, files)
+ *     return buildApiResponse(context, 200, files)
  *   }
  * ))
  * ```
@@ -374,7 +399,7 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
 
       // Reject only Unauthenticated (invalid token)
       if (userStatus === UserStatus.Unauthenticated) {
-        throw generateUnauthorizedError()
+        throw new UnauthorizedError()
       }
 
       // Allow Anonymous and Authenticated through
@@ -498,6 +523,43 @@ export function wrapScheduledHandler<TResult = void>(
       return result
     } catch (error) {
       logError('scheduled handler error', error)
+      throw error
+    }
+  }
+}
+
+/**
+ * Wraps a Lambda-to-Lambda invoke handler with logging and error handling.
+ * Used for handlers invoked asynchronously by other Lambdas (e.g., StartFileUpload).
+ * Provides consistent logging, fixture extraction, and error propagation.
+ *
+ * @param handler - Lambda invoke handler business logic
+ * @returns Wrapped handler with logging and error handling
+ *
+ * @example
+ * ```typescript
+ * export const handler = withPowertools(wrapLambdaInvokeHandler(
+ *   async ({event, context}) => {
+ *     // Process the Lambda invocation event
+ *     await processFile(event.fileId)
+ *     return buildApiResponse(context, 200, {status: 'success'})
+ *   }
+ * ))
+ * ```
+ */
+export function wrapLambdaInvokeHandler<TEvent, TResult>(
+  handler: (params: LambdaInvokeHandlerParams<TEvent>) => Promise<TResult>
+): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
+  return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
+    const traceId = metadata?.traceId || context.awsRequestId
+    logInfo('event <=', event as object)
+    logIncomingFixture(event)
+    try {
+      const result = await handler({event, context, metadata: {traceId}})
+      logOutgoingFixture(result)
+      return result
+    } catch (error) {
+      logError('lambda invoke handler error', error)
       throw error
     }
   }

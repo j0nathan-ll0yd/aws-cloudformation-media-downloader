@@ -1,31 +1,25 @@
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {logDebug, logError, logInfo, withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
+import {withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import {UnexpectedError} from '#util/errors'
 import type {Device} from '#types/domain-models'
-import type {ApplePushNotificationResponse} from '#types/infrastructure-types'
-import {deleteDevice} from '#util/shared'
+import {deleteDevice} from '#util/device-helpers'
 import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Apns2Error} from '#util/errors'
 import {scanAllPages} from '#util/pagination'
 import {retryUnprocessedDelete} from '#util/retry'
 import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '../types'
 
-/**
- * Result of the PruneDevices operation
- */
-export interface PruneDevicesResult {
-  devicesChecked: number
-  devicesPruned: number
-  errors: string[]
-}
+// Re-export types for external consumers
+export type {PruneDevicesResult} from '../types'
 
 /**
  * Returns an array of all devices using paginated scan
  * @notExported
  */
 async function getDevices(): Promise<Device[]> {
-  logDebug('getDevices <=')
   const devices = await scanAllPages<Device>(async (cursor) => {
     const scanResponse = await Devices.scan.go({cursor})
     if (!scanResponse) {

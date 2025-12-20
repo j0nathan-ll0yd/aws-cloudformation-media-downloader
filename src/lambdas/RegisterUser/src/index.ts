@@ -16,13 +16,20 @@
  */
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
-import type {UserRegistrationInput} from '#types/request-types'
+import {Users} from '#entities/Users'
+import {auth} from '#lib/vendor/BetterAuth/config'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerUserSchema} from '#util/constraints'
-import {logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
-import {auth} from '#lib/vendor/BetterAuth/config'
-import {Users} from '#entities/Users'
+import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo} from '#util/logging'
+
+interface UserRegistrationInput {
+  idToken: string
+  email: string
+  firstName?: string
+  lastName?: string
+}
 
 /**
  * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
@@ -104,7 +111,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   })
 
   // 4. Return session token (Better Auth format)
-  return response(context, 200, {
+  return buildApiResponse(context, 200, {
     token: result.token,
     expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
     sessionId: result.session?.id,

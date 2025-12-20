@@ -1,5 +1,5 @@
 import {describe, expect, test} from '@jest/globals'
-import {renderGithubIssueTemplate} from './template-helpers'
+import {renderGithubIssueTemplate} from '../template-helpers'
 
 describe('#template-helpers', () => {
   describe('renderGithubIssueTemplate', () => {

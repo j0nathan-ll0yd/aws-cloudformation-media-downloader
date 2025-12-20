@@ -1,11 +1,15 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {CookieExpirationError, UnexpectedError} from '#util/errors'
-import type {StartFileUploadParams} from '#types/infrastructure-types'
-import {DownloadStatus} from '#types/enums'
-import type {YtDlpVideoInfo} from '#types/youtube'
-import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
+import type {YtDlpVideoInfo} from '#types/youtube'
+import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {testContext} from '#util/jest-setup'
+
+interface StartFileUploadParams {
+  fileId: string
+  correlationId?: string
+}
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()

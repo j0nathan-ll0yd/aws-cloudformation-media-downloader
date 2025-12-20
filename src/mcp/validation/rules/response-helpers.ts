@@ -77,10 +77,10 @@ export const responseHelpersRule: ValidationRule = {
           // This looks like a raw Lambda response object
           violations.push(
             createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(),
-              'Raw response object detected. Use response() or lambdaErrorResponse() helper instead.', {
+              'Raw response object detected. Use buildApiResponse() or lambdaErrorResponse() helper instead.', {
               suggestion: hasResponseImport
-                ? 'Replace with: return response(statusCode, data) or return lambdaErrorResponse(statusCode, error, message)'
-                : "Import {response, lambdaErrorResponse} from '#util/lambda-helpers' and use those helpers",
+                ? 'Replace with: return buildApiResponse(context, statusCode, data) or return lambdaErrorResponse(context, error)'
+                : "Import {buildApiResponse, lambdaErrorResponse} from '#util/lambda-helpers' and use those helpers",
               codeSnippet: returnText.substring(0, 100)
             })
           )
@@ -90,8 +90,8 @@ export const responseHelpersRule: ValidationRule = {
       // Check for Promise.resolve with raw objects
       if (returnText.includes('Promise.resolve') && returnText.includes('statusCode')) {
         violations.push(
-          createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(), 'Promise.resolve with raw response object. Use response() helper directly.',
-            {suggestion: 'The response() helper already returns a proper object, no need for Promise.resolve'})
+          createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(), 'Promise.resolve with raw response object. Use buildApiResponse() helper directly.',
+            {suggestion: 'The buildApiResponse() helper already returns a proper object, no need for Promise.resolve'})
         )
       }
     }
@@ -106,7 +106,7 @@ export const responseHelpersRule: ValidationRule = {
         if (functionText.includes('APIGateway') && functionText.includes('statusCode')) {
           violations.push(
             createViolation(RULE_NAME, SEVERITY, 1, 'Lambda handler does not import response helpers but appears to return API Gateway responses', {
-              suggestion: "import {response, lambdaErrorResponse} from '#util/lambda-helpers'"
+              suggestion: "import {buildApiResponse, lambdaErrorResponse} from '#util/lambda-helpers'"
             })
           )
         }

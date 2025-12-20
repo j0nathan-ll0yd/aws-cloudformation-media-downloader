@@ -5,7 +5,7 @@
  */
 
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import {UnauthorizedError} from './errors'
+import {UnauthorizedError} from '../errors'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Create entity mocks
@@ -15,8 +15,8 @@ const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser', 'byToke
 jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
-const {validateSessionToken, refreshSession} = await import('./better-auth-helpers')
-const {Sessions} = await import('../entities/Sessions')
+const {validateSessionToken, refreshSession} = await import('../better-auth-helpers')
+const {Sessions} = await import('#entities/Sessions')
 
 /**
  * Mock session data overrides for testing

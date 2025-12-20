@@ -10,11 +10,15 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import type {UserLoginInput} from '#types/request-types'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {loginUserSchema} from '#util/constraints'
-import {logInfo, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {logInfo} from '#util/logging'
 import {auth} from '#lib/vendor/BetterAuth/config'
+
+interface UserLoginInput {
+  idToken: string
+}
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.
@@ -75,7 +79,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
   // 3. Return session token (Better Auth format)
-  return response(context, 200, {
+  return buildApiResponse(context, 200, {
     token: result.token,
     expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
     sessionId: result.session?.id,

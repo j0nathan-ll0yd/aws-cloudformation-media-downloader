@@ -2,16 +2,31 @@ import type {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from './env-validation'
 
-export const defaultFile = {
-  fileId: 'default',
-  size: getRequiredEnvNumber('DefaultFileSize'),
-  authorName: 'Lifegames',
-  authorUser: 'sxephil',
-  publishDate: new Date().toISOString(),
-  description: 'Description',
-  key: getRequiredEnv('DefaultFileName'),
-  url: getRequiredEnv('DefaultFileUrl'),
-  contentType: getRequiredEnv('DefaultFileContentType'),
-  title: 'Welcome! Tap to download.',
-  status: FileStatus.Downloaded
-} as File
+/**
+ * Cached default file to avoid repeated env var lookups
+ */
+let _defaultFile: File | undefined
+
+/**
+ * Returns the default file shown to new/anonymous users.
+ * Uses lazy evaluation to avoid module-level env validation that breaks tests.
+ * @returns The default file with properties from environment variables
+ */
+export function getDefaultFile(): File {
+  if (!_defaultFile) {
+    _defaultFile = {
+      fileId: 'default',
+      size: getRequiredEnvNumber('DefaultFileSize'),
+      authorName: 'Lifegames',
+      authorUser: 'sxephil',
+      publishDate: new Date().toISOString(),
+      description: 'Description',
+      key: getRequiredEnv('DefaultFileName'),
+      url: getRequiredEnv('DefaultFileUrl'),
+      contentType: getRequiredEnv('DefaultFileContentType'),
+      title: 'Welcome! Tap to download.',
+      status: FileStatus.Downloaded
+    }
+  }
+  return _defaultFile
+}

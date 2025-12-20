@@ -198,7 +198,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 
   describe('provides helpful suggestions', () => {
     test('should suggest response helper when detected', () => {
-      const sourceFile = project.createSourceFile('test-suggestion.ts', `import {response} from '#util/lambda-helpers'
+      const sourceFile = project.createSourceFile('test-suggestion.ts', `import {buildApiResponse} from '#util/lambda-helpers'
 
 export async function handler() {
   return {
@@ -209,7 +209,7 @@ export async function handler() {
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
-      expect(violations[0].suggestion).toContain('response')
+      expect(violations[0].suggestion).toContain('buildApiResponse')
     })
 
     test('should suggest importing helper when missing', () => {

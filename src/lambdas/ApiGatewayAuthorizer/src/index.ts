@@ -1,5 +1,6 @@
 import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {logDebug, logError, logInfo, withPowertools, wrapAuthorizer} from '#util/lambda-helpers'
+import {withPowertools, wrapAuthorizer} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
@@ -81,8 +82,6 @@ async function fetchUsageData(keyId: string, usagePlanId: string) {
 async function getUserIdFromAuthenticationHeader(authorizationHeader: string): Promise<string | undefined> {
   // Match Bearer token format (session tokens or JWTs during migration)
   const bearerRegex = /^Bearer [A-Za-z\d-_=.]+$/
-  const matches = authorizationHeader.match(bearerRegex)
-  logDebug('getPayloadFromAuthenticationHeader.matches <=', JSON.stringify(matches))
   if (!authorizationHeader.match(bearerRegex)) {
     // Abandon the request, without valid Bearer token, to produce an authorization error (403)
     return
@@ -91,9 +90,7 @@ async function getUserIdFromAuthenticationHeader(authorizationHeader: string): P
   const keypair = authorizationHeader.split(' ')
   const token = keypair[1]
   try {
-    logDebug('validateSessionToken <=', token)
     const payload = await validateSessionToken(token)
-    logDebug('validateSessionToken =>', payload)
     return payload.userId
   } catch (err) {
     logError('invalid session token <=', err)
@@ -116,9 +113,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
   }
   const userAgent = event.headers['User-Agent']
   const clientIp = event.requestContext.identity.sourceIp
-  logDebug('reservedIp <=', reservedIp)
-  logDebug('headers.userAgent <=', userAgent)
-  logDebug('request.clientIp <=', clientIp)
+  logDebug('isRemoteTestRequest <=', {reservedIp, userAgent, clientIp})
   return clientIp === reservedIp && userAgent === 'localhost@lifegames'
 }
 

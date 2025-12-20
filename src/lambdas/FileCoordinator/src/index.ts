@@ -1,9 +1,8 @@
-import type {APIGatewayProxyResult, ScheduledEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {logDebug, logInfo, putMetrics, response, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
+import {putMetrics, withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import {initiateFileDownload} from '#util/shared'
+import {initiateFileDownload} from '#util/lambda-invoke-helpers'
 import {getOptionalEnvNumber} from '#util/env-validation'
 
 /** Minimal download info needed for processing */
@@ -68,7 +67,12 @@ async function processDownloadsInBatches(downloads: DownloadInfo[]): Promise<voi
     logInfo(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}`, {batchSize: batch.length, remaining: downloads.length - i - batch.length})
 
     // Process batch concurrently, passing correlationId for tracing
-    await Promise.all(batch.map(({fileId, correlationId}) => initiateFileDownload(fileId, correlationId)))
+    // Use Promise.allSettled so one bad file doesn't prevent initiating 4 others
+    const results = await Promise.allSettled(batch.map(({fileId, correlationId}) => initiateFileDownload(fileId, correlationId)))
+    const failed = results.filter((r) => r.status === 'rejected')
+    if (failed.length > 0) {
+      logError(`Failed to initiate ${failed.length} downloads`, {batchSize: batch.length, failed: failed.length})
+    }
 
     // Add delay between batches (except for the last batch)
     if (i + BATCH_SIZE < downloads.length) {
@@ -84,9 +88,19 @@ async function processDownloadsInBatches(downloads: DownloadInfo[]): Promise<voi
  * @param event - An AWS ScheduledEvent; happening every X minutes
  * @param context - An AWS Context object
  */
-export const handler = withPowertools(wrapApiHandler(async ({context}: ApiHandlerParams<ScheduledEvent>): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapScheduledHandler(async (): Promise<void> => {
   // Query both pending and scheduled downloads in parallel
-  const [pendingDownloads, scheduledDownloads] = await Promise.all([getPendingDownloads(), getScheduledDownloads()])
+  // Use Promise.allSettled to process available downloads even if one query fails
+  const results = await Promise.allSettled([getPendingDownloads(), getScheduledDownloads()])
+  const pendingDownloads = results[0].status === 'fulfilled' ? results[0].value : []
+  const scheduledDownloads = results[1].status === 'fulfilled' ? results[1].value : []
+
+  if (results[0].status === 'rejected') {
+    logError('Failed to query pending downloads', {error: results[0].reason})
+  }
+  if (results[1].status === 'rejected') {
+    logError('Failed to query scheduled downloads', {error: results[1].reason})
+  }
 
   // Combine downloads, deduplicate by fileId
   const seenFileIds = new Set<string>()
@@ -109,12 +123,11 @@ export const handler = withPowertools(wrapApiHandler(async ({context}: ApiHandle
 
   if (allDownloads.length === 0) {
     logInfo('No files to process')
-    return response(context, 200, {processed: 0})
+    return
   }
 
   // Process downloads in batches to avoid overwhelming yt-dlp
   await processDownloadsInBatches(allDownloads)
 
   logInfo('All files processed', {total: allDownloads.length})
-  return response(context, 200, {processed: allDownloads.length, pending: pendingDownloads.length, scheduled: scheduledDownloads.length})
 }))

@@ -35,9 +35,10 @@ const fakeGithubIssueResponse = {
 
 const getUserDevicesMock = jest.fn<() => unknown>()
 const deleteDeviceMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('#util/shared', () => ({
+jest.unstable_mockModule('#util/device-helpers', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
-  deleteDevice: deleteDeviceMock
+  deleteDevice: deleteDeviceMock,
+  deleteUserDevice: jest.fn()
 }))
 
 const devicesMock = createElectroDBEntityMock()
@@ -54,7 +55,8 @@ jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevic
 
 jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
   deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: jest.fn()
+  subscribe: jest.fn(),
+  unsubscribe: jest.fn()
 }))
 
 jest.unstable_mockModule('#util/github-helpers', () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))

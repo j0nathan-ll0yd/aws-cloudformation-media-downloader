@@ -1,15 +1,23 @@
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-import {createPlatformEndpoint, listSubscriptionsByTopic, unsubscribe} from '#lib/vendor/AWS/SNS'
+import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
-import type {DeviceRegistrationRequest} from '#types/request-types'
 import {UserStatus} from '#types/enums'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {registerDeviceSchema} from '#util/constraints'
-import {logDebug, response, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import {getUserDevices, subscribeEndpointToTopic} from '#util/shared'
+import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#util/device-helpers'
 import {getRequiredEnv} from '#util/env-validation'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {logDebug} from '#util/logging'
+
+interface DeviceRegistrationRequest {
+  name: string
+  token: string
+  systemVersion: string
+  deviceId: string
+  systemName: string
+}
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -26,17 +34,6 @@ async function createPlatformEndpointFromToken(token: string) {
   }
   logDebug('createPlatformEndpoint =>', createPlatformEndpointResponse)
   return createPlatformEndpointResponse
-}
-
-/**
- * Unsubscribes an endpoint (a client device) to an SNS topic
- * @param subscriptionArn - The SubscriptionArn of an endpoint+topic
- */
-export async function unsubscribeEndpointToTopic(subscriptionArn: string) {
-  logDebug('unsubscribeEndpointToTopic <=')
-  const response = await unsubscribe({SubscriptionArn: subscriptionArn})
-  logDebug('unsubscribeEndpointToTopic =>', response)
-  return response
 }
 
 /**
@@ -119,17 +116,17 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
       // Determine if the user already exists
       const userDevices = await getUserDevices(userId)
       if (userDevices.length === 1) {
-        return response(context, 200, {endpointArn: device.endpointArn})
+        return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
       } else {
         // Confirm the subscription, and unsubscribe
         const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
         await unsubscribeEndpointToTopic(subscriptionArn)
-        return response(context, 201, {endpointArn: platformEndpoint.EndpointArn})
+        return buildApiResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn})
       }
     } else if (userStatus === UserStatus.Anonymous) {
       // If the user hasn't registered; add them to the unregistered topic
       await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
     }
-    return response(context, 200, {endpointArn: device.endpointArn})
+    return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
   })
 )

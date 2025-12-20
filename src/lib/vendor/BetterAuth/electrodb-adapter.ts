@@ -13,7 +13,7 @@ import {Sessions} from '#entities/Sessions'
 import {Accounts} from '#entities/Accounts'
 import {VerificationTokens} from '#entities/VerificationTokens'
 import {v4 as uuidv4} from 'uuid'
-import {logDebug, logError} from '#util/lambda-helpers'
+import {logDebug, logError} from '#util/logging'
 
 type ModelName = 'user' | 'session' | 'account' | 'verification'
 

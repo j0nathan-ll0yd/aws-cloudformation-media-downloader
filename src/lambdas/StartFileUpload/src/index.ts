@@ -1,22 +1,27 @@
-import type {Context} from 'aws-lambda'
-import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
-import type {FetchVideoInfoResult} from '#types/video'
-import type {File} from '#types/domain-models'
-import type {StartFileUploadParams} from '#types/infrastructure-types'
-import type {YtDlpVideoInfo} from '#types/youtube'
-import {FileStatus, ResponseStatus} from '#types/enums'
-import {logDebug, logInfo, putMetric, putMetrics, response, withPowertools} from '#util/lambda-helpers'
-import {createMetadataNotification} from '#util/transformers'
-import {UnexpectedError} from '#util/errors'
-import {upsertFile} from '#util/shared'
-import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
-import {getSegment} from '#lib/vendor/AWS/XRay'
-import {getRequiredEnv} from '#util/env-validation'
-import type {VideoErrorClassification} from '#types/video'
-import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
+import {getSegment} from '#lib/vendor/AWS/XRay'
+import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
+import type {File} from '#types/domain-models'
+import {FileStatus, ResponseStatus} from '#types/enums'
+import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
+import type {YtDlpVideoInfo} from '#types/youtube'
+import {getRequiredEnv} from '#util/env-validation'
+import {UnexpectedError} from '#util/errors'
+import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
+import {buildApiResponse, putMetric, putMetrics, withPowertools, wrapLambdaInvokeHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo} from '#util/logging'
+import {createMetadataNotification} from '#util/transformers'
+import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
+import {upsertFile} from './file-helpers'
+
+interface StartFileUploadParams {
+  fileId: string
+  /** Correlation ID for end-to-end request tracing */
+  correlationId?: string
+}
 
 /**
  * Fetch video info with X-Ray tracing.
@@ -89,10 +94,12 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
 
   try {
     // Try to update existing record first
-    await FileDownloads.update({fileId}).set(update).go()
+    logDebug('FileDownloads.update <=', {fileId, update})
+    const updateResponse = await FileDownloads.update({fileId}).set(update).go()
+    logDebug('FileDownloads.update =>', updateResponse)
   } catch {
     // If record doesn't exist, create it
-    await FileDownloads.create({
+    const createData = {
       fileId,
       status,
       retryCount,
@@ -102,7 +109,10 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       retryAfter: classification?.retryAfter,
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
       ttl: update.ttl as number | undefined
-    }).go()
+    }
+    logDebug('FileDownloads.create <=', createData)
+    const createResponse = await FileDownloads.create(createData).go()
+    logDebug('FileDownloads.create =>', createResponse)
   }
 }
 
@@ -125,12 +135,14 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
   }
 
   // Send MetadataNotification to each user
-  await Promise.all(userIds.map((userId) => {
+  // Use Promise.allSettled so one SQS error doesn't stop other user notifications
+  const results = await Promise.allSettled(userIds.map((userId) => {
     const {messageBody, messageAttributes} = createMetadataNotification(fileId, videoInfo, userId)
     return sendMessage({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes})
   }))
+  const failed = results.filter((r) => r.status === 'rejected').length
 
-  logInfo('Dispatched MetadataNotifications', {fileId, userCount: userIds.length})
+  logInfo('Dispatched MetadataNotifications', {fileId, succeeded: userIds.length - failed, failed})
 }
 
 /**
@@ -177,7 +189,7 @@ async function handleDownloadFailure(
     })
 
     // Return success - scheduling a retry is expected behavior, not a failure
-    return response(context, 200, {
+    return buildApiResponse(context, 200, {
       fileId,
       status: DownloadStatus.Scheduled,
       retryAfter: classification.retryAfter,
@@ -210,7 +222,7 @@ async function handleDownloadFailure(
     logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
   }
 
-  return response(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
+  return buildApiResponse(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
 }
 
 /**
@@ -232,9 +244,9 @@ async function handleDownloadFailure(
  * @param context - AWS Lambda context
  * @notExported
  */
-export const handler = withPowertools(async (event: StartFileUploadParams, context: Context) => {
+export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadParams, APIGatewayProxyResult>(async ({event, context}) => {
   const correlationId = event.correlationId || context.awsRequestId
-  logInfo('event <=', {...event, correlationId})
+  logInfo('Processing request', {correlationId, fileId: event.fileId})
 
   const fileId = event.fileId
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
@@ -243,7 +255,9 @@ export const handler = withPowertools(async (event: StartFileUploadParams, conte
   let existingRetryCount = 0
   let existingMaxRetries = 5
   try {
+    logDebug('FileDownloads.get <=', {fileId})
     const {data: existingDownload} = await FileDownloads.get({fileId}).go()
+    logDebug('FileDownloads.get =>', existingDownload ?? 'null')
     if (existingDownload) {
       existingRetryCount = existingDownload.retryCount ?? 0
       existingMaxRetries = existingDownload.maxRetries ?? 5
@@ -305,12 +319,11 @@ export const handler = withPowertools(async (event: StartFileUploadParams, conte
 
   logDebug('upsertFile <=', fileData)
   await upsertFile(fileData)
-  logDebug('upsertFile =>')
 
   // Step 5: Mark download as completed
   await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
   await putMetric('LambdaExecutionSuccess', 1)
 
-  return response(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
-})
+  return buildApiResponse(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
+}))

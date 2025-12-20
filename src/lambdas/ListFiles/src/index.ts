@@ -1,9 +1,10 @@
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
-import {logDebug, logError, response, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {buildApiResponse, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
+import {logDebug, logError} from '#util/logging'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
-import {defaultFile} from '#util/constants'
+import {getDefaultFile} from '#util/constants'
 import {retryUnprocessed} from '#util/retry'
 
 /**
@@ -46,9 +47,9 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
   const myResponse = {contents: [] as File[], keyCount: 0}
 
   if (userStatus === UserStatus.Anonymous) {
-    myResponse.contents = [defaultFile]
+    myResponse.contents = [getDefaultFile()]
     myResponse.keyCount = myResponse.contents.length
-    return response(context, 200, myResponse)
+    return buildApiResponse(context, 200, myResponse)
   }
 
   const files = await getFilesByUser(userId as string)
@@ -56,5 +57,5 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
     new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
   )
   myResponse.keyCount = myResponse.contents.length
-  return response(context, 200, myResponse)
+  return buildApiResponse(context, 200, myResponse)
 }))

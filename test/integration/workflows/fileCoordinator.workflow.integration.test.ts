@@ -76,9 +76,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     await insertFileDownload('video-2', DownloadStatus.Pending)
     await insertFileDownload('video-3', DownloadStatus.Pending)
 
-    const result = await handler(createMockScheduledEvent('test-event-1'), mockContext)
+    // FileCoordinator is a scheduled handler that returns void
+    await handler(createMockScheduledEvent('test-event-1'), mockContext)
 
-    expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(3)
 
     const invokedFileIds = invokeLambdaMock.mock.calls.map(([, payload]) => payload.fileId).sort()
@@ -86,10 +86,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
   })
 
   test('should handle empty queue gracefully', async () => {
-    // No FileDownloads records - should handle gracefully
-    const result = await handler(createMockScheduledEvent('test-event-2'), mockContext)
+    // No FileDownloads records - should handle gracefully (returns void)
+    await handler(createMockScheduledEvent('test-event-2'), mockContext)
 
-    expect(result.statusCode).toBe(200)
     expect(invokeLambdaMock).not.toHaveBeenCalled()
   })
 
@@ -103,9 +102,8 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     // Another ready one
     await insertFileDownload('now-retry', DownloadStatus.Scheduled, nowSeconds)
 
-    const result = await handler(createMockScheduledEvent('test-event-3'), mockContext)
+    await handler(createMockScheduledEvent('test-event-3'), mockContext)
 
-    expect(result.statusCode).toBe(200)
     // Should process 2 retries (past-retry and now-retry, not future-retry)
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
 
@@ -121,13 +119,9 @@ describe('FileCoordinator Workflow Integration Tests', () => {
     // Scheduled retry (ready)
     await insertFileDownload('scheduled-video', DownloadStatus.Scheduled, nowSeconds - 100)
 
-    const result = await handler(createMockScheduledEvent('test-event-4'), mockContext)
+    await handler(createMockScheduledEvent('test-event-4'), mockContext)
 
-    expect(result.statusCode).toBe(200)
+    // Both pending and scheduled should be processed
     expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
-
-    const body = JSON.parse(result.body)
-    expect(body.body.pending).toBe(1)
-    expect(body.body.scheduled).toBe(1)
   })
 })
