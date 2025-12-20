@@ -7,4 +7,4 @@
  */
 import {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
 
-export {DynamoDBDocumentClient}
+export { DynamoDBDocumentClient }

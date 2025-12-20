@@ -6,4 +6,4 @@
  */
 import {getRequiredEnv} from '#util/env-validation'
 const region = getRequiredEnv('AWS_REGION')
-export {region}
+export { region }

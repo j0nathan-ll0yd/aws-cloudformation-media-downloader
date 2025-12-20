@@ -9,9 +9,4 @@
 import {beforeAll, describe, test} from '@jest/globals'
 import {Users} from '#entities/Users'
 
-jest.unstable_mockModule('#entities/Users', () => ({
-	Users: {
-		get: jest.fn(),
-		create: jest.fn()
-	}
-}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: {get: jest.fn(), create: jest.fn()}}))

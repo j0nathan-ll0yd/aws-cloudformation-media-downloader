@@ -6,8 +6,5 @@
  * @expectedViolations 1
  */
 export async function handler() {
-	return Promise.resolve({
-		statusCode: 200,
-		body: JSON.stringify({})
-	})
+  return Promise.resolve({statusCode: 200, body: JSON.stringify({})})
 }

@@ -6,8 +6,5 @@
  * @expectedViolations 1
  */
 export async function handler(event: APIGatewayProxyEvent) {
-	return {
-		statusCode: 200,
-		body: JSON.stringify({success: true})
-	}
+  return {statusCode: 200, body: JSON.stringify({success: true})}
 }

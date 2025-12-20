@@ -7,4 +7,4 @@
  */
 const sdk = await import('@aws-sdk/client-dynamodb')
 
-export {sdk}
+export { sdk }

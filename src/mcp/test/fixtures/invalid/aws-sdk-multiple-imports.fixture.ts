@@ -13,4 +13,4 @@ const dynamoClient = new DynamoDBClient({})
 const s3Client = new S3Client({})
 const snsClient = new SNSClient({})
 
-export {dynamoClient, s3Client, snsClient}
+export { dynamoClient, s3Client, snsClient }

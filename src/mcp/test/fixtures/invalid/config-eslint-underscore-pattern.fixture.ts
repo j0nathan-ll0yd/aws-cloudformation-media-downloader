@@ -7,9 +7,5 @@
  * @simulatedPath eslint.config.mjs
  */
 export default [
-	{
-		rules: {
-			'@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}]
-		}
-	}
+  {rules: {'@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}]}}
 ]

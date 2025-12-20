@@ -25,10 +25,7 @@ function getTableName(): string {
  * Uses project's LocalStack-aware DynamoDB client for testing compatibility
  */
 export function createPersistenceStore(): DynamoDBPersistenceLayer {
-  return new DynamoDBPersistenceLayer({
-    tableName: getTableName(),
-    awsSdkV3Client: createDynamoDBClient()
-  })
+  return new DynamoDBPersistenceLayer({tableName: getTableName(), awsSdkV3Client: createDynamoDBClient()})
 }
 
 /**

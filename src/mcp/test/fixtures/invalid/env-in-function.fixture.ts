@@ -6,5 +6,5 @@
  * @expectedViolations 1
  */
 export function getConfig() {
-	return process.env.MY_CONFIG
+  return process.env.MY_CONFIG
 }

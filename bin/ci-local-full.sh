@@ -8,7 +8,7 @@
 # 1. All fast CI checks (via ci-local.sh)
 # 2. Integration tests against LocalStack
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

@@ -6,5 +6,5 @@
  */
 import {Users} from '#entities/Users'
 export const handler = async () => {
-	return await Users.get({userId: '123'}).go()
+  return await Users.get({userId: '123'}).go()
 }

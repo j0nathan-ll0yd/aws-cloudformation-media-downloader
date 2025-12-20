@@ -325,5 +325,10 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
 
   await putMetric('LambdaExecutionSuccess', 1)
 
-  return buildApiResponse(context, 200, {fileId: videoInfo.id, status: ResponseStatus.Success, fileSize: uploadResult.fileSize, duration: uploadResult.duration})
+  return buildApiResponse(context, 200, {
+    fileId: videoInfo.id,
+    status: ResponseStatus.Success,
+    fileSize: uploadResult.fileSize,
+    duration: uploadResult.duration
+  })
 }))

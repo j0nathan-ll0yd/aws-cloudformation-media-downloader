@@ -7,6 +7,6 @@
  * @simulatedPath src/util/status.ts
  */
 export enum Status {
-	Pending = 'pending',
-	Active = 'active'
+  Pending = 'pending',
+  Active = 'active'
 }

@@ -4,7 +4,7 @@
 # Validates that documented pnpm scripts in AGENTS.md and README.md exist in package.json
 # Usage: pnpm run validate:docs or ./bin/validate-docs.sh
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -24,7 +24,7 @@ MISSING_SCRIPTS=""
 
 # Check AGENTS.md for pnpm run commands (supports camelCase like registerDevice)
 if [ -f "AGENTS.md" ]; then
-  for script in $(grep -oE 'pnpm run [a-zA-Z:-]+' AGENTS.md 2>/dev/null | sed 's/pnpm run //' | sort -u); do
+  for script in $(grep -oE 'pnpm run [a-zA-Z:-]+' AGENTS.md 2> /dev/null | sed 's/pnpm run //' | sort -u); do
     if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
       MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
     fi
@@ -33,7 +33,7 @@ fi
 
 # Check README.md for pnpm/npm run commands (supports camelCase like registerDevice)
 if [ -f "README.md" ]; then
-  for script in $(grep -oE '(pnpm|npm) run [a-zA-Z:-]+' README.md 2>/dev/null | sed 's/.*run //' | sort -u); do
+  for script in $(grep -oE '(pnpm|npm) run [a-zA-Z:-]+' README.md 2> /dev/null | sed 's/.*run //' | sort -u); do
     if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
       MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
     fi

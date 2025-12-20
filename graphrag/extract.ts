@@ -335,7 +335,7 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
  * Save knowledge graph to file
  */
 async function saveKnowledgeGraph(graph: KnowledgeGraph, outputPath: string) {
-  await fs.writeFile(outputPath, JSON.stringify(graph, null, 2))
+  await fs.writeFile(outputPath, JSON.stringify(graph, null, 2) + '\n')
   console.log(`✓ Knowledge graph saved to ${outputPath}`)
   console.log(`  Nodes: ${graph.nodes.length}`)
   console.log(`  Edges: ${graph.edges.length}`)

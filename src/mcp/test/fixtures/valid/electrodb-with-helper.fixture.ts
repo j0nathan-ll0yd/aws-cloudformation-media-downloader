@@ -8,11 +8,6 @@
 import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
 import {Users} from '#entities/Users'
 
-const UsersMock = createElectroDBEntityMock({
-	get: jest.fn(),
-	create: jest.fn()
-})
+const UsersMock = createElectroDBEntityMock({get: jest.fn(), create: jest.fn()})
 
-jest.unstable_mockModule('#entities/Users', () => ({
-	Users: createElectroDBEntityMock({get: jest.fn()})
-}))
+jest.unstable_mockModule('#entities/Users', () => ({Users: createElectroDBEntityMock({get: jest.fn()})}))

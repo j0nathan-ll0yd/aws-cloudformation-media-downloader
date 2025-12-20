@@ -6,6 +6,6 @@
  * @expectedViolations 1
  */
 await Promise.all([
-	Users.delete({userId}).go(),
-	UserFiles.delete({userId}).go()
+  Users.delete({userId}).go(),
+  UserFiles.delete({userId}).go()
 ])

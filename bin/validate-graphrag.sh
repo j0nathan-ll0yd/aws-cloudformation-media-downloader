@@ -4,7 +4,7 @@
 # Validates that GraphRAG knowledge-graph.json is up to date
 # Usage: pnpm run validate:graphrag or ./bin/validate-graphrag.sh
 
-set -e  # Exit on error
+set -e # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -32,7 +32,7 @@ fi
 pnpm run graphrag:extract
 
 # Check for differences
-if ! git diff --quiet graphrag/knowledge-graph.json 2>/dev/null; then
+if ! git diff --quiet graphrag/knowledge-graph.json 2> /dev/null; then
   echo -e "${RED}GraphRAG knowledge-graph.json is out of date!${NC}"
   echo ""
   echo "Changes detected:"

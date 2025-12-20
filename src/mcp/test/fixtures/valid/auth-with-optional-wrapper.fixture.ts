@@ -9,8 +9,8 @@ import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
 import {UserStatus} from '#types/enums'
 
 export const handler = wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {
-	if (userStatus === UserStatus.Anonymous) {
-		return response(context, 200, {demo: true})
-	}
-	return response(context, 200, {userId})
+  if (userStatus === UserStatus.Anonymous) {
+    return response(context, 200, {demo: true})
+  }
+  return response(context, 200, {userId})
 })

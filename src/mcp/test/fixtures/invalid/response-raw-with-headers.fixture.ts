@@ -6,8 +6,5 @@
  * @expectedViolations 1
  */
 export async function handler(event: APIGatewayProxyEvent) {
-	return {
-		statusCode: 302,
-		headers: {Location: 'https://example.com'}
-	}
+  return {statusCode: 302, headers: {Location: 'https://example.com'}}
 }

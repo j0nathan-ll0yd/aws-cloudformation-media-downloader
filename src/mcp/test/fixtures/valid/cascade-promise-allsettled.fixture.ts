@@ -5,6 +5,6 @@
  * @expectedViolations 0
  */
 await Promise.allSettled([
-	Users.delete({userId}).go(),
-	UserFiles.delete({userId}).go()
+  Users.delete({userId}).go(),
+  UserFiles.delete({userId}).go()
 ])
