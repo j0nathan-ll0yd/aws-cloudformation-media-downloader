@@ -21,7 +21,7 @@ echo 'Converting JSON to TypeScript (via Quicktype)'
 quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
 eval $quicktype_command
 
-echo 'Encrypting Secrets (secrets.yaml) via SOPS'
+echo 'Checking Secrets (secrets.yaml) via SOPS'
 secrets_file_path="${bin_dir}/../secrets.yaml"
 encrypted_secrets_file_path="${bin_dir}/../secrets.enc.yaml"
 sops_config_path="${bin_dir}/../.sops.yaml"
@@ -34,9 +34,30 @@ elif [ ! -f "$sops_config_path" ]; then
   echo "Warning: SOPS config file does not exist at $sops_config_path"
   echo "Please refer to the README for SOPS configuration instructions"
   echo "Skipping encryption step"
+elif [ ! -f "$encrypted_secrets_file_path" ]; then
+  # No encrypted file exists yet - encrypt for the first time
+  echo "Encrypting secrets for the first time..."
+  sops --config "${sops_config_path}" --encrypt --output "${encrypted_secrets_file_path}" "${secrets_file_path}"
 else
-  encrypt_command="sops --config ${sops_config_path} --encrypt --output ${encrypted_secrets_file_path} ${secrets_file_path}"
-  eval $encrypt_command
+  # Compare hashes to avoid unnecessary re-encryption (AES-GCM uses random IVs)
+  # This requires the age private key to decrypt - skip comparison if unavailable
+  source_hash=$(shasum -a 256 "${secrets_file_path}" | cut -d' ' -f1)
+  decrypted_content=$(sops --config "${sops_config_path}" --decrypt "${encrypted_secrets_file_path}" 2> /dev/null)
+  decrypt_exit_code=$?
+
+  if [ $decrypt_exit_code -ne 0 ]; then
+    echo "Cannot decrypt secrets (missing age key?) - skipping encryption"
+    echo "To re-encrypt, ensure SOPS_AGE_KEY_FILE is set or key is in ~/.config/sops/age/keys.txt"
+  else
+    decrypted_hash=$(echo "$decrypted_content" | shasum -a 256 | cut -d' ' -f1)
+
+    if [ "$source_hash" != "$decrypted_hash" ]; then
+      echo "Secrets changed - re-encrypting..."
+      sops --config "${sops_config_path}" --encrypt --output "${encrypted_secrets_file_path}" "${secrets_file_path}"
+    else
+      echo "Secrets unchanged - skipping encryption"
+    fi
+  fi
 fi
 
 echo 'Prepending Typescript nocheck on file'
