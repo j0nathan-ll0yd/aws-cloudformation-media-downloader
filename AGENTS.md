@@ -478,10 +478,17 @@ pnpm run deploy          # Deploy infrastructure with OpenTofu
 ## AI Context Optimization
 This repository is optimized for AI agents using:
 - **Semantic Memory**: Local vector database (LanceDB) for natural language code search. Run `pnpm run index:codebase` to update.
-- **Repomix**: Packed context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
-- **LLMS Entry Point**: `docs/llms.txt` and `docs/llms-full.txt` for high-level understanding.
+- **Repomix**: Packed codebase context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
 - **Convention Validation**: CI/CD enforcement of rules in `AGENTS.md` via `pnpm run validate:conventions`.
 - **Gemini Instructions**: Custom instructions in `.gemini/instructions.md`.
+
+### LLM Context Files
+
+| File | Purpose | Git Status | Generation |
+|------|---------|------------|------------|
+| `docs/llms.txt` | Curated index for external AI crawlers (GPTBot, Perplexity) | Committed | Manual |
+| `docs/llms-full.txt` | Complete docs for AI agents needing full context | Gitignored | `pnpm run generate:llms` |
+| `repomix-output.xml` | Full codebase context for local Claude Code sessions | Gitignored | `pnpm run pack:context` |
 
 ### Claude Code Context Loading
 Claude Code automatically reads `CLAUDE.md` and `AGENTS.md` at session start. For additional codebase context beyond these files, generate and reference the packed context:

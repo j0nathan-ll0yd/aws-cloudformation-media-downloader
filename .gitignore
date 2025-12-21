@@ -40,3 +40,6 @@ test/fixtures/raw
 
 # Repomix context (generated on demand)
 repomix-output.xml
+
+# LLM context (llms-full.txt generated on demand, llms.txt committed)
+docs/llms-full.txt

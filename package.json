@@ -65,6 +65,7 @@
     "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve",
     "pack:context": "repomix",
     "pack:light": "repomix --include \"src/**/*.ts,docs/**/*.md,AGENTS.md\" --ignore \"**/*.test.ts,**/*.spec.ts\"",
+    "generate:llms": "cat README.md docs/wiki/**/*.md > docs/llms-full.txt",
     "prepare": "husky"
   },
   "author": "Jonathan Lloyd",
