@@ -56,6 +56,9 @@ jobs:
     - name: Check types
       run: pnpm run check-types
 
+    - name: Check test types
+      run: pnpm run check-test-types
+
     - name: Lint code
       run: pnpm run lint
 
