@@ -1,6 +1,7 @@
 import * as lancedb from '@lancedb/lancedb'
-import {generateEmbedding} from '../../../scripts/embeddings.js'
 import path from 'node:path'
+import {generateEmbedding} from '../../../scripts/embeddings.js'
+import {indexCodebase} from '../../../scripts/indexCodebase.js'
 
 const DB_DIR = path.join(process.cwd(), '.lancedb')
 const TABLE_NAME = 'code_chunks'
@@ -45,16 +46,9 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
  * Handle codebase indexing
  */
 export async function handleIndexCodebase() {
-  // Since indexing is a heavy operation, we'll trigger it as a shell command
-  // but we can wrap the logic if needed. For now, we'll just suggest running the script
-  // or use exec to run it.
-  const {exec} = await import('node:child_process')
-  const {promisify} = await import('node:util')
-  const execAsync = promisify(exec)
-
   try {
-    const {stdout, stderr} = await execAsync('pnpm run index:codebase')
-    return {content: [{type: 'text', text: `Indexing completed:\n${stdout}\n${stderr}`}]}
+    await indexCodebase()
+    return {content: [{type: 'text', text: 'Indexing completed successfully.'}]}
   } catch (error) {
     return {content: [{type: 'text', text: `Indexing failed: ${error instanceof Error ? error.message : String(error)}`}]}
   }

@@ -2,9 +2,7 @@ import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {UserFiles} from '#entities/UserFiles'
 import {Users} from '#entities/Users'
-
 import type {Device} from '#types/domain-models'
-
 import {deleteDevice, getUserDevices} from '#util/device-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'

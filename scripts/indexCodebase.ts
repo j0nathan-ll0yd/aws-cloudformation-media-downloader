@@ -15,9 +15,10 @@ interface CodeChunk {
   endLine: number
   type: string
   name: string
+  [key: string]: unknown  // Index signature for LanceDB compatibility
 }
 
-async function main() {
+export async function indexCodebase() {
   const projectRoot = process.cwd()
   const db = await lancedb.connect(DB_DIR)
 
@@ -98,4 +99,5 @@ async function createChunk(node: any, type: string, name: string, filePath: stri
   }
 }
 
-main().catch(console.error)
+// Run when executed directly
+indexCodebase().catch(console.error)

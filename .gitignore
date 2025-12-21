@@ -37,3 +37,6 @@ test/fixtures/raw
 # Claude Code (keep commands, exclude user-specific settings)
 .claude/settings.local.json
 .lancedb
+
+# Repomix context (generated on demand)
+repomix-output.xml

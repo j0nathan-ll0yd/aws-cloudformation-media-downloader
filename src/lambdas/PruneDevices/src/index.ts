@@ -1,11 +1,8 @@
 import {ApnsClient, Notification, Priority, PushType} from 'apns2'
-
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-
 import type {Device} from '#types/domain-models'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda-payloads'
-
 import {deleteDevice} from '#util/device-helpers'
 import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
 import {Apns2Error, UnexpectedError} from '#util/errors'
@@ -103,18 +100,17 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const deleteUserDevicesPromise = userIds.length > 0
-          ? (async () => {
-            const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-            const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
-            if (unprocessed.length > 0) {
-              logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
-            }
-          })()
-          : Promise.resolve()
 
-        // Cascade order: Delete children (UserDevices) first, then parent (Device)
-        await deleteUserDevicesPromise
+        // Delete UserDevices junction records first (children before parent)
+        if (userIds.length > 0) {
+          const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+          const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
+          if (unprocessed.length > 0) {
+            logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
+          }
+        }
+
+        // Then delete the Device itself
         await deleteDevice(device)
 
         result.devicesPruned++

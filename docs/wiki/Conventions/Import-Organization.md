@@ -11,14 +11,17 @@
 **Use ES modules (import/export), not CommonJS (require)**
 
 ### Import Order (STRICT)
-Imports must follow this exact order with blank lines between groups:
+Imports must follow this exact order with **NO blank lines between groups**:
 
-1. **AWS Lambda types** (if Lambda function)
-2. **Vendor library imports** (lib/vendor/*)
-3. **Type imports** (types/*)
-4. **Utility imports** (util/*)
-5. **Local/relative imports**
-6. **Node built-in modules** (at the end)
+1. **Node built-in modules** (at the top)
+2. **Third-party library imports** (npm packages)
+3. **Entity imports** (#entities/*)
+4. **Vendor library imports** (#lib/vendor/*)
+5. **Type imports** (#types/*)
+6. **Utility imports** (#util/*)
+7. **Local/relative imports**
+
+**IMPORTANT**: No blank lines between import statements. Keep all imports as a single contiguous block.
 
 ### Import Style
 - **Destructure imports** when possible
@@ -31,28 +34,18 @@ Imports must follow this exact order with blank lines between groups:
 ### ✅ Correct - Lambda Function
 
 ```typescript
-// 1. AWS Lambda type imports FIRST
-import {APIGatewayProxyResult, Context} from 'aws-lambda'
-
-// 2. Vendor library imports (lib/vendor/*)
-import {query, updateItem} from '../../../lib/vendor/AWS/DynamoDB'
-import {createS3Upload, headObject} from '../../../lib/vendor/AWS/S3'
-
-// 3. Type imports (types/*)
-import type {File} from '../../../types/domain-models'
-import type {User} from '../../../types/domain-models'
-import type {FileStatus} from '../../../types/enums'
-
-// 4. Utility imports (util/*)
-import {logDebug, logInfo, response} from '../../../util/lambda-helpers'
-import {UnexpectedError} from '../../../util/errors'
-
-// 5. Local imports
-import {processFile} from './fileProcessor'
-
-// 6. Node built-ins (if needed)
-import * as path from 'path'
+import {randomUUID} from 'node:crypto'
+import type {APIGatewayProxyResult, Context} from 'aws-lambda'
+import {Files} from '#entities/Files'
+import {UserFiles} from '#entities/UserFiles'
+import {sendMessage} from '#lib/vendor/AWS/SQS'
+import type {File} from '#types/domain-models'
+import {FileStatus} from '#types/enums'
+import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logInfo} from '#util/logging'
 ```
+
+Note: All imports in a single contiguous block with no blank lines.
 
 ### ❌ Incorrect
 
@@ -150,7 +143,7 @@ module.exports.myFunction = () => {}
 
 - [ ] ES modules syntax used (import/export)
 - [ ] Imports follow strict order
-- [ ] Blank lines between groups
+- [ ] NO blank lines between import statements
 - [ ] Destructured where possible
 - [ ] Type imports use `import type`
 - [ ] No direct AWS SDK imports

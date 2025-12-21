@@ -15,7 +15,7 @@ const SEVERITY = 'HIGH' as const
 
 export const responseHelpersRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers must use response() and lambdaErrorResponse() helpers from lambda-helpers.ts instead of raw response objects.',
+  description: 'Lambda handlers must use buildApiResponse() helper from lambda-helpers.ts instead of raw response objects.',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/**/src/*.ts'],
   excludes: ['**/*.test.ts', 'test/**/*.ts'],

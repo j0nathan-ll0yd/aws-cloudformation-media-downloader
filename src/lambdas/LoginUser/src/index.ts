@@ -11,9 +11,7 @@
  */
 
 import {auth} from '#lib/vendor/BetterAuth/config'
-
 import {loginUserSchema} from '#types/schemas'
-
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {logInfo} from '#util/logging'

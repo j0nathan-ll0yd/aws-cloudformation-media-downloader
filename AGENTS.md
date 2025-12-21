@@ -440,11 +440,39 @@ Queued | Downloading | Downloaded | Failed
 
 ### Essential Commands
 ```bash
+# Build & Check
+pnpm run precheck       # TypeScript type checking and lint (run before commits)
+pnpm run build          # Build Lambda functions with esbuild
+pnpm run format         # Auto-format with dprint (157 char lines)
+
+# Testing
+pnpm run test           # Run unit tests
+
+# Local CI (run before pushing)
+pnpm run ci:local       # Fast CI checks (~2-3 min, no integration)
+pnpm run ci:local:full  # Full CI checks (~5-10 min, with integration)
+
+# Integration testing
+pnpm run localstack:start        # Start LocalStack
+pnpm run test:integration        # Run integration tests (assumes LocalStack running)
+
+# Remote testing
+pnpm run test-remote-list        # Test file listing
+pnpm run test-remote-hook        # Test Feedly webhook
+pnpm run test-remote-registerDevice  # Test device registration
+
+# Documentation
+pnpm run document-source         # Generate TSDoc documentation
+
+# AI Context
 pnpm run pack:context    # Pack codebase into repomix-output.xml for context
 pnpm run pack:light      # Pack only interfaces and docs
 pnpm run index:codebase  # Re-index codebase for semantic search (LanceDB)
 pnpm run search:codebase "query" # Search codebase using natural language
 pnpm run validate:conventions # Run AST-based convention checks
+
+# Deployment
+pnpm run deploy          # Deploy infrastructure with OpenTofu
 ```
 
 ## AI Context Optimization

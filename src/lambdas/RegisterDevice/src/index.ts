@@ -1,12 +1,9 @@
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
-
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
-
 import {UserStatus} from '#types/enums'
 import {registerDeviceSchema} from '#types/schemas'
 import type {Device} from '#types/domain-models'
-
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#util/device-helpers'
 import {getRequiredEnv} from '#util/env-validation'

@@ -9,9 +9,9 @@ describe('lambda-helpers', () => {
   let originalLogLevel: string | undefined
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => ({} as unknown as void))
-    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => ({} as unknown as void))
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => undefined)
+    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
     originalLogLevel = process.env.LOG_LEVEL
     process.env.LOG_LEVEL = 'INFO' // Ensure fixtures are logged
   })

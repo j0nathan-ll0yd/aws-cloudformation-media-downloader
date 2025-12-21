@@ -16,14 +16,10 @@
  */
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
-
 import {Users} from '#entities/Users'
-
 import {auth} from '#lib/vendor/BetterAuth/config'
-
 import {registerUserSchema} from '#types/schemas'
 import type {ApiHandlerParams} from '#types/lambda-wrappers'
-
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
 import {logInfo} from '#util/logging'

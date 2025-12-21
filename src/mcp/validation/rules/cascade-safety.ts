@@ -30,6 +30,15 @@ const ENTITY_HIERARCHY: Record<string, string[]> = {
   Devices: ['UserDevices']
 }
 
+/**
+ * Pre-compiled regexes for entity deletion detection (performance optimization)
+ */
+const ENTITY_DELETE_REGEXES: Record<string, RegExp> = Object.fromEntries(
+  [...Object.keys(ENTITY_HIERARCHY), ...Object.values(ENTITY_HIERARCHY).flat()].map(
+    (entity) => [entity, new RegExp(`\\b${entity}\\.(delete|remove)`)]
+  )
+)
+
 export const cascadeSafetyRule: ValidationRule = {
   name: RULE_NAME,
   description:
@@ -86,17 +95,14 @@ export const cascadeSafetyRule: ValidationRule = {
 
       // Check if this is a delete operation on a known entity
       for (const [parent, children] of Object.entries(ENTITY_HIERARCHY)) {
-        // Check for parent entity deletion
-        // Use regex to ensure exact match (avoid matching UserFiles.delete as Files.delete)
-        const parentRegex = new RegExp(`\\b${parent}\\.(delete|remove)`)
-        if (parentRegex.test(text)) {
+        // Check for parent entity deletion using pre-compiled regex
+        if (ENTITY_DELETE_REGEXES[parent].test(text)) {
           deleteSequence.push({entity: parent, line: awaitExpr.getStartLineNumber()})
         }
 
-        // Check for child entity deletions
+        // Check for child entity deletions using pre-compiled regexes
         for (const child of children) {
-          const childRegex = new RegExp(`\\b${child}\\.(delete|remove)`)
-          if (childRegex.test(text)) {
+          if (ENTITY_DELETE_REGEXES[child].test(text)) {
             deleteSequence.push({entity: child, line: awaitExpr.getStartLineNumber()})
           }
         }
