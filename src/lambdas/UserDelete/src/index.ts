@@ -1,15 +1,16 @@
-import {Users} from '#entities/Users'
-import {UserFiles} from '#entities/UserFiles'
-import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'
-import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {logDebug, logError} from '#util/logging'
+import {UserDevices} from '#entities/UserDevices'
+import {UserFiles} from '#entities/UserFiles'
+import {Users} from '#entities/Users'
+
+import type {Device} from '#types/domain-models'
+
 import {deleteDevice, getUserDevices} from '#util/device-helpers'
 import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import type {Device} from '#types/domain-models'
 import {createFailedUserDeletionIssue} from '#util/github-helpers'
-import {retryUnprocessedDelete} from '#util/retry'
-import {retryUnprocessed} from '#util/retry'
+import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
+import {logDebug, logError} from '#util/logging'
+import {retryUnprocessed, retryUnprocessedDelete} from '#util/retry'
 
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
@@ -24,12 +25,6 @@ async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
 }
 
-async function deleteUser(userId: string): Promise<void> {
-  logDebug('deleteUser <=', userId)
-  const response = await Users.delete({userId}).go()
-  logDebug('deleteUser =>', response)
-}
-
 async function deleteUserDevices(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
   const userDevices = await UserDevices.query.byUser({userId}).go()
@@ -41,6 +36,12 @@ async function deleteUserDevices(userId: string): Promise<void> {
     }
   }
   logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
+}
+
+async function deleteUser(userId: string): Promise<void> {
+  logDebug('deleteUser <=', userId)
+  const response = await Users.delete({userId}).go()
+  logDebug('deleteUser =>', response)
 }
 
 /**
@@ -69,24 +70,35 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   }
 
   // Delete children FIRST (correct cascade order), then parent LAST
-  const childResults = await Promise.allSettled([
+  // 1. Delete junction/child tables first
+  const relationResults = await Promise.allSettled([
     deleteUserFiles(userId),
-    deleteUserDevices(userId),
-    ...deletableDevices.map((device) => deleteDevice(device))
+    deleteUserDevices(userId)
   ])
-  logDebug('Promise.allSettled (children)', childResults)
+  logDebug('Promise.allSettled (relations)', relationResults)
 
-  // Check for failures before deleting parent
-  const failures = childResults.filter((r) => r.status === 'rejected')
-  const hasPartialFailure = failures.length > 0
-
-  if (hasPartialFailure) {
-    logError('Cascade deletion partial failure', failures)
-    // Don't delete parent if children failed - prevents orphaned records
+  // Check for failures in relations
+  const relationFailures = relationResults.filter((r) => r.status === 'rejected')
+  if (relationFailures.length > 0) {
+    logError('Cascade deletion partial failure (relations)', relationFailures)
     return buildApiResponse(context, 207, {
       message: 'Partial deletion - some child records could not be removed',
-      failedOperations: failures.length,
-      totalOperations: childResults.length
+      failedOperations: relationFailures.length
+    })
+  }
+
+  // 2. Delete devices (parents of UserDevices)
+  const deviceResults = await Promise.allSettled(
+    deletableDevices.map((device) => deleteDevice(device))
+  )
+  logDebug('Promise.allSettled (devices)', deviceResults)
+
+  const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
+  if (deviceFailures.length > 0) {
+    logError('Cascade deletion partial failure (devices)', deviceFailures)
+    return buildApiResponse(context, 207, {
+      message: 'Partial deletion - some devices could not be removed',
+      failedOperations: deviceFailures.length
     })
   }
 

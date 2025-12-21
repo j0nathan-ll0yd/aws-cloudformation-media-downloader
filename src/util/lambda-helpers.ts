@@ -248,7 +248,7 @@ function sanitizeForTest(data: unknown): unknown {
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
-  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
   console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)}))
 }
 
@@ -265,7 +265,7 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
-  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
   console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)}))
 }
 

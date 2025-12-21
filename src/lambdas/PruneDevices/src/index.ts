@@ -1,19 +1,21 @@
+import {ApnsClient, Notification, Priority, PushType} from 'apns2'
+
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
+
+import type {Device} from '#types/domain-models'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda-payloads'
+
+import {deleteDevice} from '#util/device-helpers'
+import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
+import {Apns2Error, UnexpectedError} from '#util/errors'
 import {withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
 import {logDebug, logError, logInfo} from '#util/logging'
-import {UnexpectedError} from '#util/errors'
-import type {Device} from '#types/domain-models'
-import {deleteDevice} from '#util/device-helpers'
-import {ApnsClient, Notification, Priority, PushType} from 'apns2'
-import {Apns2Error} from '#util/errors'
 import {scanAllPages} from '#util/pagination'
 import {retryUnprocessedDelete} from '#util/retry'
-import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
-import type {ApplePushNotificationResponse, PruneDevicesResult} from '../types'
 
 // Re-export types for external consumers
-export type { PruneDevicesResult } from '../types'
+export type { PruneDevicesResult } from '#types/lambda-payloads'
 
 /**
  * Returns an array of all devices using paginated scan
@@ -110,12 +112,11 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
             }
           })()
           : Promise.resolve()
-        const results = await Promise.allSettled([deleteDevice(device), deleteUserDevicesPromise])
-        logDebug('Promise.allSettled', results)
-        const failures = results.filter((r) => r.status === 'rejected')
-        if (failures.length > 0) {
-          throw new Error(`Partial failure during device cleanup: ${JSON.stringify(failures)}`)
-        }
+        
+        // Cascade order: Delete children (UserDevices) first, then parent (Device)
+        await deleteUserDevicesPromise
+        await deleteDevice(device)
+        
         result.devicesPruned++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

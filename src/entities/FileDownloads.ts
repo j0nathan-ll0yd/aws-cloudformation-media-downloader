@@ -26,7 +26,7 @@ export const FileDownloads = new Entity({
     /** YouTube video ID - matches File.fileId */
     fileId: {type: 'string', required: true, readOnly: true},
     /** Current download status */
-    status: {type: ['pending', 'in_progress', 'scheduled', 'completed', 'failed'] as const, required: true, default: 'pending'},
+    status: {type: ['Pending', 'InProgress', 'Scheduled', 'Completed', 'Failed'] as const, required: true, default: 'Pending'},
     /** Number of download attempts made */
     retryCount: {type: 'number', required: true, default: 0},
     /** Maximum retries allowed for this download */

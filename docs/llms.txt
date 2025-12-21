@@ -1,0 +1,25 @@
+# Media Downloader
+
+AWS-based serverless media downloader integrated with a companion iOS App.
+
+## Metadata
+- **Architecture**: AWS Lambda, S3, API Gateway, SNS, DynamoDB (Single-table design).
+- **Stack**: TypeScript, OpenTofu (Terraform), ElectroDB, Node.js 22.
+- **Auth**: Better Auth 1.4.3 (Custom ElectroDB adapter), Apple Sign In (ID token flow), Session-based (30 days).
+- **Media**: yt-dlp (Auto-updated via OpenTofu), FFmpeg.
+
+## Core Components
+- **Entities**: Users, Sessions, Accounts, VerificationTokens, Files, Devices (defined in `src/entities/`).
+- **Infrastructure**: Defined in `terraform/*.tf`.
+- **API**: TypeSpec-defined REST API in `tsp/`.
+- **Testing**: Jest, LocalStack for integration tests, automated fixture extraction.
+
+## Key Pointers
+- **Project Rules**: [AGENTS.md](AGENTS.md)
+- **API Docs**: [tsp/README.md](tsp/README.md)
+- **Architecture**: `terraform/main.tf`
+- **Development**: [README.md](README.md)
+- **Knowledge Base**: `docs/wiki/`
+
+## Context
+This project aims for high efficiency, low cost (<$12/mo), and minimal dependencies. It features a custom ElectroDB adapter for Better Auth and automated yt-dlp binary management.

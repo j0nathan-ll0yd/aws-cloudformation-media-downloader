@@ -33,11 +33,11 @@ export enum FileStatus {
  * - failed: Permanently failed, no more retries
  */
 export enum DownloadStatus {
-  Pending = 'pending',
-  InProgress = 'in_progress',
-  Scheduled = 'scheduled',
-  Completed = 'completed',
-  Failed = 'failed'
+  Pending = 'Pending',
+  InProgress = 'InProgress',
+  Scheduled = 'Scheduled',
+  Completed = 'Completed',
+  Failed = 'Failed'
 }
 
 export enum ResponseStatus {

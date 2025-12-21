@@ -1,5 +1,8 @@
 import {DynamoDBDocument} from '@aws-sdk/lib-dynamodb'
+import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
 import {createDynamoDBClient} from './clients'
+
+export type { DynamoDBDocumentClient }
 
 /**
  * DynamoDB DocumentClient for ElectroDB entities.

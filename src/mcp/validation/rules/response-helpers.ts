@@ -34,7 +34,7 @@ export const responseHelpersRule: ValidationRule = {
       const moduleSpec = imp.getModuleSpecifierValue()
       if (moduleSpec.includes('lambda-helpers')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
-        return namedImports.includes('response') || namedImports.includes('lambdaErrorResponse')
+        return namedImports.includes('response') || namedImports.includes('lambdaErrorResponse') || namedImports.includes('buildApiResponse')
       }
       return false
     })

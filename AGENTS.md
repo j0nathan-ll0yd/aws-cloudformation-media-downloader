@@ -440,38 +440,34 @@ Queued | Downloading | Downloaded | Failed
 
 ### Essential Commands
 ```bash
-pnpm run precheck       # TypeScript type checking and lint (run before commits)
-pnpm run build          # Build Lambda functions with esbuild
-pnpm run test           # Run unit tests
-pnpm run deploy         # Deploy infrastructure with OpenTofu
-pnpm run format         # Auto-format with dprint (157 char lines)
-
-# Local CI (run before pushing)
-pnpm run ci:local                # Fast CI checks (~2-3 min, no integration)
-pnpm run ci:local:full           # Full CI checks (~5-10 min, with integration)
-
-# Integration testing
-pnpm run localstack:start        # Start LocalStack
-pnpm run test:integration        # Run integration tests (assumes LocalStack running)
-
-# Remote testing
-pnpm run test-remote-list        # Test file listing
-pnpm run test-remote-hook        # Test Feedly webhook
-pnpm run test-remote-registerDevice  # Test device registration
-
-# Documentation
-pnpm run document-source         # Generate TSDoc documentation
+pnpm run pack:context    # Pack codebase into repomix-output.xml for context
+pnpm run pack:light      # Pack only interfaces and docs
+pnpm run index:codebase  # Re-index codebase for semantic search (LanceDB)
+pnpm run search:codebase "query" # Search codebase using natural language
+pnpm run validate:conventions # Run AST-based convention checks
 ```
 
+## AI Context Optimization
+This repository is optimized for AI agents using:
+- **Semantic Memory**: Local vector database (LanceDB) for natural language code search. Run `pnpm run index:codebase` to update.
+- **Repomix**: Packed context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
+- **LLMS Entry Point**: `docs/llms.txt` and `docs/llms-full.txt` for high-level understanding.
+
+- **Convention Validation**: CI/CD enforcement of rules in `AGENTS.md` via `pnpm run validate:conventions`.
+- **Gemini Instructions**: Custom instructions in `.gemini/instructions.md`.
+- **Claude Context**: Use `bin/claude-context.sh` to load full context into Claude sessions.
+
 ### Pre-Commit Checklist
-1. Run `pnpm run precheck` - TypeScript type checking and lint
-2. Run `pnpm run format` - Auto-format code
-3. Run `pnpm run build` - Compile with esbuild
-4. Run `pnpm test` - Ensure all tests pass
-5. Verify NO AI references in commit message
-6. Stage changes: `git add -A`
-7. Commit with clean message: `git commit -m "type: description"`
-8. **NEVER push automatically** - Wait for user request
+1. Run `pnpm run validate:conventions` - Ensure no rule violations
+2. Run `pnpm run precheck` - TypeScript type checking and lint
+3. Run `pnpm run format` - Auto-format code
+4. Run `pnpm run pack:context` - Update context for other agents
+5. Run `pnpm test` - Ensure all tests pass
+6. Verify NO AI references in commit message
+7. Stage changes: `git add -A`
+8. Commit with clean message: `git commit -m "type: description"`
+9. **NEVER push automatically** - Wait for user request
+
 
 ## Integration Points
 

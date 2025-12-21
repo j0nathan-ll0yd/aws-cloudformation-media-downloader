@@ -28,6 +28,8 @@ import type {ImpactQueryArgs} from './handlers/impact.js'
 import {handleTestScaffoldQuery} from './handlers/test-scaffold.js'
 import type {TestScaffoldQueryArgs} from './handlers/test-scaffold.js'
 import {handleNamingValidationQuery, handleTypeAlignmentQuery} from './handlers/naming.js'
+import {handleIndexCodebase, handleSemanticSearch} from './handlers/semantics.js'
+import type {SemanticSearchArgs} from './handlers/semantics.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
@@ -201,6 +203,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['query']
         }
+      },
+      {
+        name: 'index_codebase',
+        description: 'Re-index the codebase into the semantic vector database (LanceDB)',
+        inputSchema: {type: 'object', properties: {}}
+      },
+      {
+        name: 'search_codebase_semantics',
+        description: 'Search the codebase using semantic natural language queries',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {type: 'string', description: 'Natural language search query'},
+            limit: {type: 'number', description: 'Maximum number of results to return (default: 5)'}
+          },
+          required: ['query']
+        }
       }
     ]
   }
@@ -244,6 +263,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'validate_naming':
         return wrapResult(await handleNamingValidationQuery(args as {file?: string; query: 'validate' | 'suggest' | 'all'}))
+
+      case 'index_codebase':
+        return await handleIndexCodebase()
+
+      case 'search_codebase_semantics':
+        return await handleSemanticSearch(args as unknown as SemanticSearchArgs)
 
       default:
         throw new Error(`Unknown tool: ${name}`)

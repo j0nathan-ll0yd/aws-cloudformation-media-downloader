@@ -33,13 +33,13 @@ const EXPECTED_COUNTS = {
   // Lambda directories in src/lambdas
   lambdas: 16,
   // MCP validation rules in src/mcp/validation/rules (including this rule)
-  mcpRules: 13
+  mcpRules: 15
 }
 
 /**
  * Required vendor paths that must exist (documented in AGENTS.md)
  */
-const REQUIRED_VENDOR_PATHS = ['src/lib/vendor/AWS', 'src/lib/vendor/BetterAuth', 'src/lib/vendor/ElectroDB']
+const REQUIRED_VENDOR_PATHS = ['src/lib/vendor/AWS', 'src/lib/vendor/BetterAuth', 'src/lib/vendor/ElectroDB', 'src/lib/vendor/Powertools', 'src/lib/vendor/YouTube']
 
 /**
  * Patterns that should not appear in source code (stale references)

@@ -87,13 +87,16 @@ export const cascadeSafetyRule: ValidationRule = {
       // Check if this is a delete operation on a known entity
       for (const [parent, children] of Object.entries(ENTITY_HIERARCHY)) {
         // Check for parent entity deletion
-        if (text.includes(`${parent}.delete`) || text.includes(`${parent}.remove`)) {
+        // Use regex to ensure exact match (avoid matching UserFiles.delete as Files.delete)
+        const parentRegex = new RegExp(`\\b${parent}\\.(delete|remove)`)
+        if (parentRegex.test(text)) {
           deleteSequence.push({entity: parent, line: awaitExpr.getStartLineNumber()})
         }
 
         // Check for child entity deletions
         for (const child of children) {
-          if (text.includes(`${child}.delete`) || text.includes(`${child}.remove`)) {
+          const childRegex = new RegExp(`\\b${child}\\.(delete|remove)`)
+          if (childRegex.test(text)) {
             deleteSequence.push({entity: child, line: awaitExpr.getStartLineNumber()})
           }
         }
