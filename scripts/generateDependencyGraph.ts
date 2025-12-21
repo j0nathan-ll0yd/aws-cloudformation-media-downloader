@@ -6,6 +6,10 @@ import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+if (process.env['LOG_LEVEL']?.toUpperCase() === 'SILENT') {
+  console.log = () => {}
+}
+
 interface FileImport {
   file: string
   imports: string[]

@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
@@ -19,6 +19,10 @@ const {handler} = await import('./../src')
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
   const context = testContext
+
+  beforeAll(() => {
+    process.env.LOG_LEVEL = 'SILENT'
+  })
 
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))

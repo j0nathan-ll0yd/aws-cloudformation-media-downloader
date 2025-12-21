@@ -5,6 +5,10 @@ import * as fs from 'fs'
 // Discover Lambda entry points dynamically
 const lambdaEntryFiles = glob.sync('./src/lambdas/**/src/index.ts')
 
+if (process.env['LOG_LEVEL']?.toUpperCase() === 'SILENT') {
+  console.log = () => {}
+}
+
 // AWS SDK v3 is available in Lambda runtime - externalize to reduce bundle size
 // Note: aws-xray-sdk-core is NOT in Lambda runtime - must be bundled
 const awsSdkExternals = [

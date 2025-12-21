@@ -3,17 +3,21 @@ import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, 
 
 describe('lambda-helpers', () => {
   let consoleLogSpy: jest.SpiedFunction<typeof console.log>
-  let originalEnv: NodeJS.ProcessEnv
+  let originalLogLevel: string | undefined
 
   beforeEach(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-    originalEnv = process.env
+    originalLogLevel = process.env.LOG_LEVEL
     process.env.LOG_LEVEL = 'INFO' // Ensure fixtures are logged
   })
 
   afterEach(() => {
     consoleLogSpy.mockRestore()
-    process.env = originalEnv
+    if (originalLogLevel === undefined) {
+      delete process.env.LOG_LEVEL
+    } else {
+      process.env.LOG_LEVEL = originalLogLevel
+    }
   })
 
   describe('logIncomingFixture', () => {

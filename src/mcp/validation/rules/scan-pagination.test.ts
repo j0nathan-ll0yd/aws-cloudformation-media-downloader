@@ -11,6 +11,7 @@ let scanPaginationRule: typeof import('./scan-pagination').scanPaginationRule
 const project = new Project({skipFileDependencyResolution: true, skipAddingFilesFromTsConfig: true})
 
 beforeAll(async () => {
+  process.env.LOG_LEVEL = 'SILENT'
   const module = await import('./scan-pagination')
   scanPaginationRule = module.scanPaginationRule
 })
