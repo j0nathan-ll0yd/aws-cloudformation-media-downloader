@@ -34,7 +34,7 @@ export const responseHelpersRule: ValidationRule = {
       const moduleSpec = imp.getModuleSpecifierValue()
       if (moduleSpec.includes('lambda-helpers')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
-        return namedImports.includes('buildApiResponse') || namedImports.includes('lambdaErrorResponse')
+        return namedImports.includes('buildApiResponse')
       }
       return false
     })
@@ -76,11 +76,10 @@ export const responseHelpersRule: ValidationRule = {
         if (hasStatusCode && (hasBody || hasHeaders)) {
           // This looks like a raw Lambda response object
           violations.push(
-            createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(),
-              'Raw response object detected. Use buildApiResponse() or lambdaErrorResponse() helper instead.', {
+            createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(), 'Raw response object detected. Use buildApiResponse() helper instead.', {
               suggestion: hasResponseImport
-                ? 'Replace with: return buildApiResponse(context, statusCode, data) or return lambdaErrorResponse(context, error)'
-                : "Import {buildApiResponse, lambdaErrorResponse} from '#util/lambda-helpers' and use those helpers",
+                ? 'Replace with: return buildApiResponse(context, statusCode, data)'
+                : "Import {buildApiResponse} from '#util/lambda-helpers' and use that helper",
               codeSnippet: returnText.substring(0, 100)
             })
           )
@@ -108,7 +107,7 @@ export const responseHelpersRule: ValidationRule = {
         if (functionText.includes('APIGateway') && functionText.includes('statusCode')) {
           violations.push(
             createViolation(RULE_NAME, SEVERITY, 1, 'Lambda handler does not import response helpers but appears to return API Gateway responses', {
-              suggestion: "import {buildApiResponse, lambdaErrorResponse} from '#util/lambda-helpers'"
+              suggestion: "import {buildApiResponse} from '#util/lambda-helpers'"
             })
           )
         }

@@ -168,6 +168,17 @@ _No pending conventions - all conventions are documented._
 
 ## ✅ Recently Documented
 
+### Documented: 2025-12-21
+
+1. **No Deprecation - Remove Immediately** (Rule)
+   - **What**: Remove deprecated code immediately instead of marking with `@deprecated` warnings
+   - **Why**: Small project without external consumers; deprecation periods add noise and delay without benefit
+   - **Rule**: When replacing a function/pattern, update ALL callers, tests, fixtures, and documentation in the same PR
+   - **Example**: Replaced `lambdaErrorResponse()` with `buildApiResponse()` - removed old function entirely, no deprecation warning
+   - **Documented**: docs/wiki/Conventions/Deprecation-Policy.md
+   - **Priority**: HIGH
+   - **Enforcement**: Code review; no `@deprecated` tags should be added
+
 ### Documented: 2025-12-19
 
 1. **Lambda Types Directory Threshold** (Convention)
@@ -304,7 +315,7 @@ _No pending conventions - all conventions are documented._
    - **Enforcement**: Zero-tolerance
 
 3. **Lambda Response Helper Usage** (Convention)
-   - **What**: Always use the `response` function from lambda-helpers for Lambda responses
+   - **What**: Always use the `buildApiResponse` function from lambda-helpers for Lambda responses
    - **Why**: Ensures consistent response formatting across all Lambda functions
    - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
    - **Priority**: HIGH
@@ -376,6 +387,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-12-17
-- **Total Conventions**: 31 detected, 31 documented, 0 pending
+- **Last Updated**: 2025-12-21
+- **Total Conventions**: 32 detected, 32 documented, 0 pending
 - **Convention Capture System**: Active

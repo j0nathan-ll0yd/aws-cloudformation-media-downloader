@@ -34,9 +34,7 @@ const ENTITY_HIERARCHY: Record<string, string[]> = {
  * Pre-compiled regexes for entity deletion detection (performance optimization)
  */
 const ENTITY_DELETE_REGEXES: Record<string, RegExp> = Object.fromEntries(
-  [...Object.keys(ENTITY_HIERARCHY), ...Object.values(ENTITY_HIERARCHY).flat()].map(
-    (entity) => [entity, new RegExp(`\\b${entity}\\.(delete|remove)`)]
-  )
+  [...Object.keys(ENTITY_HIERARCHY), ...Object.values(ENTITY_HIERARCHY).flat()].map((entity) => [entity, new RegExp(`\\b${entity}\\.(delete|remove)`)])
 )
 
 export const cascadeSafetyRule: ValidationRule = {

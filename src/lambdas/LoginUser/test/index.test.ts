@@ -59,10 +59,10 @@ describe('#LoginUser', () => {
     authMock.mocks.signInSocial.mockRejectedValue({status: 404, message: 'User not found'})
 
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(500)
+    expect(output.statusCode).toEqual(404)
 
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-5XX-generic')
+    expect(body.error.code).toEqual('custom-4XX-generic')
   })
 
   test('should handle Better Auth error for invalid token', async () => {
@@ -70,10 +70,10 @@ describe('#LoginUser', () => {
     authMock.mocks.signInSocial.mockRejectedValue({status: 401, message: 'Invalid ID token'})
 
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(500)
+    expect(output.statusCode).toEqual(401)
 
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-5XX-generic')
+    expect(body.error.code).toEqual('custom-4XX-generic')
   })
 
   test('should reject an invalid request', async () => {
