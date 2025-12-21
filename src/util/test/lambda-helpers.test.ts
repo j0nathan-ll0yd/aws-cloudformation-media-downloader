@@ -8,6 +8,7 @@ describe('lambda-helpers', () => {
   beforeEach(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
     originalEnv = process.env
+    process.env.LOG_LEVEL = 'INFO' // Ensure fixtures are logged
   })
 
   afterEach(() => {
