@@ -17,21 +17,16 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
   try {
     const db = await lancedb.connect(DB_DIR)
     const tableNames = await db.tableNames()
-    
+
     if (!tableNames.includes(TABLE_NAME)) {
-      return {
-        content: [{
-          type: 'text',
-          text: 'Codebase has not been indexed yet. Please run "pnpm run index:codebase" first.'
-        }]
-      }
+      return {content: [{type: 'text', text: 'Codebase has not been indexed yet. Please run "pnpm run index:codebase" first.'}]}
     }
 
     const table = await db.openTable(TABLE_NAME)
     const vector = await generateEmbedding(args.query)
     const results = await table.vectorSearch(vector).limit(args.limit || 5).toArray()
 
-    const formattedResults = results.map(result => ({
+    const formattedResults = results.map((result) => ({
       file: result.filePath,
       line: result.startLine,
       type: result.type,
@@ -40,19 +35,9 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
       snippet: result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '')
     }))
 
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify(formattedResults, null, 2)
-      }]
-    }
+    return {content: [{type: 'text', text: JSON.stringify(formattedResults, null, 2)}]}
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: `Error during semantic search: ${error instanceof Error ? error.message : String(error)}`
-      }]
-    }
+    return {content: [{type: 'text', text: `Error during semantic search: ${error instanceof Error ? error.message : String(error)}`}]}
   }
 }
 
@@ -63,24 +48,14 @@ export async function handleIndexCodebase() {
   // Since indexing is a heavy operation, we'll trigger it as a shell command
   // but we can wrap the logic if needed. For now, we'll just suggest running the script
   // or use exec to run it.
-  const { exec } = await import('node:child_process')
-  const { promisify } = await import('node:util')
+  const {exec} = await import('node:child_process')
+  const {promisify} = await import('node:util')
   const execAsync = promisify(exec)
 
   try {
-    const { stdout, stderr } = await execAsync('pnpm run index:codebase')
-    return {
-      content: [{
-        type: 'text',
-        text: `Indexing completed:\n${stdout}\n${stderr}`
-      }]
-    }
+    const {stdout, stderr} = await execAsync('pnpm run index:codebase')
+    return {content: [{type: 'text', text: `Indexing completed:\n${stdout}\n${stderr}`}]}
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: `Indexing failed: ${error instanceof Error ? error.message : String(error)}`
-      }]
-    }
+    return {content: [{type: 'text', text: `Indexing failed: ${error instanceof Error ? error.message : String(error)}`}]}
   }
 }

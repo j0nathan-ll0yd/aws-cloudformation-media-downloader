@@ -112,11 +112,11 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
             }
           })()
           : Promise.resolve()
-        
+
         // Cascade order: Delete children (UserDevices) first, then parent (Device)
         await deleteUserDevicesPromise
         await deleteDevice(device)
-        
+
         result.devicesPruned++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

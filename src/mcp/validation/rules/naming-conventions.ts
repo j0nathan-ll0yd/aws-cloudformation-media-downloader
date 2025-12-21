@@ -163,8 +163,8 @@ export const namingConventionsRule: ValidationRule = {
 
         // Check ID naming pattern
         if (
-          propName.toLowerCase().endsWith('id') && !propName.endsWith('Id') && propName !== 'id' && propName !== 'valid'
-          && !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp') && !filePath.includes('video.ts')
+          propName.toLowerCase().endsWith('id') && !propName.endsWith('Id') && propName !== 'id' && propName !== 'valid' &&
+          !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp') && !filePath.includes('video.ts')
         ) {
           violations.push(
             createViolation(RULE_NAME, 'LOW', propLine, `Property '${containerName}.${propName}' should use *Id pattern (e.g., userId, fileId)`, {

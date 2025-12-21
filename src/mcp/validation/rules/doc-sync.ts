@@ -39,7 +39,13 @@ const EXPECTED_COUNTS = {
 /**
  * Required vendor paths that must exist (documented in AGENTS.md)
  */
-const REQUIRED_VENDOR_PATHS = ['src/lib/vendor/AWS', 'src/lib/vendor/BetterAuth', 'src/lib/vendor/ElectroDB', 'src/lib/vendor/Powertools', 'src/lib/vendor/YouTube']
+const REQUIRED_VENDOR_PATHS = [
+  'src/lib/vendor/AWS',
+  'src/lib/vendor/BetterAuth',
+  'src/lib/vendor/ElectroDB',
+  'src/lib/vendor/Powertools',
+  'src/lib/vendor/YouTube'
+]
 
 /**
  * Patterns that should not appear in source code (stale references)

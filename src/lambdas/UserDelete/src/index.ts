@@ -81,25 +81,17 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   const relationFailures = relationResults.filter((r) => r.status === 'rejected')
   if (relationFailures.length > 0) {
     logError('Cascade deletion partial failure (relations)', relationFailures)
-    return buildApiResponse(context, 207, {
-      message: 'Partial deletion - some child records could not be removed',
-      failedOperations: relationFailures.length
-    })
+    return buildApiResponse(context, 207, {message: 'Partial deletion - some child records could not be removed', failedOperations: relationFailures.length})
   }
 
   // 2. Delete devices (parents of UserDevices)
-  const deviceResults = await Promise.allSettled(
-    deletableDevices.map((device) => deleteDevice(device))
-  )
+  const deviceResults = await Promise.allSettled(deletableDevices.map((device) => deleteDevice(device)))
   logDebug('Promise.allSettled (devices)', deviceResults)
 
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', deviceFailures)
-    return buildApiResponse(context, 207, {
-      message: 'Partial deletion - some devices could not be removed',
-      failedOperations: deviceFailures.length
-    })
+    return buildApiResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
   }
 
   // Delete parent LAST - only if all children succeeded
