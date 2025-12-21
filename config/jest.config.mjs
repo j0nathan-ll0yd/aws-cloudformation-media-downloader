@@ -3,6 +3,10 @@
  * https://jestjs.io/docs/configuration
  */
 
+// Default to silent logging during tests to reduce noise
+// Can be overridden with LOG_LEVEL=DEBUG pnpm test
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'SILENT'
+
 const config = {
   // All imported modules in your tests should be mocked automatically
   // automock: false,

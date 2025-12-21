@@ -6,6 +6,10 @@
  * with real AWS SDK clients in a LocalStack environment.
  */
 
+// Default to silent logging during tests to reduce noise
+// Can be overridden with LOG_LEVEL=DEBUG pnpm test
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'SILENT'
+
 const config = {
   // Automatically clear mock calls between tests
   clearMocks: true,
