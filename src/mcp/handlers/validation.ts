@@ -148,8 +148,8 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
         violations: result.violations,
         skipped: result.skipped.includes('response-helpers') ? 'Rule skipped: Not a Lambda handler file' : undefined,
         message: result.valid
-          ? 'Lambda uses response() and lambdaErrorResponse() helpers correctly.'
-          : 'Raw response objects detected. Use helper functions for consistent formatting.'
+          ? 'Lambda uses buildApiResponse() helper correctly.'
+          : 'Raw response objects detected. Use buildApiResponse() for consistent formatting.'
       }
     }
 

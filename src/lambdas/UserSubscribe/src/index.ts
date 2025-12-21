@@ -1,5 +1,6 @@
+import {userSubscribeSchema} from '#types/schemas'
+
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
-import {userSubscribeSchema} from '#util/constraints'
 import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
 import {subscribeEndpointToTopic} from '#util/device-helpers'
 

@@ -1,19 +1,18 @@
+import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
+import type {Device} from '#types/domain-models'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda-payloads'
+import {deleteDevice} from '#util/device-helpers'
+import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
+import {Apns2Error, UnexpectedError} from '#util/errors'
 import {withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
 import {logDebug, logError, logInfo} from '#util/logging'
-import {UnexpectedError} from '#util/errors'
-import type {Device} from '#types/domain-models'
-import {deleteDevice} from '#util/device-helpers'
-import {ApnsClient, Notification, Priority, PushType} from 'apns2'
-import {Apns2Error} from '#util/errors'
 import {scanAllPages} from '#util/pagination'
 import {retryUnprocessedDelete} from '#util/retry'
-import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
-import type {ApplePushNotificationResponse, PruneDevicesResult} from '../types'
 
 // Re-export types for external consumers
-export type { PruneDevicesResult } from '../types'
+export type { PruneDevicesResult } from '#types/lambda-payloads'
 
 /**
  * Returns an array of all devices using paginated scan
@@ -101,21 +100,19 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
       try {
         // Unbelievably, all these methods are idempotent
         const userIds = await getUserIdsByDeviceId(deviceId)
-        const deleteUserDevicesPromise = userIds.length > 0
-          ? (async () => {
-            const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-            const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
-            if (unprocessed.length > 0) {
-              logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
-            }
-          })()
-          : Promise.resolve()
-        const results = await Promise.allSettled([deleteDevice(device), deleteUserDevicesPromise])
-        logDebug('Promise.allSettled', results)
-        const failures = results.filter((r) => r.status === 'rejected')
-        if (failures.length > 0) {
-          throw new Error(`Partial failure during device cleanup: ${JSON.stringify(failures)}`)
+
+        // Delete UserDevices junction records first (children before parent)
+        if (userIds.length > 0) {
+          const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
+          const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
+          if (unprocessed.length > 0) {
+            logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
+          }
         }
+
+        // Then delete the Device itself
+        await deleteDevice(device)
+
         result.devicesPruned++
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)

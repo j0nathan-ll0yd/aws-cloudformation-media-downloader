@@ -6,6 +6,11 @@
  * with real AWS SDK clients in a LocalStack environment.
  */
 
+/* eslint-disable no-undef */
+// Default to silent logging during tests to reduce noise
+// Can be overridden with LOG_LEVEL=DEBUG pnpm test
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'SILENT'
+
 const config = {
   // Automatically clear mock calls between tests
   clearMocks: true,
@@ -45,6 +50,9 @@ const config = {
 
   // Transform TypeScript files with ts-jest
   transform: {'^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]},
+
+  // Silence console output during tests when LOG_LEVEL is SILENT
+  silent: process.env.LOG_LEVEL === 'SILENT',
 
   // Setup file to configure LocalStack environment
   setupFilesAfterEnv: ['<rootDir>/test/integration/setup.ts']

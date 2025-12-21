@@ -1,6 +1,6 @@
 /**
  * Unit tests for response-helpers rule
- * HIGH: Lambda handlers must use response() helper, not raw objects
+ * HIGH: Lambda handlers must use buildApiResponse() helper, not raw objects
  */
 
 import {beforeAll, describe, expect, test} from '@jest/globals'
@@ -139,11 +139,11 @@ describe('response-helpers rule', () => {
   })
 
   describe('allows proper response helper usage', () => {
-    test('should allow response() helper', () => {
-      const sourceFile = project.createSourceFile('test-response-helper.ts', `import {response} from '#util/lambda-helpers'
+    test('should allow buildApiResponse() helper', () => {
+      const sourceFile = project.createSourceFile('test-response-helper.ts', `import {buildApiResponse} from '#util/lambda-helpers'
 
 export async function handler() {
-  return response(200, {success: true})
+  return buildApiResponse(200, {success: true})
 }`, {overwrite: true})
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
@@ -151,14 +151,14 @@ export async function handler() {
       expect(violations).toHaveLength(0)
     })
 
-    test('should allow lambdaErrorResponse() helper', () => {
-      const sourceFile = project.createSourceFile('test-error-helper.ts', `import {lambdaErrorResponse, response} from '#util/lambda-helpers'
+    test('should allow buildApiResponse() for error handling', () => {
+      const sourceFile = project.createSourceFile('test-error-helper.ts', `import {buildApiResponse} from '#util/lambda-helpers'
 
 export async function handler() {
   try {
-    return response(200, {})
+    return buildApiResponse(200, {})
   } catch (error) {
-    return lambdaErrorResponse(500, error, 'Failed')
+    return buildApiResponse(500, error as Error)
   }
 }`, {overwrite: true})
 
@@ -168,11 +168,11 @@ export async function handler() {
     })
 
     test('should allow returning helper result', () => {
-      const sourceFile = project.createSourceFile('test-helper-result.ts', `import {response} from '#util/lambda-helpers'
+      const sourceFile = project.createSourceFile('test-helper-result.ts', `import {buildApiResponse} from '#util/lambda-helpers'
 
 export async function handler() {
   const result = await processData()
-  return response(200, result)
+  return buildApiResponse(200, result)
 }`, {overwrite: true})
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')

@@ -1,18 +1,30 @@
 import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import {logger} from '#lib/vendor/Powertools'
 
 describe('lambda-helpers', () => {
   let consoleLogSpy: jest.SpiedFunction<typeof console.log>
-  let originalEnv: NodeJS.ProcessEnv
+  let loggerInfoSpy: jest.SpiedFunction<typeof logger.info>
+  let loggerErrorSpy: jest.SpiedFunction<typeof logger.error>
+  let originalLogLevel: string | undefined
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-    originalEnv = process.env
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => undefined)
+    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+    originalLogLevel = process.env.LOG_LEVEL
+    process.env.LOG_LEVEL = 'INFO' // Ensure fixtures are logged
   })
 
   afterEach(() => {
     consoleLogSpy.mockRestore()
-    process.env = originalEnv
+    loggerInfoSpy.mockRestore()
+    loggerErrorSpy.mockRestore()
+    if (originalLogLevel === undefined) {
+      delete process.env.LOG_LEVEL
+    } else {
+      process.env.LOG_LEVEL = originalLogLevel
+    }
   })
 
   describe('logIncomingFixture', () => {

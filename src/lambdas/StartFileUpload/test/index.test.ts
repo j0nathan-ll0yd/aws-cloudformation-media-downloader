@@ -143,7 +143,7 @@ describe('#StartFileUpload', () => {
     // Transient errors get scheduled for retry (200)
     expect(output.statusCode).toEqual(200)
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
     expect(parsedBody.body.retryAfter).toBeDefined()
 
     // Verify FileDownloads was updated with scheduled status
@@ -159,7 +159,7 @@ describe('#StartFileUpload', () => {
     expect(output.statusCode).toEqual(500)
     // Error responses have structure: {error: {code, message: <body>}}
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual('failed')
+    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
     expect(parsedBody.error.message.category).toEqual('permanent')
 
     // Verify FileDownloads was updated with failed status
@@ -175,7 +175,7 @@ describe('#StartFileUpload', () => {
     // Unknown errors get scheduled for retry
     expect(output.statusCode).toEqual(200)
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
 
     // Verify FileDownloads was updated with scheduled status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
@@ -197,7 +197,7 @@ describe('#StartFileUpload', () => {
     // Should be scheduled for retry at release time
     expect(output.statusCode).toEqual(200)
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('scheduled')
+    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
   })
 
   test('should handle FileDownloads update failures gracefully', async () => {
@@ -230,7 +230,7 @@ describe('#StartFileUpload', () => {
     expect(output.statusCode).toEqual(500)
     // Error responses have structure: {error: {code, message: <body>}}
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual('failed')
+    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
   })
 
   test('should handle cookie expiration errors', async () => {
@@ -243,7 +243,7 @@ describe('#StartFileUpload', () => {
     expect(output.statusCode).toEqual(500)
     // Error responses have structure: {error: {code, message: <body>}}
     const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual('failed')
+    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
     expect(parsedBody.error.message.category).toEqual('cookie_expired')
   })
 

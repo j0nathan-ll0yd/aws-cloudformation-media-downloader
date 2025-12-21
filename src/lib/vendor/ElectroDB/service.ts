@@ -7,8 +7,8 @@
  * Follows the same pattern as AWS SDK encapsulation in lib/vendor/AWS/*.
  */
 import {Entity, Service} from 'electrodb'
-import type {DynamoDBDocumentClient} from '@aws-sdk/lib-dynamodb'
 import {documentClient} from '#lib/vendor/AWS/DynamoDB'
+import type {DynamoDBDocumentClient} from '#lib/vendor/AWS/DynamoDB'
 
 /**
  * Entity map type constraint for createService.

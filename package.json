@@ -11,6 +11,7 @@
     "preinstall": "npx only-allow pnpm",
     "precheck": "pnpm run check-types && pnpm run lint",
     "check-types": "tsc --project ./tsconfig.json",
+    "check-test-types": "tsc --project ./tsconfig.test.json --noEmit",
     "generate-graph": "node --experimental-strip-types scripts/generateDependencyGraph.ts",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
@@ -28,15 +29,18 @@
     "deps:check": "dependency-cruiser src --config .dependency-cruiser.cjs",
     "deps:graph": "dependency-cruiser src --config .dependency-cruiser.cjs --output-type dot | dot -T svg > dependency-graph.svg",
     "deps:report": "dependency-cruiser src --config .dependency-cruiser.cjs --output-type html --output-to dependency-report.html",
-    "test": "pnpm run generate-graph && node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.config.mjs",
+    "test": "export LOG_LEVEL=${LOG_LEVEL:-SILENT} && pnpm run --silent generate-graph && node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --config config/jest.config.mjs",
     "test:eslint-rules": "node eslint-local-rules/test/no-direct-aws-sdk-import.test.cjs && node eslint-local-rules/test/cascade-delete-order.test.cjs && node eslint-local-rules/test/use-electrodb-mock-helper.test.cjs && node eslint-local-rules/test/response-helpers.test.cjs && node eslint-local-rules/test/env-validation.test.cjs",
-    "test:integration": "pnpm run generate-graph && USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --silent --config config/jest.integration.config.mjs",
+    "test:integration": "export LOG_LEVEL=${LOG_LEVEL:-SILENT} && pnpm run --silent generate-graph && USE_LOCALSTACK=true node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --config config/jest.integration.config.mjs",
     "ci:local": "./bin/ci-local.sh",
     "ci:local:full": "./bin/ci-local-full.sh",
     "validate:docs": "./bin/validate-docs.sh",
     "validate:doc-sync": "./bin/validate-doc-sync.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
+    "validate:conventions": "node --disable-warning=DEP0180 --import tsx scripts/validateConventions.ts",
     "validate:config": "node --disable-warning=DEP0180 --import tsx scripts/validateConfig.ts",
+    "index:codebase": "node --disable-warning=DEP0180 --import tsx scripts/indexCodebase.ts",
+    "search:codebase": "node --disable-warning=DEP0180 --import tsx scripts/searchCodebase.ts",
     "typespec:compile": "tsp compile tsp/",
     "typespec:check": "tsp compile tsp/ --no-emit",
     "lint:workflows": "actionlint",
@@ -59,6 +63,9 @@
     "update:agents-prs": "./bin/update-agents-prs.sh",
     "plan": "eval export $(cat .env) && cd terraform && tofu plan",
     "deploy": "eval export $(cat .env) && cd terraform && tofu apply -auto-approve",
+    "pack:context": "repomix",
+    "pack:light": "repomix --include \"src/**/*.ts,docs/**/*.md,AGENTS.md\" --ignore \"**/*.test.ts,**/*.spec.ts\"",
+    "generate:llms": "cat README.md docs/wiki/**/*.md > docs/llms-full.txt",
     "prepare": "husky"
   },
   "author": "Jonathan Lloyd",
@@ -101,6 +108,8 @@
     "#test/*": "./test/*"
   },
   "devDependencies": {
+    "@lancedb/lancedb": "^0.23.0",
+    "@xenova/transformers": "^2.17.2",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
     "@jest/globals": "^30.2.0",
@@ -129,6 +138,7 @@
     "jest": "^30.2.0",
     "quicktype": "^23.2.6",
     "redoc": "^2.5.2",
+    "repomix": "^1.10.2",
     "source-map-support": "^0.5.21",
     "ts-jest": "^29.4.6",
     "ts-morph": "^27.0.2",
@@ -136,5 +146,10 @@
     "tsx": "^4.21.0",
     "typedoc": "^0.28.15",
     "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@lancedb/lancedb"
+    ]
   }
 }

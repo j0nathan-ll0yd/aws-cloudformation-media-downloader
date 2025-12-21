@@ -24,7 +24,7 @@ Prefer established patterns with sensible defaults over flexible configuration. 
 // src/lambdas/ListFiles/src/index.ts
 
 // Standard Lambda pattern - no configuration needed
-import {lambdaErrorResponse, response, logInfo, getUserDetailsFromEvent} from '../../../util/lambda-helpers'
+import {buildApiResponse, logInfo, getUserDetailsFromEvent} from '../../../util/lambda-helpers'
 import {withXRay} from '../../../lib/vendor/AWS/XRay'
 import {Files} from '../../../entities/Files'
 
@@ -36,10 +36,10 @@ export const handler = withXRay(async (event, context, {traceId}) => {
     const files = await getFilesByUser(userId)
 
     // Standard success response
-    return response(context, 200, {contents: files, keyCount: files.length})
+    return buildApiResponse(context, 200, {contents: files, keyCount: files.length})
   } catch (error) {
     // Standard error handling for API Gateway
-    return lambdaErrorResponse(context, error)
+    return buildApiResponse(context, error as Error)
   }
 })
 ```
@@ -102,7 +102,7 @@ Instead: Use convention that all Lambdas follow the same structure.
 // Convention: All API Gateway Lambdas return responses
 // No need to configure response vs throw behavior
 if (isApiGatewayLambda) {
-  return response(context, statusCode, body)
+  return buildApiResponse(context, statusCode, body)
 } else {
   throw error  // Event-driven Lambdas throw for retry
 }

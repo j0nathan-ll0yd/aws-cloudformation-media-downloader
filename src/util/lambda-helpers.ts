@@ -86,8 +86,13 @@ function formatResponse(context: Context, statusCode: number, body?: string | ob
  * // Error response from Error object (extracts status and message)
  * return buildApiResponse(context, new ValidationError('Invalid input'))
  */
-export function buildApiResponse(context: Context, statusCodeOrError: number | Error, body?: string | object): APIGatewayProxyResult {
-  // If first arg is Error, extract status and message
+export function buildApiResponse(context: Context, statusCodeOrError: number | Error | unknown, body?: string | object): APIGatewayProxyResult {
+  // If first arg is a number, use it as status code directly
+  if (typeof statusCodeOrError === 'number') {
+    return formatResponse(context, statusCodeOrError, body)
+  }
+
+  // Handle Error instances
   if (statusCodeOrError instanceof Error) {
     const error = statusCodeOrError
     const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
@@ -96,8 +101,18 @@ export function buildApiResponse(context: Context, statusCodeOrError: number | E
     return formatResponse(context, statusCode, message)
   }
 
-  // Otherwise use status code directly
-  return formatResponse(context, statusCodeOrError, body)
+  // Handle plain objects (e.g., Better Auth error responses like {status: 404, message: '...'})
+  if (statusCodeOrError && typeof statusCodeOrError === 'object') {
+    const errorObj = statusCodeOrError as {status?: number; statusCode?: number; message?: string}
+    const statusCode = errorObj.status || errorObj.statusCode || 500
+    const message = errorObj.message || getErrorMessage(statusCodeOrError)
+    logError('buildApiResponse (object)', JSON.stringify(statusCodeOrError))
+    return formatResponse(context, statusCode, message)
+  }
+
+  // Fallback for unknown error types
+  logError('buildApiResponse (unknown)', String(statusCodeOrError))
+  return formatResponse(context, 500, getErrorMessage(statusCodeOrError))
 }
 
 /*#__PURE__*/
@@ -107,17 +122,6 @@ export function verifyPlatformConfiguration(): void {
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')
   }
-}
-
-/** @deprecated Use buildApiResponse(context, error) instead. Kept for backwards compatibility. */
-export function lambdaErrorResponse(context: Context, error: unknown): APIGatewayProxyResult {
-  // Delegate to buildApiResponse which now handles Error objects directly
-  if (error instanceof Error) {
-    return buildApiResponse(context, error)
-  }
-  // For non-Error types, convert to message and return 500
-  logError('lambdaErrorResponse', JSON.stringify(error))
-  return formatResponse(context, 500, getErrorMessage(error))
 }
 
 export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
@@ -248,7 +252,11 @@ function sanitizeForTest(data: unknown): unknown {
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
-  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  // Silence fixture logging during tests if LOG_LEVEL is SILENT
+  if (getOptionalEnv('LOG_LEVEL', 'INFO').toUpperCase() === 'SILENT') {
+    return
+  }
+  const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
   console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)}))
 }
 
@@ -265,7 +273,11 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logOutgoingFixture(response: unknown, fixtureType?: string): void {
-  const detectedType = fixtureType || process.env.AWS_LAMBDA_FUNCTION_NAME || 'UnknownLambda'
+  // Silence fixture logging during tests if LOG_LEVEL is SILENT
+  if (getOptionalEnv('LOG_LEVEL', 'INFO').toUpperCase() === 'SILENT') {
+    return
+  }
+  const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
   console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)}))
 }
 
@@ -312,7 +324,7 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
+      const errorResult = buildApiResponse(context, error as Error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -362,7 +374,7 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
+      const errorResult = buildApiResponse(context, error as Error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -411,7 +423,7 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = lambdaErrorResponse(context, error)
+      const errorResult = buildApiResponse(context, error as Error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -615,9 +627,14 @@ import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, 
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer)).use(
-    logMetrics(metrics, {captureColdStartMetric: true})
-  )
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer))
+
+  // Only enable metrics middleware in non-test environments
+  // This prevents "No application metrics to publish" warnings in Jest
+  // where we typically verify metrics via AWS SDK mocks instead of EMF
+  if (getOptionalEnv('NODE_ENV', 'development') !== 'test') {
+    middyHandler.use(logMetrics(metrics, {captureColdStartMetric: true}))
+  }
 
   return middyHandler as unknown as (event: TEvent, context: Context) => Promise<TResult>
 }

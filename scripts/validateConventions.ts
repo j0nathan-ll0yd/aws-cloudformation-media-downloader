@@ -1,0 +1,61 @@
+import {glob} from 'glob'
+import {validateFiles, getValidationSummary} from '../src/mcp/validation/index.js'
+
+async function main() {
+  const projectRoot = process.cwd()
+  
+  // Find all TypeScript files in src/
+  const files = await glob('src/**/*.ts', {
+    ignore: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      '**/test/**',
+      'src/mcp/validation/rules/**' // Skip the rules themselves
+    ],
+    cwd: projectRoot
+  })
+
+  console.log(`Validating ${files.length} files...`)
+
+  const results = await validateFiles(files, {projectRoot})
+  const summary = getValidationSummary(results)
+
+  console.log('\n--- Validation Summary ---')
+  console.log(`Total Files: ${summary.totalFiles}`)
+  console.log(`Valid Files: ${summary.validFiles}`)
+  console.log(`Invalid Files: ${summary.invalidFiles}`)
+  console.log(`Total Violations: ${summary.totalViolations}`)
+
+  if (summary.totalViolations > 0) {
+    console.log('\n--- Violations by Severity ---')
+    for (const [severity, count] of Object.entries(summary.violationsBySeverity)) {
+      console.log(`${severity}: ${count}`)
+    }
+
+    console.log('\n--- Detailed Violations ---')
+    for (const result of results) {
+      if (!result.valid) {
+        console.log(`\nFile: ${result.file}`)
+        for (const violation of result.violations) {
+          console.log(`  [${violation.severity}] ${violation.rule} (Line ${violation.line}): ${violation.message}`)
+        }
+      }
+    }
+
+    // Fail if there are any CRITICAL or HIGH violations
+    const failCount = (summary.violationsBySeverity['CRITICAL'] || 0) + (summary.violationsBySeverity['HIGH'] || 0)
+    if (failCount > 0) {
+      console.log(`\nFound ${failCount} CRITICAL/HIGH violations. Failing validation.`) 
+      process.exit(1)
+    } else {
+      console.log('\nFound only MEDIUM/LOW violations. Passing validation.')
+    }
+  } else {
+    console.log('\nAll files passed validation!')
+  }
+}
+
+main().catch((error) => {
+  console.error('Validation failed:', error)
+  process.exit(1)
+})

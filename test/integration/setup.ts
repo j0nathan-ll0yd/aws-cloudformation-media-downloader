@@ -39,7 +39,9 @@ async function waitForLocalStack(): Promise<void> {
       const response = await fetch(localstackUrl)
       if (response.ok) {
         const health = await response.json()
-        console.log('LocalStack is ready:', JSON.stringify(health, null, 2))
+        if (process.env.LOG_LEVEL !== 'SILENT') {
+          console.log('LocalStack is ready:', JSON.stringify(health, null, 2))
+        }
         return
       }
     } catch {

@@ -59,10 +59,10 @@ function toPascalCase(str: string): string {
 
 export const namingConventionsRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Type names should follow project naming conventions (no DynamoDB* prefix, PascalCase enums, proper suffixes)',
-  severity: SEVERITY,
+  description: 'Enforce naming conventions for files, types, and properties.',
+  severity: 'MEDIUM', // Most are stylistic
   appliesTo: ['src/**/*.ts', 'src/**/*.d.ts'],
-  excludes: ['**/*.test.ts', 'test/**/*.ts', 'src/mcp/**/*.ts'],
+  excludes: ['src/**/*.test.ts', 'test/**/*.ts', 'src/types/infrastructure.d.ts'], // Infrastructure types are auto-generated
 
   validate(sourceFile: SourceFile, filePath: string): Violation[] {
     const violations: Violation[] = []
@@ -151,7 +151,7 @@ export const namingConventionsRule: ValidationRule = {
         const propLine = prop.getStartLineNumber()
 
         // Check for snake_case (common in external APIs)
-        if (propName.includes('_') && !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp')) {
+        if (propName.includes('_') && !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp') && !filePath.includes('video.ts')) {
           violations.push(
             createViolation(RULE_NAME, 'MEDIUM', propLine, `Property '${containerName}.${propName}' uses snake_case, should be camelCase`, {
               suggestion: `Rename to '${
@@ -162,7 +162,10 @@ export const namingConventionsRule: ValidationRule = {
         }
 
         // Check ID naming pattern
-        if (propName.toLowerCase().endsWith('id') && !propName.endsWith('Id') && propName !== 'id') {
+        if (
+          propName.toLowerCase().endsWith('id') && !propName.endsWith('Id') && propName !== 'id' && propName !== 'valid' &&
+          !filePath.includes('youtube.ts') && !filePath.includes('yt-dlp') && !filePath.includes('video.ts')
+        ) {
           violations.push(
             createViolation(RULE_NAME, 'LOW', propLine, `Property '${containerName}.${propName}' should use *Id pattern (e.g., userId, fileId)`, {
               suggestion: `Rename to '${propName.slice(0, -2)}Id'`

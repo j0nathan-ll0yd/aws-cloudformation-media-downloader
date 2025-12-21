@@ -105,6 +105,7 @@ echo ""
 # Step 6: Type checking
 echo -e "${YELLOW}[6/13] Running type checks...${NC}"
 pnpm run check-types
+pnpm run check-test-types
 echo -e "${GREEN}  Type checks passed${NC}"
 echo ""
 

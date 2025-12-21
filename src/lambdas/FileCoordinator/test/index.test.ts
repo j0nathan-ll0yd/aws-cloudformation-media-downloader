@@ -39,7 +39,7 @@ describe('#FileCoordinator', () => {
 
   test('should handle scheduled event (with 1 pending download)', async () => {
     // Mock: first call (pending) returns 1 file, second call (scheduled) returns 0
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockResolvedValueOnce({
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'Pending'}]}).mockResolvedValueOnce({
       data: []
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
@@ -52,7 +52,7 @@ describe('#FileCoordinator', () => {
   test('should process scheduled retries from FileDownloads', async () => {
     // Mock: first call (pending) returns 0, second call (scheduled) returns 1
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce({
-      data: [{fileId: 'scheduled-retry-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+      data: [{fileId: 'scheduled-retry-1', status: 'Scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
@@ -63,8 +63,8 @@ describe('#FileCoordinator', () => {
 
   test('should process both pending downloads and scheduled retries', async () => {
     // Mock: first call (pending) returns 1, second call (scheduled) returns 1
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockResolvedValueOnce({
-      data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'Pending'}]}).mockResolvedValueOnce({
+      data: [{fileId: 'scheduled-1', status: 'Scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
     })
     invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
@@ -78,7 +78,7 @@ describe('#FileCoordinator', () => {
       // First call (pending) rejects - simulating failure
       // Second call (scheduled) succeeds with 1 file
       fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockRejectedValueOnce(new Error('DynamoDB error')).mockResolvedValueOnce({
-        data: [{fileId: 'scheduled-1', status: 'scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
+        data: [{fileId: 'scheduled-1', status: 'Scheduled', retryAfter: Math.floor(Date.now() / 1000) - 100}]
       })
       invokeAsyncMock.mockResolvedValue({StatusCode: 202})
 
@@ -92,7 +92,7 @@ describe('#FileCoordinator', () => {
     test('should handle scheduled query failure gracefully and continue', async () => {
       // First call (pending) succeeds with 1 file
       // Second call (scheduled) rejects - simulating failure
-      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'pending'}]}).mockRejectedValueOnce(
+      fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [{fileId: 'pending-1', status: 'Pending'}]}).mockRejectedValueOnce(
         new Error('DynamoDB error')
       )
       invokeAsyncMock.mockResolvedValue({StatusCode: 202})

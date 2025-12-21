@@ -1,11 +1,11 @@
 import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
-import {withPowertools, wrapAuthorizer} from '#util/lambda-helpers'
-import {logDebug, logError, logInfo} from '#util/logging'
-import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
-import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
 import {validateSessionToken} from '#util/better-auth-helpers'
 import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
+import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
+import {withPowertools, wrapAuthorizer} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 
 const generatePolicy = (principalId: string, effect: string, resource: string, usageIdentifierKey?: string) => {
   return {
