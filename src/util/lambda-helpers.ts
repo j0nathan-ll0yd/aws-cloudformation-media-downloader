@@ -615,9 +615,14 @@ import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, 
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer)).use(
-    logMetrics(metrics, {captureColdStartMetric: true})
-  )
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer))
+
+  // Only enable metrics middleware in non-test environments
+  // This prevents "No application metrics to publish" warnings in Jest
+  // where we typically verify metrics via AWS SDK mocks instead of EMF
+  if (process.env.NODE_ENV !== 'test') {
+    middyHandler.use(logMetrics(metrics, {captureColdStartMetric: true}))
+  }
 
   return middyHandler as unknown as (event: TEvent, context: Context) => Promise<TResult>
 }
