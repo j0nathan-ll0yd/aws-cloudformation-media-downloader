@@ -50,7 +50,7 @@ const fileDownloadsMock = createElectroDBEntityMock({queryIndexes: ['byStatusRet
 jest.unstable_mockModule(fileDownloadsModulePath,
   () => ({
     FileDownloads: fileDownloadsMock.entity,
-    DownloadStatus: {Pending: 'pending', Scheduled: 'scheduled', InProgress: 'in-progress', Completed: 'completed', Failed: 'failed'}
+    DownloadStatus: {Pending: 'Pending', Scheduled: 'Scheduled', InProgress: 'InProgress', Completed: 'Completed', Failed: 'Failed'}
   }))
 
 // Mock lambda-invoke-helpers (initiateFileDownload)
@@ -76,7 +76,7 @@ interface FileDownload {
 }
 
 function createMockFileDownload(fileId: string, status: string, retryAfter?: number): FileDownload {
-  return {fileId, status, retryAfter, attemptCount: status === 'scheduled' ? 1 : 0}
+  return {fileId, status, retryAfter, attemptCount: status === 'Scheduled' ? 1 : 0}
 }
 
 describe('File Retry Integration Tests', () => {
@@ -103,7 +103,7 @@ describe('File Retry Integration Tests', () => {
 
     // Mock pending files query
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: pendingFiles.map((fileId) => createMockFileDownload(fileId, 'pending'))
+      data: pendingFiles.map((fileId) => createMockFileDownload(fileId, 'Pending'))
     })
 
     // Mock scheduled files query (empty)
@@ -123,8 +123,8 @@ describe('File Retry Integration Tests', () => {
   test('should process scheduled files ready for retry', async () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
     const scheduledFiles = [
-      createMockFileDownload('file-retry-1', 'scheduled', nowSeconds - 100),
-      createMockFileDownload('file-retry-2', 'scheduled', nowSeconds - 50)
+      createMockFileDownload('file-retry-1', 'Scheduled', nowSeconds - 100),
+      createMockFileDownload('file-retry-2', 'Scheduled', nowSeconds - 50)
     ]
 
     // Mock pending files query (empty)
@@ -143,11 +143,11 @@ describe('File Retry Integration Tests', () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Mock pending files
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-pending-1', 'pending')]})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-pending-1', 'Pending')]})
 
     // Mock scheduled files
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-retry-1', 'scheduled', nowSeconds - 100)]
+      data: [createMockFileDownload('file-retry-1', 'Scheduled', nowSeconds - 100)]
     })
 
     const event = createMockScheduledEvent('test-event-3')
@@ -162,10 +162,10 @@ describe('File Retry Integration Tests', () => {
     const nowSeconds = Math.floor(Date.now() / 1000)
 
     // Same file appears in both pending and scheduled (edge case)
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-duplicate', 'pending')]})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-duplicate', 'Pending')]})
 
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-duplicate', 'scheduled', nowSeconds - 100)]
+      data: [createMockFileDownload('file-duplicate', 'Scheduled', nowSeconds - 100)]
     })
 
     const event = createMockScheduledEvent('test-event-4')
@@ -188,9 +188,9 @@ describe('File Retry Integration Tests', () => {
   })
 
   test('should publish CloudWatch metrics', async () => {
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-1', 'pending')]})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-1', 'Pending')]})
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
-      data: [createMockFileDownload('file-2', 'scheduled', Math.floor(Date.now() / 1000) - 100)]
+      data: [createMockFileDownload('file-2', 'Scheduled', Math.floor(Date.now() / 1000) - 100)]
     })
 
     const event = createMockScheduledEvent('test-event-6')
@@ -217,7 +217,7 @@ describe('File Retry Integration Tests', () => {
     // Create more files than BATCH_SIZE (5)
     const fileIds = Array.from({length: 12}, (_, i) => `file-batch-${i}`)
 
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'Pending'))})
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     const event = createMockScheduledEvent('test-event-8')
@@ -230,7 +230,7 @@ describe('File Retry Integration Tests', () => {
   test('should continue processing other files when some fail (Promise.allSettled behavior)', async () => {
     const fileIds = ['file-ok-1', 'file-fail', 'file-ok-2']
 
-    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'pending'))})
+    fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: fileIds.map((fileId) => createMockFileDownload(fileId, 'Pending'))})
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: []})
 
     // Make middle file fail
