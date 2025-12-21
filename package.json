@@ -11,6 +11,7 @@
     "preinstall": "npx only-allow pnpm",
     "precheck": "pnpm run check-types && pnpm run lint",
     "check-types": "tsc --project ./tsconfig.json",
+    "check-test-types": "tsc --project ./tsconfig.test.json --noEmit",
     "generate-graph": "node --experimental-strip-types scripts/generateDependencyGraph.ts",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
