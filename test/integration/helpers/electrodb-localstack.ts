@@ -67,10 +67,14 @@ export async function setupLocalStackTable(): Promise<void> {
       BillingMode: 'PAY_PER_REQUEST'
     }))
 
-    console.log(`✅ Created table: ${tableName}`)
+    if (process.env.LOG_LEVEL !== 'SILENT') {
+      console.log(`✅ Created table: ${tableName}`)
+    }
   } catch (error) {
     if (error instanceof Error && error.name === 'ResourceInUseException') {
-      console.log(`ℹ️  Table ${tableName} already exists`)
+      if (process.env.LOG_LEVEL !== 'SILENT') {
+        console.log(`ℹ️  Table ${tableName} already exists`)
+      }
     } else {
       throw error
     }
@@ -95,10 +99,14 @@ export async function cleanupLocalStackTable(): Promise<void> {
   try {
     const {DeleteTableCommand} = await import('@aws-sdk/client-dynamodb')
     await client.send(new DeleteTableCommand({TableName: tableName}))
-    console.log(`🗑️  Deleted table: ${tableName}`)
+    if (process.env.LOG_LEVEL !== 'SILENT') {
+      console.log(`🗑️  Deleted table: ${tableName}`)
+    }
   } catch (error) {
     if (error instanceof Error && error.name === 'ResourceNotFoundException') {
-      console.log(`ℹ️  Table ${tableName} does not exist`)
+      if (process.env.LOG_LEVEL !== 'SILENT') {
+        console.log(`ℹ️  Table ${tableName} does not exist`)
+      }
     } else {
       console.error('Error deleting table:', error)
     }
