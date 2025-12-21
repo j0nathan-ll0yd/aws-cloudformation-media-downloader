@@ -480,10 +480,15 @@ This repository is optimized for AI agents using:
 - **Semantic Memory**: Local vector database (LanceDB) for natural language code search. Run `pnpm run index:codebase` to update.
 - **Repomix**: Packed context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
 - **LLMS Entry Point**: `docs/llms.txt` and `docs/llms-full.txt` for high-level understanding.
-
 - **Convention Validation**: CI/CD enforcement of rules in `AGENTS.md` via `pnpm run validate:conventions`.
 - **Gemini Instructions**: Custom instructions in `.gemini/instructions.md`.
-- **Claude Context**: Use `bin/claude-context.sh` to load full context into Claude sessions.
+
+### Claude Code Context Loading
+Claude Code automatically reads `CLAUDE.md` and `AGENTS.md` at session start. For additional codebase context beyond these files, generate and reference the packed context:
+```bash
+pnpm run pack:context  # Generates repomix-output.xml
+```
+Then drag `repomix-output.xml` into the Claude Code conversation or copy relevant sections as needed.
 
 ### Pre-Commit Checklist
 1. Run `pnpm run validate:conventions` - Ensure no rule violations
