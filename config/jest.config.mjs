@@ -187,8 +187,7 @@ const config = {
   // verbose: undefined,
 
   // Silence console output during tests when LOG_LEVEL is SILENT
-  silent: process.env.LOG_LEVEL === 'SILENT',
-
+  silent: process.env.LOG_LEVEL === 'SILENT'
   // An array of regexp patterns that are matched against all source file paths before re-running tests in watch mode
   // watchPathIgnorePatterns: [],
 
