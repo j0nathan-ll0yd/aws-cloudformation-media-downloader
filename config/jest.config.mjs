@@ -173,7 +173,7 @@ const config = {
     // '^.+\\.[tj]sx?$' to process js/ts with `ts-jest`
     // '^.+\\.m?[tj]sx?$' to process js/ts/mjs/mts with `ts-jest`
     '^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]
-  }
+  },
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
   // transformIgnorePatterns: [
   //   "/node_modules/",
@@ -185,6 +185,9 @@ const config = {
 
   // Indicates whether each individual test should be reported during the run
   // verbose: undefined,
+
+  // Silence console output during tests when LOG_LEVEL is SILENT
+  silent: process.env.LOG_LEVEL === 'SILENT',
 
   // An array of regexp patterns that are matched against all source file paths before re-running tests in watch mode
   // watchPathIgnorePatterns: [],

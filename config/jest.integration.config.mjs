@@ -51,6 +51,9 @@ const config = {
   // Transform TypeScript files with ts-jest
   transform: {'^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]},
 
+  // Silence console output during tests when LOG_LEVEL is SILENT
+  silent: process.env.LOG_LEVEL === 'SILENT',
+
   // Setup file to configure LocalStack environment
   setupFilesAfterEnv: ['<rootDir>/test/integration/setup.ts']
 }
