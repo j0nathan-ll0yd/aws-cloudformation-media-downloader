@@ -1,6 +1,5 @@
 import {pipeline} from '@xenova/transformers'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EmbeddingPipeline = (text: string, options: {pooling: string; normalize: boolean}) => Promise<{data: Float32Array}>
 let embedder: EmbeddingPipeline | null = null
 

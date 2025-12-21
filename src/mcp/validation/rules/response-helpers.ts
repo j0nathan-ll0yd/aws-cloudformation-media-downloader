@@ -1,6 +1,6 @@
 /**
  * Response Helpers Rule
- * HIGH: Lambda handlers must use response() helper, not raw objects
+ * HIGH: Lambda handlers must use buildApiResponse() helper, not raw objects
  *
  * Ensures consistent response formatting across all Lambda functions.
  */
@@ -34,7 +34,7 @@ export const responseHelpersRule: ValidationRule = {
       const moduleSpec = imp.getModuleSpecifierValue()
       if (moduleSpec.includes('lambda-helpers')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
-        return namedImports.includes('response') || namedImports.includes('lambdaErrorResponse') || namedImports.includes('buildApiResponse')
+        return namedImports.includes('buildApiResponse') || namedImports.includes('lambdaErrorResponse')
       }
       return false
     })
