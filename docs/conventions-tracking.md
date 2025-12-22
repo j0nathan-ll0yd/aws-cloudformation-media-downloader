@@ -41,6 +41,18 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 _No pending conventions - all conventions are documented._
 
+### Detected: 2025-12-22
+
+1. **ESM Format Migration** (Architectural Pattern)
+   - **What**: All Lambda functions now built as ESM (.mjs) targeting Node.js 24 (es2022)
+   - **Why**: Performance improvements (cold starts, top-level await), future-proofing, better tree-shaking
+   - **Build Config**: esbuild format: 'esm', target: 'es2022', outExtension: {'.js': '.mjs'}
+   - **Infrastructure**: All terraform archive_file references updated to .mjs, runtime: nodejs24.x
+   - **Detected**: During comprehensive ESM migration implementation
+   - **Target**: docs/wiki/Infrastructure/Build-System.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented (partial - OpenTofu-Patterns.md updated)
+
 ### Detected: 2025-12-20
 
 1. **Branch-First PR Workflow** (Rule)
