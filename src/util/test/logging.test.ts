@@ -37,43 +37,27 @@ describe('logging', () => {
 
     it('should log debug message with sanitized object data', async () => {
       const {logDebug} = await import('../logging')
-      const data = {
-        email: 'user@example.com',
-        token: 'secret123',
-        safeField: 'visible'
-      }
+      const data = {email: 'user@example.com', token: 'secret123', safeField: 'visible'}
 
       logDebug('test message', data)
 
-      expect(loggerDebugSpy).toHaveBeenCalledWith('test message', {
-        data: {
-          email: '[REDACTED]',
-          token: '[REDACTED]',
-          safeField: 'visible'
-        }
-      })
+      expect(loggerDebugSpy).toHaveBeenCalledWith('test message', {data: {email: '[REDACTED]', token: '[REDACTED]', safeField: 'visible'}})
     })
 
     it('should sanitize nested objects in debug logs', async () => {
       const {logDebug} = await import('../logging')
       const data = {
-        user: {
-          userId: 'user-123',
-          name: 'John Doe',
-          email: 'john@example.com',
-          password: 'secret123'
-        },
-        metadata: {
-          timestamp: Date.now(),
-          token: 'auth-token-123'
-        }
+        user: {userId: 'user-123', name: 'John Doe', email: 'john@example.com', password: 'secret123'},
+        metadata: {timestamp: Date.now(), token: 'auth-token-123'}
       }
 
       logDebug('user data', data)
 
       const call = loggerDebugSpy.mock.calls[0]
       expect(call[0]).toBe('user data')
-      const loggedData = call[1] as {data: {user: {userId: string; name: string; email: string; password: string}; metadata: {timestamp: number; token: string}}}
+      const loggedData = call[1] as {
+        data: {user: {userId: string; name: string; email: string; password: string}; metadata: {timestamp: number; token: string}}
+      }
       expect(loggedData.data.user.userId).toBe('user-123')
       expect(loggedData.data.user.name).toBe('[REDACTED]')
       expect(loggedData.data.user.email).toBe('[REDACTED]')
@@ -148,21 +132,11 @@ describe('logging', () => {
 
     it('should log info message with sanitized object data', async () => {
       const {logInfo} = await import('../logging')
-      const data = {
-        email: 'user@example.com',
-        token: 'secret123',
-        safeField: 'visible'
-      }
+      const data = {email: 'user@example.com', token: 'secret123', safeField: 'visible'}
 
       logInfo('test message', data)
 
-      expect(loggerInfoSpy).toHaveBeenCalledWith('test message', {
-        data: {
-          email: '[REDACTED]',
-          token: '[REDACTED]',
-          safeField: 'visible'
-        }
-      })
+      expect(loggerInfoSpy).toHaveBeenCalledWith('test message', {data: {email: '[REDACTED]', token: '[REDACTED]', safeField: 'visible'}})
     })
 
     it('should sanitize API Gateway event in info logs', async () => {
@@ -211,21 +185,11 @@ describe('logging', () => {
 
     it('should log error message with sanitized object data', async () => {
       const {logError} = await import('../logging')
-      const data = {
-        email: 'user@example.com',
-        password: 'secret123',
-        errorCode: 'E001'
-      }
+      const data = {email: 'user@example.com', password: 'secret123', errorCode: 'E001'}
 
       logError('error occurred', data)
 
-      expect(loggerErrorSpy).toHaveBeenCalledWith('error occurred', {
-        data: {
-          email: '[REDACTED]',
-          password: '[REDACTED]',
-          errorCode: 'E001'
-        }
-      })
+      expect(loggerErrorSpy).toHaveBeenCalledWith('error occurred', {data: {email: '[REDACTED]', password: '[REDACTED]', errorCode: 'E001'}})
     })
   })
 })

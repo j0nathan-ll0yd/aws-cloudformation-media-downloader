@@ -105,16 +105,7 @@ describe('security', () => {
     })
 
     it('should handle deeply nested structures', () => {
-      const data = {
-        level1: {
-          level2: {
-            level3: {
-              password: 'secret',
-              data: 'visible'
-            }
-          }
-        }
-      }
+      const data = {level1: {level2: {level3: {password: 'secret', data: 'visible'}}}}
 
       const result = sanitizeData(data) as Record<string, unknown>
       const level1 = result.level1 as Record<string, unknown>
@@ -143,13 +134,7 @@ describe('security', () => {
     })
 
     it('should redact name fields (name, firstName, lastName)', () => {
-      const data = {
-        userId: 'user-123',
-        name: 'John Doe',
-        firstName: 'John',
-        lastName: 'Doe',
-        displayName: 'johnd'
-      }
+      const data = {userId: 'user-123', name: 'John Doe', firstName: 'John', lastName: 'Doe', displayName: 'johnd'}
 
       const result = sanitizeData(data) as Record<string, unknown>
 
@@ -161,17 +146,7 @@ describe('security', () => {
     })
 
     it('should redact nested name fields in user objects', () => {
-      const data = {
-        user: {
-          id: 'user-123',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          settings: {
-            theme: 'dark'
-          }
-        }
-      }
+      const data = {user: {id: 'user-123', firstName: 'John', lastName: 'Doe', email: 'john@example.com', settings: {theme: 'dark'}}}
 
       const result = sanitizeData(data) as Record<string, unknown>
       const user = result.user as Record<string, unknown>

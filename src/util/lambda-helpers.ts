@@ -192,8 +192,6 @@ export async function putMetrics(metrics: MetricInput[]): Promise<void> {
   }
 }
 
-
-
 /**
  * Log incoming request for fixture extraction from CloudWatch
  * Marks production requests for automated fixture generation
