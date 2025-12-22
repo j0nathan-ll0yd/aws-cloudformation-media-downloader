@@ -53,7 +53,7 @@ resource "aws_cloudwatch_log_group" "ListFiles" {
 # Create a payload zip file from the function source code bundle
 data "archive_file" "ListFiles" {
   type        = "zip"
-  source_file = "./../build/lambdas/ListFiles.js"
+  source_file = "./../build/lambdas/ListFiles.mjs"
   output_path = "./../build/lambdas/ListFiles.zip"
 }
 

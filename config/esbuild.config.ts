@@ -47,15 +47,16 @@ async function build() {
       entryPoints: [entryFile],
       bundle: true,
       platform: 'node',
-      target: 'node22', // Lambda runtime (Node 22.x, not Node 24 yet in AWS)
-      format: 'cjs', // CommonJS for Lambda compatibility
-      outfile: `build/lambdas/${functionName}.js`,
+      target: 'es2022', // Node.js 24 supports ES2022
+      format: 'esm', // ESM for Node.js 24
+      outfile: `build/lambdas/${functionName}.mjs`,
+      outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
       external: awsSdkExternals,
       minify: true,
       sourcemap: false,
       metafile: isAnalyze, // Generate metafile for bundle analysis
       treeShaking: true,
-      // Handle dynamic imports from better-auth/kysely by bundling them
+      // Prioritize ES modules for better tree-shaking
       mainFields: ['module', 'main'],
       // Resolve Node.js subpath imports from package.json
       conditions: ['import', 'node'],
@@ -69,10 +70,10 @@ async function build() {
     }
 
     // Get bundle size
-    const stats = fs.statSync(`build/lambdas/${functionName}.js`)
+    const stats = fs.statSync(`build/lambdas/${functionName}.mjs`)
     const sizeKb = (stats.size / 1024).toFixed(1)
 
-    console.log(`  ${functionName}.js (${sizeKb} KB)`)
+    console.log(`  ${functionName}.mjs (${sizeKb} KB)`)
 
     return {functionName, size: stats.size, metafile: result.metafile}
   }))

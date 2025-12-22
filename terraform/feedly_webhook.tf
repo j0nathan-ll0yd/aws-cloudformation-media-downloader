@@ -67,7 +67,7 @@ resource "aws_cloudwatch_log_group" "WebhookFeedly" {
 
 data "archive_file" "WebhookFeedly" {
   type        = "zip"
-  source_file = "./../build/lambdas/WebhookFeedly.js"
+  source_file = "./../build/lambdas/WebhookFeedly.mjs"
   output_path = "./../build/lambdas/WebhookFeedly.zip"
 }
 
@@ -186,7 +186,7 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyXRay" {
 
 data "archive_file" "StartFileUpload" {
   type        = "zip"
-  source_file = "./../build/lambdas/StartFileUpload.js"
+  source_file = "./../build/lambdas/StartFileUpload.mjs"
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
