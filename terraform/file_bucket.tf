@@ -119,7 +119,7 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
 
 data "archive_file" "S3ObjectCreated" {
   type        = "zip"
-  source_file = "./../build/lambdas/S3ObjectCreated.js"
+  source_file = "./../build/lambdas/S3ObjectCreated.mjs"
   output_path = "./../build/lambdas/S3ObjectCreated.zip"
 }
 

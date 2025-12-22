@@ -26,7 +26,7 @@ resource "aws_cloudwatch_log_group" "LogClientEvent" {
 
 data "archive_file" "LogClientEvent" {
   type        = "zip"
-  source_file = "./../build/lambdas/LogClientEvent.js"
+  source_file = "./../build/lambdas/LogClientEvent.mjs"
   output_path = "./../build/lambdas/LogClientEvent.zip"
 }
 

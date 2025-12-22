@@ -100,7 +100,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
 data "archive_file" "ApiGatewayAuthorizer" {
   type        = "zip"
-  source_file = "./../build/lambdas/ApiGatewayAuthorizer.js"
+  source_file = "./../build/lambdas/ApiGatewayAuthorizer.mjs"
   output_path = "./../build/lambdas/ApiGatewayAuthorizer.zip"
 }
 
