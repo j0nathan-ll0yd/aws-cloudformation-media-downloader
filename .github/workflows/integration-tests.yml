@@ -64,19 +64,16 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: pnpm run test:integration --coverage --coverageDirectory=coverage/integration
+        run: pnpm run test:integration --coverage
         env:
           CI: true
           USE_LOCALSTACK: true
 
-      - name: Upload integration test coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/integration/lcov.info
-          flags: integration
-          name: integration-tests
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+      - name: Post coverage to job summary
+        if: always() && hashFiles('coverage/integration/coverage-summary.md') != ''
+        run: |
+          echo "## Integration Test Coverage" >> $GITHUB_STEP_SUMMARY
+          cat coverage/integration/coverage-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         if: always()
