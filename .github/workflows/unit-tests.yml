@@ -78,16 +78,12 @@ jobs:
       run: pnpm run validate:config
 
     - name: Run unit tests
-      run: pnpm test --coverage --coverageDirectory=coverage/unit --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text
+      run: pnpm test --coverage
       env:
         CI: true
 
-    - name: Report coverage
-      uses: ArtiomTr/jest-coverage-report-action@v2
-      if: github.event_name == 'pull_request'
-      with:
-        coverage-file: ./coverage/unit/coverage-summary.json
-        base-coverage-file: ./coverage/unit/coverage-summary.json
-        annotations: failed-tests
-        test-script: echo "Coverage already generated"
-        skip-step: all
+    - name: Post coverage to job summary
+      if: always() && hashFiles('coverage/unit/coverage-summary.md') != ''
+      run: |
+        echo "## Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+        cat coverage/unit/coverage-summary.md >> $GITHUB_STEP_SUMMARY

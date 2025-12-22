@@ -33,6 +33,22 @@ const config = {
   // Use ts-jest preset for TypeScript support
   preset: 'ts-jest',
 
+  // Use native V8 coverage instead of Istanbul (more accurate)
+  coverageProvider: 'v8',
+
+  // Custom reporter for monocart coverage (generates V8 reports + markdown summary)
+  reporters: [
+    'default',
+    [
+      'jest-monocart-coverage',
+      {
+        name: 'Integration Test Coverage',
+        reports: [['v8'], ['console-summary'], ['markdown-summary', {file: 'coverage-summary.md'}], ['lcovonly']],
+        outputDir: './coverage/integration'
+      }
+    ]
+  ],
+
   // Limit workers to prevent Jest worker hang issues with AWS SDK
   maxWorkers: 2,
 

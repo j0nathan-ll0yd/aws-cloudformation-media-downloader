@@ -103,11 +103,24 @@ const config = {
   // A preset that is used as a base for Jest's configuration
   preset: 'ts-jest',
 
+  // Use native V8 coverage instead of Istanbul (more accurate)
+  coverageProvider: 'v8',
+
   // Run tests from one or more projects
   // projects: undefined,
 
-  // Use this configuration option to add custom reporters to Jest
-  // reporters: undefined,
+  // Custom reporter for monocart coverage (generates V8 reports + markdown summary)
+  reporters: [
+    'default',
+    [
+      'jest-monocart-coverage',
+      {
+        name: 'Unit Test Coverage',
+        reports: [['v8'], ['console-summary'], ['markdown-summary', {file: 'coverage-summary.md'}], ['lcovonly']],
+        outputDir: './coverage/unit'
+      }
+    ]
+  ],
 
   // Automatically reset mock state before every test
   // resetMocks: false,

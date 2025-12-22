@@ -64,20 +64,16 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: pnpm run test:integration --coverage --coverageDirectory=coverage/integration --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text
+        run: pnpm run test:integration --coverage
         env:
           CI: true
           USE_LOCALSTACK: true
 
-      - name: Report coverage
-        uses: ArtiomTr/jest-coverage-report-action@v2
-        if: github.event_name == 'pull_request'
-        with:
-          coverage-file: ./coverage/integration/coverage-summary.json
-          base-coverage-file: ./coverage/integration/coverage-summary.json
-          annotations: failed-tests
-          test-script: echo "Coverage already generated"
-          skip-step: all
+      - name: Post coverage to job summary
+        if: always() && hashFiles('coverage/integration/coverage-summary.md') != ''
+        run: |
+          echo "## Integration Test Coverage" >> $GITHUB_STEP_SUMMARY
+          cat coverage/integration/coverage-summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         if: always()
