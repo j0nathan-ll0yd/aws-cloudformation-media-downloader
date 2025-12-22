@@ -8,10 +8,6 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
-  statement {
-    actions   = ["lambda:InvokeFunction"]
-    resources = [aws_lambda_function.StartFileUpload.arn]
-  }
   # PutItem/UpdateItem on base table for Files and UserFiles
   # GetItem to check existing files
   statement {

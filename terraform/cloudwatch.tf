@@ -6,7 +6,6 @@ locals {
   lambda_functions = [
     "ApiGatewayAuthorizer",
     "CloudfrontMiddleware",
-    "FileCoordinator",
     "ListFiles",
     "LogClientEvent",
     "LoginUser",
@@ -38,7 +37,6 @@ locals {
 
   lambda_functions_background = [
     "CloudfrontMiddleware",
-    "FileCoordinator",
     "PruneDevices",
     "S3ObjectCreated",
     "SendPushNotification",

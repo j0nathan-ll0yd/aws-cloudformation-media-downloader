@@ -1,6 +1,14 @@
 # EventBridge Event Bus for Architecture 2.0 - Hybrid Event-Driven Core
 # This replaces the polling-based FileCoordinator with event-driven orchestration
 # Events: DownloadRequested, DownloadCompleted, DownloadFailed
+#
+# MIGRATION NOTES (Issue #200):
+# - FileCoordinator Lambda has been decommissioned (previously polled every 4 minutes)
+# - DownloadRequested events replace both:
+#   1. Direct Lambda invocation from WebhookFeedly (foreground mode)
+#   2. FileCoordinator polling for pending downloads (background mode)
+# - Event-driven architecture eliminates 60s latency and wasted compute
+# - All downloads now processed immediately via DownloadQueue (SQS)
 
 resource "aws_cloudwatch_event_bus" "media_downloader" {
   name = "media-downloader"
