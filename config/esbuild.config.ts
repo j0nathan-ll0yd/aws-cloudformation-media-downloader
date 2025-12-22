@@ -10,7 +10,6 @@ if (process.env['LOG_LEVEL']?.toUpperCase() === 'SILENT') {
 }
 
 // AWS SDK v3 is available in Lambda runtime - externalize to reduce bundle size
-// Note: aws-xray-sdk-core is NOT in Lambda runtime - must be bundled
 const awsSdkExternals = [
   '@aws-sdk/client-api-gateway',
   '@aws-sdk/client-cloudwatch',
@@ -25,17 +24,6 @@ const awsSdkExternals = [
 ]
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
-
-// ESM compatibility banner - provides require() for CJS dependencies
-// Some packages (aws-xray-sdk-core, etc.) use dynamic require() which fails in ESM
-const esmBanner = `
-import { createRequire as __createRequire } from 'module';
-import { fileURLToPath as __fileURLToPath } from 'url';
-import { dirname as __dirname_fn } from 'path';
-const require = __createRequire(import.meta.url);
-const __filename = __fileURLToPath(import.meta.url);
-const __dirname = __dirname_fn(__filename);
-`
 
 async function build() {
   const startTime = Date.now()
@@ -72,9 +60,7 @@ async function build() {
       // Resolve Node.js subpath imports from package.json
       conditions: ['import', 'node'],
       // Log level
-      logLevel: 'warning',
-      // Banner to provide CJS compatibility for ESM output
-      banner: {js: esmBanner}
+      logLevel: 'warning'
     })
 
     // Write metafile for bundle analysis

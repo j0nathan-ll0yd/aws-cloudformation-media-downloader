@@ -72,6 +72,7 @@ resource "aws_lambda_function" "UserDelete" {
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -79,8 +80,11 @@ resource "aws_lambda_function" "UserDelete" {
 
   environment {
     variables = {
-      DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
-      GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      GithubPersonalToken         = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME           = "UserDelete"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

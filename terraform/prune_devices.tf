@@ -86,6 +86,7 @@ resource "aws_lambda_function" "PruneDevices" {
   depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -94,11 +95,14 @@ resource "aws_lambda_function" "PruneDevices" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      ApnsSigningKey    = data.sops_file.secrets.data["apns.staging.signingKey"]
-      ApnsTeam          = data.sops_file.secrets.data["apns.staging.team"]
-      ApnsKeyId         = data.sops_file.secrets.data["apns.staging.keyId"]
-      ApnsDefaultTopic  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      ApnsSigningKey              = data.sops_file.secrets.data["apns.staging.signingKey"]
+      ApnsTeam                    = data.sops_file.secrets.data["apns.staging.team"]
+      ApnsKeyId                   = data.sops_file.secrets.data["apns.staging.keyId"]
+      ApnsDefaultTopic            = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      OTEL_SERVICE_NAME           = "PruneDevices"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

@@ -67,6 +67,7 @@ resource "aws_lambda_function" "ListFiles" {
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -74,11 +75,14 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = {
-      DynamoDBTableName      = aws_dynamodb_table.MediaDownloader.name
-      DefaultFileSize        = 436743
-      DefaultFileName        = aws_s3_object.DefaultFile.key
-      DefaultFileUrl         = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
-      DefaultFileContentType = aws_s3_object.DefaultFile.content_type
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      DefaultFileSize             = 436743
+      DefaultFileName             = aws_s3_object.DefaultFile.key
+      DefaultFileUrl              = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
+      DefaultFileContentType      = aws_s3_object.DefaultFile.content_type
+      OTEL_SERVICE_NAME           = "ListFiles"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

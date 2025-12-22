@@ -2,7 +2,7 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
-import {getSegment} from '#lib/vendor/AWS/XRay'
+import {startSpan, endSpan, addAnnotation, addMetadata} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import {FileStatus, ResponseStatus} from '#types/enums'
@@ -24,48 +24,39 @@ interface StartFileUploadParams {
 }
 
 /**
- * Fetch video info with X-Ray tracing.
- * Wraps fetchVideoInfo and handles subsegment lifecycle.
+ * Fetch video info with OpenTelemetry tracing.
+ * Wraps fetchVideoInfo and handles span lifecycle.
  */
 async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<FetchVideoInfoResult> {
-  const segment = getSegment()
-  const subsegment = segment?.addNewSubsegment('yt-dlp-fetch-info')
+  const span = startSpan('yt-dlp-fetch-info')
 
   const result = await fetchVideoInfo(fileUrl)
 
-  if (subsegment) {
-    subsegment.addAnnotation('videoId', fileId)
-    subsegment.addMetadata('videoUrl', fileUrl)
-    subsegment.addMetadata('success', result.success)
-    subsegment.close()
-  }
+  addAnnotation(span, 'videoId', fileId)
+  addMetadata(span, 'videoUrl', fileUrl)
+  addMetadata(span, 'success', result.success)
+  endSpan(span)
 
   return result
 }
 
 /**
- * Download video to S3 with X-Ray tracing.
- * Wraps downloadVideoToS3 and handles subsegment lifecycle including error capture.
+ * Download video to S3 with OpenTelemetry tracing.
+ * Wraps downloadVideoToS3 and handles span lifecycle including error capture.
  */
 async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
-  const segment = getSegment()
-  const subsegment = segment?.addNewSubsegment('yt-dlp-download-to-s3')
+  const span = startSpan('yt-dlp-download-to-s3')
 
   try {
     const result = await downloadVideoToS3(fileUrl, bucket, fileName)
-    if (subsegment) {
-      subsegment.addAnnotation('s3Bucket', bucket)
-      subsegment.addAnnotation('s3Key', fileName)
-      subsegment.addMetadata('fileSize', result.fileSize)
-      subsegment.addMetadata('duration', result.duration)
-      subsegment.close()
-    }
+    addAnnotation(span, 's3Bucket', bucket)
+    addAnnotation(span, 's3Key', fileName)
+    addMetadata(span, 'fileSize', result.fileSize)
+    addMetadata(span, 'duration', result.duration)
+    endSpan(span)
     return result
   } catch (error) {
-    if (subsegment) {
-      subsegment.addError(error as Error)
-      subsegment.close()
-    }
+    endSpan(span, error as Error)
     throw error
   }
 }

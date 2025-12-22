@@ -59,6 +59,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   depends_on       = [aws_iam_role_policy_attachment.UserSubscribePolicy]
   filename         = data.archive_file.UserSubscribe.output_path
   source_code_hash = data.archive_file.UserSubscribe.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -66,7 +67,10 @@ resource "aws_lambda_function" "UserSubscribe" {
 
   environment {
     variables = {
-      PlatformApplicationArn = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      PlatformApplicationArn      = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      OTEL_SERVICE_NAME           = "UserSubscribe"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }
