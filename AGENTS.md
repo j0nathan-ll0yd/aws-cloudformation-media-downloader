@@ -299,6 +299,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
+| FileCoordinator | CloudWatch Events | Scheduled (DISABLED) | Legacy polling - replaced by EventBridge |
 | ListFiles | API Gateway | GET /files | List user's available files |
 | LogClientEvent | API Gateway | POST /events | Log client-side events |
 | LoginUser | API Gateway | POST /auth/login | Authenticate user |

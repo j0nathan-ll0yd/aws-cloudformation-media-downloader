@@ -1,4 +1,4 @@
-import type {SQSBatchResponse, SQSEvent, Context} from 'aws-lambda'
+import type {Context, SQSBatchResponse, SQSEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {EventType, publishEvent} from '#lib/vendor/AWS/EventBridge'
@@ -7,7 +7,7 @@ import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
-import {FileStatus, ResponseStatus} from '#types/enums'
+import {FileStatus} from '#types/enums'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {getRequiredEnv} from '#util/env-validation'
@@ -211,7 +211,10 @@ async function handleDownloadFailure(
     retryCount: newRetryCount,
     correlationId
   }
-  await publishEvent(EventType.DownloadFailed, failureEvent)
+  const failureResult = await publishEvent(EventType.DownloadFailed, failureEvent)
+  if (failureResult.some((entry) => entry.ErrorCode)) {
+    logError('Failed to publish DownloadFailed event', {fileId, entries: failureResult})
+  }
 
   // Re-throw to signal SQS that processing failed (will move to DLQ after maxReceiveCount)
   throw error
@@ -304,7 +307,10 @@ async function processDownloadRequest(fileId: string, correlationId?: string): P
     s3Key: fileName,
     correlationId
   }
-  await publishEvent(EventType.DownloadCompleted, completedEvent)
+  const completedResult = await publishEvent(EventType.DownloadCompleted, completedEvent)
+  if (completedResult.some((entry) => entry.ErrorCode)) {
+    logError('Failed to publish DownloadCompleted event', {fileId: videoInfo.id, entries: completedResult})
+  }
 
   await putMetric('LambdaExecutionSuccess', 1)
 }
@@ -341,11 +347,7 @@ export const handler = withPowertools(async (event: SQSEvent, context: Context):
       const downloadRequest = JSON.parse(eventBridgeEvent.detail) as DownloadRequestedEvent
 
       const correlationId = downloadRequest.correlationId || context.awsRequestId
-      logInfo('Processing download request', {
-        correlationId,
-        fileId: downloadRequest.fileId,
-        messageId: record.messageId
-      })
+      logInfo('Processing download request', {correlationId, fileId: downloadRequest.fileId, messageId: record.messageId})
 
       await processDownloadRequest(downloadRequest.fileId, correlationId)
     } catch (error) {

@@ -90,6 +90,26 @@ resource "aws_cloudwatch_event_rule" "download_failed" {
   })
 }
 
+# EventBridge Rule: FileUploaded -> SendPushNotification (SQS)
+# Triggered by: S3ObjectCreated (after file upload completes)
+# Target: SendPushNotification queue for user notifications
+resource "aws_cloudwatch_event_rule" "file_uploaded" {
+  name           = "FileUploaded"
+  description    = "Route FileUploaded events to SendPushNotification queue"
+  event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
+
+  event_pattern = jsonencode({
+    "detail-type" : ["FileUploaded"]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "file_uploaded_to_notification_queue" {
+  rule           = aws_cloudwatch_event_rule.file_uploaded.name
+  event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
+  target_id      = "NotificationQueueTarget"
+  arn            = aws_sqs_queue.SendPushNotification.arn
+}
+
 # IAM policy for EventBridge to send messages to DownloadQueue
 data "aws_iam_policy_document" "eventbridge_to_download_queue" {
   statement {

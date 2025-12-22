@@ -2,10 +2,11 @@
  * StartFileUpload Workflow Integration Tests
  *
  * Tests the complete video download workflow:
- * - YouTube API: mocked (fetchVideoInfo, streamVideoToS3)
+ * - YouTube API: mocked (fetchVideoInfo, downloadVideoToS3)
  * - Files entity: LocalStack DynamoDB
  * - FileDownloads entity: mocked (transient orchestration state)
  * - S3 storage: LocalStack S3
+ * - EventBridge: mocked (publishEvent)
  *
  * This tests orchestration logic, not AWS SDK behavior.
  */
@@ -22,7 +23,8 @@ process.env.CLOUDFRONT_DOMAIN = 'test.cloudfront.net'
 process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {Context} from 'aws-lambda'
+import type {PutEventsResultEntry} from '#lib/vendor/AWS/EventBridge'
+import type {Context, SQSEvent} from 'aws-lambda'
 import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
@@ -76,8 +78,45 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS',
     numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   }))
 
+// Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
+const publishEventMock = jest.fn<(eventType: string, detail: object) => Promise<PutEventsResultEntry[]>>().mockResolvedValue([{EventId: 'test-event-id'}])
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge',
+  () => ({
+    publishEvent: publishEventMock,
+    EventType: {DownloadRequested: 'DownloadRequested', DownloadCompleted: 'DownloadCompleted', DownloadFailed: 'DownloadFailed'}
+  }))
+
 // Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
+
+/**
+ * Helper to create SQS event from DownloadRequestedEvent.
+ * Matches the EventBridge to SQS event structure.
+ */
+function createSQSEvent(fileId: string, sourceUrl?: string): SQSEvent {
+  return {
+    Records: [
+      {
+        messageId: 'test-message-id',
+        receiptHandle: 'test-receipt-handle',
+        body: JSON.stringify({
+          detail: JSON.stringify({fileId, sourceUrl: sourceUrl || `https://www.youtube.com/watch?v=${fileId}`, correlationId: 'test-correlation-id'})
+        }),
+        attributes: {
+          ApproximateReceiveCount: '1',
+          SentTimestamp: '1633024800000',
+          SenderId: 'test-sender',
+          ApproximateFirstReceiveTimestamp: '1633024800000'
+        },
+        messageAttributes: {},
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
+        awsRegion: 'us-west-2'
+      }
+    ]
+  }
+}
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   let mockContext: Context
@@ -102,16 +141,17 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {
     const fileId = 'test-video-123'
-    const event = {fileId}
+    const sqsEvent = createSQSEvent(fileId)
 
-    const result = await handler(event, mockContext)
+    const result = await handler(sqsEvent, mockContext)
 
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.fileId).toBe(fileId)
-    expect(response.body.status).toBe('Success')
-    expect(response.body.fileSize).toBe(MOCK_FILE_SIZE)
+    // SQSBatchResponse should have no failed messages on success
+    expect(result.batchItemFailures).toHaveLength(0)
 
+    // Verify DownloadCompleted event was published to EventBridge
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted', expect.objectContaining({fileId, fileSize: MOCK_FILE_SIZE, duration: 180}))
+
+    // Verify DynamoDB state transitions
     const file = await getFile(fileId)
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe(fileId)

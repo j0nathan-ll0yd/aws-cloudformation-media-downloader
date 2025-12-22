@@ -39,6 +39,13 @@ const excludedSourceVariables: Record<string, number> = {
   LambdaExecutionFailure: 1,
   LambdaExecutionSuccess: 1,
   RetryExhausted: 1,
+  ScheduledVideoDetected: 1,
+  RetryScheduled: 1,
+  // EventBridge event type names (enum values, not env vars)
+  DownloadRequested: 1,
+  DownloadCompleted: 1,
+  DownloadFailed: 1,
+  FileUploaded: 1,
   // OpenTelemetry SDK false positives (AWS SDK instrumentation types)
   DynamoDB: 1,
   Kinesis: 1,

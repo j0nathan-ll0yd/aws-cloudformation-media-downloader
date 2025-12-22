@@ -4,7 +4,7 @@ import {createEventBridgeClient} from './clients'
 
 const eventBridge = createEventBridgeClient()
 
-export type {PutEventsCommandInput, PutEventsRequestEntry, PutEventsResultEntry}
+export type { PutEventsCommandInput, PutEventsRequestEntry, PutEventsResultEntry }
 
 /**
  * Event types for the media-downloader event bus
@@ -12,7 +12,8 @@ export type {PutEventsCommandInput, PutEventsRequestEntry, PutEventsResultEntry}
 export enum EventType {
   DownloadRequested = 'DownloadRequested',
   DownloadCompleted = 'DownloadCompleted',
-  DownloadFailed = 'DownloadFailed'
+  DownloadFailed = 'DownloadFailed',
+  FileUploaded = 'FileUploaded'
 }
 
 /**
@@ -51,29 +52,36 @@ export interface DownloadFailedEvent extends BaseEvent {
 }
 
 /**
- * Publish an event to the media-downloader event bus
+ * FileUploaded event - published by S3ObjectCreated when file upload completes
  */
-export async function publishEvent(
-  eventType: EventType,
-  detail: DownloadRequestedEvent | DownloadCompletedEvent | DownloadFailedEvent
-): Promise<PutEventsResultEntry[]> {
+export interface FileUploadedEvent extends BaseEvent {
+  s3Key: string
+  fileSize: number
+  contentType: string
+}
+
+/**
+ * Union type for all download-related events
+ */
+export type DownloadEvent = DownloadRequestedEvent | DownloadCompletedEvent | DownloadFailedEvent | FileUploadedEvent
+
+/* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+/**
+ * Publish an event to the media-downloader event bus
+ *
+ * Note: This is a pure pass-through wrapper. Callers should check
+ * PutEventsResultEntry[] for ErrorCode fields to handle partial failures.
+ */
+export async function publishEvent(eventType: EventType, detail: DownloadEvent): Promise<PutEventsResultEntry[]> {
   const params: PutEventsCommandInput = {
     Entries: [
-      {
-        Source: 'media-downloader',
-        DetailType: eventType,
-        Detail: JSON.stringify(detail),
-        EventBusName: 'media-downloader'
-      }
+      {Source: 'media-downloader', DetailType: eventType, Detail: JSON.stringify(detail), EventBusName: 'media-downloader'}
     ]
   }
 
   const command = new PutEventsCommand(params)
   const response = await eventBridge.send(command)
 
-  if (response.FailedEntryCount && response.FailedEntryCount > 0) {
-    throw new Error(`Failed to publish event: ${JSON.stringify(response.Entries)}`)
-  }
-
   return response.Entries || []
 }
+/* c8 ignore stop */

@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import type {PutEventsResultEntry} from '#lib/vendor/AWS/EventBridge'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
@@ -38,15 +39,12 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
 }))
 
 // Mock EventBridge for publishing events
-const publishEventMock = jest.fn().mockResolvedValue([{EventId: 'test-event-id'}])
-jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({
-  publishEvent: publishEventMock,
-  EventType: {
-    DownloadRequested: 'DownloadRequested',
-    DownloadCompleted: 'DownloadCompleted',
-    DownloadFailed: 'DownloadFailed'
-  }
-}))
+const publishEventMock = jest.fn<(eventType: string, detail: object) => Promise<PutEventsResultEntry[]>>().mockResolvedValue([{EventId: 'test-event-id'}])
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge',
+  () => ({
+    publishEvent: publishEventMock,
+    EventType: {DownloadRequested: 'DownloadRequested', DownloadCompleted: 'DownloadCompleted', DownloadFailed: 'DownloadFailed'}
+  }))
 
 const {handler} = await import('./../src')
 
@@ -59,13 +57,7 @@ describe('#StartFileUpload', () => {
       {
         messageId: 'test-message-id',
         receiptHandle: 'test-receipt-handle',
-        body: JSON.stringify({
-          detail: JSON.stringify({
-            fileId,
-            sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
-            correlationId
-          })
-        }),
+        body: JSON.stringify({detail: JSON.stringify({fileId, sourceUrl: `https://www.youtube.com/watch?v=${fileId}`, correlationId})}),
         attributes: {
           ApproximateReceiveCount: '1',
           SentTimestamp: '1633024800000',
@@ -190,10 +182,7 @@ describe('#StartFileUpload', () => {
     expect(output.batchItemFailures).toHaveLength(1)
 
     // Verify DownloadFailed event was published to EventBridge
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      fileId: 'test-video-private',
-      category: 'permanent'
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({fileId: 'test-video-private', category: 'permanent'}))
 
     // Verify FileDownloads was updated with failed status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
@@ -252,9 +241,7 @@ describe('#StartFileUpload', () => {
     expect(output.batchItemFailures).toHaveLength(1)
 
     // Verify DownloadFailed event was published
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      fileId: 'test-video-maxretries'
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({fileId: 'test-video-maxretries'}))
   })
 
   test('should handle cookie expiration errors', async () => {
@@ -267,10 +254,7 @@ describe('#StartFileUpload', () => {
     expect(output.batchItemFailures).toHaveLength(1)
 
     // Verify DownloadFailed event was published with correct category
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      fileId: 'test-video-cookie',
-      category: 'cookie_expired'
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({fileId: 'test-video-cookie', category: 'cookie_expired'}))
   })
 
   test('should dispatch MetadataNotifications to all waiting users after fetchVideoInfo', async () => {

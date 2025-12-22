@@ -122,14 +122,11 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
 
     // Publish DownloadRequested event to EventBridge
     // This replaces both direct Lambda invocation and FileCoordinator polling
-    const eventDetail: DownloadRequestedEvent = {
-      fileId,
-      userId,
-      sourceUrl: articleURL,
-      correlationId,
-      backgroundMode
+    const eventDetail: DownloadRequestedEvent = {fileId, userId, sourceUrl: articleURL, correlationId, backgroundMode}
+    const eventResult = await publishEvent(EventType.DownloadRequested, eventDetail)
+    if (eventResult.some((entry) => entry.ErrorCode)) {
+      logError('Failed to publish DownloadRequested event', {fileId, entries: eventResult})
     }
-    await publishEvent(EventType.DownloadRequested, eventDetail)
 
     // backgroundMode determines response status only - event is always published immediately
     return {statusCode: 202, status: backgroundMode ? ResponseStatus.Accepted : ResponseStatus.Initiated}

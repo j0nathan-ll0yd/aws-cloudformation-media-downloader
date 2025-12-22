@@ -45,6 +45,15 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS',
 const invokeLambdaMock = jest.fn<(name: string, payload: FileInvocationPayload) => Promise<{StatusCode: number}>>()
 jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeLambda: invokeLambdaMock, invokeAsync: invokeLambdaMock}))
 
+// Mock EventBridge for publishing DownloadRequested events
+import type {PutEventsResultEntry} from '#lib/vendor/AWS/EventBridge'
+const publishEventMock = jest.fn<(eventType: string, detail: object) => Promise<PutEventsResultEntry[]>>().mockResolvedValue([{EventId: 'test-event-id'}])
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge',
+  () => ({
+    publishEvent: publishEventMock,
+    EventType: {DownloadRequested: 'DownloadRequested', DownloadCompleted: 'DownloadCompleted', DownloadFailed: 'DownloadFailed'}
+  }))
+
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
   getVideoID: jest.fn((url: string) => {
     const match = url.match(/v=([^&]+)/)
@@ -78,9 +87,11 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     jest.clearAllMocks()
     sendMessageMock.mockClear()
     invokeLambdaMock.mockClear()
+    publishEventMock.mockClear()
 
     sendMessageMock.mockResolvedValue({MessageId: 'test-message-id'})
     invokeLambdaMock.mockResolvedValue({StatusCode: 202})
+    publishEventMock.mockResolvedValue([{EventId: 'test-event-id'}])
 
     // Recreate tables for clean state each test
     await Promise.all([deleteFilesTable(), deleteIdempotencyTable()])
@@ -102,8 +113,9 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.fileId).toBe('new-video-123')
     expect(file!.status).toBe(FileStatus.Queued)
 
-    expect(invokeLambdaMock).toHaveBeenCalledTimes(1)
-    expect(invokeLambdaMock.mock.calls[0][1].fileId).toBe('new-video-123')
+    // Verify DownloadRequested event was published to EventBridge
+    expect(publishEventMock).toHaveBeenCalledTimes(1)
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.objectContaining({fileId: 'new-video-123'}))
 
     expect(sendMessageMock).not.toHaveBeenCalled()
   })
@@ -135,7 +147,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(messageBody.notificationType).toBe('DownloadReadyNotification')
     expect(messageBody.file.fileId).toBe('existing-video')
 
-    expect(invokeLambdaMock).not.toHaveBeenCalled()
+    // File already downloaded - no EventBridge event published
+    expect(publishEventMock).not.toHaveBeenCalled()
 
     const file = await getFile('existing-video')
     expect(file!.status).toBe(FileStatus.Downloaded)
@@ -155,8 +168,9 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.fileId).toBe('background-video')
     expect(file!.status).toBe(FileStatus.Queued)
 
-    // FileCoordinator will pick up this file later
-    expect(invokeLambdaMock).not.toHaveBeenCalled()
+    // EventBridge event is always published (backgroundMode only affects response status)
+    expect(publishEventMock).toHaveBeenCalledTimes(1)
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.objectContaining({fileId: 'background-video', backgroundMode: true}))
     expect(sendMessageMock).not.toHaveBeenCalled()
   })
 
@@ -173,8 +187,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file).not.toBeNull()
     expect(file!.fileId).toBe('duplicate-video')
 
-    // StartFileUpload uses conditional updates for deduplication
-    expect(invokeLambdaMock).toHaveBeenCalledTimes(2)
+    // EventBridge event is published for each webhook (idempotency is at event processing level)
+    expect(publishEventMock).toHaveBeenCalledTimes(2)
   })
 
   test('should associate file with multiple users', async () => {
