@@ -17,6 +17,7 @@ import type {MetricInput, UserEventDetails} from '#types/util'
 import {UserStatus} from '#types/enums'
 import {getOptionalEnv} from './env-validation'
 import {logDebug, logError, logInfo} from './logging'
+import {sanitizeData} from './security'
 
 // Re-export logging functions for backwards compatibility
 export { logDebug, logError, logInfo }
@@ -192,54 +193,6 @@ export async function putMetrics(metrics: MetricInput[]): Promise<void> {
 }
 
 /**
- * Sanitize data for test fixtures by removing sensitive fields
- * Recursively processes objects and arrays to redact PII and credentials
- * @param data - Data to sanitize
- * @returns Sanitized copy of data with sensitive fields redacted
- */
-function sanitizeForTest(data: unknown): unknown {
-  if (!data || typeof data !== 'object') {
-    return data
-  }
-
-  if (Array.isArray(data)) {
-    return data.map((item) => sanitizeForTest(item))
-  }
-
-  const sanitized: Record<string, unknown> = {...(data as Record<string, unknown>)}
-
-  // Remove sensitive fields - case-insensitive patterns for comprehensive PII protection
-  const sensitivePatterns = [
-    /^authorization$/i, // fmt: multiline
-    /^token$/i,
-    /^deviceToken$/i,
-    /^refreshToken$/i,
-    /^accessToken$/i,
-    /^password$/i,
-    /^apiKey$/i,
-    /^secret$/i,
-    /^privateKey$/i,
-    /^appleDeviceIdentifier$/i,
-    /^email$/i,
-    /^phoneNumber$/i,
-    /^phone$/i,
-    /^certificate$/i,
-    /^ssn$/i,
-    /^creditCard$/i
-  ]
-
-  for (const key in sanitized) {
-    if (sensitivePatterns.some((pattern) => pattern.test(key))) {
-      sanitized[key] = '[REDACTED]'
-    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeForTest(sanitized[key])
-    }
-  }
-
-  return sanitized
-}
-
-/**
  * Log incoming request for fixture extraction from CloudWatch
  * Marks production requests for automated fixture generation
  *
@@ -257,7 +210,7 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
     return
   }
   const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
-  console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(event)}))
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeData(event)}))
 }
 
 /**
@@ -278,7 +231,7 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
     return
   }
   const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
-  console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeForTest(response)}))
+  console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeData(response)}))
 }
 
 // ============================================================================

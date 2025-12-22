@@ -168,6 +168,25 @@ _No pending conventions - all conventions are documented._
 
 ## ✅ Recently Documented
 
+### Documented: 2025-12-22
+
+1. **Centralized PII Sanitization** (Security Pattern)
+   - **What**: All logging functions automatically sanitize PII via `sanitizeData()` utility in `util/security.ts`
+   - **Why**: Prevents sensitive data leakage in CloudWatch logs
+   - **Integration**: `logInfo()`, `logDebug()`, `logError()` in `util/logging.ts` automatically apply sanitization; test fixtures use same utility
+   - **Patterns**: Redacts authorization, tokens, passwords, emails, names, phone numbers, SSN, credit cards, certificates (case-insensitive)
+   - **Documented**: docs/wiki/TypeScript/PII-Protection.md
+   - **Priority**: HIGH
+   - **Enforcement**: Automatic in all logging functions
+
+2. **TODO Comment Context Requirements** (Convention Clarification)
+   - **What**: TODO comments must explain "why" with sufficient context, not just "what needs to be done"
+   - **Why**: Aligns with "comments explain why, not what" principle; provides actionable information
+   - **Examples**: Replace "TODO: Add alarm" with detailed explanation of what triggers alarm, why it's needed, and impact
+   - **Documented**: docs/wiki/Conventions/Code-Comments.md (already documented, now enforced)
+   - **Priority**: MEDIUM
+   - **Enforcement**: Code review
+
 ### Documented: 2025-12-21
 
 1. **No Deprecation - Remove Immediately** (Rule)
