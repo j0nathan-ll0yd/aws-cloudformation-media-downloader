@@ -9,10 +9,12 @@
  */
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
-import {logDebug, logError, logInfo} from '#util/logging'
-import {refreshSession, validateSessionToken} from '#util/better-auth-helpers'
+import type {ApiHandlerParams} from '#types/lambda'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
 
 /**
  * Lambda handler for refreshing session tokens.

@@ -4,6 +4,7 @@
     "module": "esnext",
     "target": "ES2024",
     "outDir": "./dist",
+    "rootDir": ".",
     "strict": true,
     "verbatimModuleSyntax": true,
     "types": ["node", "jest"],
@@ -13,6 +14,7 @@
       "#entities/*": ["src/entities/*"],
       "#lib/*": ["src/lib/*"],
       "#util/*": ["src/util/*"],
+      "#config/*": ["src/config/*"],
       "#types/*": ["src/types/*"],
       "#test/*": ["test/*"]
     },

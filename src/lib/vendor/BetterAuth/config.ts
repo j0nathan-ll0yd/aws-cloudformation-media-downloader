@@ -7,8 +7,8 @@
 
 import {betterAuth} from 'better-auth'
 import {electroDBAdapter} from './electrodb-adapter'
-import {logDebug} from '#util/logging'
-import {getRequiredEnv} from '#util/env-validation'
+import {logDebug} from '#lib/system/logging'
+import {getRequiredEnv} from '#lib/system/env'
 
 /**
  * Better Auth instance configured for MediaDownloader service.

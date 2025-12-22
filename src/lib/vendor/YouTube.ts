@@ -3,11 +3,11 @@ import {spawn} from 'child_process'
 import {createReadStream} from 'fs'
 import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
-import {putMetrics} from '#util/lambda-helpers'
-import {logDebug, logError} from '#util/logging'
-import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {putMetrics} from '#lib/system/observability'
+import {logDebug, logError} from '#lib/system/logging'
+import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {createS3Upload} from '../vendor/AWS/S3'
-import {getRequiredEnv} from '#util/env-validation'
+import {getRequiredEnv} from '#lib/system/env'
 
 /**
  * yt-dlp configuration constants

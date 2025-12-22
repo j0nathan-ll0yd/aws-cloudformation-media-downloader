@@ -206,7 +206,7 @@ export interface ValidationRule { name: string }`, {overwrite: true})
 
       const violations = typesLocationRule.validate(sourceFile, 'src/util/lambda-helpers.ts')
 
-      expect(violations[0].suggestion).toContain('lambda-wrappers.ts')
+      expect(violations[0].suggestion).toContain('src/types/lambda.ts')
     })
 
     test('should suggest video.ts for video-error-classifier file', () => {

@@ -106,7 +106,7 @@ export const handler = wrapApiHandler(async ({event}) => {
     test('should allow wrapAuthenticatedHandler usage', () => {
       const sourceFile = project.createSourceFile('test-authenticated-wrapper.ts', `
 import {wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
+import type {AuthenticatedApiParams} from '#types/lambda'
 
 export const handler = wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
   // userId is guaranteed to be a string
@@ -123,7 +123,7 @@ export const handler = wrapAuthenticatedHandler(async ({context, userId}: Authen
     test('should allow wrapOptionalAuthHandler usage', () => {
       const sourceFile = project.createSourceFile('test-optional-wrapper.ts', `
 import {wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
+import type {OptionalAuthApiParams} from '#types/lambda'
 import {UserStatus} from '#types/enums'
 
 export const handler = wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {

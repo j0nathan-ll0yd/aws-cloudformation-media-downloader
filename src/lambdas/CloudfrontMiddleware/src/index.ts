@@ -1,7 +1,7 @@
 import type {CloudFrontRequestEvent, Context} from 'aws-lambda'
 import type {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import type {CloudFrontHandlerResult, CustomCloudFrontRequest} from '#types/lambda-payloads'
-import {logDebug, logInfo} from '#util/logging'
+import type {CloudFrontHandlerResult, CustomCloudFrontRequest} from '#types/lambda'
+import {logDebug, logInfo} from '#lib/system/logging'
 // Note: Lambda@Edge does not support externalized modules (no layers) and has strict size limits
 // X-Ray wrapper removed to avoid bundling aws-xray-sdk-core (~1MB) into the deployment package
 

@@ -48,7 +48,7 @@ export type ApiHandlerParams<TEvent> = {event: TEvent; context: Context; metadat
 
 // ✅ CORRECT - Import from types directory
 // src/lambdas/ListFiles/src/index.ts
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import type {ApiHandlerParams} from '#types/lambda'
 
 // ❌ WRONG - Exporting type from implementation file
 // src/util/helpers.ts

@@ -2,10 +2,12 @@ import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
-import {getDefaultFile} from '#util/constants'
-import {buildApiResponse, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import {logDebug, logError} from '#util/logging'
-import {retryUnprocessed} from '#util/retry'
+import {getDefaultFile} from '#config/constants'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
+import {logDebug, logError} from '#lib/system/logging'
+import {retryUnprocessed} from '#lib/system/retry'
 
 /**
  * Returns an array of Files for a user using ElectroDB batch get

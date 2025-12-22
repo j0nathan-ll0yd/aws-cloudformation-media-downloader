@@ -12,7 +12,7 @@ const userDevicesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()
-jest.unstable_mockModule('#util/device-helpers', () => ({
+jest.unstable_mockModule('#lib/domain/device/device-service', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   subscribeEndpointToTopic: jest.fn(),
   unsubscribeEndpointToTopic: jest.fn()

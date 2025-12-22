@@ -13,7 +13,8 @@ import {Sessions} from '#entities/Sessions'
 import {Accounts} from '#entities/Accounts'
 import {VerificationTokens} from '#entities/VerificationTokens'
 import {v4 as uuidv4} from 'uuid'
-import {logDebug, logError} from '#util/logging'
+import {logDebug, logError} from '#lib/system/logging'
+import {AccountSchema, SessionSchema, UserSchema, VerificationTokenSchema} from '#lib/domain/auth/validation'
 
 type ModelName = 'user' | 'session' | 'account' | 'verification'
 
@@ -148,18 +149,26 @@ export const electroDBAdapter = createAdapterFactory({
         let result: {data: Record<string, unknown>}
 
         switch (model) {
-          case 'user':
-            result = await Users.create(transformedData as Parameters<typeof Users.create>[0]).go()
+          case 'user': {
+            const validData = UserSchema.parse(transformedData)
+            result = await Users.create(validData).go()
             break
-          case 'session':
-            result = await Sessions.create(transformedData as Parameters<typeof Sessions.create>[0]).go()
+          }
+          case 'session': {
+            const validData = SessionSchema.parse(transformedData)
+            result = await Sessions.create(validData).go()
             break
-          case 'account':
-            result = await Accounts.create(transformedData as Parameters<typeof Accounts.create>[0]).go()
+          }
+          case 'account': {
+            const validData = AccountSchema.parse(transformedData)
+            result = await Accounts.create(validData).go()
             break
-          case 'verification':
-            result = await VerificationTokens.create(transformedData as Parameters<typeof VerificationTokens.create>[0]).go()
+          }
+          case 'verification': {
+            const validData = VerificationTokenSchema.parse(transformedData)
+            result = await VerificationTokens.create(validData).go()
             break
+          }
           default:
             throw new Error(`Unknown model: ${model}`)
         }

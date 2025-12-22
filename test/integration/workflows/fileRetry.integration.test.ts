@@ -54,7 +54,7 @@ jest.unstable_mockModule(fileDownloadsModulePath,
   }))
 
 // Mock lambda-invoke-helpers (initiateFileDownload)
-const lambdaInvokeHelpersPath = resolve(__dirname, '../../../src/util/lambda-invoke-helpers')
+const lambdaInvokeHelpersPath = resolve(__dirname, '../../../src/lib/lambda/invocation')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const initiateFileDownloadMock = jest.fn<any>()
 jest.unstable_mockModule(lambdaInvokeHelpersPath, () => ({initiateFileDownload: initiateFileDownloadMock}))

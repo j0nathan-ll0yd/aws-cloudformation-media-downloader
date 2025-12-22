@@ -12,9 +12,11 @@
 
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {loginUserSchema} from '#types/schemas'
-import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
-import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
-import {logInfo} from '#util/logging'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {logInfo} from '#lib/system/logging'
 
 interface UserLoginInput {
   idToken: string

@@ -35,7 +35,7 @@ const fakeGithubIssueResponse = {
 
 const getUserDevicesMock = jest.fn<() => unknown>()
 const deleteDeviceMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('#util/device-helpers', () => ({
+jest.unstable_mockModule('#lib/domain/device/device-service', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   deleteDevice: deleteDeviceMock,
   deleteUserDevice: jest.fn()
@@ -59,7 +59,8 @@ jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
   unsubscribe: jest.fn()
 }))
 
-jest.unstable_mockModule('#util/github-helpers', () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
+jest.unstable_mockModule('#lib/integrations/github/issue-service',
+  () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

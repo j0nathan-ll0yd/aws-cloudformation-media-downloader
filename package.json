@@ -104,6 +104,7 @@
     "#entities/*": "./src/entities/*",
     "#lib/*": "./src/lib/*",
     "#util/*": "./src/util/*",
+    "#config/*": "./src/config/*",
     "#types/*": "./src/types/*",
     "#test/*": "./test/*"
   },

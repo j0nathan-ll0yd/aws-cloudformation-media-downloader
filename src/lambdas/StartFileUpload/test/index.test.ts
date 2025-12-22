@@ -3,7 +3,7 @@ import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
-import {CookieExpirationError, UnexpectedError} from '#util/errors'
+import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/jest-setup'
 
 interface StartFileUploadParams {

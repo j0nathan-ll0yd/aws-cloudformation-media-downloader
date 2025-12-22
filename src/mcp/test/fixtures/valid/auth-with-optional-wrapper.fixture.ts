@@ -5,7 +5,7 @@
  * @expectedViolations 0
  */
 import {wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
+import type {OptionalAuthApiParams} from '#types/lambda'
 import {UserStatus} from '#types/enums'
 
 export const handler = wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {

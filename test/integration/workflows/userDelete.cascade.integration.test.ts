@@ -52,7 +52,7 @@ const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevi
 const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
 
 // Mock GitHub helpers to prevent actual API calls
-const githubHelpersPath = resolve(__dirname, '../../../src/util/github-helpers')
+const githubHelpersPath = resolve(__dirname, '../../../src/lib/integrations/github/issue-service')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createFailedUserDeletionIssueMock = jest.fn<any>()
 jest.unstable_mockModule(githubHelpersPath, () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))

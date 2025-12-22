@@ -5,7 +5,27 @@
 - **Enforcement**: Required for AWS changes
 - **Impact if violated**: HIGH - Production issues
 
-## LocalStack Setup
+## Remocal Testing (Remote + Local)
+
+"Remocal" testing bridges the gap between local emulation and full cloud deployment. It involves running test scripts locally that interact with **real, deployed AWS resources**.
+
+### When to Use
+- **Validation**: Verifying that local logic works against real AWS IAM permissions and service quotas.
+- **End-to-End**: Testing flows that are difficult to emulate (e.g., complex CloudFront behaviors, actual Apple Push Notification delivery).
+
+### Project Scripts
+We provide specific scripts for remocal testing:
+- `npm run test-remote-list`: Hits the deployed API Gateway to list files.
+- `npm run test-remote-hook`: Sends a payload to the deployed Feedly webhook.
+- `npm run test-remote-registerDevice`: Registers a device against the production DB.
+
+### Best Practices
+- **Non-Destructive**: Ensure remocal tests use test data or read-only operations where possible.
+- **Isolated**: Ideally, run these against a `staging` stack, not production.
+
+---
+
+## LocalStack Testing
 
 ```bash
 # Start LocalStack
