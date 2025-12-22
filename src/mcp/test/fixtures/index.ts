@@ -6,8 +6,13 @@
  */
 
 import {readdirSync, readFileSync} from 'node:fs'
-import {basename, join} from 'node:path'
+import {basename, dirname, join} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Project, SourceFile} from 'ts-morph'
+
+// ESM polyfill for __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /**
  * Metadata extracted from fixture JSDoc comments

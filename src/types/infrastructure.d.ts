@@ -36,6 +36,7 @@ export interface ArchiveFile {
     LogClientEvent:       SendPushNotificationElement[];
     LoginUser:            SendPushNotificationElement[];
     PruneDevices:         SendPushNotificationElement[];
+    RefreshToken:         SendPushNotificationElement[];
     RegisterDevice:       SendPushNotificationElement[];
     RegisterUser:         SendPushNotificationElement[];
     S3ObjectCreated:      SendPushNotificationElement[];
@@ -85,6 +86,7 @@ export interface AwsIamPolicyDocument {
     LoginUser:                      APIGatewayAuthorizerRolePolicyElement[];
     MultipartUpload:                APIGatewayAuthorizerRolePolicyElement[];
     PruneDevices:                   PruneDevice[];
+    RefreshToken:                   APIGatewayAuthorizerRolePolicyElement[];
     RegisterDevice:                 RegisterDevice[];
     RegisterUser:                   APIGatewayAuthorizerRolePolicyElement[];
     S3ObjectCreated:                APIGatewayAuthorizerRolePolicyElement[];
@@ -335,6 +337,7 @@ export interface AwsAPIGatewayIntegration {
     ListFilesGet:       AwsAPIGatewayIntegrationListFilesGet[];
     LogClientEventPost: AwsAPIGatewayIntegrationListFilesGet[];
     LoginUserPost:      AwsAPIGatewayIntegrationListFilesGet[];
+    RefreshTokenPost:   AwsAPIGatewayIntegrationListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayIntegrationListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayIntegrationListFilesGet[];
     UserDeletePost:     AwsAPIGatewayIntegrationListFilesGet[];
@@ -355,6 +358,7 @@ export interface AwsAPIGatewayMethod {
     ListFilesGet:       AwsAPIGatewayMethodListFilesGet[];
     LogClientEventPost: AwsAPIGatewayMethodListFilesGet[];
     LoginUserPost:      AwsAPIGatewayMethodListFilesGet[];
+    RefreshTokenPost:   AwsAPIGatewayMethodListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayMethodListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayMethodListFilesGet[];
     UserDeletePost:     AwsAPIGatewayMethodListFilesGet[];
@@ -393,6 +397,7 @@ export interface AwsAPIGatewayResource {
     Files:          Feedly[];
     LogEvent:       Feedly[];
     Login:          Feedly[];
+    RefreshToken:   Feedly[];
     RegisterDevice: Feedly[];
     RegisterUser:   Feedly[];
     UserDelete:     Feedly[];
@@ -746,6 +751,7 @@ export interface AwsIamPolicy {
     LoginUserRolePolicy:            RolePolicy[];
     MultipartUploadRolePolicy:      RolePolicy[];
     PruneDevicesRolePolicy:         RolePolicy[];
+    RefreshTokenRolePolicy:         RolePolicy[];
     RegisterDeviceRolePolicy:       RolePolicy[];
     RegisterUserRolePolicy:         RolePolicy[];
     S3ObjectCreatedRolePolicy:      RolePolicy[];
@@ -800,15 +806,16 @@ export interface AwsLambdaEventSourceMappingSendPushNotification {
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
     CloudfrontMiddleware: AwsLambdaFunctionAPIGatewayAuthorizer[];
-    FileCoordinator:      SendPushNotificationClass[];
+    FileCoordinator:      RefreshTokenElement[];
     ListFiles:            ListFile[];
     LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
     LoginUser:            AwsLambdaFunctionAPIGatewayAuthorizer[];
     PruneDevices:         AwsLambdaFunctionAPIGatewayAuthorizer[];
+    RefreshToken:         RefreshTokenElement[];
     RegisterDevice:       AwsLambdaFunctionAPIGatewayAuthorizer[];
     RegisterUser:         AwsLambdaFunctionAPIGatewayAuthorizer[];
     S3ObjectCreated:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    SendPushNotification: SendPushNotificationClass[];
+    SendPushNotification: RefreshTokenElement[];
     StartFileUpload:      StartFileUpload[];
     UserDelete:           AwsLambdaFunctionAPIGatewayAuthorizer[];
     UserSubscribe:        AwsLambdaFunctionAPIGatewayAuthorizer[];
@@ -866,7 +873,7 @@ export enum Mode {
     Active = "Active",
 }
 
-export interface SendPushNotificationClass {
+export interface RefreshTokenElement {
     depends_on:       string[];
     description:      string;
     environment:      FileCoordinatorEnvironment[];
@@ -878,6 +885,7 @@ export interface SendPushNotificationClass {
     runtime:          Runtime;
     source_code_hash: string;
     tracing_config:   TracingConfig[];
+    timeout?:         number;
 }
 
 export interface FileCoordinatorEnvironment {
@@ -1329,6 +1337,7 @@ const typeMap: any = {
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("SendPushNotificationElement")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("SendPushNotificationElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("SendPushNotificationElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("SendPushNotificationElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("SendPushNotificationElement")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("SendPushNotificationElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("SendPushNotificationElement")) },
@@ -1369,6 +1378,7 @@ const typeMap: any = {
         { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
@@ -1578,6 +1588,7 @@ const typeMap: any = {
         { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
@@ -1596,6 +1607,7 @@ const typeMap: any = {
         { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
@@ -1629,6 +1641,7 @@ const typeMap: any = {
         { json: "Files", js: "Files", typ: a(r("Feedly")) },
         { json: "LogEvent", js: "LogEvent", typ: a(r("Feedly")) },
         { json: "Login", js: "Login", typ: a(r("Feedly")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("Feedly")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("Feedly")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("Feedly")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("Feedly")) },
@@ -1922,6 +1935,7 @@ const typeMap: any = {
         { json: "LoginUserRolePolicy", js: "LoginUserRolePolicy", typ: a(r("RolePolicy")) },
         { json: "MultipartUploadRolePolicy", js: "MultipartUploadRolePolicy", typ: a(r("RolePolicy")) },
         { json: "PruneDevicesRolePolicy", js: "PruneDevicesRolePolicy", typ: a(r("RolePolicy")) },
+        { json: "RefreshTokenRolePolicy", js: "RefreshTokenRolePolicy", typ: a(r("RolePolicy")) },
         { json: "RegisterDeviceRolePolicy", js: "RegisterDeviceRolePolicy", typ: a(r("RolePolicy")) },
         { json: "RegisterUserRolePolicy", js: "RegisterUserRolePolicy", typ: a(r("RolePolicy")) },
         { json: "S3ObjectCreatedRolePolicy", js: "S3ObjectCreatedRolePolicy", typ: a(r("RolePolicy")) },
@@ -1967,15 +1981,16 @@ const typeMap: any = {
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationClass")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("RefreshTokenElement")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("ListFile")) },
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("RefreshTokenElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotificationClass")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("RefreshTokenElement")) },
         { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("StartFileUpload")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
@@ -2020,7 +2035,7 @@ const typeMap: any = {
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
-    "SendPushNotificationClass": o([
+    "RefreshTokenElement": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("FileCoordinatorEnvironment")) },
@@ -2032,6 +2047,7 @@ const typeMap: any = {
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
     ], false),
     "FileCoordinatorEnvironment": o([
         { json: "variables", js: "variables", typ: r("FluffyVariables") },
