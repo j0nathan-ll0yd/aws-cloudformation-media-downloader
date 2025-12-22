@@ -54,9 +54,7 @@ const AWS_SDK_MAPPING: Record<string, {wrapper: string; functions: string[]}> = 
 async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
 
-  const project = new Project({
-    tsConfigFilePath: join(projectRoot, 'tsconfig.json')
-  })
+  const project = new Project({tsConfigFilePath: join(projectRoot, 'tsconfig.json')})
 
   const sourceFile = project.addSourceFileAtPath(filePath)
   let modified = false
@@ -81,13 +79,7 @@ async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<Ap
     sourceFile.saveSync()
   }
 
-  return {
-    file: filePath,
-    convention: 'aws-sdk-wrapper',
-    applied: modified,
-    changes,
-    dryRun
-  }
+  return {file: filePath, convention: 'aws-sdk-wrapper', applied: modified, changes, dryRun}
 }
 
 /**
@@ -98,13 +90,7 @@ async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<Ap
   const changes: string[] = []
 
   if (!filePath.includes('.test.')) {
-    return {
-      file: filePath,
-      convention: 'electrodb-mock',
-      applied: false,
-      changes: ['File is not a test file - skipping'],
-      dryRun
-    }
+    return {file: filePath, convention: 'electrodb-mock', applied: false, changes: ['File is not a test file - skipping'], dryRun}
   }
 
   const content = readFileSync(filePath, 'utf-8')
@@ -123,14 +109,7 @@ async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<Ap
     changes.push('2. Create mock: const entityMock = createElectroDBEntityMock()')
     changes.push('3. Use in unstable_mockModule: ({Entity: entityMock.entity})')
 
-    return {
-      file: filePath,
-      convention: 'electrodb-mock',
-      applied: false,
-      changes,
-      dryRun,
-      error: 'Auto-fix not available - complex refactoring required'
-    }
+    return {file: filePath, convention: 'electrodb-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - complex refactoring required'}
   }
 
   // Check for mock defined inside jest.unstable_mockModule (wrong pattern)
@@ -142,14 +121,7 @@ async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<Ap
     changes.push('  const entityMock = createElectroDBEntityMock()')
     changes.push("  jest.unstable_mockModule('#entities/X', () => ({X: entityMock.entity}))")
 
-    return {
-      file: filePath,
-      convention: 'electrodb-mock',
-      applied: false,
-      changes,
-      dryRun,
-      error: 'Auto-fix not available - manual reordering required'
-    }
+    return {file: filePath, convention: 'electrodb-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - manual reordering required'}
   }
 
   const applied = newContent !== content
@@ -157,13 +129,7 @@ async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<Ap
     writeFileSync(filePath, newContent)
   }
 
-  return {
-    file: filePath,
-    convention: 'electrodb-mock',
-    applied,
-    changes: applied ? changes : ['No issues found - file follows convention'],
-    dryRun
-  }
+  return {file: filePath, convention: 'electrodb-mock', applied, changes: applied ? changes : ['No issues found - file follows convention'], dryRun}
 }
 
 /**
@@ -174,25 +140,16 @@ async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<A
   const changes: string[] = []
 
   if (!filePath.includes('/lambdas/')) {
-    return {
-      file: filePath,
-      convention: 'response-helper',
-      applied: false,
-      changes: ['File is not a Lambda handler - skipping'],
-      dryRun
-    }
+    return {file: filePath, convention: 'response-helper', applied: false, changes: ['File is not a Lambda handler - skipping'], dryRun}
   }
 
-  const project = new Project({
-    tsConfigFilePath: join(projectRoot, 'tsconfig.json')
-  })
+  const project = new Project({tsConfigFilePath: join(projectRoot, 'tsconfig.json')})
 
   const sourceFile = project.addSourceFileAtPath(filePath)
 
   // Check if buildApiResponse is imported
-  const hasResponseImport = sourceFile.getImportDeclarations().some(
-    (imp) => imp.getModuleSpecifierValue().includes('responses') &&
-      imp.getNamedImports().some((n) => n.getName() === 'buildApiResponse')
+  const hasResponseImport = sourceFile.getImportDeclarations().some((imp) =>
+    imp.getModuleSpecifierValue().includes('responses') && imp.getNamedImports().some((n) => n.getName() === 'buildApiResponse')
   )
 
   // Find raw response objects
@@ -219,23 +176,10 @@ async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<A
     changes.push('Replace: return {statusCode: X, body: JSON.stringify(data)}')
     changes.push('With: return buildApiResponse(context, X, data)')
 
-    return {
-      file: filePath,
-      convention: 'response-helper',
-      applied: false,
-      changes,
-      dryRun,
-      error: 'Auto-fix not available - manual replacement required'
-    }
+    return {file: filePath, convention: 'response-helper', applied: false, changes, dryRun, error: 'Auto-fix not available - manual replacement required'}
   }
 
-  return {
-    file: filePath,
-    convention: 'response-helper',
-    applied: false,
-    changes: ['No raw response objects found - file follows convention'],
-    dryRun
-  }
+  return {file: filePath, convention: 'response-helper', applied: false, changes: ['No raw response objects found - file follows convention'], dryRun}
 }
 
 /**
@@ -246,26 +190,14 @@ async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<Ap
   const changes: string[] = []
 
   if (!filePath.includes('/lambdas/') && !filePath.includes('/util/')) {
-    return {
-      file: filePath,
-      convention: 'env-validation',
-      applied: false,
-      changes: ['File is not a Lambda or utility - skipping'],
-      dryRun
-    }
+    return {file: filePath, convention: 'env-validation', applied: false, changes: ['File is not a Lambda or utility - skipping'], dryRun}
   }
 
   const content = readFileSync(filePath, 'utf-8')
 
   // Skip env-validation.ts itself
   if (filePath.includes('env-validation')) {
-    return {
-      file: filePath,
-      convention: 'env-validation',
-      applied: false,
-      changes: ['Skipping env-validation utility itself'],
-      dryRun
-    }
+    return {file: filePath, convention: 'env-validation', applied: false, changes: ['Skipping env-validation utility itself'], dryRun}
   }
 
   // Find direct process.env access
@@ -286,23 +218,10 @@ async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<Ap
     changes.push(`Replace: process.env.VAR_NAME`)
     changes.push(`With: getRequiredEnv('VAR_NAME')`)
 
-    return {
-      file: filePath,
-      convention: 'env-validation',
-      applied: false,
-      changes,
-      dryRun,
-      error: 'Auto-fix not available - manual replacement required'
-    }
+    return {file: filePath, convention: 'env-validation', applied: false, changes, dryRun, error: 'Auto-fix not available - manual replacement required'}
   }
 
-  return {
-    file: filePath,
-    convention: 'env-validation',
-    applied: false,
-    changes: ['No direct process.env access found - file follows convention'],
-    dryRun
-  }
+  return {file: filePath, convention: 'env-validation', applied: false, changes: ['No direct process.env access found - file follows convention'], dryRun}
 }
 
 /**
@@ -313,26 +232,14 @@ async function applyPowertools(filePath: string, dryRun: boolean): Promise<Apply
   const changes: string[] = []
 
   if (!filePath.includes('/lambdas/') || !filePath.endsWith('index.ts')) {
-    return {
-      file: filePath,
-      convention: 'powertools',
-      applied: false,
-      changes: ['File is not a Lambda handler - skipping'],
-      dryRun
-    }
+    return {file: filePath, convention: 'powertools', applied: false, changes: ['File is not a Lambda handler - skipping'], dryRun}
   }
 
   const content = readFileSync(filePath, 'utf-8')
 
   // Check if already wrapped
   if (content.includes('withPowertools') || content.includes('wrapLambdaInvokeHandler')) {
-    return {
-      file: filePath,
-      convention: 'powertools',
-      applied: false,
-      changes: ['Handler already uses PowerTools wrapper'],
-      dryRun
-    }
+    return {file: filePath, convention: 'powertools', applied: false, changes: ['Handler already uses PowerTools wrapper'], dryRun}
   }
 
   // Check for unwrapped handler export
@@ -346,23 +253,10 @@ async function applyPowertools(filePath: string, dryRun: boolean): Promise<Apply
     changes.push('    // handler code')
     changes.push('  })')
 
-    return {
-      file: filePath,
-      convention: 'powertools',
-      applied: false,
-      changes,
-      dryRun,
-      error: 'Auto-fix not available - manual wrapping required'
-    }
+    return {file: filePath, convention: 'powertools', applied: false, changes, dryRun, error: 'Auto-fix not available - manual wrapping required'}
   }
 
-  return {
-    file: filePath,
-    convention: 'powertools',
-    applied: false,
-    changes: ['Handler appears to be properly wrapped'],
-    dryRun
-  }
+  return {file: filePath, convention: 'powertools', applied: false, changes: ['Handler appears to be properly wrapped'], dryRun}
 }
 
 /**
@@ -372,27 +266,13 @@ export async function handleApplyConvention(args: ApplyConventionArgs): Promise<
   const {file, convention, dryRun = true} = args
 
   if (!file) {
-    return {
-      file: '',
-      convention,
-      applied: false,
-      changes: [],
-      dryRun,
-      error: 'File path required'
-    }
+    return {file: '', convention, applied: false, changes: [], dryRun, error: 'File path required'}
   }
 
   const filePath = file.startsWith('/') ? file : join(projectRoot, file)
 
   if (!existsSync(filePath)) {
-    return {
-      file: filePath,
-      convention,
-      applied: false,
-      changes: [],
-      dryRun,
-      error: `File not found: ${filePath}`
-    }
+    return {file: filePath, convention, applied: false, changes: [], dryRun, error: `File not found: ${filePath}`}
   }
 
   switch (convention) {
