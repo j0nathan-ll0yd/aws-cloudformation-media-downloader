@@ -64,19 +64,20 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: pnpm run test:integration --coverage --coverageDirectory=coverage/integration
+        run: pnpm run test:integration --coverage --coverageDirectory=coverage/integration --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text
         env:
           CI: true
           USE_LOCALSTACK: true
 
-      - name: Upload integration test coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Generate coverage report
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        if: always()
         with:
-          files: ./coverage/integration/lcov.info
-          flags: integration
-          name: integration-tests
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+          coverage-file: ./coverage/integration/coverage-summary.json
+          base-coverage-file: ./coverage/integration/coverage-summary.json
+          annotations: failed-tests
+          test-script: echo "Coverage already generated"
+          skip-step: all
 
       - name: Upload test results
         if: always()
