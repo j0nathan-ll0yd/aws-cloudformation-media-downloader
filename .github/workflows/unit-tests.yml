@@ -82,9 +82,9 @@ jobs:
       env:
         CI: true
 
-    - name: Generate coverage report
+    - name: Report coverage
       uses: ArtiomTr/jest-coverage-report-action@v2
-      if: always()
+      if: github.event_name == 'pull_request'
       with:
         coverage-file: ./coverage/unit/coverage-summary.json
         base-coverage-file: ./coverage/unit/coverage-summary.json
