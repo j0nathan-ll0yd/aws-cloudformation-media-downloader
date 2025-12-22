@@ -5,11 +5,7 @@ import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
 import {testContext} from '#util/jest-setup'
-
-interface StartFileUploadParams {
-  fileId: string
-  correlationId?: string
-}
+import type {SQSEvent} from 'aws-lambda'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
@@ -41,12 +37,49 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
   numberAttribute: (value: number) => ({DataType: 'Number', StringValue: String(value)})
 }))
 
-const {default: eventMock} = await import('./fixtures/startFileUpload-200-OK.json', {assert: {type: 'json'}})
+// Mock EventBridge for publishing events
+const publishEventMock = jest.fn().mockResolvedValue([{EventId: 'test-event-id'}])
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({
+  publishEvent: publishEventMock,
+  EventType: {
+    DownloadRequested: 'DownloadRequested',
+    DownloadCompleted: 'DownloadCompleted',
+    DownloadFailed: 'DownloadFailed'
+  }
+}))
+
 const {handler} = await import('./../src')
 
 describe('#StartFileUpload', () => {
   const context = testContext
-  let event: StartFileUploadParams
+
+  // Helper to create SQS event from DownloadRequestedEvent
+  const createSQSEvent = (fileId: string, correlationId?: string): SQSEvent => ({
+    Records: [
+      {
+        messageId: 'test-message-id',
+        receiptHandle: 'test-receipt-handle',
+        body: JSON.stringify({
+          detail: JSON.stringify({
+            fileId,
+            sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
+            correlationId
+          })
+        }),
+        attributes: {
+          ApproximateReceiveCount: '1',
+          SentTimestamp: '1633024800000',
+          SenderId: 'test-sender',
+          ApproximateFirstReceiveTimestamp: '1633024800000'
+        },
+        messageAttributes: {},
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
+        awsRegion: 'us-west-2'
+      }
+    ]
+  })
 
   // Helper to create a successful video info result
   const createSuccessResult = (info: Partial<YtDlpVideoInfo>): FetchVideoInfoResult => ({
@@ -68,9 +101,6 @@ describe('#StartFileUpload', () => {
   const createFailureResult = (error: Error, isCookieError = false): FetchVideoInfoResult => ({success: false, error, isCookieError})
 
   beforeEach(() => {
-    // Deep clone event to prevent test interference
-    event = JSON.parse(JSON.stringify(eventMock))
-
     // Reset mocks
     jest.clearAllMocks()
 
@@ -86,6 +116,9 @@ describe('#StartFileUpload', () => {
     // Mock SQS sendMessage
     sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
 
+    // Mock EventBridge publishEvent
+    publishEventMock.mockResolvedValue([{EventId: 'test-event-id'}])
+
     // Set environment variables
     process.env.BUCKET = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
@@ -94,18 +127,14 @@ describe('#StartFileUpload', () => {
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
   })
 
-  test('should successfully download video to S3', async () => {
+  test('should successfully download video to S3 and publish DownloadCompleted event', async () => {
+    const event = createSQSEvent('test-video-id')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('Success')
-    expect(parsedBody.body.fileSize).toEqual(82784319)
-    expect(parsedBody.body.duration).toEqual(45)
-    expect(parsedBody.body.fileId).toBeDefined()
+    expect(output.batchItemFailures).toEqual([])
 
     // Verify Files.upsert was called (for permanent metadata)
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
@@ -113,76 +142,78 @@ describe('#StartFileUpload', () => {
     // Verify FileDownloads was updated (status changes: in_progress -> completed)
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
 
-    // Verify downloadVideoToS3 was called with correct parameters (no format ID - yt-dlp handles selection)
+    // Verify DownloadCompleted event was published to EventBridge
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted', expect.objectContaining({fileId: 'test-video-id', fileSize: 82784319, duration: 45}))
+
+    // Verify downloadVideoToS3 was called with correct parameters
     expect(downloadVideoToS3Mock).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='), 'test-bucket', expect.stringMatching(/\.mp4$/))
   })
 
   test('should handle large video files', async () => {
-    // Test that large files (e.g., 100MB) are handled correctly
+    const event = createSQSEvent('test-video-large')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-large', title: 'Large Video'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 104857600, s3Url: 's3://test-bucket/test-video.mp4', duration: 120})
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual('Success')
-    expect(parsedBody.body.fileSize).toEqual(104857600)
-    expect(parsedBody.body.duration).toEqual(120)
+    expect(output.batchItemFailures).toEqual([])
 
     // Verify Files.upsert was called with success
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
+
+    // Verify DownloadCompleted event was published
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted', expect.objectContaining({fileId: 'test-video-large', fileSize: 104857600}))
   })
 
-  test('should schedule retry for transient download errors', async () => {
+  test('should throw error for transient failures to enable SQS retry', async () => {
+    const event = createSQSEvent('test-video-error')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-error'}))
     downloadVideoToS3Mock.mockRejectedValue(new Error('Download failed'))
 
     const output = await handler(event, context)
 
-    // Transient errors get scheduled for retry (200)
-    expect(output.statusCode).toEqual(200)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
-    expect(parsedBody.body.retryAfter).toBeDefined()
+    // Transient errors throw to trigger SQS retry
+    expect(output.batchItemFailures).toHaveLength(1)
+    expect(output.batchItemFailures[0].itemIdentifier).toEqual('test-message-id')
 
     // Verify FileDownloads was updated with scheduled status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
   })
 
-  test('should mark file as Failed for permanent errors (video private)', async () => {
+  test('should publish DownloadFailed event for permanent errors (video private)', async () => {
+    const event = createSQSEvent('test-video-private')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('This video is private')))
 
     const output = await handler(event, context)
 
-    // Permanent errors return error status codes
-    expect(output.statusCode).toEqual(500)
-    // Error responses have structure: {error: {code, message: <body>}}
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
-    expect(parsedBody.error.message.category).toEqual('permanent')
+    // Permanent errors result in failed message
+    expect(output.batchItemFailures).toHaveLength(1)
+
+    // Verify DownloadFailed event was published to EventBridge
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
+      fileId: 'test-video-private',
+      category: 'permanent'
+    }))
 
     // Verify FileDownloads was updated with failed status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
   })
 
   test('should schedule retry for unknown errors (benefit of doubt)', async () => {
-    // Unknown errors are treated as transient (retryable) by default
+    const event = createSQSEvent('test-video-unknown')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new UnexpectedError('Video not found')))
 
     const output = await handler(event, context)
 
-    // Unknown errors get scheduled for retry
-    expect(output.statusCode).toEqual(200)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
+    // Unknown errors get retried by SQS
+    expect(output.batchItemFailures).toHaveLength(1)
 
     // Verify FileDownloads was updated with scheduled status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
   })
 
   test('should handle fetch failure with video info for classification', async () => {
-    // Fetch fails but we have partial video info (e.g., scheduled video)
+    const event = createSQSEvent('scheduled-video')
     const videoInfo = {
       id: 'scheduled-video',
       title: 'Upcoming Video',
@@ -195,67 +226,62 @@ describe('#StartFileUpload', () => {
     const output = await handler(event, context)
 
     // Should be scheduled for retry at release time
-    expect(output.statusCode).toEqual(200)
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.body.status).toEqual(DownloadStatus.Scheduled)
+    expect(output.batchItemFailures).toHaveLength(1)
   })
 
   test('should handle FileDownloads update failures gracefully', async () => {
+    const event = createSQSEvent('test-video-error')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Video fetch failed')))
-    // FileDownloads operations fail - but the handler should handle this gracefully
-    // The actual behavior depends on the implementation - just verify we get some response
     fileDownloadsMock.mocks.update.go.mockImplementation(() => {
       throw new Error('DynamoDB error')
     })
 
-    // The handler may throw or return an error response - either is acceptable
-    try {
-      const output = await handler(event, context)
-      expect(output).toBeDefined()
-    } catch {
-      // Throwing is also acceptable if DynamoDB operations fail completely
-      expect(true).toBe(true)
-    }
+    // The handler may throw or return error - verify we get failure reported
+    const output = await handler(event, context)
+    expect(output.batchItemFailures).toHaveLength(1)
   })
 
-  test('should mark file as Failed when max retries exceeded', async () => {
-    // First the handler reads existing download state with maxed retries
+  test('should publish DownloadFailed event when max retries exceeded', async () => {
+    const event = createSQSEvent('test-video-maxretries')
     fileDownloadsMock.mocks.get.mockResolvedValue({data: {fileId: 'test', retryCount: 5, maxRetries: 5}})
-    // Then the fetch fails (doesn't matter what error, retries are exhausted)
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Any error')))
 
     const output = await handler(event, context)
 
-    // Max retries exceeded should result in error
-    expect(output.statusCode).toEqual(500)
-    // Error responses have structure: {error: {code, message: <body>}}
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
+    // Max retries exceeded should result in failure
+    expect(output.batchItemFailures).toHaveLength(1)
+
+    // Verify DownloadFailed event was published
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
+      fileId: 'test-video-maxretries'
+    }))
   })
 
   test('should handle cookie expiration errors', async () => {
-    // CookieExpirationError is recognized by the classifier
+    const event = createSQSEvent('test-video-cookie')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new CookieExpirationError('Sign in to confirm'), true))
 
     const output = await handler(event, context)
 
     // Cookie errors are permanent (require manual intervention)
-    expect(output.statusCode).toEqual(500)
-    // Error responses have structure: {error: {code, message: <body>}}
-    const parsedBody = JSON.parse(output.body)
-    expect(parsedBody.error.message.status).toEqual(DownloadStatus.Failed)
-    expect(parsedBody.error.message.category).toEqual('cookie_expired')
+    expect(output.batchItemFailures).toHaveLength(1)
+
+    // Verify DownloadFailed event was published with correct category
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
+      fileId: 'test-video-cookie',
+      category: 'cookie_expired'
+    }))
   })
 
   test('should dispatch MetadataNotifications to all waiting users after fetchVideoInfo', async () => {
-    // Mock multiple users waiting for the file
+    const event = createSQSEvent('test-video-multiuser')
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-1'}, {userId: 'user-2'}, {userId: 'user-3'}]})
-    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id', title: 'Test Video', uploader: 'Test Uploader'}))
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-multiuser', title: 'Test Video', uploader: 'Test Uploader'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
+    expect(output.batchItemFailures).toEqual([])
 
     // Verify UserFiles.query.byFile was called
     expect(userFilesMock.mocks.query.byFile!.go).toHaveBeenCalled()
@@ -273,14 +299,14 @@ describe('#StartFileUpload', () => {
   })
 
   test('should skip MetadataNotification when no users are waiting', async () => {
-    // No users waiting for the file
+    const event = createSQSEvent('test-video-nouser')
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
-    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
+    fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-nouser'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
     const output = await handler(event, context)
 
-    expect(output.statusCode).toEqual(200)
+    expect(output.batchItemFailures).toEqual([])
 
     // Verify sendMessage was NOT called (no users to notify)
     expect(sendMessageMock).not.toHaveBeenCalled()

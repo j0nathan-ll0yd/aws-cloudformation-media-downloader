@@ -22,6 +22,17 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
+// Mock EventBridge for publishing events
+const publishEventMock = jest.fn().mockResolvedValue([{EventId: 'test-event-id'}])
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({
+  publishEvent: publishEventMock,
+  EventType: {
+    DownloadRequested: 'DownloadRequested',
+    DownloadCompleted: 'DownloadCompleted',
+    DownloadFailed: 'DownloadFailed'
+  }
+}))
+
 // Mock yt-dlp-wrap to prevent YouTube module from failing
 class MockYTDlpWrap {
   constructor(public binaryPath: string) {}
@@ -47,6 +58,25 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
 
 const invokeAsyncMock = jest.fn()
 jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
+
+// Mock Powertools idempotency (bypasses idempotency checks in tests)
+const fileDownloadsMock = createElectroDBEntityMock()
+jest.unstable_mockModule('#entities/FileDownloads', () => ({
+  FileDownloads: fileDownloadsMock.entity,
+  DownloadStatus: {
+    Pending: 'Pending',
+    InProgress: 'InProgress',
+    Scheduled: 'Scheduled',
+    Completed: 'Completed',
+    Failed: 'Failed'
+  }
+}))
+
+jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
+  createPersistenceStore: jest.fn(),
+  defaultIdempotencyConfig: {},
+  makeIdempotent: jest.fn((fn: CallableFunction) => fn)
+}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 
