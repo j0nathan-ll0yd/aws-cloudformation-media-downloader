@@ -26,6 +26,17 @@ const awsSdkExternals = [
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
 
+// ESM compatibility banner - provides require() for CJS dependencies
+// Some packages (aws-xray-sdk-core, etc.) use dynamic require() which fails in ESM
+const esmBanner = `
+import { createRequire as __createRequire } from 'module';
+import { fileURLToPath as __fileURLToPath } from 'url';
+import { dirname as __dirname_fn } from 'path';
+const require = __createRequire(import.meta.url);
+const __filename = __fileURLToPath(import.meta.url);
+const __dirname = __dirname_fn(__filename);
+`
+
 async function build() {
   const startTime = Date.now()
   console.log(`Building ${lambdaEntryFiles.length} Lambda functions...`)
@@ -61,7 +72,9 @@ async function build() {
       // Resolve Node.js subpath imports from package.json
       conditions: ['import', 'node'],
       // Log level
-      logLevel: 'warning'
+      logLevel: 'warning',
+      // Banner to provide CJS compatibility for ESM output
+      banner: {js: esmBanner}
     })
 
     // Write metafile for bundle analysis
