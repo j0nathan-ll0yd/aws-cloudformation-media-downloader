@@ -32,9 +32,35 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 - **Language**: TypeScript
 - **Storage**: Amazon S3
 - **API**: AWS API Gateway with custom authorizer
+- **Orchestration**: EventBridge + SQS (event-driven, replaces polling)
 - **Notifications**: Apple Push Notification Service (APNS)
 - **Database**: DynamoDB with ElectroDB ORM (single-table design)
 - **Monitoring**: CloudWatch, X-Ray (optional)
+
+### Event-Driven Architecture (v2.0)
+
+The system uses a **Hybrid Event-Driven Architecture** combining EventBridge (intelligent routing) with SQS (robust queuing):
+
+**Event Flow:**
+1. `WebhookFeedly` publishes `DownloadRequested` event to EventBridge
+2. EventBridge routes event to `DownloadQueue` (SQS)
+3. `StartFileUpload` consumes from `DownloadQueue` and processes download
+4. On success: publishes `DownloadCompleted` event
+5. On permanent failure: publishes `DownloadFailed` event
+6. Failed messages retry via SQS visibility timeout, then move to `DownloadDLQ`
+
+**Key Benefits:**
+- **Immediate processing**: No polling delay (previously 60s)
+- **Robust retries**: SQS handles transient failures automatically
+- **Dead letter queue**: Captures permanently failed downloads for inspection
+- **Cost effective**: Event-driven pricing (~$0.01/month vs constant polling)
+- **Foundation for Sync Engine**: Events enable future real-time sync (#199)
+
+**Event Types:**
+- `DownloadRequested`: New download initiated (from WebhookFeedly/API)
+- `DownloadCompleted`: Video downloaded successfully to S3
+- `DownloadFailed`: Permanent failure (private video, cookie expired, etc.)
+
 
 ### Project Structure
 ```
@@ -93,12 +119,14 @@ graph TD
 
     Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
 
-    %% Scheduled Tasks
-    Schedule[CloudWatch Schedule] --> FileCoordinator[FileCoordinator Lambda]
-    Schedule --> PruneDevices[PruneDevices Lambda]
+    %% Event-Driven Architecture (replaces FileCoordinator polling)
+    WebhookFeedly --> EventBridge[EventBridge: media-downloader]
+    EventBridge --> DownloadQueue[SQS: DownloadQueue]
+    DownloadQueue --> StartFileUpload[StartFileUpload Lambda]
+    StartFileUpload --> EventBridge
 
-    %% Lambda Invocations
-    FileCoordinator --> StartFileUpload[StartFileUpload Lambda]
+    %% Scheduled Tasks
+    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
 
     %% S3 Triggers
     S3Upload[S3 Upload Event] --> S3ObjectCreated[S3ObjectCreated Lambda]
@@ -271,7 +299,6 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| FileCoordinator | CloudWatch Events | Scheduled | Orchestrate pending file downloads |
 | ListFiles | API Gateway | GET /files | List user's available files |
 | LogClientEvent | API Gateway | POST /events | Log client-side events |
 | LoginUser | API Gateway | POST /auth/login | Authenticate user |
@@ -280,11 +307,11 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
 | RegisterUser | API Gateway | POST /auth/register | Register new user |
 | S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
-| SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
-| StartFileUpload | Lambda Invoke | FileCoordinator | Initiate file download from YouTube |
+| SendPushNotification | SQS | MetadataNotification/DownloadReadyNotification | Send APNS notifications |
+| StartFileUpload | SQS (EventBridge) | DownloadRequested events | Initiate file download from YouTube |
 | UserDelete | API Gateway | DELETE /users | Delete user and cascade |
 | UserSubscribe | API Gateway | POST /subscriptions | Manage user topic subscriptions |
-| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles |
+| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles, publish DownloadRequested events |
 
 ### Data Access Patterns
 
