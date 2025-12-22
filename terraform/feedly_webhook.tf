@@ -32,6 +32,11 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
     ]
     resources = [aws_dynamodb_table.IdempotencyTable.arn]
   }
+  # EventBridge - publish DownloadRequested events
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.media_downloader.arn]
+  }
 }
 
 resource "aws_iam_policy" "WebhookFeedlyRolePolicy" {
@@ -140,6 +145,15 @@ data "aws_iam_policy_document" "MultipartUpload" {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
+  # Receive messages from DownloadQueue
+  statement {
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes"
+    ]
+    resources = [aws_sqs_queue.DownloadQueue.arn]
+  }
   statement {
     actions = [
       "s3:PutObject",
@@ -160,6 +174,11 @@ data "aws_iam_policy_document" "MultipartUpload" {
   statement {
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
+  }
+  # EventBridge - publish DownloadCompleted and DownloadFailed events
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.media_downloader.arn]
   }
 }
 
