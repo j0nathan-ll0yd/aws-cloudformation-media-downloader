@@ -30,7 +30,7 @@ describe('security', () => {
     it('should handle nested objects', () => {
       const data = {
         headers: {Authorization: 'Bearer secret', 'Content-Type': 'application/json'},
-        body: {user: {password: 'secret123', email: 'test@example.com', name: 'John Doe'}}
+        body: {user: {password: 'secret123', email: 'test@example.com', name: 'John Doe', role: 'admin'}}
       }
 
       const result = sanitizeData(data) as Record<string, unknown>
@@ -42,7 +42,8 @@ describe('security', () => {
       expect(headers['Content-Type']).toBe('application/json')
       expect(user.password).toBe('[REDACTED]')
       expect(user.email).toBe('[REDACTED]')
-      expect(user.name).toBe('John Doe')
+      expect(user.name).toBe('[REDACTED]')
+      expect(user.role).toBe('admin')
     })
 
     it('should handle arrays', () => {
@@ -127,18 +128,60 @@ describe('security', () => {
     it('should handle mixed arrays with objects', () => {
       const data = {
         users: [
-          {name: 'Alice', email: 'alice@example.com'},
-          {name: 'Bob', password: 'secret123'}
+          {userId: 'u1', email: 'alice@example.com'},
+          {userId: 'u2', password: 'secret123'}
         ]
       }
 
       const result = sanitizeData(data) as Record<string, unknown>
       const users = result.users as Array<Record<string, unknown>>
 
-      expect(users[0].name).toBe('Alice')
+      expect(users[0].userId).toBe('u1')
       expect(users[0].email).toBe('[REDACTED]')
-      expect(users[1].name).toBe('Bob')
+      expect(users[1].userId).toBe('u2')
       expect(users[1].password).toBe('[REDACTED]')
+    })
+
+    it('should redact name fields (name, firstName, lastName)', () => {
+      const data = {
+        userId: 'user-123',
+        name: 'John Doe',
+        firstName: 'John',
+        lastName: 'Doe',
+        displayName: 'johnd'
+      }
+
+      const result = sanitizeData(data) as Record<string, unknown>
+
+      expect(result.userId).toBe('user-123')
+      expect(result.name).toBe('[REDACTED]')
+      expect(result.firstName).toBe('[REDACTED]')
+      expect(result.lastName).toBe('[REDACTED]')
+      expect(result.displayName).toBe('johnd')
+    })
+
+    it('should redact nested name fields in user objects', () => {
+      const data = {
+        user: {
+          id: 'user-123',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@example.com',
+          settings: {
+            theme: 'dark'
+          }
+        }
+      }
+
+      const result = sanitizeData(data) as Record<string, unknown>
+      const user = result.user as Record<string, unknown>
+      const settings = user.settings as Record<string, unknown>
+
+      expect(user.id).toBe('user-123')
+      expect(user.firstName).toBe('[REDACTED]')
+      expect(user.lastName).toBe('[REDACTED]')
+      expect(user.email).toBe('[REDACTED]')
+      expect(settings.theme).toBe('dark')
     })
   })
 })

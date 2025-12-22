@@ -2,14 +2,14 @@
 
 ## Quick Reference
 - **When to use**: Any time you log structured data
-- **Enforcement**: Automatic in `logDebug()`, manual via `sanitizeData()`
+- **Enforcement**: Automatic in all logging functions (`logInfo`, `logDebug`, `logError`)
 - **Impact if violated**: High - PII leakage in CloudWatch logs
 
 ## The Rule
 
 **Never log Personally Identifiable Information (PII) or credentials in plaintext.**
 
-All debug logging automatically sanitizes data through the `sanitizeData()` utility. Test fixture generation also uses this same utility for consistent PII protection.
+All logging functions (`logInfo`, `logDebug`, `logError`) automatically sanitize data through the `sanitizeData()` utility. Test fixture generation also uses this same utility for consistent PII protection.
 
 ## Architecture
 
@@ -62,20 +62,21 @@ The following fields are **automatically redacted** (case-insensitive):
 | `creditCard` | creditCard, CreditCard |
 | `certificate` | certificate, Certificate |
 | `deviceToken` | deviceToken, appleDeviceIdentifier |
+| `name` | name, Name, firstName, lastName |
 
 ## Examples
 
-### ✅ Automatic Protection (Debug Logs)
+### ✅ Automatic Protection (All Logging Functions)
 
 ```typescript
-import {logDebug} from '#util/logging'
+import {logInfo, logDebug, logError} from '#util/logging'
 
-// PII is automatically sanitized in debug logs
-logDebug('User data', {
+// PII is automatically sanitized in ALL logging functions
+logInfo('User data', {
   userId: 'user-123',           // ✓ Safe (not PII)
   email: 'user@example.com',    // ✓ Redacted automatically
   token: 'secret-token-123',    // ✓ Redacted automatically
-  name: 'John Doe'              // ✓ Safe (not in sensitive patterns)
+  name: 'John Doe'              // ✓ Redacted automatically
 })
 
 // Output in CloudWatch:
@@ -83,7 +84,7 @@ logDebug('User data', {
 //   "userId": "user-123",
 //   "email": "[REDACTED]",
 //   "token": "[REDACTED]",
-//   "name": "John Doe"
+//   "name": "[REDACTED]"
 // }
 ```
 
@@ -102,19 +103,23 @@ const safe = sanitizeData(userData)
 // safe = { email: '[REDACTED]', password: '[REDACTED]' }
 ```
 
-### ❌ Don't Use logInfo for Sensitive Data
+### ✅ All Logging Functions Sanitize
 
 ```typescript
-// ❌ BAD - logInfo does NOT sanitize
-logInfo('User credentials', {
-  email: 'user@example.com',    // ⚠️ NOT REDACTED
-  password: 'secret123'         // ⚠️ NOT REDACTED
-})
-
-// ✅ GOOD - Use logDebug or sanitize manually
-logDebug('User credentials', {
+// All logging functions now automatically sanitize PII
+logInfo('User data', {
   email: 'user@example.com',    // ✓ Redacted
   password: 'secret123'         // ✓ Redacted
+})
+
+logDebug('Debug data', {
+  email: 'user@example.com',    // ✓ Redacted
+  token: 'secret-token'         // ✓ Redacted
+})
+
+logError('Error context', {
+  email: 'user@example.com',    // ✓ Redacted
+  apiKey: 'secret-key'          // ✓ Redacted
 })
 ```
 
@@ -195,17 +200,17 @@ Then add test coverage in `src/util/test/security.test.ts`.
 ### Before (Vulnerable)
 
 ```typescript
-// ❌ PII leaked in debug logs
-logDebug('ElectroDB Adapter: create', {model, data})
-// data could contain user emails, tokens, etc.
+// ❌ PII leaked in logs
+logInfo('event <=', event)   // Authorization headers exposed!
+logDebug('ElectroDB Adapter: create', {model, data})  // emails, names exposed!
 ```
 
 ### After (Protected)
 
 ```typescript
-// ✅ PII automatically redacted
-logDebug('ElectroDB Adapter: create', {model, data})
-// All sensitive fields in data are now [REDACTED]
+// ✅ PII automatically redacted in ALL logging functions
+logInfo('event <=', event)   // Authorization: [REDACTED]
+logDebug('ElectroDB Adapter: create', {model, data})  // email, name: [REDACTED]
 ```
 
 ## Security Considerations

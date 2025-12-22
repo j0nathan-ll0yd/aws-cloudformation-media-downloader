@@ -54,7 +54,10 @@ export function sanitizeData(data: unknown): unknown {
     /^phone$/i,
     /^certificate$/i,
     /^ssn$/i,
-    /^creditCard$/i
+    /^creditCard$/i,
+    /^name$/i,
+    /^firstName$/i,
+    /^lastName$/i
   ]
 
   for (const key in sanitized) {

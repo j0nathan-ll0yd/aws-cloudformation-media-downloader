@@ -9,6 +9,7 @@ import {sanitizeData} from './security'
 
 /**
  * Log an informational message with optional structured data
+ * Automatically sanitizes PII from objects to prevent sensitive data leakage
  * @param message - The log message
  * @param data - Optional structured data or string to include
  */
@@ -18,7 +19,7 @@ export function logInfo(message: string, data?: string | object): void {
   } else if (typeof data === 'string') {
     logger.info(message, {data})
   } else {
-    logger.info(message, {data})
+    logger.info(message, {data: sanitizeData(data)})
   }
 }
 
@@ -40,6 +41,7 @@ export function logDebug(message: string, data?: string | object): void {
 
 /**
  * Log an error message with optional structured data or Error object
+ * Automatically sanitizes PII from objects to prevent sensitive data leakage
  * @param message - The log message
  * @param data - Optional structured data, string, or Error object
  */
@@ -51,7 +53,7 @@ export function logError(message: string, data?: string | object | Error | unkno
   } else if (typeof data === 'string') {
     logger.error(message, {data})
   } else {
-    logger.error(message, {data})
+    logger.error(message, {data: sanitizeData(data)})
   }
 }
 
