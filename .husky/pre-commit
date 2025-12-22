@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# pre-commit hook: Run fast validation checks before commit
+# This catches architectural violations and code quality issues early
+#
+# To bypass (emergency only): git commit --no-verify
+
+echo "Running pre-commit checks..."
+
+# Check for dependency violations (fast - usually < 1 second)
+echo "🔍 Checking dependency architecture..."
+if ! pnpm run deps:check; then
+  echo ""
+  echo "❌ Dependency architecture violations detected."
+  echo "Fix the issues or use 'git commit --no-verify' to bypass (emergency only)"
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed"
+exit 0

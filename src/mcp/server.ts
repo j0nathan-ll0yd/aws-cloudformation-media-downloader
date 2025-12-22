@@ -30,6 +30,8 @@ import type {TestScaffoldQueryArgs} from './handlers/test-scaffold.js'
 import {handleNamingValidationQuery, handleTypeAlignmentQuery} from './handlers/naming.js'
 import {handleIndexCodebase, handleSemanticSearch} from './handlers/semantics.js'
 import type {SemanticSearchArgs} from './handlers/semantics.js'
+import {handleApplyConvention} from './handlers/apply-convention.js'
+import type {ApplyConventionArgs} from './handlers/apply-convention.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
@@ -220,6 +222,23 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['query']
         }
+      },
+      {
+        name: 'apply_convention',
+        description: 'Automatically apply architectural conventions to code (AWS SDK wrappers, ElectroDB mocks, response helpers, etc.)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {type: 'string', description: 'File path to apply conventions to'},
+            convention: {
+              type: 'string',
+              description: 'Convention to apply',
+              enum: ['aws-sdk-wrapper', 'electrodb-mock', 'response-helper', 'env-validation', 'powertools', 'all']
+            },
+            dryRun: {type: 'boolean', description: 'Preview changes without applying them (default: false)'}
+          },
+          required: ['file', 'convention']
+        }
       }
     ]
   }
@@ -269,6 +288,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'search_codebase_semantics':
         return await handleSemanticSearch(args as unknown as SemanticSearchArgs)
+
+      case 'apply_convention':
+        return wrapResult(await handleApplyConvention(args as unknown as ApplyConventionArgs))
 
       default:
         throw new Error(`Unknown tool: ${name}`)
