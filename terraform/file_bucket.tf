@@ -132,6 +132,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -139,8 +140,11 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
+      OTEL_SERVICE_NAME           = "S3ObjectCreated"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

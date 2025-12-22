@@ -81,6 +81,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -88,9 +89,12 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTableName    = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl          = aws_sqs_queue.SendPushNotification.id
-      IdempotencyTableName = aws_dynamodb_table.IdempotencyTable.name
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
+      IdempotencyTableName        = aws_dynamodb_table.IdempotencyTable.name
+      OTEL_SERVICE_NAME           = "WebhookFeedly"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }
@@ -326,7 +330,8 @@ resource "aws_lambda_function" "StartFileUpload" {
   source_code_hash               = data.archive_file.StartFileUpload.output_base64sha256
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
-    aws_lambda_layer_version.Ffmpeg.arn
+    aws_lambda_layer_version.Ffmpeg.arn,
+    data.aws_lambda_layer_version.adot_collector.arn
   ]
 
   # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)
@@ -340,13 +345,16 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket              = aws_s3_bucket.Files.id
-      DynamoDBTableName   = aws_dynamodb_table.MediaDownloader.name
-      CloudfrontDomain    = aws_cloudfront_distribution.media_files.domain_name
-      SNSQueueUrl         = aws_sqs_queue.SendPushNotification.id
-      YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
-      PATH                = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
+      Bucket                      = aws_s3_bucket.Files.id
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      CloudfrontDomain            = aws_cloudfront_distribution.media_files.domain_name
+      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
+      YtdlpBinaryPath             = "/opt/bin/yt-dlp_linux"
+      PATH                        = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      GithubPersonalToken         = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME           = "StartFileUpload"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

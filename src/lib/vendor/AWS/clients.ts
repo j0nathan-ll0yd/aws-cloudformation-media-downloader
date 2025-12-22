@@ -6,6 +6,9 @@
  *
  * This is the ONLY file where AWS SDK client instantiation should occur,
  * maintaining the AWS SDK Encapsulation Policy.
+ *
+ * NOTE: AWS SDK calls are automatically traced via OpenTelemetry's AwsInstrumentation.
+ * No manual X-Ray wrapping is needed.
  */
 
 import {S3Client} from '@aws-sdk/client-s3'
@@ -22,7 +25,6 @@ import {CloudWatchClient} from '@aws-sdk/client-cloudwatch'
 import type {CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway} from '@aws-sdk/client-api-gateway'
 import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
-import {captureAWSClient} from './XRay'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -50,7 +52,7 @@ function getBaseConfig() {
 /**
  * Create an S3 client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createS3Client(): S3Client {
   const config: S3ClientConfig = {
@@ -59,72 +61,65 @@ export function createS3Client(): S3Client {
     forcePathStyle: isLocalStackMode()
   }
 
-  const client = new S3Client(config)
-  return captureAWSClient(client)
+  return new S3Client(config)
 }
 
 /**
  * Create a DynamoDB client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createDynamoDBClient(): DynamoDBClient {
   const config: DynamoDBClientConfig = getBaseConfig()
-  const client = new DynamoDBClient(config)
-  return captureAWSClient(client)
+  return new DynamoDBClient(config)
 }
 
 /**
  * Create an SNS client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSNSClient(): SNSClient {
   const config: SNSClientConfig = getBaseConfig()
-  const client = new SNSClient(config)
-  return captureAWSClient(client)
+  return new SNSClient(config)
 }
 
 /**
  * Create an SQS client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSQSClient(): SQSClient {
   const config: SQSClientConfig = getBaseConfig()
-  const client = new SQSClient(config)
-  return captureAWSClient(client)
+  return new SQSClient(config)
 }
 
 /**
  * Create a Lambda client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createLambdaClient(): LambdaClient {
   const config: LambdaClientConfig = getBaseConfig()
-  const client = new LambdaClient(config)
-  return captureAWSClient(client)
+  return new LambdaClient(config)
 }
 
 /**
  * Create a CloudWatch client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createCloudWatchClient(): CloudWatchClient {
   const config: CloudWatchClientConfig = getBaseConfig()
-  const client = new CloudWatchClient(config)
-  return captureAWSClient(client)
+  return new CloudWatchClient(config)
 }
 
 /**
  * Create an API Gateway client instance
  * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Wrapped with X-Ray instrumentation when enabled
+ * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createAPIGatewayClient(): APIGateway {
   const config: APIGatewayClientConfig = getBaseConfig()
-  const client = new APIGateway(config)
-  return captureAWSClient(client)
+  return new APIGateway(config)
 }

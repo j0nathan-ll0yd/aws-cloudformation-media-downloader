@@ -68,6 +68,7 @@ resource "aws_lambda_function" "LoginUser" {
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
+  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
 
   tracing_config {
     mode = "Active"
@@ -75,10 +76,13 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      ApplicationUrl        = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
-      DynamoDBTableName     = aws_dynamodb_table.MediaDownloader.name
-      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
-      BetterAuthSecret      = data.sops_file.secrets.data["platform.key"]
+      ApplicationUrl              = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
+      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      SignInWithAppleConfig       = data.sops_file.secrets.data["signInWithApple.config"]
+      BetterAuthSecret            = data.sops_file.secrets.data["platform.key"]
+      OTEL_SERVICE_NAME           = "LoginUser"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

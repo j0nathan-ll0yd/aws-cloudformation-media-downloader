@@ -37,7 +37,16 @@ const excludedSourceVariables = {
   CookieAuthenticationFailure: 1,
   LambdaExecutionFailure: 1,
   LambdaExecutionSuccess: 1,
-  RetryExhausted: 1
+  RetryExhausted: 1,
+  // OpenTelemetry SDK false positives (AWS SDK instrumentation types)
+  DynamoDB: 1,
+  Kinesis: 1,
+  Lambda: 1,
+  ProtocolError: 1,
+  // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
+  OTEL_SERVICE_NAME: 1,
+  OTEL_EXPORTER_OTLP_ENDPOINT: 1,
+  OTEL_PROPAGATORS: 1
 }
 
 // Patterns that indicate library operation types or domain literals, not environment variables
