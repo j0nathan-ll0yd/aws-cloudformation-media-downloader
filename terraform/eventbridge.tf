@@ -56,11 +56,12 @@ resource "aws_cloudwatch_event_target" "download_requested_to_queue" {
   arn            = aws_sqs_queue.DownloadQueue.arn
 }
 
-# EventBridge Rule: DownloadCompleted -> Notifications
+# EventBridge Rule: DownloadCompleted
 # Triggered by: StartFileUpload (success)
+# Note: No targets yet - will be consumed by Sync Engine (issue #199)
 resource "aws_cloudwatch_event_rule" "download_completed" {
   name           = "DownloadCompleted"
-  description    = "Route DownloadCompleted events to SendPushNotification queue"
+  description    = "Captures DownloadCompleted events for future Sync Engine consumption"
   event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
 
   event_pattern = jsonencode({
@@ -68,18 +69,12 @@ resource "aws_cloudwatch_event_rule" "download_completed" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "download_completed_to_notification" {
-  rule           = aws_cloudwatch_event_rule.download_completed.name
-  event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
-  target_id      = "SendPushNotificationTarget"
-  arn            = aws_sqs_queue.SendPushNotification.arn
-}
-
-# EventBridge Rule: DownloadFailed -> Notifications
+# EventBridge Rule: DownloadFailed
 # Triggered by: StartFileUpload (permanent failure)
+# Note: No targets yet - will be consumed by Sync Engine (issue #199)
 resource "aws_cloudwatch_event_rule" "download_failed" {
   name           = "DownloadFailed"
-  description    = "Route DownloadFailed events to SendPushNotification queue"
+  description    = "Captures DownloadFailed events for future Sync Engine consumption"
   event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
 
   event_pattern = jsonencode({
@@ -87,15 +82,8 @@ resource "aws_cloudwatch_event_rule" "download_failed" {
   })
 }
 
-resource "aws_cloudwatch_event_target" "download_failed_to_notification" {
-  rule           = aws_cloudwatch_event_rule.download_failed.name
-  event_bus_name = aws_cloudwatch_event_bus.media_downloader.name
-  target_id      = "SendPushNotificationTargetFailure"
-  arn            = aws_sqs_queue.SendPushNotification.arn
-}
-
-# IAM policy for EventBridge to send messages to SQS
-data "aws_iam_policy_document" "eventbridge_to_sqs" {
+# IAM policy for EventBridge to send messages to DownloadQueue
+data "aws_iam_policy_document" "eventbridge_to_download_queue" {
   statement {
     effect = "Allow"
     principals {
@@ -103,30 +91,18 @@ data "aws_iam_policy_document" "eventbridge_to_sqs" {
       identifiers = ["events.amazonaws.com"]
     }
     actions   = ["sqs:SendMessage"]
-    resources = [
-      aws_sqs_queue.DownloadQueue.arn,
-      aws_sqs_queue.SendPushNotification.arn
-    ]
+    resources = [aws_sqs_queue.DownloadQueue.arn]
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
-      values   = [
-        aws_cloudwatch_event_rule.download_requested.arn,
-        aws_cloudwatch_event_rule.download_completed.arn,
-        aws_cloudwatch_event_rule.download_failed.arn
-      ]
+      values   = [aws_cloudwatch_event_rule.download_requested.arn]
     }
   }
 }
 
 resource "aws_sqs_queue_policy" "eventbridge_to_download_queue" {
   queue_url = aws_sqs_queue.DownloadQueue.id
-  policy    = data.aws_iam_policy_document.eventbridge_to_sqs.json
-}
-
-resource "aws_sqs_queue_policy" "eventbridge_to_notification_queue" {
-  queue_url = aws_sqs_queue.SendPushNotification.id
-  policy    = data.aws_iam_policy_document.eventbridge_to_sqs.json
+  policy    = data.aws_iam_policy_document.eventbridge_to_download_queue.json
 }
 
 # Lambda Event Source Mapping: DownloadQueue -> StartFileUpload
