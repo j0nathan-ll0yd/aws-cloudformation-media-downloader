@@ -12,9 +12,9 @@
  *   pnpm scaffold:test src/lambdas/StartFileUpload/src/index.ts
  */
 
-import {existsSync, readFileSync, writeFileSync} from 'fs'
+import {existsSync, writeFileSync} from 'fs'
 import {dirname, join, relative, basename} from 'path'
-import {Project, SyntaxKind} from 'ts-morph'
+import {Project} from 'ts-morph'
 
 interface ImportInfo {
   modulePath: string
