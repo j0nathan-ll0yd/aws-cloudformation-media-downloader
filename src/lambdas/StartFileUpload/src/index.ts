@@ -1,6 +1,8 @@
-import type {APIGatewayProxyResult, Context} from 'aws-lambda'
+import type {SQSBatchResponse, SQSEvent, Context} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
+import {EventType, publishEvent} from '#lib/vendor/AWS/EventBridge'
+import type {DownloadCompletedEvent, DownloadFailedEvent, DownloadRequestedEvent} from '#lib/vendor/AWS/EventBridge'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
@@ -11,17 +13,11 @@ import type {YtDlpVideoInfo} from '#types/youtube'
 import {getRequiredEnv} from '#util/env-validation'
 import {UnexpectedError} from '#util/errors'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#util/github-helpers'
-import {buildApiResponse, putMetric, putMetrics, withPowertools, wrapLambdaInvokeHandler} from '#util/lambda-helpers'
-import {logDebug, logInfo} from '#util/logging'
+import {putMetric, putMetrics, withPowertools} from '#util/lambda-helpers'
+import {logDebug, logError, logInfo} from '#util/logging'
 import {createMetadataNotification} from '#util/transformers'
 import {classifyVideoError, isRetryExhausted} from '#util/video-error-classifier'
 import {upsertFile} from './file-helpers'
-
-interface StartFileUploadParams {
-  fileId: string
-  /** Correlation ID for end-to-end request tracing */
-  correlationId?: string
-}
 
 /**
  * Fetch video info with OpenTelemetry tracing.
@@ -137,8 +133,8 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
 }
 
 /**
- * Handle download failure: classify error, update state, and determine next action.
- * Returns appropriate response based on whether download should be scheduled for retry.
+ * Handle download failure: classify error, update state, publish failure event, and determine next action.
+ * Throws error to trigger SQS retry for transient failures, publishes DownloadFailed event for permanent failures.
  */
 async function handleDownloadFailure(
   fileId: string,
@@ -147,8 +143,8 @@ async function handleDownloadFailure(
   videoInfoResult: FetchVideoInfoResult,
   existingRetryCount: number,
   existingMaxRetries: number,
-  context: Context
-): Promise<{statusCode: number; body: string}> {
+  correlationId?: string
+): Promise<void> {
   // Classify the error to determine retry strategy
   const classification = classifyVideoError(error, videoInfoResult.info, existingRetryCount)
   const newRetryCount = existingRetryCount + 1
@@ -179,14 +175,8 @@ async function handleDownloadFailure(
       retryCount: newRetryCount
     })
 
-    // Return success - scheduling a retry is expected behavior, not a failure
-    return buildApiResponse(context, 200, {
-      fileId,
-      status: DownloadStatus.Scheduled,
-      retryAfter: classification.retryAfter,
-      retryCount: newRetryCount,
-      reason: classification.reason
-    })
+    // Re-throw to trigger SQS retry mechanism (message stays in queue with visibility timeout)
+    throw error
   }
 
   // Handle permanent failures or retry exhaustion
@@ -213,33 +203,25 @@ async function handleDownloadFailure(
     logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
   }
 
-  return buildApiResponse(context, 500, {fileId, status: DownloadStatus.Failed, error: classification.reason, category: classification.category})
+  // Publish DownloadFailed event to EventBridge for user notification via Sync Engine
+  const failureEvent: DownloadFailedEvent = {
+    fileId,
+    error: classification.reason,
+    category: classification.category,
+    retryCount: newRetryCount,
+    correlationId
+  }
+  await publishEvent(EventType.DownloadFailed, failureEvent)
+
+  // Re-throw to signal SQS that processing failed (will move to DLQ after maxReceiveCount)
+  throw error
 }
 
 /**
- * Downloads a YouTube video and uploads it to S3.
- *
- * Architecture:
- * - FileDownloads entity: Tracks transient download state (retries, scheduling, errors)
- * - Files entity: Stores permanent media metadata (only updated on success)
- *
- * Flow:
- * 1. Mark download as in_progress
- * 2. Fetch video info (safe - never throws)
- * 3. If fetch failed → classify → schedule retry or mark failed
- * 4. If fetch succeeded → stream to S3
- * 5. If stream failed → classify → schedule retry or mark failed
- * 6. If stream succeeded → update Files entity with metadata
- *
- * @param event - Contains the fileId to download
- * @param context - AWS Lambda context
- * @notExported
+ * Process a single download request from SQS.
+ * Throws error on failure to enable SQS batch item failure reporting.
  */
-export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadParams, APIGatewayProxyResult>(async ({event, context}) => {
-  const correlationId = event.correlationId || context.awsRequestId
-  logInfo('Processing request', {correlationId, fileId: event.fileId})
-
-  const fileId = event.fileId
+async function processDownloadRequest(fileId: string, correlationId?: string): Promise<void> {
   const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
 
   // Get existing download state for retry counting
@@ -266,7 +248,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
 
   if (!videoInfoResult.success || !videoInfoResult.info) {
     const error = videoInfoResult.error ?? new UnexpectedError('Failed to fetch video info')
-    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+    return handleDownloadFailure(fileId, fileUrl, error, videoInfoResult, existingRetryCount, existingMaxRetries, correlationId)
   }
 
   const videoInfo = videoInfoResult.info
@@ -288,7 +270,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
     uploadResult = await downloadVideoToS3Traced(fileUrl, bucket, fileName)
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    return handleDownloadFailure(fileId, fileUrl, err, videoInfoResult, existingRetryCount, existingMaxRetries, context)
+    return handleDownloadFailure(fileId, fileUrl, err, videoInfoResult, existingRetryCount, existingMaxRetries, correlationId)
   }
   logDebug('downloadVideoToS3 =>', uploadResult)
 
@@ -314,12 +296,64 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
   // Step 5: Mark download as completed
   await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
-  await putMetric('LambdaExecutionSuccess', 1)
-
-  return buildApiResponse(context, 200, {
+  // Publish DownloadCompleted event to EventBridge
+  const completedEvent: DownloadCompletedEvent = {
     fileId: videoInfo.id,
-    status: ResponseStatus.Success,
     fileSize: uploadResult.fileSize,
-    duration: uploadResult.duration
-  })
-}))
+    duration: uploadResult.duration,
+    s3Key: fileName,
+    correlationId
+  }
+  await publishEvent(EventType.DownloadCompleted, completedEvent)
+
+  await putMetric('LambdaExecutionSuccess', 1)
+}
+
+/**
+ * Downloads YouTube videos and uploads them to S3.
+ * Triggered by SQS events from DownloadQueue.
+ *
+ * Architecture:
+ * - FileDownloads entity: Tracks transient download state (retries, scheduling, errors)
+ * - Files entity: Stores permanent media metadata (only updated on success)
+ * - EventBridge: Publishes DownloadCompleted/DownloadFailed events
+ *
+ * Flow:
+ * 1. Receive DownloadRequested event from SQS
+ * 2. Mark download as in_progress
+ * 3. Fetch video info (safe - never throws)
+ * 4. If fetch failed → classify → throw for SQS retry or publish DownloadFailed
+ * 5. If fetch succeeded → stream to S3
+ * 6. If stream failed → classify → throw for SQS retry or publish DownloadFailed
+ * 7. If stream succeeded → update Files entity + publish DownloadCompleted
+ *
+ * @param event - SQS event containing DownloadRequested events
+ * @param context - AWS Lambda context
+ * @notExported
+ */
+export const handler = withPowertools(async (event: SQSEvent, context: Context): Promise<SQSBatchResponse> => {
+  const failedMessageIds: string[] = []
+
+  for (const record of event.Records) {
+    try {
+      // Parse EventBridge event from SQS message body
+      const eventBridgeEvent = JSON.parse(record.body)
+      const downloadRequest = JSON.parse(eventBridgeEvent.detail) as DownloadRequestedEvent
+
+      const correlationId = downloadRequest.correlationId || context.awsRequestId
+      logInfo('Processing download request', {
+        correlationId,
+        fileId: downloadRequest.fileId,
+        messageId: record.messageId
+      })
+
+      await processDownloadRequest(downloadRequest.fileId, correlationId)
+    } catch (error) {
+      logError('Failed to process download request', {messageId: record.messageId, error})
+      failedMessageIds.push(record.messageId)
+    }
+  }
+
+  // Report failed message IDs back to SQS for retry
+  return {batchItemFailures: failedMessageIds.map((id) => ({itemIdentifier: id}))}
+})

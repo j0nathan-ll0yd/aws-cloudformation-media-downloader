@@ -1,6 +1,8 @@
 import {randomUUID} from 'node:crypto'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {Files} from '#entities/Files'
+import {EventType, publishEvent} from '#lib/vendor/AWS/EventBridge'
+import type {DownloadRequestedEvent} from '#lib/vendor/AWS/EventBridge'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
@@ -12,7 +14,6 @@ import type {Webhook} from '#types/vendor/IFTTT/Feedly/Webhook'
 import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
 import {getRequiredEnv} from '#util/env-validation'
 import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {initiateFileDownload} from '#util/lambda-invoke-helpers'
 import {logDebug, logError, logInfo} from '#util/logging'
 import {createDownloadReadyNotification} from '#util/transformers'
 import {associateFileToUser} from '#util/user-file-helpers'
@@ -118,14 +119,20 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       // New file - create Files and FileDownloads records with correlationId
       await addFile(fileId, articleURL, correlationId)
     }
-    if (!backgroundMode) {
-      // Foreground mode - initiate download immediately with correlationId
-      await initiateFileDownload(fileId, correlationId)
-      return {statusCode: 202, status: ResponseStatus.Initiated}
-    } else {
-      // Background mode - FileCoordinator will pick it up
-      return {statusCode: 202, status: ResponseStatus.Accepted}
+
+    // Publish DownloadRequested event to EventBridge
+    // This replaces both direct Lambda invocation and FileCoordinator polling
+    const eventDetail: DownloadRequestedEvent = {
+      fileId,
+      userId,
+      sourceUrl: articleURL,
+      correlationId,
+      backgroundMode
     }
+    await publishEvent(EventType.DownloadRequested, eventDetail)
+
+    // backgroundMode determines response status only - event is always published immediately
+    return {statusCode: 202, status: backgroundMode ? ResponseStatus.Accepted : ResponseStatus.Initiated}
   }
 }
 
@@ -148,7 +155,7 @@ function getIdempotentProcessor() {
  * Receives a webhook to download a file from Feedly.
  *
  * - If the file already exists: it is associated with the requesting user and a push notification is dispatched.
- * - If the file doesn't exist: it is associated with the requesting user and queued for download.
+ * - If the file doesn't exist: it is associated with the requesting user and a DownloadRequested event is published to EventBridge.
  *
  * Uses Powertools Idempotency to prevent duplicate processing of the same webhook request.
  *
