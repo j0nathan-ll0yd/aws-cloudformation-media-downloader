@@ -5,6 +5,7 @@
  * Backwards-compatible with existing logInfo/logDebug/logError calls
  */
 import {logger} from '#lib/vendor/Powertools'
+import {sanitizeData} from './security'
 
 /**
  * Log an informational message with optional structured data
@@ -23,6 +24,7 @@ export function logInfo(message: string, data?: string | object): void {
 
 /**
  * Log a debug message with optional structured data
+ * Automatically sanitizes PII from objects to prevent sensitive data leakage
  * @param message - The log message
  * @param data - Optional structured data or string to include
  */
@@ -32,7 +34,7 @@ export function logDebug(message: string, data?: string | object): void {
   } else if (typeof data === 'string') {
     logger.debug(message, {data})
   } else {
-    logger.debug(message, {data})
+    logger.debug(message, {data: sanitizeData(data)})
   }
 }
 

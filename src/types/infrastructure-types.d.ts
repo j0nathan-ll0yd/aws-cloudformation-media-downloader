@@ -8,7 +8,11 @@ import {
 } from 'aws-lambda/trigger/api-gateway-proxy'
 import {APIGatewayEventIdentity} from 'aws-lambda/common/api-gateway'
 
-// TODO: This has to be a custom event, because the actual event does NOT contain the requestContext.identity.clientCert field
+/**
+ * Custom API Gateway event type that extends the standard AWS Lambda types.
+ * Required because the AWS Lambda types include requestContext.identity.clientCert
+ * which is not present in actual API Gateway events.
+ */
 export interface CustomAPIGatewayRequestAuthorizerEvent {
   requestContext: {
     accountId: string

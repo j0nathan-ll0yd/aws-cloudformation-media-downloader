@@ -119,7 +119,9 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
         const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
         logError(errorMessage)
         result.errors.push(errorMessage)
-        // TODO: Trigger severe alarm with device details and requestId so it can be manually deleted later
+        // Severe alarm needed: device orphaned in DynamoDB after cascade delete failure
+        // Should trigger manual intervention to delete device record with ID and requestId
+        // Tracking: Monitor CloudWatch for orphaned device cleanup patterns
       }
     }
   }
