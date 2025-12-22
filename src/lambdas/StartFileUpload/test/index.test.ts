@@ -1,12 +1,12 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {PutEventsResultEntry} from '#lib/vendor/AWS/EventBridge'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createMockSQSDownloadRequestEvent} from '#test/integration/helpers/test-data'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {CookieExpirationError, UnexpectedError} from '#util/errors'
 import {testContext} from '#util/jest-setup'
-import type {SQSEvent} from 'aws-lambda'
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
@@ -50,28 +50,6 @@ const {handler} = await import('./../src')
 
 describe('#StartFileUpload', () => {
   const context = testContext
-
-  // Helper to create SQS event from DownloadRequestedEvent
-  const createSQSEvent = (fileId: string, correlationId?: string): SQSEvent => ({
-    Records: [
-      {
-        messageId: 'test-message-id',
-        receiptHandle: 'test-receipt-handle',
-        body: JSON.stringify({detail: JSON.stringify({fileId, sourceUrl: `https://www.youtube.com/watch?v=${fileId}`, correlationId})}),
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: '1633024800000',
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: '1633024800000'
-        },
-        messageAttributes: {},
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
-        awsRegion: 'us-west-2'
-      }
-    ]
-  })
 
   // Helper to create a successful video info result
   const createSuccessResult = (info: Partial<YtDlpVideoInfo>): FetchVideoInfoResult => ({
@@ -120,7 +98,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should successfully download video to S3 and publish DownloadCompleted event', async () => {
-    const event = createSQSEvent('test-video-id')
+    const event = createMockSQSDownloadRequestEvent('test-video-id')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-id'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
@@ -142,7 +120,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should handle large video files', async () => {
-    const event = createSQSEvent('test-video-large')
+    const event = createMockSQSDownloadRequestEvent('test-video-large')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-large', title: 'Large Video'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 104857600, s3Url: 's3://test-bucket/test-video.mp4', duration: 120})
 
@@ -158,7 +136,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should throw error for transient failures to enable SQS retry', async () => {
-    const event = createSQSEvent('test-video-error')
+    const event = createMockSQSDownloadRequestEvent('test-video-error')
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-error'}))
     downloadVideoToS3Mock.mockRejectedValue(new Error('Download failed'))
 
@@ -166,14 +144,14 @@ describe('#StartFileUpload', () => {
 
     // Transient errors throw to trigger SQS retry
     expect(output.batchItemFailures).toHaveLength(1)
-    expect(output.batchItemFailures[0].itemIdentifier).toEqual('test-message-id')
+    expect(output.batchItemFailures[0].itemIdentifier).toEqual('test-message-test-video-error')
 
     // Verify FileDownloads was updated with scheduled status
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
   })
 
   test('should publish DownloadFailed event for permanent errors (video private)', async () => {
-    const event = createSQSEvent('test-video-private')
+    const event = createMockSQSDownloadRequestEvent('test-video-private')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('This video is private')))
 
     const output = await handler(event, context)
@@ -189,7 +167,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should schedule retry for unknown errors (benefit of doubt)', async () => {
-    const event = createSQSEvent('test-video-unknown')
+    const event = createMockSQSDownloadRequestEvent('test-video-unknown')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new UnexpectedError('Video not found')))
 
     const output = await handler(event, context)
@@ -202,7 +180,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should handle fetch failure with video info for classification', async () => {
-    const event = createSQSEvent('scheduled-video')
+    const event = createMockSQSDownloadRequestEvent('scheduled-video')
     const videoInfo = {
       id: 'scheduled-video',
       title: 'Upcoming Video',
@@ -219,7 +197,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should handle FileDownloads update failures gracefully', async () => {
-    const event = createSQSEvent('test-video-error')
+    const event = createMockSQSDownloadRequestEvent('test-video-error')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Video fetch failed')))
     fileDownloadsMock.mocks.update.go.mockImplementation(() => {
       throw new Error('DynamoDB error')
@@ -231,7 +209,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should publish DownloadFailed event when max retries exceeded', async () => {
-    const event = createSQSEvent('test-video-maxretries')
+    const event = createMockSQSDownloadRequestEvent('test-video-maxretries')
     fileDownloadsMock.mocks.get.mockResolvedValue({data: {fileId: 'test', retryCount: 5, maxRetries: 5}})
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Any error')))
 
@@ -245,7 +223,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should handle cookie expiration errors', async () => {
-    const event = createSQSEvent('test-video-cookie')
+    const event = createMockSQSDownloadRequestEvent('test-video-cookie')
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new CookieExpirationError('Sign in to confirm'), true))
 
     const output = await handler(event, context)
@@ -258,7 +236,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should dispatch MetadataNotifications to all waiting users after fetchVideoInfo', async () => {
-    const event = createSQSEvent('test-video-multiuser')
+    const event = createMockSQSDownloadRequestEvent('test-video-multiuser')
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-1'}, {userId: 'user-2'}, {userId: 'user-3'}]})
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-multiuser', title: 'Test Video', uploader: 'Test Uploader'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
@@ -283,7 +261,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should skip MetadataNotification when no users are waiting', async () => {
-    const event = createSQSEvent('test-video-nouser')
+    const event = createMockSQSDownloadRequestEvent('test-video-nouser')
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'test-video-nouser'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})

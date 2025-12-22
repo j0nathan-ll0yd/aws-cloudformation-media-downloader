@@ -128,6 +128,43 @@ export function createMockSQSFileNotificationEvent(
 }
 
 /**
+ * Creates an SQS event containing an EventBridge DownloadRequested event payload.
+ * Used for testing StartFileUpload Lambda which receives events via EventBridge to SQS.
+ *
+ * @param fileId - YouTube video ID
+ * @param options - Optional overrides for sourceUrl, correlationId, userId, backgroundMode
+ */
+export function createMockSQSDownloadRequestEvent(
+  fileId: string,
+  options?: {sourceUrl?: string; correlationId?: string; userId?: string; backgroundMode?: boolean}
+): SQSEvent {
+  const sourceUrl = options?.sourceUrl ?? `https://www.youtube.com/watch?v=${fileId}`
+  const correlationId = options?.correlationId ?? 'test-correlation-id'
+
+  // EventBridge wraps the detail as a JSON string in the SQS message body
+  const eventBridgePayload = {detail: JSON.stringify({fileId, sourceUrl, correlationId, userId: options?.userId, backgroundMode: options?.backgroundMode})}
+
+  return {
+    Records: [{
+      messageId: `test-message-${fileId}`,
+      receiptHandle: `test-receipt-${fileId}`,
+      body: JSON.stringify(eventBridgePayload),
+      attributes: {
+        ApproximateReceiveCount: '1',
+        SentTimestamp: String(Date.now()),
+        SenderId: 'test-sender',
+        ApproximateFirstReceiveTimestamp: String(Date.now())
+      },
+      messageAttributes: {},
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
+      awsRegion: 'us-west-2'
+    }]
+  }
+}
+
+/**
  * Creates a CloudWatch Events / EventBridge scheduled event
  * @param eventId - Unique event ID
  * @param ruleName - Name of the EventBridge rule (default: 'FileCoordinatorSchedule')

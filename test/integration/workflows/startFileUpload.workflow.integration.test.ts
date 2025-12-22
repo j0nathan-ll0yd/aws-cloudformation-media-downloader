@@ -24,7 +24,7 @@ process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:456
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {PutEventsResultEntry} from '#lib/vendor/AWS/EventBridge'
-import type {Context, SQSEvent} from 'aws-lambda'
+import type {Context} from 'aws-lambda'
 import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
@@ -32,6 +32,7 @@ import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/hel
 import {createTestBucket, deleteTestBucket} from '#test/integration/helpers/s3-helpers'
 import {createMockContext} from '#test/integration/helpers/lambda-context'
 import {createMockVideoInfo} from '#test/integration/helpers/mock-youtube'
+import {createMockSQSDownloadRequestEvent} from '#test/integration/helpers/test-data'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
@@ -89,35 +90,6 @@ jest.unstable_mockModule('#lib/vendor/AWS/EventBridge',
 // Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
 
-/**
- * Helper to create SQS event from DownloadRequestedEvent.
- * Matches the EventBridge to SQS event structure.
- */
-function createSQSEvent(fileId: string, sourceUrl?: string): SQSEvent {
-  return {
-    Records: [
-      {
-        messageId: 'test-message-id',
-        receiptHandle: 'test-receipt-handle',
-        body: JSON.stringify({
-          detail: JSON.stringify({fileId, sourceUrl: sourceUrl || `https://www.youtube.com/watch?v=${fileId}`, correlationId: 'test-correlation-id'})
-        }),
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: '1633024800000',
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: '1633024800000'
-        },
-        messageAttributes: {},
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
-        awsRegion: 'us-west-2'
-      }
-    ]
-  }
-}
-
 describe('StartFileUpload Workflow Integration Tests', () => {
   let mockContext: Context
 
@@ -141,7 +113,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {
     const fileId = 'test-video-123'
-    const sqsEvent = createSQSEvent(fileId)
+    const sqsEvent = createMockSQSDownloadRequestEvent(fileId)
 
     const result = await handler(sqsEvent, mockContext)
 
