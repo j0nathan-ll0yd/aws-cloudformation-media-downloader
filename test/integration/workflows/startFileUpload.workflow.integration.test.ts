@@ -15,7 +15,7 @@ const TEST_BUCKET = 'test-integration-bucket-upload'
 const TEST_TABLE = 'test-files-upload'
 
 // Set environment variables for Lambda
-process.env.Bucket = TEST_BUCKET
+process.env.BUCKET = TEST_BUCKET
 process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.CLOUDFRONT_DOMAIN = 'test.cloudfront.net'
