@@ -12,9 +12,9 @@ import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
  * Lazy initialization to work with Jest mocking
  */
 function getTableName(): string {
-  const tableName = process.env['IdempotencyTableName']
+  const tableName = process.env['IDEMPOTENCY_TABLE_NAME']
   if (!tableName) {
-    throw new Error('IdempotencyTableName environment variable not set')
+    throw new Error('IDEMPOTENCY_TABLE_NAME environment variable not set')
   }
   return tableName
 }

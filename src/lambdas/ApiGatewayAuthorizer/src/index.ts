@@ -107,7 +107,7 @@ function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
   if (!event.headers) {
     return false
   }
-  const reservedIp = getOptionalEnv('ReservedClientIp', '')
+  const reservedIp = getOptionalEnv('RESERVED_CLIENT_IP', '')
   if (!reservedIp) {
     return false
   }
@@ -158,7 +158,7 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
 
   let principalId = 'unknown'
   const pathPart = event.path.substring(1)
-  const multiAuthenticationPathsString = getRequiredEnv('MultiAuthenticationPathParts')
+  const multiAuthenticationPathsString = getRequiredEnv('MULTI_AUTHENTICATION_PATH_PARTS')
   const multiAuthenticationPaths = multiAuthenticationPathsString.split(',')
   if (event.headers && 'Authorization' in event.headers && event.headers.Authorization !== undefined) {
     const maybeUserId = await getUserIdFromAuthenticationHeader(event.headers.Authorization)

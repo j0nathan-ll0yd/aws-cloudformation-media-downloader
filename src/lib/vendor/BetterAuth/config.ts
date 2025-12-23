@@ -29,10 +29,10 @@ export const auth = betterAuth({
   database: electroDBAdapter,
 
   // Secret for signing tokens and sessions
-  secret: getRequiredEnv('BetterAuthSecret'),
+  secret: getRequiredEnv('BETTER_AUTH_SECRET'),
 
   // Base URL for OAuth callbacks (from environment)
-  baseURL: getRequiredEnv('ApplicationUrl'),
+  baseURL: getRequiredEnv('APPLICATION_URL'),
 
   // Trusted origins for OAuth flows
   trustedOrigins: ['https://appleid.apple.com'],
@@ -73,7 +73,7 @@ export const auth = betterAuth({
  * Extract client ID (Service ID) from Sign In With Apple configuration.
  */
 function getAppleClientIdFromConfig(): string {
-  const config = JSON.parse(getRequiredEnv('SignInWithAppleConfig'))
+  const config = JSON.parse(getRequiredEnv('SIGN_IN_WITH_APPLE_CONFIG'))
   return config.client_id
 }
 
@@ -81,7 +81,7 @@ function getAppleClientIdFromConfig(): string {
  * Extract bundle ID from Sign In With Apple configuration.
  */
 function getAppleBundleIdFromConfig(): string {
-  const config = JSON.parse(getRequiredEnv('SignInWithAppleConfig'))
+  const config = JSON.parse(getRequiredEnv('SIGN_IN_WITH_APPLE_CONFIG'))
   return config.bundle_id
 }
 
@@ -90,7 +90,7 @@ function getAppleBundleIdFromConfig(): string {
  * Call this at the top of Lambda handlers to ensure Better Auth is ready.
  */
 export async function initializeBetterAuth() {
-  logDebug('Better Auth initialized', {applicationUrl: getRequiredEnv('ApplicationUrl')})
+  logDebug('Better Auth initialized', {applicationUrl: getRequiredEnv('APPLICATION_URL')})
 }
 
 /**

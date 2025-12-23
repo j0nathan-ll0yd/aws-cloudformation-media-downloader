@@ -117,8 +117,8 @@ export function buildApiResponse(context: Context, statusCodeOrError: number | E
 
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
-  const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
-  logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
+  const platformApplicationArn = getOptionalEnv('PLATFORM_APPLICATION_ARN', '')
+  logInfo('process.env.PLATFORM_APPLICATION_ARN <=', platformApplicationArn)
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')
   }
@@ -641,4 +641,4 @@ export function withPowertools<TEvent, TResult>(
 }
 
 // Re-export Powertools utilities for direct access
-export {logger, metrics, MetricUnit} from '#lib/vendor/Powertools'
+export { logger, metrics, MetricUnit } from '#lib/vendor/Powertools'

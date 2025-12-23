@@ -2,7 +2,7 @@ import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
-import {startSpan, endSpan, addAnnotation, addMetadata} from '#lib/vendor/OpenTelemetry'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import {FileStatus, ResponseStatus} from '#types/enums'
@@ -114,7 +114,7 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
  * @param videoInfo - Video metadata from yt-dlp
  */
 async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVideoInfo): Promise<void> {
-  const queueUrl = getRequiredEnv('SNSQueueUrl')
+  const queueUrl = getRequiredEnv('SNS_QUEUE_URL')
 
   // Get all users waiting for this file
   const userFilesResponse = await UserFiles.query.byFile({fileId}).go()
@@ -278,7 +278,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
   // Step 2: Prepare for download
   // Always use .mp4 extension - yt-dlp will merge to mp4 container
   const fileName = `${videoInfo.id}.mp4`
-  const bucket = getRequiredEnv('Bucket')
+  const bucket = getRequiredEnv('BUCKET')
 
   // Step 3: Download video to S3 (two-phase: temp file -> S3 stream)
   // yt-dlp handles format selection internally (best video + best audio, merged)
@@ -293,7 +293,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
   logDebug('downloadVideoToS3 =>', uploadResult)
 
   // Step 4: Update permanent File entity with metadata (only on success)
-  const cloudfrontDomain = getRequiredEnv('CloudfrontDomain')
+  const cloudfrontDomain = getRequiredEnv('CLOUDFRONT_DOMAIN')
   const fileData: File = {
     fileId: videoInfo.id,
     key: fileName,

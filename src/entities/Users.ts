@@ -34,7 +34,7 @@ export const Users = new Entity({
     byEmail: {index: 'gsi3', pk: {field: 'gsi3pk', composite: ['email']}, sk: {field: 'gsi3sk', composite: []}},
     byAppleDeviceId: {index: 'gsi7', pk: {field: 'gsi7pk', composite: ['appleDeviceId']}, sk: {field: 'gsi7sk', composite: []}}
   }
-} as const, {table: process.env.DynamoDBTableName, client: documentClient})
+} as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
 
 // Type exports for use in application code
 export type UserItem = ReturnType<typeof Users.parse>

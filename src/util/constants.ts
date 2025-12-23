@@ -16,14 +16,14 @@ export function getDefaultFile(): File {
   if (!_defaultFile) {
     _defaultFile = {
       fileId: 'default',
-      size: getRequiredEnvNumber('DefaultFileSize'),
+      size: getRequiredEnvNumber('DEFAULT_FILE_SIZE'),
       authorName: 'Lifegames',
       authorUser: 'sxephil',
       publishDate: new Date().toISOString(),
       description: 'Description',
-      key: getRequiredEnv('DefaultFileName'),
-      url: getRequiredEnv('DefaultFileUrl'),
-      contentType: getRequiredEnv('DefaultFileContentType'),
+      key: getRequiredEnv('DEFAULT_FILE_NAME'),
+      url: getRequiredEnv('DEFAULT_FILE_URL'),
+      contentType: getRequiredEnv('DEFAULT_FILE_CONTENT_TYPE'),
       title: 'Welcome! Tap to download.',
       status: FileStatus.Downloaded
     }

@@ -140,8 +140,8 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = {
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
       OTEL_SERVICE_NAME           = "S3ObjectCreated"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"

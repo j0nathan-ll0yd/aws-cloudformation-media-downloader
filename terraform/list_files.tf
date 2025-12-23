@@ -75,11 +75,11 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = {
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
-      DefaultFileSize             = 436743
-      DefaultFileName             = aws_s3_object.DefaultFile.key
-      DefaultFileUrl              = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
-      DefaultFileContentType      = aws_s3_object.DefaultFile.content_type
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      DEFAULT_FILE_SIZE           = 436743
+      DEFAULT_FILE_NAME           = aws_s3_object.DefaultFile.key
+      DEFAULT_FILE_URL            = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
+      DEFAULT_FILE_CONTENT_TYPE   = aws_s3_object.DefaultFile.content_type
       OTEL_SERVICE_NAME           = "ListFiles"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"
