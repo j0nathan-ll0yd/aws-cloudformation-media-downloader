@@ -52,7 +52,7 @@ jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
   })
 }))
 
-jest.unstable_mockModule('#util/github-helpers', () => ({
+jest.unstable_mockModule('#lib/integrations/github/issue-service', () => ({
   createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
   createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
 }))

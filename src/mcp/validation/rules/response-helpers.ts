@@ -15,7 +15,7 @@ const SEVERITY = 'HIGH' as const
 
 export const responseHelpersRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers must use buildApiResponse() helper from lambda-helpers.ts instead of raw response objects.',
+  description: 'Lambda handlers must use buildApiResponse() helper from lambda-helpers.ts or responses.ts instead of raw response objects.',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/**/src/*.ts'],
   excludes: ['**/*.test.ts', 'test/**/*.ts'],
@@ -32,7 +32,8 @@ export const responseHelpersRule: ValidationRule = {
     const imports = sourceFile.getImportDeclarations()
     const hasResponseImport = imports.some((imp) => {
       const moduleSpec = imp.getModuleSpecifierValue()
-      if (moduleSpec.includes('lambda-helpers')) {
+      // Check for both old location (lambda-helpers) and new location (responses)
+      if (moduleSpec.includes('lambda-helpers') || moduleSpec.includes('lambda/responses')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
         return namedImports.includes('buildApiResponse')
       }
@@ -79,7 +80,7 @@ export const responseHelpersRule: ValidationRule = {
             createViolation(RULE_NAME, SEVERITY, returnStmt.getStartLineNumber(), 'Raw response object detected. Use buildApiResponse() helper instead.', {
               suggestion: hasResponseImport
                 ? 'Replace with: return buildApiResponse(context, statusCode, data)'
-                : "Import {buildApiResponse} from '#util/lambda-helpers' and use that helper",
+                : "Import {buildApiResponse} from '#lib/lambda/responses' and use that helper",
               codeSnippet: returnText.substring(0, 100)
             })
           )
@@ -107,7 +108,7 @@ export const responseHelpersRule: ValidationRule = {
         if (functionText.includes('APIGateway') && functionText.includes('statusCode')) {
           violations.push(
             createViolation(RULE_NAME, SEVERITY, 1, 'Lambda handler does not import response helpers but appears to return API Gateway responses', {
-              suggestion: "import {buildApiResponse} from '#util/lambda-helpers'"
+              suggestion: "import {buildApiResponse} from '#lib/lambda/responses'"
             })
           )
         }

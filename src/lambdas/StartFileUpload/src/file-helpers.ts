@@ -4,7 +4,7 @@
  * Internal utilities for file operations in StartFileUpload Lambda.
  */
 import {Files} from '#entities/Files'
-import {logDebug} from '#util/logging'
+import {logDebug} from '#lib/system/logging'
 import type {File} from '#types/domain-models'
 
 /**

@@ -11,8 +11,7 @@ data "aws_iam_policy_document" "RegisterUser" {
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",
-      "dynamodb:Query",
-      "dynamodb:Scan"
+      "dynamodb:Query"
     ]
     resources = [
       aws_dynamodb_table.MediaDownloader.arn,

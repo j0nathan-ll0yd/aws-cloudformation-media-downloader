@@ -1,7 +1,7 @@
 import {describe, expect, test} from '@jest/globals'
 import * as fs from 'fs'
 import type {InfrastructureD} from '#types/infrastructure'
-import {logDebug} from '#util/logging'
+import {logDebug} from '#lib/system/logging'
 import path from 'path'
 import {fileURLToPath} from 'url'
 const __filename = fileURLToPath(import.meta.url)

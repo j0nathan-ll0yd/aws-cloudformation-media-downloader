@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
-import {UnexpectedError} from '#util/errors'
+import {UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/jest-setup'
 import type {SessionPayload} from '#types/util'
 const fakeUserId = uuidv4()
@@ -28,7 +28,7 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
 const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule('#util/better-auth-helpers', () => ({validateSessionToken: validateSessionTokenMock}))
+jest.unstable_mockModule('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
 
 const {handler} = await import('./../src')
 

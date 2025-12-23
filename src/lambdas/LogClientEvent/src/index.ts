@@ -1,6 +1,7 @@
 import type {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {buildApiResponse, withPowertools} from '#util/lambda-helpers'
-import {logInfo} from '#util/logging'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {logInfo} from '#lib/system/logging'
 
 export const handler = withPowertools(async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const deviceId = event.headers['x-device-uuid']

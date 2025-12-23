@@ -2,7 +2,7 @@ import {describe, expect, jest, test} from '@jest/globals'
 import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {UnexpectedError} from '#util/errors'
+import {UnexpectedError} from '#lib/system/errors'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Set APNS env vars for ApnsClient

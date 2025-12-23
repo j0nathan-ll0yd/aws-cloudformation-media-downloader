@@ -1,17 +1,18 @@
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import type {Device} from '#types/domain-models'
-import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda-payloads'
-import {deleteDevice} from '#util/device-helpers'
-import {getOptionalEnv, getRequiredEnv} from '#util/env-validation'
-import {Apns2Error, UnexpectedError} from '#util/errors'
-import {withPowertools, wrapScheduledHandler} from '#util/lambda-helpers'
-import {logDebug, logError, logInfo} from '#util/logging'
-import {scanAllPages} from '#util/pagination'
-import {retryUnprocessedDelete} from '#util/retry'
+import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
+import {deleteDevice} from '#lib/domain/device/device-service'
+import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
+import {Apns2Error, UnexpectedError} from '#lib/system/errors'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
+import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {scanAllPages} from '#lib/data/pagination'
+import {retryUnprocessedDelete} from '#lib/system/retry'
 
 // Re-export types for external consumers
-export type { PruneDevicesResult } from '#types/lambda-payloads'
+export type { PruneDevicesResult } from '#types/lambda'
 
 /**
  * Returns an array of all devices using paginated scan

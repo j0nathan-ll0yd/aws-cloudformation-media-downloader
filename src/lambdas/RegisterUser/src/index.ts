@@ -19,10 +19,12 @@ import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
 import {auth} from '#lib/vendor/BetterAuth/config'
 import {registerUserSchema} from '#types/schemas'
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
-import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
-import {buildApiResponse, withPowertools, wrapApiHandler} from '#util/lambda-helpers'
-import {logInfo} from '#util/logging'
+import type {ApiHandlerParams} from '#types/lambda'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {logInfo} from '#lib/system/logging'
 
 interface UserRegistrationInput {
   idToken: string

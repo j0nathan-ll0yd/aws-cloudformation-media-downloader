@@ -1,8 +1,11 @@
 import {userSubscribeSchema} from '#types/schemas'
 
-import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
-import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {subscribeEndpointToTopic} from '#util/device-helpers'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {verifyPlatformConfiguration} from '#lib/lambda/context'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
+import {subscribeEndpointToTopic} from '#lib/domain/device/device-service'
 
 interface UserSubscribeInput {
   endpointArn: string

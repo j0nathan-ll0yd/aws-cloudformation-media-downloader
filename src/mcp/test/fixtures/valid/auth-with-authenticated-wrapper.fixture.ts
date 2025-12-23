@@ -5,7 +5,7 @@
  * @expectedViolations 0
  */
 import {wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
+import type {AuthenticatedApiParams} from '#types/lambda'
 
 export const handler = wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
   // userId is guaranteed to be a string

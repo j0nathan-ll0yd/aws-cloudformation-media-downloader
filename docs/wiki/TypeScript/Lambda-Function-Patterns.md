@@ -111,7 +111,7 @@ export const handler = wrapApiHandler(async ({event, context}: ApiHandlerParams)
 
 ### Public API Gateway Handler
 ```typescript
-import type {ApiHandlerParams} from '#types/lambda-wrappers'
+import type {ApiHandlerParams} from '#types/lambda'
 import {wrapApiHandler, response} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -124,7 +124,7 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
 
 ### Authenticated API Gateway Handler (PREFERRED)
 ```typescript
-import type {AuthenticatedApiParams} from '#types/lambda-wrappers'
+import type {AuthenticatedApiParams} from '#types/lambda'
 import {wrapAuthenticatedHandler, response} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -139,7 +139,7 @@ export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId
 
 ### Optional Auth API Gateway Handler
 ```typescript
-import type {OptionalAuthApiParams} from '#types/lambda-wrappers'
+import type {OptionalAuthApiParams} from '#types/lambda'
 import {wrapOptionalAuthHandler, response} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 import {UserStatus} from '#types/enums'
@@ -158,7 +158,7 @@ export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId,
 
 ### API Gateway Authorizer
 ```typescript
-import type {AuthorizerParams} from '#types/lambda-wrappers'
+import type {AuthorizerParams} from '#types/lambda'
 import {wrapAuthorizer} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -171,7 +171,7 @@ export const handler = withXRay(wrapAuthorizer(async ({event}: AuthorizerParams)
 
 ### S3 Event Handler
 ```typescript
-import type {EventHandlerParams} from '#types/lambda-wrappers'
+import type {EventHandlerParams} from '#types/lambda'
 import {wrapEventHandler, s3Records} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -186,7 +186,7 @@ export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s
 
 ### SQS Handler
 ```typescript
-import type {EventHandlerParams} from '#types/lambda-wrappers'
+import type {EventHandlerParams} from '#types/lambda'
 import {wrapEventHandler, sqsRecords} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 
@@ -201,7 +201,7 @@ export const handler = withXRay(wrapEventHandler(processSQSRecord, {getRecords: 
 
 ### Scheduled Event Handler
 ```typescript
-import type {ScheduledHandlerParams} from '#types/lambda-wrappers'
+import type {ScheduledHandlerParams} from '#types/lambda'
 import {wrapScheduledHandler} from '#util/lambda-helpers'
 import {withXRay} from '#lib/vendor/AWS/XRay'
 

@@ -21,7 +21,7 @@ const SEVERITY = 'HIGH' as const
 function getSuggestedTypeFile(filePath: string): string {
   // Map common utility files to their type files
   if (filePath.includes('lambda-helpers')) {
-    return 'src/types/lambda-wrappers.ts'
+    return 'src/types/lambda.ts'
   }
   if (filePath.includes('video-error-classifier') || filePath.includes('YouTube')) {
     return 'src/types/video.ts'
@@ -53,7 +53,8 @@ export const typesLocationRule: ValidationRule = {
     'src/mcp/**/*.ts', // MCP types are self-contained
     '**/*.test.ts', // Test files
     'test/**/*.ts', // Test files
-    'src/lib/vendor/**/*.ts' // Vendor wrappers may need internal types
+    'src/lib/vendor/**/*.ts', // Vendor wrappers may need internal types
+    'src/lib/domain/**/validation.ts' // Validation schemas infer types
   ],
 
   validate(sourceFile: SourceFile, filePath: string): Violation[] {
@@ -67,7 +68,8 @@ export const typesLocationRule: ValidationRule = {
       filePath.includes('/test/') ||
       filePath.startsWith('test/') ||
       filePath.includes('.test.') ||
-      filePath.includes('lib/vendor/')
+      filePath.includes('lib/vendor/') ||
+      (filePath.includes('lib/domain') && filePath.includes('/validation.ts'))
     ) {
       return violations
     }

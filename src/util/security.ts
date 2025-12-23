@@ -10,7 +10,7 @@
  * Recursively processes objects and arrays to redact sensitive information.
  *
  * Used for:
- * - Test fixture generation (sanitizeForTest in lambda-helpers.ts)
+ * - Test fixture generation (logIncomingFixture/logOutgoingFixture in observability.ts)
  * - Runtime debug logging (logDebug in logging.ts)
  *
  * @param data - Data to sanitize

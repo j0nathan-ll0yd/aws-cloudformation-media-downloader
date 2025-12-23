@@ -20,7 +20,7 @@ describe('logging', () => {
 
   describe('logDebug', () => {
     it('should log debug message without data', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
 
       logDebug('test message')
 
@@ -28,7 +28,7 @@ describe('logging', () => {
     })
 
     it('should log debug message with string data', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
 
       logDebug('test message', 'string data')
 
@@ -36,7 +36,7 @@ describe('logging', () => {
     })
 
     it('should log debug message with sanitized object data', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
       const data = {email: 'user@example.com', token: 'secret123', safeField: 'visible'}
 
       logDebug('test message', data)
@@ -45,7 +45,7 @@ describe('logging', () => {
     })
 
     it('should sanitize nested objects in debug logs', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
       const data = {
         user: {userId: 'user-123', name: 'John Doe', email: 'john@example.com', password: 'secret123'},
         metadata: {timestamp: Date.now(), token: 'auth-token-123'}
@@ -67,7 +67,7 @@ describe('logging', () => {
     })
 
     it('should sanitize arrays in debug logs', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
       const data = {
         users: [
           {id: '1', email: 'user1@example.com'},
@@ -86,7 +86,7 @@ describe('logging', () => {
     })
 
     it('should handle all PII patterns in debug logs', async () => {
-      const {logDebug} = await import('../logging')
+      const {logDebug} = await import('#lib/system/logging')
       const data = {
         authorization: 'Bearer token',
         deviceToken: 'device-123',
@@ -115,7 +115,7 @@ describe('logging', () => {
 
   describe('logInfo', () => {
     it('should log info message without data', async () => {
-      const {logInfo} = await import('../logging')
+      const {logInfo} = await import('#lib/system/logging')
 
       logInfo('test message')
 
@@ -123,7 +123,7 @@ describe('logging', () => {
     })
 
     it('should log info message with string data', async () => {
-      const {logInfo} = await import('../logging')
+      const {logInfo} = await import('#lib/system/logging')
 
       logInfo('test message', 'string data')
 
@@ -131,7 +131,7 @@ describe('logging', () => {
     })
 
     it('should log info message with sanitized object data', async () => {
-      const {logInfo} = await import('../logging')
+      const {logInfo} = await import('#lib/system/logging')
       const data = {email: 'user@example.com', token: 'secret123', safeField: 'visible'}
 
       logInfo('test message', data)
@@ -140,7 +140,7 @@ describe('logging', () => {
     })
 
     it('should sanitize API Gateway event in info logs', async () => {
-      const {logInfo} = await import('../logging')
+      const {logInfo} = await import('#lib/system/logging')
       const event = {
         headers: {Authorization: 'Bearer secret-token', 'Content-Type': 'application/json'},
         body: {password: 'secret123', username: 'user@example.com'},
@@ -159,7 +159,7 @@ describe('logging', () => {
 
   describe('logError', () => {
     it('should log error message without data', async () => {
-      const {logError} = await import('../logging')
+      const {logError} = await import('#lib/system/logging')
 
       logError('test error')
 
@@ -167,7 +167,7 @@ describe('logging', () => {
     })
 
     it('should log error message with Error object', async () => {
-      const {logError} = await import('../logging')
+      const {logError} = await import('#lib/system/logging')
       const error = new Error('test error')
 
       logError('error occurred', error)
@@ -176,7 +176,7 @@ describe('logging', () => {
     })
 
     it('should log error message with string data', async () => {
-      const {logError} = await import('../logging')
+      const {logError} = await import('#lib/system/logging')
 
       logError('error occurred', 'error details')
 
@@ -184,7 +184,7 @@ describe('logging', () => {
     })
 
     it('should log error message with sanitized object data', async () => {
-      const {logError} = await import('../logging')
+      const {logError} = await import('#lib/system/logging')
       const data = {email: 'user@example.com', password: 'secret123', errorCode: 'E001'}
 
       logError('error occurred', data)

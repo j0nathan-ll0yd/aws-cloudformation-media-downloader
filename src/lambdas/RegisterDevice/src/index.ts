@@ -4,12 +4,15 @@ import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/
 import {UserStatus} from '#types/enums'
 import {registerDeviceSchema} from '#types/schemas'
 import type {Device} from '#types/domain-models'
-import {getPayloadFromEvent, validateRequest} from '#util/apigateway-helpers'
-import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#util/device-helpers'
-import {getRequiredEnv} from '#util/env-validation'
-import {providerFailureErrorMessage, UnexpectedError} from '#util/errors'
-import {buildApiResponse, verifyPlatformConfiguration, withPowertools, wrapOptionalAuthHandler} from '#util/lambda-helpers'
-import {logDebug} from '#util/logging'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/domain/device/device-service'
+import {getRequiredEnv} from '#lib/system/env'
+import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {verifyPlatformConfiguration} from '#lib/lambda/context'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
+import {logDebug} from '#lib/system/logging'
 
 interface DeviceRegistrationRequest {
   name: string
