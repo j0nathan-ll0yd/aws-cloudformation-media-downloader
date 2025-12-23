@@ -103,11 +103,24 @@ const config = {
   // A preset that is used as a base for Jest's configuration
   preset: 'ts-jest',
 
+  // Use native V8 coverage instead of Istanbul (more accurate)
+  coverageProvider: 'v8',
+
   // Run tests from one or more projects
   // projects: undefined,
 
-  // Use this configuration option to add custom reporters to Jest
-  // reporters: undefined,
+  // Custom reporter for monocart coverage (generates V8 reports + markdown summary)
+  reporters: [
+    'default',
+    [
+      'jest-monocart-coverage',
+      {
+        name: 'Unit Test Coverage',
+        reports: [['v8'], ['console-summary'], ['markdown-summary', {file: 'coverage-summary.md'}], ['lcovonly']],
+        outputDir: './coverage/unit'
+      }
+    ]
+  ],
 
   // Automatically reset mock state before every test
   // resetMocks: false,
@@ -175,10 +188,11 @@ const config = {
     '^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]
   },
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "/node_modules/",
-  //   "\\.pnp\\.[^\\/]+$"
-  // ],
+  // Must transform jsonschema because our pnpm patch introduces ESM syntax
+  // Uses broad match for pnpm's .pnpm/jsonschema@version/node_modules/jsonschema path structure
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*jsonschema.*)'
+  ],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

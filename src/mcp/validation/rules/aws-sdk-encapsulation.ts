@@ -25,7 +25,9 @@ const FORBIDDEN_PACKAGES = [
   '@aws-sdk/middleware-',
   'aws-sdk', // v2
   // AWS Lambda Powertools
-  '@aws-lambda-powertools/'
+  '@aws-lambda-powertools/',
+  // OpenTelemetry
+  '@opentelemetry/'
 ]
 
 /**
@@ -43,10 +45,12 @@ const VENDOR_SUGGESTIONS: Record<string, string> = {
   '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager',
   // AWS Lambda Powertools
   '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
-  '@aws-lambda-powertools/tracer': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency',
-  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser'
+  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser',
+  // OpenTelemetry
+  '@opentelemetry/api': 'lib/vendor/OpenTelemetry',
+  '@opentelemetry/sdk-trace-node': 'lib/vendor/OpenTelemetry/sdk'
 }
 
 function getSuggestion(moduleSpecifier: string): string {
@@ -63,13 +67,13 @@ export const awsSdkEncapsulationRule: ValidationRule = {
   description: 'Never import AWS SDK packages directly. Use lib/vendor/AWS/ wrappers for encapsulation, type safety, and testability.',
   severity: SEVERITY,
   appliesTo: ['src/**/*.ts'],
-  excludes: ['src/lib/vendor/AWS/**/*.ts', 'src/lib/vendor/Powertools/**/*.ts', 'src/**/*.test.ts', 'test/**/*.ts'],
+  excludes: ['src/lib/vendor/AWS/**/*.ts', 'src/lib/vendor/Powertools/**/*.ts', 'src/lib/vendor/OpenTelemetry/**/*.ts', 'src/**/*.test.ts', 'test/**/*.ts'],
 
   validate(sourceFile: SourceFile, filePath: string): Violation[] {
     const violations: Violation[] = []
 
     // Skip vendor directories - that's where direct imports are allowed
-    if (filePath.includes('lib/vendor/AWS') || filePath.includes('lib/vendor/Powertools')) {
+    if (filePath.includes('lib/vendor/AWS') || filePath.includes('lib/vendor/Powertools') || filePath.includes('lib/vendor/OpenTelemetry')) {
       return violations
     }
 

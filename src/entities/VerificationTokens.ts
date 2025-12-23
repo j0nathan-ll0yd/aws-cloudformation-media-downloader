@@ -32,7 +32,7 @@ export const VerificationTokens = new Entity(
       byIdentifier: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['identifier']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}}
     }
   } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
+  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
 )
 
 // Type exports for use in application code

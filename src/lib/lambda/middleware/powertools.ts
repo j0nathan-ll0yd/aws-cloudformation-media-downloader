@@ -1,5 +1,5 @@
 import middy from '@middy/core'
-import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, MetricUnit, tracer} from '#lib/vendor/Powertools'
+import {injectLambdaContext, logger, logMetrics, metrics, MetricUnit} from '#lib/vendor/Powertools'
 import type {Context} from 'aws-lambda'
 import {getOptionalEnv} from '#lib/system/env'
 
@@ -9,18 +9,18 @@ import {getOptionalEnv} from '#lib/system/env'
  *
  * Features:
  * - Structured JSON logging with automatic context enrichment
- * - X-Ray tracing with enhanced annotations
+ * - OpenTelemetry tracing via ADOT Lambda layer (automatic)
  * - Automatic cold start metric tracking
  * - Correlation IDs through all logs
  *
- * Use this as a replacement for `withXRay()` for enhanced observability.
+ * Note: Tracing is now provided by the ADOT Lambda layer and OpenTelemetry.
+ * The layer auto-instruments AWS SDK calls - no manual SDK initialization needed.
  *
  * @param handler - Lambda handler function
  * @returns Wrapped handler with Powertools middleware
  *
  * @example
  * ```typescript
- * // Replace withXRay with withPowertools for enhanced observability
  * export const handler = withPowertools(wrapAuthenticatedHandler(
  *   async ({event, context, userId}) => {
  *     const files = await getFilesByUser(userId)
@@ -32,7 +32,7 @@ import {getOptionalEnv} from '#lib/system/env'
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer))
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}))
 
   // Only enable metrics middleware in non-test environments
   // This prevents "No application metrics to publish" warnings in Jest
@@ -45,4 +45,4 @@ export function withPowertools<TEvent, TResult>(
 }
 
 // Re-export Powertools utilities for direct access
-export { logger, metrics, MetricUnit, tracer }
+export { logger, metrics, MetricUnit }

@@ -26,7 +26,7 @@ resource "aws_cloudwatch_log_group" "LogClientEvent" {
 
 data "archive_file" "LogClientEvent" {
   type        = "zip"
-  source_file = "./../build/lambdas/LogClientEvent.js"
+  source_file = "./../build/lambdas/LogClientEvent.mjs"
   output_path = "./../build/lambdas/LogClientEvent.zip"
 }
 
@@ -39,9 +39,18 @@ resource "aws_lambda_function" "LogClientEvent" {
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path
   source_code_hash = data.archive_file.LogClientEvent.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
+  }
+
+  environment {
+    variables = {
+      OTEL_SERVICE_NAME           = "LogClientEvent"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
+    }
   }
 }
 

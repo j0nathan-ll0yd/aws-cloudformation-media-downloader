@@ -24,7 +24,7 @@ const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCoo
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    process.env.GithubPersonalToken = 'test-token'
+    process.env.GITHUB_PERSONAL_TOKEN = 'test-token'
   })
 
   describe('#createFailedUserDeletionIssue', () => {

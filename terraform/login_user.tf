@@ -54,7 +54,7 @@ resource "aws_cloudwatch_log_group" "LoginUser" {
 
 data "archive_file" "LoginUser" {
   type        = "zip"
-  source_file = "./../build/lambdas/LoginUser.js"
+  source_file = "./../build/lambdas/LoginUser.mjs"
   output_path = "./../build/lambdas/LoginUser.zip"
 }
 
@@ -68,6 +68,7 @@ resource "aws_lambda_function" "LoginUser" {
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
   filename         = data.archive_file.LoginUser.output_path
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -75,10 +76,13 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = {
-      ApplicationUrl        = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
-      DynamoDBTableName     = aws_dynamodb_table.MediaDownloader.name
-      SignInWithAppleConfig = data.sops_file.secrets.data["signInWithApple.config"]
-      BetterAuthSecret      = data.sops_file.secrets.data["platform.key"]
+      APPLICATION_URL             = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      SIGN_IN_WITH_APPLE_CONFIG   = data.sops_file.secrets.data["signInWithApple.config"]
+      BETTER_AUTH_SECRET          = data.sops_file.secrets.data["platform.key"]
+      OTEL_SERVICE_NAME           = "LoginUser"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

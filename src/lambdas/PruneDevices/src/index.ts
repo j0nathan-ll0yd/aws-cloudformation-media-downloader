@@ -1,4 +1,3 @@
-import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import type {Device} from '#types/domain-models'
@@ -38,11 +37,13 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
+  // Dynamic import for ESM compatibility - apns2 is CJS-only
+  const {ApnsClient, Notification, Priority, PushType} = await import('apns2')
   const client = new ApnsClient({
-    team: getRequiredEnv('ApnsTeam'),
-    keyId: getRequiredEnv('ApnsKeyId'),
-    signingKey: getRequiredEnv('ApnsSigningKey'),
-    defaultTopic: getRequiredEnv('ApnsDefaultTopic'),
+    team: getRequiredEnv('APNS_TEAM'),
+    keyId: getRequiredEnv('APNS_KEY_ID'),
+    signingKey: getRequiredEnv('APNS_SIGNING_KEY'),
+    defaultTopic: getRequiredEnv('APNS_DEFAULT_TOPIC'),
     host: getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
   })
   const healthCheckNotification = new Notification(token, {
@@ -120,7 +121,9 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
         const errorMessage = `Failed to properly remove device ${deviceId}: ${message}`
         logError(errorMessage)
         result.errors.push(errorMessage)
-        // TODO: Trigger severe alarm with device details and requestId so it can be manually deleted later
+        // Severe alarm needed: device orphaned in DynamoDB after cascade delete failure
+        // Should trigger manual intervention to delete device record with ID and requestId
+        // Tracking: Monitor CloudWatch for orphaned device cleanup patterns
       }
     }
   }

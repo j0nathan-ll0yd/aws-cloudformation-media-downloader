@@ -29,7 +29,7 @@ interface DeviceRegistrationRequest {
  */
 async function createPlatformEndpointFromToken(token: string) {
   // An idempotent option that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
-  const params = {PlatformApplicationArn: getRequiredEnv('PlatformApplicationArn'), Token: token}
+  const params = {PlatformApplicationArn: getRequiredEnv('PLATFORM_APPLICATION_ARN'), Token: token}
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
   if (!createPlatformEndpointResponse) {
@@ -107,7 +107,7 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
   validateRequest(requestBody, registerDeviceSchema)
 
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
-  const pushNotificationTopicArn = getRequiredEnv('PushNotificationTopicArn')
+  const pushNotificationTopicArn = getRequiredEnv('PUSH_NOTIFICATION_TOPIC_ARN')
   const device = {...requestBody, endpointArn: platformEndpoint.EndpointArn} as Device
   // Store the device details, regardless of user status
   await upsertDevice(device)

@@ -40,7 +40,7 @@ describe('#APIGatewayAuthorizer', () => {
     beforeEach(() => {
       event = JSON.parse(JSON.stringify(eventMock))
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
-      process.env.MultiAuthenticationPathParts = 'files'
+      process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
     })
     test('should throw an error if there is no API key', async () => {
       delete event.queryStringParameters!['ApiKey']
@@ -64,7 +64,7 @@ describe('#APIGatewayAuthorizer', () => {
     beforeEach(() => {
       event = JSON.parse(JSON.stringify(eventMock))
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
-      process.env.MultiAuthenticationPathParts = 'files'
+      process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
       validateSessionTokenMock.mockReset()
     })
     test('should handle a valid Authorization header', async () => {
@@ -136,7 +136,7 @@ describe('#APIGatewayAuthorizer', () => {
     test('should handle a test request if structured correctly', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       event.headers!['User-Agent'] = 'localhost@lifegames'
-      process.env.ReservedClientIp = event.requestContext.identity.sourceIp = '127.0.0.1'
+      process.env.RESERVED_CLIENT_IP = event.requestContext.identity.sourceIp = '127.0.0.1'
       const output = await handler(event, testContext)
       expect(output.principalId).toEqual('123e4567-e89b-12d3-a456-426614174000')
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
@@ -148,7 +148,7 @@ describe('#APIGatewayAuthorizer', () => {
     beforeEach(() => {
       event = JSON.parse(JSON.stringify(eventMock))
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
-      process.env.MultiAuthenticationPathParts = 'files'
+      process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
     })
     test('should deny access when headers are missing on non-multi-auth path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)

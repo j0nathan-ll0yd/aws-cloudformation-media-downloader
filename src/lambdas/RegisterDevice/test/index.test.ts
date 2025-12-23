@@ -46,8 +46,8 @@ describe('#RegisterDevice', () => {
     userDevicesMock.mocks.create.mockResolvedValue({data: {}})
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
-    process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
-    process.env.PushNotificationTopicArn = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
+    process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
+    process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
   })
   test('(anonymous) should create an endpoint and subscribe to the unregistered topic', async () => {
     event.requestContext.authorizer!.principalId = 'unknown'
@@ -81,7 +81,7 @@ describe('#RegisterDevice', () => {
     // Set up as anonymous user (not unauthenticated) to test APNS config check
     delete event.headers['Authorization']
     event.requestContext.authorizer!.principalId = 'unknown'
-    process.env.PlatformApplicationArn = ''
+    process.env.PLATFORM_APPLICATION_ARN = ''
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(503)
   })

@@ -68,7 +68,7 @@ resource "aws_cloudwatch_log_group" "FileCoordinator" {
 
 data "archive_file" "FileCoordinator" {
   type        = "zip"
-  source_file = "./../build/lambdas/FileCoordinator.js"
+  source_file = "./../build/lambdas/FileCoordinator.mjs"
   output_path = "./../build/lambdas/FileCoordinator.zip"
 }
 
@@ -82,6 +82,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -89,7 +90,12 @@ resource "aws_lambda_function" "FileCoordinator" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
+      DYNAMODB_TABLE_NAME             = aws_dynamodb_table.MediaDownloader.name
+      FILE_COORDINATOR_BATCH_SIZE     = 5
+      FILE_COORDINATOR_BATCH_DELAY_MS = 10000
+      OTEL_SERVICE_NAME               = "FileCoordinator"
+      OTEL_EXPORTER_OTLP_ENDPOINT     = "http://localhost:4318"
+      OTEL_PROPAGATORS                = "xray"
     }
   }
 }

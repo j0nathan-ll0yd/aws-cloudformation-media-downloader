@@ -17,16 +17,16 @@
 const TEST_TABLE = 'test-user-delete'
 
 // Set environment variables for Lambda
-process.env.DynamoDBTableName = TEST_TABLE
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 // Required env vars
-process.env.DefaultFileSize = '1024'
-process.env.DefaultFileName = 'test-default-file.mp4'
-process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
-process.env.DefaultFileContentType = 'video/mp4'
-process.env.PlatformApplicationArn = 'arn:aws:sns:us-west-2:123456789012:app/APNS/TestApp'
-process.env.PushNotificationTopicArn = 'arn:aws:sns:us-west-2:123456789012:TestTopic'
+process.env.DEFAULT_FILE_SIZE = '1024'
+process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
+process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
+process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
+process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:us-west-2:123456789012:app/APNS/TestApp'
+process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:123456789012:TestTopic'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'

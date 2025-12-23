@@ -80,6 +80,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   ]
   filename         = data.archive_file.ApiGatewayAuthorizer.output_path
   source_code_hash = data.archive_file.ApiGatewayAuthorizer.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -87,20 +88,24 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      MultiAuthenticationPathParts = join(",", [
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
+      MULTI_AUTHENTICATION_PATH_PARTS = join(",", [
         aws_api_gateway_resource.RegisterDevice.path_part,
         aws_api_gateway_resource.Files.path_part,
         aws_api_gateway_resource.LogEvent.path_part
       ]),
-      ReservedClientIp = "104.1.88.244"
+      RESERVED_CLIENT_IP          = "104.1.88.244"
+      ENABLE_XRAY                 = "false"
+      OTEL_SERVICE_NAME           = "ApiGatewayAuthorizer"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }
 
 data "archive_file" "ApiGatewayAuthorizer" {
   type        = "zip"
-  source_file = "./../build/lambdas/ApiGatewayAuthorizer.js"
+  source_file = "./../build/lambdas/ApiGatewayAuthorizer.mjs"
   output_path = "./../build/lambdas/ApiGatewayAuthorizer.zip"
 }
 

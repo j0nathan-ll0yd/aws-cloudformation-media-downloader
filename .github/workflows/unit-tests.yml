@@ -78,15 +78,12 @@ jobs:
       run: pnpm run validate:config
 
     - name: Run unit tests
-      run: pnpm test --coverage --coverageDirectory=coverage/unit
+      run: pnpm test --coverage
       env:
         CI: true
 
-    - name: Upload unit test coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage/unit/lcov.info
-        flags: unit
-        name: unit-tests
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: true
+    - name: Post coverage to job summary
+      if: always() && hashFiles('coverage/unit/coverage-summary.md') != ''
+      run: |
+        echo "## Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+        cat coverage/unit/coverage-summary.md >> $GITHUB_STEP_SUMMARY

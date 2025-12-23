@@ -48,7 +48,7 @@ export const Files = new Entity({
     primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
     byKey: {index: 'KeyIndex', pk: {field: 'gsi5pk', composite: ['key'] as const}}
   }
-} as const, {table: process.env.DynamoDBTableName, client: documentClient})
+} as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
 
 // Type exports for use in application code
 export type FileItem = ReturnType<typeof Files.parse>

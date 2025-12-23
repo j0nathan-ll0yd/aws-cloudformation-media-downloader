@@ -33,6 +33,22 @@ const config = {
   // Use ts-jest preset for TypeScript support
   preset: 'ts-jest',
 
+  // Use native V8 coverage instead of Istanbul (more accurate)
+  coverageProvider: 'v8',
+
+  // Custom reporter for monocart coverage (generates V8 reports + markdown summary)
+  reporters: [
+    'default',
+    [
+      'jest-monocart-coverage',
+      {
+        name: 'Integration Test Coverage',
+        reports: [['v8'], ['console-summary'], ['markdown-summary', {file: 'coverage-summary.md'}], ['lcovonly']],
+        outputDir: './coverage/integration'
+      }
+    ]
+  ],
+
   // Limit workers to prevent Jest worker hang issues with AWS SDK
   maxWorkers: 2,
 
@@ -50,6 +66,12 @@ const config = {
 
   // Transform TypeScript files with ts-jest
   transform: {'^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]},
+
+  // Must transform jsonschema because our pnpm patch introduces ESM syntax
+  // Uses broad match for pnpm's .pnpm/jsonschema@version/node_modules/jsonschema path structure
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*jsonschema.*)'
+  ],
 
   // Silence console output during tests when LOG_LEVEL is SILENT
   silent: process.env.LOG_LEVEL === 'SILENT',

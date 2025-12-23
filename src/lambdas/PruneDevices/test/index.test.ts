@@ -6,10 +6,10 @@ import {UnexpectedError} from '#lib/system/errors'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Set APNS env vars for ApnsClient
-process.env.ApnsSigningKey = fakePrivateKey
-process.env.ApnsTeam = 'XXXXXX'
-process.env.ApnsKeyId = 'XXXXXX'
-process.env.ApnsDefaultTopic = 'lifegames.OfflineMediaDownloader'
+process.env.APNS_SIGNING_KEY = fakePrivateKey
+process.env.APNS_TEAM = 'XXXXXX'
+process.env.APNS_KEY_ID = 'XXXXXX'
+process.env.APNS_DEFAULT_TOPIC = 'lifegames.OfflineMediaDownloader'
 
 const fakeUserId = uuidv4()
 const fakeGetDevicesResponse = {

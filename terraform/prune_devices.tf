@@ -73,7 +73,7 @@ resource "aws_cloudwatch_log_group" "PruneDevices" {
 
 data "archive_file" "PruneDevices" {
   type        = "zip"
-  source_file = "./../build/lambdas/PruneDevices.js"
+  source_file = "./../build/lambdas/PruneDevices.mjs"
   output_path = "./../build/lambdas/PruneDevices.zip"
 }
 
@@ -86,6 +86,7 @@ resource "aws_lambda_function" "PruneDevices" {
   depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -94,11 +95,15 @@ resource "aws_lambda_function" "PruneDevices" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      ApnsSigningKey    = data.sops_file.secrets.data["apns.staging.signingKey"]
-      ApnsTeam          = data.sops_file.secrets.data["apns.staging.team"]
-      ApnsKeyId         = data.sops_file.secrets.data["apns.staging.keyId"]
-      ApnsDefaultTopic  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      APNS_SIGNING_KEY            = data.sops_file.secrets.data["apns.staging.signingKey"]
+      APNS_TEAM                   = data.sops_file.secrets.data["apns.staging.team"]
+      APNS_KEY_ID                 = data.sops_file.secrets.data["apns.staging.keyId"]
+      APNS_DEFAULT_TOPIC          = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      APNS_HOST                   = "api.sandbox.push.apple.com"
+      OTEL_SERVICE_NAME           = "PruneDevices"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

@@ -5,10 +5,10 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
-process.env.DefaultFileSize = '1024'
-process.env.DefaultFileName = 'test-default-file.mp4'
-process.env.DefaultFileUrl = 'https://example.com/test-default-file.mp4'
-process.env.DefaultFileContentType = 'video/mp4'
+process.env.DEFAULT_FILE_SIZE = '1024'
+process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
+process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
+process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 const fakeUserId = uuidv4()
 const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})

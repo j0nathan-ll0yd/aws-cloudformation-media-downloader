@@ -13,7 +13,7 @@
 // ES modules evaluate imports before file code runs, but we can set env vars
 // before the dynamic imports below are resolved
 const TEST_TABLE = 'MediaDownloader'
-process.env.DynamoDBTableName = TEST_TABLE
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 

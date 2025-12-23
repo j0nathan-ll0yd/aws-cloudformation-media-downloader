@@ -15,7 +15,7 @@
 const TEST_TABLE = 'test-push-notification'
 
 // Set environment variables for Lambda
-process.env.DynamoDBTableName = TEST_TABLE
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'

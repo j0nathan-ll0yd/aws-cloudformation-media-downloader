@@ -19,7 +19,7 @@ export const UserDevices = new Entity(
       byDevice: {index: 'DeviceCollection', pk: {field: 'gsi3pk', composite: ['deviceId']}, sk: {field: 'gsi3sk', composite: ['userId']}}
     }
   } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
+  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
 )
 
 // Type exports for use in application code
