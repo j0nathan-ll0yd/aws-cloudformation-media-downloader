@@ -18,36 +18,38 @@ export interface InfrastructureD {
 }
 
 export interface Data {
-    archive_file:            ArchiveFile;
-    aws_caller_identity:     Aws;
-    aws_iam_policy_document: AwsIamPolicyDocument;
-    aws_region:              Aws;
-    http:                    HTTP;
-    local_file:              LocalFile;
-    sops_file:               SopsFile;
+    archive_file:             ArchiveFile;
+    aws_caller_identity:      Aws;
+    aws_iam_policy_document:  AwsIamPolicyDocument;
+    aws_lambda_layer_version: DataAwsLambdaLayerVersion;
+    aws_region:               Aws;
+    http:                     HTTP;
+    local_file:               LocalFile;
+    sops_file:                SopsFile;
 }
 
 export interface ArchiveFile {
-    ApiGatewayAuthorizer: SendPushNotificationElement[];
-    CloudfrontMiddleware: SendPushNotificationElement[];
+    ApiGatewayAuthorizer: CloudfrontMiddlewareElement[];
+    CloudfrontMiddleware: CloudfrontMiddlewareElement[];
     FfmpegLayer:          Layer[];
-    FileCoordinator:      SendPushNotificationElement[];
-    ListFiles:            SendPushNotificationElement[];
-    LogClientEvent:       SendPushNotificationElement[];
-    LoginUser:            SendPushNotificationElement[];
-    PruneDevices:         SendPushNotificationElement[];
-    RegisterDevice:       SendPushNotificationElement[];
-    RegisterUser:         SendPushNotificationElement[];
-    S3ObjectCreated:      SendPushNotificationElement[];
-    SendPushNotification: SendPushNotificationElement[];
-    StartFileUpload:      SendPushNotificationElement[];
-    UserDelete:           SendPushNotificationElement[];
-    UserSubscribe:        SendPushNotificationElement[];
-    WebhookFeedly:        SendPushNotificationElement[];
+    FileCoordinator:      CloudfrontMiddlewareElement[];
+    ListFiles:            CloudfrontMiddlewareElement[];
+    LogClientEvent:       CloudfrontMiddlewareElement[];
+    LoginUser:            CloudfrontMiddlewareElement[];
+    PruneDevices:         CloudfrontMiddlewareElement[];
+    RefreshToken:         CloudfrontMiddlewareElement[];
+    RegisterDevice:       CloudfrontMiddlewareElement[];
+    RegisterUser:         CloudfrontMiddlewareElement[];
+    S3ObjectCreated:      CloudfrontMiddlewareElement[];
+    SendPushNotification: CloudfrontMiddlewareElement[];
+    StartFileUpload:      CloudfrontMiddlewareElement[];
+    UserDelete:           CloudfrontMiddlewareElement[];
+    UserSubscribe:        CloudfrontMiddlewareElement[];
+    WebhookFeedly:        CloudfrontMiddlewareElement[];
     YtDlpLayer:           Layer[];
 }
 
-export interface SendPushNotificationElement {
+export interface CloudfrontMiddlewareElement {
     output_path: string;
     source_file: string;
     type:        APIGatewayAuthorizerType;
@@ -85,7 +87,8 @@ export interface AwsIamPolicyDocument {
     LoginUser:                         APIGatewayAuthorizerRolePolicyElement[];
     MultipartUpload:                   APIGatewayAuthorizerRolePolicyElement[];
     PruneDevices:                      PruneDevice[];
-    RegisterDevice:                    RegisterDevice[];
+    RefreshToken:                      APIGatewayAuthorizerRolePolicyElement[];
+    RegisterDevice:                    AwsIamPolicyDocumentRegisterDevice[];
     RegisterUser:                      APIGatewayAuthorizerRolePolicyElement[];
     S3ObjectCreated:                   APIGatewayAuthorizerRolePolicyElement[];
     SNSAssumeRole:                     AssumeRole[];
@@ -145,7 +148,7 @@ export interface DynamicStatement {
     for_each: string;
 }
 
-export interface RegisterDevice {
+export interface AwsIamPolicyDocumentRegisterDevice {
     statement: RegisterDeviceStatement[];
 }
 
@@ -179,6 +182,14 @@ export interface Condition {
     test:     string;
     values:   string[];
     variable: string;
+}
+
+export interface DataAwsLambdaLayerVersion {
+    adot_collector: AdotCollector[];
+}
+
+export interface AdotCollector {
+    layer_name: string;
 }
 
 export interface HTTP {
@@ -273,7 +284,7 @@ export interface Resource {
     aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
     aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
     aws_lambda_function:                             AwsLambdaFunction;
-    aws_lambda_layer_version:                        AwsLambdaLayerVersion;
+    aws_lambda_layer_version:                        ResourceAwsLambdaLayerVersion;
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
     aws_s3_bucket_intelligent_tiering_configuration: AwsS3BucketIntelligentTieringConfiguration;
@@ -306,10 +317,10 @@ export interface AwsAPIGatewayAPIKeyIOSApp {
 }
 
 export interface AwsAPIGatewayAuthorizer {
-    ApiGatewayAuthorizer: APIGatewayAuthorizer[];
+    ApiGatewayAuthorizer: AwsAPIGatewayAuthorizerAPIGatewayAuthorizer[];
 }
 
-export interface APIGatewayAuthorizer {
+export interface AwsAPIGatewayAuthorizerAPIGatewayAuthorizer {
     authorizer_credentials:           string;
     authorizer_result_ttl_in_seconds: number;
     authorizer_uri:                   string;
@@ -357,6 +368,7 @@ export interface AwsAPIGatewayIntegration {
     ListFilesGet:       AwsAPIGatewayIntegrationListFilesGet[];
     LogClientEventPost: AwsAPIGatewayIntegrationListFilesGet[];
     LoginUserPost:      AwsAPIGatewayIntegrationListFilesGet[];
+    RefreshTokenPost:   AwsAPIGatewayIntegrationListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayIntegrationListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayIntegrationListFilesGet[];
     UserDeletePost:     AwsAPIGatewayIntegrationListFilesGet[];
@@ -377,6 +389,7 @@ export interface AwsAPIGatewayMethod {
     ListFilesGet:       AwsAPIGatewayMethodListFilesGet[];
     LogClientEventPost: AwsAPIGatewayMethodListFilesGet[];
     LoginUserPost:      AwsAPIGatewayMethodListFilesGet[];
+    RefreshTokenPost:   AwsAPIGatewayMethodListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayMethodListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayMethodListFilesGet[];
     UserDeletePost:     AwsAPIGatewayMethodListFilesGet[];
@@ -415,6 +428,7 @@ export interface AwsAPIGatewayResource {
     Files:          Feedly[];
     LogEvent:       Feedly[];
     Login:          Feedly[];
+    RefreshToken:   Feedly[];
     RegisterDevice: Feedly[];
     RegisterUser:   Feedly[];
     UserDelete:     Feedly[];
@@ -801,6 +815,7 @@ export interface AwsIamPolicy {
     LoginUserRolePolicy:            RolePolicy[];
     MultipartUploadRolePolicy:      RolePolicy[];
     PruneDevicesRolePolicy:         RolePolicy[];
+    RefreshTokenRolePolicy:         RolePolicy[];
     RegisterDeviceRolePolicy:       RolePolicy[];
     RegisterUserRolePolicy:         RolePolicy[];
     S3ObjectCreatedRolePolicy:      RolePolicy[];
@@ -856,37 +871,35 @@ export interface SendPushNotification {
 
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
-    CloudfrontMiddleware: AwsLambdaFunctionAPIGatewayAuthorizer[];
-    FileCoordinator:      SendPushNotificationClass[];
+    CloudfrontMiddleware: CloudfrontMiddleware[];
+    FileCoordinator:      FileCoordinator[];
     ListFiles:            ListFile[];
-    LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
-    LoginUser:            AwsLambdaFunctionAPIGatewayAuthorizer[];
-    PruneDevices:         AwsLambdaFunctionAPIGatewayAuthorizer[];
-    RegisterDevice:       AwsLambdaFunctionAPIGatewayAuthorizer[];
-    RegisterUser:         AwsLambdaFunctionAPIGatewayAuthorizer[];
-    S3ObjectCreated:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    SendPushNotification: SendPushNotificationClass[];
+    LogClientEvent:       LogClientEvent[];
+    LoginUser:            User[];
+    PruneDevices:         AwsLambdaFunctionPruneDevice[];
+    RefreshToken:         RefreshToken[];
+    RegisterDevice:       AwsLambdaFunctionRegisterDevice[];
+    RegisterUser:         User[];
+    S3ObjectCreated:      LogClientEvent[];
+    SendPushNotification: RefreshToken[];
     StartFileUpload:      StartFileUpload[];
-    UserDelete:           AwsLambdaFunctionAPIGatewayAuthorizer[];
-    UserSubscribe:        AwsLambdaFunctionAPIGatewayAuthorizer[];
-    WebhookFeedly:        AwsLambdaFunctionAPIGatewayAuthorizer[];
+    UserDelete:           LogClientEvent[];
+    UserSubscribe:        LogClientEvent[];
+    WebhookFeedly:        WebhookFeedly[];
 }
 
 export interface AwsLambdaFunctionAPIGatewayAuthorizer {
-    depends_on?:      string[];
+    depends_on:       string[];
     description:      string;
-    environment?:     APIGatewayAuthorizerEnvironment[];
+    environment:      APIGatewayAuthorizerEnvironment[];
     filename:         string;
     function_name:    string;
     handler:          string;
+    layers:           string[];
     role:             string;
-    runtime:          Runtime;
+    runtime:          string;
     source_code_hash: string;
     tracing_config:   TracingConfig[];
-    provider?:        string;
-    publish?:         boolean;
-    timeout?:         number;
-    memory_size?:     number;
 }
 
 export interface APIGatewayAuthorizerEnvironment {
@@ -894,25 +907,12 @@ export interface APIGatewayAuthorizerEnvironment {
 }
 
 export interface PurpleVariables {
-    DynamoDBTableName?:            string;
-    MultiAuthenticationPathParts?: string;
-    ReservedClientIp?:             string;
-    ApplicationUrl?:               string;
-    BetterAuthSecret?:             string;
-    SignInWithAppleConfig?:        string;
-    ApnsDefaultTopic?:             string;
-    ApnsKeyId?:                    string;
-    ApnsSigningKey?:               string;
-    ApnsTeam?:                     string;
-    PlatformApplicationArn?:       string;
-    PushNotificationTopicArn?:     string;
-    SNSQueueUrl?:                  string;
-    GithubPersonalToken?:          string;
-    IdempotencyTableName?:         string;
-}
-
-export enum Runtime {
-    Nodejs24X = "nodejs24.x",
+    DYNAMODB_TABLE_NAME:             string;
+    MULTI_AUTHENTICATION_PATH_PARTS: string;
+    OTEL_EXPORTER_OTLP_ENDPOINT:     string;
+    OTEL_PROPAGATORS:                string;
+    OTEL_SERVICE_NAME:               string;
+    RESERVED_CLIENT_IP:              string;
 }
 
 export interface TracingConfig {
@@ -923,16 +923,30 @@ export enum Mode {
     Active = "Active",
 }
 
-export interface SendPushNotificationClass {
+export interface CloudfrontMiddleware {
+    description:      string;
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    provider:         string;
+    publish:          boolean;
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface FileCoordinator {
     depends_on:       string[];
     description:      string;
     environment:      FileCoordinatorEnvironment[];
     filename:         string;
     function_name:    string;
     handler:          string;
-    memory_size?:     number;
+    layers:           string[];
+    memory_size:      number;
     role:             string;
-    runtime:          Runtime;
+    runtime:          string;
     source_code_hash: string;
     tracing_config:   TracingConfig[];
 }
@@ -942,7 +956,12 @@ export interface FileCoordinatorEnvironment {
 }
 
 export interface FluffyVariables {
-    DynamoDBTableName: string;
+    DYNAMODB_TABLE_NAME:             string;
+    FILE_COORDINATOR_BATCH_DELAY_MS: number;
+    FILE_COORDINATOR_BATCH_SIZE:     number;
+    OTEL_EXPORTER_OTLP_ENDPOINT:     string;
+    OTEL_PROPAGATORS:                string;
+    OTEL_SERVICE_NAME:               string;
 }
 
 export interface ListFile {
@@ -952,9 +971,10 @@ export interface ListFile {
     filename:         string;
     function_name:    string;
     handler:          string;
+    layers:           string[];
     memory_size:      number;
     role:             string;
-    runtime:          Runtime;
+    runtime:          string;
     source_code_hash: string;
     tracing_config:   TracingConfig[];
 }
@@ -964,11 +984,145 @@ export interface ListFileEnvironment {
 }
 
 export interface TentacledVariables {
-    DefaultFileContentType: string;
-    DefaultFileName:        string;
-    DefaultFileSize:        number;
-    DefaultFileUrl:         string;
-    DynamoDBTableName:      string;
+    DEFAULT_FILE_CONTENT_TYPE:   string;
+    DEFAULT_FILE_NAME:           string;
+    DEFAULT_FILE_SIZE:           number;
+    DEFAULT_FILE_URL:            string;
+    DYNAMODB_TABLE_NAME:         string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+}
+
+export interface LogClientEvent {
+    depends_on:       string[];
+    description:      string;
+    environment:      LogClientEventEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface LogClientEventEnvironment {
+    variables: StickyVariables;
+}
+
+export interface StickyVariables {
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+    DYNAMODB_TABLE_NAME?:        string;
+    SNS_QUEUE_URL?:              string;
+    GITHUB_PERSONAL_TOKEN?:      string;
+    PLATFORM_APPLICATION_ARN?:   string;
+    IDEMPOTENCY_TABLE_NAME?:     string;
+}
+
+export interface User {
+    depends_on:       string[];
+    description:      string;
+    environment:      LoginUserEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    timeout:          number;
+    tracing_config:   TracingConfig[];
+}
+
+export interface LoginUserEnvironment {
+    variables: IndigoVariables;
+}
+
+export interface IndigoVariables {
+    APPLICATION_URL:             string;
+    BETTER_AUTH_SECRET:          string;
+    DYNAMODB_TABLE_NAME:         string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+    SIGN_IN_WITH_APPLE_CONFIG:   string;
+}
+
+export interface AwsLambdaFunctionPruneDevice {
+    depends_on:       string[];
+    description:      string;
+    environment:      PruneDeviceEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    timeout:          number;
+    tracing_config:   TracingConfig[];
+}
+
+export interface PruneDeviceEnvironment {
+    variables: IndecentVariables;
+}
+
+export interface IndecentVariables {
+    APNS_DEFAULT_TOPIC:          string;
+    APNS_HOST:                   string;
+    APNS_KEY_ID:                 string;
+    APNS_SIGNING_KEY:            string;
+    APNS_TEAM:                   string;
+    DYNAMODB_TABLE_NAME:         string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+}
+
+export interface RefreshToken {
+    depends_on:       string[];
+    description:      string;
+    environment:      LogClientEventEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    timeout?:         number;
+    tracing_config:   TracingConfig[];
+}
+
+export interface AwsLambdaFunctionRegisterDevice {
+    depends_on:       string[];
+    description:      string;
+    environment:      RegisterDeviceEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface RegisterDeviceEnvironment {
+    variables: HilariousVariables;
+}
+
+export interface HilariousVariables {
+    DYNAMODB_TABLE_NAME:         string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+    PLATFORM_APPLICATION_ARN:    string;
+    PUSH_NOTIFICATION_TOPIC_ARN: string;
 }
 
 export interface StartFileUpload {
@@ -983,37 +1137,55 @@ export interface StartFileUpload {
     memory_size:                    number;
     reserved_concurrent_executions: number;
     role:                           string;
-    runtime:                        Runtime;
+    runtime:                        string;
     source_code_hash:               string;
     timeout:                        number;
     tracing_config:                 TracingConfig[];
 }
 
 export interface StartFileUploadEnvironment {
-    variables: StickyVariables;
+    variables: AmbitiousVariables;
 }
 
-export interface StickyVariables {
-    Bucket:              string;
-    CloudfrontDomain:    string;
-    DynamoDBTableName:   string;
-    GithubPersonalToken: string;
-    PATH:                string;
-    SNSQueueUrl:         string;
-    YtdlpBinaryPath:     string;
+export interface AmbitiousVariables {
+    BUCKET:                      string;
+    CLOUDFRONT_DOMAIN:           string;
+    DYNAMODB_TABLE_NAME:         string;
+    GITHUB_PERSONAL_TOKEN:       string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_PROPAGATORS:            string;
+    OTEL_SERVICE_NAME:           string;
+    PATH:                        string;
+    SNS_QUEUE_URL:               string;
+    YTDLP_BINARY_PATH:           string;
 }
 
 export interface EphemeralStorage {
     size: number;
 }
 
-export interface AwsLambdaLayerVersion {
+export interface WebhookFeedly {
+    depends_on:       string[];
+    description:      string;
+    environment:      LogClientEventEnvironment[];
+    filename:         string;
+    function_name:    string;
+    handler:          string;
+    layers:           string[];
+    memory_size:      number;
+    role:             string;
+    runtime:          string;
+    source_code_hash: string;
+    tracing_config:   TracingConfig[];
+}
+
+export interface ResourceAwsLambdaLayerVersion {
     Ffmpeg: Ffmpeg[];
     YtDlp:  Ffmpeg[];
 }
 
 export interface Ffmpeg {
-    compatible_runtimes: Runtime[];
+    compatible_runtimes: string[];
     description:         string;
     filename:            string;
     layer_name:          string;
@@ -1401,31 +1573,33 @@ const typeMap: any = {
         { json: "archive_file", js: "archive_file", typ: r("ArchiveFile") },
         { json: "aws_caller_identity", js: "aws_caller_identity", typ: r("Aws") },
         { json: "aws_iam_policy_document", js: "aws_iam_policy_document", typ: r("AwsIamPolicyDocument") },
+        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("DataAwsLambdaLayerVersion") },
         { json: "aws_region", js: "aws_region", typ: r("Aws") },
         { json: "http", js: "http", typ: r("HTTP") },
         { json: "local_file", js: "local_file", typ: r("LocalFile") },
         { json: "sops_file", js: "sops_file", typ: r("SopsFile") },
     ], false),
     "ArchiveFile": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("SendPushNotificationElement")) },
-        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("SendPushNotificationElement")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddlewareElement")) },
         { json: "FfmpegLayer", js: "FfmpegLayer", typ: a(r("Layer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationElement")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("SendPushNotificationElement")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("SendPushNotificationElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("SendPushNotificationElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("SendPushNotificationElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("SendPushNotificationElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("SendPushNotificationElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("SendPushNotificationElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotificationElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("SendPushNotificationElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("SendPushNotificationElement")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("SendPushNotificationElement")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("SendPushNotificationElement")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CloudfrontMiddlewareElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CloudfrontMiddlewareElement")) },
         { json: "YtDlpLayer", js: "YtDlpLayer", typ: a(r("Layer")) },
     ], false),
-    "SendPushNotificationElement": o([
+    "CloudfrontMiddlewareElement": o([
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_file", js: "source_file", typ: "" },
         { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
@@ -1455,7 +1629,8 @@ const typeMap: any = {
         { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsIamPolicyDocumentRegisterDevice")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
@@ -1504,7 +1679,7 @@ const typeMap: any = {
         { json: "content", js: "content", typ: a(r("Ent")) },
         { json: "for_each", js: "for_each", typ: "" },
     ], false),
-    "RegisterDevice": o([
+    "AwsIamPolicyDocumentRegisterDevice": o([
         { json: "statement", js: "statement", typ: a(r("RegisterDeviceStatement")) },
     ], false),
     "RegisterDeviceStatement": o([
@@ -1532,6 +1707,12 @@ const typeMap: any = {
         { json: "test", js: "test", typ: "" },
         { json: "values", js: "values", typ: a("") },
         { json: "variable", js: "variable", typ: "" },
+    ], false),
+    "DataAwsLambdaLayerVersion": o([
+        { json: "adot_collector", js: "adot_collector", typ: a(r("AdotCollector")) },
+    ], false),
+    "AdotCollector": o([
+        { json: "layer_name", js: "layer_name", typ: "" },
     ], false),
     "HTTP": o([
         { json: "icanhazip", js: "icanhazip", typ: a(r("Icanhazip")) },
@@ -1613,7 +1794,7 @@ const typeMap: any = {
         { json: "aws_iam_role_policy_attachment", js: "aws_iam_role_policy_attachment", typ: m(a(r("AwsIamRolePolicyAttachment"))) },
         { json: "aws_lambda_event_source_mapping", js: "aws_lambda_event_source_mapping", typ: r("AwsLambdaEventSourceMapping") },
         { json: "aws_lambda_function", js: "aws_lambda_function", typ: r("AwsLambdaFunction") },
-        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("AwsLambdaLayerVersion") },
+        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("ResourceAwsLambdaLayerVersion") },
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
         { json: "aws_s3_bucket_intelligent_tiering_configuration", js: "aws_s3_bucket_intelligent_tiering_configuration", typ: r("AwsS3BucketIntelligentTieringConfiguration") },
@@ -1641,9 +1822,9 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "AwsAPIGatewayAuthorizer": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsAPIGatewayAuthorizerAPIGatewayAuthorizer")) },
     ], false),
-    "APIGatewayAuthorizer": o([
+    "AwsAPIGatewayAuthorizerAPIGatewayAuthorizer": o([
         { json: "authorizer_credentials", js: "authorizer_credentials", typ: "" },
         { json: "authorizer_result_ttl_in_seconds", js: "authorizer_result_ttl_in_seconds", typ: 0 },
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
@@ -1683,6 +1864,7 @@ const typeMap: any = {
         { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
@@ -1701,6 +1883,7 @@ const typeMap: any = {
         { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
@@ -1734,6 +1917,7 @@ const typeMap: any = {
         { json: "Files", js: "Files", typ: a(r("Feedly")) },
         { json: "LogEvent", js: "LogEvent", typ: a(r("Feedly")) },
         { json: "Login", js: "Login", typ: a(r("Feedly")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("Feedly")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("Feedly")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("Feedly")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("Feedly")) },
@@ -2055,6 +2239,7 @@ const typeMap: any = {
         { json: "LoginUserRolePolicy", js: "LoginUserRolePolicy", typ: a(r("RolePolicy")) },
         { json: "MultipartUploadRolePolicy", js: "MultipartUploadRolePolicy", typ: a(r("RolePolicy")) },
         { json: "PruneDevicesRolePolicy", js: "PruneDevicesRolePolicy", typ: a(r("RolePolicy")) },
+        { json: "RefreshTokenRolePolicy", js: "RefreshTokenRolePolicy", typ: a(r("RolePolicy")) },
         { json: "RegisterDeviceRolePolicy", js: "RegisterDeviceRolePolicy", typ: a(r("RolePolicy")) },
         { json: "RegisterUserRolePolicy", js: "RegisterUserRolePolicy", typ: a(r("RolePolicy")) },
         { json: "S3ObjectCreatedRolePolicy", js: "S3ObjectCreatedRolePolicy", typ: a(r("RolePolicy")) },
@@ -2101,70 +2286,72 @@ const typeMap: any = {
     ], false),
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("SendPushNotificationClass")) },
+        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("FileCoordinator")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("ListFile")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotificationClass")) },
+        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("LogClientEvent")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("User")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionPruneDevice")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("RefreshToken")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionRegisterDevice")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("User")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("LogClientEvent")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("RefreshToken")) },
         { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("StartFileUpload")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("LogClientEvent")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("LogClientEvent")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("WebhookFeedly")) },
     ], false),
     "AwsLambdaFunctionAPIGatewayAuthorizer": o([
-        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
+        { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: u(undefined, a(r("APIGatewayAuthorizerEnvironment"))) },
+        { json: "environment", js: "environment", typ: a(r("APIGatewayAuthorizerEnvironment")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "runtime", js: "runtime", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-        { json: "provider", js: "provider", typ: u(undefined, "") },
-        { json: "publish", js: "publish", typ: u(undefined, true) },
-        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
-        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
     ], false),
     "APIGatewayAuthorizerEnvironment": o([
         { json: "variables", js: "variables", typ: r("PurpleVariables") },
     ], false),
     "PurpleVariables": o([
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: u(undefined, "") },
-        { json: "MultiAuthenticationPathParts", js: "MultiAuthenticationPathParts", typ: u(undefined, "") },
-        { json: "ReservedClientIp", js: "ReservedClientIp", typ: u(undefined, "") },
-        { json: "ApplicationUrl", js: "ApplicationUrl", typ: u(undefined, "") },
-        { json: "BetterAuthSecret", js: "BetterAuthSecret", typ: u(undefined, "") },
-        { json: "SignInWithAppleConfig", js: "SignInWithAppleConfig", typ: u(undefined, "") },
-        { json: "ApnsDefaultTopic", js: "ApnsDefaultTopic", typ: u(undefined, "") },
-        { json: "ApnsKeyId", js: "ApnsKeyId", typ: u(undefined, "") },
-        { json: "ApnsSigningKey", js: "ApnsSigningKey", typ: u(undefined, "") },
-        { json: "ApnsTeam", js: "ApnsTeam", typ: u(undefined, "") },
-        { json: "PlatformApplicationArn", js: "PlatformApplicationArn", typ: u(undefined, "") },
-        { json: "PushNotificationTopicArn", js: "PushNotificationTopicArn", typ: u(undefined, "") },
-        { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: u(undefined, "") },
-        { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: u(undefined, "") },
-        { json: "IdempotencyTableName", js: "IdempotencyTableName", typ: u(undefined, "") },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "MULTI_AUTHENTICATION_PATH_PARTS", js: "MULTI_AUTHENTICATION_PATH_PARTS", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+        { json: "RESERVED_CLIENT_IP", js: "RESERVED_CLIENT_IP", typ: "" },
     ], false),
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
-    "SendPushNotificationClass": o([
+    "CloudfrontMiddleware": o([
+        { json: "description", js: "description", typ: "" },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "provider", js: "provider", typ: "" },
+        { json: "publish", js: "publish", typ: true },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "FileCoordinator": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("FileCoordinatorEnvironment")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: "" },
-        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "memory_size", js: "memory_size", typ: 0 },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "runtime", js: "runtime", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
@@ -2172,7 +2359,12 @@ const typeMap: any = {
         { json: "variables", js: "variables", typ: r("FluffyVariables") },
     ], false),
     "FluffyVariables": o([
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "FILE_COORDINATOR_BATCH_DELAY_MS", js: "FILE_COORDINATOR_BATCH_DELAY_MS", typ: 0 },
+        { json: "FILE_COORDINATOR_BATCH_SIZE", js: "FILE_COORDINATOR_BATCH_SIZE", typ: 0 },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
     ], false),
     "ListFile": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
@@ -2181,9 +2373,10 @@ const typeMap: any = {
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
         { json: "memory_size", js: "memory_size", typ: 0 },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "runtime", js: "runtime", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
@@ -2191,11 +2384,132 @@ const typeMap: any = {
         { json: "variables", js: "variables", typ: r("TentacledVariables") },
     ], false),
     "TentacledVariables": o([
-        { json: "DefaultFileContentType", js: "DefaultFileContentType", typ: "" },
-        { json: "DefaultFileName", js: "DefaultFileName", typ: "" },
-        { json: "DefaultFileSize", js: "DefaultFileSize", typ: 0 },
-        { json: "DefaultFileUrl", js: "DefaultFileUrl", typ: "" },
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
+        { json: "DEFAULT_FILE_CONTENT_TYPE", js: "DEFAULT_FILE_CONTENT_TYPE", typ: "" },
+        { json: "DEFAULT_FILE_NAME", js: "DEFAULT_FILE_NAME", typ: "" },
+        { json: "DEFAULT_FILE_SIZE", js: "DEFAULT_FILE_SIZE", typ: 0 },
+        { json: "DEFAULT_FILE_URL", js: "DEFAULT_FILE_URL", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+    ], false),
+    "LogClientEvent": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "LogClientEventEnvironment": o([
+        { json: "variables", js: "variables", typ: r("StickyVariables") },
+    ], false),
+    "StickyVariables": o([
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: u(undefined, "") },
+        { json: "SNS_QUEUE_URL", js: "SNS_QUEUE_URL", typ: u(undefined, "") },
+        { json: "GITHUB_PERSONAL_TOKEN", js: "GITHUB_PERSONAL_TOKEN", typ: u(undefined, "") },
+        { json: "PLATFORM_APPLICATION_ARN", js: "PLATFORM_APPLICATION_ARN", typ: u(undefined, "") },
+        { json: "IDEMPOTENCY_TABLE_NAME", js: "IDEMPOTENCY_TABLE_NAME", typ: u(undefined, "") },
+    ], false),
+    "User": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("LoginUserEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "timeout", js: "timeout", typ: 0 },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "LoginUserEnvironment": o([
+        { json: "variables", js: "variables", typ: r("IndigoVariables") },
+    ], false),
+    "IndigoVariables": o([
+        { json: "APPLICATION_URL", js: "APPLICATION_URL", typ: "" },
+        { json: "BETTER_AUTH_SECRET", js: "BETTER_AUTH_SECRET", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+        { json: "SIGN_IN_WITH_APPLE_CONFIG", js: "SIGN_IN_WITH_APPLE_CONFIG", typ: "" },
+    ], false),
+    "AwsLambdaFunctionPruneDevice": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("PruneDeviceEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "timeout", js: "timeout", typ: 0 },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "PruneDeviceEnvironment": o([
+        { json: "variables", js: "variables", typ: r("IndecentVariables") },
+    ], false),
+    "IndecentVariables": o([
+        { json: "APNS_DEFAULT_TOPIC", js: "APNS_DEFAULT_TOPIC", typ: "" },
+        { json: "APNS_HOST", js: "APNS_HOST", typ: "" },
+        { json: "APNS_KEY_ID", js: "APNS_KEY_ID", typ: "" },
+        { json: "APNS_SIGNING_KEY", js: "APNS_SIGNING_KEY", typ: "" },
+        { json: "APNS_TEAM", js: "APNS_TEAM", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+    ], false),
+    "RefreshToken": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "AwsLambdaFunctionRegisterDevice": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("RegisterDeviceEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "RegisterDeviceEnvironment": o([
+        { json: "variables", js: "variables", typ: r("HilariousVariables") },
+    ], false),
+    "HilariousVariables": o([
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
+        { json: "PLATFORM_APPLICATION_ARN", js: "PLATFORM_APPLICATION_ARN", typ: "" },
+        { json: "PUSH_NOTIFICATION_TOPIC_ARN", js: "PUSH_NOTIFICATION_TOPIC_ARN", typ: "" },
     ], false),
     "StartFileUpload": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
@@ -2209,32 +2523,49 @@ const typeMap: any = {
         { json: "memory_size", js: "memory_size", typ: 0 },
         { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: 0 },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "runtime", js: "runtime", typ: "" },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "timeout", js: "timeout", typ: 0 },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "StartFileUploadEnvironment": o([
-        { json: "variables", js: "variables", typ: r("StickyVariables") },
+        { json: "variables", js: "variables", typ: r("AmbitiousVariables") },
     ], false),
-    "StickyVariables": o([
-        { json: "Bucket", js: "Bucket", typ: "" },
-        { json: "CloudfrontDomain", js: "CloudfrontDomain", typ: "" },
-        { json: "DynamoDBTableName", js: "DynamoDBTableName", typ: "" },
-        { json: "GithubPersonalToken", js: "GithubPersonalToken", typ: "" },
+    "AmbitiousVariables": o([
+        { json: "BUCKET", js: "BUCKET", typ: "" },
+        { json: "CLOUDFRONT_DOMAIN", js: "CLOUDFRONT_DOMAIN", typ: "" },
+        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "GITHUB_PERSONAL_TOKEN", js: "GITHUB_PERSONAL_TOKEN", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
+        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
         { json: "PATH", js: "PATH", typ: "" },
-        { json: "SNSQueueUrl", js: "SNSQueueUrl", typ: "" },
-        { json: "YtdlpBinaryPath", js: "YtdlpBinaryPath", typ: "" },
+        { json: "SNS_QUEUE_URL", js: "SNS_QUEUE_URL", typ: "" },
+        { json: "YTDLP_BINARY_PATH", js: "YTDLP_BINARY_PATH", typ: "" },
     ], false),
     "EphemeralStorage": o([
         { json: "size", js: "size", typ: 0 },
     ], false),
-    "AwsLambdaLayerVersion": o([
+    "WebhookFeedly": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: "" },
+        { json: "layers", js: "layers", typ: a("") },
+        { json: "memory_size", js: "memory_size", typ: 0 },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: "" },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+    ], false),
+    "ResourceAwsLambdaLayerVersion": o([
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
         { json: "YtDlp", js: "YtDlp", typ: a(r("Ffmpeg")) },
     ], false),
     "Ffmpeg": o([
-        { json: "compatible_runtimes", js: "compatible_runtimes", typ: a(r("Runtime")) },
+        { json: "compatible_runtimes", js: "compatible_runtimes", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "filename", js: "filename", typ: "" },
         { json: "layer_name", js: "layer_name", typ: "" },
@@ -2404,9 +2735,6 @@ const typeMap: any = {
     "AttributeType": [
         "N",
         "S",
-    ],
-    "Runtime": [
-        "nodejs24.x",
     ],
     "Mode": [
         "Active",

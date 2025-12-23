@@ -19,7 +19,7 @@ export async function setupLocalStackTable(): Promise<void> {
     credentials: {accessKeyId: 'test', secretAccessKey: 'test'}
   })
 
-  const tableName = process.env.DynamoDBTableName || 'MediaDownloader'
+  const tableName = process.env.DYNAMODB_TABLE_NAME || 'MediaDownloader'
 
   try {
     await client.send(new CreateTableCommand({
@@ -94,7 +94,7 @@ export async function cleanupLocalStackTable(): Promise<void> {
     credentials: {accessKeyId: 'test', secretAccessKey: 'test'}
   })
 
-  const tableName = process.env.DynamoDBTableName || 'MediaDownloader'
+  const tableName = process.env.DYNAMODB_TABLE_NAME || 'MediaDownloader'
 
   try {
     const {DeleteTableCommand} = await import('@aws-sdk/client-dynamodb')

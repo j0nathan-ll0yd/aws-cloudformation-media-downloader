@@ -80,7 +80,7 @@ describe('#WebhookFeedly', () => {
     event = JSON.parse(JSON.stringify(eventMock))
     jest.clearAllMocks()
     // Set required environment variables for sendFileNotification
-    process.env.SNSQueueUrl = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
+    process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
   })
   test('should continue processing when user-file association fails (graceful degradation)', async () => {
     // The code uses Promise.allSettled and logs the error but continues processing
