@@ -172,7 +172,7 @@ describe('Device Registration Integration Tests', () => {
     expect(response.body.endpointArn).toBe(endpointArn)
 
     // Verify SNS endpoint created
-    expect(createPlatformEndpointMock).toHaveBeenCalledWith({PLATFORM_APPLICATION_ARN: process.env.PLATFORM_APPLICATION_ARN, Token: token})
+    expect(createPlatformEndpointMock).toHaveBeenCalledWith({PlatformApplicationArn: process.env.PLATFORM_APPLICATION_ARN, Token: token})
 
     // Verify device stored
     expect(devicesMock.entity.upsert).toHaveBeenCalled()

@@ -10,11 +10,11 @@ import {FileStatus} from '#types/enums'
 import {createMockFile} from './test-data'
 
 function getMediaDownloaderTable() {
-  return process.env.DynamoDBTableName || 'test-media-downloader'
+  return process.env.DYNAMODB_TABLE_NAME || 'test-media-downloader'
 }
 
 function getIdempotencyTable() {
-  return process.env.IdempotencyTableName || 'test-idempotency'
+  return process.env.IDEMPOTENCY_TABLE_NAME || 'test-idempotency'
 }
 
 /**
