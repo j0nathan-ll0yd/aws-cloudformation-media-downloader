@@ -2,6 +2,9 @@ import type {File} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {getRequiredEnv, getRequiredEnvNumber} from '#lib/system/env'
 
+// Re-export runtime constants
+export * from './runtime'
+
 /**
  * Cached default file to avoid repeated env var lookups
  */

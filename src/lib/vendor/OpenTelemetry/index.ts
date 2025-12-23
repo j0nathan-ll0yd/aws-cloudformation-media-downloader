@@ -161,3 +161,6 @@ export function withTracing<TEvent = unknown, TResult = unknown>(
 
 // Re-export SpanKind for consumers who need to specify span types
 export { SpanKind }
+
+// Re-export SDK initialization functions
+export { initializeTracing, isTracingInitialized } from './sdk'
