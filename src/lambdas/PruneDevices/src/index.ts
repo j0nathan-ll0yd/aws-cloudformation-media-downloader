@@ -1,4 +1,3 @@
-import {ApnsClient, Notification, Priority, PushType} from 'apns2'
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import type {Device} from '#types/domain-models'
@@ -37,11 +36,13 @@ async function isDeviceDisabled(token: string): Promise<boolean> {
 
 async function dispatchHealthCheckNotificationToDeviceToken(token: string): Promise<ApplePushNotificationResponse> {
   logInfo('dispatchHealthCheckNotificationToDeviceToken')
+  // Dynamic import for ESM compatibility - apns2 is CJS-only
+  const {ApnsClient, Notification, Priority, PushType} = await import('apns2')
   const client = new ApnsClient({
-    team: getRequiredEnv('ApnsTeam'),
-    keyId: getRequiredEnv('ApnsKeyId'),
-    signingKey: getRequiredEnv('ApnsSigningKey'),
-    defaultTopic: getRequiredEnv('ApnsDefaultTopic'),
+    team: getRequiredEnv('APNS_TEAM'),
+    keyId: getRequiredEnv('APNS_KEY_ID'),
+    signingKey: getRequiredEnv('APNS_SIGNING_KEY'),
+    defaultTopic: getRequiredEnv('APNS_DEFAULT_TOPIC'),
     host: getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
   })
   const healthCheckNotification = new Notification(token, {

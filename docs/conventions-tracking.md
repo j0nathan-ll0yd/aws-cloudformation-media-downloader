@@ -41,6 +41,33 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 _No pending conventions - all conventions are documented._
 
+### Detected: 2025-12-23
+
+1. **CJS Dependency Compatibility** (Architectural Pattern)
+   - **What**: Use `createRequire` shim in esbuild banner for CJS dependencies in ESM bundles
+   - **Why**: Allows CJS packages (ElectroDB) to work in pure ESM Lambda environment without forking
+   - **Shim**: `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`
+   - **Overhead**: ~200 bytes per bundle (negligible)
+   - **Alternatives**: Dynamic imports for isolated usage, `import type` for types only, pnpm patches for built-in requires
+   - **Detected**: During ElectroDB ESM compatibility investigation
+   - **Target**: docs/wiki/TypeScript/ESM-Migration-Guide.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Build-time (esbuild banner)
+
+### Detected: 2025-12-22
+
+1. **ESM Format Migration** (Architectural Pattern)
+   - **What**: All Lambda functions now built as ESM (.mjs) targeting Node.js 24 (es2022)
+   - **Why**: Performance improvements (cold starts, top-level await), future-proofing, better tree-shaking
+   - **Build Config**: esbuild format: 'esm', target: 'es2022', outExtension: {'.js': '.mjs'}
+   - **Infrastructure**: All terraform archive_file references updated to .mjs, runtime: nodejs24.x
+   - **CJS Compatibility**: createRequire shim for ElectroDB, pnpm patch for jsonschema, dynamic imports for apns2
+   - **Detected**: During comprehensive ESM migration implementation
+   - **Target**: docs/wiki/TypeScript/ESM-Migration-Guide.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+
 ### Detected: 2025-12-20
 
 1. **Branch-First PR Workflow** (Rule)

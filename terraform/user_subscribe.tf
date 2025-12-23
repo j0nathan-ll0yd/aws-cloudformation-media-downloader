@@ -46,7 +46,7 @@ resource "aws_cloudwatch_log_group" "UserSubscribe" {
 
 data "archive_file" "UserSubscribe" {
   type        = "zip"
-  source_file = "./../build/lambdas/UserSubscribe.js"
+  source_file = "./../build/lambdas/UserSubscribe.mjs"
   output_path = "./../build/lambdas/UserSubscribe.zip"
 }
 
@@ -59,6 +59,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   depends_on       = [aws_iam_role_policy_attachment.UserSubscribePolicy]
   filename         = data.archive_file.UserSubscribe.output_path
   source_code_hash = data.archive_file.UserSubscribe.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -66,7 +67,10 @@ resource "aws_lambda_function" "UserSubscribe" {
 
   environment {
     variables = {
-      PlatformApplicationArn = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      OTEL_SERVICE_NAME           = "UserSubscribe"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

@@ -94,8 +94,20 @@ import {processFile} from '../processors'
 ✅ Type-only imports when possible
 ✅ Clear module boundaries
 
+## ESM Compatibility
+
+This project uses pure ESM for Lambda functions. When working with CommonJS dependencies:
+
+1. **Most CJS packages work automatically** via the `createRequire` shim
+2. **Use dynamic imports** for problematic packages: `await import('pkg')`
+3. **Use `import type`** for type-only imports from CJS packages
+4. **Create pnpm patches** for packages with Node.js built-in requires
+
+See [ESM Migration Guide](ESM-Migration-Guide.md) for comprehensive documentation.
+
 ## Related Patterns
 
+- [ESM Migration Guide](ESM-Migration-Guide.md) - CJS compatibility strategies
 - [Import Organization](../Conventions/Import-Organization.md)
 - [Type Definitions](Type-Definitions.md)
 - [Lambda Function Patterns](Lambda-Function-Patterns.md)

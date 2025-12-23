@@ -91,8 +91,8 @@ interface ProcessEnv {
 resource "aws_lambda_function" "FunctionName" {
   function_name = "FunctionName"
   role         = aws_iam_role.FunctionNameRole.arn
-  handler      = "index.handler"
-  runtime      = "nodejs22.x"
+  handler      = "FunctionName.handler"
+  runtime      = "nodejs24.x"
   timeout      = 300
   memory_size  = 512
 
@@ -112,6 +112,8 @@ resource "aws_lambda_function" "FunctionName" {
   ]
 }
 ```
+
+**Note**: Lambda functions are bundled as ESM (.mjs) with Node.js 24 runtime. The handler format remains `FunctionName.handler` - AWS Lambda automatically detects .mjs files.
 
 ### IAM Role Pattern
 

@@ -1,4 +1,4 @@
-import {Notification} from 'apns2'
+import type {Notification} from 'apns2'
 
 export class CustomLambdaError extends Error {
   errors: object | undefined

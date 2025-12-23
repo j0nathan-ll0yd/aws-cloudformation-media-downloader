@@ -87,11 +87,11 @@ describe('#StartFileUpload', () => {
     sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
 
     // Set environment variables
-    process.env.Bucket = 'test-bucket'
+    process.env.BUCKET = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'
-    process.env.DynamoDBTableName = 'test-table'
-    process.env.CloudfrontDomain = 'test-cdn.cloudfront.net'
-    process.env.SNSQueueUrl = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
+    process.env.DYNAMODB_TABLE_NAME = 'test-table'
+    process.env.CLOUDFRONT_DOMAIN = 'test-cdn.cloudfront.net'
+    process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
   })
 
   test('should successfully download video to S3', async () => {

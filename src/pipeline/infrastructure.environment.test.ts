@@ -8,14 +8,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // IF NEW DEPENDENCIES ARE ADDED, YOU MAY NEED TO ADD MORE EXCLUSIONS HERE
-const excludedSourceVariables = {
+// These are false positives detected by the source code regex that are NOT env vars
+const excludedSourceVariables: Record<string, number> = {
+  // Runtime/system variables (lowercase)
   hasOwnProperty: 1,
   let: 1,
   no_proxy: 1,
   t: 1,
   http_proxy: 1,
   https_proxy: 1,
-  PATH: 1, // System PATH for Lambda runtime and custom binaries
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
   Connection: 1, // HTTP header
@@ -37,7 +38,122 @@ const excludedSourceVariables = {
   CookieAuthenticationFailure: 1,
   LambdaExecutionFailure: 1,
   LambdaExecutionSuccess: 1,
-  RetryExhausted: 1
+  RetryExhausted: 1,
+  // OpenTelemetry SDK false positives (AWS SDK instrumentation types)
+  DynamoDB: 1,
+  Kinesis: 1,
+  Lambda: 1,
+  ProtocolError: 1,
+  // AWS service name constants
+  SNS: 1,
+  SQS: 1,
+  // System/Node.js environment variables (we don't control these)
+  HOME: 1,
+  USER: 1,
+  PATH: 1,
+  LOGNAME: 1,
+  LNAME: 1,
+  USERNAME: 1,
+  USERPROFILE: 1,
+  HOMEDRIVE: 1,
+  HOMEPATH: 1,
+  NODE_ENV: 1,
+  NODE_DEBUG: 1,
+  JEST_WORKER_ID: 1,
+  LOG_LEVEL: 1,
+  ENVIRONMENT: 1,
+  USE_LOCALSTACK: 1,
+  ENABLE_XRAY: 1,
+  NO_PROXY: 1,
+  HTTP_PROXY: 1,
+  HTTPS_PROXY: 1,
+  UNDICI_NO_WASM_SIMD: 1,
+  POWERTOOLS_METRICS_DISABLED: 1,
+  // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
+  OTEL_SERVICE_NAME: 1,
+  OTEL_EXPORTER_OTLP_ENDPOINT: 1,
+  OTEL_EXPORTER_OTLP_COMPRESSION: 1,
+  OTEL_EXPORTER_OTLP_HEADERS: 1,
+  OTEL_EXPORTER_OTLP_TIMEOUT: 1,
+  OTEL_PROPAGATORS: 1,
+  // AWS Lambda runtime environment variables (set by AWS, not in source)
+  AWS_EXECUTION_ENV: 1,
+  AWS_LAMBDA_BENCHMARK_MODE: 1,
+  AWS_LAMBDA_FUNCTION_NAME: 1,
+  AWS_LAMBDA_INITIALIZATION_TYPE: 1,
+  AWS_REGION: 1,
+  AWS_SDK_UA_APP_ID: 1,
+  // CI/debug environment variables
+  CI: 1,
+  DEBUG: 1,
+  // SemVer library constants (matched by minified pattern)
+  COMPARATOR: 1,
+  // Better Auth / Apple Sign-in constants and error codes
+  APPLE_ID_TOKEN_ISSUER: 1,
+  DOMAIN_AND_REGION_REQUIRED: 1,
+  FAILED_TO_GET_ACCESS_TOKEN: 1,
+  FAILED_TO_REFRESH_ACCESS_TOKEN: 1,
+  CLIENT_ID_AND_SECRET_REQUIRED: 1,
+  CLIENT_SECRET_REQUIRED: 1,
+  AUTH_SECRET: 1,
+  BETTER_AUTH_TELEMETRY: 1,
+  BETTER_AUTH_TELEMETRY_DEBUG: 1,
+  BETTER_AUTH_TELEMETRY_ENDPOINT: 1,
+  BETTER_AUTH_TELEMETRY_ID: 1,
+  // Crypto algorithm constants
+  PBKDF2: 1,
+  HMAC: 1,
+  ECDSA: 1,
+  // CI/deployment platform detection (std-env library)
+  RAILWAY_STATIC_URL: 1,
+  RENDER: 1,
+  TEAMCITY_VERSION: 1,
+  VERCEL: 1,
+  GOOGLE_CLOUD_FUNCTION_NAME: 1,
+  KOYEB: 1,
+  NETLIFY: 1,
+  DENO_DEPLOYMENT_ID: 1,
+  DO_DEPLOYMENT_ID: 1,
+  DYNO: 1,
+  FLY_APP_NAME: 1,
+  AZURE_FUNCTION_NAME: 1,
+  CF_PAGES: 1,
+  CI_NAME: 1,
+  // Terminal detection environment variables
+  TERM: 1,
+  TERM_PROGRAM: 1,
+  TERM_PROGRAM_VERSION: 1,
+  TMUX: 1,
+  // HTTP status code constants
+  UNAUTHORIZED: 1,
+  UNPROCESSABLE_ENTITY: 1,
+  INTERNAL_SERVER_ERROR: 1,
+  NOT_FOUND: 1,
+  FOUND: 1,
+  FORBIDDEN: 1,
+  EXPECTATION_FAILED: 1,
+  BAD_REQUEST: 1,
+  // Color/terminal output detection
+  FORCE_COLOR: 1,
+  NO_COLOR: 1,
+  NODE_DISABLE_COLORS: 1,
+  COLORTERM: 1,
+  // Package/version constants
+  PACKAGE_VERSION: 1
+}
+
+// Patterns that indicate SemVer constants or version parsing patterns (NOT env vars)
+// These are string constants used by semver library that match SCREAMING_SNAKE_CASE
+const semverPatterns = [
+  /^(FULL|LOOSE|PLAIN|PRE|RANGE|CARET|TILDE|STAR|XRANGE|LONE|TRIM|HYPEN|GT|LT|GTE|COERCE|MAIN|NUMERIC|PRERELEASE|BUILD|NONNUMERIC)/,
+  /LOOSE$/,
+  /PLAIN$/,
+  /RANGE$/,
+  /TRIM$/
+]
+
+function isSemverConstant(variable: string): boolean {
+  return semverPatterns.some((pattern) => pattern.test(variable))
 }
 
 // Patterns that indicate library operation types or domain literals, not environment variables
@@ -58,8 +174,12 @@ function isOperationType(variable: string): boolean {
 
 function filterSourceVariables(extractedVariables: string[]): string[] {
   return extractedVariables.filter((variable) => {
-    return variable !== variable.toUpperCase() && !variable.startsWith('npm_') && !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable) &&
-      !isOperationType(variable)
+    // Keep our SCREAMING_SNAKE_CASE environment variables
+    // Filter out: npm_ vars, excluded vars, library operation types, semver constants
+    return !variable.startsWith('npm_') &&
+      !Object.prototype.hasOwnProperty.call(excludedSourceVariables, variable) &&
+      !isOperationType(variable) &&
+      !isSemverConstant(variable)
   })
 }
 
@@ -87,7 +207,7 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
 
 function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
-  const functionPath = `${__dirname}/../../build/lambdas/${functionName}.js`
+  const functionPath = `${__dirname}/../../build/lambdas/${functionName}.mjs`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
   let environmentVariablesSource: string[] = []
 
@@ -101,22 +221,21 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
 
   // Also match minified getRequiredEnv/getOptionalEnv patterns
   // After minification, these become patterns like:
-  // - X("EnvVarName") where X is a single-letter minified function name
-  // - yn("EnvVarName") where yn is a 2-3 letter minified function name
-  // - }("EnvVarName") for IIFE patterns (immediately invoked function expressions)
-  // - $("EnvVarName") where $ is used as minified function name ($ is not a word char in regex)
-  // - bF("EnvVarName","default") for two-argument calls like getOptionalEnv (esbuild preserves both args)
-  // Match function calls with string arguments that look like env vars (PascalCase, min 3 chars)
-  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Za-z]{2,})["'](?:,[^)]+)?\)/g
+  // - X("ENV_VAR_NAME") where X is a single-letter minified function name
+  // - yn("ENV_VAR_NAME") where yn is a 2-3 letter minified function name
+  // - }("ENV_VAR_NAME") for IIFE patterns (immediately invoked function expressions)
+  // - $("ENV_VAR_NAME") where $ is used as minified function name ($ is not a word char in regex)
+  // - bF("ENV_VAR_NAME","default") for two-argument calls like getOptionalEnv (esbuild preserves both args)
+  // Match function calls with string arguments that look like env vars (SCREAMING_SNAKE_CASE, min 3 chars)
+  const envValidationRegex = /(?:\b[a-zA-Z_][a-zA-Z0-9_$]{0,2}|\$|\})\(["']([A-Z][A-Z0-9_]{2,})["'](?:,[^)]+)?\)/g
   const envValidationMatches = functionSource.match(envValidationRegex)
   logDebug('functionSource.match(envValidationRegex)', JSON.stringify(envValidationMatches))
   if (envValidationMatches && envValidationMatches.length > 0) {
     const extracted = envValidationMatches.map((match: string) => {
-      // Extract the variable name from patterns like X("VarName") or bF("VarName","default")
-      const varMatch = match.match(/\(["']([A-Z][A-Za-z]{2,})["']/)
+      // Extract the variable name from patterns like X("ENV_VAR") or bF("ENV_VAR","default")
+      const varMatch = match.match(/\(["']([A-Z][A-Z0-9_]{2,})["']/)
       return varMatch ? varMatch[1] : ''
-    }).filter(Boolean) // Exclude ALL_CAPS strings (likely constants, not env vars), crypto terms, and library types
-      .filter((v) => v !== v.toUpperCase() && !['HMAC', 'ECDSA', 'SHA'].includes(v) && !v.startsWith('Zod'))
+    }).filter(Boolean)
     environmentVariablesSource.push(...extracted)
   }
 
@@ -143,11 +262,12 @@ describe('#Infrastructure', () => {
           if (Object.prototype.hasOwnProperty.call(excludedSourceVariables, environmentVariable)) {
             return
           }
-          expect(environmentVariable.toUpperCase()).not.toBe(environmentVariable)
           if (cloudFrontDistributionNames[functionName]) {
+            // CloudFront custom headers use lowercase kebab-case
             expect(environmentVariable).toMatch(/^x-[a-z-]+$/)
           } else {
-            expect(environmentVariable).toMatch(/^[A-Z][A-Za-z]*$/)
+            // All environment variables must be SCREAMING_SNAKE_CASE
+            expect(environmentVariable).toMatch(/^[A-Z][A-Z0-9_]*$/)
           }
         })
       }

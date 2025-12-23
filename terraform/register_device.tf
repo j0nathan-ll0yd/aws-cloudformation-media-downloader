@@ -64,7 +64,7 @@ resource "aws_cloudwatch_log_group" "RegisterDevice" {
 
 data "archive_file" "RegisterDevice" {
   type        = "zip"
-  source_file = "./../build/lambdas/RegisterDevice.js"
+  source_file = "./../build/lambdas/RegisterDevice.mjs"
   output_path = "./../build/lambdas/RegisterDevice.zip"
 }
 
@@ -77,6 +77,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -84,9 +85,12 @@ resource "aws_lambda_function" "RegisterDevice" {
 
   environment {
     variables = {
-      PlatformApplicationArn   = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
-      PushNotificationTopicArn = aws_sns_topic.PushNotifications.arn
-      DynamoDBTableName        = aws_dynamodb_table.MediaDownloader.name
+      PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.PushNotifications.arn
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      OTEL_SERVICE_NAME           = "RegisterDevice"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

@@ -67,6 +67,12 @@ const config = {
   // Transform TypeScript files with ts-jest
   transform: {'^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]},
 
+  // Must transform jsonschema because our pnpm patch introduces ESM syntax
+  // Uses broad match for pnpm's .pnpm/jsonschema@version/node_modules/jsonschema path structure
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*jsonschema.*)'
+  ],
+
   // Silence console output during tests when LOG_LEVEL is SILENT
   silent: process.env.LOG_LEVEL === 'SILENT',
 

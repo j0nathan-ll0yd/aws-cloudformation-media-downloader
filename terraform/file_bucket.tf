@@ -119,7 +119,7 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
 
 data "archive_file" "S3ObjectCreated" {
   type        = "zip"
-  source_file = "./../build/lambdas/S3ObjectCreated.js"
+  source_file = "./../build/lambdas/S3ObjectCreated.mjs"
   output_path = "./../build/lambdas/S3ObjectCreated.zip"
 }
 
@@ -132,6 +132,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -139,8 +140,11 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl       = aws_sqs_queue.SendPushNotification.id
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
+      OTEL_SERVICE_NAME           = "S3ObjectCreated"
+      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+      OTEL_PROPAGATORS            = "xray"
     }
   }
 }

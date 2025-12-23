@@ -15,11 +15,11 @@ const TEST_BUCKET = 'test-integration-bucket-upload'
 const TEST_TABLE = 'test-files-upload'
 
 // Set environment variables for Lambda
-process.env.Bucket = TEST_BUCKET
-process.env.DynamoDBTableName = TEST_TABLE
+process.env.BUCKET = TEST_BUCKET
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
-process.env.CloudfrontDomain = 'test.cloudfront.net'
-process.env.SNSQueueUrl = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
+process.env.CLOUDFRONT_DOMAIN = 'test.cloudfront.net'
+process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'

@@ -19,7 +19,7 @@ export const UserFiles = new Entity(
       byFile: {index: 'FileCollection', pk: {field: 'gsi2pk', composite: ['fileId']}, sk: {field: 'gsi2sk', composite: ['userId']}}
     }
   } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
+  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
 )
 
 // Type exports for use in application code

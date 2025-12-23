@@ -10,7 +10,7 @@ const repo = 'aws-cloudformation-media-downloader'
 async function getOctokitInstance() {
   // Constrained to only reading/writing issues
   return new Octokit({
-    auth: getRequiredEnv('GithubPersonalToken'),
+    auth: getRequiredEnv('GITHUB_PERSONAL_TOKEN'),
     baseUrl: 'https://api.github.com',
     userAgent: `${repo}-production`,
     timeZone: 'America/Los_Angeles',

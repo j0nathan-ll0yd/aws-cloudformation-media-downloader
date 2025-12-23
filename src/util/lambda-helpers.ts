@@ -118,8 +118,8 @@ export function buildApiResponse(context: Context, statusCodeOrError: number | E
 
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
-  const platformApplicationArn = getOptionalEnv('PlatformApplicationArn', '')
-  logInfo('process.env.PlatformApplicationArn <=', platformApplicationArn)
+  const platformApplicationArn = getOptionalEnv('PLATFORM_APPLICATION_ARN', '')
+  logInfo('process.env.PLATFORM_APPLICATION_ARN <=', platformApplicationArn)
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')
   }
@@ -549,7 +549,11 @@ export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records
 // ============================================================================
 
 import middy from '@middy/core'
-import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, tracer} from '#lib/vendor/Powertools'
+import {injectLambdaContext, logger, logMetrics, metrics} from '#lib/vendor/Powertools'
+
+// Note: OpenTelemetry tracing is provided by the ADOT Lambda layer
+// The layer auto-instruments AWS SDK calls - no manual SDK initialization needed
+// Manual initialization removed due to ESM compatibility issues with @opentelemetry/sdk-trace-node
 
 /**
  * Wraps a Lambda handler with AWS Powertools middleware stack.
@@ -557,18 +561,15 @@ import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, 
  *
  * Features:
  * - Structured JSON logging with automatic context enrichment
- * - X-Ray tracing with enhanced annotations
+ * - OpenTelemetry tracing with AWS X-Ray integration
  * - Automatic cold start metric tracking
  * - Correlation IDs through all logs
- *
- * Use this as a replacement for `withXRay()` for enhanced observability.
  *
  * @param handler - Lambda handler function
  * @returns Wrapped handler with Powertools middleware
  *
  * @example
  * ```typescript
- * // Replace withXRay with withPowertools for enhanced observability
  * export const handler = withPowertools(wrapAuthenticatedHandler(
  *   async ({event, context, userId}) => {
  *     const files = await getFilesByUser(userId)
@@ -580,7 +581,9 @@ import {captureLambdaHandler, injectLambdaContext, logger, logMetrics, metrics, 
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(captureLambdaHandler(tracer))
+  // Note: Tracing is provided by ADOT Lambda layer - no manual initialization needed
+
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}))
 
   // Only enable metrics middleware in non-test environments
   // This prevents "No application metrics to publish" warnings in Jest
@@ -593,4 +596,4 @@ export function withPowertools<TEvent, TResult>(
 }
 
 // Re-export Powertools utilities for direct access
-export { logger, metrics, MetricUnit, tracer } from '#lib/vendor/Powertools'
+export { logger, metrics, MetricUnit } from '#lib/vendor/Powertools'
