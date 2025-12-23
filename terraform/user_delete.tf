@@ -72,7 +72,7 @@ resource "aws_lambda_function" "UserDelete" {
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"

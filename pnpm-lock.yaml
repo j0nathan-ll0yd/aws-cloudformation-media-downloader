@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  jsonschema@1.2.7:
+    hash: e96e4fc27fff61af7478846f5b8bbb48205a26c1d64606552fc984f8d780cb38
+    path: patches/jsonschema@1.2.7.patch
+
 importers:
 
   .:
@@ -110,9 +115,6 @@ importers:
       yt-dlp-wrap:
         specifier: ^2.3.12
         version: 2.3.12
-      ytdl-core:
-        specifier: ^4.11.5
-        version: 4.11.5
       zod:
         specifier: ^4.2.1
         version: 4.2.1
@@ -4485,10 +4487,6 @@ packages:
   lz-utils@2.1.0:
     resolution: {integrity: sha512-CMkfimAypidTtWjNDxY8a1bc1mJdyEh04V2FfEQ5Zh8Nx4v7k850EYa+dOWGn9hKG5xOyHP5MkuduAZCTHRvJw==}
 
-  m3u8stream@0.8.6:
-    resolution: {integrity: sha512-LZj8kIVf9KCphiHmH7sbFQTVe4tOemb202fWwvJwR9W5ENW/1hxJN6ksAWGhQgSBSa3jyWhnjKU1Fw1GaOdbyA==}
-    engines: {node: '>=12'}
-
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
     engines: {node: '>=10'}
@@ -4576,10 +4574,6 @@ packages:
   mimic-response@3.1.0:
     resolution: {integrity: sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==}
     engines: {node: '>=10'}
-
-  miniget@4.2.3:
-    resolution: {integrity: sha512-SjbDPDICJ1zT+ZvQwK0hUcRY4wxlhhNpHL9nJOB2MEAXRGagTljsO8MEDzQMTFf0Q8g4QNi8P9lEm/g7e+qgzA==}
-    engines: {node: '>=12'}
 
   minimalistic-assert@1.0.1:
     resolution: {integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==}
@@ -5265,9 +5259,6 @@ packages:
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
-
-  sax@1.4.3:
-    resolution: {integrity: sha512-yqYn1JhPczigF94DMS+shiDMjDowYO6y9+wB/4WgO0Y19jWYk0lQ4tuG5KI7kj4FTp1wxPj5IFfcrz/s1c3jjQ==}
 
   scheduler@0.23.2:
     resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
@@ -6013,10 +6004,6 @@ packages:
 
   yt-dlp-wrap@2.3.12:
     resolution: {integrity: sha512-P8fJ+6M1YjukyJENCTviNLiZ8mokxprR54ho3DsSKPWDcac489OjRiStGEARJr6un6ETS6goTn4CWl/b/rM3aA==}
-
-  ytdl-core@4.11.5:
-    resolution: {integrity: sha512-27LwsW4n4nyNviRCO1hmr8Wr5J1wLLMawHCQvH8Fk0hiRqrxuIu028WzbJetiYH28K8XDbeinYW4/wcHQD1EXA==}
-    engines: {node: '>=12'}
 
   zod-to-json-schema@3.25.0:
     resolution: {integrity: sha512-HvWtU2UG41LALjajJrML6uQejQhNJx+JBO9IflpSja4R03iNWfKXrj6W2h7ljuLyc1nKS+9yDyL/9tD1U/yBnQ==}
@@ -10121,7 +10108,7 @@ snapshots:
     dependencies:
       '@aws-sdk/lib-dynamodb': 3.953.0(@aws-sdk/client-dynamodb@3.953.0)
       '@aws-sdk/util-dynamodb': 3.953.0(@aws-sdk/client-dynamodb@3.953.0)
-      jsonschema: 1.2.7
+      jsonschema: 1.2.7(patch_hash=e96e4fc27fff61af7478846f5b8bbb48205a26c1d64606552fc984f8d780cb38)
     transitivePeerDependencies:
       - '@aws-sdk/client-dynamodb'
 
@@ -11241,7 +11228,7 @@ snapshots:
 
   jsonpointer@5.0.1: {}
 
-  jsonschema@1.2.7: {}
+  jsonschema@1.2.7(patch_hash=e96e4fc27fff61af7478846f5b8bbb48205a26c1d64606552fc984f8d780cb38): {}
 
   keyv@4.5.4:
     dependencies:
@@ -11314,11 +11301,6 @@ snapshots:
 
   lz-utils@2.1.0: {}
 
-  m3u8stream@0.8.6:
-    dependencies:
-      miniget: 4.2.3
-      sax: 1.4.3
-
   make-dir@4.0.0:
     dependencies:
       semver: 7.7.3
@@ -11386,8 +11368,6 @@ snapshots:
   mimic-function@5.0.1: {}
 
   mimic-response@3.1.0: {}
-
-  miniget@4.2.3: {}
 
   minimalistic-assert@1.0.1: {}
 
@@ -12181,8 +12161,6 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sax@1.4.3: {}
-
   scheduler@0.23.2:
     dependencies:
       loose-envify: 1.4.0
@@ -12968,12 +12946,6 @@ snapshots:
   yoctocolors@2.1.2: {}
 
   yt-dlp-wrap@2.3.12: {}
-
-  ytdl-core@4.11.5:
-    dependencies:
-      m3u8stream: 0.8.6
-      miniget: 4.2.3
-      sax: 1.4.3
 
   zod-to-json-schema@3.25.0(zod@3.25.76):
     dependencies:

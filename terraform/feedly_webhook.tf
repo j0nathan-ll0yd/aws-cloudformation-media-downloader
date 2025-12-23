@@ -81,7 +81,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -331,7 +331,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
     aws_lambda_layer_version.Ffmpeg.arn,
-    data.aws_lambda_layer_version.adot_collector.arn
+    local.adot_layer_arn
   ]
 
   # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)

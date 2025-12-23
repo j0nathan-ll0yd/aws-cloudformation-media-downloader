@@ -77,7 +77,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"

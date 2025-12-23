@@ -550,7 +550,10 @@ export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records
 
 import middy from '@middy/core'
 import {injectLambdaContext, logger, logMetrics, metrics} from '#lib/vendor/Powertools'
-import {initializeTracing} from '#lib/vendor/OpenTelemetry/sdk'
+
+// Note: OpenTelemetry tracing is provided by the ADOT Lambda layer
+// The layer auto-instruments AWS SDK calls - no manual SDK initialization needed
+// Manual initialization removed due to ESM compatibility issues with @opentelemetry/sdk-trace-node
 
 /**
  * Wraps a Lambda handler with AWS Powertools middleware stack.
@@ -578,8 +581,7 @@ import {initializeTracing} from '#lib/vendor/OpenTelemetry/sdk'
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  // Initialize OpenTelemetry tracing (idempotent - only runs once per cold start)
-  initializeTracing()
+  // Note: Tracing is provided by ADOT Lambda layer - no manual initialization needed
 
   const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}))
 

@@ -67,7 +67,7 @@ resource "aws_lambda_function" "ListFiles" {
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -80,6 +80,7 @@ resource "aws_lambda_function" "ListFiles" {
       DEFAULT_FILE_NAME           = aws_s3_object.DefaultFile.key
       DEFAULT_FILE_URL            = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
       DEFAULT_FILE_CONTENT_TYPE   = aws_s3_object.DefaultFile.content_type
+      ENABLE_XRAY                 = "false"
       OTEL_SERVICE_NAME           = "ListFiles"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"

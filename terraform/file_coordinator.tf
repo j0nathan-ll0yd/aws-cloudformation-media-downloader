@@ -82,7 +82,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
   filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"

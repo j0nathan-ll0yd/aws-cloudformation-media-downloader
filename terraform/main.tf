@@ -26,8 +26,9 @@ data "aws_caller_identity" "current" {}
 # AWS Distro for OpenTelemetry (ADOT) collector layer
 # Used for Lambda tracing - sends traces to X-Ray via OTLP
 # Layer version list: https://aws-otel.github.io/docs/getting-started/lambda/lambda-js#lambda-layer
-data "aws_lambda_layer_version" "adot_collector" {
-  layer_name = "aws-otel-collector-amd64-ver-0-113-0"
+# AWS-managed layer published in account 901920570463
+locals {
+  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 }
 
 # Read encrypted secrets from YAML

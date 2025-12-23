@@ -188,10 +188,11 @@ const config = {
     '^.+\\.[tj]sx?$': ['ts-jest', {useESM: true, tsconfig: '<rootDir>/tsconfig.test.json'}]
   },
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "/node_modules/",
-  //   "\\.pnp\\.[^\\/]+$"
-  // ],
+  // Must transform jsonschema because our pnpm patch introduces ESM syntax
+  // Uses broad match for pnpm's .pnpm/jsonschema@version/node_modules/jsonschema path structure
+  transformIgnorePatterns: [
+    '/node_modules/(?!.*jsonschema.*)'
+  ],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

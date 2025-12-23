@@ -25,6 +25,17 @@ const awsSdkExternals = [
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
 
+// Minimal require shim for CJS compatibility layer created by esbuild
+// When bundling CJS code (ElectroDB) to ESM format, esbuild creates a
+// `var O = ...` shim that checks `typeof require`. Without this banner,
+// Lambda's pure ESM environment has no `require`, causing runtime errors.
+// The jsonschema pnpm patch fixes require('url'), but ElectroDB's internal
+// CJS patterns still need this shim for externalized AWS SDK imports.
+const nodeBuiltinRequireShim = `
+import { createRequire as __esmCreateRequire } from 'node:module';
+const require = __esmCreateRequire(import.meta.url);
+`
+
 async function build() {
   const startTime = Date.now()
   console.log(`Building ${lambdaEntryFiles.length} Lambda functions...`)
@@ -51,14 +62,16 @@ async function build() {
       outfile: `build/lambdas/${functionName}.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
       external: awsSdkExternals,
+      banner: {js: nodeBuiltinRequireShim},
       minify: true,
       sourcemap: false,
       metafile: isAnalyze, // Generate metafile for bundle analysis
       treeShaking: true,
       // Prioritize ES modules for better tree-shaking
       mainFields: ['module', 'main'],
-      // Resolve Node.js subpath imports from package.json
-      conditions: ['import', 'node'],
+      // Prefer ESM exports to avoid CJS require() calls in pure ESM bundles
+      // 'module' condition matches @aws/lambda-invoke-store ESM export
+      conditions: ['module', 'import'],
       // Log level
       logLevel: 'warning'
     })

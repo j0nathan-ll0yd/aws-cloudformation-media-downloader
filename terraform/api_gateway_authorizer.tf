@@ -80,7 +80,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   ]
   filename         = data.archive_file.ApiGatewayAuthorizer.output_path
   source_code_hash = data.archive_file.ApiGatewayAuthorizer.output_base64sha256
-  layers           = [data.aws_lambda_layer_version.adot_collector.arn]
+  layers           = [local.adot_layer_arn]
 
   tracing_config {
     mode = "Active"
@@ -95,6 +95,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
         aws_api_gateway_resource.LogEvent.path_part
       ]),
       RESERVED_CLIENT_IP          = "104.1.88.244"
+      ENABLE_XRAY                 = "false"
       OTEL_SERVICE_NAME           = "ApiGatewayAuthorizer"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"
