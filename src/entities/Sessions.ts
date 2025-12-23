@@ -40,7 +40,7 @@ export const Sessions = new Entity(
       byToken: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['token']}, sk: {field: 'gsi2sk', composite: []}}
     }
   } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
+  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
 )
 
 // Type exports for use in application code

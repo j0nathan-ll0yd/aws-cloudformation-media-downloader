@@ -12,7 +12,7 @@
 
 // Test configuration
 const TEST_TABLE = 'test-filecoordinator'
-process.env.DynamoDBTableName = TEST_TABLE
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.StartFileUploadFunctionArn = 'arn:aws:lambda:us-west-2:123456789012:function:StartFileUpload'
 

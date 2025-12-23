@@ -60,7 +60,7 @@ import type {FetchVideoInfoResult} from '#types/video'
  * @returns Result object with video info (if successful) or error details
  */
 export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult> {
-  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
+  const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
 
   try {
@@ -228,7 +228,7 @@ function execYtDlp(ytdlpBinaryPath: string, args: string[]): Promise<void> {
  * @returns Upload results including file size, S3 URL, and duration
  */
 export async function downloadVideoToS3(uri: string, bucket: string, key: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
-  const ytdlpBinaryPath = getRequiredEnv('YtdlpBinaryPath')
+  const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   const tempFile = `/tmp/${key}`
 
   logDebug('downloadVideoToS3 =>', {uri, bucket, key, tempFile})

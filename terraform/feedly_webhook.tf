@@ -89,9 +89,9 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = {
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
-      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
-      IdempotencyTableName        = aws_dynamodb_table.IdempotencyTable.name
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
+      IDEMPOTENCY_TABLE_NAME      = aws_dynamodb_table.IdempotencyTable.name
       OTEL_SERVICE_NAME           = "WebhookFeedly"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"
@@ -345,13 +345,13 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = {
-      Bucket                      = aws_s3_bucket.Files.id
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
-      CloudfrontDomain            = aws_cloudfront_distribution.media_files.domain_name
-      SNSQueueUrl                 = aws_sqs_queue.SendPushNotification.id
-      YtdlpBinaryPath             = "/opt/bin/yt-dlp_linux"
+      BUCKET                      = aws_s3_bucket.Files.id
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      CLOUDFRONT_DOMAIN           = aws_cloudfront_distribution.media_files.domain_name
+      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
+      YTDLP_BINARY_PATH           = "/opt/bin/yt-dlp_linux"
       PATH                        = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      GithubPersonalToken         = data.sops_file.secrets.data["github.issue.token"]
+      GITHUB_PERSONAL_TOKEN       = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME           = "StartFileUpload"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"

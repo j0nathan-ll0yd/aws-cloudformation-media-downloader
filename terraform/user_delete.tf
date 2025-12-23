@@ -80,8 +80,8 @@ resource "aws_lambda_function" "UserDelete" {
 
   environment {
     variables = {
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
-      GithubPersonalToken         = data.sops_file.secrets.data["github.issue.token"]
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
+      GITHUB_PERSONAL_TOKEN       = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME           = "UserDelete"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"

@@ -21,7 +21,7 @@ describe('#UserSubscribe', () => {
     event = JSON.parse(JSON.stringify(eventMock))
     event.headers.Authorization = 'Bearer test-token'
     event.requestContext.authorizer!.principalId = fakeUserId
-    process.env.PlatformApplicationArn = 'arn:aws:sns:region:account_id:topic:uuid'
+    process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
   })
   test('should create a new remote endpoint (for the mobile phone)', async () => {
     const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
@@ -32,7 +32,7 @@ describe('#UserSubscribe', () => {
     expect(body.body).toHaveProperty('subscriptionArn')
   })
   test('should return an error if APNS is not configured', async () => {
-    process.env.PlatformApplicationArn = ''
+    process.env.PLATFORM_APPLICATION_ARN = ''
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(503)
   })

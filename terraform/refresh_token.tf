@@ -73,7 +73,7 @@ resource "aws_lambda_function" "RefreshToken" {
 
   environment {
     variables = {
-      DynamoDBTableName           = aws_dynamodb_table.MediaDownloader.name
+      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
       OTEL_SERVICE_NAME           = "RefreshToken"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
       OTEL_PROPAGATORS            = "xray"

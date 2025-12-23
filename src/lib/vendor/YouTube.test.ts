@@ -49,7 +49,7 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({createS3Upload: mockCreat
 jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({putMetricData: jest.fn(), getStandardUnit: (unit?: string) => unit || 'None'}))
 
 // Set up environment variable before importing
-process.env.YtdlpBinaryPath = '/opt/bin/yt-dlp_linux'
+process.env.YTDLP_BINARY_PATH = '/opt/bin/yt-dlp_linux'
 
 // Import after mocking
 const {downloadVideoToS3, getVideoID, isCookieExpirationError} = await import('./YouTube')

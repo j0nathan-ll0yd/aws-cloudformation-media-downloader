@@ -45,7 +45,7 @@ export const Accounts = new Entity(
       byProvider: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['providerId', 'providerAccountId']}, sk: {field: 'gsi2sk', composite: []}}
     }
   } as const,
-  {table: process.env.DynamoDBTableName, client: documentClient}
+  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
 )
 
 // Type exports for use in application code

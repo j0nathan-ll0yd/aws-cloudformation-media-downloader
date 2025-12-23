@@ -34,7 +34,9 @@ let initialized = false
  */
 export function initializeTracing(): void {
   // Only initialize once per cold start
-  if (initialized) return
+  if (initialized) {
+    return
+  }
 
   // Skip initialization if tracing is disabled
   if (process.env.USE_LOCALSTACK === 'true') {
@@ -51,38 +53,24 @@ export function initializeTracing(): void {
 
   // Create resource with Lambda metadata
   // Note: cloud.* and faas.* attributes are experimental in @opentelemetry/semantic-conventions
-  const resource = new Resource({
-    [ATTR_SERVICE_NAME]: functionName,
-    'cloud.provider': 'aws',
-    'cloud.platform': 'aws_lambda',
-    'faas.name': functionName
-  })
+  const resource = new Resource({[ATTR_SERVICE_NAME]: functionName, 'cloud.provider': 'aws', 'cloud.platform': 'aws_lambda', 'faas.name': functionName})
 
   // Create provider with X-Ray compatible ID generator
-  const provider = new NodeTracerProvider({
-    resource,
-    idGenerator: new AWSXRayIdGenerator()
-  })
+  const provider = new NodeTracerProvider({resource, idGenerator: new AWSXRayIdGenerator()})
 
   // Configure OTLP exporter to send to ADOT collector sidecar
   // The ADOT Lambda layer runs a collector on localhost:4318
-  const exporter = new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces'
-  })
+  const exporter = new OTLPTraceExporter({url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces'})
 
   // Use BatchSpanProcessor for efficient trace export
   provider.addSpanProcessor(new BatchSpanProcessor(exporter))
 
   // Register with X-Ray propagator for trace context propagation
-  provider.register({
-    propagator: new AWSXRayPropagator()
-  })
+  provider.register({propagator: new AWSXRayPropagator()})
 
   // Register AWS SDK v3 auto-instrumentation
   // This automatically traces all AWS SDK calls (DynamoDB, S3, SQS, etc.)
-  registerInstrumentations({
-    instrumentations: [new AwsInstrumentation()]
-  })
+  registerInstrumentations({instrumentations: [new AwsInstrumentation()]})
 
   initialized = true
 }

@@ -31,4 +31,4 @@ export const logger = new Logger({
 export const metrics = new Metrics({namespace: 'MediaDownloader', serviceName: process.env['AWS_LAMBDA_FUNCTION_NAME'] || 'MediaDownloader'})
 
 // Re-export middleware functions for use with middy
-export {injectLambdaContext, logMetrics, MetricUnit}
+export { injectLambdaContext, logMetrics, MetricUnit }

@@ -12,10 +12,10 @@ const TEST_TABLE = 'test-files-webhook'
 const TEST_SQS_QUEUE_URL = 'http://localhost:4566/000000000000/test-notifications'
 const TEST_IDEMPOTENCY_TABLE = 'test-idempotency-webhook'
 
-process.env.DynamoDBTableName = TEST_TABLE
-process.env.SNSQueueUrl = TEST_SQS_QUEUE_URL
+process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
+process.env.SNS_QUEUE_URL = TEST_SQS_QUEUE_URL
 process.env.USE_LOCALSTACK = 'true'
-process.env.IdempotencyTableName = TEST_IDEMPOTENCY_TABLE
+process.env.IDEMPOTENCY_TABLE_NAME = TEST_IDEMPOTENCY_TABLE
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'

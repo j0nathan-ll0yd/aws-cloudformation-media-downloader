@@ -55,7 +55,7 @@ export const FileDownloads = new Entity({
     /** Query downloads by status and retry time - enables FileCoordinator to find ready downloads */
     byStatusRetryAfter: {index: 'GSI6', pk: {field: 'gsi6pk', composite: ['status'] as const}, sk: {field: 'gsi6sk', composite: ['retryAfter'] as const}}
   }
-} as const, {table: process.env.DynamoDBTableName, client: documentClient})
+} as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
 
 // Type exports for use in application code
 export type FileDownloadItem = ReturnType<typeof FileDownloads.parse>
