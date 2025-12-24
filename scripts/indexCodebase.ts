@@ -2,6 +2,7 @@ import * as lancedb from '@lancedb/lancedb'
 import {Project} from 'ts-morph'
 import {glob} from 'glob'
 import * as path from 'node:path'
+import * as fs from 'node:fs/promises'
 import {generateEmbedding} from './embeddings.js'
 
 const DB_DIR = '.lancedb'
@@ -16,6 +17,17 @@ interface CodeChunk {
   type: string
   name: string
   [key: string]: unknown  // Index signature for LanceDB compatibility
+}
+
+interface KnowledgeGraphNode {
+  id: string
+  type: string
+  properties: Record<string, unknown>
+}
+
+interface KnowledgeGraph {
+  nodes: KnowledgeGraphNode[]
+  edges: Array<{source: string; target: string; relationship: string}>
 }
 
 export async function indexCodebase() {
@@ -66,6 +78,14 @@ export async function indexCodebase() {
     }
   }
 
+  // Index TypeSpec files
+  const typespecChunks = await indexTypeSpecFiles(projectRoot)
+  chunks.push(...typespecChunks)
+
+  // Index knowledge graph nodes for semantic search
+  const graphChunks = await indexKnowledgeGraph(projectRoot)
+  chunks.push(...graphChunks)
+
   console.log(`Generated ${chunks.length} chunks. Creating table...`)
 
   // Check if table exists, if so delete it to re-index
@@ -97,6 +117,166 @@ async function createChunk(node: any, type: string, name: string, filePath: stri
     type,
     name
   }
+}
+
+/**
+ * Index TypeSpec model and operation definitions
+ */
+async function indexTypeSpecFiles(projectRoot: string): Promise<CodeChunk[]> {
+  const chunks: CodeChunk[] = []
+  const tspFiles = ['tsp/models/models.tsp', 'tsp/operations/operations.tsp']
+
+  for (const relativePath of tspFiles) {
+    try {
+      const content = await fs.readFile(path.join(projectRoot, relativePath), 'utf-8')
+      console.log(`Processing ${relativePath}...`)
+
+      // Extract model definitions
+      const modelRegex = /\/\*\*([^*]|\*[^/])*\*\/\s*\nmodel\s+(\w+)\s*\{[^}]+\}/g
+      let match
+      let lineNum = 1
+      while ((match = modelRegex.exec(content)) !== null) {
+        const modelText = match[0]
+        const modelName = match[2]
+        lineNum = content.slice(0, match.index).split('\n').length
+
+        const contextHeader = `File: ${relativePath}\nType: TypeSpec model\nName: ${modelName}\n\nAPI Contract: This TypeSpec model defines the schema for ${modelName}. Use with generated Zod schemas in src/types/api-schema/.\n\n`
+        const vector = await generateEmbedding(contextHeader + modelText)
+
+        chunks.push({
+          vector,
+          text: modelText,
+          filePath: relativePath,
+          startLine: lineNum,
+          endLine: lineNum + modelText.split('\n').length,
+          type: 'typespec-model',
+          name: modelName
+        })
+      }
+
+      // Extract enum definitions
+      const enumRegex = /\/\*\*([^*]|\*[^/])*\*\/\s*\nenum\s+(\w+)\s*\{[^}]+\}/g
+      while ((match = enumRegex.exec(content)) !== null) {
+        const enumText = match[0]
+        const enumName = match[2]
+        lineNum = content.slice(0, match.index).split('\n').length
+
+        const contextHeader = `File: ${relativePath}\nType: TypeSpec enum\nName: ${enumName}\n\n`
+        const vector = await generateEmbedding(contextHeader + enumText)
+
+        chunks.push({
+          vector,
+          text: enumText,
+          filePath: relativePath,
+          startLine: lineNum,
+          endLine: lineNum + enumText.split('\n').length,
+          type: 'typespec-enum',
+          name: enumName
+        })
+      }
+
+      // Extract interface (operation) definitions
+      const interfaceRegex = /\/\*\*([^*]|\*[^/])*\*\/\s*\n@route\("[^"]+"\)\s*\n@tag\("[^"]+"\)\s*\ninterface\s+(\w+)\s*\{[\s\S]*?(?=\n\/\*\*|\ninterface|$)/g
+      while ((match = interfaceRegex.exec(content)) !== null) {
+        const ifaceText = match[0]
+        const ifaceName = match[2]
+        lineNum = content.slice(0, match.index).split('\n').length
+
+        const contextHeader = `File: ${relativePath}\nType: TypeSpec interface (API operations)\nName: ${ifaceName}\n\nAPI Endpoint: This interface defines REST operations. Each operation maps to a Lambda handler.\n\n`
+        const vector = await generateEmbedding(contextHeader + ifaceText)
+
+        chunks.push({
+          vector,
+          text: ifaceText.slice(0, 2000), // Truncate large interfaces
+          filePath: relativePath,
+          startLine: lineNum,
+          endLine: lineNum + ifaceText.split('\n').length,
+          type: 'typespec-interface',
+          name: ifaceName
+        })
+      }
+    } catch {
+      console.log(`  Skipping ${relativePath} (file not found)`)
+    }
+  }
+
+  console.log(`  Indexed ${chunks.length} TypeSpec definitions`)
+  return chunks
+}
+
+/**
+ * Index knowledge graph nodes to enable semantic queries about architecture
+ */
+async function indexKnowledgeGraph(projectRoot: string): Promise<CodeChunk[]> {
+  const chunks: CodeChunk[] = []
+  const graphPath = path.join(projectRoot, 'graphrag', 'knowledge-graph.json')
+
+  try {
+    const content = await fs.readFile(graphPath, 'utf-8')
+    const graph: KnowledgeGraph = JSON.parse(content)
+    console.log(`Processing knowledge graph (${graph.nodes.length} nodes)...`)
+
+    // Group nodes by type for more contextual embeddings
+    const nodesByType = new Map<string, KnowledgeGraphNode[]>()
+    for (const node of graph.nodes) {
+      const nodes = nodesByType.get(node.type) || []
+      nodes.push(node)
+      nodesByType.set(node.type, nodes)
+    }
+
+    // Create summary chunks for each type
+    for (const [type, nodes] of nodesByType) {
+      const names = nodes.map((n) => n.properties.name || n.id.split(':')[1]).join(', ')
+      const summaryText = `Architecture: ${type} components in the system: ${names}`
+
+      // Find edges for this type
+      const relevantEdges = graph.edges.filter((e) => nodes.some((n) => e.source === n.id || e.target === n.id))
+      const edgeSummary = relevantEdges.slice(0, 10).map((e) => `${e.source} --${e.relationship}--> ${e.target}`).join('\n')
+
+      const fullText = `${summaryText}\n\nRelationships:\n${edgeSummary}`
+      const vector = await generateEmbedding(`Architecture summary for ${type} components:\n\n${fullText}`)
+
+      chunks.push({
+        vector,
+        text: fullText,
+        filePath: 'graphrag/knowledge-graph.json',
+        startLine: 0,
+        endLine: 0,
+        type: `architecture-${type.toLowerCase()}`,
+        name: `${type} Summary`
+      })
+    }
+
+    // Create individual chunks for API endpoints with their connections
+    const apiEndpoints = graph.nodes.filter((n) => n.type === 'ApiEndpoint')
+    for (const endpoint of apiEndpoints) {
+      const props = endpoint.properties as {name: string; route: string; method: string; description?: string}
+      const edges = graph.edges.filter((e) => e.source === endpoint.id || e.target === endpoint.id)
+      const connections = edges.map((e) => {
+        const other = e.source === endpoint.id ? e.target : e.source
+        return `${e.relationship}: ${other}`
+      })
+
+      const text = `API Endpoint: ${props.method} ${props.route}\nName: ${props.name}\nDescription: ${props.description || 'N/A'}\nConnections: ${connections.join(', ')}`
+      const vector = await generateEmbedding(`How to add an API endpoint: ${text}`)
+
+      chunks.push({
+        vector,
+        text,
+        filePath: 'graphrag/knowledge-graph.json',
+        startLine: 0,
+        endLine: 0,
+        type: 'api-endpoint',
+        name: props.name
+      })
+    }
+
+    console.log(`  Indexed ${chunks.length} knowledge graph summaries`)
+  } catch (err) {
+    console.log(`  Skipping knowledge graph (${err instanceof Error ? err.message : 'unknown error'})`)
+  }
+
+  return chunks
 }
 
 // Run when executed directly

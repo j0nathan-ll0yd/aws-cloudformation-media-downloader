@@ -21,7 +21,7 @@ const projectRoot = path.resolve(__dirname, '..')
 
 interface Node {
   id: string
-  type: 'Lambda' | 'Entity' | 'Service' | 'External'
+  type: 'Lambda' | 'Entity' | 'Service' | 'External' | 'ApiModel' | 'ApiEndpoint'
   properties: Record<string, unknown>
 }
 
@@ -71,6 +71,25 @@ interface Metadata {
   entityRelationships: Array<{from: string; to: string; type: string}>
   lambdaInvocations: Array<{from: string; to: string; via: string}>
   serviceToServiceEdges: Array<{from: string; to: string; relationship: string; event?: string}>
+  typeSpecModels?: TypeSpecModelMetadata[]
+  typeSpecEndpoints?: TypeSpecEndpointMetadata[]
+}
+
+interface TypeSpecModelMetadata {
+  name: string
+  type: 'model' | 'enum'
+  description?: string
+  fields?: string[]
+}
+
+interface TypeSpecEndpointMetadata {
+  name: string
+  route: string
+  method: string
+  handler: string
+  requestModel?: string
+  responseModel?: string
+  description?: string
 }
 
 /**
@@ -89,6 +108,115 @@ async function discoverEntities(): Promise<string[]> {
   const entitiesDir = path.join(projectRoot, 'src', 'entities')
   const entries = await fs.readdir(entitiesDir)
   return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts').map((e) => e.replace('.ts', ''))
+}
+
+/**
+ * Discover TypeSpec models from tsp/models/models.tsp
+ */
+async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
+  const modelsPath = path.join(projectRoot, 'tsp', 'models', 'models.tsp')
+  const content = await fs.readFile(modelsPath, 'utf-8')
+  const models: TypeSpecModelMetadata[] = []
+
+  // Parse model definitions
+  const modelRegex = /\/\*\*\s*\n\s*\*\s*([^*]+)\s*\n[^*]*\*\/\s*\nmodel\s+(\w+)\s*\{/g
+  let match
+  while ((match = modelRegex.exec(content)) !== null) {
+    const description = match[1].trim()
+    const name = match[2]
+
+    // Extract field names for context
+    const modelStart = match.index + match[0].length
+    const modelEnd = content.indexOf('}', modelStart)
+    const modelBody = content.slice(modelStart, modelEnd)
+    const fields = modelBody
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('*') && !line.startsWith('/') && line.includes(':'))
+      .map((line) => line.split(':')[0].replace('?', '').trim())
+      .filter((field) => field.length > 0)
+
+    models.push({name, type: 'model', description, fields})
+  }
+
+  // Parse enum definitions
+  const enumRegex = /\/\*\*\s*\n\s*\*\s*([^*]+)\s*\n[^*]*\*\/\s*\nenum\s+(\w+)\s*\{/g
+  while ((match = enumRegex.exec(content)) !== null) {
+    const description = match[1].trim()
+    const name = match[2]
+
+    // Extract enum values
+    const enumStart = match.index + match[0].length
+    const enumEnd = content.indexOf('}', enumStart)
+    const enumBody = content.slice(enumStart, enumEnd)
+    const values = enumBody
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('*') && !line.startsWith('/') && line.includes(':'))
+      .map((line) => line.split(':')[0].trim())
+      .filter((value) => value.length > 0)
+
+    models.push({name, type: 'enum', description, fields: values})
+  }
+
+  return models
+}
+
+/**
+ * Discover TypeSpec API endpoints from tsp/operations/operations.tsp
+ *
+ * Uses hardcoded endpoint definitions since TypeSpec syntax is complex to parse.
+ * This is maintained in sync with tsp/operations/operations.tsp.
+ */
+async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> {
+  // Hardcoded endpoint definitions based on operations.tsp
+  // These map directly to TypeSpec interface operations
+  return [
+    {
+      name: 'listFiles',
+      route: '/files',
+      method: 'GET',
+      handler: 'ListFiles',
+      responseModel: 'FileListResponse',
+      description: 'List available files for authenticated user'
+    },
+    {
+      name: 'registerDevice',
+      route: '/device/register',
+      method: 'POST',
+      handler: 'RegisterDevice',
+      requestModel: 'DeviceRegistrationRequest',
+      responseModel: 'DeviceRegistrationResponse',
+      description: 'Register device for push notifications'
+    },
+    {
+      name: 'processFeedlyWebhook',
+      route: '/feedly',
+      method: 'POST',
+      handler: 'WebhookFeedly',
+      requestModel: 'FeedlyWebhookRequest',
+      responseModel: 'WebhookResponse',
+      description: 'Process Feedly webhook'
+    },
+    {
+      name: 'registerUser',
+      route: '/user/register',
+      method: 'POST',
+      handler: 'RegisterUser',
+      requestModel: 'UserRegistrationRequest',
+      responseModel: 'UserRegistrationResponse',
+      description: 'Register new user'
+    },
+    {
+      name: 'loginUser',
+      route: '/user/login',
+      method: 'POST',
+      handler: 'LoginUser',
+      requestModel: 'UserLoginRequest',
+      responseModel: 'UserLoginResponse',
+      description: 'Login existing user'
+    }
+  ]
 }
 
 /**
@@ -189,10 +317,19 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
   const edges: Edge[] = []
 
   // Load all data sources
-  const [lambdaNames, entityNames, depGraph, metadata] = await Promise.all([discoverLambdas(), discoverEntities(), loadDependencyGraph(), loadMetadata()])
+  const [lambdaNames, entityNames, depGraph, metadata, typeSpecModels, typeSpecEndpoints] = await Promise.all([
+    discoverLambdas(),
+    discoverEntities(),
+    loadDependencyGraph(),
+    loadMetadata(),
+    discoverTypeSpecModels(),
+    discoverTypeSpecEndpoints()
+  ])
 
   console.log(`  Discovered ${lambdaNames.length} Lambdas`)
   console.log(`  Discovered ${entityNames.length} Entities`)
+  console.log(`  Discovered ${typeSpecModels.length} TypeSpec Models`)
+  console.log(`  Discovered ${typeSpecEndpoints.length} TypeSpec Endpoints`)
 
   // 1. Add Lambda nodes
   for (const name of lambdaNames) {
@@ -235,7 +372,83 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     })
   }
 
-  // 5. Add Lambda → Service/External edges (derived from dependency graph)
+  // 5. Add TypeSpec Model nodes
+  for (const model of typeSpecModels) {
+    nodes.push({
+      id: `apimodel:${model.name}`,
+      type: 'ApiModel',
+      properties: {
+        name: model.name,
+        modelType: model.type,
+        description: model.description,
+        fields: model.fields
+      }
+    })
+  }
+
+  // 6. Add TypeSpec Endpoint nodes
+  for (const endpoint of typeSpecEndpoints) {
+    nodes.push({
+      id: `apiendpoint:${endpoint.name}`,
+      type: 'ApiEndpoint',
+      properties: {
+        name: endpoint.name,
+        route: endpoint.route,
+        method: endpoint.method,
+        description: endpoint.description
+      }
+    })
+
+    // Add endpoint → handler Lambda edge
+    if (endpoint.handler && lambdaNames.includes(endpoint.handler)) {
+      edges.push({
+        source: `apiendpoint:${endpoint.name}`,
+        target: `lambda:${endpoint.handler}`,
+        relationship: 'implemented_by'
+      })
+    }
+
+    // Add endpoint → request model edge
+    if (endpoint.requestModel) {
+      edges.push({
+        source: `apiendpoint:${endpoint.name}`,
+        target: `apimodel:${endpoint.requestModel}`,
+        relationship: 'accepts'
+      })
+    }
+
+    // Add endpoint → response model edge
+    if (endpoint.responseModel) {
+      edges.push({
+        source: `apiendpoint:${endpoint.name}`,
+        target: `apimodel:${endpoint.responseModel}`,
+        relationship: 'returns'
+      })
+    }
+  }
+
+  // Add Lambda → ApiModel validation edges (based on generated type imports)
+  const lambdaToModelMap: Record<string, string[]> = {
+    LoginUser: ['UserLoginRequest'],
+    RegisterUser: ['UserRegistrationRequest'],
+    RegisterDevice: ['DeviceRegistrationRequest'],
+    UserSubscribe: ['UserSubscriptionRequest'],
+    WebhookFeedly: ['FeedlyWebhookRequest']
+  }
+
+  for (const [lambdaName, models] of Object.entries(lambdaToModelMap)) {
+    for (const model of models) {
+      if (typeSpecModels.some((m) => m.name === model)) {
+        edges.push({
+          source: `lambda:${lambdaName}`,
+          target: `apimodel:${model}`,
+          relationship: 'validates_with'
+        })
+      }
+    }
+  }
+
+  // 7. Add Lambda → Service/External edges (derived from dependency graph)
   for (const lambdaName of lambdaNames) {
     const entryPoint = `src/lambdas/${lambdaName}/src/index.ts`
     const deps = depGraph.transitiveDependencies[entryPoint] || []
@@ -320,10 +533,12 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     nodes,
     edges,
     metadata: {
-      version: '2.0.0',
-      description: 'Media Downloader Lambda chains and entity relationships (auto-generated)',
+      version: '3.0.0',
+      description: 'Media Downloader knowledge graph with Lambda chains, entities, and API contracts (auto-generated)',
       sources: {
         lambdas: 'src/lambdas/',
+        entities: 'src/entities/',
+        typespec: 'tsp/',
         dependencies: 'build/graph.json',
         metadata: 'graphrag/metadata.json'
       }
