@@ -13,6 +13,11 @@
  *   - response-helpers: Enforce response() helper usage
  *   - env-validation: Enforce getRequiredEnv() usage
  *   - authenticated-handler-enforcement: Enforce centralized auth wrappers
+ *
+ * Phase 3 (STRATEGIC):
+ *   - enforce-powertools: Enforce PowerTools wrapper usage
+ *   - no-domain-leakage: Prevent domain from importing outer layers
+ *   - strict-env-vars: Forbid direct process.env in handlers
  */
 
 const noDirectAwsSdkImport = require('./rules/no-direct-aws-sdk-import.cjs')
@@ -21,6 +26,9 @@ const useElectrodbMockHelper = require('./rules/use-electrodb-mock-helper.cjs')
 const responseHelpers = require('./rules/response-helpers.cjs')
 const envValidation = require('./rules/env-validation.cjs')
 const authenticatedHandlerEnforcement = require('./rules/authenticated-handler-enforcement.cjs')
+const enforcePowertools = require('./rules/enforce-powertools.cjs')
+const noDomainLeakage = require('./rules/no-domain-leakage.cjs')
+const strictEnvVars = require('./rules/strict-env-vars.cjs')
 
 module.exports = {
   rules: {
@@ -31,6 +39,10 @@ module.exports = {
     // Phase 2: HIGH
     'response-helpers': responseHelpers,
     'env-validation': envValidation,
-    'authenticated-handler-enforcement': authenticatedHandlerEnforcement
+    'authenticated-handler-enforcement': authenticatedHandlerEnforcement,
+    // Phase 3: STRATEGIC
+    'enforce-powertools': enforcePowertools,
+    'no-domain-leakage': noDomainLeakage,
+    'strict-env-vars': strictEnvVars
   }
 }

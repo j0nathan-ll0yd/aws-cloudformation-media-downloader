@@ -1,0 +1,4 @@
+// AWS {{serviceName}} mock
+jest.unstable_mockModule('#lib/vendor/AWS/{{serviceName}}', () => ({
+{{mockFunctions}}
+}))

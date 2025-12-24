@@ -78,6 +78,20 @@ module.exports = {
       to: {},
     },
     {
+      name: 'no-orphans-lib',
+      severity: 'error',
+      comment: 'Library code (src/lib) must not contain orphaned modules - this prevents dead code accumulation',
+      from: {
+        orphan: true,
+        path: '^src/lib/',
+        pathNot: [
+          '\\.(test|spec)\\.(ts|js)$',
+          '\\.d\\.ts$',
+        ],
+      },
+      to: {},
+    },
+    {
       name: 'no-deprecated',
       comment: 'Do not use deprecated dependencies',
       severity: 'warn',

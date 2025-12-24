@@ -1,0 +1,11 @@
+// OpenTelemetry mock (no-op tracing)
+jest.unstable_mockModule('#lib/vendor/OpenTelemetry', () => ({
+  getTracer: () => ({startSpan: jest.fn()}),
+  getCurrentSpan: jest.fn(),
+  startSpan: jest.fn().mockReturnValue(null),
+  addAnnotation: jest.fn(),
+  addMetadata: jest.fn(),
+  endSpan: jest.fn(),
+  withTracing: (handler: unknown) => handler,
+  SpanKind: {INTERNAL: 0}
+}))

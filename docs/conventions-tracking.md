@@ -8,10 +8,11 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 | Method | Count | Conventions |
 |--------|-------|-------------|
-| **MCP Rules** | 15 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement |
-| **Git Hooks** | 2 | AI attribution (commit-msg), direct master push (pre-push) |
-| **ESLint** | 3 | naming conventions, import order, unused vars |
-| **CI Workflows** | 2 | script validation, type checking |
+| **MCP Rules** | 16 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, convention-auto-fix |
+| **ESLint** | 9 | no-direct-aws-sdk-import, cascade-delete-order, use-electrodb-mock-helper, response-helpers, env-validation, authenticated-handler-enforcement, enforce-powertools, no-domain-leakage, strict-env-vars |
+| **Git Hooks** | 3 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit) |
+| **Dependency Cruiser** | 6 | no-circular, no-cross-lambda-imports, no-direct-aws-sdk-import, no-entity-cross-dependencies, no-test-imports-in-production, no-orphans-lib |
+| **CI Workflows** | 3 | script validation, type checking, GraphRAG auto-update |
 | **Build-Time** | 1 | pnpm lifecycle script protection (.npmrc) |
 | **Manual Review** | ~10 | code comments, test methodology, architectural patterns |
 
@@ -34,16 +35,107 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 | doc-sync | docs | HIGH | Documentation drift detection |
 | naming-conventions | naming | HIGH | Type and enum naming patterns |
 | authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
+| convention-auto-fix | auto-fix | MEDIUM | Apply conventions automatically |
 
 ---
 
 ## 🟡 Pending Documentation
 
+### Detected: 2025-12-22
+
+1. **TypeSpec-to-Runtime Code Generation** (Methodology)
+   - **What**: Automated generation of Zod schemas and TypeScript types from TypeSpec API definitions
+   - **Why**: TypeSpec becomes single source of truth; prevents API contract drift; ensures compile-time type safety
+   - **Tool**: `pnpm gen:api-types` script using quicktype and custom Zod schema generation
+   - **Output**: `src/types/api-schema/types.ts` and `src/types/api-schema/schemas.ts`
+   - **Target**: docs/wiki/TypeScript/TypeSpec-Integration.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+2. **Test Scaffolding Tool** (DX Tool)
+   - **What**: Automated test file generation with correct mock setup via `pnpm scaffold:test <file>`
+   - **Why**: Reduces test writing time by 60%; ensures consistent mock patterns; follows project conventions
+   - **Tool**: Uses ts-morph for AST analysis to detect imports and generate appropriate mocks
+   - **Target**: docs/wiki/Testing/Test-Scaffolding.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+3. **PowerTools Wrapper Enforcement** (Rule)
+   - **What**: All Lambda handlers must be wrapped with `withPowertools()` or `wrapLambdaInvokeHandler()`
+   - **Why**: Consistent observability, error handling, and metrics across all Lambda functions
+   - **Enforcement**: ESLint `local-rules/enforce-powertools` (HIGH severity)
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+4. **Domain Layer Purity** (Architecture Rule)
+   - **What**: Files in `src/lib/domain/` cannot import from `src/lambdas/` or `src/lib/vendor/AWS/`
+   - **Why**: Domain logic must remain pure and infrastructure-agnostic
+   - **Enforcement**: ESLint `local-rules/no-domain-leakage` (HIGH severity)
+   - **Target**: docs/wiki/Architecture/Domain-Layer.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+5. **Centralized Environment Variable Access** (Pattern)
+   - **What**: Lambda handlers must use `getRequiredEnv()` instead of direct `process.env` access
+   - **Why**: Fail-fast at cold start with clear error messages; centralized validation
+   - **Enforcement**: ESLint `local-rules/strict-env-vars` (HIGH severity)
+   - **Related**: Existing env-validation pattern, but now enforced via ESLint
+   - **Target**: docs/wiki/AWS/Lambda-Environment-Variables.md (update existing)
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+6. **Pre-Commit Dependency Validation** (Workflow)
+   - **What**: Dependency-cruiser runs automatically on `git commit` to catch architectural violations
+   - **Why**: Shift-left validation prevents architectural drift from entering codebase
+   - **Enforcement**: Husky pre-commit hook running `pnpm deps:check`
+   - **Target**: docs/wiki/Conventions/Git-Workflow.md (update existing)
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+7. **No Orphaned Library Code** (Rule)
+   - **What**: All modules in `src/lib/` must be imported by at least one file (except tests/types)
+   - **Why**: Prevents dead code accumulation in shared library code
+   - **Enforcement**: Dependency-cruiser `no-orphans-lib` rule (ERROR severity)
+   - **Target**: docs/wiki/Architecture/Code-Organization.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+
+8. **Automated GraphRAG Synchronization** (CI/CD)
+   - **What**: GraphRAG knowledge graph automatically updates when source files change
+   - **Why**: AI agents always have current semantic memory; documentation stays synchronized
+   - **Triggers**: Changes to `src/lambdas/`, `src/entities/`, `src/lib/vendor/`, `graphrag/metadata.json`, `tsp/`
+   - **Enforcement**: GitHub Actions workflow `.github/workflows/auto-update-graphrag.yml`
+   - **Target**: docs/wiki/Infrastructure/GraphRAG-Automation.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Implemented, pending documentation
+
+9. **MCP Convention Auto-Fix** (Tool)
+   - **What**: MCP server can automatically apply conventions (e.g., replace AWS SDK imports with vendor wrappers)
+   - **Why**: Reduces manual refactoring effort; speeds up convention adherence
+   - **Tool**: `apply_convention` MCP tool with support for multiple convention types
+   - **Supported**: aws-sdk-wrapper (auto-fix), electrodb-mock (guidance), response-helper (guidance), env-validation (guidance), powertools (guidance)
+   - **Target**: docs/wiki/MCP/Convention-Tools.md (update existing)
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Implemented, pending documentation
+
 _No pending conventions - all conventions are documented._
 
 ### Detected: 2025-12-23
 
-1. **CJS Dependency Compatibility** (Architectural Pattern)
+1. **External Template Files for Code Generation** (Code Organization Rule)
+   - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code
+   - **Why**: Keeps generator code clean and maintainable; templates are easier to review, test, and modify independently; separates concerns between template content and interpolation logic
+   - **Location**: `src/mcp/templates/` for MCP handlers; similar pattern for other generators
+   - **Example**: `lines.push("const mock = ...")` is WRONG; `loadTemplate('test-scaffold/entity-mock.template.txt')` is CORRECT
+   - **Loader**: Use `loadAndInterpolate()` from `src/mcp/templates/loader.ts` for simple placeholder replacement
+   - **Detected**: During test-scaffold.ts refactoring
+   - **Target**: docs/wiki/MCP/Template-Organization.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+   - **Enforcement**: Code review; consider MCP validation rule
+
+2. **CJS Dependency Compatibility** (Architectural Pattern)
    - **What**: Use `createRequire` shim in esbuild banner for CJS dependencies in ESM bundles
    - **Why**: Allows CJS packages (ElectroDB) to work in pure ESM Lambda environment without forking
    - **Shim**: `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`
@@ -433,6 +525,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-12-21
-- **Total Conventions**: 32 detected, 32 documented, 0 pending
+- **Last Updated**: 2025-12-23
+- **Total Conventions**: 42 detected (32 documented, 10 pending documentation)
 - **Convention Capture System**: Active

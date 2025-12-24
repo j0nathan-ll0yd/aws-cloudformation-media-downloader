@@ -339,9 +339,345 @@
         "type": "integration",
         "description": "Issue creation for errors"
       }
+    },
+    {
+      "id": "apimodel:File",
+      "type": "ApiModel",
+      "properties": {
+        "name": "File",
+        "modelType": "model",
+        "description": "A media file available for download",
+        "fields": [
+          "fileId",
+          "key",
+          "size",
+          "status",
+          "title",
+          "publishDate",
+          "authorName",
+          "authorUser",
+          "contentType",
+          "description",
+          "url"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:FileListResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "FileListResponse",
+        "modelType": "model",
+        "description": "Response containing a list of files",
+        "fields": [
+          "contents",
+          "keyCount"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:Device",
+      "type": "ApiModel",
+      "properties": {
+        "name": "Device",
+        "modelType": "model",
+        "description": "Device information for push notifications",
+        "fields": [
+          "deviceId",
+          "name",
+          "systemName",
+          "systemVersion",
+          "token",
+          "endpointArn"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:DeviceRegistrationRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "DeviceRegistrationRequest",
+        "modelType": "model",
+        "description": "Device registration request",
+        "fields": [
+          "deviceId",
+          "name",
+          "systemName",
+          "systemVersion",
+          "token"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:DeviceRegistrationResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "DeviceRegistrationResponse",
+        "modelType": "model",
+        "description": "Device registration response",
+        "fields": [
+          "endpointArn"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:FeedlyWebhookRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "FeedlyWebhookRequest",
+        "modelType": "model",
+        "description": "Feedly webhook request",
+        "fields": [
+          "articleFirstImageURL",
+          "articleCategories",
+          "articlePublishedAt",
+          "articleTitle",
+          "articleURL",
+          "createdAt",
+          "sourceFeedURL",
+          "sourceTitle",
+          "sourceURL",
+          "backgroundMode"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:WebhookResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "WebhookResponse",
+        "modelType": "model",
+        "description": "Webhook processing response",
+        "fields": [
+          "status"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:UserLoginRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserLoginRequest",
+        "modelType": "model",
+        "description": "User login request",
+        "fields": [
+          "idToken"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:UserLoginResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserLoginResponse",
+        "modelType": "model",
+        "description": "User login response",
+        "fields": [
+          "token"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:UserRegistrationRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserRegistrationRequest",
+        "modelType": "model",
+        "description": "User registration request",
+        "fields": [
+          "idToken",
+          "firstName",
+          "lastName"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:UserRegistrationResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserRegistrationResponse",
+        "modelType": "model",
+        "description": "User registration response",
+        "fields": [
+          "token"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:UserSubscriptionRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserSubscriptionRequest",
+        "modelType": "model",
+        "description": "User subscription request",
+        "fields": [
+          "endpointArn",
+          "topicArn"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:FileStatus",
+      "type": "ApiModel",
+      "properties": {
+        "name": "FileStatus",
+        "modelType": "enum",
+        "description": "File status enumeration",
+        "fields": [
+          "Queued",
+          "Downloading",
+          "Downloaded",
+          "Failed"
+        ]
+      }
+    },
+    {
+      "id": "apiendpoint:listFiles",
+      "type": "ApiEndpoint",
+      "properties": {
+        "name": "listFiles",
+        "route": "/files",
+        "method": "GET",
+        "description": "List available files for authenticated user"
+      }
+    },
+    {
+      "id": "apiendpoint:registerDevice",
+      "type": "ApiEndpoint",
+      "properties": {
+        "name": "registerDevice",
+        "route": "/device/register",
+        "method": "POST",
+        "description": "Register device for push notifications"
+      }
+    },
+    {
+      "id": "apiendpoint:processFeedlyWebhook",
+      "type": "ApiEndpoint",
+      "properties": {
+        "name": "processFeedlyWebhook",
+        "route": "/feedly",
+        "method": "POST",
+        "description": "Process Feedly webhook"
+      }
+    },
+    {
+      "id": "apiendpoint:registerUser",
+      "type": "ApiEndpoint",
+      "properties": {
+        "name": "registerUser",
+        "route": "/user/register",
+        "method": "POST",
+        "description": "Register new user"
+      }
+    },
+    {
+      "id": "apiendpoint:loginUser",
+      "type": "ApiEndpoint",
+      "properties": {
+        "name": "loginUser",
+        "route": "/user/login",
+        "method": "POST",
+        "description": "Login existing user"
+      }
     }
   ],
   "edges": [
+    {
+      "source": "apiendpoint:listFiles",
+      "target": "lambda:ListFiles",
+      "relationship": "implemented_by"
+    },
+    {
+      "source": "apiendpoint:listFiles",
+      "target": "apimodel:FileListResponse",
+      "relationship": "returns"
+    },
+    {
+      "source": "apiendpoint:registerDevice",
+      "target": "lambda:RegisterDevice",
+      "relationship": "implemented_by"
+    },
+    {
+      "source": "apiendpoint:registerDevice",
+      "target": "apimodel:DeviceRegistrationRequest",
+      "relationship": "accepts"
+    },
+    {
+      "source": "apiendpoint:registerDevice",
+      "target": "apimodel:DeviceRegistrationResponse",
+      "relationship": "returns"
+    },
+    {
+      "source": "apiendpoint:processFeedlyWebhook",
+      "target": "lambda:WebhookFeedly",
+      "relationship": "implemented_by"
+    },
+    {
+      "source": "apiendpoint:processFeedlyWebhook",
+      "target": "apimodel:FeedlyWebhookRequest",
+      "relationship": "accepts"
+    },
+    {
+      "source": "apiendpoint:processFeedlyWebhook",
+      "target": "apimodel:WebhookResponse",
+      "relationship": "returns"
+    },
+    {
+      "source": "apiendpoint:registerUser",
+      "target": "lambda:RegisterUser",
+      "relationship": "implemented_by"
+    },
+    {
+      "source": "apiendpoint:registerUser",
+      "target": "apimodel:UserRegistrationRequest",
+      "relationship": "accepts"
+    },
+    {
+      "source": "apiendpoint:registerUser",
+      "target": "apimodel:UserRegistrationResponse",
+      "relationship": "returns"
+    },
+    {
+      "source": "apiendpoint:loginUser",
+      "target": "lambda:LoginUser",
+      "relationship": "implemented_by"
+    },
+    {
+      "source": "apiendpoint:loginUser",
+      "target": "apimodel:UserLoginRequest",
+      "relationship": "accepts"
+    },
+    {
+      "source": "apiendpoint:loginUser",
+      "target": "apimodel:UserLoginResponse",
+      "relationship": "returns"
+    },
+    {
+      "source": "lambda:LoginUser",
+      "target": "apimodel:UserLoginRequest",
+      "relationship": "validates_with"
+    },
+    {
+      "source": "lambda:RegisterUser",
+      "target": "apimodel:UserRegistrationRequest",
+      "relationship": "validates_with"
+    },
+    {
+      "source": "lambda:RegisterDevice",
+      "target": "apimodel:DeviceRegistrationRequest",
+      "relationship": "validates_with"
+    },
+    {
+      "source": "lambda:UserSubscribe",
+      "target": "apimodel:UserSubscriptionRequest",
+      "relationship": "validates_with"
+    },
+    {
+      "source": "lambda:WebhookFeedly",
+      "target": "apimodel:FeedlyWebhookRequest",
+      "relationship": "validates_with"
+    },
     {
       "source": "service:API Gateway",
       "target": "lambda:ApiGatewayAuthorizer",
@@ -526,10 +862,12 @@
     }
   ],
   "metadata": {
-    "version": "2.0.0",
-    "description": "Media Downloader Lambda chains and entity relationships (auto-generated)",
+    "version": "3.0.0",
+    "description": "Media Downloader knowledge graph with Lambda chains, entities, and API contracts (auto-generated)",
     "sources": {
       "lambdas": "src/lambdas/",
+      "entities": "src/entities/",
+      "typespec": "tsp/",
       "dependencies": "build/graph.json",
       "metadata": "graphrag/metadata.json"
     }

@@ -1,0 +1,55 @@
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {testContext} from '#util/jest-setup'
+{{entityMockImport}}
+
+// Environment setup - BEFORE handler import
+process.env.TableName = 'test-table'
+process.env.Region = 'us-east-1'
+
+{{entityMocks}}
+{{vendorMocks}}
+// Import handler after mocks
+const {handler} = await import('../src')
+
+describe('#{{lambdaName}}', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+{{entityMockResets}}
+  })
+
+  describe('success cases', () => {
+    test('should handle valid request', async () => {
+      // Arrange
+      const event: Partial<APIGatewayProxyEvent> = {
+        requestContext: {
+          authorizer: {
+            userId: 'test-user-id'
+          }
+        } as unknown as APIGatewayProxyEvent["requestContext"],
+        body: JSON.stringify({})
+      }
+
+{{entityMockReturns}}
+      // Act
+      const result = await handler(event as APIGatewayProxyEvent, testContext)
+
+      // Assert
+      expect(result.statusCode).toBe(200)
+    })
+  })
+
+  describe('error cases', () => {
+    test('should handle missing authorization', async () => {
+      // Arrange
+      const event: Partial<APIGatewayProxyEvent> = {
+        requestContext: {} as unknown as APIGatewayProxyEvent["requestContext"]
+      }
+
+      // Act
+      const result = await handler(event as APIGatewayProxyEvent, testContext)
+
+      // Assert
+      expect(result.statusCode).toBe(401)
+    })
+  })
+})

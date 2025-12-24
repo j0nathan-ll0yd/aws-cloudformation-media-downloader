@@ -1,0 +1,46 @@
+name: Auto-Update GraphRAG
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/lambdas/**'
+      - 'src/entities/**'
+      - 'src/lib/vendor/**'
+      - 'graphrag/metadata.json'
+      - 'tsp/**'
+
+jobs:
+  update-graphrag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update GraphRAG knowledge graph
+        run: pnpm run graphrag:extract
+
+      - name: Commit updated knowledge graph
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add graphrag/knowledge-graph.json
+          if git diff --staged --quiet; then
+            echo "No changes to knowledge graph"
+          else
+            git commit -m "chore: update GraphRAG knowledge graph"
+            git push
+          fi

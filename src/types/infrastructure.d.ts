@@ -18,14 +18,13 @@ export interface InfrastructureD {
 }
 
 export interface Data {
-    archive_file:             ArchiveFile;
-    aws_caller_identity:      Aws;
-    aws_iam_policy_document:  AwsIamPolicyDocument;
-    aws_lambda_layer_version: DataAwsLambdaLayerVersion;
-    aws_region:               Aws;
-    http:                     HTTP;
-    local_file:               LocalFile;
-    sops_file:                SopsFile;
+    archive_file:            ArchiveFile;
+    aws_caller_identity:     Aws;
+    aws_iam_policy_document: AwsIamPolicyDocument;
+    aws_region:              Aws;
+    http:                    HTTP;
+    local_file:              LocalFile;
+    sops_file:               SopsFile;
 }
 
 export interface ArchiveFile {
@@ -164,14 +163,6 @@ export interface UserSubscribeStatement {
     resources: string;
 }
 
-export interface DataAwsLambdaLayerVersion {
-    adot_collector: AdotCollector[];
-}
-
-export interface AdotCollector {
-    layer_name: string;
-}
-
 export interface HTTP {
     icanhazip: Icanhazip[];
 }
@@ -197,9 +188,10 @@ export interface Secret {
 }
 
 export interface Local {
-    lambda_functions:            string[];
-    lambda_functions_api:        string[];
-    lambda_functions_background: string[];
+    lambda_functions?:            string[];
+    lambda_functions_api?:        string[];
+    lambda_functions_background?: string[];
+    adot_layer_arn?:              string;
 }
 
 export interface Output {
@@ -263,7 +255,7 @@ export interface Resource {
     aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
     aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
     aws_lambda_function:                             AwsLambdaFunction;
-    aws_lambda_layer_version:                        ResourceAwsLambdaLayerVersion;
+    aws_lambda_layer_version:                        AwsLambdaLayerVersion;
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
     aws_s3_bucket_intelligent_tiering_configuration: AwsS3BucketIntelligentTieringConfiguration;
@@ -851,6 +843,7 @@ export interface APIGatewayAuthorizerEnvironment {
 
 export interface PurpleVariables {
     DYNAMODB_TABLE_NAME:             string;
+    ENABLE_XRAY:                     string;
     MULTI_AUTHENTICATION_PATH_PARTS: string;
     OTEL_EXPORTER_OTLP_ENDPOINT:     string;
     OTEL_PROPAGATORS:                string;
@@ -932,6 +925,7 @@ export interface TentacledVariables {
     DEFAULT_FILE_SIZE:           number;
     DEFAULT_FILE_URL:            string;
     DYNAMODB_TABLE_NAME:         string;
+    ENABLE_XRAY:                 string;
     OTEL_EXPORTER_OTLP_ENDPOINT: string;
     OTEL_PROPAGATORS:            string;
     OTEL_SERVICE_NAME:           string;
@@ -1122,7 +1116,7 @@ export interface WebhookFeedly {
     tracing_config:   TracingConfig[];
 }
 
-export interface ResourceAwsLambdaLayerVersion {
+export interface AwsLambdaLayerVersion {
     Ffmpeg: Ffmpeg[];
     YtDlp:  Ffmpeg[];
 }
@@ -1487,7 +1481,6 @@ const typeMap: any = {
         { json: "archive_file", js: "archive_file", typ: r("ArchiveFile") },
         { json: "aws_caller_identity", js: "aws_caller_identity", typ: r("Aws") },
         { json: "aws_iam_policy_document", js: "aws_iam_policy_document", typ: r("AwsIamPolicyDocument") },
-        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("DataAwsLambdaLayerVersion") },
         { json: "aws_region", js: "aws_region", typ: r("Aws") },
         { json: "http", js: "http", typ: r("HTTP") },
         { json: "local_file", js: "local_file", typ: r("LocalFile") },
@@ -1605,12 +1598,6 @@ const typeMap: any = {
         { json: "actions", js: "actions", typ: a("") },
         { json: "resources", js: "resources", typ: "" },
     ], false),
-    "DataAwsLambdaLayerVersion": o([
-        { json: "adot_collector", js: "adot_collector", typ: a(r("AdotCollector")) },
-    ], false),
-    "AdotCollector": o([
-        { json: "layer_name", js: "layer_name", typ: "" },
-    ], false),
     "HTTP": o([
         { json: "icanhazip", js: "icanhazip", typ: a(r("Icanhazip")) },
     ], false),
@@ -1630,9 +1617,10 @@ const typeMap: any = {
         { json: "source_file", js: "source_file", typ: "" },
     ], false),
     "Local": o([
-        { json: "lambda_functions", js: "lambda_functions", typ: a("") },
-        { json: "lambda_functions_api", js: "lambda_functions_api", typ: a("") },
-        { json: "lambda_functions_background", js: "lambda_functions_background", typ: a("") },
+        { json: "lambda_functions", js: "lambda_functions", typ: u(undefined, a("")) },
+        { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
+        { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
+        { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
     ], false),
     "Output": o([
         { json: "api_gateway_api_key", js: "api_gateway_api_key", typ: a(r("APIGatewayAPIKey")) },
@@ -1690,7 +1678,7 @@ const typeMap: any = {
         { json: "aws_iam_role_policy_attachment", js: "aws_iam_role_policy_attachment", typ: m(a(r("AwsIamRolePolicyAttachment"))) },
         { json: "aws_lambda_event_source_mapping", js: "aws_lambda_event_source_mapping", typ: r("AwsLambdaEventSourceMapping") },
         { json: "aws_lambda_function", js: "aws_lambda_function", typ: r("AwsLambdaFunction") },
-        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("ResourceAwsLambdaLayerVersion") },
+        { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("AwsLambdaLayerVersion") },
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
         { json: "aws_s3_bucket_intelligent_tiering_configuration", js: "aws_s3_bucket_intelligent_tiering_configuration", typ: r("AwsS3BucketIntelligentTieringConfiguration") },
@@ -2185,6 +2173,7 @@ const typeMap: any = {
     ], false),
     "PurpleVariables": o([
         { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "ENABLE_XRAY", js: "ENABLE_XRAY", typ: "" },
         { json: "MULTI_AUTHENTICATION_PATH_PARTS", js: "MULTI_AUTHENTICATION_PATH_PARTS", typ: "" },
         { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
         { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
@@ -2254,6 +2243,7 @@ const typeMap: any = {
         { json: "DEFAULT_FILE_SIZE", js: "DEFAULT_FILE_SIZE", typ: 0 },
         { json: "DEFAULT_FILE_URL", js: "DEFAULT_FILE_URL", typ: "" },
         { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
+        { json: "ENABLE_XRAY", js: "ENABLE_XRAY", typ: "" },
         { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
         { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
         { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
@@ -2425,7 +2415,7 @@ const typeMap: any = {
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
-    "ResourceAwsLambdaLayerVersion": o([
+    "AwsLambdaLayerVersion": o([
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
         { json: "YtDlp", js: "YtDlp", typ: a(r("Ffmpeg")) },
     ], false),

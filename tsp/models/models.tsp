@@ -189,9 +189,9 @@ model DeviceRegistrationResponse {
 }
 
 /**
- * Feedly webhook event
+ * Feedly webhook request
  */
-model FeedlyWebhook {
+model FeedlyWebhookRequest {
   /**
    * URL of the first image in the article
    * @example "https://i.ytimg.com/vi/7jEzw5WLiMI/maxresdefault.jpg"
@@ -213,7 +213,7 @@ model FeedlyWebhook {
   /**
    * Title of the article
    */
-  articleTitle: string;
+  articleTitle?: string;
 
   /**
    * URL of the article (typically a YouTube video URL)
@@ -264,11 +264,11 @@ model WebhookResponse {
 /**
  * User login request
  */
-model UserLogin {
+model UserLoginRequest {
   /**
-   * Authorization code from Sign in with Apple
+   * Identity token from Sign in with Apple (JWT)
    */
-  authorizationCode: string;
+  idToken: string;
 }
 
 /**
@@ -284,11 +284,11 @@ model UserLoginResponse {
 /**
  * User registration request
  */
-model UserRegistration {
+model UserRegistrationRequest {
   /**
-   * Authorization code from Sign in with Apple
+   * Identity token from Sign in with Apple (JWT)
    */
-  authorizationCode: string;
+  idToken: string;
 
   /**
    * User's first name
@@ -309,4 +309,19 @@ model UserRegistrationResponse {
    * JWT access token for authenticated requests
    */
   token: string;
+}
+
+/**
+ * User subscription request
+ */
+model UserSubscriptionRequest {
+  /**
+   * AWS SNS endpoint ARN for the device
+   */
+  endpointArn: string;
+
+  /**
+   * AWS SNS topic ARN to subscribe to
+   */
+  topicArn: string;
 }

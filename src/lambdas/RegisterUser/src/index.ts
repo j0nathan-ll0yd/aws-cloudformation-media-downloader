@@ -18,20 +18,14 @@
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
 import {auth} from '#lib/vendor/BetterAuth/config'
-import {registerUserSchema} from '#types/schemas'
+import {userRegistrationRequestSchema} from '#types/api-schema'
+import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
-
-interface UserRegistrationInput {
-  idToken: string
-  email: string
-  firstName?: string
-  lastName?: string
-}
 
 /**
  * Registers a User or logs in existing User via Sign in with Apple using Better Auth.
@@ -51,8 +45,8 @@ interface UserRegistrationInput {
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
   // 1. Validate request
-  const requestBody = getPayloadFromEvent(event) as UserRegistrationInput
-  validateRequest(requestBody, registerUserSchema)
+  const requestBody = getPayloadFromEvent(event) as UserRegistrationRequest
+  validateRequest(requestBody, userRegistrationRequestSchema)
 
   // 2. Sign in/Register using Better Auth with ID token from iOS app
   // Better Auth handles:

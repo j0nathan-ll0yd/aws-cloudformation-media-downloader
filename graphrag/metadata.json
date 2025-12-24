@@ -1,6 +1,6 @@
 {
   "$schema": "./metadata.schema.json",
-  "description": "Semantic metadata for GraphRAG that cannot be auto-derived from code",
+  "description": "Semantic metadata for GraphRAG including Lambda triggers, API contracts, and entity relationships",
   "lambdas": {
     "ApiGatewayAuthorizer": {
       "trigger": "API Gateway",
