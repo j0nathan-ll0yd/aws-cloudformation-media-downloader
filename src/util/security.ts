@@ -15,16 +15,7 @@
  *
  * @param data - Data to sanitize
  * @returns Sanitized copy of data with sensitive fields redacted
- *
- * @example
- * ```typescript
- * const sanitized = sanitizeData({
- *   email: 'user@example.com',
- *   token: 'secret123',
- *   safeField: 'visible'
- * })
- * // Returns: { email: '[REDACTED]', token: '[REDACTED]', safeField: 'visible' }
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#test-fixtures | PII Protection Examples}
  */
 export function sanitizeData(data: unknown): unknown {
   if (!data || typeof data !== 'object') {

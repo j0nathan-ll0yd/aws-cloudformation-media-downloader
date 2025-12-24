@@ -1,5 +1,6 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
 import tsdoc from 'eslint-plugin-tsdoc'
+import jsdoc from 'eslint-plugin-jsdoc'
 import tsParser from '@typescript-eslint/parser'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -42,7 +43,7 @@ export default [
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
   {
-    plugins: {'@typescript-eslint': typescriptEslint, tsdoc, 'local-rules': localRules},
+    plugins: {'@typescript-eslint': typescriptEslint, tsdoc, jsdoc, 'local-rules': localRules},
 
     languageOptions: {parser: tsParser},
 
@@ -53,8 +54,33 @@ export default [
       'no-bitwise': 'error',
       'no-cond-assign': 'error',
 
-      // Documentation
+      // Documentation - TSDoc syntax validation
       'tsdoc/syntax': 'warn',
+
+      // Documentation - JSDoc enforcement (per Code-Comments.md conventions)
+      // Require JSDoc on exported functions (warn to allow gradual adoption)
+      'jsdoc/require-jsdoc': ['warn', {
+        publicOnly: true,
+        require: {FunctionDeclaration: true, MethodDefinition: true, ArrowFunctionExpression: false},
+        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
+      }],
+      // Require @param tags for function parameters (warn for gradual adoption)
+      'jsdoc/require-param': 'warn',
+      // Require @param descriptions (not just names)
+      'jsdoc/require-param-description': 'warn',
+      // Enforce hyphen before @param description (TSDoc standard)
+      'jsdoc/require-hyphen-before-param-description': ['warn', 'always'],
+      // Validate @param names match function parameters (warn for gradual adoption)
+      // Note: Destructured params may not match exactly - use checkDestructured: false
+      'jsdoc/check-param-names': ['warn', {checkDestructured: false}],
+      // Require @returns tag for functions with return values
+      'jsdoc/require-returns': 'warn',
+      // Require @returns description
+      'jsdoc/require-returns-description': 'warn',
+      // Don't allow types in JSDoc (TypeScript provides types)
+      'jsdoc/no-types': 'error',
+      // Check that @returns is not used for void functions
+      'jsdoc/require-returns-check': 'warn',
       // NOTE: Formatting rules (quotes, semi, comma-dangle, max-len) removed.
       // dprint handles all formatting via dprint.json
 
@@ -66,7 +92,9 @@ export default [
       // Phase 2: HIGH
       'local-rules/response-helpers': 'warn',
       'local-rules/env-validation': 'error',
-      'local-rules/authenticated-handler-enforcement': 'warn'
+      'local-rules/authenticated-handler-enforcement': 'warn',
+      // Phase 4: STYLISTIC (comment conventions)
+      'local-rules/spacing-conventions': 'warn'
     }
   }
 ]

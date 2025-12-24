@@ -1,8 +1,36 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for the Devices DynamoDB table.
- * This entity manages device registrations for push notifications.
+ * Devices Entity - iOS device registration for push notifications.
+ *
+ * Manages Apple Push Notification Service (APNS) endpoint associations.
+ * Each device has a unique deviceToken from iOS and an SNS endpointArn for delivery.
+ *
+ * Lifecycle:
+ * 1. Created when user registers device in iOS app (RegisterDevice Lambda)
+ * 2. Updated when device token changes (app reinstall, iOS update)
+ * 3. Deleted when user unregisters or device goes stale (PruneDevices Lambda)
+ *
+ * Device Token Flow:
+ * - iOS app requests push notification permission
+ * - iOS provides device token (hex string)
+ * - App sends token to RegisterDevice Lambda
+ * - Lambda creates SNS platform endpoint
+ * - endpointArn stored for push notification delivery
+ *
+ * Staleness Detection:
+ * - APNS returns "Unregistered" when token is invalid
+ * - PruneDevices Lambda runs daily to clean stale endpoints
+ * - Stale devices are unlinked from users and deleted
+ *
+ * Access Patterns:
+ * - Primary: Get device by deviceId
+ * - No secondary indexes (devices queried via UserDevices relationship)
+ *
+ * @see UserDevices for user-device associations
+ * @see RegisterDevice Lambda for device registration
+ * @see SendPushNotification Lambda for notification delivery
+ * @see PruneDevices Lambda for stale device cleanup
  */
 export const Devices = new Entity(
   {

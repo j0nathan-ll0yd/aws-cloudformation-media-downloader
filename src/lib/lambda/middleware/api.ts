@@ -13,15 +13,7 @@ import {UnauthorizedError} from '#lib/system/errors'
  *
  * @param handler - Business logic that returns APIGatewayProxyResult or throws
  * @returns Wrapped handler with error handling and fixture logging
- *
- * @example
- * ```typescript
- * export const handler = withXRay(wrapApiHandler(async ({event, context}) => {
- *   // Business logic - just throw on error
- *   if (!valid) throw new UnauthorizedError('Invalid')
- *   return response(context, 200, data)
- * }))
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapApiHandler | Usage Examples}
  */
 export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: ApiHandlerParams<TEvent>) => Promise<APIGatewayProxyResult>
@@ -48,17 +40,7 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
  *
  * @param handler - Business logic with guaranteed userId
  * @returns Wrapped handler with authentication enforcement
- *
- * @example
- * ```typescript
- * export const handler = withXRay(wrapAuthenticatedHandler(
- *   async ({event, context, userId}) => {
- *     // userId is guaranteed to be a string - no null checks needed
- *     const files = await getFilesByUser(userId)
- *     return response(context, 200, files)
- *   }
- * ))
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapAuthenticatedHandler | Usage Examples}
  */
 export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: AuthenticatedApiParams<TEvent>) => Promise<APIGatewayProxyResult>
@@ -97,20 +79,7 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
  *
  * @param handler - Business logic with userId and userStatus
  * @returns Wrapped handler with optional authentication support
- *
- * @example
- * ```typescript
- * export const handler = withPowertools(wrapOptionalAuthHandler(
- *   async ({context, userId, userStatus}) => {
- *     if (userStatus === UserStatus.Anonymous) {
- *       return buildApiResponse(context, 200, [getDefaultFile()])
- *     }
- *     // userId is available for authenticated users
- *     const files = await getFilesByUser(userId as string)
- *     return buildApiResponse(context, 200, files)
- *   }
- * ))
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapOptionalAuthHandler | Usage Examples}
  */
 export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: OptionalAuthApiParams<TEvent>) => Promise<APIGatewayProxyResult>

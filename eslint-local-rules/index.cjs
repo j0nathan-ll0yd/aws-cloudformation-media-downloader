@@ -29,6 +29,7 @@ const authenticatedHandlerEnforcement = require('./rules/authenticated-handler-e
 const enforcePowertools = require('./rules/enforce-powertools.cjs')
 const noDomainLeakage = require('./rules/no-domain-leakage.cjs')
 const strictEnvVars = require('./rules/strict-env-vars.cjs')
+const spacingConventions = require('./rules/spacing-conventions.cjs')
 
 module.exports = {
   rules: {
@@ -43,6 +44,8 @@ module.exports = {
     // Phase 3: STRATEGIC
     'enforce-powertools': enforcePowertools,
     'no-domain-leakage': noDomainLeakage,
-    'strict-env-vars': strictEnvVars
+    'strict-env-vars': strictEnvVars,
+    // Phase 4: STYLISTIC (comment conventions)
+    'spacing-conventions': spacingConventions
   }
 }

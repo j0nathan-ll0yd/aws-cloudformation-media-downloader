@@ -1,8 +1,32 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for the Users DynamoDB table.
- * This entity manages user accounts and identity provider information.
+ * Users Entity - Core user account management.
+ *
+ * Manages user accounts with Sign In With Apple integration.
+ * Each user has embedded identity provider tokens for OAuth refresh.
+ *
+ * Lifecycle:
+ * 1. Created when user signs in with Apple for the first time (RegisterUser Lambda)
+ * 2. Updated when tokens are refreshed or profile changes (LoginUser, RefreshToken)
+ * 3. Deleted when user requests account deletion (UserDelete Lambda)
+ *
+ * Identity Provider Structure:
+ * The `identityProviders` map contains Apple OAuth tokens:
+ * - userId: Apple's unique user identifier
+ * - accessToken/refreshToken: OAuth tokens for API access
+ * - email: May be Apple's private relay email
+ * - isPrivateEmail: Whether user chose to hide their email
+ *
+ * Access Patterns:
+ * - Primary: Get user by userId
+ * - byEmail (GSI3): Look up user by email (login flow)
+ * - byAppleDeviceId (GSI7): Look up user by Apple device ID (token refresh)
+ *
+ * @see RegisterUser Lambda for account creation
+ * @see LoginUser Lambda for authentication
+ * @see UserDelete Lambda for cascade deletion
+ * @see Collections.userResources for querying user's files/devices
  */
 export const Users = new Entity({
   model: {entity: 'User', version: '1', service: 'MediaDownloader'},
