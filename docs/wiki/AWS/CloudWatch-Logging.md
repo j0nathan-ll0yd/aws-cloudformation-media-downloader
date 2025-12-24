@@ -61,6 +61,88 @@ Controlled by `LOG_LEVEL` environment variable:
 | INFO | Standard flow + above | ✓ Default |
 | DEBUG | Detailed diagnostics | Development only |
 
+## Accessing Lambda Logs from CLI
+
+### Log Group Naming Convention
+
+All Lambda log groups follow the pattern `/aws/lambda/{FunctionName}`. Log groups are defined in Terraform alongside each Lambda function:
+
+```hcl
+# Example from terraform/list_files.tf
+resource "aws_cloudwatch_log_group" "ListFiles" {
+  name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
+  retention_in_days = 14
+}
+```
+
+### Lambda Log Groups Reference
+
+| Lambda | Log Group | Terraform File |
+|--------|-----------|----------------|
+| ApiGatewayAuthorizer | `/aws/lambda/ApiGatewayAuthorizer` | api_gateway_authorizer.tf |
+| FileCoordinator | `/aws/lambda/FileCoordinator` | file_coordinator.tf |
+| ListFiles | `/aws/lambda/ListFiles` | list_files.tf |
+| LogClientEvent | `/aws/lambda/LogClientEvent` | log_client_event.tf |
+| LoginUser | `/aws/lambda/LoginUser` | login_user.tf |
+| PruneDevices | `/aws/lambda/PruneDevices` | prune_devices.tf |
+| RefreshToken | `/aws/lambda/RefreshToken` | refresh_token.tf |
+| RegisterDevice | `/aws/lambda/RegisterDevice` | register_device.tf |
+| RegisterUser | `/aws/lambda/RegisterUser` | register_user.tf |
+| S3ObjectCreated | `/aws/lambda/S3ObjectCreated` | file_bucket.tf |
+| SendPushNotification | `/aws/lambda/SendPushNotification` | send_push_notification.tf |
+| StartFileUpload | `/aws/lambda/StartFileUpload` | feedly_webhook.tf |
+| UserDelete | `/aws/lambda/UserDelete` | user_delete.tf |
+| UserSubscribe | `/aws/lambda/UserSubscribe` | user_subscribe.tf |
+| WebhookFeedly | `/aws/lambda/WebhookFeedly` | feedly_webhook.tf |
+
+### CLI Commands for Log Access
+
+```bash
+# Tail logs in real-time (last 10 minutes)
+aws logs tail /aws/lambda/ApiGatewayAuthorizer --since 10m --follow --region us-west-2
+
+# View recent logs without following
+aws logs tail /aws/lambda/ListFiles --since 30m --format short --region us-west-2
+
+# Filter for errors only
+aws logs tail /aws/lambda/WebhookFeedly --since 1h --filter-pattern "ERROR" --region us-west-2
+
+# Filter for specific request ID
+aws logs tail /aws/lambda/LoginUser --since 1h --filter-pattern "abc123-request-id" --region us-west-2
+
+# View logs from a specific time range
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/FileCoordinator \
+  --start-time $(date -v-1H +%s000) \
+  --end-time $(date +%s000) \
+  --region us-west-2
+
+# Search across multiple log groups (useful after deployments)
+for lambda in ApiGatewayAuthorizer ListFiles LoginUser; do
+  echo "=== $lambda ==="
+  aws logs tail /aws/lambda/$lambda --since 5m --format short --region us-west-2 | head -20
+done
+```
+
+### Post-Deployment Log Verification
+
+After deploying Lambda changes, verify logs to confirm expected behavior:
+
+```bash
+# Quick health check of key lambdas after deployment
+aws logs tail /aws/lambda/ApiGatewayAuthorizer --since 5m --format short --region us-west-2
+
+# Check for any errors after deployment
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/ApiGatewayAuthorizer \
+  --start-time $(date -v-5M +%s000) \
+  --filter-pattern "ERROR" \
+  --region us-west-2
+
+# Verify OTEL deprecation warnings are suppressed
+aws logs tail /aws/lambda/ApiGatewayAuthorizer --since 10m --region us-west-2 | grep -i "deprecated"
+```
+
 ## CloudWatch Insights Queries
 
 ```sql

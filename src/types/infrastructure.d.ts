@@ -18,7 +18,7 @@ export interface InfrastructureD {
 }
 
 export interface Data {
-    archive_file:            ArchiveFile;
+    archive_file:            { [key: string]: ArchiveFile[] };
     aws_caller_identity:     Aws;
     aws_iam_policy_document: AwsIamPolicyDocument;
     aws_region:              Aws;
@@ -28,41 +28,14 @@ export interface Data {
 }
 
 export interface ArchiveFile {
-    ApiGatewayAuthorizer: CloudfrontMiddlewareElement[];
-    CloudfrontMiddleware: CloudfrontMiddlewareElement[];
-    FfmpegLayer:          Layer[];
-    FileCoordinator:      CloudfrontMiddlewareElement[];
-    ListFiles:            CloudfrontMiddlewareElement[];
-    LogClientEvent:       CloudfrontMiddlewareElement[];
-    LoginUser:            CloudfrontMiddlewareElement[];
-    PruneDevices:         CloudfrontMiddlewareElement[];
-    RefreshToken:         CloudfrontMiddlewareElement[];
-    RegisterDevice:       CloudfrontMiddlewareElement[];
-    RegisterUser:         CloudfrontMiddlewareElement[];
-    S3ObjectCreated:      CloudfrontMiddlewareElement[];
-    SendPushNotification: CloudfrontMiddlewareElement[];
-    StartFileUpload:      CloudfrontMiddlewareElement[];
-    UserDelete:           CloudfrontMiddlewareElement[];
-    UserSubscribe:        CloudfrontMiddlewareElement[];
-    WebhookFeedly:        CloudfrontMiddlewareElement[];
-    YtDlpLayer:           Layer[];
-}
-
-export interface CloudfrontMiddlewareElement {
-    output_path: string;
-    source_file: string;
-    type:        APIGatewayAuthorizerType;
-}
-
-export enum APIGatewayAuthorizerType {
-    Zip = "zip",
-}
-
-export interface Layer {
-    depends_on:  string[];
     output_path: string;
     source_dir:  string;
-    type:        APIGatewayAuthorizerType;
+    type:        ArchiveFileType;
+    depends_on?: string[];
+}
+
+export enum ArchiveFileType {
+    Zip = "zip",
 }
 
 export interface Aws {
@@ -196,11 +169,12 @@ export interface Local {
 }
 
 export interface CommonLambdaEnv {
-    LOG_LEVEL:                         string;
-    NODE_OPTIONS:                      string;
-    OPENTELEMETRY_EXTENSION_LOG_LEVEL: string;
-    OTEL_EXPORTER_OTLP_ENDPOINT:       string;
-    OTEL_PROPAGATORS:                  string;
+    LOG_LEVEL:                          string;
+    NODE_OPTIONS:                       string;
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI: string;
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL:  string;
+    OTEL_EXPORTER_OTLP_ENDPOINT:        string;
+    OTEL_PROPAGATORS:                   string;
 }
 
 export interface Output {
@@ -814,32 +788,32 @@ export interface AwsLambdaEventSourceMappingSendPushNotification {
 }
 
 export interface AwsLambdaFunction {
-    ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
+    ApiGatewayAuthorizer: LogClientEventElement[];
     CloudfrontMiddleware: CloudfrontMiddleware[];
-    FileCoordinator:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    ListFiles:            AwsLambdaFunctionAPIGatewayAuthorizer[];
-    LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
-    LoginUser:            AwsLambdaFunctionAPIGatewayAuthorizer[];
-    PruneDevices:         AwsLambdaFunctionAPIGatewayAuthorizer[];
-    RefreshToken:         AwsLambdaFunctionAPIGatewayAuthorizer[];
-    RegisterDevice:       AwsLambdaFunctionAPIGatewayAuthorizer[];
-    RegisterUser:         AwsLambdaFunctionAPIGatewayAuthorizer[];
-    S3ObjectCreated:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    SendPushNotification: AwsLambdaFunctionAPIGatewayAuthorizer[];
-    StartFileUpload:      AwsLambdaFunctionAPIGatewayAuthorizer[];
-    UserDelete:           AwsLambdaFunctionAPIGatewayAuthorizer[];
-    UserSubscribe:        AwsLambdaFunctionAPIGatewayAuthorizer[];
-    WebhookFeedly:        AwsLambdaFunctionAPIGatewayAuthorizer[];
+    FileCoordinator:      LogClientEventElement[];
+    ListFiles:            LogClientEventElement[];
+    LogClientEvent:       LogClientEventElement[];
+    LoginUser:            LogClientEventElement[];
+    PruneDevices:         LogClientEventElement[];
+    RefreshToken:         LogClientEventElement[];
+    RegisterDevice:       LogClientEventElement[];
+    RegisterUser:         LogClientEventElement[];
+    S3ObjectCreated:      LogClientEventElement[];
+    SendPushNotification: LogClientEventElement[];
+    StartFileUpload:      LogClientEventElement[];
+    UserDelete:           LogClientEventElement[];
+    UserSubscribe:        LogClientEventElement[];
+    WebhookFeedly:        LogClientEventElement[];
 }
 
-export interface AwsLambdaFunctionAPIGatewayAuthorizer {
+export interface LogClientEventElement {
     depends_on:                      string[];
     description:                     string;
     environment:                     Environment[];
     filename:                        string;
     function_name:                   string;
-    handler:                         string;
-    layers:                          LayerElement[];
+    handler:                         Handler;
+    layers:                          Layer[];
     role:                            string;
     runtime:                         Runtime;
     source_code_hash:                string;
@@ -858,7 +832,11 @@ export interface EphemeralStorage {
     size: number;
 }
 
-export enum LayerElement {
+export enum Handler {
+    IndexHandler = "index.handler",
+}
+
+export enum Layer {
     AwsLambdaLayerVersionFfmpegArn = "${aws_lambda_layer_version.Ffmpeg.arn}",
     AwsLambdaLayerVersionYtDLPArn = "${aws_lambda_layer_version.YtDlp.arn}",
     LocalAdotLayerArn = "${local.adot_layer_arn}",
@@ -880,7 +858,7 @@ export interface CloudfrontMiddleware {
     description:      string;
     filename:         string;
     function_name:    string;
-    handler:          string;
+    handler:          Handler;
     provider:         string;
     publish:          boolean;
     role:             string;
@@ -1251,7 +1229,7 @@ const typeMap: any = {
         { json: "terraform", js: "terraform", typ: a(r("Terraform")) },
     ], false),
     "Data": o([
-        { json: "archive_file", js: "archive_file", typ: r("ArchiveFile") },
+        { json: "archive_file", js: "archive_file", typ: m(a(r("ArchiveFile"))) },
         { json: "aws_caller_identity", js: "aws_caller_identity", typ: r("Aws") },
         { json: "aws_iam_policy_document", js: "aws_iam_policy_document", typ: r("AwsIamPolicyDocument") },
         { json: "aws_region", js: "aws_region", typ: r("Aws") },
@@ -1260,35 +1238,10 @@ const typeMap: any = {
         { json: "sops_file", js: "sops_file", typ: r("SopsFile") },
     ], false),
     "ArchiveFile": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "FfmpegLayer", js: "FfmpegLayer", typ: a(r("Layer")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CloudfrontMiddlewareElement")) },
-        { json: "YtDlpLayer", js: "YtDlpLayer", typ: a(r("Layer")) },
-    ], false),
-    "CloudfrontMiddlewareElement": o([
-        { json: "output_path", js: "output_path", typ: "" },
-        { json: "source_file", js: "source_file", typ: "" },
-        { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
-    ], false),
-    "Layer": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "output_path", js: "output_path", typ: "" },
         { json: "source_dir", js: "source_dir", typ: "" },
-        { json: "type", js: "type", typ: r("APIGatewayAuthorizerType") },
+        { json: "type", js: "type", typ: r("ArchiveFileType") },
+        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
     ], false),
     "Aws": o([
         { json: "current", js: "current", typ: a(r("Current")) },
@@ -1399,6 +1352,7 @@ const typeMap: any = {
     "CommonLambdaEnv": o([
         { json: "LOG_LEVEL", js: "LOG_LEVEL", typ: "" },
         { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
+        { json: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", js: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", typ: "" },
         { json: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", js: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", typ: "" },
         { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
         { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
@@ -1919,31 +1873,31 @@ const typeMap: any = {
         { json: "function_response_types", js: "function_response_types", typ: a("") },
     ], false),
     "AwsLambdaFunction": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("LogClientEventElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("LogClientEventElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("LogClientEventElement")) },
+        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("LogClientEventElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("LogClientEventElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("LogClientEventElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("LogClientEventElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("LogClientEventElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("LogClientEventElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("LogClientEventElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("LogClientEventElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("LogClientEventElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("LogClientEventElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("LogClientEventElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("LogClientEventElement")) },
     ], false),
-    "AwsLambdaFunctionAPIGatewayAuthorizer": o([
+    "LogClientEventElement": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("Environment")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a(r("LayerElement")) },
+        { json: "handler", js: "handler", typ: r("Handler") },
+        { json: "layers", js: "layers", typ: a(r("Layer")) },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
@@ -1966,7 +1920,7 @@ const typeMap: any = {
         { json: "description", js: "description", typ: "" },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
+        { json: "handler", js: "handler", typ: r("Handler") },
         { json: "provider", js: "provider", typ: "" },
         { json: "publish", js: "publish", typ: true },
         { json: "role", js: "role", typ: "" },
@@ -2118,14 +2072,17 @@ const typeMap: any = {
         { json: "source", js: "source", typ: "" },
         { json: "version", js: "version", typ: "" },
     ], false),
-    "APIGatewayAuthorizerType": [
+    "ArchiveFileType": [
         "zip",
     ],
     "AttributeType": [
         "N",
         "S",
     ],
-    "LayerElement": [
+    "Handler": [
+        "index.handler",
+    ],
+    "Layer": [
         "${aws_lambda_layer_version.Ffmpeg.arn}",
         "${aws_lambda_layer_version.YtDlp.arn}",
         "${local.adot_layer_arn}",

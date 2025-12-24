@@ -137,7 +137,20 @@ _No pending conventions - all conventions are documented._
    - **Status**: ✅ Implemented, pending documentation
    - **Enforcement**: Code review when adding workarounds
 
-2. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
+2. **Post-Deployment Log Verification** (Operational Pattern)
+   - **What**: After deploying Lambda changes, verify CloudWatch logs to confirm expected behavior
+   - **Why**: Catches deployment issues early; validates log noise reduction; confirms no new errors
+   - **Log Groups**: All follow `/aws/lambda/{FunctionName}` pattern, defined in Terraform alongside each Lambda
+   - **Reference**: See Lambda Log Groups table in `docs/wiki/AWS/CloudWatch-Logging.md`
+   - **Commands**:
+     - `aws logs tail /aws/lambda/{Lambda} --since 5m --format short --region us-west-2`
+     - `aws logs tail /aws/lambda/{Lambda} --since 10m --region us-west-2 | grep -i "deprecated"`
+   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: Operational practice after deployments
+
+3. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
    - **What**: Use `common_lambda_env` Terraform local with `merge()` to centralize OTEL and runtime configuration
    - **Why**: DRY principle; ensures consistent configuration across all 14 lambdas; reduces ~90% log noise
    - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
@@ -572,5 +585,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-12-23
-- **Total Conventions**: 43 detected (32 documented, 11 pending documentation)
+- **Total Conventions**: 44 detected (33 documented, 11 pending documentation)
 - **Convention Capture System**: Active

@@ -69,7 +69,7 @@ resource "aws_cloudwatch_log_group" "SendPushNotification" {
 
 data "archive_file" "SendPushNotification" {
   type        = "zip"
-  source_dir = "./../build/lambdas/SendPushNotification"
+  source_dir  = "./../build/lambdas/SendPushNotification"
   output_path = "./../build/lambdas/SendPushNotification.zip"
 }
 

@@ -59,7 +59,7 @@ resource "aws_cloudwatch_log_group" "UserDelete" {
 
 data "archive_file" "UserDelete" {
   type        = "zip"
-  source_dir = "./../build/lambdas/UserDelete"
+  source_dir  = "./../build/lambdas/UserDelete"
   output_path = "./../build/lambdas/UserDelete.zip"
 }
 

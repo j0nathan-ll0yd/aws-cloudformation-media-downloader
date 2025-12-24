@@ -46,7 +46,7 @@ resource "aws_cloudwatch_log_group" "UserSubscribe" {
 
 data "archive_file" "UserSubscribe" {
   type        = "zip"
-  source_dir = "./../build/lambdas/UserSubscribe"
+  source_dir  = "./../build/lambdas/UserSubscribe"
   output_path = "./../build/lambdas/UserSubscribe.zip"
 }
 

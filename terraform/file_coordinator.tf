@@ -68,7 +68,7 @@ resource "aws_cloudwatch_log_group" "FileCoordinator" {
 
 data "archive_file" "FileCoordinator" {
   type        = "zip"
-  source_dir = "./../build/lambdas/FileCoordinator"
+  source_dir  = "./../build/lambdas/FileCoordinator"
   output_path = "./../build/lambdas/FileCoordinator.zip"
 }
 

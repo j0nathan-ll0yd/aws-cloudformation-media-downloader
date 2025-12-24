@@ -20,7 +20,7 @@ provider "aws" {
 
 data "archive_file" "CloudfrontMiddleware" {
   type        = "zip"
-  source_dir = "./../build/lambdas/CloudfrontMiddleware"
+  source_dir  = "./../build/lambdas/CloudfrontMiddleware"
   output_path = "./../build/lambdas/CloudfrontMiddleware.zip"
 }
 

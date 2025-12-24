@@ -53,7 +53,7 @@ resource "aws_cloudwatch_log_group" "RegisterUser" {
 
 data "archive_file" "RegisterUser" {
   type        = "zip"
-  source_dir = "./../build/lambdas/RegisterUser"
+  source_dir  = "./../build/lambdas/RegisterUser"
   output_path = "./../build/lambdas/RegisterUser.zip"
 }
 

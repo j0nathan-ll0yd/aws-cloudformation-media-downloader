@@ -64,7 +64,7 @@ resource "aws_cloudwatch_log_group" "RegisterDevice" {
 
 data "archive_file" "RegisterDevice" {
   type        = "zip"
-  source_dir = "./../build/lambdas/RegisterDevice"
+  source_dir  = "./../build/lambdas/RegisterDevice"
   output_path = "./../build/lambdas/RegisterDevice.zip"
 }
 

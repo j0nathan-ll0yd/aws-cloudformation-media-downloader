@@ -51,7 +51,7 @@ resource "aws_cloudwatch_log_group" "RefreshToken" {
 
 data "archive_file" "RefreshToken" {
   type        = "zip"
-  source_dir = "./../build/lambdas/RefreshToken"
+  source_dir  = "./../build/lambdas/RefreshToken"
   output_path = "./../build/lambdas/RefreshToken.zip"
 }
 

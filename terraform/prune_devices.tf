@@ -73,7 +73,7 @@ resource "aws_cloudwatch_log_group" "PruneDevices" {
 
 data "archive_file" "PruneDevices" {
   type        = "zip"
-  source_dir = "./../build/lambdas/PruneDevices"
+  source_dir  = "./../build/lambdas/PruneDevices"
   output_path = "./../build/lambdas/PruneDevices.zip"
 }
 

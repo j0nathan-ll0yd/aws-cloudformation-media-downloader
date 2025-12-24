@@ -67,7 +67,7 @@ resource "aws_cloudwatch_log_group" "WebhookFeedly" {
 
 data "archive_file" "WebhookFeedly" {
   type        = "zip"
-  source_dir = "./../build/lambdas/WebhookFeedly"
+  source_dir  = "./../build/lambdas/WebhookFeedly"
   output_path = "./../build/lambdas/WebhookFeedly.zip"
 }
 
@@ -188,7 +188,7 @@ resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyXRay" {
 
 data "archive_file" "StartFileUpload" {
   type        = "zip"
-  source_dir = "./../build/lambdas/StartFileUpload"
+  source_dir  = "./../build/lambdas/StartFileUpload"
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
@@ -318,7 +318,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
   function_name                  = "StartFileUpload"
   role                           = aws_iam_role.MultipartUploadRole.arn
-  handler          = "index.handler"
+  handler                        = "index.handler"
   runtime                        = "nodejs24.x"
   depends_on                     = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
   timeout                        = 900
