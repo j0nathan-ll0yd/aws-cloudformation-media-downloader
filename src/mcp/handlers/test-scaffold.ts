@@ -41,17 +41,8 @@ function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
   const entityMatch = dep.match(/src\/entities\/(\w+)/)
   if (entityMatch && entityNames.includes(entityMatch[1])) {
     const entityName = entityMatch[1]
-    const mockCode = loadAndInterpolate('test-scaffold/entity-mock.template.txt', {
-      entityName,
-      entityNameLower: entityName.toLowerCase()
-    })
-    return {
-      type: 'entity',
-      name: entityName,
-      path: dep,
-      importAlias: `#entities/${entityName}`,
-      mockCode
-    }
+    const mockCode = loadAndInterpolate('test-scaffold/entity-mock.template.txt', {entityName, entityNameLower: entityName.toLowerCase()})
+    return {type: 'entity', name: entityName, path: dep, importAlias: `#entities/${entityName}`, mockCode}
   }
 
   // AWS Vendor mocks
@@ -60,17 +51,8 @@ function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
     const serviceName = awsVendorMatch[1]
     const mockFunctions = getAwsServiceMocks(serviceName)
     const mockFunctionsStr = mockFunctions.map((fn) => `  ${fn}: jest.fn()`).join(',\n')
-    const mockCode = loadAndInterpolate('test-scaffold/aws-vendor-mock.template.txt', {
-      serviceName,
-      mockFunctions: mockFunctionsStr
-    })
-    return {
-      type: 'vendor',
-      name: `AWS/${serviceName}`,
-      path: dep,
-      importAlias: `#lib/vendor/AWS/${serviceName}`,
-      mockCode
-    }
+    const mockCode = loadAndInterpolate('test-scaffold/aws-vendor-mock.template.txt', {serviceName, mockFunctions: mockFunctionsStr})
+    return {type: 'vendor', name: `AWS/${serviceName}`, path: dep, importAlias: `#lib/vendor/AWS/${serviceName}`, mockCode}
   }
 
   // Other vendor mocks (YouTube, etc.)
@@ -78,25 +60,13 @@ function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
   if (vendorMatch && !dep.includes('/AWS/')) {
     const vendorName = vendorMatch[1]
     const mockCode = loadAndInterpolate('test-scaffold/vendor-mock.template.txt', {vendorName})
-    return {
-      type: 'vendor',
-      name: vendorName,
-      path: dep,
-      importAlias: `#lib/vendor/${vendorName}`,
-      mockCode
-    }
+    return {type: 'vendor', name: vendorName, path: dep, importAlias: `#lib/vendor/${vendorName}`, mockCode}
   }
 
   // OpenTelemetry wrapper
   if (dep.includes('OpenTelemetry')) {
     const mockCode = loadTemplate('test-scaffold/opentelemetry-mock.template.txt')
-    return {
-      type: 'vendor',
-      name: 'OpenTelemetry',
-      path: dep,
-      importAlias: '#lib/vendor/OpenTelemetry',
-      mockCode
-    }
+    return {type: 'vendor', name: 'OpenTelemetry', path: dep, importAlias: '#lib/vendor/OpenTelemetry', mockCode}
   }
 
   return null
@@ -129,21 +99,18 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const entityMockImport = entityMocks.length > 0 ? "import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'" : ''
 
   // Build entity mocks section
-  const entityMocksSection =
-    entityMocks.length > 0 ? '// Entity mocks\n' + entityMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
+  const entityMocksSection = entityMocks.length > 0 ? '// Entity mocks\n' + entityMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
 
   // Build vendor mocks section
-  const vendorMocksSection =
-    vendorMocks.length > 0 ? '// Vendor mocks\n' + vendorMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
+  const vendorMocksSection = vendorMocks.length > 0 ? '// Vendor mocks\n' + vendorMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
 
   // Build entity mock resets
   const entityMockResets = entityMocks.map((m) => `    ${m.name.toLowerCase()}Mock.reset()`).join('\n')
 
   // Build entity mock returns
-  const entityMockReturns =
-    entityMocks.length > 0
-      ? entityMocks.map((m) => `      ${m.name.toLowerCase()}Mock.query.go.mockResolvedValue({data: []})`).join('\n') + '\n'
-      : ''
+  const entityMockReturns = entityMocks.length > 0
+    ? entityMocks.map((m) => `      ${m.name.toLowerCase()}Mock.query.go.mockResolvedValue({data: []})`).join('\n') + '\n'
+    : ''
 
   // Load and interpolate the main template
   return loadAndInterpolate('test-scaffold/test-file.template.txt', {
@@ -173,9 +140,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const transitiveDeps = depGraph.transitiveDependencies[normalizedFile] || []
 
   if (transitiveDeps.length === 0) {
-    const suggestions = Object.keys(depGraph.transitiveDependencies)
-      .filter((k) => k.includes(file.split('/').pop()!.replace('.ts', '')))
-      .slice(0, 5)
+    const suggestions = Object.keys(depGraph.transitiveDependencies).filter((k) => k.includes(file.split('/').pop()!.replace('.ts', ''))).slice(0, 5)
 
     return {error: `File '${file}' not found in dependency graph`, suggestions: suggestions.length > 0 ? suggestions : undefined}
   }
@@ -238,10 +203,9 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           '2. Vendor mocks (jest.unstable_mockModule)',
           '3. Handler import (await import)'
         ],
-        recommendation:
-          entityMocks.length > 0
-            ? 'Remember: Entity mocks MUST be defined before jest.unstable_mockModule calls'
-            : 'Standard mock setup - define mocks before importing handler'
+        recommendation: entityMocks.length > 0
+          ? 'Remember: Entity mocks MUST be defined before jest.unstable_mockModule calls'
+          : 'Standard mock setup - define mocks before importing handler'
       }
     }
 
