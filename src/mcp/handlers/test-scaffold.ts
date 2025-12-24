@@ -83,7 +83,7 @@ function getAwsServiceMocks(service: string): string[] {
     SNS: ['publishToSNS', 'sendPushNotification'],
     SQS: ['sendMessage', 'receiveMessage', 'deleteMessage'],
     SecretsManager: ['getSecret'],
-    CloudWatch: ['putMetricData', 'putLogEvents']
+    CloudWatch: ['putLogEvents']
   }
   return serviceMocks[service] || ['mockFunction']
 }

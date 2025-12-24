@@ -161,18 +161,33 @@ export interface Secret {
 }
 
 export interface Local {
-    lambda_functions?:            string[];
-    lambda_functions_api?:        string[];
-    lambda_functions_background?: string[];
-    adot_layer_arn?:              string;
-    common_lambda_env?:           CommonLambdaEnv;
+    api_gateway_authorizer_function_name?: string;
+    lambda_functions?:                     string[];
+    lambda_functions_api?:                 string[];
+    lambda_functions_background?:          string[];
+    start_file_upload_function_name?:      string;
+    webhook_feedly_function_name?:         string;
+    s3_object_created_function_name?:      string;
+    file_coordinator_function_name?:       string;
+    list_files_function_name?:             string;
+    log_client_event_function_name?:       string;
+    login_user_function_name?:             string;
+    adot_layer_arn?:                       string;
+    common_lambda_env?:                    CommonLambdaEnv;
+    prune_devices_function_name?:          string;
+    refresh_token_function_name?:          string;
+    register_device_function_name?:        string;
+    register_user_function_name?:          string;
+    send_push_notification_function_name?: string;
+    user_delete_function_name?:            string;
+    user_subscribe_function_name?:         string;
 }
 
 export interface CommonLambdaEnv {
-    LOG_LEVEL:                           string;
-    NODE_OPTIONS:                        string;
-    OPENTELEMETRY_COLLECTOR_CONFIG_FILE: string;
-    OPENTELEMETRY_EXTENSION_LOG_LEVEL:   string;
+    LOG_LEVEL:                          string;
+    NODE_OPTIONS:                       string;
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI: string;
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL:  string;
 }
 
 export interface Output {
@@ -1341,16 +1356,31 @@ const typeMap: any = {
         { json: "source_file", js: "source_file", typ: "" },
     ], false),
     "Local": o([
+        { json: "api_gateway_authorizer_function_name", js: "api_gateway_authorizer_function_name", typ: u(undefined, "") },
         { json: "lambda_functions", js: "lambda_functions", typ: u(undefined, a("")) },
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
+        { json: "start_file_upload_function_name", js: "start_file_upload_function_name", typ: u(undefined, "") },
+        { json: "webhook_feedly_function_name", js: "webhook_feedly_function_name", typ: u(undefined, "") },
+        { json: "s3_object_created_function_name", js: "s3_object_created_function_name", typ: u(undefined, "") },
+        { json: "file_coordinator_function_name", js: "file_coordinator_function_name", typ: u(undefined, "") },
+        { json: "list_files_function_name", js: "list_files_function_name", typ: u(undefined, "") },
+        { json: "log_client_event_function_name", js: "log_client_event_function_name", typ: u(undefined, "") },
+        { json: "login_user_function_name", js: "login_user_function_name", typ: u(undefined, "") },
         { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
+        { json: "prune_devices_function_name", js: "prune_devices_function_name", typ: u(undefined, "") },
+        { json: "refresh_token_function_name", js: "refresh_token_function_name", typ: u(undefined, "") },
+        { json: "register_device_function_name", js: "register_device_function_name", typ: u(undefined, "") },
+        { json: "register_user_function_name", js: "register_user_function_name", typ: u(undefined, "") },
+        { json: "send_push_notification_function_name", js: "send_push_notification_function_name", typ: u(undefined, "") },
+        { json: "user_delete_function_name", js: "user_delete_function_name", typ: u(undefined, "") },
+        { json: "user_subscribe_function_name", js: "user_subscribe_function_name", typ: u(undefined, "") },
     ], false),
     "CommonLambdaEnv": o([
         { json: "LOG_LEVEL", js: "LOG_LEVEL", typ: "" },
         { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
-        { json: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", js: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", typ: "" },
+        { json: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", js: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", typ: "" },
         { json: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", js: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", typ: "" },
     ], false),
     "Output": o([

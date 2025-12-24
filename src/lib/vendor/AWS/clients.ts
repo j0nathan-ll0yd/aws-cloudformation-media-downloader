@@ -21,8 +21,6 @@ import {SQSClient} from '@aws-sdk/client-sqs'
 import type {SQSClientConfig} from '@aws-sdk/client-sqs'
 import {LambdaClient} from '@aws-sdk/client-lambda'
 import type {LambdaClientConfig} from '@aws-sdk/client-lambda'
-import {CloudWatchClient} from '@aws-sdk/client-cloudwatch'
-import type {CloudWatchClientConfig} from '@aws-sdk/client-cloudwatch'
 import {APIGateway} from '@aws-sdk/client-api-gateway'
 import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
 
@@ -102,16 +100,6 @@ export function createSQSClient(): SQSClient {
 export function createLambdaClient(): LambdaClient {
   const config: LambdaClientConfig = getBaseConfig()
   return new LambdaClient(config)
-}
-
-/**
- * Create a CloudWatch client instance
- * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
- * Automatically traced via OpenTelemetry AwsInstrumentation
- */
-export function createCloudWatchClient(): CloudWatchClient {
-  const config: CloudWatchClientConfig = getBaseConfig()
-  return new CloudWatchClient(config)
 }
 
 /**
