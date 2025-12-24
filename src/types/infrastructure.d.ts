@@ -169,10 +169,10 @@ export interface Local {
 }
 
 export interface CommonLambdaEnv {
-    LOG_LEVEL:                          string;
-    NODE_OPTIONS:                       string;
+    LOG_LEVEL:                           string;
+    NODE_OPTIONS:                        string;
     OPENTELEMETRY_COLLECTOR_CONFIG_FILE: string;
-    OPENTELEMETRY_EXTENSION_LOG_LEVEL:  string;
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL:   string;
 }
 
 export interface Output {

@@ -241,7 +241,8 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
 
 function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
-  const functionPath = `${__dirname}/../../build/lambdas/${functionName}.mjs`
+  // Build output is in subdirectories for each Lambda (with collector.yaml for packaging)
+  const functionPath = `${__dirname}/../../build/lambdas/${functionName}/index.mjs`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
   let environmentVariablesSource: string[] = []
 
