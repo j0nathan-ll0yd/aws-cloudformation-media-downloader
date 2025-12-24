@@ -172,15 +172,22 @@ _No pending conventions - all conventions are documented._
    - **Status**: ✅ Documented
    - **Enforcement**: Middleware implementation
 
-3. **enableMetrics for Metric-Publishing Lambdas** (Observability Pattern)
-   - **What**: Metrics are disabled by default; pass `{enableMetrics: true}` to `withPowertools()` for lambdas that publish custom metrics
-   - **Why**: Most lambdas don't publish metrics; default-off avoids "No application metrics" warnings
-   - **Example**: `export const handler = withPowertools(wrapScheduledHandler(...), {enableMetrics: true})`
+3. **Powertools Metrics for All Custom Metrics** (Observability Pattern)
+   - **What**: Use Powertools `metrics.addMetric()` for all custom metrics; use `{enableCustomMetrics: true}` on lambdas that publish metrics
+   - **Why**: EMF logs (zero latency) vs CloudWatch API calls (~50-100ms); automatic batching and flushing
+   - **Implementation**:
+     - Import `metrics, MetricUnit` from `#lib/lambda/middleware/powertools`
+     - Use `metrics.addMetric('Name', MetricUnit.Count, 1)` for simple metrics
+     - Use `metrics.singleMetric()` for metrics with unique dimensions
+     - Add `{enableCustomMetrics: true}` to handler's `withPowertools()` call
+   - **Cold Start**: Tracked automatically for ALL lambdas (manual tracking for lambdas without `enableCustomMetrics`)
+   - **Lambdas with Custom Metrics**: FileCoordinator, StartFileUpload, YouTube.ts (vendor)
+   - **Future Concern**: Manual cold start duplicates Powertools logic; monitor Powertools changelog on upgrades
    - **Detected**: During log noise reduction implementation
    - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: MEDIUM
+   - **Priority**: HIGH
    - **Status**: ✅ Documented
-   - **Enforcement**: ESLint enforce-powertools rule
+   - **Enforcement**: Code review; deprecated functions removed from observability.ts
 
 4. **External Template Files for Code Generation** (Code Organization Rule)
    - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code

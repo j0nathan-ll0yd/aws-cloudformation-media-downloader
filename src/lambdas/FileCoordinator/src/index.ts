@@ -1,6 +1,5 @@
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {putMetrics} from '#lib/system/observability'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
@@ -116,12 +115,10 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<voi
 
   logInfo('Files to process', {pending: pendingDownloads.length, scheduled: scheduledDownloads.length, total: allDownloads.length})
 
-  // Publish metrics for monitoring
-  await putMetrics([
-    {name: 'PendingFilesFound', value: pendingDownloads.length, unit: 'Count'},
-    {name: 'ScheduledFilesFound', value: scheduledDownloads.length, unit: 'Count'},
-    {name: 'TotalFilesToProcess', value: allDownloads.length, unit: 'Count'}
-  ])
+  // Publish metrics for monitoring (flushed automatically by Powertools middleware)
+  metrics.addMetric('PendingFilesFound', MetricUnit.Count, pendingDownloads.length)
+  metrics.addMetric('ScheduledFilesFound', MetricUnit.Count, scheduledDownloads.length)
+  metrics.addMetric('TotalFilesToProcess', MetricUnit.Count, allDownloads.length)
 
   if (allDownloads.length === 0) {
     logInfo('No files to process')
@@ -132,4 +129,4 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<voi
   await processDownloadsInBatches(allDownloads)
 
   logInfo('All files processed', {total: allDownloads.length})
-}))
+}), {enableCustomMetrics: true})

@@ -12,8 +12,7 @@ import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issue-service'
 import {buildApiResponse} from '#lib/lambda/responses'
-import {putMetric, putMetrics} from '#lib/system/observability'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {createMetadataNotification} from '#lib/domain/notification/transformers'
@@ -171,10 +170,12 @@ async function handleDownloadFailure(
   if (classification.retryable && classification.retryAfter && !isRetryExhausted(newRetryCount, maxRetries)) {
     await updateDownloadState(fileId, DownloadStatus.Scheduled, classification, newRetryCount)
 
-    await putMetrics([
-      {name: 'ScheduledVideoDetected', value: 1, unit: 'Count'},
-      {name: 'RetryScheduled', value: 1, unit: 'Count', dimensions: [{Name: 'Category', Value: classification.category}]}
-    ])
+    // Metrics flushed automatically by Powertools middleware
+    metrics.addMetric('ScheduledVideoDetected', MetricUnit.Count, 1)
+    // Use singleMetric for metric with unique dimension
+    const retryMetric = metrics.singleMetric()
+    retryMetric.addDimension('Category', classification.category)
+    retryMetric.addMetric('RetryScheduled', MetricUnit.Count, 1)
 
     logInfo(`Scheduled retry for ${fileId}`, {
       retryAfter: new Date(classification.retryAfter * 1000).toISOString(),
@@ -203,16 +204,23 @@ async function handleDownloadFailure(
     logDebug('Failed to update File entity status', message)
   }
 
-  await putMetric('LambdaExecutionFailure', 1, undefined, [{Name: 'ErrorType', Value: error.constructor.name}])
+  // Use singleMetric for metrics with unique dimensions
+  const failureMetric = metrics.singleMetric()
+  failureMetric.addDimension('ErrorType', error.constructor.name)
+  failureMetric.addMetric('LambdaExecutionFailure', MetricUnit.Count, 1)
 
   // Create GitHub issues for actionable failures
   if (classification.category === 'cookie_expired') {
-    await putMetric('CookieAuthenticationFailure', 1, undefined, [{Name: 'VideoId', Value: fileId}])
+    const cookieMetric = metrics.singleMetric()
+    cookieMetric.addDimension('VideoId', fileId)
+    cookieMetric.addMetric('CookieAuthenticationFailure', MetricUnit.Count, 1)
     await createCookieExpirationIssue(fileId, fileUrl, error)
   } else if (classification.category === 'permanent') {
     await createVideoDownloadFailureIssue(fileId, fileUrl, error, classification.reason)
   } else if (isRetryExhausted(newRetryCount, maxRetries)) {
-    await putMetric('RetryExhausted', 1, undefined, [{Name: 'Category', Value: classification.category}])
+    const exhaustedMetric = metrics.singleMetric()
+    exhaustedMetric.addDimension('Category', classification.category)
+    exhaustedMetric.addMetric('RetryExhausted', MetricUnit.Count, 1)
     logInfo(`Retry exhausted for ${fileId}`, {category: classification.category, retryCount: newRetryCount, maxRetries})
   }
 
@@ -317,7 +325,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
   // Step 5: Mark download as completed
   await updateDownloadState(fileId, DownloadStatus.Completed, undefined, existingRetryCount)
 
-  await putMetric('LambdaExecutionSuccess', 1)
+  metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
 
   return buildApiResponse(context, 200, {
     fileId: videoInfo.id,
@@ -325,4 +333,4 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
     fileSize: uploadResult.fileSize,
     duration: uploadResult.duration
   })
-}))
+}), {enableCustomMetrics: true})

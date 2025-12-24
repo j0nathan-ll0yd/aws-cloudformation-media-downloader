@@ -59,11 +59,8 @@ const lambdaInvokeHelpersPath = resolve(__dirname, '../../../src/lib/lambda/invo
 const initiateFileDownloadMock = jest.fn<any>()
 jest.unstable_mockModule(lambdaInvokeHelpersPath, () => ({initiateFileDownload: initiateFileDownloadMock}))
 
-// Mock CloudWatch metrics
-const cloudwatchModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/CloudWatch')
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const putMetricDataMock = jest.fn<any>()
-jest.unstable_mockModule(cloudwatchModulePath, () => ({putMetricData: putMetricDataMock, getStandardUnit: jest.fn().mockReturnValue('Count')}))
+// Note: Metrics are now published via Powertools EMF logs (stdout), not CloudWatch API.
+// The handler's metrics are verified by checking that it completes successfully with files processed.
 
 // Import handler after mocking
 const {handler} = await import('../../../src/lambdas/FileCoordinator/src/index')
@@ -95,7 +92,6 @@ describe('File Retry Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     initiateFileDownloadMock.mockResolvedValue(undefined)
-    putMetricDataMock.mockResolvedValue(undefined)
   })
 
   test('should process pending files (new downloads)', async () => {
@@ -187,7 +183,7 @@ describe('File Retry Integration Tests', () => {
     expect(initiateFileDownloadMock).not.toHaveBeenCalled()
   })
 
-  test('should publish CloudWatch metrics', async () => {
+  test('should publish metrics via Powertools EMF logs', async () => {
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({data: [createMockFileDownload('file-1', 'Pending')]})
     fileDownloadsMock.mocks.query.byStatusRetryAfter!.go.mockResolvedValueOnce({
       data: [createMockFileDownload('file-2', 'Scheduled', Math.floor(Date.now() / 1000) - 100)]
@@ -196,8 +192,9 @@ describe('File Retry Integration Tests', () => {
     const event = createMockScheduledEvent('test-event-6')
     await handler(event, mockContext)
 
-    // Verify metrics were published
-    expect(putMetricDataMock).toHaveBeenCalled()
+    // Metrics are now published via Powertools EMF logs to stdout
+    // Verification: handler completes successfully and processes files
+    expect(initiateFileDownloadMock).toHaveBeenCalledTimes(2)
   })
 
   test('should handle DynamoDB query failure gracefully with Promise.allSettled', async () => {

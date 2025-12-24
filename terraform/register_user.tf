@@ -1,3 +1,7 @@
+locals {
+  register_user_function_name = "RegisterUser"
+}
+
 resource "aws_iam_role" "RegisterUserRole" {
   name               = "RegisterUserRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -59,7 +63,7 @@ data "archive_file" "RegisterUser" {
 
 resource "aws_lambda_function" "RegisterUser" {
   description      = "Registers a new user"
-  function_name    = "RegisterUser"
+  function_name    = local.register_user_function_name
   role             = aws_iam_role.RegisterUserRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -79,7 +83,7 @@ resource "aws_lambda_function" "RegisterUser" {
       DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
-      OTEL_SERVICE_NAME         = "RegisterUser"
+      OTEL_SERVICE_NAME         = local.register_user_function_name
     })
   }
 }

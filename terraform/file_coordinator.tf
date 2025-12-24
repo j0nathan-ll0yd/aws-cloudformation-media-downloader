@@ -1,3 +1,7 @@
+locals {
+  file_coordinator_function_name = "FileCoordinator"
+}
+
 resource "aws_iam_role" "FileCoordinatorRole" {
   name               = "FileCoordinatorRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
@@ -74,7 +78,7 @@ data "archive_file" "FileCoordinator" {
 
 resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
-  function_name    = "FileCoordinator"
+  function_name    = local.file_coordinator_function_name
   role             = aws_iam_role.FileCoordinatorRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -93,7 +97,7 @@ resource "aws_lambda_function" "FileCoordinator" {
       DYNAMODB_TABLE_NAME             = aws_dynamodb_table.MediaDownloader.name
       FILE_COORDINATOR_BATCH_SIZE     = 5
       FILE_COORDINATOR_BATCH_DELAY_MS = 10000
-      OTEL_SERVICE_NAME               = "FileCoordinator"
+      OTEL_SERVICE_NAME               = local.file_coordinator_function_name
     })
   }
 }

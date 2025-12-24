@@ -1,3 +1,7 @@
+locals {
+  s3_object_created_function_name = "S3ObjectCreated"
+}
+
 resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
 }
@@ -125,7 +129,7 @@ data "archive_file" "S3ObjectCreated" {
 
 resource "aws_lambda_function" "S3ObjectCreated" {
   description      = "Dispatches a notification after a file is uploaded to an S3 bucket"
-  function_name    = "S3ObjectCreated"
+  function_name    = local.s3_object_created_function_name
   role             = aws_iam_role.S3ObjectCreatedRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -142,7 +146,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
     variables = merge(local.common_lambda_env, {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
       SNS_QUEUE_URL       = aws_sqs_queue.SendPushNotification.id
-      OTEL_SERVICE_NAME   = "S3ObjectCreated"
+      OTEL_SERVICE_NAME   = local.s3_object_created_function_name
     })
   }
 }

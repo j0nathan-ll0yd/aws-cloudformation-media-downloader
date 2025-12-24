@@ -1,3 +1,7 @@
+locals {
+  register_device_function_name = "RegisterDevice"
+}
+
 resource "aws_iam_role" "RegisterDeviceRole" {
   name               = "RegisterDeviceRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -70,7 +74,7 @@ data "archive_file" "RegisterDevice" {
 
 resource "aws_lambda_function" "RegisterDevice" {
   description      = "Registers an iOS device"
-  function_name    = "RegisterDevice"
+  function_name    = local.register_device_function_name
   role             = aws_iam_role.RegisterDeviceRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -88,7 +92,7 @@ resource "aws_lambda_function" "RegisterDevice" {
       PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.PushNotifications.arn
       DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME           = "RegisterDevice"
+      OTEL_SERVICE_NAME           = local.register_device_function_name
     })
   }
 }

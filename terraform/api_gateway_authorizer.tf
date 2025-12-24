@@ -1,3 +1,7 @@
+locals {
+  api_gateway_authorizer_function_name = "ApiGatewayAuthorizer"
+}
+
 resource "aws_iam_role" "ApiGatewayAuthorizer" {
   name               = "ApiGatewayAuthorizer"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -70,7 +74,7 @@ resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicy" {
 
 resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   description   = "The function that handles authorization for the API Gateway."
-  function_name = "ApiGatewayAuthorizer"
+  function_name = local.api_gateway_authorizer_function_name
   role          = aws_iam_role.ApiGatewayAuthorizer.arn
   handler       = "index.handler"
   runtime       = "nodejs24.x"
@@ -95,7 +99,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
         aws_api_gateway_resource.LogEvent.path_part
       ]),
       RESERVED_CLIENT_IP = "104.1.88.244"
-      OTEL_SERVICE_NAME  = "ApiGatewayAuthorizer"
+      OTEL_SERVICE_NAME  = local.api_gateway_authorizer_function_name
     })
   }
 }

@@ -1,3 +1,7 @@
+locals {
+  user_subscribe_function_name = "UserSubscribe"
+}
+
 resource "aws_iam_role" "UserSubscribeRole" {
   name               = "UserSubscribeRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -52,7 +56,7 @@ data "archive_file" "UserSubscribe" {
 
 resource "aws_lambda_function" "UserSubscribe" {
   description      = "Subscribes a device to an SNS topic"
-  function_name    = "UserSubscribe"
+  function_name    = local.user_subscribe_function_name
   role             = aws_iam_role.UserSubscribeRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -68,7 +72,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   environment {
     variables = merge(local.common_lambda_env, {
       PLATFORM_APPLICATION_ARN = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
-      OTEL_SERVICE_NAME        = "UserSubscribe"
+      OTEL_SERVICE_NAME        = local.user_subscribe_function_name
     })
   }
 }

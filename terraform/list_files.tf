@@ -1,3 +1,7 @@
+locals {
+  list_files_function_name = "ListFiles"
+}
+
 resource "aws_iam_role" "ListFilesRole" {
   name               = "ListFilesRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -59,7 +63,7 @@ data "archive_file" "ListFiles" {
 
 resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
-  function_name    = "ListFiles"
+  function_name    = local.list_files_function_name
   role             = aws_iam_role.ListFilesRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -80,7 +84,7 @@ resource "aws_lambda_function" "ListFiles" {
       DEFAULT_FILE_NAME         = aws_s3_object.DefaultFile.key
       DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
       DEFAULT_FILE_CONTENT_TYPE = aws_s3_object.DefaultFile.content_type
-      OTEL_SERVICE_NAME         = "ListFiles"
+      OTEL_SERVICE_NAME         = local.list_files_function_name
     })
   }
 }

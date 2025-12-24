@@ -1,3 +1,8 @@
+locals {
+  webhook_feedly_function_name    = "WebhookFeedly"
+  start_file_upload_function_name = "StartFileUpload"
+}
+
 resource "aws_iam_role" "WebhookFeedlyRole" {
   name               = "WebhookFeedlyRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -73,7 +78,7 @@ data "archive_file" "WebhookFeedly" {
 
 resource "aws_lambda_function" "WebhookFeedly" {
   description      = "A webhook from Feedly via IFTTT"
-  function_name    = "WebhookFeedly"
+  function_name    = local.webhook_feedly_function_name
   role             = aws_iam_role.WebhookFeedlyRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -92,7 +97,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DYNAMODB_TABLE_NAME    = aws_dynamodb_table.MediaDownloader.name
       SNS_QUEUE_URL          = aws_sqs_queue.SendPushNotification.id
       IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
-      OTEL_SERVICE_NAME      = "WebhookFeedly"
+      OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
     })
   }
 }
@@ -316,7 +321,7 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
 
 resource "aws_lambda_function" "StartFileUpload" {
   description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
-  function_name                  = "StartFileUpload"
+  function_name                  = local.start_file_upload_function_name
   role                           = aws_iam_role.MultipartUploadRole.arn
   handler                        = "index.handler"
   runtime                        = "nodejs24.x"
@@ -350,7 +355,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
       PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME     = "StartFileUpload"
+      OTEL_SERVICE_NAME     = local.start_file_upload_function_name
     })
   }
 }

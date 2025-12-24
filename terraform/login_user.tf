@@ -1,3 +1,7 @@
+locals {
+  login_user_function_name = "LoginUser"
+}
+
 resource "aws_iam_role" "LoginUserRole" {
   name               = "LoginUserRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -60,7 +64,7 @@ data "archive_file" "LoginUser" {
 
 resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
-  function_name    = "LoginUser"
+  function_name    = local.login_user_function_name
   role             = aws_iam_role.LoginUserRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -80,7 +84,7 @@ resource "aws_lambda_function" "LoginUser" {
       DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
-      OTEL_SERVICE_NAME         = "LoginUser"
+      OTEL_SERVICE_NAME         = local.login_user_function_name
     })
   }
 }

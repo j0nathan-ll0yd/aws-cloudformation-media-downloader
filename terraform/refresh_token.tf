@@ -1,3 +1,7 @@
+locals {
+  refresh_token_function_name = "RefreshToken"
+}
+
 resource "aws_iam_role" "RefreshTokenRole" {
   name               = "RefreshTokenRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -57,7 +61,7 @@ data "archive_file" "RefreshToken" {
 
 resource "aws_lambda_function" "RefreshToken" {
   description      = "Refreshes a user session by extending the expiration time"
-  function_name    = "RefreshToken"
+  function_name    = local.refresh_token_function_name
   role             = aws_iam_role.RefreshTokenRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -74,7 +78,7 @@ resource "aws_lambda_function" "RefreshToken" {
   environment {
     variables = merge(local.common_lambda_env, {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME   = "RefreshToken"
+      OTEL_SERVICE_NAME   = local.refresh_token_function_name
     })
   }
 }

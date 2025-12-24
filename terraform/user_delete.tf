@@ -1,3 +1,7 @@
+locals {
+  user_delete_function_name = "UserDelete"
+}
+
 resource "aws_iam_role" "UserDeleteRole" {
   name               = "UserDeleteRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -65,7 +69,7 @@ data "archive_file" "UserDelete" {
 
 resource "aws_lambda_function" "UserDelete" {
   description      = "Deletes a User and all associated data (requirement for Sign In With Apple)"
-  function_name    = "UserDelete"
+  function_name    = local.user_delete_function_name
   role             = aws_iam_role.UserDeleteRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -82,7 +86,7 @@ resource "aws_lambda_function" "UserDelete" {
     variables = merge(local.common_lambda_env, {
       DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME     = "UserDelete"
+      OTEL_SERVICE_NAME     = local.user_delete_function_name
     })
   }
 }

@@ -1,3 +1,7 @@
+locals {
+  log_client_event_function_name = "LogClientEvent"
+}
+
 resource "aws_iam_role" "LogClientEventRole" {
   name               = "LogClientEventRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -32,7 +36,7 @@ data "archive_file" "LogClientEvent" {
 
 resource "aws_lambda_function" "LogClientEvent" {
   description      = "Records an event from a client environment (e.g. App or Web)."
-  function_name    = "LogClientEvent"
+  function_name    = local.log_client_event_function_name
   role             = aws_iam_role.LogClientEventRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -47,7 +51,7 @@ resource "aws_lambda_function" "LogClientEvent" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      OTEL_SERVICE_NAME = "LogClientEvent"
+      OTEL_SERVICE_NAME = local.log_client_event_function_name
     })
   }
 }

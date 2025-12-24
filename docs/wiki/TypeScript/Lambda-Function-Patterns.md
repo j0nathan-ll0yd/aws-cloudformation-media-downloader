@@ -69,12 +69,32 @@ All wrappers provide:
 ### Powertools Wrapper Options
 
 ```typescript
-// Metrics are disabled by default (most lambdas don't publish custom metrics)
+// Default - cold start metrics tracked automatically for ALL lambdas
 export const handler = withPowertools(wrapAuthorizer(...))
 
-// Enable metrics for lambdas that publish custom metrics
-export const handler = withPowertools(wrapScheduledHandler(...), {enableMetrics: true})
+// Enable full metrics middleware for lambdas that publish custom metrics
+export const handler = withPowertools(wrapScheduledHandler(...), {enableCustomMetrics: true})
 ```
+
+**Cold Start Tracking**: All lambdas automatically track cold start metrics. For lambdas without
+`enableCustomMetrics`, this is done via manual tracking to avoid "No application metrics" warnings.
+
+**Custom Metrics**: Set `enableCustomMetrics: true` for lambdas that publish custom metrics:
+
+```typescript
+import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
+
+// Simple metric (no dimensions)
+metrics.addMetric('FilesProcessed', MetricUnit.Count, filesProcessed)
+
+// Metric with unique dimensions (use singleMetric)
+const m = metrics.singleMetric()
+m.addDimension('Category', classification.category)
+m.addMetric('RetryScheduled', MetricUnit.Count, 1)
+```
+
+**Why Powertools?** EMF logs have zero latency vs CloudWatch API calls (~50-100ms).
+Metrics are batched and flushed automatically by the middleware at request end.
 
 ## Response Format (REQUIRED)
 
@@ -283,7 +303,7 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 
 ## Best Practices
 
-✅ Use `withPowertools` wrapper for all Lambda handlers (provides logging, metrics, tracing)
+✅ Use `withPowertools` wrapper for all Lambda handlers (provides logging, cold start tracking, tracing)
 ✅ Use appropriate handler wrapper (`wrapApiHandler`, `wrapAuthenticatedHandler`, etc.)
 ✅ Use vendor wrappers for AWS SDK (never import AWS SDK directly)
 ✅ Return responses using `response()` helper
@@ -291,7 +311,8 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers
 ✅ Read environment variables inside functions, not at module scope
-✅ Use `{enableMetrics: true}` for lambdas that publish custom metrics (metrics disabled by default)
+✅ Cold start metrics are tracked automatically for all lambdas (no option needed)
+✅ Use `{enableCustomMetrics: true}` only if using Powertools `metrics.addMetric()` API
 
 ## Testing
 

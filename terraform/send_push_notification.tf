@@ -1,3 +1,7 @@
+locals {
+  send_push_notification_function_name = "SendPushNotification"
+}
+
 resource "aws_iam_role" "SendPushNotificationRole" {
   name               = "SendPushNotificationRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
@@ -75,7 +79,7 @@ data "archive_file" "SendPushNotification" {
 
 resource "aws_lambda_function" "SendPushNotification" {
   description      = "Records an event from a client environment (e.g. App or Web)."
-  function_name    = "SendPushNotification"
+  function_name    = local.send_push_notification_function_name
   role             = aws_iam_role.SendPushNotificationRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -90,7 +94,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   environment {
     variables = merge(local.common_lambda_env, {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME   = "SendPushNotification"
+      OTEL_SERVICE_NAME   = local.send_push_notification_function_name
     })
   }
 }

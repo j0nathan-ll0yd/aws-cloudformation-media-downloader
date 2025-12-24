@@ -1,3 +1,7 @@
+locals {
+  prune_devices_function_name = "PruneDevices"
+}
+
 resource "aws_iam_role" "PruneDevicesRole" {
   name               = "PruneDevicesRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
@@ -79,7 +83,7 @@ data "archive_file" "PruneDevices" {
 
 resource "aws_lambda_function" "PruneDevices" {
   description      = "Validates iOS devices are still reachable; otherwise removes them."
-  function_name    = "PruneDevices"
+  function_name    = local.prune_devices_function_name
   role             = aws_iam_role.PruneDevicesRole.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -101,7 +105,7 @@ resource "aws_lambda_function" "PruneDevices" {
       APNS_KEY_ID         = data.sops_file.secrets.data["apns.staging.keyId"]
       APNS_DEFAULT_TOPIC  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
       APNS_HOST           = "api.sandbox.push.apple.com"
-      OTEL_SERVICE_NAME   = "PruneDevices"
+      OTEL_SERVICE_NAME   = local.prune_devices_function_name
     })
   }
 }

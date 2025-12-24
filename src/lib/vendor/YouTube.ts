@@ -3,7 +3,7 @@ import {spawn} from 'child_process'
 import {createReadStream} from 'fs'
 import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
-import {putMetrics} from '#lib/system/observability'
+import {metrics, MetricUnit} from '#lib/vendor/Powertools'
 import {logDebug, logError} from '#lib/system/logging'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {createS3Upload} from '../vendor/AWS/S3'
@@ -287,15 +287,13 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
     logDebug('downloadVideoToS3 <=', {fileSize, s3Url, duration})
 
-    // Publish CloudWatch metrics
+    // Publish CloudWatch metrics (flushed by Powertools middleware in calling Lambda)
     const throughputMBps = fileSize > 0 && duration > 0 ? fileSize / 1024 / 1024 / duration : 0
 
-    await putMetrics([
-      {name: 'VideoDownloadSuccess', value: 1, unit: 'Count'},
-      {name: 'VideoDownloadDuration', value: duration, unit: 'Seconds'},
-      {name: 'VideoFileSize', value: fileSize, unit: 'Bytes'},
-      {name: 'VideoThroughput', value: throughputMBps, unit: 'None'}
-    ])
+    metrics.addMetric('VideoDownloadSuccess', MetricUnit.Count, 1)
+    metrics.addMetric('VideoDownloadDuration', MetricUnit.Seconds, duration)
+    metrics.addMetric('VideoDownloadSize', MetricUnit.Bytes, fileSize)
+    metrics.addMetric('VideoThroughput', MetricUnit.Count, throughputMBps)
 
     return {fileSize, s3Url, duration}
   } catch (error) {
@@ -308,8 +306,8 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
       // File may not exist if download failed early
     }
 
-    // Publish failure metric
-    await putMetrics([{name: 'VideoDownloadFailure', value: 1, unit: 'Count'}])
+    // Publish failure metric (flushed by Powertools middleware in calling Lambda)
+    metrics.addMetric('VideoDownloadFailure', MetricUnit.Count, 1)
 
     // Re-throw CookieExpirationError without wrapping
     if (error instanceof CookieExpirationError) {
