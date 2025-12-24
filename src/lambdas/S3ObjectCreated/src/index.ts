@@ -73,4 +73,4 @@ async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Pro
  * After a File is downloaded, dispatch a notification to all UserDevices
  * @notExported
  */
-export const handler = withPowertools(wrapEventHandler(processS3Record, {getRecords: s3Records}), {skipMetrics: true})
+export const handler = withPowertools(wrapEventHandler(processS3Record, {getRecords: s3Records}))

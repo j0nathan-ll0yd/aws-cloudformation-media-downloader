@@ -23,4 +23,4 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
   return buildApiResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
-}), {skipMetrics: true})
+}))

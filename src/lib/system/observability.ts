@@ -1,7 +1,7 @@
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import type {MetricInput} from '#types/util'
 import {getOptionalEnv} from '#lib/system/env'
-import {getRequestSummary, logDebug, logError, logInfo, logger} from '#lib/system/logging'
+import {getRequestSummary, logDebug, logError, logger, logInfo} from '#lib/system/logging'
 import {sanitizeData} from '#util/security'
 
 /**

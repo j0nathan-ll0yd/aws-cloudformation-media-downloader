@@ -69,8 +69,11 @@ All wrappers provide:
 ### Powertools Wrapper Options
 
 ```typescript
-// Skip metrics for lambdas that don't publish custom metrics
-export const handler = withPowertools(wrapAuthorizer(...), {skipMetrics: true})
+// Metrics are disabled by default (most lambdas don't publish custom metrics)
+export const handler = withPowertools(wrapAuthorizer(...))
+
+// Enable metrics for lambdas that publish custom metrics
+export const handler = withPowertools(wrapScheduledHandler(...), {enableMetrics: true})
 ```
 
 ## Response Format (REQUIRED)
@@ -177,12 +180,11 @@ import type {AuthorizerParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthorizer} from '#lib/lambda/middleware/legacy'
 
-// Skip metrics for authorizers (they don't publish custom metrics)
 export const handler = withPowertools(wrapAuthorizer(async ({event}: AuthorizerParams) => {
   // Throw Error('Unauthorized') for 401 response
   if (!isValid) throw new Error('Unauthorized')
   return generateAllow(userId, event.methodArn)
-}), {skipMetrics: true})
+}))
 ```
 
 ### S3 Event Handler
@@ -289,7 +291,7 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers
 ✅ Read environment variables inside functions, not at module scope
-✅ Use `{skipMetrics: true}` for lambdas that don't publish custom metrics
+✅ Use `{enableMetrics: true}` for lambdas that publish custom metrics (metrics disabled by default)
 
 ## Testing
 

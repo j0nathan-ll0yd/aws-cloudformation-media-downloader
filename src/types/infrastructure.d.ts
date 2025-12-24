@@ -173,8 +173,6 @@ export interface CommonLambdaEnv {
     NODE_OPTIONS:                       string;
     OPENTELEMETRY_COLLECTOR_CONFIG_FILE: string;
     OPENTELEMETRY_EXTENSION_LOG_LEVEL:  string;
-    OTEL_EXPORTER_OTLP_ENDPOINT:        string;
-    OTEL_PROPAGATORS:                   string;
 }
 
 export interface Output {
@@ -1354,8 +1352,6 @@ const typeMap: any = {
         { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
         { json: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", js: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", typ: "" },
         { json: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", js: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
     ], false),
     "Output": o([
         { json: "api_gateway_api_key", js: "api_gateway_api_key", typ: a(r("APIGatewayAPIKey")) },

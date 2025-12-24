@@ -75,11 +75,9 @@ const excludedSourceVariables: Record<string, number> = {
   POWERTOOLS_METRICS_DISABLED: 1,
   // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
   OTEL_SERVICE_NAME: 1,
-  OTEL_EXPORTER_OTLP_ENDPOINT: 1,
   OTEL_EXPORTER_OTLP_COMPRESSION: 1,
   OTEL_EXPORTER_OTLP_HEADERS: 1,
   OTEL_EXPORTER_OTLP_TIMEOUT: 1,
-  OTEL_PROPAGATORS: 1,
   // AWS Lambda runtime environment variables (set by AWS, not in source)
   AWS_EXECUTION_ENV: 1,
   AWS_LAMBDA_BENCHMARK_MODE: 1,
@@ -187,9 +185,10 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
   })
 }
 
-// Variables from common_lambda_env local that are merged into all lambdas
+// Variables from common_lambda_env local in terraform/main.tf that are merged into all lambdas
 // These are infrastructure-level settings, not accessed by source code
-const commonLambdaEnvVars = ['OPENTELEMETRY_EXTENSION_LOG_LEVEL', 'OPENTELEMETRY_COLLECTOR_CONFIG_FILE', 'OTEL_EXPORTER_OTLP_ENDPOINT', 'OTEL_PROPAGATORS', 'NODE_OPTIONS', 'LOG_LEVEL']
+// Keep in sync with terraform/main.tf locals.common_lambda_env
+const commonLambdaEnvVars = ['OPENTELEMETRY_EXTENSION_LOG_LEVEL', 'OPENTELEMETRY_COLLECTOR_CONFIG_FILE', 'NODE_OPTIONS', 'LOG_LEVEL']
 
 // Parse environment variables from a Terraform merge() expression string.
 // hcl2json outputs merge() expressions as raw strings, not evaluated objects.

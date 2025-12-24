@@ -60,4 +60,4 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
   )
   myResponse.keyCount = myResponse.contents.length
   return buildApiResponse(context, 200, myResponse)
-}), {skipMetrics: true})
+}))

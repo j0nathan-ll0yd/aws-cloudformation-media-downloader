@@ -13,10 +13,11 @@ export type WrapperMetadata = {traceId: string}
  */
 export interface PowertoolsOptions {
   /**
-   * Skip metrics middleware entirely. Use for lambdas that don't publish custom metrics
-   * to avoid "No application metrics to publish" warnings.
+   * Enable metrics middleware. Set to true for lambdas that publish custom metrics.
+   * Defaults to false (metrics disabled) to avoid "No application metrics to publish" warnings.
+   * Only FileCoordinator and StartFileUpload currently publish custom metrics.
    */
-  skipMetrics?: boolean
+  enableMetrics?: boolean
 }
 
 /** Parameters passed to wrapped API Gateway handlers */

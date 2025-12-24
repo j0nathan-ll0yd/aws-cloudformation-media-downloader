@@ -172,10 +172,10 @@ _No pending conventions - all conventions are documented._
    - **Status**: ✅ Documented
    - **Enforcement**: Middleware implementation
 
-3. **skipMetrics for Non-Metric Lambdas** (Observability Pattern)
-   - **What**: Pass `{skipMetrics: true}` to `withPowertools()` for lambdas that don't publish custom metrics
-   - **Why**: Suppresses "No application metrics to publish" warnings from Powertools
-   - **Example**: `export const handler = withPowertools(wrapAuthorizer(...), {skipMetrics: true})`
+3. **enableMetrics for Metric-Publishing Lambdas** (Observability Pattern)
+   - **What**: Metrics are disabled by default; pass `{enableMetrics: true}` to `withPowertools()` for lambdas that publish custom metrics
+   - **Why**: Most lambdas don't publish metrics; default-off avoids "No application metrics" warnings
+   - **Example**: `export const handler = withPowertools(wrapScheduledHandler(...), {enableMetrics: true})`
    - **Detected**: During log noise reduction implementation
    - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
    - **Priority**: MEDIUM

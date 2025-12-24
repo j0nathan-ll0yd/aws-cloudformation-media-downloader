@@ -124,4 +124,4 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
     await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
   }
   return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
-}), {skipMetrics: true})
+}))

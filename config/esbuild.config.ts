@@ -82,6 +82,10 @@ async function build() {
 
     // Copy OTEL collector config to Lambda directory for packaging
     // This config fixes: "service::telemetry::metrics::address is being deprecated"
+    // Upstream issue: ADOT Lambda layer v1.30.2 uses deprecated collector config format
+    // See: https://github.com/aws-observability/aws-otel-lambda/issues/1039
+    // When ADOT layer is updated with fixed config, this custom collector.yaml can be removed
+    // and OPENTELEMETRY_COLLECTOR_CONFIG_FILE env var can be deleted from terraform/main.tf
     fs.copyFileSync('config/otel-collector.yaml', `${lambdaDir}/collector.yaml`)
 
     // Write metafile for bundle analysis

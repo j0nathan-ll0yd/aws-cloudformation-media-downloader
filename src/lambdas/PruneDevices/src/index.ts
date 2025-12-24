@@ -130,4 +130,4 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
 
   logInfo('PruneDevices completed', result)
   return result
-}), {skipMetrics: true})
+}))

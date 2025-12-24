@@ -11,19 +11,19 @@ import type {PowertoolsOptions} from '#types/lambda'
  * Features:
  * - Structured JSON logging with automatic context enrichment
  * - OpenTelemetry tracing via ADOT Lambda layer (automatic)
- * - Automatic cold start metric tracking (unless skipMetrics is true)
+ * - Optional cold start metric tracking (opt-in via enableMetrics)
  * - Correlation IDs through all logs
  *
  * Note: Tracing is now provided by the ADOT Lambda layer and OpenTelemetry.
  * The layer auto-instruments AWS SDK calls - no manual SDK initialization needed.
  *
  * @param handler - Lambda handler function
- * @param options - Optional configuration (e.g., skipMetrics for lambdas without custom metrics)
+ * @param options - Optional configuration (e.g., enableMetrics for lambdas with custom metrics)
  * @returns Wrapped handler with Powertools middleware
  *
  * @example
  * ```typescript
- * // Standard usage with metrics
+ * // Standard usage (no metrics - default for most lambdas)
  * export const handler = withPowertools(wrapAuthenticatedHandler(
  *   async ({event, context, userId}) => {
  *     const files = await getFilesByUser(userId)
@@ -31,13 +31,13 @@ import type {PowertoolsOptions} from '#types/lambda'
  *   }
  * ))
  *
- * // Skip metrics for lambdas that don't publish custom metrics
- * export const handler = withPowertools(wrapAuthorizer(
+ * // Enable metrics for lambdas that publish custom metrics
+ * export const handler = withPowertools(wrapScheduledHandler(
  *   async ({event, context}) => {
- *     // Authorizer doesn't publish custom metrics
- *     return generateAllow(userId, event.methodArn)
+ *     metrics.addMetric('FilesProcessed', MetricUnit.Count, filesProcessed)
+ *     return result
  *   }
- * ), {skipMetrics: true})
+ * ), {enableMetrics: true})
  * ```
  */
 export function withPowertools<TEvent, TResult>(
@@ -46,10 +46,10 @@ export function withPowertools<TEvent, TResult>(
 ): (event: TEvent, context: Context) => Promise<TResult> {
   const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}))
 
-  // Enable metrics middleware unless:
-  // 1. Running in test environment (prevents warnings in Jest)
-  // 2. Explicitly disabled via skipMetrics option (for lambdas without custom metrics)
-  const shouldEnableMetrics = !options?.skipMetrics && getOptionalEnv('NODE_ENV', 'development') !== 'test'
+  // Enable metrics middleware only when:
+  // 1. Explicitly enabled via enableMetrics option (for lambdas that publish custom metrics)
+  // 2. Not running in test environment (prevents warnings in Jest)
+  const shouldEnableMetrics = options?.enableMetrics && getOptionalEnv('NODE_ENV', 'development') !== 'test'
 
   if (shouldEnableMetrics) {
     middyHandler.use(logMetrics(metrics, {captureColdStartMetric: true}))
