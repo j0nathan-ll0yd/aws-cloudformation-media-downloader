@@ -123,7 +123,39 @@ _No pending conventions - all conventions are documented._
 
 ### Detected: 2025-12-23
 
-1. **External Template Files for Code Generation** (Code Organization Rule)
+1. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
+   - **What**: Use `common_lambda_env` Terraform local with `merge()` to centralize OTEL and runtime configuration
+   - **Why**: DRY principle; ensures consistent configuration across all 14 lambdas; reduces ~90% log noise
+   - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
+   - **Pattern**: `environment { variables = merge(local.common_lambda_env, { OTEL_SERVICE_NAME = "LambdaName", ... }) }`
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/AWS/X-Ray-Integration.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Terraform/OpenTofu configuration
+
+2. **Compact Request Logging** (Observability Pattern)
+   - **What**: Use `getRequestSummary()` helper for INFO-level request logging (~150 bytes vs ~2.5KB)
+   - **Why**: Reduces CloudWatch costs and log noise while maintaining debuggability
+   - **Pattern**: `logInfo('request <=', getRequestSummary(event))` in middleware wrappers
+   - **Details**: Extracts only path, method, requestId, sourceIp; full event available via DEBUG level or X-Ray
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Middleware implementation
+
+3. **skipMetrics for Non-Metric Lambdas** (Observability Pattern)
+   - **What**: Pass `{skipMetrics: true}` to `withPowertools()` for lambdas that don't publish custom metrics
+   - **Why**: Suppresses "No application metrics to publish" warnings from Powertools
+   - **Example**: `export const handler = withPowertools(wrapAuthorizer(...), {skipMetrics: true})`
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: ESLint enforce-powertools rule
+
+4. **External Template Files for Code Generation** (Code Organization Rule)
    - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code
    - **Why**: Keeps generator code clean and maintainable; templates are easier to review, test, and modify independently; separates concerns between template content and interpolation logic
    - **Location**: `src/mcp/templates/` for MCP handlers; similar pattern for other generators
