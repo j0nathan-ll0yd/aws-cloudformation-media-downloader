@@ -2,7 +2,8 @@ import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
 import {UserStatus} from '#types/enums'
-import {registerDeviceSchema} from '#types/schemas'
+import {deviceRegistrationRequestSchema} from '#types/api-schema'
+import type {DeviceRegistrationRequest} from '#types/api-schema'
 import type {Device} from '#types/domain-models'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/domain/device/device-service'
@@ -13,14 +14,6 @@ import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
-
-interface DeviceRegistrationRequest {
-  name: string
-  token: string
-  systemVersion: string
-  deviceId: string
-  systemName: string
-}
 
 /**
  * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
@@ -104,7 +97,7 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
   // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
-  validateRequest(requestBody, registerDeviceSchema)
+  validateRequest(requestBody, deviceRegistrationRequestSchema)
 
   const platformEndpoint = await createPlatformEndpointFromToken(requestBody.token)
   const pushNotificationTopicArn = getRequiredEnv('PUSH_NOTIFICATION_TOPIC_ARN')

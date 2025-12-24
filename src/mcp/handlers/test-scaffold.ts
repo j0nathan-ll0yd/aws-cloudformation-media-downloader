@@ -82,16 +82,25 @@ jest.unstable_mockModule('#lib/vendor/${vendorName}', () => ({
     }
   }
 
-  // X-Ray wrapper
-  if (dep.includes('XRay')) {
+  // OpenTelemetry wrapper
+  if (dep.includes('OpenTelemetry')) {
     return {
       type: 'vendor',
-      name: 'XRay',
+      name: 'OpenTelemetry',
       path: dep,
-      importAlias: '#lib/vendor/AWS/XRay',
-      mockCode: `// X-Ray mock (passthrough)
-jest.unstable_mockModule('#lib/vendor/AWS/XRay', () => ({
-  withXRay: (handler: unknown) => handler
+      importAlias: '#lib/vendor/OpenTelemetry',
+      mockCode: `// OpenTelemetry mock (no-op tracing)
+jest.unstable_mockModule('#lib/vendor/OpenTelemetry', () => ({
+  getTracer: () => ({startSpan: jest.fn()}),
+  getCurrentSpan: jest.fn(),
+  startSpan: jest.fn().mockReturnValue(null),
+  addAnnotation: jest.fn(),
+  addMetadata: jest.fn(),
+  endSpan: jest.fn(),
+  withTracing: (handler: unknown) => handler,
+  SpanKind: {INTERNAL: 0},
+  initializeTracing: jest.fn(),
+  isTracingInitialized: jest.fn().mockReturnValue(false)
 }))`
     }
   }
@@ -125,21 +134,19 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const lines: string[] = []
 
   // Imports
-  lines.push("import {beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'")
-  lines.push("import type {APIGatewayProxyEvent, Context} from 'aws-lambda'")
+  lines.push("import {beforeEach, describe, expect, jest, test} from '@jest/globals'")
+  lines.push("import {testContext} from '#util/jest-setup'")
 
   if (entityMocks.length > 0) {
-    lines.push("import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'")
+    lines.push("import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'")
   }
 
   lines.push('')
 
-  // Environment setup
-  lines.push('// Environment setup')
-  lines.push('beforeAll(() => {')
-  lines.push("  process.env.TableName = 'test-table'")
-  lines.push("  process.env.Region = 'us-east-1'")
-  lines.push('})')
+  // Environment setup (must be BEFORE any imports that access process.env at module level)
+  lines.push('// Environment setup - BEFORE handler import')
+  lines.push("process.env.TableName = 'test-table'")
+  lines.push("process.env.Region = 'us-east-1'")
   lines.push('')
 
   // Entity mocks (must be before other mocks)
@@ -163,23 +170,6 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   // Import handler after mocks
   lines.push('// Import handler after mocks')
   lines.push("const {handler} = await import('../src')")
-  lines.push('')
-
-  // Test context helper
-  lines.push('// Test helpers')
-  lines.push('const testContext: Context = {')
-  lines.push("  functionName: 'test',")
-  lines.push("  functionVersion: '1',")
-  lines.push("  invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789:function:test',")
-  lines.push("  memoryLimitInMB: '128',")
-  lines.push("  awsRequestId: 'test-request-id',")
-  lines.push("  logGroupName: 'test-log-group',")
-  lines.push("  logStreamName: 'test-log-stream',")
-  lines.push('  getRemainingTimeInMillis: () => 30000,')
-  lines.push('  done: () => {},')
-  lines.push('  fail: () => {},')
-  lines.push('  succeed: () => {}')
-  lines.push('} as Context')
   lines.push('')
 
   // Test suite

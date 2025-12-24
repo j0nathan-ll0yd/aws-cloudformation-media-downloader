@@ -266,9 +266,9 @@ model WebhookResponse {
  */
 model UserLogin {
   /**
-   * Authorization code from Sign in with Apple
+   * Identity token from Sign in with Apple (JWT)
    */
-  authorizationCode: string;
+  idToken: string;
 }
 
 /**
@@ -286,9 +286,9 @@ model UserLoginResponse {
  */
 model UserRegistration {
   /**
-   * Authorization code from Sign in with Apple
+   * Identity token from Sign in with Apple (JWT)
    */
-  authorizationCode: string;
+  idToken: string;
 
   /**
    * User's first name
@@ -309,4 +309,19 @@ model UserRegistrationResponse {
    * JWT access token for authenticated requests
    */
   token: string;
+}
+
+/**
+ * User subscription request
+ */
+model UserSubscription {
+  /**
+   * AWS SNS endpoint ARN for the device
+   */
+  endpointArn: string;
+
+  /**
+   * AWS SNS topic ARN to subscribe to
+   */
+  topicArn: string;
 }
