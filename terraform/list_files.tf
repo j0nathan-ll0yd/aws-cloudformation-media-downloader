@@ -2,8 +2,8 @@ locals {
   list_files_function_name = "ListFiles"
 }
 
-resource "aws_iam_role" "ListFilesRole" {
-  name               = "${local.list_files_function_name}Role"
+resource "aws_iam_role" "ListFiles" {
+  name               = local.list_files_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -23,23 +23,23 @@ data "aws_iam_policy_document" "ListFiles" {
   }
 }
 
-resource "aws_iam_policy" "ListFilesRolePolicy" {
-  name   = "ListFilesRolePolicy"
+resource "aws_iam_policy" "ListFiles" {
+  name   = local.list_files_function_name
   policy = data.aws_iam_policy_document.ListFiles.json
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicy" {
-  role       = aws_iam_role.ListFilesRole.name
-  policy_arn = aws_iam_policy.ListFilesRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "ListFiles" {
+  role       = aws_iam_role.ListFiles.name
+  policy_arn = aws_iam_policy.ListFiles.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
-  role       = aws_iam_role.ListFilesRole.name
+resource "aws_iam_role_policy_attachment" "ListFilesLogging" {
+  role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyXRay" {
-  role       = aws_iam_role.ListFilesRole.name
+resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
+  role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -64,11 +64,11 @@ data "archive_file" "ListFiles" {
 resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
   function_name    = local.list_files_function_name
-  role             = aws_iam_role.ListFilesRole.arn
+  role             = aws_iam_role.ListFiles.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 512
-  depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.ListFiles]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
   layers           = [local.adot_layer_arn]

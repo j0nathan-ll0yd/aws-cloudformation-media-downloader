@@ -2,8 +2,8 @@ locals {
   user_delete_function_name = "UserDelete"
 }
 
-resource "aws_iam_role" "UserDeleteRole" {
-  name               = "${local.user_delete_function_name}Role"
+resource "aws_iam_role" "UserDelete" {
+  name               = local.user_delete_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -30,23 +30,23 @@ data "aws_iam_policy_document" "UserDelete" {
   }
 }
 
-resource "aws_iam_policy" "UserDeleteRolePolicy" {
-  name   = "UserDeleteRolePolicy"
+resource "aws_iam_policy" "UserDelete" {
+  name   = local.user_delete_function_name
   policy = data.aws_iam_policy_document.UserDelete.json
 }
 
-resource "aws_iam_role_policy_attachment" "UserDeletePolicy" {
-  role       = aws_iam_role.UserDeleteRole.name
-  policy_arn = aws_iam_policy.UserDeleteRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "UserDelete" {
+  role       = aws_iam_role.UserDelete.name
+  policy_arn = aws_iam_policy.UserDelete.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserDeletePolicyLogging" {
-  role       = aws_iam_role.UserDeleteRole.name
+resource "aws_iam_role_policy_attachment" "UserDeleteLogging" {
+  role       = aws_iam_role.UserDelete.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserDeletePolicyXRay" {
-  role       = aws_iam_role.UserDeleteRole.name
+resource "aws_iam_role_policy_attachment" "UserDeleteXRay" {
+  role       = aws_iam_role.UserDelete.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -70,10 +70,10 @@ data "archive_file" "UserDelete" {
 resource "aws_lambda_function" "UserDelete" {
   description      = "Deletes a User and all associated data (requirement for Sign In With Apple)"
   function_name    = local.user_delete_function_name
-  role             = aws_iam_role.UserDeleteRole.arn
+  role             = aws_iam_role.UserDelete.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
+  depends_on       = [aws_iam_role_policy_attachment.UserDelete]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
   layers           = [local.adot_layer_arn]

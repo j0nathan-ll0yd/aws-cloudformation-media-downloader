@@ -2,8 +2,8 @@ locals {
   user_subscribe_function_name = "UserSubscribe"
 }
 
-resource "aws_iam_role" "UserSubscribeRole" {
-  name               = "${local.user_subscribe_function_name}Role"
+resource "aws_iam_role" "UserSubscribe" {
+  name               = local.user_subscribe_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -17,23 +17,23 @@ data "aws_iam_policy_document" "UserSubscribe" {
   }
 }
 
-resource "aws_iam_policy" "UserSubscribeRolePolicy" {
-  name   = "UserSubscribeRolePolicy"
+resource "aws_iam_policy" "UserSubscribe" {
+  name   = local.user_subscribe_function_name
   policy = data.aws_iam_policy_document.UserSubscribe.json
 }
 
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicy" {
-  role       = aws_iam_role.UserSubscribeRole.name
-  policy_arn = aws_iam_policy.UserSubscribeRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "UserSubscribe" {
+  role       = aws_iam_role.UserSubscribe.name
+  policy_arn = aws_iam_policy.UserSubscribe.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicyLogging" {
-  role       = aws_iam_role.UserSubscribeRole.name
+resource "aws_iam_role_policy_attachment" "UserSubscribeLogging" {
+  role       = aws_iam_role.UserSubscribe.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserSubscribePolicyXRay" {
-  role       = aws_iam_role.UserSubscribeRole.name
+resource "aws_iam_role_policy_attachment" "UserSubscribeXRay" {
+  role       = aws_iam_role.UserSubscribe.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -57,10 +57,10 @@ data "archive_file" "UserSubscribe" {
 resource "aws_lambda_function" "UserSubscribe" {
   description      = "Subscribes a device to an SNS topic"
   function_name    = local.user_subscribe_function_name
-  role             = aws_iam_role.UserSubscribeRole.arn
+  role             = aws_iam_role.UserSubscribe.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.UserSubscribePolicy]
+  depends_on       = [aws_iam_role_policy_attachment.UserSubscribe]
   filename         = data.archive_file.UserSubscribe.output_path
   source_code_hash = data.archive_file.UserSubscribe.output_base64sha256
   layers           = [local.adot_layer_arn]

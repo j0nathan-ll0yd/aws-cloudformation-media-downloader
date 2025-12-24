@@ -28,7 +28,7 @@ data "aws_caller_identity" "current" {}
 # Layer version list: https://aws-otel.github.io/docs/getting-started/lambda/lambda-js#lambda-layer
 # AWS-managed layer published in account 901920570463
 locals {
-  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
+  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
   # Common environment variables for all lambdas with ADOT layer
   # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)

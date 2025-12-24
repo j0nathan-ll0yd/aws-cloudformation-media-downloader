@@ -2,18 +2,18 @@ locals {
   send_push_notification_function_name = "SendPushNotification"
 }
 
-resource "aws_iam_role" "SendPushNotificationRole" {
-  name               = "${local.send_push_notification_function_name}Role"
+resource "aws_iam_role" "SendPushNotification" {
+  name               = local.send_push_notification_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyLogging" {
-  role       = aws_iam_role.SendPushNotificationRole.name
+resource "aws_iam_role_policy_attachment" "SendPushNotificationLogging" {
+  role       = aws_iam_role.SendPushNotification.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyXRay" {
-  role       = aws_iam_role.SendPushNotificationRole.name
+resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
+  role       = aws_iam_role.SendPushNotification.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -50,14 +50,14 @@ data "aws_iam_policy_document" "SendPushNotification" {
   }
 }
 
-resource "aws_iam_policy" "SendPushNotificationRolePolicy" {
-  name   = "SendPushNotificationRolePolicy"
+resource "aws_iam_policy" "SendPushNotification" {
+  name   = local.send_push_notification_function_name
   policy = data.aws_iam_policy_document.SendPushNotification.json
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationRolePolicy" {
-  role       = aws_iam_role.SendPushNotificationRole.name
-  policy_arn = aws_iam_policy.SendPushNotificationRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "SendPushNotification" {
+  role       = aws_iam_role.SendPushNotification.name
+  policy_arn = aws_iam_policy.SendPushNotification.arn
 }
 
 resource "aws_lambda_permission" "SendPushNotification" {
@@ -80,10 +80,10 @@ data "archive_file" "SendPushNotification" {
 resource "aws_lambda_function" "SendPushNotification" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = local.send_push_notification_function_name
-  role             = aws_iam_role.SendPushNotificationRole.arn
+  role             = aws_iam_role.SendPushNotification.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
+  depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   layers           = [local.adot_layer_arn]

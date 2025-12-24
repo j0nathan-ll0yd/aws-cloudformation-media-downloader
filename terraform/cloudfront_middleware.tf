@@ -1,15 +1,15 @@
-resource "aws_iam_role" "CloudfrontMiddlewareRole" {
-  name               = "CloudfrontMiddlewareRole"
+resource "aws_iam_role" "CloudfrontMiddleware" {
+  name               = "CloudfrontMiddleware"
   assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
 }
 
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyLogging" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
+resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewareLogging" {
+  role       = aws_iam_role.CloudfrontMiddleware.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewarePolicyXRay" {
-  role       = aws_iam_role.CloudfrontMiddlewareRole.name
+resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewareXRay" {
+  role       = aws_iam_role.CloudfrontMiddleware.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -27,7 +27,7 @@ data "archive_file" "CloudfrontMiddleware" {
 resource "aws_lambda_function" "CloudfrontMiddleware" {
   description      = "A lambda that acts as middleware before hitting the API."
   function_name    = "CloudfrontMiddleware"
-  role             = aws_iam_role.CloudfrontMiddlewareRole.arn
+  role             = aws_iam_role.CloudfrontMiddleware.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   publish          = true

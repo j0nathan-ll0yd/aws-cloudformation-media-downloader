@@ -2,18 +2,18 @@ locals {
   log_client_event_function_name = "LogClientEvent"
 }
 
-resource "aws_iam_role" "LogClientEventRole" {
-  name               = "${local.log_client_event_function_name}Role"
+resource "aws_iam_role" "LogClientEvent" {
+  name               = local.log_client_event_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
-resource "aws_iam_role_policy_attachment" "LogClientEventPolicyLogging" {
-  role       = aws_iam_role.LogClientEventRole.name
+resource "aws_iam_role_policy_attachment" "LogClientEventLogging" {
+  role       = aws_iam_role.LogClientEvent.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "LogClientEventPolicyXRay" {
-  role       = aws_iam_role.LogClientEventRole.name
+resource "aws_iam_role_policy_attachment" "LogClientEventXRay" {
+  role       = aws_iam_role.LogClientEvent.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -37,10 +37,10 @@ data "archive_file" "LogClientEvent" {
 resource "aws_lambda_function" "LogClientEvent" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = local.log_client_event_function_name
-  role             = aws_iam_role.LogClientEventRole.arn
+  role             = aws_iam_role.LogClientEvent.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
+  depends_on       = [aws_iam_role_policy_attachment.LogClientEventLogging]
   filename         = data.archive_file.LogClientEvent.output_path
   source_code_hash = data.archive_file.LogClientEvent.output_base64sha256
   layers           = [local.adot_layer_arn]

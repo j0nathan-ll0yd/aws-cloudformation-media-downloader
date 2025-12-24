@@ -2,8 +2,8 @@ locals {
   register_device_function_name = "RegisterDevice"
 }
 
-resource "aws_iam_role" "RegisterDeviceRole" {
-  name               = "${local.register_device_function_name}Role"
+resource "aws_iam_role" "RegisterDevice" {
+  name               = local.register_device_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -35,23 +35,23 @@ data "aws_iam_policy_document" "RegisterDevice" {
   }
 }
 
-resource "aws_iam_policy" "RegisterDeviceRolePolicy" {
-  name   = "RegisterDeviceRolePolicy"
+resource "aws_iam_policy" "RegisterDevice" {
+  name   = local.register_device_function_name
   policy = data.aws_iam_policy_document.RegisterDevice.json
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicy" {
-  role       = aws_iam_role.RegisterDeviceRole.name
-  policy_arn = aws_iam_policy.RegisterDeviceRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "RegisterDevice" {
+  role       = aws_iam_role.RegisterDevice.name
+  policy_arn = aws_iam_policy.RegisterDevice.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyLogging" {
-  role       = aws_iam_role.RegisterDeviceRole.name
+resource "aws_iam_role_policy_attachment" "RegisterDeviceLogging" {
+  role       = aws_iam_role.RegisterDevice.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDevicePolicyXRay" {
-  role       = aws_iam_role.RegisterDeviceRole.name
+resource "aws_iam_role_policy_attachment" "RegisterDeviceXRay" {
+  role       = aws_iam_role.RegisterDevice.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -75,10 +75,10 @@ data "archive_file" "RegisterDevice" {
 resource "aws_lambda_function" "RegisterDevice" {
   description      = "Registers an iOS device"
   function_name    = local.register_device_function_name
-  role             = aws_iam_role.RegisterDeviceRole.arn
+  role             = aws_iam_role.RegisterDevice.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
+  depends_on       = [aws_iam_role_policy_attachment.RegisterDevice]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
   layers           = [local.adot_layer_arn]

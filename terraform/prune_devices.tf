@@ -2,8 +2,8 @@ locals {
   prune_devices_function_name = "PruneDevices"
 }
 
-resource "aws_iam_role" "PruneDevicesRole" {
-  name               = "${local.prune_devices_function_name}Role"
+resource "aws_iam_role" "PruneDevices" {
+  name               = local.prune_devices_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
@@ -31,23 +31,23 @@ data "aws_iam_policy_document" "PruneDevices" {
   }
 }
 
-resource "aws_iam_policy" "PruneDevicesRolePolicy" {
-  name   = "PruneDevicesRolePolicy"
+resource "aws_iam_policy" "PruneDevices" {
+  name   = local.prune_devices_function_name
   policy = data.aws_iam_policy_document.PruneDevices.json
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicy" {
-  role       = aws_iam_role.PruneDevicesRole.name
-  policy_arn = aws_iam_policy.PruneDevicesRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "PruneDevices" {
+  role       = aws_iam_role.PruneDevices.name
+  policy_arn = aws_iam_policy.PruneDevices.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyLogging" {
-  role       = aws_iam_role.PruneDevicesRole.name
+resource "aws_iam_role_policy_attachment" "PruneDevicesLogging" {
+  role       = aws_iam_role.PruneDevices.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
-  role       = aws_iam_role.PruneDevicesRole.name
+resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {
+  role       = aws_iam_role.PruneDevices.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -84,10 +84,10 @@ data "archive_file" "PruneDevices" {
 resource "aws_lambda_function" "PruneDevices" {
   description      = "Validates iOS devices are still reachable; otherwise removes them."
   function_name    = local.prune_devices_function_name
-  role             = aws_iam_role.PruneDevicesRole.arn
+  role             = aws_iam_role.PruneDevices.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.PruneDevices]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
   layers           = [local.adot_layer_arn]

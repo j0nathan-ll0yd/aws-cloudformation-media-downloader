@@ -2,8 +2,8 @@ locals {
   refresh_token_function_name = "RefreshToken"
 }
 
-resource "aws_iam_role" "RefreshTokenRole" {
-  name               = "${local.refresh_token_function_name}Role"
+resource "aws_iam_role" "RefreshToken" {
+  name               = local.refresh_token_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -22,23 +22,23 @@ data "aws_iam_policy_document" "RefreshToken" {
   }
 }
 
-resource "aws_iam_policy" "RefreshTokenRolePolicy" {
-  name   = "RefreshTokenRolePolicy"
+resource "aws_iam_policy" "RefreshToken" {
+  name   = local.refresh_token_function_name
   policy = data.aws_iam_policy_document.RefreshToken.json
 }
 
-resource "aws_iam_role_policy_attachment" "RefreshTokenPolicy" {
-  role       = aws_iam_role.RefreshTokenRole.name
-  policy_arn = aws_iam_policy.RefreshTokenRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "RefreshToken" {
+  role       = aws_iam_role.RefreshToken.name
+  policy_arn = aws_iam_policy.RefreshToken.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RefreshTokenPolicyLogging" {
-  role       = aws_iam_role.RefreshTokenRole.name
+resource "aws_iam_role_policy_attachment" "RefreshTokenLogging" {
+  role       = aws_iam_role.RefreshToken.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RefreshTokenPolicyXRay" {
-  role       = aws_iam_role.RefreshTokenRole.name
+resource "aws_iam_role_policy_attachment" "RefreshTokenXRay" {
+  role       = aws_iam_role.RefreshToken.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -62,11 +62,11 @@ data "archive_file" "RefreshToken" {
 resource "aws_lambda_function" "RefreshToken" {
   description      = "Refreshes a user session by extending the expiration time"
   function_name    = local.refresh_token_function_name
-  role             = aws_iam_role.RefreshTokenRole.arn
+  role             = aws_iam_role.RefreshToken.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
-  depends_on       = [aws_iam_role_policy_attachment.RefreshTokenPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.RefreshToken]
   filename         = data.archive_file.RefreshToken.output_path
   source_code_hash = data.archive_file.RefreshToken.output_base64sha256
   layers           = [local.adot_layer_arn]

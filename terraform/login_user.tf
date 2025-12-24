@@ -2,8 +2,8 @@ locals {
   login_user_function_name = "LoginUser"
 }
 
-resource "aws_iam_role" "LoginUserRole" {
-  name               = "${local.login_user_function_name}Role"
+resource "aws_iam_role" "LoginUser" {
+  name               = local.login_user_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -25,23 +25,23 @@ data "aws_iam_policy_document" "LoginUser" {
   }
 }
 
-resource "aws_iam_policy" "LoginUserRolePolicy" {
-  name   = "LoginUserRolePolicy"
+resource "aws_iam_policy" "LoginUser" {
+  name   = local.login_user_function_name
   policy = data.aws_iam_policy_document.LoginUser.json
 }
 
-resource "aws_iam_role_policy_attachment" "LoginUserPolicy" {
-  role       = aws_iam_role.LoginUserRole.name
-  policy_arn = aws_iam_policy.LoginUserRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "LoginUser" {
+  role       = aws_iam_role.LoginUser.name
+  policy_arn = aws_iam_policy.LoginUser.arn
 }
 
-resource "aws_iam_role_policy_attachment" "LoginUserPolicyLogging" {
-  role       = aws_iam_role.LoginUserRole.name
+resource "aws_iam_role_policy_attachment" "LoginUserLogging" {
+  role       = aws_iam_role.LoginUser.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "LoginUserPolicyXRay" {
-  role       = aws_iam_role.LoginUserRole.name
+resource "aws_iam_role_policy_attachment" "LoginUserXRay" {
+  role       = aws_iam_role.LoginUser.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -65,11 +65,11 @@ data "archive_file" "LoginUser" {
 resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
   function_name    = local.login_user_function_name
-  role             = aws_iam_role.LoginUserRole.arn
+  role             = aws_iam_role.LoginUser.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
-  depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.LoginUser]
   filename         = data.archive_file.LoginUser.output_path
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
   layers           = [local.adot_layer_arn]

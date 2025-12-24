@@ -7,17 +7,17 @@ resource "aws_iam_role" "ApiGatewayAuthorizer" {
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
-data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
+data "aws_iam_policy_document" "ApiGatewayAuthorizerInvocation" {
   statement {
     actions   = ["lambda:InvokeFunction"]
     resources = [aws_lambda_function.ApiGatewayAuthorizer.arn]
   }
 }
 
-resource "aws_iam_role_policy" "ApiGatewayAuthorize" {
-  name   = "ApiGatewayAuthorizerInvocationPolicy"
+resource "aws_iam_role_policy" "ApiGatewayAuthorizerInvocation" {
+  name   = "ApiGatewayAuthorizerInvocation"
   role   = aws_iam_role.ApiGatewayAuthorizer.id
-  policy = data.aws_iam_policy_document.ApiGatewayAuthorizer.json
+  policy = data.aws_iam_policy_document.ApiGatewayAuthorizerInvocation.json
 }
 
 resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
@@ -25,17 +25,17 @@ resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
   retention_in_days = 14
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyLogging" {
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerLogging" {
   role       = aws_iam_role.ApiGatewayAuthorizer.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicyXRay" {
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerXRay" {
   role       = aws_iam_role.ApiGatewayAuthorizer.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
-data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
+data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
   statement {
     actions = ["apigateway:GET"]
     resources = [
@@ -62,14 +62,14 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizerRolePolicy" {
   }
 }
 
-resource "aws_iam_policy" "ApiGatewayAuthorizerRolePolicy" {
-  name   = "ApiGatewayAuthorizerRolePolicy"
-  policy = data.aws_iam_policy_document.ApiGatewayAuthorizerRolePolicy.json
+resource "aws_iam_policy" "ApiGatewayAuthorizer" {
+  name   = local.api_gateway_authorizer_function_name
+  policy = data.aws_iam_policy_document.ApiGatewayAuthorizer.json
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerPolicy" {
+resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizer" {
   role       = aws_iam_role.ApiGatewayAuthorizer.name
-  policy_arn = aws_iam_policy.ApiGatewayAuthorizerRolePolicy.arn
+  policy_arn = aws_iam_policy.ApiGatewayAuthorizer.arn
 }
 
 resource "aws_lambda_function" "ApiGatewayAuthorizer" {
@@ -79,8 +79,8 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   handler       = "index.handler"
   runtime       = "nodejs24.x"
   depends_on = [
-    aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicy,
-    aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicyLogging
+    aws_iam_role_policy_attachment.ApiGatewayAuthorizer,
+    aws_iam_role_policy_attachment.ApiGatewayAuthorizerLogging
   ]
   filename         = data.archive_file.ApiGatewayAuthorizer.output_path
   source_code_hash = data.archive_file.ApiGatewayAuthorizer.output_base64sha256

@@ -46,7 +46,7 @@ locals {
   ]
 }
 
-resource "aws_cloudwatch_dashboard" "main" {
+resource "aws_cloudwatch_dashboard" "Main" {
   dashboard_name = "MediaDownloader"
 
   dashboard_body = jsonencode({
@@ -298,7 +298,7 @@ resource "aws_cloudwatch_dashboard" "main" {
 
 output "cloudwatch_dashboard_url" {
   description = "URL to the CloudWatch dashboard"
-  value       = "https://${data.aws_region.current.id}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.id}#dashboards:name=${aws_cloudwatch_dashboard.main.dashboard_name}"
+  value       = "https://${data.aws_region.current.id}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.id}#dashboards:name=${aws_cloudwatch_dashboard.Main.dashboard_name}"
 }
 
 # =============================================================================
@@ -307,7 +307,7 @@ output "cloudwatch_dashboard_url" {
 # =============================================================================
 
 # Lambda Errors Alarm (API) - triggers when total errors across API Lambdas exceed threshold
-resource "aws_cloudwatch_metric_alarm" "lambda_errors_api" {
+resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
   alarm_name          = "MediaDownloader-Lambda-Errors-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -342,7 +342,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors_api" {
 }
 
 # Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
-resource "aws_cloudwatch_metric_alarm" "lambda_errors_background" {
+resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
   alarm_name          = "MediaDownloader-Lambda-Errors-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -377,7 +377,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors_background" {
 }
 
 # Lambda Throttles Alarm (API) - any throttle is concerning
-resource "aws_cloudwatch_metric_alarm" "lambda_throttles_api" {
+resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
   alarm_name          = "MediaDownloader-Lambda-Throttles-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -412,7 +412,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles_api" {
 }
 
 # Lambda Throttles Alarm (Background) - any throttle is concerning
-resource "aws_cloudwatch_metric_alarm" "lambda_throttles_background" {
+resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
   alarm_name          = "MediaDownloader-Lambda-Throttles-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -447,7 +447,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles_background" {
 }
 
 # SQS DLQ Alarm - any message in DLQ requires investigation
-resource "aws_cloudwatch_metric_alarm" "sqs_dlq_messages" {
+resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
   alarm_name          = "MediaDownloader-SQS-DLQ-Messages"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -467,7 +467,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_dlq_messages" {
 }
 
 # SQS Queue Age Alarm - messages shouldn't be stuck in queue
-resource "aws_cloudwatch_metric_alarm" "sqs_queue_age" {
+resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
   alarm_name          = "MediaDownloader-SQS-Queue-Age"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2

@@ -2,8 +2,8 @@ locals {
   file_coordinator_function_name = "FileCoordinator"
 }
 
-resource "aws_iam_role" "FileCoordinatorRole" {
-  name               = "${local.file_coordinator_function_name}Role"
+resource "aws_iam_role" "FileCoordinator" {
+  name               = local.file_coordinator_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
@@ -26,23 +26,23 @@ data "aws_iam_policy_document" "FileCoordinator" {
   }
 }
 
-resource "aws_iam_policy" "FileCoordinatorRolePolicy" {
-  name   = "FileCoordinatorRolePolicy"
+resource "aws_iam_policy" "FileCoordinator" {
+  name   = local.file_coordinator_function_name
   policy = data.aws_iam_policy_document.FileCoordinator.json
 }
 
-resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicy" {
-  role       = aws_iam_role.FileCoordinatorRole.name
-  policy_arn = aws_iam_policy.FileCoordinatorRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "FileCoordinator" {
+  role       = aws_iam_role.FileCoordinator.name
+  policy_arn = aws_iam_policy.FileCoordinator.arn
 }
 
-resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyLogging" {
-  role       = aws_iam_role.FileCoordinatorRole.name
+resource "aws_iam_role_policy_attachment" "FileCoordinatorLogging" {
+  role       = aws_iam_role.FileCoordinator.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "FileCoordinatorPolicyXRay" {
-  role       = aws_iam_role.FileCoordinatorRole.name
+resource "aws_iam_role_policy_attachment" "FileCoordinatorXRay" {
+  role       = aws_iam_role.FileCoordinator.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -79,11 +79,11 @@ data "archive_file" "FileCoordinator" {
 resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
   function_name    = local.file_coordinator_function_name
-  role             = aws_iam_role.FileCoordinatorRole.arn
+  role             = aws_iam_role.FileCoordinator.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 1024
-  depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.FileCoordinator]
   filename         = data.archive_file.FileCoordinator.output_path
   source_code_hash = data.archive_file.FileCoordinator.output_base64sha256
   layers           = [local.adot_layer_arn]
