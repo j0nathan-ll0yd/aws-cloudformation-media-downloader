@@ -217,6 +217,23 @@ The `.husky/post-checkout` hook automatically configures worktrees:
 
 After navigating to a new worktree, you can immediately run `pnpm run deploy`.
 
+### Claude Code and Worktrees
+
+Claude Code anchors to the directory where it was started. If you start Claude Code from the main repo and then work in a worktree, you'll see "Shell cwd was reset" messages.
+
+**Best Practice**: Start Claude Code from within the worktree:
+```bash
+cd ~/wt/my-feature
+claude
+```
+
+**Alternative**: Add the worktree directory mid-session:
+```bash
+/add-dir ~/wt/my-feature
+```
+
+The `/add-dir` slash command grants Claude Code access to work in that directory during the current session without restarting.
+
 ### Worktree Benefits
 
 - **Isolation**: Changes don't affect master until merged

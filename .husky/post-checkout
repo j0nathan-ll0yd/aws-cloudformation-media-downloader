@@ -78,4 +78,7 @@ if [ ! -d "node_modules" ]; then
 
   echo ""
   echo "Worktree setup complete!"
+  echo ""
+  echo "TIP: If using Claude Code from another directory, run:"
+  echo "  /add-dir $CURRENT_DIR"
 fi
