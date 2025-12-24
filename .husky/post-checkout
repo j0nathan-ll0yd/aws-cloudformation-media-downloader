@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# post-checkout hook: Setup worktrees for development and deployment
+# Runs after: git checkout, git switch, git worktree add
+#
+# Symlinks from main repo:
+#   - .claude/               (Claude Code settings)
+#   - secrets.yaml           (Decrypted secrets - gitignored)
+#   - .sops.yaml             (SOPS configuration)
+#   - .env                   (Environment variables for SOPS)
+#   - terraform/terraform.tfstate*  (Terraform state files)
+#
+# Auto-setup for fresh worktrees:
+#   - pnpm install
+#   - tofu init
+#
+
+# Get the main repository path (common git dir, strip /.git suffix)
+MAIN_REPO=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | sed 's/\/\.git$//')
+CURRENT_DIR=$(pwd)
+
+# Skip if we couldn't determine main repo or we're in main repo
+[ -z "$MAIN_REPO" ] && exit 0
+[ "$CURRENT_DIR" = "$MAIN_REPO" ] && exit 0
+
+# --- Symlink shared files ---
+SHARED_ITEMS=".claude secrets.yaml .sops.yaml .env"
+LINKED=""
+
+for item in $SHARED_ITEMS; do
+  # Skip if already exists (file, dir, or symlink)
+  if [ -e "$item" ] || [ -L "$item" ]; then
+    continue
+  fi
+
+  # Check if item exists in main repo
+  if [ -e "$MAIN_REPO/$item" ]; then
+    ln -s "$MAIN_REPO/$item" "$item"
+    if [ $? -eq 0 ]; then
+      LINKED="$LINKED $item"
+    fi
+  fi
+done
+
+# Symlink terraform state files (nested paths)
+for state_file in "terraform/terraform.tfstate" "terraform/terraform.tfstate.backup"; do
+  if [ ! -e "$state_file" ] && [ ! -L "$state_file" ]; then
+    if [ -e "$MAIN_REPO/$state_file" ]; then
+      ln -s "$MAIN_REPO/$state_file" "$state_file"
+      if [ $? -eq 0 ]; then
+        LINKED="$LINKED $state_file"
+      fi
+    fi
+  fi
+done
+
+# Print summary if anything was linked
+if [ -n "$LINKED" ]; then
+  echo "Linked from main repo:$LINKED"
+fi
+
+# --- Auto-setup: Only run for fresh worktrees (no node_modules) ---
+if [ ! -d "node_modules" ]; then
+  echo ""
+  echo "Setting up worktree..."
+
+  # Install dependencies
+  if command -v pnpm &> /dev/null; then
+    echo "Running pnpm install..."
+    pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+  fi
+
+  # Initialize terraform
+  if [ -d "terraform" ] && command -v tofu &> /dev/null; then
+    echo "Running tofu init..."
+    (cd terraform && tofu init -input=false) 2>/dev/null
+  fi
+
+  echo ""
+  echo "Worktree setup complete!"
+fi
