@@ -32,17 +32,17 @@ locals {
 
   # Common environment variables for all lambdas with ADOT layer
   # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)
-  # OPENTELEMETRY_COLLECTOR_CONFIG_FILE points to custom config that fixes deprecated telemetry.metrics.address
+  # OPENTELEMETRY_COLLECTOR_CONFIG_URI points to custom config that fixes deprecated telemetry.metrics.address
   # NODE_OPTIONS suppresses url.parse() deprecation warning from AWS SDK v3
   # LOG_LEVEL=DEBUG for development visibility (change to INFO for production)
   #
   # Note: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_PROPAGATORS are not needed as ADOT layer
   # defaults to localhost:4318 (HTTP) and X-Ray propagation respectively.
   common_lambda_env = {
-    OPENTELEMETRY_EXTENSION_LOG_LEVEL   = "warn"
-    OPENTELEMETRY_COLLECTOR_CONFIG_FILE = "/var/task/collector.yaml"
-    NODE_OPTIONS                        = "--no-deprecation"
-    LOG_LEVEL                           = "DEBUG"
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
+    NODE_OPTIONS                       = "--no-deprecation"
+    LOG_LEVEL                          = "DEBUG"
   }
 }
 
