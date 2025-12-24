@@ -1,0 +1,3 @@
+// {{entityName}} entity mock
+const {{entityNameLower}}Mock = createElectroDBEntityMock({queryIndexes: ['byKey']})
+jest.unstable_mockModule('#entities/{{entityName}}', () => ({{{entityName}}: {{entityNameLower}}Mock.entity}))

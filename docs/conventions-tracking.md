@@ -123,7 +123,19 @@ _No pending conventions - all conventions are documented._
 
 ### Detected: 2025-12-23
 
-1. **CJS Dependency Compatibility** (Architectural Pattern)
+1. **External Template Files for Code Generation** (Code Organization Rule)
+   - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code
+   - **Why**: Keeps generator code clean and maintainable; templates are easier to review, test, and modify independently; separates concerns between template content and interpolation logic
+   - **Location**: `src/mcp/templates/` for MCP handlers; similar pattern for other generators
+   - **Example**: `lines.push("const mock = ...")` is WRONG; `loadTemplate('test-scaffold/entity-mock.template.txt')` is CORRECT
+   - **Loader**: Use `loadAndInterpolate()` from `src/mcp/templates/loader.ts` for simple placeholder replacement
+   - **Detected**: During test-scaffold.ts refactoring
+   - **Target**: docs/wiki/MCP/Template-Organization.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+   - **Enforcement**: Code review; consider MCP validation rule
+
+2. **CJS Dependency Compatibility** (Architectural Pattern)
    - **What**: Use `createRequire` shim in esbuild banner for CJS dependencies in ESM bundles
    - **Why**: Allows CJS packages (ElectroDB) to work in pure ESM Lambda environment without forking
    - **Shim**: `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`
@@ -513,6 +525,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-12-22
-- **Total Conventions**: 41 detected (32 documented, 9 pending documentation)
+- **Last Updated**: 2025-12-23
+- **Total Conventions**: 42 detected (32 documented, 10 pending documentation)
 - **Convention Capture System**: Active

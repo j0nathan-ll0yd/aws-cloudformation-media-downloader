@@ -2,10 +2,13 @@
  * Test scaffolding handler for MCP server
  * Generates complete test file scaffolding with all required mocks
  *
- * Uses build/graph.json for dependency analysis and existing test patterns
+ * Uses build/graph.json for dependency analysis and existing test patterns.
+ * Templates are loaded from external files in src/mcp/templates/test-scaffold/
+ * to keep code clean and maintainable.
  */
 
 import {discoverEntities, loadDependencyGraph} from './data-loader.js'
+import {loadAndInterpolate, loadTemplate} from '../templates/loader.js'
 
 export type TestScaffoldQueryType = 'scaffold' | 'mocks' | 'fixtures' | 'structure'
 
@@ -31,21 +34,23 @@ function extractLambdaName(filePath: string): string | null {
 }
 
 /**
- * Generate mock code for a dependency
+ * Generate mock code for a dependency using templates
  */
 function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
   // Entity mocks
   const entityMatch = dep.match(/src\/entities\/(\w+)/)
   if (entityMatch && entityNames.includes(entityMatch[1])) {
     const entityName = entityMatch[1]
+    const mockCode = loadAndInterpolate('test-scaffold/entity-mock.template.txt', {
+      entityName,
+      entityNameLower: entityName.toLowerCase()
+    })
     return {
       type: 'entity',
       name: entityName,
       path: dep,
       importAlias: `#entities/${entityName}`,
-      mockCode: `// ${entityName} entity mock
-const ${entityName.toLowerCase()}Mock = createElectroDBEntityMock({queryIndexes: ['byKey']})
-jest.unstable_mockModule('#entities/${entityName}', () => ({${entityName}: ${entityName.toLowerCase()}Mock.entity}))`
+      mockCode
     }
   }
 
@@ -54,15 +59,17 @@ jest.unstable_mockModule('#entities/${entityName}', () => ({${entityName}: ${ent
   if (awsVendorMatch) {
     const serviceName = awsVendorMatch[1]
     const mockFunctions = getAwsServiceMocks(serviceName)
+    const mockFunctionsStr = mockFunctions.map((fn) => `  ${fn}: jest.fn()`).join(',\n')
+    const mockCode = loadAndInterpolate('test-scaffold/aws-vendor-mock.template.txt', {
+      serviceName,
+      mockFunctions: mockFunctionsStr
+    })
     return {
       type: 'vendor',
       name: `AWS/${serviceName}`,
       path: dep,
       importAlias: `#lib/vendor/AWS/${serviceName}`,
-      mockCode: `// AWS ${serviceName} mock
-jest.unstable_mockModule('#lib/vendor/AWS/${serviceName}', () => ({
-${mockFunctions.map((fn) => `  ${fn}: jest.fn()`).join(',\n')}
-}))`
+      mockCode
     }
   }
 
@@ -70,36 +77,25 @@ ${mockFunctions.map((fn) => `  ${fn}: jest.fn()`).join(',\n')}
   const vendorMatch = dep.match(/src\/lib\/vendor\/(\w+)/)
   if (vendorMatch && !dep.includes('/AWS/')) {
     const vendorName = vendorMatch[1]
+    const mockCode = loadAndInterpolate('test-scaffold/vendor-mock.template.txt', {vendorName})
     return {
       type: 'vendor',
       name: vendorName,
       path: dep,
       importAlias: `#lib/vendor/${vendorName}`,
-      mockCode: `// ${vendorName} vendor mock
-jest.unstable_mockModule('#lib/vendor/${vendorName}', () => ({
-  // Add mock functions as needed
-}))`
+      mockCode
     }
   }
 
   // OpenTelemetry wrapper
   if (dep.includes('OpenTelemetry')) {
+    const mockCode = loadTemplate('test-scaffold/opentelemetry-mock.template.txt')
     return {
       type: 'vendor',
       name: 'OpenTelemetry',
       path: dep,
       importAlias: '#lib/vendor/OpenTelemetry',
-      mockCode: `// OpenTelemetry mock (no-op tracing)
-jest.unstable_mockModule('#lib/vendor/OpenTelemetry', () => ({
-  getTracer: () => ({startSpan: jest.fn()}),
-  getCurrentSpan: jest.fn(),
-  startSpan: jest.fn().mockReturnValue(null),
-  addAnnotation: jest.fn(),
-  addMetadata: jest.fn(),
-  endSpan: jest.fn(),
-  withTracing: (handler: unknown) => handler,
-  SpanKind: {INTERNAL: 0}
-}))`
+      mockCode
     }
   }
 
@@ -123,114 +119,41 @@ function getAwsServiceMocks(service: string): string[] {
 }
 
 /**
- * Generate complete test file scaffold
+ * Generate complete test file scaffold using templates
  */
 function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const entityMocks = mocks.filter((m) => m.type === 'entity')
   const vendorMocks = mocks.filter((m) => m.type === 'vendor')
 
-  const lines: string[] = []
+  // Build entity mock import
+  const entityMockImport = entityMocks.length > 0 ? "import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'" : ''
 
-  // Imports
-  lines.push("import {beforeEach, describe, expect, jest, test} from '@jest/globals'")
-  lines.push("import {testContext} from '#util/jest-setup'")
+  // Build entity mocks section
+  const entityMocksSection =
+    entityMocks.length > 0 ? '// Entity mocks\n' + entityMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
 
-  if (entityMocks.length > 0) {
-    lines.push("import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'")
-  }
+  // Build vendor mocks section
+  const vendorMocksSection =
+    vendorMocks.length > 0 ? '// Vendor mocks\n' + vendorMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
 
-  lines.push('')
+  // Build entity mock resets
+  const entityMockResets = entityMocks.map((m) => `    ${m.name.toLowerCase()}Mock.reset()`).join('\n')
 
-  // Environment setup (must be BEFORE any imports that access process.env at module level)
-  lines.push('// Environment setup - BEFORE handler import')
-  lines.push("process.env.TableName = 'test-table'")
-  lines.push("process.env.Region = 'us-east-1'")
-  lines.push('')
+  // Build entity mock returns
+  const entityMockReturns =
+    entityMocks.length > 0
+      ? entityMocks.map((m) => `      ${m.name.toLowerCase()}Mock.query.go.mockResolvedValue({data: []})`).join('\n') + '\n'
+      : ''
 
-  // Entity mocks (must be before other mocks)
-  if (entityMocks.length > 0) {
-    lines.push('// Entity mocks')
-    for (const mock of entityMocks) {
-      lines.push(mock.mockCode)
-      lines.push('')
-    }
-  }
-
-  // Vendor mocks
-  if (vendorMocks.length > 0) {
-    lines.push('// Vendor mocks')
-    for (const mock of vendorMocks) {
-      lines.push(mock.mockCode)
-      lines.push('')
-    }
-  }
-
-  // Import handler after mocks
-  lines.push('// Import handler after mocks')
-  lines.push("const {handler} = await import('../src')")
-  lines.push('')
-
-  // Test suite
-  lines.push(`describe('#${lambdaName}', () => {`)
-  lines.push('  beforeEach(() => {')
-  lines.push('    jest.clearAllMocks()')
-
-  // Reset entity mocks
-  for (const mock of entityMocks) {
-    const entityName = mock.name.toLowerCase()
-    lines.push(`    ${entityName}Mock.reset()`)
-  }
-
-  lines.push('  })')
-  lines.push('')
-
-  lines.push("  describe('success cases', () => {")
-  lines.push("    test('should handle valid request', async () => {")
-  lines.push('      // Arrange')
-  lines.push('      const event: Partial<APIGatewayProxyEvent> = {')
-  lines.push('        requestContext: {')
-  lines.push('          authorizer: {')
-  lines.push("            userId: 'test-user-id'")
-  lines.push('          }')
-  lines.push('        } as unknown as APIGatewayProxyEvent["requestContext"],')
-  lines.push('        body: JSON.stringify({})')
-  lines.push('      }')
-  lines.push('')
-
-  // Set up mock returns for entities
-  for (const mock of entityMocks) {
-    const entityName = mock.name.toLowerCase()
-    lines.push(`      ${entityName}Mock.query.go.mockResolvedValue({data: []})`)
-  }
-
-  lines.push('')
-  lines.push('      // Act')
-  lines.push('      const result = await handler(event as APIGatewayProxyEvent, testContext)')
-  lines.push('')
-  lines.push('      // Assert')
-  lines.push('      expect(result.statusCode).toBe(200)')
-  lines.push('    })')
-  lines.push('  })')
-  lines.push('')
-
-  lines.push("  describe('error cases', () => {")
-  lines.push("    test('should handle missing authorization', async () => {")
-  lines.push('      // Arrange')
-  lines.push('      const event: Partial<APIGatewayProxyEvent> = {')
-  lines.push('        requestContext: {} as unknown as APIGatewayProxyEvent["requestContext"]')
-  lines.push('      }')
-  lines.push('')
-  lines.push('      // Act')
-  lines.push('      const result = await handler(event as APIGatewayProxyEvent, testContext)')
-  lines.push('')
-  lines.push('      // Assert')
-  lines.push('      expect(result.statusCode).toBe(401)')
-  lines.push('    })')
-  lines.push('  })')
-
-  lines.push('})')
-
-  return lines.join('\n')
+  // Load and interpolate the main template
+  return loadAndInterpolate('test-scaffold/test-file.template.txt', {
+    lambdaName,
+    entityMockImport,
+    entityMocks: entityMocksSection,
+    vendorMocks: vendorMocksSection,
+    entityMockResets,
+    entityMockReturns
+  })
 }
 
 export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
@@ -250,7 +173,9 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const transitiveDeps = depGraph.transitiveDependencies[normalizedFile] || []
 
   if (transitiveDeps.length === 0) {
-    const suggestions = Object.keys(depGraph.transitiveDependencies).filter((k) => k.includes(file.split('/').pop()!.replace('.ts', ''))).slice(0, 5)
+    const suggestions = Object.keys(depGraph.transitiveDependencies)
+      .filter((k) => k.includes(file.split('/').pop()!.replace('.ts', '')))
+      .slice(0, 5)
 
     return {error: `File '${file}' not found in dependency graph`, suggestions: suggestions.length > 0 ? suggestions : undefined}
   }
@@ -313,9 +238,10 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           '2. Vendor mocks (jest.unstable_mockModule)',
           '3. Handler import (await import)'
         ],
-        recommendation: entityMocks.length > 0
-          ? 'Remember: Entity mocks MUST be defined before jest.unstable_mockModule calls'
-          : 'Standard mock setup - define mocks before importing handler'
+        recommendation:
+          entityMocks.length > 0
+            ? 'Remember: Entity mocks MUST be defined before jest.unstable_mockModule calls'
+            : 'Standard mock setup - define mocks before importing handler'
       }
     }
 
