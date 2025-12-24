@@ -2,7 +2,7 @@
 
 ## Convention Capture System
 
-**CRITICAL**: This project captures emergent conventions during development. Read `docs/conventions-tracking.md` at session start.
+**CRITICAL**: This project captures emergent conventions during development. Read `docs/wiki/Meta/Conventions-Tracking.md` at session start.
 
 ### Detection Signals:
 - 🚨 **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
@@ -10,12 +10,12 @@
 - 📋 **MEDIUM**: "Prefer X over Y", repeated decisions
 
 ### When Convention Detected:
-1. Update `docs/conventions-tracking.md` with the new convention
+1. Update `docs/wiki/Meta/Conventions-Tracking.md` with the new convention
 2. Document in appropriate wiki page under `docs/wiki/`
 3. Mark as documented in tracking file
 
 ### Reference:
-- **Active Conventions**: `docs/conventions-tracking.md`
+- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md`
 - **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
 
 **Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.

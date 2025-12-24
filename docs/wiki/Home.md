@@ -108,7 +108,7 @@ Conventions evolve through:
 ### For New Projects
 1. Copy AGENTS.md template with Convention Capture instructions
 2. Reference this wiki for universal patterns
-3. Build project-specific conventions in `docs/conventions-tracking.md`
+3. Build project-specific conventions in `docs/wiki/Meta/Conventions-Tracking.md`
 4. Use passthrough files (CLAUDE.md, GEMINI.md) for tool compatibility
 
 ## Repository Structure

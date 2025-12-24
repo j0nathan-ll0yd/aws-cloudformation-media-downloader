@@ -21,7 +21,7 @@ The MCP server provides 5 tools for convention querying and code validation:
 
 ### query_conventions
 
-Search and filter project conventions from `docs/conventions-tracking.md` and wiki pages.
+Search and filter project conventions from `docs/wiki/Meta/Conventions-Tracking.md` and wiki pages.
 
 **Query Types:**
 - `list` - List all conventions grouped by severity

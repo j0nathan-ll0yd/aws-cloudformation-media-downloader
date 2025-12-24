@@ -36,8 +36,7 @@ project/
 ├── CLAUDE.md          # Claude Code passthrough (1 line)
 ├── GEMINI.md          # Gemini Code Assist passthrough (4 lines)
 └── docs/
-    ├── wiki/          # Detailed conventions
-    └── conventions-tracking.md  # Project-specific patterns
+    └── wiki/          # All documentation (including Conventions-Tracking.md)
 ```
 
 ### Benefits
@@ -137,7 +136,7 @@ Please see AGENTS.md for documentation.
 ### Step 4: Initialize Convention Tracking
 
 ```bash
-touch docs/conventions-tracking.md
+touch docs/wiki/Meta/Conventions-Tracking.md
 ```
 
 ## Migration from Existing Projects

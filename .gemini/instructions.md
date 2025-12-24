@@ -2,10 +2,10 @@
 
 ## Context Loading
 - **CRITICAL**: At the start of every session, read `repomix-output.xml` if it exists. This contains the full codebase context.
-- Read `AGENTS.md` and `docs/conventions-tracking.md` for project rules and emergent conventions.
+- Read `AGENTS.md` and `docs/wiki/Meta/Conventions-Tracking.md` for project rules and emergent conventions.
 
 ## Development Rules
-- Adhere to the conventions defined in `docs/wiki/` and `docs/conventions-tracking.md`.
+- Adhere to the conventions defined in `docs/wiki/`.
 - **Zero Tolerance**: Never import from `@aws-sdk/*` directly. Use wrappers in `#lib/vendor/AWS/`.
 - **Testing**: Use `test/helpers/electrodb-mock.ts` for ElectroDB mocking.
 - **Commits**: Follow conventional commits. Do NOT include AI attribution in commit messages.

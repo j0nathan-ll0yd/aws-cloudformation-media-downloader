@@ -1,9 +1,9 @@
 /**
  * Convention query handler for MCP server
- * Provides access to project conventions from conventions-tracking.md and wiki
+ * Provides access to project conventions from wiki
  *
  * Data is dynamically loaded from:
- * - docs/conventions-tracking.md (structured convention registry)
+ * - docs/wiki/Meta/Conventions-Tracking.md (structured convention registry)
  * - docs/wiki/ (detailed documentation pages)
  */
 
