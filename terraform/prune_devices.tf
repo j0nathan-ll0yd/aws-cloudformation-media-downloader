@@ -73,7 +73,7 @@ resource "aws_cloudwatch_log_group" "PruneDevices" {
 
 data "archive_file" "PruneDevices" {
   type        = "zip"
-  source_file = "./../build/lambdas/PruneDevices.mjs"
+  source_dir = "./../build/lambdas/PruneDevices"
   output_path = "./../build/lambdas/PruneDevices.zip"
 }
 
@@ -81,7 +81,7 @@ resource "aws_lambda_function" "PruneDevices" {
   description      = "Validates iOS devices are still reachable; otherwise removes them."
   function_name    = "PruneDevices"
   role             = aws_iam_role.PruneDevicesRole.arn
-  handler          = "PruneDevices.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
   filename         = data.archive_file.PruneDevices.output_path

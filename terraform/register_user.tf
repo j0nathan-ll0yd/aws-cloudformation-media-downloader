@@ -53,7 +53,7 @@ resource "aws_cloudwatch_log_group" "RegisterUser" {
 
 data "archive_file" "RegisterUser" {
   type        = "zip"
-  source_file = "./../build/lambdas/RegisterUser.mjs"
+  source_dir = "./../build/lambdas/RegisterUser"
   output_path = "./../build/lambdas/RegisterUser.zip"
 }
 
@@ -61,7 +61,7 @@ resource "aws_lambda_function" "RegisterUser" {
   description      = "Registers a new user"
   function_name    = "RegisterUser"
   role             = aws_iam_role.RegisterUserRole.arn
-  handler          = "RegisterUser.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 10
   depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]

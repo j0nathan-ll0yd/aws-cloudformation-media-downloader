@@ -23,15 +23,11 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
 }
 
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
-  const policy = generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
-  logDebug('response ==', policy)
-  return policy
+  return generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
 }
 
 export function generateDeny(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
-  const policy = generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
-  logDebug('response ==', policy)
-  return policy
+  return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
 }
 
 /**

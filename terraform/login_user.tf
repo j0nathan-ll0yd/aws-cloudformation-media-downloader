@@ -54,7 +54,7 @@ resource "aws_cloudwatch_log_group" "LoginUser" {
 
 data "archive_file" "LoginUser" {
   type        = "zip"
-  source_file = "./../build/lambdas/LoginUser.mjs"
+  source_dir = "./../build/lambdas/LoginUser"
   output_path = "./../build/lambdas/LoginUser.zip"
 }
 
@@ -62,7 +62,7 @@ resource "aws_lambda_function" "LoginUser" {
   description      = "A lambda function that lists files in S3."
   function_name    = "LoginUser"
   role             = aws_iam_role.LoginUserRole.arn
-  handler          = "LoginUser.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
   depends_on       = [aws_iam_role_policy_attachment.LoginUserPolicy]

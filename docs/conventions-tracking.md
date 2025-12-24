@@ -123,7 +123,21 @@ _No pending conventions - all conventions are documented._
 
 ### Detected: 2025-12-23
 
-1. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
+1. **Workaround Tracking with Automated Monitoring** (Workflow Pattern)
+   - **What**: When implementing workarounds for upstream dependency issues, create a tracking GitHub issue AND an automated workflow to monitor upstream status
+   - **Why**: Prevents workarounds from becoming permanent technical debt; proactive notification when upstream fixes are available
+   - **Components**:
+     - GitHub Issue: Documents the workaround, links to upstream issue, explains impact
+     - GitHub Actions Workflow: Weekly check of upstream issue status (`.github/workflows/check-upstream-issues.yml`)
+     - Automated Comments: Posts to tracking issue when upstream is closed
+   - **Example**: OTEL collector deprecation warning workaround → Issue #216 + check-upstream-issues.yml
+   - **Template**: Add entries to `trackedIssues` array in workflow with `owner`, `repo`, `issue_number`, `our_issue`, `description`
+   - **Target**: docs/wiki/Conventions/Workaround-Tracking.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+   - **Enforcement**: Code review when adding workarounds
+
+2. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
    - **What**: Use `common_lambda_env` Terraform local with `merge()` to centralize OTEL and runtime configuration
    - **Why**: DRY principle; ensures consistent configuration across all 14 lambdas; reduces ~90% log noise
    - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
@@ -558,5 +572,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-12-23
-- **Total Conventions**: 42 detected (32 documented, 10 pending documentation)
+- **Total Conventions**: 43 detected (32 documented, 11 pending documentation)
 - **Convention Capture System**: Active

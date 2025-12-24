@@ -53,7 +53,7 @@ resource "aws_cloudwatch_log_group" "ListFiles" {
 # Create a payload zip file from the function source code bundle
 data "archive_file" "ListFiles" {
   type        = "zip"
-  source_file = "./../build/lambdas/ListFiles.mjs"
+  source_dir = "./../build/lambdas/ListFiles"
   output_path = "./../build/lambdas/ListFiles.zip"
 }
 
@@ -61,7 +61,7 @@ resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
   function_name    = "ListFiles"
   role             = aws_iam_role.ListFilesRole.arn
-  handler          = "ListFiles.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]

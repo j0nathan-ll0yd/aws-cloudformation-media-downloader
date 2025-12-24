@@ -119,7 +119,7 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
 
 data "archive_file" "S3ObjectCreated" {
   type        = "zip"
-  source_file = "./../build/lambdas/S3ObjectCreated.mjs"
+  source_dir = "./../build/lambdas/S3ObjectCreated"
   output_path = "./../build/lambdas/S3ObjectCreated.zip"
 }
 
@@ -127,7 +127,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   description      = "Dispatches a notification after a file is uploaded to an S3 bucket"
   function_name    = "S3ObjectCreated"
   role             = aws_iam_role.S3ObjectCreatedRole.arn
-  handler          = "S3ObjectCreated.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
   filename         = data.archive_file.S3ObjectCreated.output_path

@@ -8,4 +8,4 @@ export const handler = withPowertools(async (event: APIGatewayEvent, context: Co
   const message = event.body
   logInfo('Event received', {deviceId, message})
   return buildApiResponse(context, 204)
-})
+}, {skipMetrics: true})

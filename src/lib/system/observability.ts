@@ -1,7 +1,7 @@
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import type {MetricInput} from '#types/util'
 import {getOptionalEnv} from '#lib/system/env'
-import {getRequestSummary, logDebug, logError, logInfo} from '#lib/system/logging'
+import {getRequestSummary, logDebug, logError, logInfo, logger} from '#lib/system/logging'
 import {sanitizeData} from '#util/security'
 
 /**
@@ -71,7 +71,9 @@ export function logIncomingFixture(event: unknown, fixtureType?: string): void {
     return
   }
   const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
-  console.log(JSON.stringify({__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeData(event)}))
+  // Use Powertools logger for consistent JSON formatting (enables CloudWatch pretty-printing)
+  // Note: 'timestamp' is a reserved Powertools key, so we use 'capturedAt' instead
+  logger.info('fixture:incoming', {__FIXTURE_MARKER__: 'INCOMING', fixtureType: detectedType, capturedAt: Date.now(), event: sanitizeData(event)})
 }
 
 /**
@@ -92,5 +94,7 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
     return
   }
   const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
-  console.log(JSON.stringify({__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, timestamp: Date.now(), data: sanitizeData(response)}))
+  // Use Powertools logger for consistent JSON formatting (enables CloudWatch pretty-printing)
+  // Note: 'timestamp' is a reserved Powertools key, so we use 'capturedAt' instead
+  logger.info('fixture:outgoing', {__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, capturedAt: Date.now(), response: sanitizeData(response)})
 }

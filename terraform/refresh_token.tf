@@ -51,7 +51,7 @@ resource "aws_cloudwatch_log_group" "RefreshToken" {
 
 data "archive_file" "RefreshToken" {
   type        = "zip"
-  source_file = "./../build/lambdas/RefreshToken.mjs"
+  source_dir = "./../build/lambdas/RefreshToken"
   output_path = "./../build/lambdas/RefreshToken.zip"
 }
 
@@ -59,7 +59,7 @@ resource "aws_lambda_function" "RefreshToken" {
   description      = "Refreshes a user session by extending the expiration time"
   function_name    = "RefreshToken"
   role             = aws_iam_role.RefreshTokenRole.arn
-  handler          = "RefreshToken.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
   depends_on       = [aws_iam_role_policy_attachment.RefreshTokenPolicy]

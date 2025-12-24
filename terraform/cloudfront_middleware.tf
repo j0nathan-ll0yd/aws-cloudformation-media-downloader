@@ -20,7 +20,7 @@ provider "aws" {
 
 data "archive_file" "CloudfrontMiddleware" {
   type        = "zip"
-  source_file = "./../build/lambdas/CloudfrontMiddleware.mjs"
+  source_dir = "./../build/lambdas/CloudfrontMiddleware"
   output_path = "./../build/lambdas/CloudfrontMiddleware.zip"
 }
 
@@ -28,7 +28,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   description      = "A lambda that acts as middleware before hitting the API."
   function_name    = "CloudfrontMiddleware"
   role             = aws_iam_role.CloudfrontMiddlewareRole.arn
-  handler          = "CloudfrontMiddleware.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   publish          = true
   provider         = aws.us_east_1

@@ -72,7 +72,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   description   = "The function that handles authorization for the API Gateway."
   function_name = "ApiGatewayAuthorizer"
   role          = aws_iam_role.ApiGatewayAuthorizer.arn
-  handler       = "ApiGatewayAuthorizer.handler"
+  handler          = "index.handler"
   runtime       = "nodejs24.x"
   depends_on = [
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerPolicy,
@@ -102,7 +102,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
 data "archive_file" "ApiGatewayAuthorizer" {
   type        = "zip"
-  source_file = "./../build/lambdas/ApiGatewayAuthorizer.mjs"
+  source_dir = "./../build/lambdas/ApiGatewayAuthorizer"
   output_path = "./../build/lambdas/ApiGatewayAuthorizer.zip"
 }
 

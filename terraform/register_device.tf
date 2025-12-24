@@ -64,7 +64,7 @@ resource "aws_cloudwatch_log_group" "RegisterDevice" {
 
 data "archive_file" "RegisterDevice" {
   type        = "zip"
-  source_file = "./../build/lambdas/RegisterDevice.mjs"
+  source_dir = "./../build/lambdas/RegisterDevice"
   output_path = "./../build/lambdas/RegisterDevice.zip"
 }
 
@@ -72,7 +72,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   description      = "Registers an iOS device"
   function_name    = "RegisterDevice"
   role             = aws_iam_role.RegisterDeviceRole.arn
-  handler          = "RegisterDevice.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevicePolicy]
   filename         = data.archive_file.RegisterDevice.output_path

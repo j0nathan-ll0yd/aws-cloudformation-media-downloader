@@ -46,7 +46,7 @@ resource "aws_cloudwatch_log_group" "UserSubscribe" {
 
 data "archive_file" "UserSubscribe" {
   type        = "zip"
-  source_file = "./../build/lambdas/UserSubscribe.mjs"
+  source_dir = "./../build/lambdas/UserSubscribe"
   output_path = "./../build/lambdas/UserSubscribe.zip"
 }
 
@@ -54,7 +54,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   description      = "Subscribes a device to an SNS topic"
   function_name    = "UserSubscribe"
   role             = aws_iam_role.UserSubscribeRole.arn
-  handler          = "UserSubscribe.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.UserSubscribePolicy]
   filename         = data.archive_file.UserSubscribe.output_path

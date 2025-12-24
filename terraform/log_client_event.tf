@@ -26,7 +26,7 @@ resource "aws_cloudwatch_log_group" "LogClientEvent" {
 
 data "archive_file" "LogClientEvent" {
   type        = "zip"
-  source_file = "./../build/lambdas/LogClientEvent.mjs"
+  source_dir = "./../build/lambdas/LogClientEvent"
   output_path = "./../build/lambdas/LogClientEvent.zip"
 }
 
@@ -34,7 +34,7 @@ resource "aws_lambda_function" "LogClientEvent" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = "LogClientEvent"
   role             = aws_iam_role.LogClientEventRole.arn
-  handler          = "LogClientEvent.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.LogClientEventPolicyLogging]
   filename         = data.archive_file.LogClientEvent.output_path

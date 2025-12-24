@@ -59,7 +59,7 @@ resource "aws_cloudwatch_log_group" "UserDelete" {
 
 data "archive_file" "UserDelete" {
   type        = "zip"
-  source_file = "./../build/lambdas/UserDelete.mjs"
+  source_dir = "./../build/lambdas/UserDelete"
   output_path = "./../build/lambdas/UserDelete.zip"
 }
 
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "UserDelete" {
   description      = "Deletes a User and all associated data (requirement for Sign In With Apple)"
   function_name    = "UserDelete"
   role             = aws_iam_role.UserDeleteRole.arn
-  handler          = "UserDelete.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.UserDeletePolicy]
   filename         = data.archive_file.UserDelete.output_path

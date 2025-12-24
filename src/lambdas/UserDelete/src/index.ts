@@ -106,4 +106,4 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   }
 
   return buildApiResponse(context, 204)
-}))
+}), {skipMetrics: true})

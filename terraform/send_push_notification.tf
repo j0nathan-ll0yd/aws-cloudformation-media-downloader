@@ -69,7 +69,7 @@ resource "aws_cloudwatch_log_group" "SendPushNotification" {
 
 data "archive_file" "SendPushNotification" {
   type        = "zip"
-  source_file = "./../build/lambdas/SendPushNotification.mjs"
+  source_dir = "./../build/lambdas/SendPushNotification"
   output_path = "./../build/lambdas/SendPushNotification.zip"
 }
 
@@ -77,7 +77,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   description      = "Records an event from a client environment (e.g. App or Web)."
   function_name    = "SendPushNotification"
   role             = aws_iam_role.SendPushNotificationRole.arn
-  handler          = "SendPushNotification.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
   filename         = data.archive_file.SendPushNotification.output_path

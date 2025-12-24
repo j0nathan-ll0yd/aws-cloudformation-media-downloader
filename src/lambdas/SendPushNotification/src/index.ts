@@ -106,4 +106,4 @@ export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchR
   }
 
   return {batchItemFailures}
-})
+}, {skipMetrics: true})

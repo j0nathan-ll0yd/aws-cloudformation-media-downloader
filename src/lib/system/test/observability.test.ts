@@ -2,13 +2,11 @@ import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {logger} from '#lib/vendor/Powertools'
 
 describe('System:Observability', () => {
-  let consoleLogSpy: jest.SpiedFunction<typeof console.log>
   let loggerInfoSpy: jest.SpiedFunction<typeof logger.info>
   let loggerErrorSpy: jest.SpiedFunction<typeof logger.error>
   let originalLogLevel: string | undefined
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
     loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => undefined)
     loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
     originalLogLevel = process.env.LOG_LEVEL
@@ -16,7 +14,6 @@ describe('System:Observability', () => {
   })
 
   afterEach(() => {
-    consoleLogSpy.mockRestore()
     loggerInfoSpy.mockRestore()
     loggerErrorSpy.mockRestore()
     if (originalLogLevel === undefined) {
@@ -33,13 +30,16 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent, 'test-fixture')
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      // First call is compact request summary, second is fixture
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(2)
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      expect(fixtureCall[0]).toBe('fixture:incoming')
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.__FIXTURE_MARKER__).toBe('INCOMING')
       expect(loggedData.fixtureType).toBe('test-fixture')
-      expect(loggedData.data.headers.Authorization).toBe('[REDACTED]')
-      expect(loggedData.data.httpMethod).toBe('POST')
-      expect(loggedData.timestamp).toBeDefined()
+      expect((loggedData.event as Record<string, unknown>).headers).toEqual({Authorization: '[REDACTED]'})
+      expect((loggedData.event as Record<string, unknown>).httpMethod).toBe('POST')
+      expect(loggedData.capturedAt).toBeDefined()
     })
 
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
@@ -50,8 +50,9 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent)
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(2)
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('ListFiles')
     })
 
@@ -63,8 +64,9 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent, 'CustomName')
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(2)
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('CustomName')
     })
 
@@ -76,8 +78,9 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent)
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(2)
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('UnknownLambda')
     })
   })
@@ -89,12 +92,14 @@ describe('System:Observability', () => {
 
       logOutgoingFixture(mockResponse, 'test-fixture')
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(1)
+      const fixtureCall = loggerInfoSpy.mock.calls[0]
+      expect(fixtureCall[0]).toBe('fixture:outgoing')
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.__FIXTURE_MARKER__).toBe('OUTGOING')
       expect(loggedData.fixtureType).toBe('test-fixture')
-      expect(loggedData.data.statusCode).toBe(200)
-      expect(loggedData.timestamp).toBeDefined()
+      expect((loggedData.response as Record<string, unknown>).statusCode).toBe(200)
+      expect(loggedData.capturedAt).toBeDefined()
     })
 
     it('should auto-detect Lambda name from AWS_LAMBDA_FUNCTION_NAME', async () => {
@@ -105,8 +110,9 @@ describe('System:Observability', () => {
 
       logOutgoingFixture(mockResponse)
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(1)
+      const fixtureCall = loggerInfoSpy.mock.calls[0]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('WebhookFeedly')
     })
 
@@ -118,8 +124,9 @@ describe('System:Observability', () => {
 
       logOutgoingFixture(mockResponse, 'CustomName')
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(1)
+      const fixtureCall = loggerInfoSpy.mock.calls[0]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('CustomName')
     })
 
@@ -131,8 +138,9 @@ describe('System:Observability', () => {
 
       logOutgoingFixture(mockResponse)
 
-      expect(consoleLogSpy).toHaveBeenCalledTimes(1)
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
+      expect(loggerInfoSpy).toHaveBeenCalledTimes(1)
+      const fixtureCall = loggerInfoSpy.mock.calls[0]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
       expect(loggedData.fixtureType).toBe('UnknownLambda')
     })
   })
@@ -153,15 +161,17 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent, 'test-fixture')
 
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
-      expect(loggedData.data.authorization).toBe('[REDACTED]')
-      expect(loggedData.data.Authorization).toBe('[REDACTED]')
-      expect(loggedData.data.token).toBe('[REDACTED]')
-      expect(loggedData.data.password).toBe('[REDACTED]')
-      expect(loggedData.data.apiKey).toBe('[REDACTED]')
-      expect(loggedData.data.secret).toBe('[REDACTED]')
-      expect(loggedData.data.appleDeviceIdentifier).toBe('[REDACTED]')
-      expect(loggedData.data.safeField).toBe('visible')
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
+      const event = loggedData.event as Record<string, unknown>
+      expect(event.authorization).toBe('[REDACTED]')
+      expect(event.Authorization).toBe('[REDACTED]')
+      expect(event.token).toBe('[REDACTED]')
+      expect(event.password).toBe('[REDACTED]')
+      expect(event.apiKey).toBe('[REDACTED]')
+      expect(event.secret).toBe('[REDACTED]')
+      expect(event.appleDeviceIdentifier).toBe('[REDACTED]')
+      expect(event.safeField).toBe('visible')
     })
 
     it('should handle nested objects', async () => {
@@ -173,11 +183,13 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent, 'test-fixture')
 
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
-      expect(loggedData.data.headers.Authorization).toBe('[REDACTED]')
-      expect(loggedData.data.headers['Content-Type']).toBe('application/json')
-      expect(loggedData.data.body.user.password).toBe('[REDACTED]')
-      expect(loggedData.data.body.user.email).toBe('[REDACTED]')
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
+      const event = loggedData.event as Record<string, unknown>
+      expect((event.headers as Record<string, unknown>).Authorization).toBe('[REDACTED]')
+      expect((event.headers as Record<string, unknown>)['Content-Type']).toBe('application/json')
+      expect(((event.body as Record<string, unknown>).user as Record<string, unknown>).password).toBe('[REDACTED]')
+      expect(((event.body as Record<string, unknown>).user as Record<string, unknown>).email).toBe('[REDACTED]')
     })
 
     it('should handle arrays', async () => {
@@ -186,11 +198,14 @@ describe('System:Observability', () => {
 
       logIncomingFixture(mockEvent, 'test-fixture')
 
-      const loggedData = JSON.parse(consoleLogSpy.mock.calls[0][0] as string)
-      expect(loggedData.data.items[0].id).toBe('1')
-      expect(loggedData.data.items[0].token).toBe('[REDACTED]')
-      expect(loggedData.data.items[1].id).toBe('2')
-      expect(loggedData.data.items[1].token).toBe('[REDACTED]')
+      const fixtureCall = loggerInfoSpy.mock.calls[1]
+      const loggedData = fixtureCall[1] as Record<string, unknown>
+      const event = loggedData.event as Record<string, unknown>
+      const items = event.items as Record<string, unknown>[]
+      expect(items[0].id).toBe('1')
+      expect(items[0].token).toBe('[REDACTED]')
+      expect(items[1].id).toBe('2')
+      expect(items[1].token).toBe('[REDACTED]')
     })
   })
 })

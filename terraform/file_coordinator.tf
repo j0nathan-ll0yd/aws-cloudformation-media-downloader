@@ -68,7 +68,7 @@ resource "aws_cloudwatch_log_group" "FileCoordinator" {
 
 data "archive_file" "FileCoordinator" {
   type        = "zip"
-  source_file = "./../build/lambdas/FileCoordinator.mjs"
+  source_dir = "./../build/lambdas/FileCoordinator"
   output_path = "./../build/lambdas/FileCoordinator.zip"
 }
 
@@ -76,7 +76,7 @@ resource "aws_lambda_function" "FileCoordinator" {
   description      = "Checks for files to be downloaded and triggers their execution"
   function_name    = "FileCoordinator"
   role             = aws_iam_role.FileCoordinatorRole.arn
-  handler          = "FileCoordinator.handler"
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 1024
   depends_on       = [aws_iam_role_policy_attachment.FileCoordinatorPolicy]
