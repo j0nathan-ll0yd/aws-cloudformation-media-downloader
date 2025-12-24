@@ -143,6 +143,67 @@ aws logs filter-log-events \
 aws logs tail /aws/lambda/ApiGatewayAuthorizer --since 10m --region us-west-2 | grep -i "deprecated"
 ```
 
+## JSON Log Format
+
+### Why JSON?
+
+Powertools Logger **always outputs structured JSON** regardless of Lambda's `log_format` setting. This is intentional:
+
+**Plain Text Format (traditional):**
+```
+2024-10-27T19:17:45.586Z 79b4f56e INFO some log message
+```
+
+**JSON Format (Powertools):**
+```json
+{"level":"INFO","message":"some log message","timestamp":"2024-10-27T19:17:45.586Z","service":"LoginUser","xray_trace_id":"..."}
+```
+
+### Trade-offs
+
+| Aspect | Plain Text | JSON (current) |
+|--------|------------|----------------|
+| Human readability | Better in raw logs | Requires parsing |
+| Searchability | Regex-based | Field-based queries |
+| CloudWatch Insights | Limited | Full field discovery |
+| Log size | Smaller | ~20% larger |
+| Structured data | Difficult | Native support |
+
+### Why We Chose JSON
+
+1. **CloudWatch Logs Insights** auto-discovers JSON fields - you can filter by `level`, `message`, `requestId`, etc.
+2. **Correlation**: X-Ray trace IDs, request IDs, and service names are automatically included
+3. **Context enrichment**: Cold start indicators, Lambda context, custom attributes
+4. **AWS recommendation**: [AWS recommends JSON format](https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs-logformat.html) for production Lambda functions
+
+### Working with JSON Logs
+
+**In CloudWatch Console:**
+- Use **Logs Insights** tab instead of raw log streams
+- Click fields in the sidebar to auto-filter
+- JSON fields are auto-indexed for fast queries
+
+**Quick Filtering:**
+```sql
+-- Filter by log level
+fields @timestamp, message, level
+| filter level = "ERROR"
+| sort @timestamp desc
+
+-- Filter by service
+fields @timestamp, message
+| filter service = "LoginUser"
+| sort @timestamp desc
+```
+
+**For Local Development:**
+Set `POWERTOOLS_DEV=true` to pretty-print JSON (multi-line with indentation).
+
+### Reference
+- [AWS Lambda Log Format Documentation](https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs-logformat.html)
+- [Powertools Logger Documentation](https://docs.aws.amazon.com/powertools/typescript/latest/core/logger/)
+- [CloudWatch Logs Insights Query Syntax](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CWL_QuerySyntax.html)
+
 ## CloudWatch Insights Queries
 
 ```sql
