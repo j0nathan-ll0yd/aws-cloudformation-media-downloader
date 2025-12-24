@@ -213,7 +213,7 @@ model FeedlyWebhookRequest {
   /**
    * Title of the article
    */
-  articleTitle: string;
+  articleTitle?: string;
 
   /**
    * URL of the article (typically a YouTube video URL)
