@@ -4,7 +4,7 @@ locals {
 }
 
 resource "aws_iam_role" "WebhookFeedlyRole" {
-  name               = "WebhookFeedlyRole"
+  name               = "${local.webhook_feedly_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 

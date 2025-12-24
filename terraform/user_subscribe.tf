@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "UserSubscribeRole" {
-  name               = "UserSubscribeRole"
+  name               = "${local.user_subscribe_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 

@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "RefreshTokenRole" {
-  name               = "RefreshTokenRole"
+  name               = "${local.refresh_token_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 

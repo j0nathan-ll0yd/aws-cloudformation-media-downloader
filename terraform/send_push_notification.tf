@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "SendPushNotificationRole" {
-  name               = "SendPushNotificationRole"
+  name               = "${local.send_push_notification_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 

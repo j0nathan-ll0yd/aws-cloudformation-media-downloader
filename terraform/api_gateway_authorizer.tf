@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "ApiGatewayAuthorizer" {
-  name               = "ApiGatewayAuthorizer"
+  name               = local.api_gateway_authorizer_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 

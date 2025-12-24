@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "FileCoordinatorRole" {
-  name               = "FileCoordinatorRole"
+  name               = "${local.file_coordinator_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 

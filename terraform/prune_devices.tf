@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_iam_role" "PruneDevicesRole" {
-  name               = "PruneDevicesRole"
+  name               = "${local.prune_devices_function_name}Role"
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
