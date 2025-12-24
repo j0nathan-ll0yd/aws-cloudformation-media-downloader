@@ -124,7 +124,7 @@ interface Webhooks {
   processFeedlyWebhook(
     @header("Authorization") authorization: string,
     @header("X-API-Key") apiKey: string,
-    @body webhook: FeedlyWebhook,
+    @body webhook: FeedlyWebhookRequest,
   ): {
     @statusCode statusCode: 200;
     @body body: WebhookResponse;
@@ -168,7 +168,7 @@ interface Authentication {
   @summary("Register new user")
   registerUser(
     @header("X-API-Key") apiKey: string,
-    @body registration: UserRegistration,
+    @body registration: UserRegistrationRequest,
   ): {
     @statusCode statusCode: 200;
     @body body: UserRegistrationResponse;
@@ -201,7 +201,7 @@ interface Authentication {
   @summary("Login existing user")
   loginUser(
     @header("X-API-Key") apiKey: string,
-    @body login: UserLogin,
+    @body login: UserLoginRequest,
   ): {
     @statusCode statusCode: 200;
     @body body: UserLoginResponse;

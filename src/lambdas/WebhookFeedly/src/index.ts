@@ -6,8 +6,8 @@ import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {FileStatus, ResponseStatus} from '#types/enums'
-import {feedlyWebhookSchema} from '#types/api-schema'
-import type {FeedlyWebhook} from '#types/api-schema'
+import {feedlyWebhookRequestSchema} from '#types/api-schema'
+import type {FeedlyWebhookRequest} from '#types/api-schema'
 import type {File} from '#types/domain-models'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getRequiredEnv} from '#lib/system/env'
@@ -161,8 +161,8 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
   const correlationId = randomUUID()
   logInfo('Processing request', {correlationId, requestId: context.awsRequestId})
 
-  const requestBody = getPayloadFromEvent(event) as FeedlyWebhook
-  validateRequest(requestBody, feedlyWebhookSchema)
+  const requestBody = getPayloadFromEvent(event) as FeedlyWebhookRequest
+  validateRequest(requestBody, feedlyWebhookRequestSchema)
   const fileId = getVideoID(requestBody.articleURL)
 
   // Process webhook with idempotency protection

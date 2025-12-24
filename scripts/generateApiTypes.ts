@@ -151,13 +151,13 @@ const DOMAIN_MODELS = new Set([
   'Device',
   'DeviceRegistrationRequest',
   'DeviceRegistrationResponse',
-  'FeedlyWebhook',
+  'FeedlyWebhookRequest',
   'WebhookResponse',
-  'UserLogin',
+  'UserLoginRequest',
   'UserLoginResponse',
-  'UserRegistration',
+  'UserRegistrationRequest',
   'UserRegistrationResponse',
-  'UserSubscription',
+  'UserSubscriptionRequest',
   'ErrorResponse',
   'UnauthorizedError',
   'ForbiddenError',
@@ -225,7 +225,7 @@ function topologicalSort(schemas: GeneratedSchema[]): GeneratedSchema[] {
  */
 function postProcessSchemas(schemas: GeneratedSchema[]): GeneratedSchema[] {
   return schemas.map((schema) => {
-    if (schema.name === 'FeedlyWebhook') {
+    if (schema.name === 'FeedlyWebhookRequest') {
       // Replace z.string().url() with YouTube regex validation for articleURL
       schema.zodSchema = schema.zodSchema.replace(
         /articleURL: z\.string\(\)\.url\(\)/,

@@ -11,8 +11,8 @@
  */
 
 import {auth} from '#lib/vendor/BetterAuth/config'
-import {userLoginSchema} from '#types/api-schema'
-import type {UserLogin} from '#types/api-schema'
+import {userLoginRequestSchema} from '#types/api-schema'
+import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
@@ -37,8 +37,8 @@ import {logInfo} from '#lib/system/logging'
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
   // 1. Validate request body
-  const requestBody = getPayloadFromEvent(event) as UserLogin
-  validateRequest(requestBody, userLoginSchema)
+  const requestBody = getPayloadFromEvent(event) as UserLoginRequest
+  validateRequest(requestBody, userLoginRequestSchema)
 
   // 2. Sign in using Better Auth with ID token from iOS app
   // Better Auth handles:

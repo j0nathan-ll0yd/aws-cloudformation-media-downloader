@@ -1,5 +1,5 @@
-import {userSubscriptionSchema} from '#types/api-schema'
-import type {UserSubscription} from '#types/api-schema'
+import {userSubscriptionRequestSchema} from '#types/api-schema'
+import type {UserSubscriptionRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
@@ -18,8 +18,8 @@ import {subscribeEndpointToTopic} from '#lib/domain/device/device-service'
  */
 export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context}) => {
   verifyPlatformConfiguration()
-  const requestBody = getPayloadFromEvent(event) as UserSubscription
-  validateRequest(requestBody, userSubscriptionSchema)
+  const requestBody = getPayloadFromEvent(event) as UserSubscriptionRequest
+  validateRequest(requestBody, userSubscriptionRequestSchema)
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
   return buildApiResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
