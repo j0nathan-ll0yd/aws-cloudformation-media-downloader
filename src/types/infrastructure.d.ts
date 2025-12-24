@@ -171,7 +171,7 @@ export interface Local {
 export interface CommonLambdaEnv {
     LOG_LEVEL:                          string;
     NODE_OPTIONS:                       string;
-    OPENTELEMETRY_COLLECTOR_CONFIG_URI: string;
+    OPENTELEMETRY_COLLECTOR_CONFIG_FILE: string;
     OPENTELEMETRY_EXTENSION_LOG_LEVEL:  string;
     OTEL_EXPORTER_OTLP_ENDPOINT:        string;
     OTEL_PROPAGATORS:                   string;
@@ -1352,7 +1352,7 @@ const typeMap: any = {
     "CommonLambdaEnv": o([
         { json: "LOG_LEVEL", js: "LOG_LEVEL", typ: "" },
         { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
-        { json: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", js: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", typ: "" },
+        { json: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", js: "OPENTELEMETRY_COLLECTOR_CONFIG_FILE", typ: "" },
         { json: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", js: "OPENTELEMETRY_EXTENSION_LOG_LEVEL", typ: "" },
         { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
         { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
