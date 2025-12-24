@@ -98,9 +98,7 @@ jest.unstable_mockModule('#lib/vendor/OpenTelemetry', () => ({
   addMetadata: jest.fn(),
   endSpan: jest.fn(),
   withTracing: (handler: unknown) => handler,
-  SpanKind: {INTERNAL: 0},
-  initializeTracing: jest.fn(),
-  isTracingInitialized: jest.fn().mockReturnValue(false)
+  SpanKind: {INTERNAL: 0}
 }))`
     }
   }

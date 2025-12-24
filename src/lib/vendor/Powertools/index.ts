@@ -32,6 +32,3 @@ export const metrics = new Metrics({namespace: 'MediaDownloader', serviceName: p
 
 // Re-export middleware functions for use with middy
 export { injectLambdaContext, logMetrics, MetricUnit }
-
-// Re-export parser utilities for request validation
-export { createApiBodyParser, createApiV2BodyParser } from './parser'
