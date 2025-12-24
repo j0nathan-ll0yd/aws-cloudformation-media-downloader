@@ -36,4 +36,3 @@ export interface UserEventDetails {
   userId?: string
   userStatus: UserStatus
 }
-
