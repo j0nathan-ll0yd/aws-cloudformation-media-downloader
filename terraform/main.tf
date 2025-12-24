@@ -31,15 +31,15 @@ locals {
   adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
   # Common environment variables for all lambdas with ADOT layer
-  # OTEL_LOG_LEVEL=warn silences INFO-level startup/shutdown logs (~18 lines per cold start)
+  # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)
   # NODE_OPTIONS suppresses url.parse() deprecation warning from AWS SDK v3
   # LOG_LEVEL=DEBUG for development visibility (change to INFO for production)
   common_lambda_env = {
-    OTEL_LOG_LEVEL              = "warn"
-    OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-    OTEL_PROPAGATORS            = "xray"
-    NODE_OPTIONS                = "--no-deprecation"
-    LOG_LEVEL                   = "DEBUG"
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL = "warn"
+    OTEL_EXPORTER_OTLP_ENDPOINT       = "http://localhost:4318"
+    OTEL_PROPAGATORS                  = "xray"
+    NODE_OPTIONS                      = "--no-deprecation"
+    LOG_LEVEL                         = "DEBUG"
   }
 }
 

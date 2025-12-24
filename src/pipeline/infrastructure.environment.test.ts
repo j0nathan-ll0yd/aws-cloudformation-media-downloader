@@ -18,7 +18,7 @@ const excludedSourceVariables: Record<string, number> = {
   http_proxy: 1,
   https_proxy: 1,
   // Infrastructure-level variables (used by Lambda runtime/ADOT, not source code)
-  OTEL_LOG_LEVEL: 1, // OpenTelemetry log level for ADOT layer
+  OPENTELEMETRY_EXTENSION_LOG_LEVEL: 1, // ADOT Lambda extension log level
   NODE_OPTIONS: 1, // Node.js runtime options (--no-deprecation)
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
@@ -188,7 +188,7 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
 
 // Variables from common_lambda_env local that are merged into all lambdas
 // These are infrastructure-level settings, not accessed by source code
-const commonLambdaEnvVars = ['OTEL_LOG_LEVEL', 'OTEL_EXPORTER_OTLP_ENDPOINT', 'OTEL_PROPAGATORS', 'NODE_OPTIONS', 'LOG_LEVEL']
+const commonLambdaEnvVars = ['OPENTELEMETRY_EXTENSION_LOG_LEVEL', 'OTEL_EXPORTER_OTLP_ENDPOINT', 'OTEL_PROPAGATORS', 'NODE_OPTIONS', 'LOG_LEVEL']
 
 // Parse environment variables from a Terraform merge() expression string.
 // hcl2json outputs merge() expressions as raw strings, not evaluated objects.
