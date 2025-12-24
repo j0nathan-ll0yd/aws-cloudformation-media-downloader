@@ -180,4 +180,4 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
     }
   }
   return generateAllow(principalId, event.methodArn, apiKeyValue)
-}))
+}), {skipMetrics: true})

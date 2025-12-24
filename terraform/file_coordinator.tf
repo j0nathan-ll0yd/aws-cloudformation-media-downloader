@@ -89,13 +89,11 @@ resource "aws_lambda_function" "FileCoordinator" {
   }
 
   environment {
-    variables = {
+    variables = merge(local.common_lambda_env, {
       DYNAMODB_TABLE_NAME             = aws_dynamodb_table.MediaDownloader.name
       FILE_COORDINATOR_BATCH_SIZE     = 5
       FILE_COORDINATOR_BATCH_DELAY_MS = 10000
       OTEL_SERVICE_NAME               = "FileCoordinator"
-      OTEL_EXPORTER_OTLP_ENDPOINT     = "http://localhost:4318"
-      OTEL_PROPAGATORS                = "xray"
-    }
+    })
   }
 }

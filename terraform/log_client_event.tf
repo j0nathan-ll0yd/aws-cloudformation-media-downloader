@@ -46,11 +46,9 @@ resource "aws_lambda_function" "LogClientEvent" {
   }
 
   environment {
-    variables = {
-      OTEL_SERVICE_NAME           = "LogClientEvent"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME = "LogClientEvent"
+    })
   }
 }
 

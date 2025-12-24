@@ -1,7 +1,7 @@
 import type {CloudFrontRequestEvent, Context} from 'aws-lambda'
 import type {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import type {CloudFrontHandlerResult, CustomCloudFrontRequest} from '#types/lambda'
-import {logDebug, logInfo} from '#lib/system/logging'
+import {logDebug} from '#lib/system/logging'
 // Note: Lambda@Edge does not support externalized modules (no layers) and has strict size limits
 // X-Ray wrapper removed to avoid bundling aws-xray-sdk-core (~1MB) into the deployment package
 
@@ -34,8 +34,9 @@ async function handleQueryString(request: CloudFrontRequest) {
 }
 
 export const handler = async (event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontHandlerResult> => {
-  logInfo('event <=', event)
-  logInfo('context <=', context)
+  // Lambda@Edge can't use logIncomingFixture (no layers), so log at DEBUG to reduce noise
+  logDebug('event <=', event)
+  logDebug('context <=', context)
   const request = event.Records[0].cf.request as CustomCloudFrontRequest
   await handleQueryString(request)
   logDebug('request <=', request)

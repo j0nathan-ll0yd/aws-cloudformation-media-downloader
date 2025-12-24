@@ -23,7 +23,7 @@ export function wrapScheduledHandler<TResult = void>(
 ): (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
   return async (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('scheduled event <=', event)
+    logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId}})
       logInfo('scheduled result =>', result as object)
@@ -59,7 +59,6 @@ export function wrapLambdaInvokeHandler<TEvent, TResult>(
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event as object)
     logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId}})

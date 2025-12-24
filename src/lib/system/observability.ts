@@ -1,7 +1,7 @@
 import {getStandardUnit, putMetricData} from '#lib/vendor/AWS/CloudWatch'
 import type {MetricInput} from '#types/util'
 import {getOptionalEnv} from '#lib/system/env'
-import {logDebug, logError} from '#lib/system/logging'
+import {getRequestSummary, logDebug, logError, logInfo} from '#lib/system/logging'
 import {sanitizeData} from '#util/security'
 
 /**
@@ -51,6 +51,9 @@ export async function putMetrics(metrics: MetricInput[]): Promise<void> {
  * Log incoming request for fixture extraction from CloudWatch
  * Marks production requests for automated fixture generation
  *
+ * Also logs a compact request summary at INFO level for human-readable logs.
+ * Full event is logged with __FIXTURE_MARKER__ for automated fixture extraction.
+ *
  * Automatically detects the Lambda function name from AWS_LAMBDA_FUNCTION_NAME
  * environment variable (set by AWS Lambda runtime).
  *
@@ -60,6 +63,9 @@ export async function putMetrics(metrics: MetricInput[]): Promise<void> {
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Fixture-Extraction#fixture-logging-implementation | Fixture Logging Implementation}
  */
 export function logIncomingFixture(event: unknown, fixtureType?: string): void {
+  // Log compact request summary for human-readable logs (~150 bytes vs ~2.5KB full event)
+  logInfo('request <=', getRequestSummary(event))
+
   // Silence fixture logging during tests if LOG_LEVEL is SILENT
   if (getOptionalEnv('LOG_LEVEL', 'INFO').toUpperCase() === 'SILENT') {
     return

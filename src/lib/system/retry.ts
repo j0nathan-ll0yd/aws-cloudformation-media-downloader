@@ -1,4 +1,4 @@
-import {logDebug} from '#lib/system/logging'
+import {logDebug, logError} from '#lib/system/logging'
 import type {RetryConfig} from '#types/util'
 
 const DEFAULT_CONFIG: Required<RetryConfig> = {maxRetries: 3, initialDelayMs: 100, multiplier: 2, maxDelayMs: 20000}
@@ -63,7 +63,7 @@ async function retryWithBackoff<TResult extends {unprocessed: unknown[]}>(
   }
 
   if (result.unprocessed.length > 0) {
-    logDebug(`${operationName}: exhausted retries with ${result.unprocessed.length} unprocessed items remaining`)
+    logError(`${operationName}: exhausted retries with ${result.unprocessed.length} unprocessed items remaining`)
   }
 
   return result

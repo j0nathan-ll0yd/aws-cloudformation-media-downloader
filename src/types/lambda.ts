@@ -8,6 +8,17 @@ import type {UserStatus} from './enums'
 /** Metadata passed to all wrapped handlers */
 export type WrapperMetadata = {traceId: string}
 
+/**
+ * Options for withPowertools middleware
+ */
+export interface PowertoolsOptions {
+  /**
+   * Skip metrics middleware entirely. Use for lambdas that don't publish custom metrics
+   * to avoid "No application metrics to publish" warnings.
+   */
+  skipMetrics?: boolean
+}
+
 /** Parameters passed to wrapped API Gateway handlers */
 export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {event: TEvent; context: Context; metadata: WrapperMetadata}
 

@@ -66,12 +66,10 @@ resource "aws_lambda_function" "UserSubscribe" {
   }
 
   environment {
-    variables = {
-      PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
-      OTEL_SERVICE_NAME           = "UserSubscribe"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      PLATFORM_APPLICATION_ARN = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
+      OTEL_SERVICE_NAME        = "UserSubscribe"
+    })
   }
 }
 

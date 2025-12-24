@@ -1,6 +1,7 @@
 import type {AuthorizerParams, EventHandlerParams, WrapperMetadata} from '#types/lambda'
 import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, S3Event, S3EventRecord, SQSEvent, SQSRecord} from 'aws-lambda'
-import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {logDebug, logError} from '#lib/system/logging'
+import {logIncomingFixture} from '#lib/system/observability'
 
 /**
  * Wraps an API Gateway custom authorizer with proper error propagation.
@@ -22,7 +23,7 @@ export function wrapAuthorizer(
 ): (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata) => Promise<CustomAuthorizerResult> {
   return async (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata): Promise<CustomAuthorizerResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event)
+    logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId}})
       logDebug('response ==', result)
@@ -64,7 +65,7 @@ export function wrapEventHandler<TEvent, TRecord>(
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<void> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<void> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event as object)
+    logIncomingFixture(event)
     const records = options.getRecords(event)
     const errors: Error[] = []
 

@@ -57,5 +57,20 @@ export function logError(message: string, data?: string | object | Error | unkno
   }
 }
 
+/**
+ * Extract essential request info for logging
+ * Reduces log size from ~2.5KB to ~150 bytes per request
+ * Full event details are available via X-Ray traces
+ * @param event - API Gateway event or similar request object
+ * @returns Compact summary with path, method, requestId, sourceIp
+ */
+export function getRequestSummary(event: unknown): object {
+  const e = event as Record<string, unknown>
+  const requestContext = e.requestContext as Record<string, unknown> | undefined
+  const identity = requestContext?.identity as Record<string, unknown> | undefined
+
+  return {path: e.path || e.resource, method: e.httpMethod, requestId: requestContext?.requestId, sourceIp: identity?.sourceIp}
+}
+
 // Re-export logger for direct access when needed
 export { logger }

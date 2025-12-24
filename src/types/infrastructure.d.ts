@@ -87,7 +87,7 @@ export interface AwsIamPolicyDocument {
     MultipartUpload:                APIGatewayAuthorizerRolePolicyElement[];
     PruneDevices:                   PruneDevice[];
     RefreshToken:                   APIGatewayAuthorizerRolePolicyElement[];
-    RegisterDevice:                 AwsIamPolicyDocumentRegisterDevice[];
+    RegisterDevice:                 RegisterDevice[];
     RegisterUser:                   APIGatewayAuthorizerRolePolicyElement[];
     S3ObjectCreated:                APIGatewayAuthorizerRolePolicyElement[];
     SNSAssumeRole:                  AssumeRole[];
@@ -145,7 +145,7 @@ export interface DynamicStatement {
     for_each: string;
 }
 
-export interface AwsIamPolicyDocumentRegisterDevice {
+export interface RegisterDevice {
     statement: RegisterDeviceStatement[];
 }
 
@@ -192,6 +192,15 @@ export interface Local {
     lambda_functions_api?:        string[];
     lambda_functions_background?: string[];
     adot_layer_arn?:              string;
+    common_lambda_env?:           CommonLambdaEnv;
+}
+
+export interface CommonLambdaEnv {
+    LOG_LEVEL:                   string;
+    NODE_OPTIONS:                string;
+    OTEL_EXPORTER_OTLP_ENDPOINT: string;
+    OTEL_LOG_LEVEL:              string;
+    OTEL_PROPAGATORS:            string;
 }
 
 export interface Output {
@@ -287,10 +296,10 @@ export interface AwsAPIGatewayAPIKeyIOSApp {
 }
 
 export interface AwsAPIGatewayAuthorizer {
-    ApiGatewayAuthorizer: AwsAPIGatewayAuthorizerAPIGatewayAuthorizer[];
+    ApiGatewayAuthorizer: APIGatewayAuthorizer[];
 }
 
-export interface AwsAPIGatewayAuthorizerAPIGatewayAuthorizer {
+export interface APIGatewayAuthorizer {
     authorizer_credentials:           string;
     authorizer_result_ttl_in_seconds: number;
     authorizer_uri:                   string;
@@ -807,48 +816,56 @@ export interface AwsLambdaEventSourceMappingSendPushNotification {
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: AwsLambdaFunctionAPIGatewayAuthorizer[];
     CloudfrontMiddleware: CloudfrontMiddleware[];
-    FileCoordinator:      FileCoordinator[];
-    ListFiles:            ListFile[];
-    LogClientEvent:       LogClientEvent[];
-    LoginUser:            User[];
-    PruneDevices:         AwsLambdaFunctionPruneDevice[];
-    RefreshToken:         RefreshToken[];
-    RegisterDevice:       AwsLambdaFunctionRegisterDevice[];
-    RegisterUser:         User[];
-    S3ObjectCreated:      LogClientEvent[];
-    SendPushNotification: RefreshToken[];
-    StartFileUpload:      StartFileUpload[];
-    UserDelete:           LogClientEvent[];
-    UserSubscribe:        LogClientEvent[];
-    WebhookFeedly:        WebhookFeedly[];
+    FileCoordinator:      AwsLambdaFunctionAPIGatewayAuthorizer[];
+    ListFiles:            AwsLambdaFunctionAPIGatewayAuthorizer[];
+    LogClientEvent:       AwsLambdaFunctionAPIGatewayAuthorizer[];
+    LoginUser:            AwsLambdaFunctionAPIGatewayAuthorizer[];
+    PruneDevices:         AwsLambdaFunctionAPIGatewayAuthorizer[];
+    RefreshToken:         AwsLambdaFunctionAPIGatewayAuthorizer[];
+    RegisterDevice:       AwsLambdaFunctionAPIGatewayAuthorizer[];
+    RegisterUser:         AwsLambdaFunctionAPIGatewayAuthorizer[];
+    S3ObjectCreated:      AwsLambdaFunctionAPIGatewayAuthorizer[];
+    SendPushNotification: AwsLambdaFunctionAPIGatewayAuthorizer[];
+    StartFileUpload:      AwsLambdaFunctionAPIGatewayAuthorizer[];
+    UserDelete:           AwsLambdaFunctionAPIGatewayAuthorizer[];
+    UserSubscribe:        AwsLambdaFunctionAPIGatewayAuthorizer[];
+    WebhookFeedly:        AwsLambdaFunctionAPIGatewayAuthorizer[];
 }
 
 export interface AwsLambdaFunctionAPIGatewayAuthorizer {
-    depends_on:       string[];
-    description:      string;
-    environment:      APIGatewayAuthorizerEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
+    depends_on:                      string[];
+    description:                     string;
+    environment:                     Environment[];
+    filename:                        string;
+    function_name:                   string;
+    handler:                         string;
+    layers:                          LayerElement[];
+    role:                            string;
+    runtime:                         Runtime;
+    source_code_hash:                string;
+    tracing_config:                  TracingConfig[];
+    memory_size?:                    number;
+    timeout?:                        number;
+    ephemeral_storage?:              EphemeralStorage[];
+    reserved_concurrent_executions?: number;
 }
 
-export interface APIGatewayAuthorizerEnvironment {
-    variables: PurpleVariables;
+export interface Environment {
+    variables: string;
 }
 
-export interface PurpleVariables {
-    DYNAMODB_TABLE_NAME:             string;
-    ENABLE_XRAY:                     string;
-    MULTI_AUTHENTICATION_PATH_PARTS: string;
-    OTEL_EXPORTER_OTLP_ENDPOINT:     string;
-    OTEL_PROPAGATORS:                string;
-    OTEL_SERVICE_NAME:               string;
-    RESERVED_CLIENT_IP:              string;
+export interface EphemeralStorage {
+    size: number;
+}
+
+export enum LayerElement {
+    AwsLambdaLayerVersionFfmpegArn = "${aws_lambda_layer_version.Ffmpeg.arn}",
+    AwsLambdaLayerVersionYtDLPArn = "${aws_lambda_layer_version.YtDlp.arn}",
+    LocalAdotLayerArn = "${local.adot_layer_arn}",
+}
+
+export enum Runtime {
+    Nodejs24X = "nodejs24.x",
 }
 
 export interface TracingConfig {
@@ -867,251 +884,7 @@ export interface CloudfrontMiddleware {
     provider:         string;
     publish:          boolean;
     role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
-}
-
-export interface FileCoordinator {
-    depends_on:       string[];
-    description:      string;
-    environment:      FileCoordinatorEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    memory_size:      number;
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
-}
-
-export interface FileCoordinatorEnvironment {
-    variables: FluffyVariables;
-}
-
-export interface FluffyVariables {
-    DYNAMODB_TABLE_NAME:             string;
-    FILE_COORDINATOR_BATCH_DELAY_MS: number;
-    FILE_COORDINATOR_BATCH_SIZE:     number;
-    OTEL_EXPORTER_OTLP_ENDPOINT:     string;
-    OTEL_PROPAGATORS:                string;
-    OTEL_SERVICE_NAME:               string;
-}
-
-export interface ListFile {
-    depends_on:       string[];
-    description:      string;
-    environment:      ListFileEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    memory_size:      number;
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
-}
-
-export interface ListFileEnvironment {
-    variables: TentacledVariables;
-}
-
-export interface TentacledVariables {
-    DEFAULT_FILE_CONTENT_TYPE:   string;
-    DEFAULT_FILE_NAME:           string;
-    DEFAULT_FILE_SIZE:           number;
-    DEFAULT_FILE_URL:            string;
-    DYNAMODB_TABLE_NAME:         string;
-    ENABLE_XRAY:                 string;
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-}
-
-export interface LogClientEvent {
-    depends_on:       string[];
-    description:      string;
-    environment:      LogClientEventEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
-}
-
-export interface LogClientEventEnvironment {
-    variables: StickyVariables;
-}
-
-export interface StickyVariables {
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-    DYNAMODB_TABLE_NAME?:        string;
-    SNS_QUEUE_URL?:              string;
-    GITHUB_PERSONAL_TOKEN?:      string;
-    PLATFORM_APPLICATION_ARN?:   string;
-    IDEMPOTENCY_TABLE_NAME?:     string;
-}
-
-export interface User {
-    depends_on:       string[];
-    description:      string;
-    environment:      LoginUserEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    timeout:          number;
-    tracing_config:   TracingConfig[];
-}
-
-export interface LoginUserEnvironment {
-    variables: IndigoVariables;
-}
-
-export interface IndigoVariables {
-    APPLICATION_URL:             string;
-    BETTER_AUTH_SECRET:          string;
-    DYNAMODB_TABLE_NAME:         string;
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-    SIGN_IN_WITH_APPLE_CONFIG:   string;
-}
-
-export interface AwsLambdaFunctionPruneDevice {
-    depends_on:       string[];
-    description:      string;
-    environment:      PruneDeviceEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    timeout:          number;
-    tracing_config:   TracingConfig[];
-}
-
-export interface PruneDeviceEnvironment {
-    variables: IndecentVariables;
-}
-
-export interface IndecentVariables {
-    APNS_DEFAULT_TOPIC:          string;
-    APNS_HOST:                   string;
-    APNS_KEY_ID:                 string;
-    APNS_SIGNING_KEY:            string;
-    APNS_TEAM:                   string;
-    DYNAMODB_TABLE_NAME:         string;
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-}
-
-export interface RefreshToken {
-    depends_on:       string[];
-    description:      string;
-    environment:      LogClientEventEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    timeout?:         number;
-    tracing_config:   TracingConfig[];
-}
-
-export interface AwsLambdaFunctionRegisterDevice {
-    depends_on:       string[];
-    description:      string;
-    environment:      RegisterDeviceEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    role:             string;
-    runtime:          string;
-    source_code_hash: string;
-    tracing_config:   TracingConfig[];
-}
-
-export interface RegisterDeviceEnvironment {
-    variables: HilariousVariables;
-}
-
-export interface HilariousVariables {
-    DYNAMODB_TABLE_NAME:         string;
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-    PLATFORM_APPLICATION_ARN:    string;
-    PUSH_NOTIFICATION_TOPIC_ARN: string;
-}
-
-export interface StartFileUpload {
-    depends_on:                     string[];
-    description:                    string;
-    environment:                    StartFileUploadEnvironment[];
-    ephemeral_storage:              EphemeralStorage[];
-    filename:                       string;
-    function_name:                  string;
-    handler:                        string;
-    layers:                         string[];
-    memory_size:                    number;
-    reserved_concurrent_executions: number;
-    role:                           string;
-    runtime:                        string;
-    source_code_hash:               string;
-    timeout:                        number;
-    tracing_config:                 TracingConfig[];
-}
-
-export interface StartFileUploadEnvironment {
-    variables: AmbitiousVariables;
-}
-
-export interface AmbitiousVariables {
-    BUCKET:                      string;
-    CLOUDFRONT_DOMAIN:           string;
-    DYNAMODB_TABLE_NAME:         string;
-    GITHUB_PERSONAL_TOKEN:       string;
-    OTEL_EXPORTER_OTLP_ENDPOINT: string;
-    OTEL_PROPAGATORS:            string;
-    OTEL_SERVICE_NAME:           string;
-    PATH:                        string;
-    SNS_QUEUE_URL:               string;
-    YTDLP_BINARY_PATH:           string;
-}
-
-export interface EphemeralStorage {
-    size: number;
-}
-
-export interface WebhookFeedly {
-    depends_on:       string[];
-    description:      string;
-    environment:      LogClientEventEnvironment[];
-    filename:         string;
-    function_name:    string;
-    handler:          string;
-    layers:           string[];
-    memory_size:      number;
-    role:             string;
-    runtime:          string;
+    runtime:          Runtime;
     source_code_hash: string;
     tracing_config:   TracingConfig[];
 }
@@ -1122,7 +895,7 @@ export interface AwsLambdaLayerVersion {
 }
 
 export interface Ffmpeg {
-    compatible_runtimes: string[];
+    compatible_runtimes: Runtime[];
     description:         string;
     filename:            string;
     layer_name:          string;
@@ -1537,7 +1310,7 @@ const typeMap: any = {
         { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
         { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsIamPolicyDocumentRegisterDevice")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
         { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerRolePolicyElement")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
@@ -1584,7 +1357,7 @@ const typeMap: any = {
         { json: "content", js: "content", typ: a(r("Ent")) },
         { json: "for_each", js: "for_each", typ: "" },
     ], false),
-    "AwsIamPolicyDocumentRegisterDevice": o([
+    "RegisterDevice": o([
         { json: "statement", js: "statement", typ: a(r("RegisterDeviceStatement")) },
     ], false),
     "RegisterDeviceStatement": o([
@@ -1621,6 +1394,14 @@ const typeMap: any = {
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
         { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
+        { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
+    ], false),
+    "CommonLambdaEnv": o([
+        { json: "LOG_LEVEL", js: "LOG_LEVEL", typ: "" },
+        { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
+        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
+        { json: "OTEL_LOG_LEVEL", js: "OTEL_LOG_LEVEL", typ: "" },
+        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
     ], false),
     "Output": o([
         { json: "api_gateway_api_key", js: "api_gateway_api_key", typ: a(r("APIGatewayAPIKey")) },
@@ -1705,9 +1486,9 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "AwsAPIGatewayAuthorizer": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsAPIGatewayAuthorizerAPIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
     ], false),
-    "AwsAPIGatewayAuthorizerAPIGatewayAuthorizer": o([
+    "APIGatewayAuthorizer": o([
         { json: "authorizer_credentials", js: "authorizer_credentials", typ: "" },
         { json: "authorizer_result_ttl_in_seconds", js: "authorizer_result_ttl_in_seconds", typ: 0 },
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
@@ -2140,45 +1921,43 @@ const typeMap: any = {
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("FileCoordinator")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("ListFile")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("LogClientEvent")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("User")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionPruneDevice")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("RefreshToken")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionRegisterDevice")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("User")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("LogClientEvent")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("RefreshToken")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("StartFileUpload")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("LogClientEvent")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("LogClientEvent")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("WebhookFeedly")) },
+        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("AwsLambdaFunctionAPIGatewayAuthorizer")) },
     ], false),
     "AwsLambdaFunctionAPIGatewayAuthorizer": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("APIGatewayAuthorizerEnvironment")) },
+        { json: "environment", js: "environment", typ: a(r("Environment")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
+        { json: "layers", js: "layers", typ: a(r("LayerElement")) },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
+        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "ephemeral_storage", js: "ephemeral_storage", typ: u(undefined, a(r("EphemeralStorage"))) },
+        { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: u(undefined, 0) },
     ], false),
-    "APIGatewayAuthorizerEnvironment": o([
-        { json: "variables", js: "variables", typ: r("PurpleVariables") },
+    "Environment": o([
+        { json: "variables", js: "variables", typ: "" },
     ], false),
-    "PurpleVariables": o([
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "ENABLE_XRAY", js: "ENABLE_XRAY", typ: "" },
-        { json: "MULTI_AUTHENTICATION_PATH_PARTS", js: "MULTI_AUTHENTICATION_PATH_PARTS", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-        { json: "RESERVED_CLIENT_IP", js: "RESERVED_CLIENT_IP", typ: "" },
+    "EphemeralStorage": o([
+        { json: "size", js: "size", typ: 0 },
     ], false),
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
@@ -2191,227 +1970,7 @@ const typeMap: any = {
         { json: "provider", js: "provider", typ: "" },
         { json: "publish", js: "publish", typ: true },
         { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "FileCoordinator": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("FileCoordinatorEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "memory_size", js: "memory_size", typ: 0 },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "FileCoordinatorEnvironment": o([
-        { json: "variables", js: "variables", typ: r("FluffyVariables") },
-    ], false),
-    "FluffyVariables": o([
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "FILE_COORDINATOR_BATCH_DELAY_MS", js: "FILE_COORDINATOR_BATCH_DELAY_MS", typ: 0 },
-        { json: "FILE_COORDINATOR_BATCH_SIZE", js: "FILE_COORDINATOR_BATCH_SIZE", typ: 0 },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-    ], false),
-    "ListFile": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("ListFileEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "memory_size", js: "memory_size", typ: 0 },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "ListFileEnvironment": o([
-        { json: "variables", js: "variables", typ: r("TentacledVariables") },
-    ], false),
-    "TentacledVariables": o([
-        { json: "DEFAULT_FILE_CONTENT_TYPE", js: "DEFAULT_FILE_CONTENT_TYPE", typ: "" },
-        { json: "DEFAULT_FILE_NAME", js: "DEFAULT_FILE_NAME", typ: "" },
-        { json: "DEFAULT_FILE_SIZE", js: "DEFAULT_FILE_SIZE", typ: 0 },
-        { json: "DEFAULT_FILE_URL", js: "DEFAULT_FILE_URL", typ: "" },
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "ENABLE_XRAY", js: "ENABLE_XRAY", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-    ], false),
-    "LogClientEvent": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "LogClientEventEnvironment": o([
-        { json: "variables", js: "variables", typ: r("StickyVariables") },
-    ], false),
-    "StickyVariables": o([
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: u(undefined, "") },
-        { json: "SNS_QUEUE_URL", js: "SNS_QUEUE_URL", typ: u(undefined, "") },
-        { json: "GITHUB_PERSONAL_TOKEN", js: "GITHUB_PERSONAL_TOKEN", typ: u(undefined, "") },
-        { json: "PLATFORM_APPLICATION_ARN", js: "PLATFORM_APPLICATION_ARN", typ: u(undefined, "") },
-        { json: "IDEMPOTENCY_TABLE_NAME", js: "IDEMPOTENCY_TABLE_NAME", typ: u(undefined, "") },
-    ], false),
-    "User": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("LoginUserEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "timeout", js: "timeout", typ: 0 },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "LoginUserEnvironment": o([
-        { json: "variables", js: "variables", typ: r("IndigoVariables") },
-    ], false),
-    "IndigoVariables": o([
-        { json: "APPLICATION_URL", js: "APPLICATION_URL", typ: "" },
-        { json: "BETTER_AUTH_SECRET", js: "BETTER_AUTH_SECRET", typ: "" },
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-        { json: "SIGN_IN_WITH_APPLE_CONFIG", js: "SIGN_IN_WITH_APPLE_CONFIG", typ: "" },
-    ], false),
-    "AwsLambdaFunctionPruneDevice": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("PruneDeviceEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "timeout", js: "timeout", typ: 0 },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "PruneDeviceEnvironment": o([
-        { json: "variables", js: "variables", typ: r("IndecentVariables") },
-    ], false),
-    "IndecentVariables": o([
-        { json: "APNS_DEFAULT_TOPIC", js: "APNS_DEFAULT_TOPIC", typ: "" },
-        { json: "APNS_HOST", js: "APNS_HOST", typ: "" },
-        { json: "APNS_KEY_ID", js: "APNS_KEY_ID", typ: "" },
-        { json: "APNS_SIGNING_KEY", js: "APNS_SIGNING_KEY", typ: "" },
-        { json: "APNS_TEAM", js: "APNS_TEAM", typ: "" },
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-    ], false),
-    "RefreshToken": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "AwsLambdaFunctionRegisterDevice": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("RegisterDeviceEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "RegisterDeviceEnvironment": o([
-        { json: "variables", js: "variables", typ: r("HilariousVariables") },
-    ], false),
-    "HilariousVariables": o([
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-        { json: "PLATFORM_APPLICATION_ARN", js: "PLATFORM_APPLICATION_ARN", typ: "" },
-        { json: "PUSH_NOTIFICATION_TOPIC_ARN", js: "PUSH_NOTIFICATION_TOPIC_ARN", typ: "" },
-    ], false),
-    "StartFileUpload": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("StartFileUploadEnvironment")) },
-        { json: "ephemeral_storage", js: "ephemeral_storage", typ: a(r("EphemeralStorage")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "memory_size", js: "memory_size", typ: 0 },
-        { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: 0 },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "timeout", js: "timeout", typ: 0 },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-    ], false),
-    "StartFileUploadEnvironment": o([
-        { json: "variables", js: "variables", typ: r("AmbitiousVariables") },
-    ], false),
-    "AmbitiousVariables": o([
-        { json: "BUCKET", js: "BUCKET", typ: "" },
-        { json: "CLOUDFRONT_DOMAIN", js: "CLOUDFRONT_DOMAIN", typ: "" },
-        { json: "DYNAMODB_TABLE_NAME", js: "DYNAMODB_TABLE_NAME", typ: "" },
-        { json: "GITHUB_PERSONAL_TOKEN", js: "GITHUB_PERSONAL_TOKEN", typ: "" },
-        { json: "OTEL_EXPORTER_OTLP_ENDPOINT", js: "OTEL_EXPORTER_OTLP_ENDPOINT", typ: "" },
-        { json: "OTEL_PROPAGATORS", js: "OTEL_PROPAGATORS", typ: "" },
-        { json: "OTEL_SERVICE_NAME", js: "OTEL_SERVICE_NAME", typ: "" },
-        { json: "PATH", js: "PATH", typ: "" },
-        { json: "SNS_QUEUE_URL", js: "SNS_QUEUE_URL", typ: "" },
-        { json: "YTDLP_BINARY_PATH", js: "YTDLP_BINARY_PATH", typ: "" },
-    ], false),
-    "EphemeralStorage": o([
-        { json: "size", js: "size", typ: 0 },
-    ], false),
-    "WebhookFeedly": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
-        { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("LogClientEventEnvironment")) },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: "" },
-        { json: "layers", js: "layers", typ: a("") },
-        { json: "memory_size", js: "memory_size", typ: 0 },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
@@ -2420,7 +1979,7 @@ const typeMap: any = {
         { json: "YtDlp", js: "YtDlp", typ: a(r("Ffmpeg")) },
     ], false),
     "Ffmpeg": o([
-        { json: "compatible_runtimes", js: "compatible_runtimes", typ: a("") },
+        { json: "compatible_runtimes", js: "compatible_runtimes", typ: a(r("Runtime")) },
         { json: "description", js: "description", typ: "" },
         { json: "filename", js: "filename", typ: "" },
         { json: "layer_name", js: "layer_name", typ: "" },
@@ -2565,6 +2124,14 @@ const typeMap: any = {
     "AttributeType": [
         "N",
         "S",
+    ],
+    "LayerElement": [
+        "${aws_lambda_layer_version.Ffmpeg.arn}",
+        "${aws_lambda_layer_version.YtDlp.arn}",
+        "${local.adot_layer_arn}",
+    ],
+    "Runtime": [
+        "nodejs24.x",
     ],
     "Mode": [
         "Active",

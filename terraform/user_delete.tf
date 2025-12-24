@@ -79,13 +79,11 @@ resource "aws_lambda_function" "UserDelete" {
   }
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      GITHUB_PERSONAL_TOKEN       = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME           = "UserDelete"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
+      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME     = "UserDelete"
+    })
   }
 }
 

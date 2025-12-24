@@ -88,14 +88,12 @@ resource "aws_lambda_function" "WebhookFeedly" {
   }
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
-      IDEMPOTENCY_TABLE_NAME      = aws_dynamodb_table.IdempotencyTable.name
-      OTEL_SERVICE_NAME           = "WebhookFeedly"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME    = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL          = aws_sqs_queue.SendPushNotification.id
+      IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
+      OTEL_SERVICE_NAME      = "WebhookFeedly"
+    })
   }
 }
 
@@ -344,18 +342,16 @@ resource "aws_lambda_function" "StartFileUpload" {
   }
 
   environment {
-    variables = {
-      BUCKET                      = aws_s3_bucket.Files.id
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      CLOUDFRONT_DOMAIN           = aws_cloudfront_distribution.media_files.domain_name
-      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
-      YTDLP_BINARY_PATH           = "/opt/bin/yt-dlp_linux"
-      PATH                        = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      GITHUB_PERSONAL_TOKEN       = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME           = "StartFileUpload"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      BUCKET                = aws_s3_bucket.Files.id
+      DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
+      CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.media_files.domain_name
+      SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
+      YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
+      PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME     = "StartFileUpload"
+    })
   }
 }
 
