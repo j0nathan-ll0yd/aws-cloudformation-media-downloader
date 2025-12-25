@@ -20,6 +20,8 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_integration.LoginUserPost),
       jsonencode(aws_api_gateway_integration.RegisterDevicePost),
       jsonencode(aws_api_gateway_integration.RegisterUserPost),
+      jsonencode(aws_api_gateway_integration.RefreshTokenPost),
+      jsonencode(aws_api_gateway_integration.UserDelete),
       jsonencode(aws_api_gateway_integration.WebhookFeedlyPost),
       jsonencode(aws_api_gateway_integration.UserSubscribePost),
       jsonencode(aws_api_gateway_method.ListFilesGet),
@@ -27,6 +29,8 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_method.LoginUserPost),
       jsonencode(aws_api_gateway_method.RegisterDevicePost),
       jsonencode(aws_api_gateway_method.RegisterUserPost),
+      jsonencode(aws_api_gateway_method.RefreshTokenPost),
+      jsonencode(aws_api_gateway_method.UserDelete),
       jsonencode(aws_api_gateway_method.WebhookFeedlyPost),
       jsonencode(aws_api_gateway_method.UserSubscribePost)
     ])))

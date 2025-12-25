@@ -1,18 +1,19 @@
 openapi: 3.0.0
 info:
-  title: Offline Media Downloader API
+  title: aws-cloudformation-media-downloader
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 0.0.0
+  version: 1.0.0
 tags:
   - name: Files
   - name: Devices
   - name: Webhooks
   - name: Authentication
+  - name: Events
 paths:
   /device/register:
     post:
@@ -87,6 +88,49 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Models.DeviceRegistrationRequest'
+  /events:
+    post:
+      operationId: Events_logClientEvent
+      summary: Log client event
+      description: |-
+        Log a client-side event for debugging and analytics.
+
+        Receives event data from the iOS client and logs it to CloudWatch
+        for later analysis. Used for debugging and usage analytics.
+      parameters:
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Device-UUID
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No content on success
+        '400':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.ClientEventRequest'
   /feedly:
     post:
       operationId: Webhooks_processFeedlyWebhook
@@ -154,7 +198,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Models.FeedlyWebhook'
+              $ref: '#/components/schemas/Models.FeedlyWebhookRequest'
   /files:
     get:
       operationId: Files_listFiles
@@ -207,6 +251,49 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - Files
+  /user:
+    delete:
+      operationId: Authentication_deleteUser
+      summary: Delete user account
+      description: |-
+        Delete user account and all associated data.
+
+        Required for Sign in with Apple compliance (account deletion requirement).
+        Deletes user files, devices, and the user record itself.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No content on success
+        '207':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
   /user/login:
     post:
       operationId: Authentication_loginUser
@@ -271,7 +358,48 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Models.UserLogin'
+              $ref: '#/components/schemas/Models.UserLoginRequest'
+  /user/refresh:
+    post:
+      operationId: Authentication_refreshToken
+      summary: Refresh session token
+      description: |-
+        Refresh an existing session token.
+
+        Extends the session expiration time without re-authenticating.
+        The same token is returned with an updated expiration time.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refreshed session information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.TokenRefreshResponse'
+        '401':
+          description: Refreshed session information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Refreshed session information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
   /user/register:
     post:
       operationId: Authentication_registerUser
@@ -325,7 +453,59 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Models.UserRegistration'
+              $ref: '#/components/schemas/Models.UserRegistrationRequest'
+  /user/subscribe:
+    post:
+      operationId: Authentication_subscribeUser
+      summary: Subscribe to notifications
+      description: |-
+        Subscribe a user's device to push notification topics.
+
+        Links an SNS endpoint (device) to an SNS topic for receiving notifications.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Subscription ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UserSubscriptionResponse'
+        '400':
+          description: Subscription ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Subscription ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Subscription ARN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.UserSubscriptionRequest'
 components:
   schemas:
     ErrorResponse:
@@ -401,6 +581,15 @@ components:
           type: string
           description: Request ID for tracking
       description: Internal Server Error response (500)
+    Models.ClientEventRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: The event message or payload to log
+      description: Client event request for logging
     Models.Device:
       type: object
       required:
@@ -463,10 +652,9 @@ components:
           type: string
           description: AWS SNS endpoint ARN for the registered device
       description: Device registration response
-    Models.FeedlyWebhook:
+    Models.FeedlyWebhookRequest:
       type: object
       required:
-        - articleTitle
         - articleURL
       properties:
         articleFirstImageURL:
@@ -503,7 +691,7 @@ components:
         backgroundMode:
           type: boolean
           description: Whether the webhook was triggered in background mode
-      description: Feedly webhook event
+      description: Feedly webhook request
     Models.File:
       type: object
       required:
@@ -570,14 +758,35 @@ components:
         - Downloaded
         - Failed
       description: File status enumeration
-    Models.UserLogin:
+    Models.TokenRefreshResponse:
       type: object
       required:
-        - authorizationCode
+        - token
+        - expiresAt
+        - sessionId
+        - userId
       properties:
-        authorizationCode:
+        token:
           type: string
-          description: Authorization code from Sign in with Apple
+          description: JWT access token (same token, extended expiration)
+        expiresAt:
+          type: string
+          description: ISO 8601 timestamp when the session expires
+        sessionId:
+          type: string
+          description: Session identifier
+        userId:
+          type: string
+          description: User identifier
+      description: Token refresh response
+    Models.UserLoginRequest:
+      type: object
+      required:
+        - idToken
+      properties:
+        idToken:
+          type: string
+          description: Identity token from Sign in with Apple (JWT)
       description: User login request
     Models.UserLoginResponse:
       type: object
@@ -588,14 +797,14 @@ components:
           type: string
           description: JWT access token for authenticated requests
       description: User login response
-    Models.UserRegistration:
+    Models.UserRegistrationRequest:
       type: object
       required:
-        - authorizationCode
+        - idToken
       properties:
-        authorizationCode:
+        idToken:
           type: string
-          description: Authorization code from Sign in with Apple
+          description: Identity token from Sign in with Apple (JWT)
         firstName:
           type: string
           description: User's first name
@@ -612,6 +821,28 @@ components:
           type: string
           description: JWT access token for authenticated requests
       description: User registration response
+    Models.UserSubscriptionRequest:
+      type: object
+      required:
+        - endpointArn
+        - topicArn
+      properties:
+        endpointArn:
+          type: string
+          description: AWS SNS endpoint ARN for the device
+        topicArn:
+          type: string
+          description: AWS SNS topic ARN to subscribe to
+      description: User subscription request
+    Models.UserSubscriptionResponse:
+      type: object
+      required:
+        - subscriptionArn
+      properties:
+        subscriptionArn:
+          type: string
+          description: AWS SNS subscription ARN
+      description: User subscription response
     Models.WebhookResponse:
       type: object
       required:

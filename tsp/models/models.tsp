@@ -325,3 +325,48 @@ model UserSubscriptionRequest {
    */
   topicArn: string;
 }
+
+/**
+ * User subscription response
+ */
+model UserSubscriptionResponse {
+  /**
+   * AWS SNS subscription ARN
+   */
+  subscriptionArn: string;
+}
+
+/**
+ * Token refresh response
+ */
+model TokenRefreshResponse {
+  /**
+   * JWT access token (same token, extended expiration)
+   */
+  token: string;
+
+  /**
+   * ISO 8601 timestamp when the session expires
+   */
+  expiresAt: string;
+
+  /**
+   * Session identifier
+   */
+  sessionId: string;
+
+  /**
+   * User identifier
+   */
+  userId: string;
+}
+
+/**
+ * Client event request for logging
+ */
+model ClientEventRequest {
+  /**
+   * The event message or payload to log
+   */
+  message: string;
+}

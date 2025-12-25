@@ -97,15 +97,15 @@ resource "aws_lambda_function" "RegisterDevice" {
   }
 }
 
-resource "aws_api_gateway_resource" "RegisterDevice" {
+resource "aws_api_gateway_resource" "DeviceRegister" {
   rest_api_id = aws_api_gateway_rest_api.Main.id
-  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
-  path_part   = "registerDevice"
+  parent_id   = aws_api_gateway_resource.Device.id
+  path_part   = "register"
 }
 
 resource "aws_api_gateway_method" "RegisterDevicePost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
-  resource_id      = aws_api_gateway_resource.RegisterDevice.id
+  resource_id      = aws_api_gateway_resource.DeviceRegister.id
   http_method      = "POST"
   authorization    = "CUSTOM"
   authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
@@ -114,7 +114,7 @@ resource "aws_api_gateway_method" "RegisterDevicePost" {
 
 resource "aws_api_gateway_integration" "RegisterDevicePost" {
   rest_api_id             = aws_api_gateway_rest_api.Main.id
-  resource_id             = aws_api_gateway_resource.RegisterDevice.id
+  resource_id             = aws_api_gateway_resource.DeviceRegister.id
   http_method             = aws_api_gateway_method.RegisterDevicePost.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"

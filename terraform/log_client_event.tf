@@ -56,15 +56,15 @@ resource "aws_lambda_function" "LogClientEvent" {
   }
 }
 
-resource "aws_api_gateway_resource" "LogEvent" {
+resource "aws_api_gateway_resource" "Events" {
   rest_api_id = aws_api_gateway_rest_api.Main.id
   parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
-  path_part   = "logEvent"
+  path_part   = "events"
 }
 
 resource "aws_api_gateway_method" "LogClientEventPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
-  resource_id      = aws_api_gateway_resource.LogEvent.id
+  resource_id      = aws_api_gateway_resource.Events.id
   http_method      = "POST"
   authorization    = "NONE"
   api_key_required = true
@@ -72,7 +72,7 @@ resource "aws_api_gateway_method" "LogClientEventPost" {
 
 resource "aws_api_gateway_integration" "LogClientEventPost" {
   rest_api_id             = aws_api_gateway_rest_api.Main.id
-  resource_id             = aws_api_gateway_resource.LogEvent.id
+  resource_id             = aws_api_gateway_resource.Events.id
   http_method             = aws_api_gateway_method.LogClientEventPost.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"

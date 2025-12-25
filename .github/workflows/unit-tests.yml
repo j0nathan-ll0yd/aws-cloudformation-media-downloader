@@ -38,6 +38,12 @@ jobs:
     - name: Compile TypeSpec
       run: pnpm run typespec:check
 
+    - name: Generate API documentation
+      run: pnpm run document-api
+
+    - name: Validate API path alignment
+      run: pnpm run validate:api-paths
+
     - name: Setup directories
       id: setup
       run: mkdir build

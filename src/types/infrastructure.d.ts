@@ -299,8 +299,12 @@ export interface APIGatewayAuthorizer {
     authorizer_uri:                   string;
     identity_source:                  string;
     name:                             string;
-    rest_api_id:                      string;
+    rest_api_id:                      APIID;
     type:                             string;
+}
+
+export enum APIID {
+    AwsAPIGatewayRESTAPIMainID = "${aws_api_gateway_rest_api.Main.id}",
 }
 
 export interface AwsAPIGatewayDeployment {
@@ -310,7 +314,7 @@ export interface AwsAPIGatewayDeployment {
 export interface AwsAPIGatewayDeploymentMain {
     depends_on:  string[];
     lifecycle:   Lifecycle[];
-    rest_api_id: string;
+    rest_api_id: APIID;
     triggers:    MainTriggers;
 }
 
@@ -330,7 +334,7 @@ export interface AwsAPIGatewayGatewayResponse {
 export interface Default00GatewayResponse {
     response_templates: ResponseTemplates;
     response_type:      string;
-    rest_api_id:        string;
+    rest_api_id:        APIID;
 }
 
 export interface ResponseTemplates {
@@ -344,7 +348,7 @@ export interface AwsAPIGatewayIntegration {
     RefreshTokenPost:   AwsAPIGatewayIntegrationListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayIntegrationListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayIntegrationListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayIntegrationListFilesGet[];
+    UserDelete:         AwsAPIGatewayIntegrationListFilesGet[];
     UserSubscribePost:  AwsAPIGatewayIntegrationListFilesGet[];
     WebhookFeedlyPost:  AwsAPIGatewayIntegrationListFilesGet[];
 }
@@ -353,7 +357,7 @@ export interface AwsAPIGatewayIntegrationListFilesGet {
     http_method:             string;
     integration_http_method: string;
     resource_id:             string;
-    rest_api_id:             string;
+    rest_api_id:             APIID;
     type:                    string;
     uri:                     string;
 }
@@ -365,7 +369,7 @@ export interface AwsAPIGatewayMethod {
     RefreshTokenPost:   AwsAPIGatewayMethodListFilesGet[];
     RegisterDevicePost: AwsAPIGatewayMethodListFilesGet[];
     RegisterUserPost:   AwsAPIGatewayMethodListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayMethodListFilesGet[];
+    UserDelete:         AwsAPIGatewayMethodListFilesGet[];
     UserSubscribePost:  AwsAPIGatewayMethodListFilesGet[];
     WebhookFeedlyPost:  AwsAPIGatewayMethodListFilesGet[];
 }
@@ -376,7 +380,7 @@ export interface AwsAPIGatewayMethodListFilesGet {
     authorizer_id?:   string;
     http_method:      string;
     resource_id:      string;
-    rest_api_id:      string;
+    rest_api_id:      APIID;
 }
 
 export interface AwsAPIGatewayMethodSettings {
@@ -385,7 +389,7 @@ export interface AwsAPIGatewayMethodSettings {
 
 export interface AwsAPIGatewayMethodSettingsProduction {
     method_path: string;
-    rest_api_id: string;
+    rest_api_id: APIID;
     settings:    Setting[];
     stage_name:  string;
 }
@@ -397,21 +401,28 @@ export interface Setting {
 }
 
 export interface AwsAPIGatewayResource {
-    Feedly:         Feedly[];
-    Files:          Feedly[];
-    LogEvent:       Feedly[];
-    Login:          Feedly[];
-    RefreshToken:   Feedly[];
-    RegisterDevice: Feedly[];
-    RegisterUser:   Feedly[];
-    UserDelete:     Feedly[];
-    UserSubscribe:  Feedly[];
+    Device:         Device[];
+    DeviceRegister: Device[];
+    Events:         Device[];
+    Feedly:         Device[];
+    Files:          Device[];
+    User:           Device[];
+    UserLogin:      Device[];
+    UserRefresh:    Device[];
+    UserRegister:   Device[];
+    UserSubscribe:  Device[];
 }
 
-export interface Feedly {
-    parent_id:   string;
+export interface Device {
+    parent_id:   ParentID;
     path_part:   string;
-    rest_api_id: string;
+    rest_api_id: APIID;
+}
+
+export enum ParentID {
+    AwsAPIGatewayRESTAPIMainRootResourceID = "${aws_api_gateway_rest_api.Main.root_resource_id}",
+    AwsAPIGatewayResourceDeviceID = "${aws_api_gateway_resource.Device.id}",
+    AwsAPIGatewayResourceUserID = "${aws_api_gateway_resource.User.id}",
 }
 
 export interface AwsAPIGatewayRESTAPI {
@@ -435,7 +446,7 @@ export interface AwsAPIGatewayStage {
 
 export interface AwsAPIGatewayStageProduction {
     deployment_id:        string;
-    rest_api_id:          string;
+    rest_api_id:          APIID;
     stage_name:           string;
     xray_tracing_enabled: boolean;
 }
@@ -451,7 +462,7 @@ export interface AwsAPIGatewayUsagePlanIOSApp {
 }
 
 export interface APIStage {
-    api_id: string;
+    api_id: APIID;
     stage:  string;
 }
 
@@ -1551,7 +1562,7 @@ const typeMap: any = {
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
         { json: "identity_source", js: "identity_source", typ: "" },
         { json: "name", js: "name", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "type", js: "type", typ: "" },
     ], false),
     "AwsAPIGatewayDeployment": o([
@@ -1560,7 +1571,7 @@ const typeMap: any = {
     "AwsAPIGatewayDeploymentMain": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "lifecycle", js: "lifecycle", typ: a(r("Lifecycle")) },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "triggers", js: "triggers", typ: r("MainTriggers") },
     ], false),
     "Lifecycle": o([
@@ -1576,7 +1587,7 @@ const typeMap: any = {
     "Default00GatewayResponse": o([
         { json: "response_templates", js: "response_templates", typ: r("ResponseTemplates") },
         { json: "response_type", js: "response_type", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
     ], false),
     "ResponseTemplates": o([
         { json: "application/json", js: "application/json", typ: "" },
@@ -1588,7 +1599,7 @@ const typeMap: any = {
         { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
         { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
     ], false),
@@ -1596,7 +1607,7 @@ const typeMap: any = {
         { json: "http_method", js: "http_method", typ: "" },
         { json: "integration_http_method", js: "integration_http_method", typ: "" },
         { json: "resource_id", js: "resource_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "type", js: "type", typ: "" },
         { json: "uri", js: "uri", typ: "" },
     ], false),
@@ -1607,7 +1618,7 @@ const typeMap: any = {
         { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
         { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
     ], false),
@@ -1617,14 +1628,14 @@ const typeMap: any = {
         { json: "authorizer_id", js: "authorizer_id", typ: u(undefined, "") },
         { json: "http_method", js: "http_method", typ: "" },
         { json: "resource_id", js: "resource_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
     ], false),
     "AwsAPIGatewayMethodSettings": o([
         { json: "Production", js: "Production", typ: a(r("AwsAPIGatewayMethodSettingsProduction")) },
     ], false),
     "AwsAPIGatewayMethodSettingsProduction": o([
         { json: "method_path", js: "method_path", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "settings", js: "settings", typ: a(r("Setting")) },
         { json: "stage_name", js: "stage_name", typ: "" },
     ], false),
@@ -1634,20 +1645,21 @@ const typeMap: any = {
         { json: "metrics_enabled", js: "metrics_enabled", typ: true },
     ], false),
     "AwsAPIGatewayResource": o([
-        { json: "Feedly", js: "Feedly", typ: a(r("Feedly")) },
-        { json: "Files", js: "Files", typ: a(r("Feedly")) },
-        { json: "LogEvent", js: "LogEvent", typ: a(r("Feedly")) },
-        { json: "Login", js: "Login", typ: a(r("Feedly")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("Feedly")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("Feedly")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("Feedly")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("Feedly")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("Feedly")) },
+        { json: "Device", js: "Device", typ: a(r("Device")) },
+        { json: "DeviceRegister", js: "DeviceRegister", typ: a(r("Device")) },
+        { json: "Events", js: "Events", typ: a(r("Device")) },
+        { json: "Feedly", js: "Feedly", typ: a(r("Device")) },
+        { json: "Files", js: "Files", typ: a(r("Device")) },
+        { json: "User", js: "User", typ: a(r("Device")) },
+        { json: "UserLogin", js: "UserLogin", typ: a(r("Device")) },
+        { json: "UserRefresh", js: "UserRefresh", typ: a(r("Device")) },
+        { json: "UserRegister", js: "UserRegister", typ: a(r("Device")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("Device")) },
     ], false),
-    "Feedly": o([
-        { json: "parent_id", js: "parent_id", typ: "" },
+    "Device": o([
+        { json: "parent_id", js: "parent_id", typ: r("ParentID") },
         { json: "path_part", js: "path_part", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
     ], false),
     "AwsAPIGatewayRESTAPI": o([
         { json: "Main", js: "Main", typ: a(r("AwsAPIGatewayRESTAPIMain")) },
@@ -1666,7 +1678,7 @@ const typeMap: any = {
     ], false),
     "AwsAPIGatewayStageProduction": o([
         { json: "deployment_id", js: "deployment_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "stage_name", js: "stage_name", typ: "" },
         { json: "xray_tracing_enabled", js: "xray_tracing_enabled", typ: true },
     ], false),
@@ -1679,7 +1691,7 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "APIStage": o([
-        { json: "api_id", js: "api_id", typ: "" },
+        { json: "api_id", js: "api_id", typ: r("APIID") },
         { json: "stage", js: "stage", typ: "" },
     ], false),
     "AwsAPIGatewayUsagePlanKey": o([
@@ -2230,6 +2242,14 @@ const typeMap: any = {
     ], false),
     "ArchiveFileType": [
         "zip",
+    ],
+    "APIID": [
+        "${aws_api_gateway_rest_api.Main.id}",
+    ],
+    "ParentID": [
+        "${aws_api_gateway_rest_api.Main.root_resource_id}",
+        "${aws_api_gateway_resource.Device.id}",
+        "${aws_api_gateway_resource.User.id}",
     ],
     "AttributeType": [
         "N",

@@ -516,6 +516,45 @@
       }
     },
     {
+      "id": "apimodel:UserSubscriptionResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserSubscriptionResponse",
+        "modelType": "model",
+        "description": "User subscription response",
+        "fields": [
+          "subscriptionArn"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:TokenRefreshResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "TokenRefreshResponse",
+        "modelType": "model",
+        "description": "Token refresh response",
+        "fields": [
+          "token",
+          "expiresAt",
+          "sessionId",
+          "userId"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:ClientEventRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "ClientEventRequest",
+        "modelType": "model",
+        "description": "Client event request for logging",
+        "fields": [
+          "message"
+        ]
+      }
+    },
+    {
       "id": "apimodel:FileStatus",
       "type": "ApiModel",
       "properties": {
