@@ -1,20 +1,36 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for Better Auth accounts (OAuth provider links).
- * Manages OAuth provider connections for users (Apple, Google, GitHub, etc.).
+ * Accounts Entity - OAuth provider connections for Better Auth.
  *
- * Better Auth Account Schema:
- * - id: unique account identifier
- * - userId: reference to user who owns this account
- * - providerId: OAuth provider name ('apple', 'google', 'github', etc.)
- * - providerAccountId: user ID from the provider (e.g., Apple User ID)
- * - accessToken: OAuth access token from provider
- * - refreshToken: OAuth refresh token from provider
- * - expiresAt: token expiration timestamp
- * - scope: OAuth scopes granted
- * - tokenType: OAuth token type (usually 'Bearer')
- * - idToken: OIDC ID token if available
+ * Links users to OAuth identity providers (Sign In With Apple, Google, etc.).
+ * One user can have multiple accounts (one per provider).
+ *
+ * Lifecycle:
+ * 1. Created when user first authenticates with a provider (RegisterUser)
+ * 2. Updated when tokens are refreshed (RefreshToken Lambda)
+ * 3. Deleted when user unlinks provider or deletes account (UserDelete)
+ *
+ * OAuth Token Management:
+ * - accessToken: Short-lived token for API access (may be null after refresh)
+ * - refreshToken: Long-lived token for obtaining new access tokens
+ * - expiresAt: When access token expires (used for proactive refresh)
+ * - idToken: OIDC ID token with user claims (used for initial auth)
+ *
+ * Provider Integration:
+ * - Currently only Sign In With Apple is supported
+ * - providerAccountId is Apple's unique user ID (stable across devices)
+ * - Email may be Apple's private relay address
+ *
+ * Access Patterns:
+ * - Primary: Get account by accountId
+ * - byUser (GSI1): Get all OAuth providers linked to user
+ * - byProvider (GSI2): Look up account by provider + providerAccountId
+ *
+ * @see RegisterUser Lambda for initial account creation
+ * @see LoginUser Lambda for authentication via existing account
+ * @see RefreshToken Lambda for token refresh
+ * @see Collections.userAccounts for batch account queries
  */
 export const Accounts = new Entity(
   {

@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(15)
+      expect(allRules.length).toBe(16)
     })
 
     test('should contain all expected rules', () => {
@@ -47,6 +47,7 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('batch-retry')
       expect(ruleNames).toContain('scan-pagination')
       expect(ruleNames).toContain('doc-sync')
+      expect(ruleNames).toContain('comment-conventions')
       // MEDIUM rules
       expect(ruleNames).toContain('import-order')
       expect(ruleNames).toContain('response-enum')
@@ -72,6 +73,7 @@ describe('validation exports', () => {
       expect(rulesByName['batch-retry']).toBeDefined()
       expect(rulesByName['scan-pagination']).toBeDefined()
       expect(rulesByName['doc-sync']).toBeDefined()
+      expect(rulesByName['comment-conventions']).toBeDefined()
       expect(rulesByName['naming-conventions']).toBeDefined()
       expect(rulesByName['authenticated-handler-enforcement']).toBeDefined()
       // MEDIUM rules
@@ -93,6 +95,7 @@ describe('validation exports', () => {
       expect(rulesByName['batch']).toBe(rulesByName['batch-retry'])
       expect(rulesByName['scan']).toBe(rulesByName['scan-pagination'])
       expect(rulesByName['docs']).toBe(rulesByName['doc-sync'])
+      expect(rulesByName['comments']).toBe(rulesByName['comment-conventions'])
       // MEDIUM aliases
       expect(rulesByName['imports']).toBe(rulesByName['import-order'])
       expect(rulesByName['enum']).toBe(rulesByName['response-enum'])

@@ -9,14 +9,7 @@ import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
  *
  * @param handler - Scheduled event business logic
  * @returns Wrapped handler with logging
- *
- * @example
- * ```typescript
- * export const handler = withXRay(wrapScheduledHandler(async () => {
- *   // Scheduled task logic
- *   await pruneOldRecords()
- * }))
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapScheduledHandler | Usage Examples}
  */
 export function wrapScheduledHandler<TResult = void>(
   handler: (params: ScheduledHandlerParams) => Promise<TResult>
@@ -42,17 +35,7 @@ export function wrapScheduledHandler<TResult = void>(
  *
  * @param handler - Lambda invoke handler business logic
  * @returns Wrapped handler with logging and error handling
- *
- * @example
- * ```typescript
- * export const handler = withPowertools(wrapLambdaInvokeHandler(
- *   async ({event, context}) => {
- *     // Process the Lambda invocation event
- *     await processFile(event.fileId)
- *     return buildApiResponse(context, 200, {status: 'success'})
- *   }
- * ))
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapLambdaInvokeHandler | Usage Examples}
  */
 export function wrapLambdaInvokeHandler<TEvent, TResult>(
   handler: (params: LambdaInvokeHandlerParams<TEvent>) => Promise<TResult>

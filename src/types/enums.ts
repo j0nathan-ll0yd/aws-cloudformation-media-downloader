@@ -1,6 +1,21 @@
+/**
+ * User authentication status from API Gateway custom authorizer.
+ *
+ * Determines which middleware wrapper to use and what access is granted.
+ *
+ * - Authenticated: Valid token, userId available
+ * - Unauthenticated: Invalid/expired token, rejected with 401
+ * - Anonymous: No token provided, allowed for some endpoints
+ *
+ * @see wrapAuthenticatedHandler - Requires Authenticated only
+ * @see wrapOptionalAuthHandler - Allows Authenticated + Anonymous
+ */
 export enum UserStatus {
+  /** Valid authentication token, userId guaranteed */
   Authenticated,
+  /** Invalid or expired token, will be rejected with 401 */
   Unauthenticated,
+  /** No token provided, may be allowed for certain endpoints */
   Anonymous
 }
 
@@ -40,9 +55,24 @@ export enum DownloadStatus {
   Failed = 'Failed'
 }
 
+/**
+ * API response status values for async operations.
+ *
+ * Used to indicate the progress stage of asynchronous operations
+ * that span multiple Lambda invocations.
+ *
+ * - Dispatched: Request queued/sent but not yet processing
+ * - Initiated: Processing has begun
+ * - Accepted: Request validated and accepted for processing
+ * - Success: Operation completed successfully
+ */
 export enum ResponseStatus {
+  /** Request has been sent/queued for processing */
   Dispatched = 'Dispatched',
+  /** Processing has been initiated */
   Initiated = 'Initiated',
+  /** Request validated and accepted */
   Accepted = 'Accepted',
+  /** Operation completed successfully */
   Success = 'Success'
 }

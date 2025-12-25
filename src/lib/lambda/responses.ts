@@ -57,15 +57,11 @@ function formatResponse(context: Context, statusCode: number, body?: string | ob
 /**
  * Build an API Gateway response from either a status code + body or an Error object.
  *
- * @example
- * // Success response
- * return buildApiResponse(context, 200, \{data: files\})
- *
- * // Error response with status code
- * return buildApiResponse(context, 404, 'File not found')
- *
- * // Error response from Error object (extracts status and message)
- * return buildApiResponse(context, new ValidationError('Invalid input'))
+ * @param context - AWS Lambda context for request ID
+ * @param statusCodeOrError - HTTP status code (number) or Error object
+ * @param body - Response body for success responses
+ * @returns Formatted API Gateway response
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#buildApiResponse | Usage Examples}
  */
 export function buildApiResponse(context: Context, statusCodeOrError: number | Error | unknown, body?: string | object): APIGatewayProxyResult {
   // If first arg is a number, use it as status code directly

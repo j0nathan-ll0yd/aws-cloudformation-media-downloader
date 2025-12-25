@@ -27,8 +27,9 @@ import {mockFormattingRule} from './rules/mock-formatting'
 import {docSyncRule} from './rules/doc-sync'
 import {namingConventionsRule} from './rules/naming-conventions'
 import {authenticatedHandlerEnforcementRule} from './rules/authenticated-handler-enforcement'
+import {commentConventionsRule} from './rules/comment-conventions'
 
-// Export all rules (15 total: 6 CRITICAL + 6 HIGH + 3 MEDIUM)
+// Export all rules (16 total: 6 CRITICAL + 7 HIGH + 3 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -47,6 +48,7 @@ export const allRules: ValidationRule[] = [
   mockFormattingRule,
   // HIGH (documentation)
   docSyncRule,
+  commentConventionsRule,
   // HIGH (naming)
   namingConventionsRule,
   // HIGH (auth)
@@ -85,6 +87,8 @@ export const rulesByName: Record<string, ValidationRule> = {
   // HIGH (documentation) rules
   'doc-sync': docSyncRule,
   docs: docSyncRule, // alias
+  'comment-conventions': commentConventionsRule,
+  comments: commentConventionsRule, // alias
   // HIGH (naming) rules
   'naming-conventions': namingConventionsRule,
   naming: namingConventionsRule, // alias
@@ -99,6 +103,7 @@ export {
   awsSdkEncapsulationRule,
   batchRetryRule,
   cascadeSafetyRule,
+  commentConventionsRule,
   configEnforcementRule,
   docSyncRule,
   electrodbMockingRule,

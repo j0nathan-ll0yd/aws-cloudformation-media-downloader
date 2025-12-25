@@ -1,18 +1,36 @@
 import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
 
 /**
- * ElectroDB entity schema for Better Auth sessions.
- * Manages user authentication sessions with automatic expiration and device tracking.
+ * Sessions Entity - Better Auth user session management.
  *
- * Better Auth Session Schema:
- * - id: unique session identifier
- * - userId: reference to user
- * - expiresAt: session expiration timestamp
- * - token: session token (hashed)
- * - ipAddress: client IP for security
- * - userAgent: client user agent for device tracking
- * - createdAt: session creation timestamp
- * - updatedAt: last activity timestamp
+ * Manages authentication sessions with automatic expiration.
+ * Used by Better Auth for session-based authentication.
+ *
+ * Lifecycle:
+ * 1. Created when user logs in successfully (LoginUser Lambda)
+ * 2. Updated when session is refreshed (activity extends expiration)
+ * 3. Expires automatically when expiresAt timestamp is reached
+ * 4. Deleted when user logs out or session is invalidated
+ *
+ * Session Token Flow:
+ * - User authenticates with Sign In With Apple
+ * - Better Auth creates session with hashed token
+ * - Token returned to client as HTTP-only cookie
+ * - Subsequent requests validate token via byToken index
+ *
+ * Security Features:
+ * - ipAddress: Tracks originating IP for anomaly detection
+ * - userAgent: Identifies client device/browser
+ * - updatedAt: Auto-updates on any change for activity tracking
+ *
+ * Access Patterns:
+ * - Primary: Get session by sessionId
+ * - byUser (GSI1): Get all sessions for a user (logout-all, session list)
+ * - byToken (GSI2): Validate session token (request authentication)
+ *
+ * @see LoginUser Lambda for session creation
+ * @see ApiGatewayAuthorizer for session validation
+ * @see Collections.userSessions for batch session queries
  */
 export const Sessions = new Entity(
   {
