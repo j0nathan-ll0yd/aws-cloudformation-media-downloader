@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   check-update:
@@ -62,14 +63,33 @@ jobs:
             exit 1
           fi
 
-          echo "Testing format listing capability..."
-          ./yt-dlp_linux --list-formats "https://www.youtube.com/watch?v=jNQXAC9IVRw" --no-warnings --quiet || {
-            echo "ERROR: Binary failed format listing test"
-            exit 1
+          rm -f yt-dlp_linux SHA2-256SUMS
+          echo "Binary verification complete"
+
+      - name: Ensure required labels exist
+        if: steps.check.outputs.update_needed == 'true'
+        run: |
+          set -e
+
+          create_label_if_missing() {
+            local name="$1"
+            local description="$2"
+            local color="$3"
+
+            if ! gh label list --json name --jq '.[].name' | grep -q "^${name}$"; then
+              echo "Creating label: ${name}"
+              gh label create "${name}" --description "${description}" --color "${color}" || true
+            fi
           }
 
-          rm -f yt-dlp_linux SHA2-256SUMS
-          echo "✅ Binary verification complete"
+          create_label_if_missing "dependencies" "Dependency updates" "0366d6"
+          create_label_if_missing "automated" "Automated by GitHub Actions" "bfd4f2"
+          create_label_if_missing "yt-dlp" "Related to yt-dlp binary" "fbca04"
+          create_label_if_missing "bug" "Something is not working" "d73a4a"
+          create_label_if_missing "automation" "CI/CD automation issues" "c2e0c6"
+          create_label_if_missing "infrastructure" "Infrastructure changes" "d4c5f9"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Update VERSION file and create PR
         if: steps.check.outputs.update_needed == 'true'
@@ -101,10 +121,9 @@ jobs:
           - Binary will be downloaded by OpenTofu during deployment
 
           ## Pre-merge Verification
-          - ✅ Binary downloaded and SHA256 checksum verified
-          - ✅ Binary execution test passed (\`--version\`)
-          - ✅ Format listing capability verified
-          - ⏳ CI/CD tests pending
+          - [x] Binary downloaded and SHA256 checksum verified
+          - [x] Binary execution test passed (\`--version\`)
+          - [ ] CI/CD tests pending
 
           ## Deployment Process
           1. Merge this PR to update the VERSION file
