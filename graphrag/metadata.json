@@ -10,10 +10,6 @@
       "trigger": "CloudFront",
       "purpose": "Edge processing for CDN requests"
     },
-    "FileCoordinator": {
-      "trigger": "CloudWatch Events",
-      "purpose": "Scheduled job to orchestrate pending file downloads"
-    },
     "ListFiles": {
       "trigger": "API Gateway",
       "purpose": "List files available to authenticated user"
@@ -51,8 +47,8 @@
       "purpose": "Send push notification to user devices via APNS"
     },
     "StartFileUpload": {
-      "trigger": "Lambda Invoke",
-      "purpose": "Initiate file download from YouTube"
+      "trigger": "SQS",
+      "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
     },
     "UserDelete": {
       "trigger": "API Gateway",
@@ -64,7 +60,7 @@
     },
     "WebhookFeedly": {
       "trigger": "API Gateway",
-      "purpose": "Process incoming Feedly webhook articles"
+      "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
     }
   },
   "externalServices": [
@@ -84,6 +80,7 @@
     { "name": "SecretsManager", "type": "secrets", "vendorPath": "AWS/SecretsManager" },
     { "name": "StepFunctions", "type": "orchestration", "vendorPath": "AWS/StepFunctions" },
     { "name": "XRay", "type": "tracing", "vendorPath": "AWS/XRay" },
+    { "name": "EventBridge", "type": "events", "vendorPath": "AWS/EventBridge" },
     { "name": "API Gateway", "type": "api", "vendorPath": null },
     { "name": "CloudFront", "type": "cdn", "vendorPath": null }
   ],
@@ -106,13 +103,13 @@
     { "from": "VerificationTokens", "to": "Users", "type": "belongs_to" }
   ],
   "lambdaInvocations": [
-    { "from": "FileCoordinator", "to": "StartFileUpload", "via": "Lambda invokeAsync" },
     { "from": "S3ObjectCreated", "to": "SendPushNotification", "via": "SQS" }
   ],
   "serviceToServiceEdges": [
     { "from": "API Gateway", "to": "Lambda", "relationship": "triggers" },
     { "from": "S3", "to": "Lambda", "relationship": "triggers", "event": "s3:ObjectCreated" },
     { "from": "CloudWatch", "to": "Lambda", "relationship": "triggers", "event": "scheduled" },
-    { "from": "SQS", "to": "Lambda", "relationship": "triggers" }
+    { "from": "SQS", "to": "Lambda", "relationship": "triggers" },
+    { "from": "EventBridge", "to": "SQS", "relationship": "routes", "event": "DownloadRequested" }
   ]
 }

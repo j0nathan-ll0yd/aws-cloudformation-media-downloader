@@ -94,11 +94,12 @@ graph TD
     Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
 
     %% Scheduled Tasks
-    Schedule[CloudWatch Schedule] --> FileCoordinator[FileCoordinator Lambda]
-    Schedule --> PruneDevices[PruneDevices Lambda]
+    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
 
-    %% Lambda Invocations
-    FileCoordinator --> StartFileUpload[StartFileUpload Lambda]
+    %% Event-Driven Downloads
+    WebhookFeedly --> EventBridge[EventBridge]
+    EventBridge --> DownloadQueue[SQS DownloadQueue]
+    DownloadQueue --> StartFileUpload[StartFileUpload Lambda]
 
     %% S3 Triggers
     S3Upload[S3 Upload Event] --> S3ObjectCreated[S3ObjectCreated Lambda]
@@ -111,10 +112,10 @@ graph TD
     RegisterDevice --> DDB
     RegisterUser --> DDB
     WebhookFeedly --> DDB
-    FileCoordinator --> DDB
     UserDelete --> DDB
     PruneDevices --> DDB
     S3ObjectCreated --> DDB
+    StartFileUpload --> DDB
 
     StartFileUpload --> S3Storage[(S3 Storage)]
     WebhookFeedly --> S3Storage
@@ -271,7 +272,6 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| FileCoordinator | CloudWatch Events | Scheduled | Orchestrate pending file downloads |
 | ListFiles | API Gateway | GET /files | List user's available files |
 | LogClientEvent | API Gateway | POST /events | Log client-side events |
 | LoginUser | API Gateway | POST /auth/login | Authenticate user |
@@ -281,10 +281,10 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | RegisterUser | API Gateway | POST /auth/register | Register new user |
 | S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
 | SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
-| StartFileUpload | Lambda Invoke | FileCoordinator | Initiate file download from YouTube |
+| StartFileUpload | SQS | DownloadQueue (via EventBridge) | Download video from YouTube to S3 |
 | UserDelete | API Gateway | DELETE /users | Delete user and cascade |
 | UserSubscribe | API Gateway | POST /subscriptions | Manage user topic subscriptions |
-| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles |
+| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles, publish events |
 
 ### Data Access Patterns
 
