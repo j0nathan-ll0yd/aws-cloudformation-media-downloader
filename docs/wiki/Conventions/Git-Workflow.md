@@ -230,12 +230,17 @@ cd ~/wt/my-feature
 claude
 ```
 
-**Alternative**: Add the worktree directory mid-session:
+**Why this matters for MCP**: The MCP server uses relative paths for:
+- `.lancedb/` (semantic search)
+- `graphrag/knowledge-graph.json` (knowledge graph)
+- `build/graph.json` (dependency analysis)
+
+If you start from the main repo, MCP queries will use the **main repo's indexes**, not the worktree's.
+
+**Fallback**: If you must work from another directory, use `/add-dir` for file access (but MCP will still use the starting directory's indexes):
 ```bash
 /add-dir ~/wt/my-feature
 ```
-
-The `/add-dir` slash command grants Claude Code access to work in that directory during the current session without restarting.
 
 ### Worktree Benefits
 
