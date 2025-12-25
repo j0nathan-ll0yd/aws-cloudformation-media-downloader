@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # pre-commit hook: Run fast validation checks before commit
 # This catches architectural violations and code quality issues early
 #
@@ -7,61 +7,62 @@
 echo "Running pre-commit checks..."
 
 # Check for dependency violations (fast - usually < 1 second)
-echo "🔍 Checking dependency architecture..."
+echo "Checking dependency architecture..."
 if ! pnpm run deps:check; then
   echo ""
-  echo "❌ Dependency architecture violations detected."
+  echo "Dependency architecture violations detected."
   echo "Fix the issues or use 'git commit --no-verify' to bypass (emergency only)"
   exit 1
 fi
 
 # Check docs/ structure convention (fast - < 1 second)
-echo "🔍 Checking docs/ structure..."
-ALLOWED_ROOT_FILES=("doc-code-mapping.json" "doc-code-mapping.schema.json" "llms.txt" "llms-full.txt" "terraform.md")
-ALLOWED_SUBDIRS=("wiki" "api" "source")
+echo "Checking docs/ structure..."
 
+# POSIX-compliant file/directory validation using case statements
 docs_errors=0
+
 for file in docs/*; do
-  if [[ -f "$file" ]]; then
-    filename=$(basename "$file")
-    allowed=false
-    for allowed_file in "${ALLOWED_ROOT_FILES[@]}"; do
-      if [[ "$filename" == "$allowed_file" ]]; then
-        allowed=true
-        break
-      fi
-    done
-    if [[ "$allowed" == "false" ]]; then
-      if [[ "$filename" == *.md ]]; then
-        echo "  ❌ Markdown file '$filename' should be in docs/wiki/, not docs/ root"
-      else
-        echo "  ❌ Unexpected file '$filename' in docs/ root"
-      fi
-      docs_errors=$((docs_errors + 1))
-    fi
-  elif [[ -d "$file" ]]; then
-    dirname=$(basename "$file")
-    allowed=false
-    for allowed_dir in "${ALLOWED_SUBDIRS[@]}"; do
-      if [[ "$dirname" == "$allowed_dir" ]]; then
-        allowed=true
-        break
-      fi
-    done
-    if [[ "$allowed" == "false" ]]; then
-      echo "  ❌ Unexpected subdirectory 'docs/$dirname/' - use docs/wiki/ for documentation"
-      docs_errors=$((docs_errors + 1))
-    fi
+  # Skip if glob didn't match anything
+  [ ! -e "$file" ] && continue
+
+  basename_file=$(basename "$file")
+
+  if [ -f "$file" ]; then
+    # Check if file is in allowed list
+    case "$basename_file" in
+      doc-code-mapping.json|doc-code-mapping.schema.json|llms.txt|llms-full.txt|terraform.md)
+        # Allowed file
+        ;;
+      *.md)
+        echo "  Markdown file '$basename_file' should be in docs/wiki/, not docs/ root"
+        docs_errors=$((docs_errors + 1))
+        ;;
+      *)
+        echo "  Unexpected file '$basename_file' in docs/ root"
+        docs_errors=$((docs_errors + 1))
+        ;;
+    esac
+  elif [ -d "$file" ]; then
+    # Check if directory is in allowed list
+    case "$basename_file" in
+      wiki|api|source|archive)
+        # Allowed directory
+        ;;
+      *)
+        echo "  Unexpected subdirectory 'docs/$basename_file/' - use docs/wiki/ for documentation"
+        docs_errors=$((docs_errors + 1))
+        ;;
+    esac
   fi
 done
 
-if [[ $docs_errors -gt 0 ]]; then
+if [ $docs_errors -gt 0 ]; then
   echo ""
-  echo "❌ docs/ structure violations detected."
+  echo "docs/ structure violations detected."
   echo "Markdown docs belong in docs/wiki/. Machine files allowed in docs/ root."
   echo "Fix the issues or use 'git commit --no-verify' to bypass (emergency only)"
   exit 1
 fi
 
-echo "✅ Pre-commit checks passed"
+echo "Pre-commit checks passed"
 exit 0
