@@ -1,16 +1,15 @@
-import {pipeline} from '@xenova/transformers'
+import {EmbeddingModel, FlagEmbedding} from 'fastembed'
 
-type EmbeddingPipeline = (text: string, options: {pooling: string; normalize: boolean}) => Promise<{data: Float32Array}>
-let embedder: EmbeddingPipeline | null = null
+let embedder: FlagEmbedding | null = null
 
 /**
- * Get the embedding pipeline (singleton)
+ * Get the embedding model (singleton)
  */
-async function getEmbedder(): Promise<EmbeddingPipeline> {
+async function getEmbedder(): Promise<FlagEmbedding> {
   if (!embedder) {
-    // Using a lightweight but effective model for code/text embeddings
-    // 'Xenova/all-MiniLM-L6-v2' is small (~80MB) and very fast
-    embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2') as unknown as EmbeddingPipeline
+    // Using all-MiniLM-L6-v2 for code/text embeddings
+    // Same model as before, but via fastembed (no sharp dependency)
+    embedder = await FlagEmbedding.init({model: EmbeddingModel.AllMiniLML6V2})
   }
   return embedder
 }
@@ -19,7 +18,12 @@ async function getEmbedder(): Promise<EmbeddingPipeline> {
  * Generate embedding for a string
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const extractor = await getEmbedder()
-  const output = await extractor(text, {pooling: 'mean', normalize: true})
-  return Array.from(output.data)
+  const model = await getEmbedder()
+  const embeddings = await model.embed([text])
+  for await (const batch of embeddings) {
+    // batch is an array of Float32Arrays, one per input text
+    // Since we only pass one text, batch[0] is our embedding
+    return Array.from(batch[0])
+  }
+  throw new Error('Failed to generate embedding')
 }
