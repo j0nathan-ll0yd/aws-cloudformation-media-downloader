@@ -16,7 +16,7 @@ resource "aws_api_gateway_deployment" "Main" {
   triggers = {
     redeployment = sha1(join(",", tolist([
       jsonencode(aws_api_gateway_integration.ListFilesGet),
-      jsonencode(aws_api_gateway_integration.LogClientEventPost),
+      jsonencode(aws_api_gateway_integration.DeviceEventPost),
       jsonencode(aws_api_gateway_integration.LoginUserPost),
       jsonencode(aws_api_gateway_integration.RegisterDevicePost),
       jsonencode(aws_api_gateway_integration.RegisterUserPost),
@@ -25,7 +25,7 @@ resource "aws_api_gateway_deployment" "Main" {
       jsonencode(aws_api_gateway_integration.WebhookFeedlyPost),
       jsonencode(aws_api_gateway_integration.UserSubscribePost),
       jsonencode(aws_api_gateway_method.ListFilesGet),
-      jsonencode(aws_api_gateway_method.LogClientEventPost),
+      jsonencode(aws_api_gateway_method.DeviceEventPost),
       jsonencode(aws_api_gateway_method.LoginUserPost),
       jsonencode(aws_api_gateway_method.RegisterDevicePost),
       jsonencode(aws_api_gateway_method.RegisterUserPost),
