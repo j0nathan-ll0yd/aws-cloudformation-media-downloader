@@ -171,7 +171,7 @@ test('userResources collection', async () => {
 
 ## Related Patterns
 
-- [Vendor Wrappers](../AWS/SDK-Encapsulation-Policy.md) - AWS SDK encapsulation
+- [Vendor Wrappers](../AWS/Vendor-Encapsulation-Policy.md) - AWS SDK encapsulation
 - [Integration Testing](../Testing/Integration-Testing.md) - Test strategies
 - [Jest ESM Mocking](../Testing/Jest-ESM-Mocking-Strategy.md) - Mocking patterns
 

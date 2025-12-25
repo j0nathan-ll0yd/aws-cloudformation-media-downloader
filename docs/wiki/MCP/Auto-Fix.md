@@ -420,7 +420,7 @@ describe('applyMyConvention', () => {
 
 - [MCP Convention Tools](../src/mcp/README.md)
 - [Validation Rules](../src/mcp/validation/README.md)
-- [AWS SDK Encapsulation Policy](../docs/wiki/AWS/SDK-Encapsulation-Policy.md)
+- [AWS SDK Encapsulation Policy](../docs/wiki/AWS/Vendor-Encapsulation-Policy.md)
 - [ElectroDB Testing Patterns](../docs/wiki/Testing/ElectroDB-Testing-Patterns.md)
 
 ## Troubleshooting

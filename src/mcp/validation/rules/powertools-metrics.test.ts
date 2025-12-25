@@ -1,5 +1,11 @@
+/**
+ * Unit tests for powertools-metrics rule
+ * MEDIUM: Validate PowerTools metrics usage patterns
+ */
+
 import {beforeAll, describe, expect, test} from '@jest/globals'
 import type {ValidationRule} from '../types'
+import {loadFixture} from '../../test/fixtures'
 
 describe('powertools-metrics rule', () => {
   let powertoolsMetricsRule: ValidationRule
@@ -29,88 +35,38 @@ describe('powertools-metrics rule', () => {
   })
 
   describe('enableCustomMetrics validation', () => {
-    test('passes when no metrics are used', async () => {
-      const {Project} = await import('ts-morph')
-      const project = new Project({useInMemoryFileSystem: true})
-      const sourceFile = project.createSourceFile(
-        'test.ts',
-        `
-        export const handler = withPowertools(async () => {
-          return {statusCode: 200}
-        })
-        `
-      )
-      const violations = powertoolsMetricsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+    test('passes when no metrics are used', () => {
+      const {sourceFile, metadata} = loadFixture('valid/powertools-no-metrics')
+      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       expect(violations).toHaveLength(0)
     })
 
-    test('passes when metrics.addMetric and enableCustomMetrics are both present', async () => {
-      const {Project} = await import('ts-morph')
-      const project = new Project({useInMemoryFileSystem: true})
-      const sourceFile = project.createSourceFile(
-        'test.ts',
-        `
-        export const handler = withPowertools(async () => {
-          metrics.addMetric('Count', MetricUnit.Count, 1)
-          return {statusCode: 200}
-        }, {enableCustomMetrics: true})
-        `
-      )
-      const violations = powertoolsMetricsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+    test('passes when metrics.addMetric and enableCustomMetrics are both present', () => {
+      const {sourceFile, metadata} = loadFixture('valid/powertools-with-custom-metrics')
+      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       expect(violations).toHaveLength(0)
     })
 
-    test('fails when metrics.addMetric is used without enableCustomMetrics', async () => {
-      const {Project} = await import('ts-morph')
-      const project = new Project({useInMemoryFileSystem: true})
-      const sourceFile = project.createSourceFile(
-        'test.ts',
-        `
-        export const handler = withPowertools(async () => {
-          metrics.addMetric('Count', MetricUnit.Count, 1)
-          return {statusCode: 200}
-        })
-        `
-      )
-      const violations = powertoolsMetricsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+    test('fails when metrics.addMetric is used without enableCustomMetrics', () => {
+      const {sourceFile, metadata} = loadFixture('invalid/powertools-missing-enable')
+      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       expect(violations.length).toBeGreaterThanOrEqual(1)
       expect(violations[0].message).toContain('enableCustomMetrics')
     })
   })
 
   describe('singleMetric validation', () => {
-    test('passes when singleMetric is used with addDimension', async () => {
-      const {Project} = await import('ts-morph')
-      const project = new Project({useInMemoryFileSystem: true})
-      const sourceFile = project.createSourceFile(
-        'test.ts',
-        `
-        export const handler = withPowertools(async () => {
-          const metric = metrics.singleMetric()
-          metric.addDimension('Type', 'test')
-          metric.addMetric('Count', MetricUnit.Count, 1)
-        }, {enableCustomMetrics: true})
-        `
-      )
-      const violations = powertoolsMetricsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+    test('passes when singleMetric is used with addDimension', () => {
+      const {sourceFile, metadata} = loadFixture('valid/powertools-single-metric')
+      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       // Should have no violations about singleMetric usage
       const singleMetricViolations = violations.filter((v) => v.message.includes('singleMetric'))
       expect(singleMetricViolations).toHaveLength(0)
     })
 
-    test('warns when addDimension is used without singleMetric', async () => {
-      const {Project} = await import('ts-morph')
-      const project = new Project({useInMemoryFileSystem: true})
-      const sourceFile = project.createSourceFile(
-        'test.ts',
-        `
-        export const handler = withPowertools(async () => {
-          metrics.addDimension('Type', 'test')
-          metrics.addMetric('Count', MetricUnit.Count, 1)
-        }, {enableCustomMetrics: true})
-        `
-      )
-      const violations = powertoolsMetricsRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+    test('warns when addDimension is used without singleMetric', () => {
+      const {sourceFile, metadata} = loadFixture('invalid/powertools-dimension-without-single')
+      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       const singleMetricViolations = violations.filter((v) => v.message.includes('singleMetric'))
       expect(singleMetricViolations.length).toBeGreaterThanOrEqual(1)
     })

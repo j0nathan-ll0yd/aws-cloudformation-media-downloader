@@ -1,698 +1,120 @@
 # Conventions Tracking
 
-This document tracks all conventions, patterns, rules, and methodologies detected during development work. It serves as a central registry ensuring no institutional knowledge is lost to conversation history.
+Central registry of all project conventions with their documentation and enforcement mechanisms.
 
-## 📊 Enforcement Summary
+## Enforcement Summary
 
-### Automated Enforcement Methods
+### Automated Methods
 
-| Method | Count | Conventions |
+| Method | Count | Description |
 |--------|-------|-------------|
-| **MCP Rules** | 18 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, comment-conventions, docs-structure, powertools-metrics |
-| **ESLint** | 18 | no-direct-aws-sdk-import, cascade-delete-order, use-electrodb-mock-helper, response-helpers, env-validation, authenticated-handler-enforcement, enforce-powertools, no-domain-leakage, strict-env-vars, spacing-conventions + 8 jsdoc rules (require-description, require-param, require-returns, tag-lines, check-param-names, no-defaults, require-param-type, require-returns-type) |
-| **Git Hooks** | 5 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit), docs structure validation (pre-commit), worktree setup (post-checkout) |
-| **Dependency Cruiser** | 6 | no-circular, no-cross-lambda-imports, no-direct-aws-sdk-import, no-entity-cross-dependencies, no-test-imports-in-production, no-orphans-lib |
-| **CI Workflows** | 3 | script validation, type checking, GraphRAG auto-update |
-| **Build-Time** | 1 | pnpm lifecycle script protection (.npmrc) |
-| **Manual Review** | ~10 | code comments, test methodology, architectural patterns |
+| **MCP Rules** | 18 | AST-based validation via ts-morph |
+| **ESLint** | 18 | Linting rules including 8 JSDoc rules |
+| **Git Hooks** | 5 | Pre-commit, commit-msg, pre-push, post-checkout |
+| **Dependency Cruiser** | 6 | Architectural boundary enforcement |
+| **CI Workflows** | 3 | Script validation, type checking, GraphRAG sync |
+| **Build-Time** | 1 | pnpm lifecycle script protection |
 
-### MCP Validation Rules by Severity
+### MCP Validation Rules
 
-| Rule | Alias | Severity | What It Checks |
-|------|-------|----------|----------------|
-| aws-sdk-encapsulation | aws-sdk | CRITICAL | Direct AWS SDK imports |
-| electrodb-mocking | electrodb | CRITICAL | Manual entity mocks in tests |
-| config-enforcement | config | CRITICAL | ESLint/TSConfig drift |
-| env-validation | env | CRITICAL | Raw process.env access |
-| cascade-safety | cascade | CRITICAL | Promise.all with deletes |
-| response-helpers | response | HIGH | Raw response objects |
-| types-location | types | HIGH | Types outside src/types/ |
-| batch-retry | batch | HIGH | Unprotected batch ops |
-| scan-pagination | scan | HIGH | Unpaginated scans |
-| import-order | imports | MEDIUM | Import grouping order |
-| response-enum | enum | MEDIUM | Magic status strings |
-| mock-formatting | mock | MEDIUM | Chained mock returns |
-| doc-sync | docs | HIGH | Documentation drift detection |
-| naming-conventions | naming | HIGH | Type and enum naming patterns |
-| authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
-| comment-conventions | comments | HIGH | Lambda file headers, JSDoc, @example length |
-| docs-structure | docs-loc | HIGH | Documentation directory conventions |
-| powertools-metrics | metrics | MEDIUM | PowerTools metrics usage patterns |
+| Rule | Alias | Severity | Documentation |
+|------|-------|----------|---------------|
+| aws-sdk-encapsulation | aws-sdk | CRITICAL | [Vendor Encapsulation Policy](../AWS/Vendor-Encapsulation-Policy.md) |
+| electrodb-mocking | electrodb | CRITICAL | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) |
+| config-enforcement | config | CRITICAL | [MCP Convention Tools](../MCP/Convention-Tools.md) |
+| env-validation | env | CRITICAL | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) |
+| cascade-safety | cascade | CRITICAL | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| response-helpers | response | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| types-location | types | HIGH | [Type Definitions](../TypeScript/Type-Definitions.md) |
+| batch-retry | batch | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| scan-pagination | scan | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| doc-sync | docs | HIGH | [MCP Convention Tools](../MCP/Convention-Tools.md) |
+| naming-conventions | naming | HIGH | [Naming Conventions](../Conventions/Naming-Conventions.md) |
+| authenticated-handler-enforcement | auth | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| comment-conventions | comments | HIGH | [Code Comments](../Conventions/Code-Comments.md) |
+| docs-structure | docs-location | HIGH | [Documentation Structure](Documentation-Structure.md) |
+| import-order | imports | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| mock-formatting | mock | MEDIUM | [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md) |
+| powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 
 ---
 
-## 🟡 Pending Documentation
-
-### Detected: 2025-12-24
-
-1. **Documentation Structure Convention** (Architecture Rule)
-   - **What**: All human-readable documentation (`.md` files) must be in `docs/wiki/`. Machine-readable files (`.json`, `.txt`) stay in `docs/` root. API specs in `docs/api/`. Generated TSDoc is gitignored.
-   - **Why**: Clear separation of concerns; single location for documentation; prevents scattered markdown files
-   - **Directory Rules**:
-     - `docs/wiki/` → All markdown documentation (synced to GitHub Wiki)
-     - `docs/api/` → OpenAPI specs, SwaggerUI
-     - `docs/` root → `llms.txt`, `*.json` configs only
-     - `docs/source/` → Generated TSDoc (gitignored)
-   - **Enforcement**: Manual code review; add MCP validation rule to detect markdown files in wrong location
-   - **Target**: docs/wiki/Meta/Documentation-Structure.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement**: MCP rule `docs-structure` (HIGH) + pre-commit hook
-
-2. **Comment Conventions with Multi-Tier Enforcement** (Code Quality Rule)
-   - **What**: Comprehensive JSDoc requirements for all exported functions, type definitions, and Lambda file headers
-   - **Why**: Consistent documentation improves maintainability, AI comprehension, and API documentation generation
-   - **Tiers**:
-     - Tier 1 (Entities): Full JSDoc with @file header, property docs, @example
-     - Tier 2 (Lambdas): Handler docs with @description, @param, @returns
-     - Tier 3 (Utilities): Function-level JSDoc with @param and @returns
-   - **Enforcement**:
-     - ESLint: `eslint-plugin-jsdoc` with 8 rules (jsdoc/require-description, jsdoc/require-param, etc.)
-     - MCP: `comment-conventions` rule validates Lambda headers and @example length
-     - Local ESLint Rule: `spacing-conventions` for function spacing patterns
-   - **Target**: docs/wiki/Conventions/Code-Comments.md (expanded), docs/wiki/Conventions/Function-Spacing.md (new)
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement Level**: ESLint (error severity for Lambda handlers), MCP (HIGH severity)
-
-3. **Worktree Setup Automation** (Workflow Pattern)
-   - **What**: Husky `post-checkout` hook automatically sets up worktrees with symlinks, dependencies, and MCP context
-   - **Why**: Reduces worktree setup time from ~5 minutes to ~30 seconds; ensures consistent development environment
-   - **Automation**:
-     - Creates symlinks: `.env`, `secrets.yaml`, `terraform/terraform.tfstate`
-     - Runs `pnpm install` for dependencies
-     - Generates `repomix-output.xml` for AI context
-     - Configures MCP server settings
-   - **Enforcement**: Git hook (automatic on checkout)
-   - **Target**: docs/wiki/Conventions/Git-Workflow.md (updated)
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement Level**: Automatic via Husky hook
-
-4. **Terraform Centralized Lambda Environment** (Infrastructure Pattern)
-   - **What**: All Lambda functions use `merge(local.common_lambda_env, {...})` for environment variables
-   - **Why**: DRY principle; consistent OTEL configuration; reduces ~90% log noise
-   - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
-   - **Enforcement**: Manual review of Terraform changes
-   - **Documented**: docs/wiki/Infrastructure/OpenTofu-Patterns.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement Improvement**: Consider adding Terraform linting rule or MCP rule for Lambda environment patterns
-
-### Detected: 2025-12-22
-
-1. **TypeSpec-to-Runtime Code Generation** (Methodology)
-   - **What**: Automated generation of Zod schemas and TypeScript types from TypeSpec API definitions
-   - **Why**: TypeSpec becomes single source of truth; prevents API contract drift; ensures compile-time type safety
-   - **Tool**: `pnpm gen:api-types` script using quicktype and custom Zod schema generation
-   - **Output**: `src/types/api-schema/types.ts` and `src/types/api-schema/schemas.ts`
-   - **Documented**: docs/wiki/TypeScript/TypeSpec-Code-Generation.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-2. **Test Scaffolding Tool** (DX Tool)
-   - **What**: Automated test file generation with correct mock setup via `pnpm scaffold:test <file>`
-   - **Why**: Reduces test writing time by 60%; ensures consistent mock patterns; follows project conventions
-   - **Tool**: Uses ts-morph for AST analysis to detect imports and generate appropriate mocks
-   - **Documented**: docs/wiki/Testing/Test-Scaffolding.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-3. **PowerTools Wrapper Enforcement** (Rule)
-   - **What**: All Lambda handlers must be wrapped with `withPowertools()` or `wrapLambdaInvokeHandler()`
-   - **Why**: Consistent observability, error handling, and metrics across all Lambda functions
-   - **Enforcement**: ESLint `local-rules/enforce-powertools` (HIGH severity), MCP `powertools-metrics` (MEDIUM)
-   - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-4. **Domain Layer Purity** (Architecture Rule)
-   - **What**: Files in `src/lib/domain/` cannot import from `src/lambdas/` or `src/lib/vendor/AWS/`
-   - **Why**: Domain logic must remain pure and infrastructure-agnostic
-   - **Enforcement**: ESLint `local-rules/no-domain-leakage` (HIGH severity), Dependency Cruiser
-   - **Documented**: docs/wiki/Architecture/Domain-Layer.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-5. **Centralized Environment Variable Access** (Pattern)
-   - **What**: Lambda handlers must use `getRequiredEnv()` instead of direct `process.env` access
-   - **Why**: Fail-fast at cold start with clear error messages; centralized validation
-   - **Enforcement**: ESLint `local-rules/strict-env-vars` (HIGH severity)
-   - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-6. **Pre-Commit Dependency Validation** (Workflow)
-   - **What**: Dependency-cruiser runs automatically on `git commit` to catch architectural violations
-   - **Why**: Shift-left validation prevents architectural drift from entering codebase
-   - **Enforcement**: Husky pre-commit hook running `pnpm deps:check`
-   - **Documented**: docs/wiki/Conventions/Git-Workflow.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-7. **No Orphaned Library Code** (Rule)
-   - **What**: All modules in `src/lib/` must be imported by at least one file (except tests/types)
-   - **Why**: Prevents dead code accumulation in shared library code
-   - **Enforcement**: Dependency-cruiser `no-orphans-lib` rule (ERROR severity)
-   - **Documented**: docs/wiki/Architecture/Code-Organization.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-
-8. **Automated GraphRAG Synchronization** (CI/CD)
-   - **What**: GraphRAG knowledge graph automatically updates when source files change
-   - **Why**: AI agents always have current semantic memory; documentation stays synchronized
-   - **Triggers**: Changes to `src/lambdas/`, `src/entities/`, `src/lib/vendor/`, `graphrag/metadata.json`, `tsp/`
-   - **Enforcement**: GitHub Actions workflow `.github/workflows/auto-update-graphrag.yml`
-   - **Documented**: docs/wiki/Infrastructure/GraphRAG-Automation.md
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Implemented, ✅ Documented
-
-9. **MCP Convention Auto-Fix** (Tool)
-   - **What**: MCP server can automatically apply conventions (e.g., replace AWS SDK imports with vendor wrappers)
-   - **Why**: Reduces manual refactoring effort; speeds up convention adherence
-   - **Tool**: `apply_convention` MCP tool with support for multiple convention types
-   - **Supported**: aws-sdk-wrapper (auto-fix), electrodb-mock (guidance), response-helper (guidance), env-validation (guidance), powertools (guidance)
-   - **Documented**: docs/wiki/MCP/Convention-Tools.md
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Implemented, ✅ Documented
-
-_All conventions from 2025-12-22 are now documented._
-
-### Detected: 2025-12-23
-
-1. **Workaround Tracking with Automated Monitoring** (Workflow Pattern)
-   - **What**: When implementing workarounds for upstream dependency issues, create a tracking GitHub issue AND an automated workflow to monitor upstream status
-   - **Why**: Prevents workarounds from becoming permanent technical debt; proactive notification when upstream fixes are available
-   - **Components**:
-     - GitHub Issue: Documents the workaround, links to upstream issue, explains impact
-     - GitHub Actions Workflow: Weekly check of upstream issue status (`.github/workflows/check-upstream-issues.yml`)
-     - Automated Comments: Posts to tracking issue when upstream is closed
-   - **Example**: OTEL collector deprecation warning workaround → Issue #216 + check-upstream-issues.yml
-   - **Template**: Add entries to `trackedIssues` array in workflow with `owner`, `repo`, `issue_number`, `our_issue`, `description`
-   - **Documented**: docs/wiki/Conventions/Workaround-Tracking.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement**: Code review when adding workarounds
-
-2. **Post-Deployment Log Verification** (Operational Pattern)
-   - **What**: After deploying Lambda changes, verify CloudWatch logs to confirm expected behavior
-   - **Why**: Catches deployment issues early; validates log noise reduction; confirms no new errors
-   - **Log Groups**: All follow `/aws/lambda/{FunctionName}` pattern, defined in Terraform alongside each Lambda
-   - **Reference**: See Lambda Log Groups table in `docs/wiki/AWS/CloudWatch-Logging.md`
-   - **Commands**:
-     - `aws logs tail /aws/lambda/{Lambda} --since 5m --format short --region us-west-2`
-     - `aws logs tail /aws/lambda/{Lambda} --since 10m --region us-west-2 | grep -i "deprecated"`
-   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Documented
-   - **Enforcement**: Operational practice after deployments
-
-3. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
-   - **What**: Use `common_lambda_env` Terraform local with `merge()` to centralize OTEL and runtime configuration
-   - **Why**: DRY principle; ensures consistent configuration across all 14 lambdas; reduces ~90% log noise
-   - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
-   - **Pattern**: `environment { variables = merge(local.common_lambda_env, { OTEL_SERVICE_NAME = "LambdaName", ... }) }`
-   - **Detected**: During log noise reduction implementation
-   - **Target**: docs/wiki/AWS/X-Ray-Integration.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: Terraform/OpenTofu configuration
-
-2. **Compact Request Logging** (Observability Pattern)
-   - **What**: Use `getRequestSummary()` helper for INFO-level request logging (~150 bytes vs ~2.5KB)
-   - **Why**: Reduces CloudWatch costs and log noise while maintaining debuggability
-   - **Pattern**: `logInfo('request <=', getRequestSummary(event))` in middleware wrappers
-   - **Details**: Extracts only path, method, requestId, sourceIp; full event available via DEBUG level or X-Ray
-   - **Detected**: During log noise reduction implementation
-   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: Middleware implementation
-
-3. **Powertools Metrics for All Custom Metrics** (Observability Pattern)
-   - **What**: Use Powertools `metrics.addMetric()` for all custom metrics; use `{enableCustomMetrics: true}` on lambdas that publish metrics
-   - **Why**: EMF logs (zero latency) vs CloudWatch API calls (~50-100ms); automatic batching and flushing
-   - **Implementation**:
-     - Import `metrics, MetricUnit` from `#lib/lambda/middleware/powertools`
-     - Use `metrics.addMetric('Name', MetricUnit.Count, 1)` for simple metrics
-     - Use `metrics.singleMetric()` for metrics with unique dimensions
-     - Add `{enableCustomMetrics: true}` to handler's `withPowertools()` call
-   - **Cold Start**: Tracked automatically for ALL lambdas (manual tracking for lambdas without `enableCustomMetrics`)
-   - **Lambdas with Custom Metrics**: FileCoordinator, StartFileUpload, YouTube.ts (vendor)
-   - **Future Concern**: Manual cold start duplicates Powertools logic; monitor Powertools changelog on upgrades
-   - **Detected**: During log noise reduction implementation
-   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: Code review; deprecated functions removed from observability.ts
-
-4. **External Template Files for Code Generation** (Code Organization Rule)
-   - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code
-   - **Why**: Keeps generator code clean and maintainable; templates are easier to review, test, and modify independently; separates concerns between template content and interpolation logic
-   - **Location**: `src/mcp/templates/` for MCP handlers; similar pattern for other generators
-   - **Example**: `lines.push("const mock = ...")` is WRONG; `loadTemplate('test-scaffold/entity-mock.template.txt')` is CORRECT
-   - **Loader**: Use `loadAndInterpolate()` from `src/mcp/templates/loader.ts` for simple placeholder replacement
-   - **Detected**: During test-scaffold.ts refactoring
-   - **Documented**: docs/wiki/MCP/Template-Organization.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement**: Code review; consider MCP validation rule
-
-2. **CJS Dependency Compatibility** (Architectural Pattern)
-   - **What**: Use `createRequire` shim in esbuild banner for CJS dependencies in ESM bundles
-   - **Why**: Allows CJS packages (ElectroDB) to work in pure ESM Lambda environment without forking
-   - **Shim**: `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`
-   - **Overhead**: ~200 bytes per bundle (negligible)
-   - **Alternatives**: Dynamic imports for isolated usage, `import type` for types only, pnpm patches for built-in requires
-   - **Detected**: During ElectroDB ESM compatibility investigation
-   - **Target**: docs/wiki/TypeScript/ESM-Migration-Guide.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: Build-time (esbuild banner)
-
-### Detected: 2025-12-22
-
-1. **ESM Format Migration** (Architectural Pattern)
-   - **What**: All Lambda functions now built as ESM (.mjs) targeting Node.js 24 (es2022)
-   - **Why**: Performance improvements (cold starts, top-level await), future-proofing, better tree-shaking
-   - **Build Config**: esbuild format: 'esm', target: 'es2022', outExtension: {'.js': '.mjs'}
-   - **Infrastructure**: All terraform archive_file references updated to .mjs, runtime: nodejs24.x
-   - **CJS Compatibility**: createRequire shim for ElectroDB, pnpm patch for jsonschema, dynamic imports for apns2
-   - **Detected**: During comprehensive ESM migration implementation
-   - **Target**: docs/wiki/TypeScript/ESM-Migration-Guide.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-
-### Detected: 2025-12-20
-
-1. **Branch-First PR Workflow** (Rule)
-   - **What**: All feature work must follow strict flow: Create Branch -> Commit -> Push -> Create PR -> Wait for Review.
-   - **Why**: Prevents direct commits to main, ensures code review, and maintains a clean history.
-   - **Rule**: NEVER commit directly to main. ALWAYS wait for user approval on PRs.
-   - **Target**: docs/wiki/Conventions/Git-Workflow.md
-   - **Priority**: CRITICAL
-   - **Status**: ✅ Documented
-   - **Enforcement**: Zero-tolerance (Agent must self-correct).
-
-### Detected: 2025-12-19
-
-1. **Centralized Auth Handler Wrappers** (Security Pattern)
-   - **What**: Use `wrapAuthenticatedHandler` for endpoints requiring authentication (rejects Unauthenticated + Anonymous) or `wrapOptionalAuthHandler` for endpoints allowing anonymous access (rejects only Unauthenticated)
-   - **Why**: Eliminates boilerplate `getUserDetailsFromEvent()` + `UserStatus` checks; provides type-safe `userId` (guaranteed string in authenticated wrapper); fixes security vulnerabilities from missing auth checks
-   - **Detected**: During security audit of Lambda handlers
-   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: MCP `authenticated-handler-enforcement` rule, ESLint `local-rules/authenticated-handler-enforcement`
-
-### Detected: 2025-11-28
-
-1. **Production Fixture Logging** (Testing Pattern)
-   - **What**: Use `logIncomingFixture()` / `logOutgoingFixture()` to capture production API requests/responses for test fixture generation
-   - **Why**: Transform testing from assumptions to production truth; CloudWatch extraction enables regular fixture updates
-   - **Detected**: During fixture automation implementation
-   - **Target**: docs/wiki/Testing/Fixture-Extraction.md
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Documented
-   - **Enforcement**: Always enabled (logs to CloudWatch, extract when needed)
-
-2. **ElectroDB Collections Testing** (Testing Pattern)
-   - **What**: Test Collections (JOIN-like queries) with LocalStack to validate single-table design
-   - **Why**: Ensures GSI queries work correctly across entity boundaries; validates userResources, fileUsers, deviceUsers, userSessions, userAccounts
-   - **Detected**: During ElectroDB integration testing implementation
-   - **Target**: docs/wiki/Testing/ElectroDB-Testing-Patterns.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: Required for Collections changes
-
-### Detected: 2025-11-28 (Script Validation)
-
-7. **Script Documentation Sync** (Rule)
-   - **What**: All npm scripts referenced in `AGENTS.md` or `README.md` must exist in `package.json`
-   - **Why**: Documentation drift causes confusion and broken developer workflows
-   - **Detected**: During comprehensive repository review
-   - **Target**: docs/wiki/Infrastructure/Script-Registry.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Enforcement**: CI validates on every push (unit-tests.yml)
-
-### Detected: 2025-11-27
-
-3. **No Try-Catch for Required Environment Variables** (Rule)
-   - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
-   - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
-   - **Example**: `const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)` NOT `try { const config = ... } catch { return fallback }`
-   - **Detected**: During Better Auth configuration cleanup
-   - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
-   - **Priority**: CRITICAL
-   - **Status**: ✅ Documented
-   - **Enforcement**: Zero-tolerance (infrastructure tests verify all env vars are present)
-
-### Detected: 2025-11-24
-
-1. **pnpm Lifecycle Script Protection** (Security Rule)
-   - **What**: All lifecycle scripts disabled by default in `.npmrc`; packages requiring scripts must be explicitly allowlisted after audit
-   - **Why**: Defense against AI-targeted typosquatting and supply chain attacks that exploit LLM-assisted development
-   - **Detected**: During npm to pnpm migration for security hardening
-   - **Target**: Already documented in docs/wiki/Meta/pnpm-Migration.md
-   - **Priority**: CRITICAL
-   - **Status**: ✅ Documented
-   - **Enforcement**: Zero-tolerance (all scripts blocked by default)
-
-### Detected: 2025-11-22
-
-1. **AGENTS.md Filename Standard** (Convention)
-   - **What**: Use `AGENTS.md` (plural) as the filename for AI coding assistant context files
-   - **Why**: Industry standard supported by OpenAI Codex, GitHub Copilot, Google Gemini, Cursor, and 20+ AI tools
-   - **Detected**: During GitHub Wiki organization planning
-   - **Documented**: docs/wiki/Meta/AI-Tool-Context-Files.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-
-2. **Passthrough File Pattern** (Pattern)
-   - **What**: Tool-specific files (CLAUDE.md, GEMINI.md) contain only a reference to the universal source (AGENTS.md)
-   - **Why**: Maintains backwards compatibility while having single source of truth
-   - **Detected**: During AI tool compatibility analysis
-   - **Documented**: docs/wiki/Meta/AI-Tool-Context-Files.md
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Documented
-
-
-4. **Zero AI References in Commits** (Rule)
-   - **What**: Absolutely forbidden to include "Generated with Claude Code", "Co-Authored-By: Claude", emojis, or any AI references in commits/PRs
-   - **Why**: Professional technical commits only, following commitlint syntax
-   - **Detected**: Explicitly stated in CLAUDE.md project instructions
-   - **Target**: Already documented in CLAUDE.md
-   - **Priority**: CRITICAL
-   - **Status**: ✅ Documented
-   - **Enforcement**: Zero-tolerance
-
-5. **AWS SDK Encapsulation Policy** (Rule)
-   - **What**: NEVER import AWS SDK packages directly in application code; ALL usage must be wrapped in vendor modules (lib/vendor/AWS/)
-   - **Why**: Encapsulation, type safety, testability, maintainability, consistency
-   - **Detected**: Explicitly stated in CLAUDE.md project instructions
-   - **Target**: Already documented in CLAUDE.md
-   - **Priority**: CRITICAL
-   - **Status**: ✅ Documented
-   - **Enforcement**: Zero-tolerance
-
-6. **Comprehensive Jest Mocking Strategy** (Methodology)
-   - **What**: When importing ANY function from a module, must mock ALL of that module's transitive dependencies
-   - **Why**: ES modules execute all module-level code on import; missing mocks cause obscure test failures
-   - **Detected**: Explicitly stated in CLAUDE.md project instructions
-   - **Target**: Already documented in CLAUDE.md
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-
-### Detected: 2025-11-25
-
-
-
-## ✅ Recently Documented
-
-### Documented: 2025-12-22
-
-1. **Centralized PII Sanitization** (Security Pattern)
-   - **What**: All logging functions automatically sanitize PII via `sanitizeData()` utility in `util/security.ts`
-   - **Why**: Prevents sensitive data leakage in CloudWatch logs
-   - **Integration**: `logInfo()`, `logDebug()`, `logError()` in `util/logging.ts` automatically apply sanitization; test fixtures use same utility
-   - **Patterns**: Redacts authorization, tokens, passwords, emails, names, phone numbers, SSN, credit cards, certificates (case-insensitive)
-   - **Documented**: docs/wiki/TypeScript/PII-Protection.md
-   - **Priority**: HIGH
-   - **Enforcement**: Automatic in all logging functions
-
-2. **TODO Comment Context Requirements** (Convention Clarification)
-   - **What**: TODO comments must explain "why" with sufficient context, not just "what needs to be done"
-   - **Why**: Aligns with "comments explain why, not what" principle; provides actionable information
-   - **Examples**: Replace "TODO: Add alarm" with detailed explanation of what triggers alarm, why it's needed, and impact
-   - **Documented**: docs/wiki/Conventions/Code-Comments.md (already documented, now enforced)
-   - **Priority**: MEDIUM
-   - **Enforcement**: Code review
-
-### Documented: 2025-12-21
-
-1. **No Deprecation - Remove Immediately** (Rule)
-   - **What**: Remove deprecated code immediately instead of marking with `@deprecated` warnings
-   - **Why**: Small project without external consumers; deprecation periods add noise and delay without benefit
-   - **Rule**: When replacing a function/pattern, update ALL callers, tests, fixtures, and documentation in the same PR
-   - **Example**: Replaced `lambdaErrorResponse()` with `buildApiResponse()` - removed old function entirely, no deprecation warning
-   - **Documented**: docs/wiki/Conventions/Deprecation-Policy.md
-   - **Priority**: HIGH
-   - **Enforcement**: Code review; no `@deprecated` tags should be added
-
-### Documented: 2025-12-19
-
-1. **Lambda Types Directory Threshold** (Convention)
-   - **What**: Create `types/` directory in a lambda only when 3+ types, types are re-exported, or types are complex (5+ properties)
-   - **Why**: Reduces directory proliferation while maintaining organization for substantial type collections; small inline types are easier to understand next to their usage
-   - **Rule**: Use inline types for 1-2 simple, non-exported types; use types/ directory for 3+ types or re-exported types
-   - **Documented**: docs/wiki/TypeScript/Type-Definitions.md (Lambda-Specific Types section)
-   - **Priority**: MEDIUM
-   - **Status**: ✅ Documented
-
-### Documented: 2025-12-17
-
-1. **Documentation Sync Validation** (Rule)
-   - **What**: Automated validation ensures AGENTS.md, wiki, GraphRAG metadata, and MCP rules stay in sync with source code
-   - **Why**: Prevents documentation drift that causes confusion for developers and AI assistants
-   - **Enforcement**: CI validation via `pnpm run validate:doc-sync` and MCP `doc-sync` rule
-   - **Checks**: Entity count, Lambda count, MCP rule count, path existence, stale patterns, GraphRAG metadata, wiki links
-   - **Priority**: HIGH
-   - **Status**: ✅ Documented
-   - **Related Files**: bin/validate-doc-sync.sh, docs/doc-code-mapping.json, src/mcp/validation/rules/doc-sync.ts
-
-### Documented: 2025-12-16
-
-1. **Type Definitions Location** (Rule)
-   - **What**: Exported type definitions (type aliases, interfaces, enums) must be in src/types/ directory
-   - **Why**: Separation of concerns, discoverability, and maintainability
-   - **Exceptions**: Entity-derived types (src/entities/), MCP types (src/mcp/), internal types
-   - **Documented**: docs/wiki/TypeScript/Type-Definitions.md
-   - **Priority**: HIGH
-   - **Enforcement**: MCP `types-location` rule (HIGH severity); CI validates on push
-
-2. **No Underscore-Prefixed Unused Variables** (Rule)
-   - **What**: Never use underscore-prefixed variables (`_event`, `_context`, `_metadata`) to suppress unused variable warnings
-   - **Why**: Per AGENTS.md: "Avoid backwards-compatibility hacks like renaming unused `_vars`"
-   - **Solution**: Use object destructuring in function signatures to extract only needed properties
-   - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: CRITICAL
-   - **Enforcement**: MCP `config-enforcement` rule validates ESLint config; CI validates on push
-
-3. **Configuration Drift Detection** (Pattern)
-   - **What**: MCP validation rules detect configuration changes that weaken project enforcement
-   - **Why**: Configuration files can silently weaken enforcement standards
-   - **Detected Patterns**: ESLint underscore ignore patterns, disabled TSConfig strict settings
-   - **Documented**: docs/wiki/MCP/Convention-Tools.md
-   - **Priority**: HIGH
-   - **Enforcement**: MCP `config-enforcement` rule; CI validates on every push
-
-### Documented: 2025-11-29
-
-1. **Multiline Array/Object Formatting Hint** (Convention)
-   - **What**: Use `// fmt: multiline` comment after first element to force consistent multiline formatting
-   - **Why**: dprint uses "best fit" algorithm that can create ugly mixed inline/multiline arrays; line comments cannot be collapsed to single line
-   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
-   - **Priority**: MEDIUM
-   - **Enforcement**: Optional (use when dprint's default formatting harms readability)
-
-2. **Type Aliases for Line Width Management** (Convention)
-   - **What**: Create type aliases for return types or parameter groups when function signatures exceed 157 characters
-   - **Why**: Keeps function signatures on single lines for better readability; avoids awkward parameter wrapping
-   - **Examples**: `SessionResult`, `RequestPayload`, `MetricInput`
-   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
-   - **Priority**: MEDIUM
-   - **Enforcement**: Optional (use when signatures would otherwise wrap)
-
-3. **Sequential Mock Return Values as Separate Statements** (Convention)
-   - **What**: Use separate statements instead of method chaining for `mockResolvedValueOnce` / `mockReturnValueOnce` sequences
-   - **Why**: Chained methods exceed line width and wrap mid-chain; separate statements are dprint-stable and more readable
-   - **Example**: `mockFn.mockResolvedValueOnce(a)` on line 1, `mockFn.mockResolvedValueOnce(b)` on line 2
-   - **Documented**: docs/wiki/Conventions/Code-Formatting.md
-   - **Priority**: MEDIUM
-   - **Enforcement**: Always for sequences of 2+ mock return values
-
-### Documented: 2025-11-28 (Code Quality Improvements)
-
-1. **ResponseStatus Enum for API Responses** (Convention)
-   - **What**: Use `ResponseStatus` enum for all API response status values instead of magic strings
-   - **Why**: Type safety, consistency, and easier refactoring
-   - **Documented**: src/types/enums.ts
-   - **Priority**: MEDIUM
-   - **Enforcement**: Prefer enum over string literals
-
-2. **Environment Variable Validation** (Pattern)
-   - **What**: Use `getRequiredEnv()` / `getRequiredEnvNumber()` from `util/env-validation.ts` for environment variables
-   - **Why**: Fail fast at cold start with clear error messages instead of cryptic runtime failures
-   - **Documented**: src/util/env-validation.ts
-   - **Priority**: HIGH
-   - **Enforcement**: Required for new Lambda functions
-
-3. **Lazy Evaluation for Environment Variables** (Pattern)
-   - **What**: Call `getRequiredEnv()` inside functions, not at module level
-   - **Why**: Avoids test failures from env validation running at import time before mocks are set up
-   - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent esbuild tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
-   - **Example for functions**: `function getConfig() { return getRequiredEnv('CONFIG') }` (lazy)
-   - **Example for constants**: Set `process.env.DEFAULT_FILE_URL = 'value'` before import, NOT mock env-validation
-   - **Documented**: src/util/constants.ts, src/lib/vendor/YouTube.ts
-   - **Priority**: HIGH
-   - **Enforcement**: Prefer lazy evaluation; use env vars in tests for module-level constants
-
-4. **Batch Operation Retry Logic** (Pattern)
-   - **What**: Use `retryUnprocessed()` / `retryUnprocessedDelete()` from `util/retry.ts` for DynamoDB batch operations
-   - **Why**: DynamoDB batch operations may return unprocessed items; retry with exponential backoff prevents data loss
-   - **Documented**: src/util/retry.ts
-   - **Priority**: HIGH
-   - **Enforcement**: Required for batch get/delete operations
-
-5. **Paginated Scan Operations** (Pattern)
-   - **What**: Use `scanAllPages()` from `util/pagination.ts` for DynamoDB scan operations
-   - **Why**: DynamoDB scans are limited to 1MB per request; pagination prevents silent data truncation
-   - **Documented**: src/util/pagination.ts
-   - **Priority**: HIGH
-   - **Enforcement**: Required for all scan operations
-
-6. **Promise.allSettled for Cascade Operations** (Pattern)
-   - **What**: Use `Promise.allSettled()` instead of `Promise.all()` for cascade deletion and multi-resource operations
-   - **Why**: Prevents partial state from orphaning data; allows handling individual failures gracefully
-   - **Documented**: src/lambdas/UserDelete/src/index.ts, src/lambdas/PruneDevices/src/index.ts
-   - **Priority**: HIGH
-   - **Enforcement**: Required for cascade operations
-
-7. **Cascade Deletion Order** (Rule)
-   - **What**: Delete child entities BEFORE parent entities in cascade operations
-   - **Why**: Prevents orphaned references if parent deletion succeeds but child deletion fails
-   - **Documented**: src/lambdas/UserDelete/src/index.ts
-   - **Priority**: CRITICAL
-   - **Enforcement**: Zero-tolerance for incorrect cascade order
-
-### Documented: 2025-11-28
-
-1. **ElectroDB Test Mocking Standard** (Rule)
-   - **What**: ALWAYS use the `createElectroDBEntityMock()` helper for mocking ElectroDB entities
-   - **Why**: Ensures consistent mocking patterns and proper type safety
-   - **Documented**: docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md
-   - **Priority**: CRITICAL
-   - **Enforcement**: Zero-tolerance
-
-3. **Lambda Response Helper Usage** (Convention)
-   - **What**: Always use the `buildApiResponse` function from lambda-helpers for Lambda responses
-   - **Why**: Ensures consistent response formatting across all Lambda functions
-   - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
-   - **Priority**: HIGH
-
-4. **GitHub Wiki Sync Automation** (Methodology)
-   - **What**: Automated GitHub Actions workflow syncs docs/wiki/ to GitHub Wiki
-   - **Why**: Git-tracked source with beautiful web UI, zero manual maintenance
-   - **Documented**: docs/wiki/Meta/GitHub-Wiki-Sync.md
-   - **Priority**: HIGH
-
-5. **Dependency Graph Analysis** (Methodology)
-   - **What**: Use build/graph.json to identify all transitive dependencies for Jest mocking
-   - **Why**: ES modules execute all module-level code, requiring comprehensive mocking
-   - **Documented**: docs/wiki/Testing/Dependency-Graph-Analysis.md (NEW)
-   - **Priority**: HIGH
-
-6. **Lambda Directory Naming** (Convention)
-   - **What**: Lambda function directories use PascalCase to match AWS resource naming
-   - **Why**: Easy correlation between code and infrastructure
-   - **Documented**: docs/wiki/Conventions/Naming-Conventions.md
-   - **Priority**: MEDIUM
-
-## 🔧 Enforcement Improvement Opportunities
-
-This section tracks conventions that could benefit from stronger enforcement.
-
-### Recently Implemented (2025-12-24)
-
-| Convention | Status | Implementation |
-|------------|--------|----------------|
-| **Documentation Structure** | ✅ Implemented | MCP rule `docs-structure` + pre-commit hook |
-| **Comment Conventions (ESLint)** | ✅ Implemented | Error severity for Lambda handlers (`src/lambdas/*/src/index.ts`) |
-| **No Archived Plans in docs/** | ✅ Implemented | Pre-commit hook validates docs/ structure |
-| **PowerTools Metrics Usage** | ✅ Implemented | MCP rule `powertools-metrics` |
-
-### Medium Priority (Consider Implementing)
-
-| Convention | Current | Proposed | Effort | Benefit |
-|------------|---------|----------|--------|---------|
-| **Terraform Lambda Environment** | Manual review | MCP rule or tflint | Medium | Validates `merge(common_lambda_env, ...)` pattern |
-| **Test Fixture Logging** | Always enabled | CI check for fixture freshness | Medium | Ensures fixtures are updated periodically |
-
-### Low Priority (Future Consideration)
-
-| Convention | Current | Proposed | Effort | Benefit |
-|------------|---------|----------|--------|---------|
-| **Template File Organization** | Code review | MCP rule for embedded templates | Medium | Detects string literals that should be templates |
-
-### Implementation Notes
-
-**MCP Rule `docs-structure`** (✅ IMPLEMENTED):
-- Validates that all `.md` files in `docs/` are under `docs/wiki/` or are known exceptions
-- Allowed in docs/ root: doc-code-mapping.json, llms.txt, terraform.md
-- Implemented: `src/mcp/validation/rules/docs-structure.ts`
-- Pre-commit hook also validates docs/ structure
-
-**ESLint jsdoc severity** (✅ IMPLEMENTED):
-- Lambda handlers (`src/lambdas/*/src/index.ts`): error severity for all jsdoc rules
-- Library code (`src/lib/`): warn severity for gradual adoption
-- Scripts/tools (`scripts/`, `graphrag/`, `config/`): jsdoc rules disabled
-
-**MCP Rule `powertools-metrics`** (✅ IMPLEMENTED):
-- Validates that files using `metrics.addMetric()` have `{enableCustomMetrics: true}` in withPowertools()
-- Warns when `addDimension()` is used without `singleMetric()` (dimension isolation)
-- Implemented: `src/mcp/validation/rules/powertools-metrics.ts`
-
-## 💭 Proposed Conventions
+## Convention Reference
+
+### CRITICAL Severity
+
+| Convention | Documentation | Enforcement |
+|------------|---------------|-------------|
+| Zero AI References in Commits | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `commit-msg` |
+| Vendor Library Encapsulation | [Vendor Encapsulation Policy](../AWS/Vendor-Encapsulation-Policy.md) | MCP + ESLint + Dependency Cruiser |
+| ElectroDB Test Mocking | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) | MCP + ESLint |
+| No Try-Catch for Required Env Vars | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) | MCP + ESLint |
+| Cascade Deletion Order | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
+| No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
+
+### HIGH Severity
+
+| Convention | Documentation | Enforcement |
+|------------|---------------|-------------|
+| Branch-First PR Workflow | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `pre-push` |
+| Authenticated Handler Wrappers | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| Lambda Response Helper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| Type Definitions Location | [Type Definitions](../TypeScript/Type-Definitions.md) | MCP |
+| Batch Operation Retry | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| Paginated Scan Operations | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| PowerTools Wrapper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | ESLint |
+| Domain Layer Purity | [Domain Layer](../Architecture/Domain-Layer.md) | ESLint + Dependency Cruiser |
+| No Orphaned Library Code | [Code Organization](../Architecture/Code-Organization.md) | Dependency Cruiser |
+| Environment Variable Access | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) | MCP + ESLint |
+| Documentation Structure | [Documentation Structure](Documentation-Structure.md) | MCP + pre-commit hook |
+| Comment Conventions | [Code Comments](../Conventions/Code-Comments.md) | ESLint + MCP |
+| External Template Files | [Template Organization](../MCP/Template-Organization.md) | Code review |
+| Workaround Tracking | [Workaround Tracking](../Conventions/Workaround-Tracking.md) | GitHub Actions |
+
+### MEDIUM Severity
+
+| Convention | Documentation | Enforcement |
+|------------|---------------|-------------|
+| Import Ordering | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| ResponseStatus Enum | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| Mock Return Formatting | [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md) | MCP |
+| PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
+| GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
+
+---
+
+## Enforcement Improvement Opportunities
+
+| Convention | Current | Proposed | Priority |
+|------------|---------|----------|----------|
+| Terraform Lambda Environment | Manual review | MCP rule for `merge(common_lambda_env, ...)` | Medium |
+| Template File Organization | Code review | MCP rule for embedded templates | Low |
+
+---
+
+## Proposed Conventions
 
 ### Device ID Tracking in Auth Flows
 
-**What**: Login and Registration requests should include deviceId in request payload
-**Why**: Better Auth session tracking includes deviceId for device-specific session management
-**Current Status**: deviceId is always `undefined` in LoginUser and RegisterUser Lambdas
-**Implementation Note**: iOS app needs to be updated to send deviceId in auth requests
-**Code References**:
-- LoginUser: `src/lambdas/LoginUser/src/index.ts:77`
-- RegisterUser: `src/lambdas/RegisterUser/src/index.ts:161`
+**Status**: Proposed (not blocking)
 
-_Note: This is not blocking functionality but would improve session tracking capabilities._
+iOS app should send deviceId in auth requests for Better Auth session tracking.
 
-## 🗄️ Archived Conventions
-
-_No archived conventions yet - superseded or deprecated conventions will be moved here._
+**References**:
+- `src/lambdas/LoginUser/src/index.ts:77`
+- `src/lambdas/RegisterUser/src/index.ts:161`
 
 ---
 
-## Usage Guidelines
+## Usage
 
-### For AI Assistants
+**For AI Assistants**: Review this file at session start. When detecting new conventions, add them to the appropriate severity section with documentation link and enforcement mechanism.
 
-When working on this project:
-1. **Start of Session**: Review this file to understand current conventions
-2. **During Session**: Flag new conventions immediately when detected
-3. **End of Session**: Update this file with newly detected conventions
-4. **Before Documenting**: Move convention from "Pending" to "Recently Documented"
+**For Developers**: Use this as a quick reference for what's enforced and how. Detailed guidance is in the linked documentation pages.
 
-### For Developers
+---
 
-When contributing:
-1. Review pending conventions to understand emerging patterns
-2. Provide feedback on proposed conventions
-3. Help document conventions in the wiki
-4. Update this file when conventions are officially documented
-
-### Convention Lifecycle
-
-```
-Detected → Pending Documentation → Documented in Wiki → Recently Documented → (after 30 days) → Archived
-                                                                                              ↓
-                                                                                      Superseded/Deprecated
-```
-
-## Metadata
-
-- **Created**: 2025-11-22
-- **Last Updated**: 2025-12-24
-- **Total Conventions**: 50 detected (50 documented, 0 pending documentation)
-- **MCP Rules**: 18 (5 CRITICAL + 9 HIGH + 4 MEDIUM)
-- **Convention Capture System**: Active
+*Convention details live in wiki pages. This file tracks enforcement mechanisms.*

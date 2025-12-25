@@ -360,7 +360,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
 
 ### AWS & Infrastructure
-- **SDK Encapsulation**: [docs/wiki/AWS/SDK-Encapsulation-Policy.md](docs/wiki/AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
+- **Vendor Encapsulation**: [docs/wiki/AWS/Vendor-Encapsulation-Policy.md](docs/wiki/AWS/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
@@ -368,10 +368,11 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 
 The following patterns have caused issues in this project and should be avoided:
 
-### 1. Direct AWS SDK Imports (CRITICAL)
+### 1. Direct Vendor Library Imports (CRITICAL)
 **Wrong**: `import {DynamoDBClient} from '@aws-sdk/client-dynamodb'`
 **Right**: `import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'`
-**Why**: Breaks encapsulation, makes testing difficult, loses type safety benefits
+**Why**: Breaks encapsulation, makes testing difficult, loses environment detection (LocalStack/X-Ray)
+**Applies to**: AWS SDK, ElectroDB, Better Auth, yt-dlp, and all third-party services
 
 ### 2. Manual ElectroDB Entity Mocks (CRITICAL)
 **Wrong**: Hand-crafted mock objects for entities in tests

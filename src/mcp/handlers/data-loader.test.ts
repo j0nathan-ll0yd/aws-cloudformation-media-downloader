@@ -331,9 +331,9 @@ describe('searchWikiPages', () => {
   })
 
   test('should find pages matching filename', async () => {
-    const results = await searchWikiPages('SDK')
+    const results = await searchWikiPages('Vendor')
 
-    const hasMatch = results.some((r) => r.path.toLowerCase().includes('sdk'))
+    const hasMatch = results.some((r) => r.path.toLowerCase().includes('vendor'))
     expect(hasMatch).toBe(true)
   })
 })
