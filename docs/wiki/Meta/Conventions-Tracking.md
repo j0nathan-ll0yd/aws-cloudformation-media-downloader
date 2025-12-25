@@ -8,9 +8,9 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 | Method | Count | Conventions |
 |--------|-------|-------------|
-| **MCP Rules** | 16 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, convention-auto-fix |
-| **ESLint** | 9 | no-direct-aws-sdk-import, cascade-delete-order, use-electrodb-mock-helper, response-helpers, env-validation, authenticated-handler-enforcement, enforce-powertools, no-domain-leakage, strict-env-vars |
-| **Git Hooks** | 3 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit) |
+| **MCP Rules** | 17 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, convention-auto-fix, comment-conventions |
+| **ESLint** | 18 | no-direct-aws-sdk-import, cascade-delete-order, use-electrodb-mock-helper, response-helpers, env-validation, authenticated-handler-enforcement, enforce-powertools, no-domain-leakage, strict-env-vars, spacing-conventions + 8 jsdoc rules (require-description, require-param, require-returns, tag-lines, check-param-names, no-defaults, require-param-type, require-returns-type) |
+| **Git Hooks** | 4 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit), worktree setup (post-checkout) |
 | **Dependency Cruiser** | 6 | no-circular, no-cross-lambda-imports, no-direct-aws-sdk-import, no-entity-cross-dependencies, no-test-imports-in-production, no-orphans-lib |
 | **CI Workflows** | 3 | script validation, type checking, GraphRAG auto-update |
 | **Build-Time** | 1 | pnpm lifecycle script protection (.npmrc) |
@@ -36,10 +36,67 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 | naming-conventions | naming | HIGH | Type and enum naming patterns |
 | authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
 | convention-auto-fix | auto-fix | MEDIUM | Apply conventions automatically |
+| comment-conventions | comments | HIGH | Lambda file headers, JSDoc, @example length |
 
 ---
 
 ## 🟡 Pending Documentation
+
+### Detected: 2025-12-24
+
+1. **Documentation Structure Convention** (Architecture Rule)
+   - **What**: All human-readable documentation (`.md` files) must be in `docs/wiki/`. Machine-readable files (`.json`, `.txt`) stay in `docs/` root. API specs in `docs/api/`. Generated TSDoc is gitignored.
+   - **Why**: Clear separation of concerns; single location for documentation; prevents scattered markdown files
+   - **Directory Rules**:
+     - `docs/wiki/` → All markdown documentation (synced to GitHub Wiki)
+     - `docs/api/` → OpenAPI specs, SwaggerUI
+     - `docs/` root → `llms.txt`, `*.json` configs only
+     - `docs/source/` → Generated TSDoc (gitignored)
+   - **Enforcement**: Manual code review; add MCP validation rule to detect markdown files in wrong location
+   - **Target**: docs/wiki/Meta/Documentation-Structure.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, ✅ Documented
+   - **Enforcement Improvement**: Consider adding MCP rule `docs-structure` to validate file locations
+
+2. **Comment Conventions with Multi-Tier Enforcement** (Code Quality Rule)
+   - **What**: Comprehensive JSDoc requirements for all exported functions, type definitions, and Lambda file headers
+   - **Why**: Consistent documentation improves maintainability, AI comprehension, and API documentation generation
+   - **Tiers**:
+     - Tier 1 (Entities): Full JSDoc with @file header, property docs, @example
+     - Tier 2 (Lambdas): Handler docs with @description, @param, @returns
+     - Tier 3 (Utilities): Function-level JSDoc with @param and @returns
+   - **Enforcement**:
+     - ESLint: `eslint-plugin-jsdoc` with 8 rules (jsdoc/require-description, jsdoc/require-param, etc.)
+     - MCP: `comment-conventions` rule validates Lambda headers and @example length
+     - Local ESLint Rule: `spacing-conventions` for function spacing patterns
+   - **Target**: docs/wiki/Conventions/Code-Comments.md (expanded), docs/wiki/Conventions/Function-Spacing.md (new)
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, ✅ Documented
+   - **Enforcement Level**: ESLint (warn severity for gradual adoption), MCP (HIGH severity)
+
+3. **Worktree Setup Automation** (Workflow Pattern)
+   - **What**: Husky `post-checkout` hook automatically sets up worktrees with symlinks, dependencies, and MCP context
+   - **Why**: Reduces worktree setup time from ~5 minutes to ~30 seconds; ensures consistent development environment
+   - **Automation**:
+     - Creates symlinks: `.env`, `secrets.yaml`, `terraform/terraform.tfstate`
+     - Runs `pnpm install` for dependencies
+     - Generates `repomix-output.xml` for AI context
+     - Configures MCP server settings
+   - **Enforcement**: Git hook (automatic on checkout)
+   - **Target**: docs/wiki/Conventions/Git-Workflow.md (updated)
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, ✅ Documented
+   - **Enforcement Level**: Automatic via Husky hook
+
+4. **Terraform Centralized Lambda Environment** (Infrastructure Pattern)
+   - **What**: All Lambda functions use `merge(local.common_lambda_env, {...})` for environment variables
+   - **Why**: DRY principle; consistent OTEL configuration; reduces ~90% log noise
+   - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
+   - **Enforcement**: Manual review of Terraform changes; could add Terraform validation
+   - **Target**: docs/wiki/Infrastructure/OpenTofu-Patterns.md (update)
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending wiki update
+   - **Enforcement Improvement**: Consider adding Terraform linting rule or MCP rule for Lambda environment patterns
 
 ### Detected: 2025-12-22
 
@@ -542,6 +599,45 @@ _No pending conventions - all conventions are documented._
    - **Documented**: docs/wiki/Conventions/Naming-Conventions.md
    - **Priority**: MEDIUM
 
+## 🔧 Enforcement Improvement Opportunities
+
+This section tracks conventions that could benefit from stronger enforcement.
+
+### High Priority (Should Implement)
+
+| Convention | Current | Proposed | Effort | Benefit |
+|------------|---------|----------|--------|---------|
+| **Documentation Structure** | Manual review | MCP rule `docs-structure` | Low | Prevents markdown files in wrong locations |
+| **Comment Conventions (ESLint)** | warn severity | error severity | Low | Stricter enforcement after codebase is compliant |
+
+### Medium Priority (Consider Implementing)
+
+| Convention | Current | Proposed | Effort | Benefit |
+|------------|---------|----------|--------|---------|
+| **Terraform Lambda Environment** | Manual review | MCP rule or tflint | Medium | Validates `merge(common_lambda_env, ...)` pattern |
+| **No Archived Plans in docs/** | Manual review | Pre-commit hook | Low | Prevents re-creation of `docs/archive/` or `docs/plans/` |
+| **Test Fixture Logging** | Always enabled | CI check for fixture freshness | Medium | Ensures fixtures are updated periodically |
+
+### Low Priority (Future Consideration)
+
+| Convention | Current | Proposed | Effort | Benefit |
+|------------|---------|----------|--------|---------|
+| **PowerTools Metrics Usage** | Code review | MCP rule for custom metrics | High | Validates metrics.addMetric() usage |
+| **Template File Organization** | Code review | MCP rule for embedded templates | Medium | Detects string literals that should be templates |
+
+### Implementation Notes
+
+**MCP Rule `docs-structure`** (Recommended for this PR):
+- Check that all `.md` files in `docs/` are under `docs/wiki/` or are known exceptions
+- Exceptions: None (all markdown should be in wiki now)
+- Implementation: Add to `src/mcp/validation/rules/`
+
+**ESLint jsdoc severity upgrade path**:
+1. Current: All jsdoc rules at `warn` severity for gradual adoption
+2. Phase 1: Upgrade `jsdoc/require-description` to `error` once all files comply
+3. Phase 2: Upgrade remaining rules incrementally
+4. Timeline: After 2-3 weeks of compliance
+
 ## 💭 Proposed Conventions
 
 ### Device ID Tracking in Auth Flows
@@ -591,6 +687,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 ## Metadata
 
 - **Created**: 2025-11-22
-- **Last Updated**: 2025-12-23
-- **Total Conventions**: 44 detected (33 documented, 11 pending documentation)
+- **Last Updated**: 2025-12-24
+- **Total Conventions**: 48 detected (37 documented, 11 pending documentation)
 - **Convention Capture System**: Active
