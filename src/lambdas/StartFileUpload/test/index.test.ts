@@ -1,11 +1,40 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {SQSEvent} from 'aws-lambda'
+import type {SQSEvent, SQSRecord} from 'aws-lambda'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/jest-setup'
+
+/** Message body structure for DownloadQueue SQS messages */
+interface DownloadQueueMessage {
+  fileId: string
+  sourceUrl?: string
+  correlationId?: string
+  userId?: string
+  attempt?: number
+}
+
+/** Creates a single SQS record for testing */
+function createSQSRecord(messageId: string, message: DownloadQueueMessage, baseRecord: SQSRecord): SQSRecord {
+  return {
+    ...baseRecord,
+    messageId,
+    body: JSON.stringify({
+      fileId: message.fileId,
+      sourceUrl: message.sourceUrl ?? `https://www.youtube.com/watch?v=${message.fileId}`,
+      correlationId: message.correlationId ?? `corr-${message.fileId}`,
+      userId: message.userId ?? 'user-123',
+      attempt: message.attempt ?? 1
+    })
+  }
+}
+
+/** Creates a multi-record SQS event for batch processing tests */
+function createMultiRecordEvent(messages: Array<{messageId: string} & DownloadQueueMessage>, baseRecord: SQSRecord): SQSEvent {
+  return {Records: messages.map((msg) => createSQSRecord(msg.messageId, msg, baseRecord))}
+}
 
 // Mock YouTube functions
 const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
@@ -206,20 +235,10 @@ describe('#StartFileUpload', () => {
   })
 
   test('should process multiple SQS records in batch', async () => {
-    const multiRecordEvent: SQSEvent = {
-      Records: [
-        {
-          ...event.Records[0],
-          messageId: 'msg-1',
-          body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})
-        },
-        {
-          ...event.Records[0],
-          messageId: 'msg-2',
-          body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})
-        }
-      ]
-    }
+    const multiRecordEvent = createMultiRecordEvent([
+      {messageId: 'msg-1', fileId: 'video-1'},
+      {messageId: 'msg-2', fileId: 'video-2'}
+    ], event.Records[0])
 
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'video-1'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 1000, s3Url: 's3://test-bucket/video.mp4', duration: 10})
@@ -231,20 +250,10 @@ describe('#StartFileUpload', () => {
   })
 
   test('should report only failed records in batch', async () => {
-    const multiRecordEvent: SQSEvent = {
-      Records: [
-        {
-          ...event.Records[0],
-          messageId: 'msg-success',
-          body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})
-        },
-        {
-          ...event.Records[0],
-          messageId: 'msg-fail',
-          body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})
-        }
-      ]
-    }
+    const multiRecordEvent = createMultiRecordEvent([
+      {messageId: 'msg-success', fileId: 'video-1'},
+      {messageId: 'msg-fail', fileId: 'video-2'}
+    ], event.Records[0])
 
     // First succeeds, second fails with transient error
     fetchVideoInfoMock.mockResolvedValueOnce(createSuccessResult({id: 'video-1'})).mockResolvedValueOnce(createFailureResult(new Error('Network error')))
