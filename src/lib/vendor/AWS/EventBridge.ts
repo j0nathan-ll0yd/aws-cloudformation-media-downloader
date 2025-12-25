@@ -17,7 +17,7 @@ import type {MediaDownloaderEventType} from '#types/events'
 
 const eventBridge = createEventBridgeClient()
 
-export type {PutEventsRequestEntry, PutEventsResponse}
+export type { PutEventsRequestEntry, PutEventsResponse }
 
 /**
  * Publish events to EventBridge.

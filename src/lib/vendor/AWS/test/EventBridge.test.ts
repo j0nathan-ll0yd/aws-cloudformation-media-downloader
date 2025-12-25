@@ -2,14 +2,10 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 
 const mockSend = jest.fn<(command: unknown) => Promise<unknown>>()
 
-jest.unstable_mockModule('@aws-sdk/client-eventbridge', () => ({
-  EventBridgeClient: jest.fn().mockImplementation(() => ({send: mockSend})),
-  PutEventsCommand: jest.fn().mockImplementation((input) => ({input}))
-}))
+jest.unstable_mockModule('@aws-sdk/client-eventbridge',
+  () => ({EventBridgeClient: jest.fn().mockImplementation(() => ({send: mockSend})), PutEventsCommand: jest.fn().mockImplementation((input) => ({input}))}))
 
-jest.unstable_mockModule('../clients', () => ({
-  createEventBridgeClient: jest.fn().mockReturnValue({send: mockSend})
-}))
+jest.unstable_mockModule('../clients', () => ({createEventBridgeClient: jest.fn().mockReturnValue({send: mockSend})}))
 
 const {publishEvent, putEvents} = await import('../EventBridge')
 
@@ -53,13 +49,7 @@ describe('#EventBridge', () => {
     test('should publish DownloadCompleted event', async () => {
       mockSend.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-789'}]})
 
-      const detail = {
-        fileId: 'abc123',
-        correlationId: 'corr-1',
-        s3Key: 'abc123.mp4',
-        fileSize: 82784319,
-        completedAt: '2024-01-01T00:05:00.000Z'
-      }
+      const detail = {fileId: 'abc123', correlationId: 'corr-1', s3Key: 'abc123.mp4', fileSize: 82784319, completedAt: '2024-01-01T00:05:00.000Z'}
 
       const result = await publishEvent('DownloadCompleted', detail)
 
@@ -87,10 +77,7 @@ describe('#EventBridge', () => {
     })
 
     test('should handle failed event entries', async () => {
-      mockSend.mockResolvedValue({
-        FailedEntryCount: 1,
-        Entries: [{ErrorCode: 'InternalFailure', ErrorMessage: 'EventBridge service error'}]
-      })
+      mockSend.mockResolvedValue({FailedEntryCount: 1, Entries: [{ErrorCode: 'InternalFailure', ErrorMessage: 'EventBridge service error'}]})
 
       const detail = {fileId: 'abc123', correlationId: 'corr-1'}
 

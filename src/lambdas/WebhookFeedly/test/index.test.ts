@@ -12,10 +12,11 @@ const userFilesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const fileDownloadsMock = createElectroDBEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads', () => ({
-  FileDownloads: fileDownloadsMock.entity,
-  DownloadStatus: {Pending: 'pending', InProgress: 'in_progress', Completed: 'completed', Failed: 'failed', Scheduled: 'scheduled'}
-}))
+jest.unstable_mockModule('#entities/FileDownloads',
+  () => ({
+    FileDownloads: fileDownloadsMock.entity,
+    DownloadStatus: {Pending: 'pending', InProgress: 'in_progress', Completed: 'completed', Failed: 'failed', Scheduled: 'scheduled'}
+  }))
 
 // Mock Powertools idempotency to bypass DynamoDB persistence
 jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
@@ -131,12 +132,13 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Accepted')
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.objectContaining({
-      fileId: expect.any(String),
-      userId: fakeUserId,
-      sourceUrl: handleFeedlyEventResponse.articleURL,
-      correlationId: expect.any(String),
-      requestedAt: expect.any(String)
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested',
+      expect.objectContaining({
+        fileId: expect.any(String),
+        userId: fakeUserId,
+        sourceUrl: handleFeedlyEventResponse.articleURL,
+        correlationId: expect.any(String),
+        requestedAt: expect.any(String)
+      }))
   })
 })

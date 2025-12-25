@@ -112,8 +112,19 @@ describe('StartFileUpload Workflow Integration Tests', () => {
       Records: [{
         messageId: 'test-message-id',
         receiptHandle: 'test-receipt-handle',
-        body: JSON.stringify({fileId, sourceUrl: `https://www.youtube.com/watch?v=${fileId}`, correlationId: 'test-corr-id', userId: 'test-user', attempt: 1}),
-        attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1666060600624', SenderId: 'AIDAIT2UOQQY3AUEKVGXU', ApproximateFirstReceiveTimestamp: '1666060600632'},
+        body: JSON.stringify({
+          fileId,
+          sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
+          correlationId: 'test-corr-id',
+          userId: 'test-user',
+          attempt: 1
+        }),
+        attributes: {
+          ApproximateReceiveCount: '1',
+          SentTimestamp: '1666060600624',
+          SenderId: 'AIDAIT2UOQQY3AUEKVGXU',
+          ApproximateFirstReceiveTimestamp: '1666060600632'
+        },
         messageAttributes: {},
         md5OfBody: 'test-md5',
         eventSource: 'aws:sqs',

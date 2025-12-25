@@ -30,21 +30,20 @@ jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock
 
 // Mock SQS sendMessage for MetadataNotification dispatch
 const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
-  sendMessage: sendMessageMock,
-  stringAttribute: (value: string) => ({DataType: 'String', StringValue: value}),
-  numberAttribute: (value: number) => ({DataType: 'Number', StringValue: String(value)})
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+  () => ({
+    sendMessage: sendMessageMock,
+    stringAttribute: (value: string) => ({DataType: 'String', StringValue: value}),
+    numberAttribute: (value: number) => ({DataType: 'Number', StringValue: String(value)})
+  }))
 
 // Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
 const publishEventMock = jest.fn<(eventType: string, detail: unknown) => Promise<unknown>>()
 jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 // Mock GitHub issue creation (for permanent failures)
-jest.unstable_mockModule('#lib/integrations/github/issue-service', () => ({
-  createCookieExpirationIssue: jest.fn(),
-  createVideoDownloadFailureIssue: jest.fn()
-}))
+jest.unstable_mockModule('#lib/integrations/github/issue-service',
+  () => ({createCookieExpirationIssue: jest.fn(), createVideoDownloadFailureIssue: jest.fn()}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
@@ -99,12 +98,8 @@ describe('#StartFileUpload', () => {
     expect(result.batchItemFailures).toEqual([])
     expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
     expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted', expect.objectContaining({
-      fileId: 'YcuKhcqzt7w',
-      correlationId: 'corr-123',
-      s3Key: expect.stringMatching(/\.mp4$/),
-      fileSize: 82784319
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted',
+      expect.objectContaining({fileId: 'YcuKhcqzt7w', correlationId: 'corr-123', s3Key: expect.stringMatching(/\.mp4$/), fileSize: 82784319}))
   })
 
   test('should handle large video files', async () => {
@@ -125,11 +120,8 @@ describe('#StartFileUpload', () => {
 
     // Transient errors should cause batch item failure for SQS retry
     expect(result.batchItemFailures).toEqual([{itemIdentifier: 'test-message-id-123'}])
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      fileId: 'YcuKhcqzt7w',
-      correlationId: 'corr-123',
-      retryable: true
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed',
+      expect.objectContaining({fileId: 'YcuKhcqzt7w', correlationId: 'corr-123', retryable: true}))
   })
 
   test('should not retry permanent errors (video private)', async () => {
@@ -139,11 +131,8 @@ describe('#StartFileUpload', () => {
 
     // Permanent errors should NOT cause batch item failure - message should be removed
     expect(result.batchItemFailures).toEqual([])
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      fileId: 'YcuKhcqzt7w',
-      errorCategory: 'permanent',
-      retryable: false
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed',
+      expect.objectContaining({fileId: 'YcuKhcqzt7w', errorCategory: 'permanent', retryable: false}))
   })
 
   test('should retry unknown errors with benefit of doubt', async () => {
@@ -153,9 +142,7 @@ describe('#StartFileUpload', () => {
 
     // Unknown errors are treated as transient (retryable)
     expect(result.batchItemFailures).toEqual([{itemIdentifier: 'test-message-id-123'}])
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      retryable: true
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({retryable: true}))
   })
 
   test('should handle scheduled video with future release timestamp', async () => {
@@ -182,9 +169,7 @@ describe('#StartFileUpload', () => {
 
     // Max retries exceeded - should NOT retry (no batch item failure)
     expect(result.batchItemFailures).toEqual([])
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      retryable: false
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({retryable: false}))
   })
 
   test('should not retry cookie expiration errors', async () => {
@@ -194,10 +179,7 @@ describe('#StartFileUpload', () => {
 
     // Cookie errors are permanent - no retry
     expect(result.batchItemFailures).toEqual([])
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({
-      errorCategory: 'cookie_expired',
-      retryable: false
-    }))
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadFailed', expect.objectContaining({errorCategory: 'cookie_expired', retryable: false}))
   })
 
   test('should dispatch MetadataNotifications to all waiting users', async () => {
@@ -226,8 +208,16 @@ describe('#StartFileUpload', () => {
   test('should process multiple SQS records in batch', async () => {
     const multiRecordEvent: SQSEvent = {
       Records: [
-        {...event.Records[0], messageId: 'msg-1', body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})},
-        {...event.Records[0], messageId: 'msg-2', body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})}
+        {
+          ...event.Records[0],
+          messageId: 'msg-1',
+          body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})
+        },
+        {
+          ...event.Records[0],
+          messageId: 'msg-2',
+          body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})
+        }
       ]
     }
 
@@ -243,15 +233,21 @@ describe('#StartFileUpload', () => {
   test('should report only failed records in batch', async () => {
     const multiRecordEvent: SQSEvent = {
       Records: [
-        {...event.Records[0], messageId: 'msg-success', body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})},
-        {...event.Records[0], messageId: 'msg-fail', body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})}
+        {
+          ...event.Records[0],
+          messageId: 'msg-success',
+          body: JSON.stringify({fileId: 'video-1', sourceUrl: 'https://youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-1', attempt: 1})
+        },
+        {
+          ...event.Records[0],
+          messageId: 'msg-fail',
+          body: JSON.stringify({fileId: 'video-2', sourceUrl: 'https://youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-2', attempt: 1})
+        }
       ]
     }
 
     // First succeeds, second fails with transient error
-    fetchVideoInfoMock
-      .mockResolvedValueOnce(createSuccessResult({id: 'video-1'}))
-      .mockResolvedValueOnce(createFailureResult(new Error('Network error')))
+    fetchVideoInfoMock.mockResolvedValueOnce(createSuccessResult({id: 'video-1'})).mockResolvedValueOnce(createFailureResult(new Error('Network error')))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 1000, s3Url: 's3://test-bucket/video.mp4', duration: 10})
 
     const result = await handler(multiRecordEvent, context)

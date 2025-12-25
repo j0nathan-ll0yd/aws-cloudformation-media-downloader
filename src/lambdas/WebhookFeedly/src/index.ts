@@ -129,13 +129,7 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
     }
     // Publish DownloadRequested event to EventBridge
     // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
-    const eventDetail: DownloadRequestedDetail = {
-      fileId,
-      userId,
-      sourceUrl: articleURL,
-      correlationId,
-      requestedAt: new Date().toISOString()
-    }
+    const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
     await publishEvent('DownloadRequested', eventDetail)
     logInfo('Published DownloadRequested event', {fileId, correlationId})
     return {statusCode: 202, status: ResponseStatus.Accepted}
@@ -177,12 +171,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
   const fileId = getVideoID(requestBody.articleURL)
 
   // Process webhook with idempotency protection
-  const result = await getIdempotentProcessor()({
-    fileId,
-    userId,
-    articleURL: requestBody.articleURL,
-    correlationId
-  })
+  const result = await getIdempotentProcessor()({fileId, userId, articleURL: requestBody.articleURL, correlationId})
 
   return buildApiResponse(context, result.statusCode, {status: result.status})
 }))
