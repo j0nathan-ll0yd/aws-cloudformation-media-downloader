@@ -19,15 +19,6 @@
       }
     },
     {
-      "id": "lambda:FileCoordinator",
-      "type": "Lambda",
-      "properties": {
-        "name": "FileCoordinator",
-        "trigger": "CloudWatch Events",
-        "purpose": "Scheduled job to orchestrate pending file downloads"
-      }
-    },
-    {
       "id": "lambda:ListFiles",
       "type": "Lambda",
       "properties": {
