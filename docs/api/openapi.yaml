@@ -13,8 +13,50 @@ tags:
   - name: Devices
   - name: Webhooks
   - name: Authentication
-  - name: Events
 paths:
+  /device/event:
+    post:
+      operationId: Devices_logClientEvent
+      summary: Log client event
+      description: |-
+        Log a client-side event for debugging and analytics.
+
+        Receives event data from the iOS client and logs it to CloudWatch
+        for later analysis. Used for debugging and usage analytics.
+      parameters:
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Device-UUID
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No content on success
+        '400':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: No content on success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Devices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.ClientEventRequest'
   /device/register:
     post:
       operationId: Devices_registerDevice
@@ -88,49 +130,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Models.DeviceRegistrationRequest'
-  /events:
-    post:
-      operationId: Events_logClientEvent
-      summary: Log client event
-      description: |-
-        Log a client-side event for debugging and analytics.
-
-        Receives event data from the iOS client and logs it to CloudWatch
-        for later analysis. Used for debugging and usage analytics.
-      parameters:
-        - name: X-API-Key
-          in: header
-          required: true
-          schema:
-            type: string
-        - name: X-Device-UUID
-          in: header
-          required: false
-          schema:
-            type: string
-      responses:
-        '204':
-          description: No content on success
-        '400':
-          description: No content on success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: No content on success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerError'
-      tags:
-        - Events
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Models.ClientEventRequest'
   /feedly:
     post:
       operationId: Webhooks_processFeedlyWebhook

@@ -402,8 +402,8 @@ export interface Setting {
 
 export interface AwsAPIGatewayResource {
     Device:         Device[];
+    DeviceEvent:    Device[];
     DeviceRegister: Device[];
-    Events:         Device[];
     Feedly:         Device[];
     Files:          Device[];
     User:           Device[];
@@ -1646,8 +1646,8 @@ const typeMap: any = {
     ], false),
     "AwsAPIGatewayResource": o([
         { json: "Device", js: "Device", typ: a(r("Device")) },
+        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("Device")) },
         { json: "DeviceRegister", js: "DeviceRegister", typ: a(r("Device")) },
-        { json: "Events", js: "Events", typ: a(r("Device")) },
         { json: "Feedly", js: "Feedly", typ: a(r("Device")) },
         { json: "Files", js: "Files", typ: a(r("Device")) },
         { json: "User", js: "User", typ: a(r("Device")) },

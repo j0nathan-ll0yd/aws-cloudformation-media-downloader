@@ -95,7 +95,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
       # Full paths for endpoints that support multi-authentication mode
       # (both authenticated and anonymous/demo access)
-      MULTI_AUTHENTICATION_PATH_PARTS = "device/register,files,events",
+      MULTI_AUTHENTICATION_PATH_PARTS = "device/register,device/event,files",
       RESERVED_CLIENT_IP              = "104.1.88.244"
       OTEL_SERVICE_NAME               = local.api_gateway_authorizer_function_name
     })

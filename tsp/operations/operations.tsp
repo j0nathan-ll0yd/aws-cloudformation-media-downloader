@@ -54,18 +54,18 @@ interface Files {
 interface Devices {
   /**
    * Register a device to receive push notifications.
-   * 
+   *
    * This is an idempotent operation that:
    * 1. Creates an AWS SNS endpoint for the device
    * 2. Associates the device with the authenticated user
    * 3. Subscribes the device to push notification topics
-   * 
+   *
    * Example request: See `tsp/examples/register-device-request.json`
    * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json`)
-   * 
+   *
    * Example response: See `tsp/examples/register-device-response.json`
    * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json`)
-   * 
+   *
    * @returns Device registration confirmation with endpoint ARN
    */
   @post
@@ -90,6 +90,31 @@ interface Devices {
   } | {
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
+   * Log a client-side event for debugging and analytics.
+   *
+   * Receives event data from the iOS client and logs it to CloudWatch
+   * for later analysis. Used for debugging and usage analytics.
+   *
+   * @returns No content on success
+   */
+  @post
+  @route("/event")
+  @summary("Log client event")
+  logClientEvent(
+    @header("X-API-Key") apiKey: string,
+    @header("X-Device-UUID") deviceId?: string,
+    @body event: ClientEventRequest,
+  ): {
+    @statusCode statusCode: 204;
+  } | {
+    @statusCode statusCode: 400;
+    @body body: ErrorResponse;
   } | {
     @statusCode statusCode: 500;
     @body body: InternalServerError;
@@ -302,33 +327,3 @@ interface Authentication {
   };
 }
 
-/**
- * Client event logging operations
- */
-@route("/events")
-@tag("Events")
-interface Events {
-  /**
-   * Log a client-side event for debugging and analytics.
-   *
-   * Receives event data from the iOS client and logs it to CloudWatch
-   * for later analysis. Used for debugging and usage analytics.
-   *
-   * @returns No content on success
-   */
-  @post
-  @summary("Log client event")
-  logClientEvent(
-    @header("X-API-Key") apiKey: string,
-    @header("X-Device-UUID") deviceId?: string,
-    @body event: ClientEventRequest,
-  ): {
-    @statusCode statusCode: 204;
-  } | {
-    @statusCode statusCode: 400;
-    @body body: ErrorResponse;
-  } | {
-    @statusCode statusCode: 500;
-    @body body: InternalServerError;
-  };
-}
