@@ -22,6 +22,8 @@ const BATCH_DELAY_MS = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_DELAY_MS', 1
  * Returns download info for FileDownloads with status='pending'.
  * These are new downloads (from WebhookFeedly) that haven't been attempted yet.
  * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
+ *
+ * @returns Array of pending downloads with fileId and correlationId
  */
 async function getPendingDownloads(): Promise<DownloadInfo[]> {
   logDebug('Querying for pending downloads ready to start')
@@ -41,6 +43,8 @@ async function getPendingDownloads(): Promise<DownloadInfo[]> {
  * Returns download info for FileDownloads scheduled for retry.
  * These are downloads that failed but are retryable (scheduled videos, transient errors).
  * Uses FileDownloads.byStatusRetryAfter GSI to efficiently query.
+ *
+ * @returns Array of scheduled downloads ready for retry
  */
 async function getScheduledDownloads(): Promise<DownloadInfo[]> {
   logDebug('Querying for scheduled downloads ready for retry')

@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(16)
+      expect(allRules.length).toBe(18)
     })
 
     test('should contain all expected rules', () => {
@@ -56,6 +56,10 @@ describe('validation exports', () => {
       expect(ruleNames).toContain('naming-conventions')
       // HIGH (auth) rules
       expect(ruleNames).toContain('authenticated-handler-enforcement')
+      // HIGH (docs structure) rules
+      expect(ruleNames).toContain('docs-structure')
+      // MEDIUM (metrics) rules
+      expect(ruleNames).toContain('powertools-metrics')
     })
   })
 
@@ -80,6 +84,10 @@ describe('validation exports', () => {
       expect(rulesByName['import-order']).toBeDefined()
       expect(rulesByName['response-enum']).toBeDefined()
       expect(rulesByName['mock-formatting']).toBeDefined()
+      // HIGH (docs structure) rules
+      expect(rulesByName['docs-structure']).toBeDefined()
+      // MEDIUM (metrics) rules
+      expect(rulesByName['powertools-metrics']).toBeDefined()
     })
 
     test('should have aliases', () => {
@@ -104,6 +112,10 @@ describe('validation exports', () => {
       expect(rulesByName['naming']).toBe(rulesByName['naming-conventions'])
       // HIGH (auth) aliases
       expect(rulesByName['auth']).toBe(rulesByName['authenticated-handler-enforcement'])
+      // HIGH (docs structure) aliases
+      expect(rulesByName['docs-location']).toBe(rulesByName['docs-structure'])
+      // MEDIUM (metrics) aliases
+      expect(rulesByName['metrics']).toBe(rulesByName['powertools-metrics'])
     })
   })
 

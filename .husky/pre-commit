@@ -15,5 +15,53 @@ if ! pnpm run deps:check; then
   exit 1
 fi
 
+# Check docs/ structure convention (fast - < 1 second)
+echo "🔍 Checking docs/ structure..."
+ALLOWED_ROOT_FILES=("doc-code-mapping.json" "doc-code-mapping.schema.json" "llms.txt" "llms-full.txt" "terraform.md")
+ALLOWED_SUBDIRS=("wiki" "api" "source")
+
+docs_errors=0
+for file in docs/*; do
+  if [[ -f "$file" ]]; then
+    filename=$(basename "$file")
+    allowed=false
+    for allowed_file in "${ALLOWED_ROOT_FILES[@]}"; do
+      if [[ "$filename" == "$allowed_file" ]]; then
+        allowed=true
+        break
+      fi
+    done
+    if [[ "$allowed" == "false" ]]; then
+      if [[ "$filename" == *.md ]]; then
+        echo "  ❌ Markdown file '$filename' should be in docs/wiki/, not docs/ root"
+      else
+        echo "  ❌ Unexpected file '$filename' in docs/ root"
+      fi
+      docs_errors=$((docs_errors + 1))
+    fi
+  elif [[ -d "$file" ]]; then
+    dirname=$(basename "$file")
+    allowed=false
+    for allowed_dir in "${ALLOWED_SUBDIRS[@]}"; do
+      if [[ "$dirname" == "$allowed_dir" ]]; then
+        allowed=true
+        break
+      fi
+    done
+    if [[ "$allowed" == "false" ]]; then
+      echo "  ❌ Unexpected subdirectory 'docs/$dirname/' - use docs/wiki/ for documentation"
+      docs_errors=$((docs_errors + 1))
+    fi
+  fi
+done
+
+if [[ $docs_errors -gt 0 ]]; then
+  echo ""
+  echo "❌ docs/ structure violations detected."
+  echo "Markdown docs belong in docs/wiki/. Machine files allowed in docs/ root."
+  echo "Fix the issues or use 'git commit --no-verify' to bypass (emergency only)"
+  exit 1
+fi
+
 echo "✅ Pre-commit checks passed"
 exit 0

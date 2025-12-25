@@ -16,8 +16,10 @@ import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
 
 /**
- * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS)
+ * An idempotent operation that creates an endpoint for a device on one of the supported services (e.g. GCP, APNS).
+ *
  * @param token - The client device token
+ * @returns The created platform endpoint response
  * @notExported
  */
 async function createPlatformEndpointFromToken(token: string) {
@@ -33,10 +35,12 @@ async function createPlatformEndpointFromToken(token: string) {
 }
 
 /**
- * Store the device details associated with the user by creating a UserDevice record
- * Creates individual record for the user-device relationship
+ * Store the device details associated with the user by creating a UserDevice record.
+ * Creates individual record for the user-device relationship.
+ *
  * @param userId - The userId
  * @param deviceId - The UUID of the device (either iOS or Android)
+ * @returns The upsert response from ElectroDB
  * @notExported
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
@@ -47,8 +51,10 @@ async function upsertUserDevices(userId: string, deviceId: string) {
 }
 
 /**
- * Store the device details independent of the user (e.g. iPhone, Android) and stores it to DynamoDB
+ * Store the device details independent of the user (e.g. iPhone, Android) and stores it to DynamoDB.
+ *
  * @param device - The Device details (e.g. endpointArn)
+ * @returns The upsert response from ElectroDB
  * @notExported
  */
 async function upsertDevice(device: Device) {
@@ -66,9 +72,11 @@ async function upsertDevice(device: Device) {
 }
 
 /**
- * Store the device details associated with the user (e.g. iPhone, Android) and stores it to DynamoDB
- * @param endpointArn - The userId
- * @param topicArn - The Device details (e.g. endpointArn)
+ * Gets the subscription ARN for an endpoint subscribed to a topic.
+ *
+ * @param endpointArn - The SNS platform endpoint ARN
+ * @param topicArn - The SNS topic ARN
+ * @returns The subscription ARN if found
  * @notExported
  */
 async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topicArn: string): Promise<string> {

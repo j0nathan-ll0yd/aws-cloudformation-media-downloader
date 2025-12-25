@@ -257,8 +257,38 @@ If you start from the main repo, MCP queries will use the **main repo's indexes*
 | Hook | File | Purpose |
 |------|------|---------|
 | `commit-msg` | `.husky/commit-msg` | Blocks AI attribution patterns in commit messages |
+| `pre-commit` | `.husky/pre-commit` | Dependency validation + docs structure validation |
 | `pre-push` | `.husky/pre-push` | Blocks direct pushes to master/main branch |
 | `post-checkout` | `.husky/post-checkout` | Auto-configures worktrees for deployment |
+
+#### pre-commit Hook
+
+Runs before each commit to catch architectural violations early:
+
+```bash
+# Runs automatically on commit
+🔍 Checking dependency architecture...
+🔍 Checking docs/ structure...
+✅ Pre-commit checks passed
+```
+
+**What it validates:**
+- **Dependency architecture** (`pnpm deps:check`):
+  - No circular dependencies
+  - No cross-lambda imports
+  - No orphaned library code
+  - No direct AWS SDK imports
+  - Domain layer purity (no infrastructure imports)
+
+- **Documentation structure**:
+  - Markdown files are in `docs/wiki/`, not `docs/` root
+  - Only allowed files in `docs/` root: `llms.txt`, `*.json`, `terraform.md`
+  - No archived plans or unexpected subdirectories
+
+**Bypass (emergency only)**:
+```bash
+git commit --no-verify -m "emergency fix"
+```
 
 #### commit-msg Hook
 

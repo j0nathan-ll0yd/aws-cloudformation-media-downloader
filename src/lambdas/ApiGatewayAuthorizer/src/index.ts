@@ -22,16 +22,34 @@ const generatePolicy = (principalId: string, effect: string, resource: string, u
   } as CustomAuthorizerResult
 }
 
+/**
+ * Generates an Allow policy for API Gateway authorization.
+ *
+ * @param principalId - The principal ID for the policy
+ * @param resource - The API Gateway resource ARN
+ * @param usageIdentifierKey - Optional API key identifier for usage tracking
+ * @returns Custom authorizer result with Allow effect
+ */
 export function generateAllow(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
   return generatePolicy(principalId, 'Allow', resource, usageIdentifierKey)
 }
 
+/**
+ * Generates a Deny policy for API Gateway authorization.
+ *
+ * @param principalId - The principal ID for the policy
+ * @param resource - The API Gateway resource ARN
+ * @param usageIdentifierKey - Optional API key identifier for usage tracking
+ * @returns Custom authorizer result with Deny effect
+ */
 export function generateDeny(principalId: string, resource: string, usageIdentifierKey?: string): CustomAuthorizerResult {
   return generatePolicy(principalId, 'Deny', resource, usageIdentifierKey)
 }
 
 /**
- * Returns an array of ApiKeys for API Gateway
+ * Returns an array of ApiKeys for API Gateway.
+ *
+ * @returns Array of API keys with their values
  * @notExported
  */
 async function fetchApiKeys(): Promise<ApiKey[]> {
@@ -46,7 +64,10 @@ async function fetchApiKeys(): Promise<ApiKey[]> {
 }
 
 /**
- * Returns an array of UsagePlans for a given APIKey
+ * Returns an array of UsagePlans for a given APIKey.
+ *
+ * @param keyId - The API key ID to fetch usage plans for
+ * @returns Array of usage plans associated with the API key
  * @notExported
  */
 async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
@@ -61,7 +82,11 @@ async function fetchUsagePlans(keyId: string): Promise<UsagePlan[]> {
 }
 
 /**
- * Returns an array, by day, of Usage for a given APIKey and UsagePlan
+ * Returns an array, by day, of Usage for a given APIKey and UsagePlan.
+ *
+ * @param keyId - The API key ID
+ * @param usagePlanId - The usage plan ID
+ * @returns Usage data for the current day
  * @notExported
  */
 async function fetchUsageData(keyId: string, usagePlanId: string) {
@@ -96,8 +121,10 @@ async function getUserIdFromAuthenticationHeader(authorizationHeader: string): P
 }
 
 /**
- * If the request is coming from my IP, use a test userId
- * @param event - A APIGatewayRequestAuthorizerEvent
+ * Checks if the request is coming from a reserved IP for remote testing.
+ *
+ * @param event - The API Gateway request authorizer event
+ * @returns True if the request is from the reserved test IP and user agent
  * @notExported
  */
 function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {

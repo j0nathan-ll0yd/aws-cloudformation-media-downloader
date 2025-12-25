@@ -29,6 +29,7 @@ import {associateFileToUser} from '#lib/domain/user/user-file-service'
  * @param fileId - The unique file identifier (YouTube video ID)
  * @param sourceUrl - The original YouTube URL for the video
  * @param correlationId - Correlation ID for end-to-end request tracing
+ * @returns The created file response from ElectroDB
  */
 async function addFile(fileId: string, sourceUrl?: string, correlationId?: string) {
   logDebug('addFile <=', {fileId, sourceUrl, correlationId})
@@ -58,6 +59,7 @@ async function addFile(fileId: string, sourceUrl?: string, correlationId?: strin
 /**
  * Retrieves a File from DynamoDB (if it exists)
  * @param fileId - The unique file identifier
+ * @returns The file record if found, undefined otherwise
  * @notExported
  */
 async function getFile(fileId: string): Promise<File | undefined> {
@@ -71,6 +73,7 @@ async function getFile(fileId: string): Promise<File | undefined> {
  * Sends a DownloadReadyNotification to the user
  * @param file - A DynamoDB File object
  * @param userId - The UUID of the user
+ * @returns The SQS send message response
  * @notExported
  */
 async function sendFileNotification(file: File, userId: string) {
@@ -96,9 +99,13 @@ interface WebhookProcessingResult {
 }
 
 /**
- * Core webhook processing logic - wrapped with idempotency
- * This function handles the actual file processing and returns the result
- * Idempotency ensures duplicate webhook calls return the same response
+ * Core webhook processing logic - wrapped with idempotency.
+ * This function handles the actual file processing and returns the result.
+ * Idempotency ensures duplicate webhook calls return the same response.
+ *
+ * @param input - The webhook processing input parameters
+ * @returns Processing result with status code and response status
+ * @notExported
  */
 async function processWebhookRequest(input: WebhookProcessingInput): Promise<WebhookProcessingResult> {
   const {fileId, userId, articleURL, backgroundMode, correlationId} = input

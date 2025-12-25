@@ -301,6 +301,14 @@ const host = getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
 const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ```
 
+## Enforcement
+
+| Rule | Method | Severity |
+|------|--------|----------|
+| All handlers must use `withPowertools()` | ESLint `local-rules/enforce-powertools` | HIGH |
+| Custom metrics require `{enableCustomMetrics: true}` | MCP `powertools-metrics` | MEDIUM |
+| `singleMetric()` required for unique dimensions | MCP `powertools-metrics` | MEDIUM |
+
 ## Best Practices
 
 ✅ Use `withPowertools` wrapper for all Lambda handlers (provides logging, cold start tracking, tracing)

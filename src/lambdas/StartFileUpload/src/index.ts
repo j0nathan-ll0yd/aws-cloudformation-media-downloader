@@ -28,6 +28,10 @@ interface StartFileUploadParams {
 /**
  * Fetch video info with OpenTelemetry tracing.
  * Wraps fetchVideoInfo and handles span lifecycle.
+ *
+ * @param fileUrl - The video URL to fetch info for
+ * @param fileId - The file ID for annotation
+ * @returns The video info result
  */
 async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<FetchVideoInfoResult> {
   const span = startSpan('yt-dlp-fetch-info')
@@ -45,6 +49,11 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
 /**
  * Download video to S3 with OpenTelemetry tracing.
  * Wraps downloadVideoToS3 and handles span lifecycle including error capture.
+ *
+ * @param fileUrl - The video URL to download
+ * @param bucket - The S3 bucket to upload to
+ * @param fileName - The S3 object key
+ * @returns Object with fileSize, s3Url, and duration
  */
 async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const span = startSpan('yt-dlp-download-to-s3')
@@ -140,7 +149,15 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
 
 /**
  * Handle download failure: classify error, update state, and determine next action.
- * Returns appropriate response based on whether download should be scheduled for retry.
+ *
+ * @param fileId - The file ID that failed to download
+ * @param fileUrl - The source video URL
+ * @param error - The error that occurred
+ * @param videoInfoResult - The video info fetch result
+ * @param existingRetryCount - Current retry count for this download
+ * @param existingMaxRetries - Maximum retries allowed
+ * @param context - Lambda context for timing
+ * @returns Response object based on whether download should be scheduled for retry
  */
 async function handleDownloadFailure(
   fileId: string,

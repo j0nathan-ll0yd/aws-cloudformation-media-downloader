@@ -13,6 +13,7 @@ The MCP server provides 5 tools for convention querying and code validation:
 |------|---------|-----------------|
 | `query_conventions` | Search project conventions | Understanding rules before coding |
 | `validate_pattern` | AST-based code validation | Checking code against conventions |
+| `apply_convention` | Auto-fix convention violations | Automated refactoring |
 | `check_coverage` | Mock analysis for tests | Identifying required Jest mocks |
 | `lambda_impact` | Dependency impact analysis | Understanding change scope |
 | `suggest_tests` | Test scaffolding generation | Creating new test files |
@@ -86,6 +87,11 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 | response-enum | enum | MEDIUM | Use ResponseStatus enum instead of magic strings |
 | mock-formatting | mock | MEDIUM | Sequential mock returns should be separate statements |
 | doc-sync | docs | HIGH | Documentation stays in sync with codebase |
+| naming-conventions | naming | HIGH | Type and enum naming patterns |
+| authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
+| comment-conventions | comments | HIGH | Lambda file headers, JSDoc, @example length |
+| docs-structure | docs-location | HIGH | Documentation directory conventions |
+| powertools-metrics | metrics | MEDIUM | PowerTools metrics usage patterns |
 
 **Examples:**
 ```typescript
@@ -165,6 +171,34 @@ suggest_tests({ file: "src/lambdas/NewLambda/src/index.ts", query: "scaffold" })
 // Get just the mock setup
 suggest_tests({ file: "src/lambdas/NewLambda/src/index.ts", query: "mocks" })
 ```
+
+### apply_convention
+
+Automatically apply conventions to code files, reducing manual refactoring effort.
+
+**Supported Conventions:**
+
+| Convention | Effect | Status |
+|------------|--------|--------|
+| `aws-sdk-wrapper` | Replaces direct AWS SDK imports with vendor wrapper imports | Auto-fix |
+| `electrodb-mock` | Generates correct ElectroDB mock setup | Guidance |
+| `response-helper` | Suggests response helper replacements | Guidance |
+| `env-validation` | Suggests getRequiredEnv() replacements | Guidance |
+| `powertools` | Suggests withPowertools() wrapper usage | Guidance |
+| `all` | Runs all applicable conventions | Mixed |
+
+**Examples:**
+```typescript
+// Auto-fix AWS SDK imports
+apply_convention({ file: "src/lambdas/MyLambda/src/index.ts", convention: "aws-sdk-wrapper" })
+
+// Preview changes without applying (dry run)
+apply_convention({ file: "src/lambdas/MyLambda/src/index.ts", convention: "all", dryRun: true })
+```
+
+**Output:**
+- `dryRun: true` - Returns proposed changes without modifying files
+- `dryRun: false` (default) - Applies changes and returns diff summary
 
 ## CI Integration
 

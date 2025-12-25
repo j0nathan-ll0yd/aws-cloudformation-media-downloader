@@ -8,9 +8,9 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 
 | Method | Count | Conventions |
 |--------|-------|-------------|
-| **MCP Rules** | 17 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, convention-auto-fix, comment-conventions |
+| **MCP Rules** | 18 | aws-sdk-encapsulation, electrodb-mocking, config-enforcement, env-validation, cascade-safety, response-helpers, types-location, batch-retry, scan-pagination, import-order, response-enum, mock-formatting, doc-sync, naming-conventions, authenticated-handler-enforcement, comment-conventions, docs-structure, powertools-metrics |
 | **ESLint** | 18 | no-direct-aws-sdk-import, cascade-delete-order, use-electrodb-mock-helper, response-helpers, env-validation, authenticated-handler-enforcement, enforce-powertools, no-domain-leakage, strict-env-vars, spacing-conventions + 8 jsdoc rules (require-description, require-param, require-returns, tag-lines, check-param-names, no-defaults, require-param-type, require-returns-type) |
-| **Git Hooks** | 4 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit), worktree setup (post-checkout) |
+| **Git Hooks** | 5 | AI attribution (commit-msg), direct master push (pre-push), dependency validation (pre-commit), docs structure validation (pre-commit), worktree setup (post-checkout) |
 | **Dependency Cruiser** | 6 | no-circular, no-cross-lambda-imports, no-direct-aws-sdk-import, no-entity-cross-dependencies, no-test-imports-in-production, no-orphans-lib |
 | **CI Workflows** | 3 | script validation, type checking, GraphRAG auto-update |
 | **Build-Time** | 1 | pnpm lifecycle script protection (.npmrc) |
@@ -35,8 +35,9 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
 | doc-sync | docs | HIGH | Documentation drift detection |
 | naming-conventions | naming | HIGH | Type and enum naming patterns |
 | authenticated-handler-enforcement | auth | HIGH | Manual auth checks in handlers |
-| convention-auto-fix | auto-fix | MEDIUM | Apply conventions automatically |
 | comment-conventions | comments | HIGH | Lambda file headers, JSDoc, @example length |
+| docs-structure | docs-loc | HIGH | Documentation directory conventions |
+| powertools-metrics | metrics | MEDIUM | PowerTools metrics usage patterns |
 
 ---
 
@@ -56,7 +57,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Target**: docs/wiki/Meta/Documentation-Structure.md
    - **Priority**: HIGH
    - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement Improvement**: Consider adding MCP rule `docs-structure` to validate file locations
+   - **Enforcement**: MCP rule `docs-structure` (HIGH) + pre-commit hook
 
 2. **Comment Conventions with Multi-Tier Enforcement** (Code Quality Rule)
    - **What**: Comprehensive JSDoc requirements for all exported functions, type definitions, and Lambda file headers
@@ -72,7 +73,7 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Target**: docs/wiki/Conventions/Code-Comments.md (expanded), docs/wiki/Conventions/Function-Spacing.md (new)
    - **Priority**: HIGH
    - **Status**: ✅ Implemented, ✅ Documented
-   - **Enforcement Level**: ESLint (warn severity for gradual adoption), MCP (HIGH severity)
+   - **Enforcement Level**: ESLint (error severity for Lambda handlers), MCP (HIGH severity)
 
 3. **Worktree Setup Automation** (Workflow Pattern)
    - **What**: Husky `post-checkout` hook automatically sets up worktrees with symlinks, dependencies, and MCP context
@@ -92,10 +93,10 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **What**: All Lambda functions use `merge(local.common_lambda_env, {...})` for environment variables
    - **Why**: DRY principle; consistent OTEL configuration; reduces ~90% log noise
    - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
-   - **Enforcement**: Manual review of Terraform changes; could add Terraform validation
-   - **Target**: docs/wiki/Infrastructure/OpenTofu-Patterns.md (update)
+   - **Enforcement**: Manual review of Terraform changes
+   - **Documented**: docs/wiki/Infrastructure/OpenTofu-Patterns.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending wiki update
+   - **Status**: ✅ Implemented, ✅ Documented
    - **Enforcement Improvement**: Consider adding Terraform linting rule or MCP rule for Lambda environment patterns
 
 ### Detected: 2025-12-22
@@ -105,78 +106,77 @@ This document tracks all conventions, patterns, rules, and methodologies detecte
    - **Why**: TypeSpec becomes single source of truth; prevents API contract drift; ensures compile-time type safety
    - **Tool**: `pnpm gen:api-types` script using quicktype and custom Zod schema generation
    - **Output**: `src/types/api-schema/types.ts` and `src/types/api-schema/schemas.ts`
-   - **Target**: docs/wiki/TypeScript/TypeSpec-Integration.md
+   - **Documented**: docs/wiki/TypeScript/TypeSpec-Code-Generation.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 2. **Test Scaffolding Tool** (DX Tool)
    - **What**: Automated test file generation with correct mock setup via `pnpm scaffold:test <file>`
    - **Why**: Reduces test writing time by 60%; ensures consistent mock patterns; follows project conventions
    - **Tool**: Uses ts-morph for AST analysis to detect imports and generate appropriate mocks
-   - **Target**: docs/wiki/Testing/Test-Scaffolding.md
+   - **Documented**: docs/wiki/Testing/Test-Scaffolding.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 3. **PowerTools Wrapper Enforcement** (Rule)
    - **What**: All Lambda handlers must be wrapped with `withPowertools()` or `wrapLambdaInvokeHandler()`
    - **Why**: Consistent observability, error handling, and metrics across all Lambda functions
-   - **Enforcement**: ESLint `local-rules/enforce-powertools` (HIGH severity)
-   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Enforcement**: ESLint `local-rules/enforce-powertools` (HIGH severity), MCP `powertools-metrics` (MEDIUM)
+   - **Documented**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 4. **Domain Layer Purity** (Architecture Rule)
    - **What**: Files in `src/lib/domain/` cannot import from `src/lambdas/` or `src/lib/vendor/AWS/`
    - **Why**: Domain logic must remain pure and infrastructure-agnostic
-   - **Enforcement**: ESLint `local-rules/no-domain-leakage` (HIGH severity)
-   - **Target**: docs/wiki/Architecture/Domain-Layer.md
+   - **Enforcement**: ESLint `local-rules/no-domain-leakage` (HIGH severity), Dependency Cruiser
+   - **Documented**: docs/wiki/Architecture/Domain-Layer.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 5. **Centralized Environment Variable Access** (Pattern)
    - **What**: Lambda handlers must use `getRequiredEnv()` instead of direct `process.env` access
    - **Why**: Fail-fast at cold start with clear error messages; centralized validation
    - **Enforcement**: ESLint `local-rules/strict-env-vars` (HIGH severity)
-   - **Related**: Existing env-validation pattern, but now enforced via ESLint
-   - **Target**: docs/wiki/AWS/Lambda-Environment-Variables.md (update existing)
+   - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 6. **Pre-Commit Dependency Validation** (Workflow)
    - **What**: Dependency-cruiser runs automatically on `git commit` to catch architectural violations
    - **Why**: Shift-left validation prevents architectural drift from entering codebase
    - **Enforcement**: Husky pre-commit hook running `pnpm deps:check`
-   - **Target**: docs/wiki/Conventions/Git-Workflow.md (update existing)
+   - **Documented**: docs/wiki/Conventions/Git-Workflow.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 7. **No Orphaned Library Code** (Rule)
    - **What**: All modules in `src/lib/` must be imported by at least one file (except tests/types)
    - **Why**: Prevents dead code accumulation in shared library code
    - **Enforcement**: Dependency-cruiser `no-orphans-lib` rule (ERROR severity)
-   - **Target**: docs/wiki/Architecture/Code-Organization.md
+   - **Documented**: docs/wiki/Architecture/Code-Organization.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 8. **Automated GraphRAG Synchronization** (CI/CD)
    - **What**: GraphRAG knowledge graph automatically updates when source files change
    - **Why**: AI agents always have current semantic memory; documentation stays synchronized
    - **Triggers**: Changes to `src/lambdas/`, `src/entities/`, `src/lib/vendor/`, `graphrag/metadata.json`, `tsp/`
    - **Enforcement**: GitHub Actions workflow `.github/workflows/auto-update-graphrag.yml`
-   - **Target**: docs/wiki/Infrastructure/GraphRAG-Automation.md
+   - **Documented**: docs/wiki/Infrastructure/GraphRAG-Automation.md
    - **Priority**: MEDIUM
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
 9. **MCP Convention Auto-Fix** (Tool)
    - **What**: MCP server can automatically apply conventions (e.g., replace AWS SDK imports with vendor wrappers)
    - **Why**: Reduces manual refactoring effort; speeds up convention adherence
    - **Tool**: `apply_convention` MCP tool with support for multiple convention types
    - **Supported**: aws-sdk-wrapper (auto-fix), electrodb-mock (guidance), response-helper (guidance), env-validation (guidance), powertools (guidance)
-   - **Target**: docs/wiki/MCP/Convention-Tools.md (update existing)
+   - **Documented**: docs/wiki/MCP/Convention-Tools.md
    - **Priority**: MEDIUM
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
 
-_No pending conventions - all conventions are documented._
+_All conventions from 2025-12-22 are now documented._
 
 ### Detected: 2025-12-23
 
@@ -189,9 +189,9 @@ _No pending conventions - all conventions are documented._
      - Automated Comments: Posts to tracking issue when upstream is closed
    - **Example**: OTEL collector deprecation warning workaround → Issue #216 + check-upstream-issues.yml
    - **Template**: Add entries to `trackedIssues` array in workflow with `owner`, `repo`, `issue_number`, `our_issue`, `description`
-   - **Target**: docs/wiki/Conventions/Workaround-Tracking.md
+   - **Documented**: docs/wiki/Conventions/Workaround-Tracking.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
    - **Enforcement**: Code review when adding workarounds
 
 2. **Post-Deployment Log Verification** (Operational Pattern)
@@ -253,9 +253,9 @@ _No pending conventions - all conventions are documented._
    - **Example**: `lines.push("const mock = ...")` is WRONG; `loadTemplate('test-scaffold/entity-mock.template.txt')` is CORRECT
    - **Loader**: Use `loadAndInterpolate()` from `src/mcp/templates/loader.ts` for simple placeholder replacement
    - **Detected**: During test-scaffold.ts refactoring
-   - **Target**: docs/wiki/MCP/Template-Organization.md
+   - **Documented**: docs/wiki/MCP/Template-Organization.md
    - **Priority**: HIGH
-   - **Status**: ✅ Implemented, pending documentation
+   - **Status**: ✅ Implemented, ✅ Documented
    - **Enforcement**: Code review; consider MCP validation rule
 
 2. **CJS Dependency Compatibility** (Architectural Pattern)
@@ -603,40 +603,45 @@ _No pending conventions - all conventions are documented._
 
 This section tracks conventions that could benefit from stronger enforcement.
 
-### High Priority (Should Implement)
+### Recently Implemented (2025-12-24)
 
-| Convention | Current | Proposed | Effort | Benefit |
-|------------|---------|----------|--------|---------|
-| **Documentation Structure** | Manual review | MCP rule `docs-structure` | Low | Prevents markdown files in wrong locations |
-| **Comment Conventions (ESLint)** | warn severity | error severity | Low | Stricter enforcement after codebase is compliant |
+| Convention | Status | Implementation |
+|------------|--------|----------------|
+| **Documentation Structure** | ✅ Implemented | MCP rule `docs-structure` + pre-commit hook |
+| **Comment Conventions (ESLint)** | ✅ Implemented | Error severity for Lambda handlers (`src/lambdas/*/src/index.ts`) |
+| **No Archived Plans in docs/** | ✅ Implemented | Pre-commit hook validates docs/ structure |
+| **PowerTools Metrics Usage** | ✅ Implemented | MCP rule `powertools-metrics` |
 
 ### Medium Priority (Consider Implementing)
 
 | Convention | Current | Proposed | Effort | Benefit |
 |------------|---------|----------|--------|---------|
 | **Terraform Lambda Environment** | Manual review | MCP rule or tflint | Medium | Validates `merge(common_lambda_env, ...)` pattern |
-| **No Archived Plans in docs/** | Manual review | Pre-commit hook | Low | Prevents re-creation of `docs/archive/` or `docs/plans/` |
 | **Test Fixture Logging** | Always enabled | CI check for fixture freshness | Medium | Ensures fixtures are updated periodically |
 
 ### Low Priority (Future Consideration)
 
 | Convention | Current | Proposed | Effort | Benefit |
 |------------|---------|----------|--------|---------|
-| **PowerTools Metrics Usage** | Code review | MCP rule for custom metrics | High | Validates metrics.addMetric() usage |
 | **Template File Organization** | Code review | MCP rule for embedded templates | Medium | Detects string literals that should be templates |
 
 ### Implementation Notes
 
-**MCP Rule `docs-structure`** (Recommended for this PR):
-- Check that all `.md` files in `docs/` are under `docs/wiki/` or are known exceptions
-- Exceptions: None (all markdown should be in wiki now)
-- Implementation: Add to `src/mcp/validation/rules/`
+**MCP Rule `docs-structure`** (✅ IMPLEMENTED):
+- Validates that all `.md` files in `docs/` are under `docs/wiki/` or are known exceptions
+- Allowed in docs/ root: doc-code-mapping.json, llms.txt, terraform.md
+- Implemented: `src/mcp/validation/rules/docs-structure.ts`
+- Pre-commit hook also validates docs/ structure
 
-**ESLint jsdoc severity upgrade path**:
-1. Current: All jsdoc rules at `warn` severity for gradual adoption
-2. Phase 1: Upgrade `jsdoc/require-description` to `error` once all files comply
-3. Phase 2: Upgrade remaining rules incrementally
-4. Timeline: After 2-3 weeks of compliance
+**ESLint jsdoc severity** (✅ IMPLEMENTED):
+- Lambda handlers (`src/lambdas/*/src/index.ts`): error severity for all jsdoc rules
+- Library code (`src/lib/`): warn severity for gradual adoption
+- Scripts/tools (`scripts/`, `graphrag/`, `config/`): jsdoc rules disabled
+
+**MCP Rule `powertools-metrics`** (✅ IMPLEMENTED):
+- Validates that files using `metrics.addMetric()` have `{enableCustomMetrics: true}` in withPowertools()
+- Warns when `addDimension()` is used without `singleMetric()` (dimension isolation)
+- Implemented: `src/mcp/validation/rules/powertools-metrics.ts`
 
 ## 💭 Proposed Conventions
 
@@ -688,5 +693,6 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-12-24
-- **Total Conventions**: 48 detected (37 documented, 11 pending documentation)
+- **Total Conventions**: 50 detected (50 documented, 0 pending documentation)
+- **MCP Rules**: 18 (5 CRITICAL + 9 HIGH + 4 MEDIUM)
 - **Convention Capture System**: Active

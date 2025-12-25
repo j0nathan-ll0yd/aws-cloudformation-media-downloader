@@ -37,7 +37,7 @@ WARNINGS=""
 # =============================================================================
 # Check 1: Entity count matches documentation
 # =============================================================================
-echo -n "  [1/7] Checking entity count... "
+echo -n "  [1/8] Checking entity count... "
 ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count entity files listed in AGENTS.md between entities/ and lambdas/ sections
@@ -54,7 +54,7 @@ fi
 # =============================================================================
 # Check 2: Lambda count matches documentation
 # =============================================================================
-echo -n "  [2/7] Checking Lambda count... "
+echo -n "  [2/8] Checking Lambda count... "
 LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
@@ -71,7 +71,7 @@ fi
 # =============================================================================
 # Check 3: MCP validation rule count
 # =============================================================================
-echo -n "  [3/7] Checking MCP rule count... "
+echo -n "  [3/8] Checking MCP rule count... "
 MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
@@ -88,7 +88,7 @@ fi
 # =============================================================================
 # Check 4: Critical paths exist
 # =============================================================================
-echo -n "  [4/7] Checking documented paths exist... "
+echo -n "  [4/8] Checking documented paths exist... "
 PATHS_OK=true
 
 REQUIRED_PATHS=(
@@ -117,7 +117,7 @@ fi
 # =============================================================================
 # Check 5: Forbidden patterns in AGENTS.md
 # =============================================================================
-echo -n "  [5/7] Checking for stale patterns... "
+echo -n "  [5/8] Checking for stale patterns... "
 STALE_OK=true
 
 # Check for old Prettier reference (should be dprint)
@@ -142,7 +142,7 @@ fi
 # =============================================================================
 # Check 6: GraphRAG metadata completeness
 # =============================================================================
-echo -n "  [6/7] Checking GraphRAG metadata... "
+echo -n "  [6/8] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
 # Get entity names from filesystem (excluding Collections.ts which is a service, not entity)
@@ -165,7 +165,7 @@ fi
 # =============================================================================
 # Check 7: Wiki internal links resolve
 # =============================================================================
-echo -n "  [7/7] Checking wiki links... "
+echo -n "  [7/8] Checking wiki links... "
 WIKI_OK=true
 BROKEN_LINKS=""
 
@@ -204,6 +204,70 @@ if [ "$WIKI_OK" = true ]; then
 else
   echo -e "${YELLOW}BROKEN LINKS${NC} (warning only)"
   WARNINGS="$WARNINGS$BROKEN_LINKS"
+fi
+
+# =============================================================================
+# Check 8: Documentation structure (markdown in wiki/, machine files in root)
+# =============================================================================
+echo -n "  [8/8] Checking docs/ structure... "
+DOCS_OK=true
+
+# Allowed files in docs/ root
+ALLOWED_ROOT_FILES=(
+  "doc-code-mapping.json"
+  "doc-code-mapping.schema.json"
+  "llms.txt"
+  "llms-full.txt"
+  "terraform.md"
+)
+
+# Allowed subdirectories in docs/
+ALLOWED_SUBDIRS=("wiki" "api" "source")
+
+# Check files in docs/ root
+for file in docs/*; do
+  [ ! -e "$file" ] && continue
+  basename=$(basename "$file")
+
+  if [ -f "$file" ]; then
+    # Check if file is in allowed list
+    is_allowed=false
+    for allowed in "${ALLOWED_ROOT_FILES[@]}"; do
+      if [ "$basename" = "$allowed" ]; then
+        is_allowed=true
+        break
+      fi
+    done
+
+    if [ "$is_allowed" = false ]; then
+      if [[ "$basename" == *.md ]]; then
+        ERRORS="$ERRORS\n  - Markdown file '$basename' should be in docs/wiki/, not docs/ root"
+      else
+        WARNINGS="$WARNINGS\n  - Unexpected file '$basename' in docs/ root"
+      fi
+      DOCS_OK=false
+    fi
+  elif [ -d "$file" ]; then
+    # Check if directory is in allowed list
+    is_allowed=false
+    for allowed in "${ALLOWED_SUBDIRS[@]}"; do
+      if [ "$basename" = "$allowed" ]; then
+        is_allowed=true
+        break
+      fi
+    done
+
+    if [ "$is_allowed" = false ]; then
+      ERRORS="$ERRORS\n  - Unexpected subdirectory 'docs/$basename/' - move markdown to docs/wiki/"
+      DOCS_OK=false
+    fi
+  fi
+done
+
+if [ "$DOCS_OK" = true ]; then
+  echo -e "${GREEN}OK${NC}"
+else
+  echo -e "${RED}STRUCTURE VIOLATION${NC}"
 fi
 
 # =============================================================================

@@ -33,7 +33,7 @@ const EXPECTED_COUNTS = {
   // Lambda directories in src/lambdas
   lambdas: 16,
   // MCP validation rules in src/mcp/validation/rules (including this rule)
-  mcpRules: 16
+  mcpRules: 18
 }
 
 /**

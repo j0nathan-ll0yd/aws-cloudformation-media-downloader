@@ -122,6 +122,58 @@ interface ProcessEnv {
 }
 ```
 
+## Centralized Lambda Environment Configuration
+
+### The Pattern
+
+All Lambda functions MUST use `merge(local.common_lambda_env, {...})` for environment variables:
+
+```hcl
+locals {
+  common_lambda_env = {
+    OTEL_LOG_LEVEL       = "warn"           # Reduce OTEL noise (was ~90% of logs)
+    NODE_OPTIONS         = "--no-deprecation" # Suppress deprecation warnings
+    OTEL_PROPAGATORS     = "xray"            # Use X-Ray propagation format
+    LOG_LEVEL            = "DEBUG"           # Application log level
+  }
+}
+
+resource "aws_lambda_function" "MyLambda" {
+  # ...
+  environment {
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME = local.my_lambda_function_name
+      DynamoDBTableName = aws_dynamodb_table.main.name
+      # Function-specific variables...
+    })
+  }
+}
+```
+
+### Why This Matters
+
+1. **DRY Principle**: Common settings defined once, applied everywhere
+2. **Consistent Observability**: All Lambdas have the same OTEL configuration
+3. **Log Noise Reduction**: Achieved ~90% reduction in log noise
+4. **Easy Updates**: Change one local, all Lambdas updated
+
+### Common Variables Explained
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `OTEL_LOG_LEVEL` | `warn` | Reduces verbose OTEL debug logs |
+| `NODE_OPTIONS` | `--no-deprecation` | Suppresses Node.js deprecation warnings |
+| `OTEL_PROPAGATORS` | `xray` | Enables X-Ray trace context propagation |
+| `LOG_LEVEL` | `DEBUG` | Application-level logging (Powertools) |
+
+### Adding New Common Variables
+
+When a variable should apply to all Lambdas:
+
+1. Add to `local.common_lambda_env` in `locals.tf`
+2. Verify no Lambda overrides it unexpectedly
+3. Deploy and verify in CloudWatch logs
+
 ## Lambda Function Pattern
 
 ### Standard Lambda Definition

@@ -16,6 +16,30 @@ process.env.PushNotificationTopicArn
 process.env.FeedlyQueueUrl
 ```
 
+## Centralized Access (REQUIRED)
+
+Always use the `getRequiredEnv()` helper instead of direct `process.env` access:
+
+```typescript
+import {getRequiredEnv, getOptionalEnv, getOptionalEnvNumber} from '#lib/system/env'
+
+// ✅ CORRECT - Centralized access with clear error messages
+const tableName = getRequiredEnv('DynamoDBTableName')
+const apiHost = getOptionalEnv('API_HOST', 'api.example.com')
+const batchSize = getOptionalEnvNumber('BATCH_SIZE', 10)
+
+// ❌ WRONG - Direct process.env access
+const tableName = process.env.DynamoDBTableName || 'default-table'
+const tableName = process.env.DynamoDBTableName as string
+```
+
+**Why**:
+- Fail-fast at cold start with clear error messages
+- Centralized validation ensures consistency
+- Type-safe access (no runtime `undefined` surprises)
+
+**Enforcement**: ESLint `local-rules/strict-env-vars` (HIGH severity)
+
 ## No Defaults in Code
 
 Environment variables are required and verified by unit tests. Don't provide defaults:
@@ -24,8 +48,8 @@ Environment variables are required and verified by unit tests. Don't provide def
 // ❌ WRONG - Don't use defaults
 const tableName = process.env.DynamoDBTableName || 'default-table'
 
-// ✅ CORRECT - Required, verified by tests
-const tableName = process.env.DynamoDBTableName as string
+// ✅ CORRECT - Use getRequiredEnv
+const tableName = getRequiredEnv('DynamoDBTableName')
 ```
 
 ## No Try-Catch for Required Variables (CRITICAL)

@@ -28,8 +28,10 @@ import {docSyncRule} from './rules/doc-sync'
 import {namingConventionsRule} from './rules/naming-conventions'
 import {authenticatedHandlerEnforcementRule} from './rules/authenticated-handler-enforcement'
 import {commentConventionsRule} from './rules/comment-conventions'
+import {docsStructureRule} from './rules/docs-structure'
+import {powertoolsMetricsRule} from './rules/powertools-metrics'
 
-// Export all rules (16 total: 6 CRITICAL + 7 HIGH + 3 MEDIUM)
+// Export all rules (18 total: 5 CRITICAL + 9 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -52,7 +54,11 @@ export const allRules: ValidationRule[] = [
   // HIGH (naming)
   namingConventionsRule,
   // HIGH (auth)
-  authenticatedHandlerEnforcementRule
+  authenticatedHandlerEnforcementRule,
+  // HIGH (docs structure)
+  docsStructureRule,
+  // MEDIUM (observability)
+  powertoolsMetricsRule
 ]
 
 // Export rules by name for selective validation
@@ -94,7 +100,13 @@ export const rulesByName: Record<string, ValidationRule> = {
   naming: namingConventionsRule, // alias
   // HIGH (auth) rules
   'authenticated-handler-enforcement': authenticatedHandlerEnforcementRule,
-  auth: authenticatedHandlerEnforcementRule // alias
+  auth: authenticatedHandlerEnforcementRule, // alias
+  // HIGH (docs structure) rules
+  'docs-structure': docsStructureRule,
+  'docs-location': docsStructureRule, // alias
+  // MEDIUM (observability) rules
+  'powertools-metrics': powertoolsMetricsRule,
+  metrics: powertoolsMetricsRule // alias
 }
 
 // Export individual rules
@@ -106,11 +118,13 @@ export {
   commentConventionsRule,
   configEnforcementRule,
   docSyncRule,
+  docsStructureRule,
   electrodbMockingRule,
   envValidationRule,
   importOrderRule,
   mockFormattingRule,
   namingConventionsRule,
+  powertoolsMetricsRule,
   responseEnumRule,
   responseHelpersRule,
   scanPaginationRule,
