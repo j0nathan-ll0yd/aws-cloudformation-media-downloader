@@ -100,27 +100,79 @@ retention_in_days = 14
 
 ### Lambda Environment Variables
 
-Always use CamelCase to match TypeScript ProcessEnv interface:
+Always use **SCREAMING_CASE** for environment variable names:
 
 ```hcl
 environment {
-  variables = {
-    DynamoDBTableFiles  = aws_dynamodb_table.Files.name
-    YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
-    GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
+  variables = merge(local.common_lambda_env, {
+    OTEL_SERVICE_NAME         = local.function_name
+    DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
+    YTDLP_BINARY_PATH         = "/opt/bin/yt-dlp_linux"
+    GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
+  })
+}
+```
+
+TypeScript code accesses these via `getRequiredEnv()`:
+
+```typescript
+import {getRequiredEnv} from '#lib/system/env'
+
+const tableName = getRequiredEnv('DYNAMODB_TABLE_NAME')
+const ytdlpPath = getRequiredEnv('YTDLP_BINARY_PATH')
+```
+
+## Centralized Lambda Environment Configuration
+
+### The Pattern
+
+All Lambda functions MUST use `merge(local.common_lambda_env, {...})` for environment variables:
+
+```hcl
+locals {
+  common_lambda_env = {
+    OTEL_LOG_LEVEL       = "warn"           # Reduce OTEL noise (was ~90% of logs)
+    NODE_OPTIONS         = "--no-deprecation" # Suppress deprecation warnings
+    OTEL_PROPAGATORS     = "xray"            # Use X-Ray propagation format
+    LOG_LEVEL            = "DEBUG"           # Application log level
+  }
+}
+
+resource "aws_lambda_function" "MyLambda" {
+  # ...
+  environment {
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME   = local.my_lambda_function_name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.main.name
+      # Function-specific variables...
+    })
   }
 }
 ```
 
-Match exactly to `src/types/global.d.ts`:
+### Why This Matters
 
-```typescript
-interface ProcessEnv {
-  DynamoDBTableFiles: string
-  YtdlpBinaryPath: string
-  GithubPersonalToken: string
-}
-```
+1. **DRY Principle**: Common settings defined once, applied everywhere
+2. **Consistent Observability**: All Lambdas have the same OTEL configuration
+3. **Log Noise Reduction**: Achieved ~90% reduction in log noise
+4. **Easy Updates**: Change one local, all Lambdas updated
+
+### Common Variables Explained
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `OTEL_LOG_LEVEL` | `warn` | Reduces verbose OTEL debug logs |
+| `NODE_OPTIONS` | `--no-deprecation` | Suppresses Node.js deprecation warnings |
+| `OTEL_PROPAGATORS` | `xray` | Enables X-Ray trace context propagation |
+| `LOG_LEVEL` | `DEBUG` | Application-level logging (Powertools) |
+
+### Adding New Common Variables
+
+When a variable should apply to all Lambdas:
+
+1. Add to `local.common_lambda_env` in `locals.tf`
+2. Verify no Lambda overrides it unexpectedly
+3. Deploy and verify in CloudWatch logs
 
 ## Lambda Function Pattern
 
@@ -139,10 +191,11 @@ resource "aws_lambda_function" "FunctionName" {
   source_code_hash = data.archive_file.FunctionName.output_base64sha256
 
   environment {
-    variables = {
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
-      S3BucketName      = aws_s3_bucket.MediaFiles.bucket
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME   = "FunctionName"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.Files.name
+      S3_BUCKET_NAME      = aws_s3_bucket.MediaFiles.bucket
+    })
   }
 
   depends_on = [
@@ -282,7 +335,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "MediaFilesEncrypt
 - ✅ Group related resources in logical files
 - ✅ Use PascalCase for resource names
 - ✅ Reference resources using interpolation
-- ✅ Keep environment variable names consistent with TypeScript
+- ✅ Use SCREAMING_CASE for environment variable names
 - ✅ Use PAY_PER_REQUEST for DynamoDB in serverless
 - ✅ Enable versioning and encryption on S3 buckets
 - ✅ Set CloudWatch log retention

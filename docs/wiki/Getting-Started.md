@@ -75,12 +75,12 @@ From your AGENTS.md or documentation:
 ```markdown
 ## Conventions to Follow
 - [Naming](Conventions/Naming-Conventions.md)
-- [AWS SDK](AWS/SDK-Encapsulation-Policy.md)
+- [AWS SDK](Conventions/Vendor-Encapsulation-Policy.md)
 - [Testing](Testing/Jest-ESM-Mocking-Strategy.md)
 ```
 
 ### Step 4: Track Project Conventions
-Create `docs/conventions-tracking.md` for project-specific patterns:
+Create `docs/wiki/Meta/Conventions-Tracking.md` for project-specific patterns:
 ```markdown
 ## Project-Specific Conventions
 
@@ -134,7 +134,7 @@ Each wiki page follows a standard template:
 
 ### Starting a Session
 1. Read AGENTS.md (which references this wiki)
-2. Check `docs/conventions-tracking.md` for project patterns
+2. Check `docs/wiki/Meta/Conventions-Tracking.md` for project patterns
 3. Activate convention detection mode
 4. Reference wiki pages as needed
 
@@ -148,7 +148,7 @@ Each wiki page follows a standard template:
 ```
 User: "How should I handle AWS SDK imports?"
 
-AI: Per [AWS SDK Encapsulation Policy](AWS/SDK-Encapsulation-Policy.md),
+AI: Per [AWS SDK Encapsulation Policy](Conventions/Vendor-Encapsulation-Policy.md),
 NEVER import AWS SDK directly. Use vendor wrappers in lib/vendor/AWS/.
 
 This is a zero-tolerance rule to maintain encapsulation and testability.
@@ -164,7 +164,7 @@ This is a zero-tolerance rule to maintain encapsulation and testability.
 
 ### Contributing New Patterns
 1. Detect pattern emergence
-2. Document in conventions-tracking.md
+2. Document in `docs/wiki/Meta/Conventions-Tracking.md`
 3. Create wiki page following template
 4. Submit PR with:
    - Clear rationale
@@ -183,7 +183,7 @@ This is a zero-tolerance rule to maintain encapsulation and testability.
 1. Copy AGENTS.md template
 2. Add project-specific content
 3. Link to relevant wiki pages
-4. Create conventions-tracking.md
+4. Create `docs/wiki/Meta/Conventions-Tracking.md`
 
 ### Onboarding Developer
 1. Point to wiki Home.md

@@ -6,7 +6,7 @@ Please see AGENTS.md in the repository root for comprehensive project documentat
 
 ## Quick Reference
 
-- **Conventions**: `docs/wiki/` (Source of Truth) & `docs/conventions-tracking.md` (Recent)
+- **Conventions**: `docs/wiki/` (Source of Truth) & `docs/wiki/Meta/Conventions-Tracking.md` (Recent)
 - **Pack Context**: `pnpm run pack:context` (Updates `repomix-output.xml`)
 - **Validate**: `pnpm run validate:conventions` (Checks against rules)
 - **Test**: `pnpm run test` (Unit)

@@ -152,7 +152,7 @@ module.exports.myFunction = () => {}
 ## Related Patterns
 
 - [Naming Conventions](Naming-Conventions.md) - File and module naming
-- [AWS SDK Encapsulation](../AWS/SDK-Encapsulation-Policy.md) - Vendor wrapper imports
+- [AWS SDK Encapsulation](../Conventions/Vendor-Encapsulation-Policy.md) - Vendor wrapper imports
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - Lambda-specific imports
 
 ---

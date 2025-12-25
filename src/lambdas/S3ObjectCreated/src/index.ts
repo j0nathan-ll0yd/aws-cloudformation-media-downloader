@@ -13,8 +13,10 @@ import {UnexpectedError} from '#lib/system/errors'
 import {getRequiredEnv} from '#lib/system/env'
 
 /**
- * Returns the DynamoDBFile by S3 object key using KeyIndex GSI
+ * Returns the DynamoDBFile by S3 object key using KeyIndex GSI.
+ *
  * @param fileName - The S3 object key to search for
+ * @returns The file record matching the S3 object key
  * @notExported
  */
 async function getFileByFilename(fileName: string): Promise<File> {
@@ -29,9 +31,11 @@ async function getFileByFilename(fileName: string): Promise<File> {
 }
 
 /**
- * Returns an array of user IDs who have requested a given file
- * Uses FileCollection GSI for efficient reverse lookup (eliminates full table scan)
+ * Returns an array of user IDs who have requested a given file.
+ * Uses FileCollection GSI for efficient reverse lookup (eliminates full table scan).
+ *
  * @param file - The DynamoDBFile you want to search for
+ * @returns Array of user IDs associated with the file
  * @notExported
  */
 async function getUsersOfFile(file: File): Promise<string[]> {
@@ -45,9 +49,11 @@ async function getUsersOfFile(file: File): Promise<string[]> {
 }
 
 /**
- * Dispatches DownloadReadyNotification to a user via SQS
+ * Dispatches DownloadReadyNotification to a user via SQS.
+ *
  * @param file - The DynamoDBFile that is now ready to download
  * @param userId - The UUID of the user
+ * @returns Promise from sending the SQS message
  * @notExported
  */
 function dispatchFileNotificationToUser(file: File, userId: string) {

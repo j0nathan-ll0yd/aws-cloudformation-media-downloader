@@ -192,7 +192,7 @@ grep -rn "= new.*Client({" lib/vendor/AWS/*.ts | grep -v "function\|if ("
 ## Related Patterns
 - [Jest ESM Mocking Strategy](Jest-ESM-Mocking-Strategy.md) - Mocking before imports
 - [LocalStack Testing](../Integration/LocalStack-Testing.md) - Testing with LocalStack
-- [AWS SDK Encapsulation Policy](../AWS/SDK-Encapsulation-Policy.md) - Vendor wrapper pattern
+- [AWS SDK Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - Vendor wrapper pattern
 
 ---
 

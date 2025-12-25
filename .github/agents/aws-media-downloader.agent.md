@@ -34,9 +34,8 @@ This project uses an automated system to capture emergent conventions during dev
 Flag it with: "🔔 CONVENTION DETECTED" and document the pattern
 
 ### Reference:
-- **Tracking**: `docs/conventions-tracking.md` - Current conventions
-- **Guide**: `docs/CONVENTION-CAPTURE-GUIDE.md` - Methodology
-- **Templates**: `docs/templates/` - Convention documentation
+- **Tracking**: `docs/wiki/Meta/Conventions-Tracking.md` - Current conventions
+- **Guide**: `docs/wiki/Meta/Convention-Capture-System.md` - Methodology
 
 ## Project Context
 
@@ -290,7 +289,7 @@ When working on this project, always consult:
 - `build/graph.json` - Code dependency graph (READ THIS FIRST)
 - `AGENTS.md` - Primary project documentation
 - `docs/wiki/` - All style guides and patterns (MUST READ applicable guides)
-- `docs/conventions-tracking.md` - Project-specific conventions
+- `docs/wiki/Meta/Conventions-Tracking.md` - Project-specific conventions
 - `src/entities/` - ElectroDB entity definitions
 - `test/helpers/electrodb-mock.ts` - ElectroDB testing patterns
 - `package.json` - Dependencies and scripts

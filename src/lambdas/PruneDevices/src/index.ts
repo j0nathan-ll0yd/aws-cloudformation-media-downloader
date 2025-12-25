@@ -15,7 +15,9 @@ import {retryUnprocessedDelete} from '#lib/system/retry'
 export type { PruneDevicesResult } from '#types/lambda'
 
 /**
- * Returns an array of all devices using paginated scan
+ * Returns an array of all devices using paginated scan.
+ *
+ * @returns Array of all registered devices
  * @notExported
  */
 async function getDevices(): Promise<Device[]> {

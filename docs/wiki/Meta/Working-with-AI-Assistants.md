@@ -116,7 +116,7 @@ Create a Lambda function to process video files from S3.
 
 ```
 The AI created the function but:
-1. ❌ Used direct AWS SDK import (violates SDK-Encapsulation-Policy)
+1. ❌ Used direct AWS SDK import (violates Vendor-Encapsulation-Policy)
 2. ✅ Used correct error handling
 3. ❌ Missing X-Ray tracing
 4. ✅ Tests included

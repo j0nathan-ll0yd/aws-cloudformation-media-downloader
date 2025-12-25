@@ -40,7 +40,7 @@ Document now? [Y/N]
 
 ### Convention Tracking
 
-Central registry in `docs/conventions-tracking.md`:
+Central registry in `docs/wiki/Meta/Conventions-Tracking.md`:
 
 ```markdown
 ## 🟡 Pending Documentation
@@ -62,7 +62,7 @@ Central registry in `docs/conventions-tracking.md`:
 
 **Session Start**:
 1. Read AGENTS.md (contains Convention Capture instructions)
-2. Check `docs/conventions-tracking.md` for pending items
+2. Check `docs/wiki/Meta/Conventions-Tracking.md` for pending items
 3. Activate detection mode
 
 **During Work**:
@@ -74,16 +74,15 @@ Central registry in `docs/conventions-tracking.md`:
 **Session End**:
 1. Generate session summary
 2. List detected conventions
-3. Update `conventions-tracking.md`
+3. Update `docs/wiki/Meta/Conventions-Tracking.md`
 4. List pending documentation tasks
 
 ### For Developers
 
 **Setting Up**:
 1. Add Convention Capture section to AGENTS.md
-2. Create `docs/conventions-tracking.md`
-3. Create `docs/templates/` directory
-4. Initialize with known conventions
+2. Create `docs/wiki/Meta/Conventions-Tracking.md`
+3. Initialize with known conventions
 
 **Contributing**:
 1. Work normally with AI assistant
@@ -175,9 +174,8 @@ Every project using AGENTS.md automatically gets Convention Capture:
 ```
 
 Each project maintains its own:
-- `docs/conventions-tracking.md` - Project conventions
-- `docs/sessions/` - Session summaries
-- Local overrides and additions
+- `docs/wiki/Meta/Conventions-Tracking.md` - Project conventions
+- Local overrides and additions in `docs/wiki/`
 
 ## Related Documentation
 

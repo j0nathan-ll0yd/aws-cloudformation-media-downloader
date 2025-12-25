@@ -135,7 +135,42 @@ function parseConventionBlock(block: string, defaultStatus: ConventionStatus): C
 }
 
 /**
+ * Parse a table row into convention data
+ */
+function parseTableRow(row: string, severity: ConventionSeverity): Convention | null {
+  // Split by | and extract columns
+  const columns = row.split('|').map((c) => c.trim()).filter(Boolean)
+  if (columns.length < 3) {
+    return null
+  }
+
+  const [name, docLink, enforcement] = columns
+
+  // Skip header row
+  if (name.includes('---') || name === 'Convention') {
+    return null
+  }
+
+  // Extract wiki path from markdown link [text](path)
+  const linkMatch = docLink.match(/\[([^\]]+)\]\(([^)]+)\)/)
+  const wikiPath = linkMatch?.[2] || undefined
+
+  return {
+    name,
+    type: 'Convention',
+    category: inferCategory('Convention', wikiPath),
+    severity,
+    status: 'documented',
+    what: name,
+    why: `See ${linkMatch?.[1] || 'documentation'}`,
+    wikiPath,
+    enforcement: enforcement || undefined
+  }
+}
+
+/**
  * Parse conventions-tracking.md content into structured data
+ * Supports both old block format and new table format
  */
 export function parseConventions(content: string): ParsedConventions {
   const conventions: Convention[] = []
@@ -144,29 +179,58 @@ export function parseConventions(content: string): ParsedConventions {
   const lastUpdatedMatch = content.match(/\*\*Last Updated\*\*:\s*(\d{4}-\d{2}-\d{2})/)
   const totalMatch = content.match(/\*\*Total Conventions\*\*:\s*(\d+)\s*detected,\s*(\d+)\s*documented,\s*(\d+)\s*pending/)
 
-  // Split by sections
-  const sections: Array<{pattern: RegExp; status: ConventionStatus}> = [
-    {pattern: /## 🟡 Pending Documentation([\s\S]*?)(?=## ✅|## 💭|## 🗄️|## Usage|$)/, status: 'pending'},
-    {pattern: /## ✅ Recently Documented([\s\S]*?)(?=## 🟡|## 💭|## 🗄️|## Usage|$)/, status: 'documented'},
-    {pattern: /## 💭 Proposed Conventions([\s\S]*?)(?=## 🟡|## ✅|## 🗄️|## Usage|$)/, status: 'proposed'},
-    {pattern: /## 🗄️ Archived Conventions([\s\S]*?)(?=## 🟡|## ✅|## 💭|## Usage|$)/, status: 'archived'}
+  // Try new table format first (sections with severity headers)
+  const severitySections: Array<{pattern: RegExp; severity: ConventionSeverity}> = [
+    {pattern: /### CRITICAL Severity([\s\S]*?)(?=### |## |$)/, severity: 'CRITICAL'},
+    {pattern: /### HIGH Severity([\s\S]*?)(?=### |## |$)/, severity: 'HIGH'},
+    {pattern: /### MEDIUM Severity([\s\S]*?)(?=### |## |$)/, severity: 'MEDIUM'},
+    {pattern: /### LOW Severity([\s\S]*?)(?=### |## |$)/, severity: 'LOW'}
   ]
 
-  for (const {pattern, status} of sections) {
+  for (const {pattern, severity} of severitySections) {
     const sectionMatch = content.match(pattern)
     if (!sectionMatch) {
       continue
     }
 
     const sectionContent = sectionMatch[1]
+    const lines = sectionContent.split('\n')
 
-    // Split section into convention blocks (numbered items or ### headers)
-    const blocks = sectionContent.split(/(?=^\d+\.\s+\*\*|^###\s+)/m).filter((b) => b.trim())
+    for (const line of lines) {
+      if (line.trim().startsWith('|') && !line.includes('---')) {
+        const convention = parseTableRow(line, severity)
+        if (convention) {
+          conventions.push(convention)
+        }
+      }
+    }
+  }
 
-    for (const block of blocks) {
-      const convention = parseConventionBlock(block, status)
-      if (convention && convention.what) {
-        conventions.push(convention)
+  // If no conventions found from tables, try old block format
+  if (conventions.length === 0) {
+    const sections: Array<{pattern: RegExp; status: ConventionStatus}> = [
+      {pattern: /## 🟡 Pending Documentation([\s\S]*?)(?=## ✅|## 💭|## 🗄️|## Usage|$)/, status: 'pending'},
+      {pattern: /## ✅ Recently Documented([\s\S]*?)(?=## 🟡|## 💭|## 🗄️|## Usage|$)/, status: 'documented'},
+      {pattern: /## 💭 Proposed Conventions([\s\S]*?)(?=## 🟡|## ✅|## 🗄️|## Usage|$)/, status: 'proposed'},
+      {pattern: /## 🗄️ Archived Conventions([\s\S]*?)(?=## 🟡|## ✅|## 💭|## Usage|$)/, status: 'archived'}
+    ]
+
+    for (const {pattern, status} of sections) {
+      const sectionMatch = content.match(pattern)
+      if (!sectionMatch) {
+        continue
+      }
+
+      const sectionContent = sectionMatch[1]
+
+      // Split section into convention blocks (numbered items or ### headers)
+      const blocks = sectionContent.split(/(?=^\d+\.\s+\*\*|^###\s+)/m).filter((b) => b.trim())
+
+      for (const block of blocks) {
+        const convention = parseConventionBlock(block, status)
+        if (convention && convention.what) {
+          conventions.push(convention)
+        }
       }
     }
   }

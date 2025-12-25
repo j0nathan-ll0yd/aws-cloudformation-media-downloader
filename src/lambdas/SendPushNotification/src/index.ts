@@ -13,8 +13,10 @@ import {transformToAPNSNotification} from '#lib/domain/notification/transformers
 const SUPPORTED_NOTIFICATION_TYPES: FileNotificationType[] = ['MetadataNotification', 'DownloadReadyNotification']
 
 /**
- * Returns device IDs for a user
+ * Returns device IDs for a user.
+ *
  * @param userId - The UUID of the user
+ * @returns Array of device IDs registered to the user
  * @notExported
  */
 async function getUserDevicesByUserId(userId: string): Promise<string[]> {
@@ -28,8 +30,10 @@ async function getUserDevicesByUserId(userId: string): Promise<string[]> {
 }
 
 /**
- * Retrieves a Device from DynamoDB (if it exists)
+ * Retrieves a Device from DynamoDB (if it exists).
+ *
  * @param deviceId - The unique Device identifier
+ * @returns The device record
  * @notExported
  */
 async function getDevice(deviceId: string): Promise<Device> {

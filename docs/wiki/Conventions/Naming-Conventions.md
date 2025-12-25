@@ -41,7 +41,8 @@ Use consistent naming conventions based on the element type:
 **Used for**:
 - Mathematical/physical constants: `PI`, `SPEED_OF_LIGHT`
 - True application constants: `MAX_RETRIES`, `DEFAULT_TIMEOUT`
-- **Deprecated for**: Module-level environment variables (use CamelCase instead)
+- Environment variable names: `DYNAMODB_TABLE_NAME`, `SNS_QUEUE_URL`
+- Module-level configuration values: `const BATCH_SIZE = 10`
 
 ### kebab-case
 **Pattern**: All lowercase with hyphens
@@ -124,14 +125,24 @@ const maxRetries = 3;  // Should be MAX_RETRIES (if truly constant)
 ## Special Cases
 
 ### Environment Variables
-In Lambda functions, use CamelCase for module-level constants:
-```typescript
-// ✅ Correct - Module-level env var constant
-const BucketName = process.env.BUCKET_NAME!;
-const TableName = process.env.TABLE_NAME!;
+Environment variable names use **SCREAMING_CASE**. Access them via `getRequiredEnv()`:
 
-// ❌ Incorrect - SCREAMING_SNAKE_CASE deprecated for env vars
-const BUCKET_NAME = process.env.BUCKET_NAME!;
+```typescript
+// ✅ CORRECT - Use getRequiredEnv() with SCREAMING_CASE variable names
+import {getRequiredEnv, getOptionalEnvNumber} from '#lib/system/env'
+
+// Lazy evaluation (preferred) - camelCase for local variable
+async function processFile() {
+  const bucketName = getRequiredEnv('BUCKET')
+  const tableName = getRequiredEnv('DYNAMODB_TABLE_NAME')
+}
+
+// Module-level constants - SCREAMING_CASE for true constants
+const BATCH_SIZE = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_SIZE', 5)
+const BATCH_DELAY_MS = getOptionalEnvNumber('FILE_COORDINATOR_BATCH_DELAY_MS', 10000)
+
+// ❌ WRONG - Direct process.env access
+const bucket = process.env.BUCKET_NAME!
 ```
 
 ### Lambda Function Directories

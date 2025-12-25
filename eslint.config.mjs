@@ -96,5 +96,28 @@ export default [
       // Phase 4: STYLISTIC (comment conventions)
       'local-rules/spacing-conventions': 'warn'
     }
+  },
+  // Relaxed JSDoc requirements for scripts and tooling (self-documenting per Code-Comments.md)
+  {
+    files: ['scripts/**/*.ts', 'graphrag/**/*.ts', 'config/**/*.ts'],
+    rules: {
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-returns-description': 'off'
+    }
+  },
+  // Stricter JSDoc for Lambda handlers (required per Code-Comments.md)
+  {
+    files: ['src/lambdas/*/src/index.ts'],
+    rules: {
+      'jsdoc/require-jsdoc': ['error', {
+        publicOnly: true,
+        require: {FunctionDeclaration: true, MethodDefinition: true, ArrowFunctionExpression: false},
+        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
+      }],
+      'jsdoc/require-returns': 'error'
+    }
   }
 ]

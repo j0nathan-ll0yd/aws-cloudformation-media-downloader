@@ -6,7 +6,7 @@
  * patterns that violate project conventions documented in AGENTS.md:
  * - "Avoid backwards-compatibility hacks like renaming unused _vars"
  *
- * @see docs/conventions-tracking.md
+ * @see docs/wiki/Meta/Conventions-Tracking.md
  */
 
 import type {SourceFile} from 'ts-morph'

@@ -10,9 +10,11 @@ import {logDebug, logError} from '#lib/system/logging'
 import {retryUnprocessed} from '#lib/system/retry'
 
 /**
- * Returns an array of Files for a user using ElectroDB batch get
- * Eliminates N+1 query pattern by using batch operations
+ * Returns an array of Files for a user using ElectroDB batch get.
+ * Eliminates N+1 query pattern by using batch operations.
+ *
  * @param userId - The User ID
+ * @returns Array of files associated with the user
  * @notExported
  */
 async function getFilesByUser(userId: string): Promise<File[]> {

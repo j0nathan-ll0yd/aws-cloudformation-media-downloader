@@ -3,7 +3,7 @@
  * Reads from the same sources as GraphRAG for consistency:
  * - build/graph.json for dependencies
  * - graphrag/metadata.json for semantic info
- * - docs/conventions-tracking.md for conventions
+ * - docs/wiki/Meta/Conventions-Tracking.md for conventions
  * - docs/wiki/ for detailed documentation
  * - Filesystem for Lambda/Entity discovery
  */
@@ -189,7 +189,7 @@ export async function getAwsServices(): Promise<ServiceMetadata[]> {
 }
 
 /**
- * Load conventions from docs/conventions-tracking.md
+ * Load conventions from docs/wiki/Meta/Conventions-Tracking.md
  */
 export async function loadConventions(): Promise<Convention[]> {
   const now = Date.now()
@@ -197,7 +197,7 @@ export async function loadConventions(): Promise<Convention[]> {
     return cachedConventions
   }
 
-  const conventionsPath = path.join(projectRoot, 'docs', 'conventions-tracking.md')
+  const conventionsPath = path.join(projectRoot, 'docs', 'wiki', 'Meta', 'Conventions-Tracking.md')
   const content = await fs.readFile(conventionsPath, 'utf-8')
   const parsed = parseConventions(content)
   cachedConventions = parsed.conventions

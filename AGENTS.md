@@ -2,7 +2,7 @@
 
 ## Convention Capture System
 
-**CRITICAL**: This project captures emergent conventions during development. Read `docs/conventions-tracking.md` at session start.
+**CRITICAL**: This project captures emergent conventions during development. Read `docs/wiki/Meta/Conventions-Tracking.md` at session start.
 
 ### Detection Signals:
 - 🚨 **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
@@ -10,12 +10,12 @@
 - 📋 **MEDIUM**: "Prefer X over Y", repeated decisions
 
 ### When Convention Detected:
-1. Update `docs/conventions-tracking.md` with the new convention
+1. Update `docs/wiki/Meta/Conventions-Tracking.md` with the new convention
 2. Document in appropriate wiki page under `docs/wiki/`
 3. Mark as documented in tracking file
 
 ### Reference:
-- **Active Conventions**: `docs/conventions-tracking.md`
+- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md`
 - **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
 
 **Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.
@@ -360,7 +360,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
 
 ### AWS & Infrastructure
-- **SDK Encapsulation**: [docs/wiki/AWS/SDK-Encapsulation-Policy.md](docs/wiki/AWS/SDK-Encapsulation-Policy.md) - ZERO tolerance
+- **Vendor Encapsulation**: [docs/wiki/Conventions/Vendor-Encapsulation-Policy.md](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 
@@ -368,10 +368,11 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 
 The following patterns have caused issues in this project and should be avoided:
 
-### 1. Direct AWS SDK Imports (CRITICAL)
+### 1. Direct Vendor Library Imports (CRITICAL)
 **Wrong**: `import {DynamoDBClient} from '@aws-sdk/client-dynamodb'`
 **Right**: `import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'`
-**Why**: Breaks encapsulation, makes testing difficult, loses type safety benefits
+**Why**: Breaks encapsulation, makes testing difficult, loses environment detection (LocalStack/X-Ray)
+**Applies to**: AWS SDK, ElectroDB, Better Auth, yt-dlp, and all third-party services
 
 ### 2. Manual ElectroDB Entity Mocks (CRITICAL)
 **Wrong**: Hand-crafted mock objects for entities in tests
@@ -384,8 +385,8 @@ The following patterns have caused issues in this project and should be avoided:
 **Why**: Partial failures leave orphaned data; children must be deleted before parents
 
 ### 4. Try-Catch for Required Environment Variables (CRITICAL)
-**Wrong**: `try { config = JSON.parse(process.env.Config) } catch { return fallback }`
-**Right**: `const config = getRequiredEnv('Config')` - let it fail fast
+**Wrong**: `try { config = JSON.parse(process.env.CONFIG) } catch { return fallback }`
+**Right**: `const config = getRequiredEnv('CONFIG')` - let it fail fast
 **Why**: Silent failures hide configuration errors that should break at cold start
 
 ### 5. Underscore-Prefixed Unused Variables (HIGH)
@@ -399,7 +400,7 @@ The following patterns have caused issues in this project and should be avoided:
 **Why**: Professional commits, code ownership clarity, industry standard
 
 ### 7. Module-Level Environment Variable Validation (HIGH)
-**Wrong**: `const config = getRequiredEnv('Config')` at top of module
+**Wrong**: `const config = getRequiredEnv('CONFIG')` at top of module
 **Right**: Call `getRequiredEnv()` inside functions (lazy evaluation)
 **Why**: Module-level calls break tests that need to set up mocks before import
 
