@@ -23,6 +23,8 @@ import {LambdaClient} from '@aws-sdk/client-lambda'
 import type {LambdaClientConfig} from '@aws-sdk/client-lambda'
 import {APIGateway} from '@aws-sdk/client-api-gateway'
 import type {APIGatewayClientConfig} from '@aws-sdk/client-api-gateway'
+import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
+import type {EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
 
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
@@ -110,4 +112,14 @@ export function createLambdaClient(): LambdaClient {
 export function createAPIGatewayClient(): APIGateway {
   const config: APIGatewayClientConfig = getBaseConfig()
   return new APIGateway(config)
+}
+
+/**
+ * Create an EventBridge client instance
+ * Configured for LocalStack when USE_LOCALSTACK=true, otherwise production AWS
+ * Automatically traced via OpenTelemetry AwsInstrumentation
+ */
+export function createEventBridgeClient(): EventBridgeClient {
+  const config: EventBridgeClientConfig = getBaseConfig()
+  return new EventBridgeClient(config)
 }

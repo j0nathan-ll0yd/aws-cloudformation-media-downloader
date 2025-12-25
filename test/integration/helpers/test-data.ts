@@ -130,9 +130,9 @@ export function createMockSQSFileNotificationEvent(
 /**
  * Creates a CloudWatch Events / EventBridge scheduled event
  * @param eventId - Unique event ID
- * @param ruleName - Name of the EventBridge rule (default: 'FileCoordinatorSchedule')
+ * @param ruleName - Name of the EventBridge rule (default: 'ScheduledEvent')
  */
-export function createMockScheduledEvent(eventId: string, ruleName = 'FileCoordinatorSchedule'): ScheduledEvent {
+export function createMockScheduledEvent(eventId: string, ruleName = 'ScheduledEvent'): ScheduledEvent {
   return {
     id: eventId,
     version: '0',

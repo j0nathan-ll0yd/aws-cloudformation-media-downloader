@@ -20,9 +20,10 @@ process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
 process.env.CLOUDFRONT_DOMAIN = 'test.cloudfront.net'
 process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
+process.env.EVENT_BUS_NAME = 'MediaDownloader'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {Context} from 'aws-lambda'
+import type {Context, SQSEvent} from 'aws-lambda'
 import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
@@ -76,6 +77,9 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS',
     numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   }))
 
+// Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: jest.fn<() => unknown>()}))
+
 // Note: No #lambdas/* path alias exists, using relative import for handler
 const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
 
@@ -102,15 +106,26 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {
     const fileId = 'test-video-123'
-    const event = {fileId}
+
+    // Create SQS event (StartFileUpload now consumes from SQS)
+    const event: SQSEvent = {
+      Records: [{
+        messageId: 'test-message-id',
+        receiptHandle: 'test-receipt-handle',
+        body: JSON.stringify({fileId, sourceUrl: `https://www.youtube.com/watch?v=${fileId}`, correlationId: 'test-corr-id', userId: 'test-user', attempt: 1}),
+        attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1666060600624', SenderId: 'AIDAIT2UOQQY3AUEKVGXU', ApproximateFirstReceiveTimestamp: '1666060600632'},
+        messageAttributes: {},
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
+        awsRegion: 'us-west-2'
+      }]
+    }
 
     const result = await handler(event, mockContext)
 
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.fileId).toBe(fileId)
-    expect(response.body.status).toBe('Success')
-    expect(response.body.fileSize).toBe(MOCK_FILE_SIZE)
+    // SQS handler returns SQSBatchResponse with batchItemFailures
+    expect(result.batchItemFailures).toEqual([])
 
     const file = await getFile(fileId)
     expect(file).not.toBeNull()

@@ -155,7 +155,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.fileId).toBe('background-video')
     expect(file!.status).toBe(FileStatus.Queued)
 
-    // FileCoordinator will pick up this file later
+    // EventBridge routes to DownloadQueue -> StartFileUpload
     expect(invokeLambdaMock).not.toHaveBeenCalled()
     expect(sendMessageMock).not.toHaveBeenCalled()
   })

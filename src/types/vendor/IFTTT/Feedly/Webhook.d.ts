@@ -7,8 +7,8 @@
  * This webhook triggers the video download workflow:
  * 1. Feedly detects new article in subscribed YouTube channel
  * 2. IFTTT forwards article to WebhookFeedly Lambda
- * 3. Lambda extracts video ID from articleURL
- * 4. FileCoordinator picks up the queued download
+ * 3. Lambda publishes DownloadRequested event to EventBridge
+ * 4. EventBridge routes to DownloadQueue -> StartFileUpload
  *
  * @see WebhookFeedly Lambda for processing implementation
  * @see {@link https://ifttt.com/feedly | Feedly IFTTT Integration}
@@ -29,6 +29,4 @@ export interface Webhook {
   readonly articleTitle: string
   /** Full URL to the article (YouTube video URL to extract video ID from) */
   readonly articleURL: string
-  /** Whether this is a background/silent notification (optional) */
-  backgroundMode?: boolean
 }

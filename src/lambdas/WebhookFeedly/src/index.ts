@@ -3,18 +3,19 @@ import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {Files} from '#entities/Files'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
+import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {FileStatus, ResponseStatus} from '#types/enums'
 import {feedlyWebhookRequestSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
 import type {File} from '#types/domain-models'
+import type {DownloadRequestedDetail} from '#types/events'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
-import {initiateFileDownload} from '#lib/lambda/invocation'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/user-file-service'
@@ -89,7 +90,6 @@ interface WebhookProcessingInput {
   fileId: string
   userId: string
   articleURL: string
-  backgroundMode?: boolean
   correlationId: string
 }
 
@@ -108,7 +108,7 @@ interface WebhookProcessingResult {
  * @notExported
  */
 async function processWebhookRequest(input: WebhookProcessingInput): Promise<WebhookProcessingResult> {
-  const {fileId, userId, articleURL, backgroundMode, correlationId} = input
+  const {fileId, userId, articleURL, correlationId} = input
 
   // Parallelize independent operations for ~60% latency reduction
   // Use Promise.allSettled to handle partial failures gracefully
@@ -127,14 +127,18 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       // New file - create Files and FileDownloads records with correlationId
       await addFile(fileId, articleURL, correlationId)
     }
-    if (!backgroundMode) {
-      // Foreground mode - initiate download immediately with correlationId
-      await initiateFileDownload(fileId, correlationId)
-      return {statusCode: 202, status: ResponseStatus.Initiated}
-    } else {
-      // Background mode - FileCoordinator will pick it up
-      return {statusCode: 202, status: ResponseStatus.Accepted}
+    // Publish DownloadRequested event to EventBridge
+    // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
+    const eventDetail: DownloadRequestedDetail = {
+      fileId,
+      userId,
+      sourceUrl: articleURL,
+      correlationId,
+      requestedAt: new Date().toISOString()
     }
+    await publishEvent('DownloadRequested', eventDetail)
+    logInfo('Published DownloadRequested event', {fileId, correlationId})
+    return {statusCode: 202, status: ResponseStatus.Accepted}
   }
 }
 
@@ -177,7 +181,6 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
     fileId,
     userId,
     articleURL: requestBody.articleURL,
-    backgroundMode: requestBody.backgroundMode,
     correlationId
   })
 
