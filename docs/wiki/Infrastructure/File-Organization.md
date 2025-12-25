@@ -56,9 +56,10 @@ resource "aws_lambda_function" "ListFiles" {
   role         = aws_iam_role.ListFilesRole.arn
 
   environment {
-    variables = {
-      DynamoDBTableName = aws_dynamodb_table.MediaDownloader.name
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME   = "ListFiles"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
+    })
   }
 }
 

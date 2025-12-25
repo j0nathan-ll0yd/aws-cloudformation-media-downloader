@@ -100,26 +100,26 @@ retention_in_days = 14
 
 ### Lambda Environment Variables
 
-Always use CamelCase to match TypeScript ProcessEnv interface:
+Always use **SCREAMING_CASE** for environment variable names:
 
 ```hcl
 environment {
-  variables = {
-    DynamoDBTableFiles  = aws_dynamodb_table.Files.name
-    YtdlpBinaryPath     = "/opt/bin/yt-dlp_linux"
-    GithubPersonalToken = data.sops_file.secrets.data["github.issue.token"]
-  }
+  variables = merge(local.common_lambda_env, {
+    OTEL_SERVICE_NAME         = local.function_name
+    DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
+    YTDLP_BINARY_PATH         = "/opt/bin/yt-dlp_linux"
+    GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
+  })
 }
 ```
 
-Match exactly to `src/types/global.d.ts`:
+TypeScript code accesses these via `getRequiredEnv()`:
 
 ```typescript
-interface ProcessEnv {
-  DynamoDBTableFiles: string
-  YtdlpBinaryPath: string
-  GithubPersonalToken: string
-}
+import {getRequiredEnv} from '#lib/system/env'
+
+const tableName = getRequiredEnv('DYNAMODB_TABLE_NAME')
+const ytdlpPath = getRequiredEnv('YTDLP_BINARY_PATH')
 ```
 
 ## Centralized Lambda Environment Configuration
@@ -142,8 +142,8 @@ resource "aws_lambda_function" "MyLambda" {
   # ...
   environment {
     variables = merge(local.common_lambda_env, {
-      OTEL_SERVICE_NAME = local.my_lambda_function_name
-      DynamoDBTableName = aws_dynamodb_table.main.name
+      OTEL_SERVICE_NAME   = local.my_lambda_function_name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.main.name
       # Function-specific variables...
     })
   }
@@ -191,10 +191,11 @@ resource "aws_lambda_function" "FunctionName" {
   source_code_hash = data.archive_file.FunctionName.output_base64sha256
 
   environment {
-    variables = {
-      DynamoDBTableFiles = aws_dynamodb_table.Files.name
-      S3BucketName      = aws_s3_bucket.MediaFiles.bucket
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME   = "FunctionName"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.Files.name
+      S3_BUCKET_NAME      = aws_s3_bucket.MediaFiles.bucket
+    })
   }
 
   depends_on = [
@@ -334,7 +335,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "MediaFilesEncrypt
 - ✅ Group related resources in logical files
 - ✅ Use PascalCase for resource names
 - ✅ Reference resources using interpolation
-- ✅ Keep environment variable names consistent with TypeScript
+- ✅ Use SCREAMING_CASE for environment variable names
 - ✅ Use PAY_PER_REQUEST for DynamoDB in serverless
 - ✅ Enable versioning and encryption on S3 buckets
 - ✅ Set CloudWatch log retention

@@ -46,7 +46,7 @@ import {beforeAll, afterAll, test} from '@jest/globals'
 import {setupLocalStack, teardownLocalStack} from '../helpers'
 
 beforeAll(async () => {
-  process.env.UseLocalstack = 'true'
+  process.env.USE_LOCALSTACK = 'true'
   await setupLocalStack()
 })
 

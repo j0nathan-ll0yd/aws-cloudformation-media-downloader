@@ -7,20 +7,21 @@
 
 ## OpenTofu Configuration
 
-Define environment variables in Lambda resources using CamelCase:
+Define environment variables in Lambda resources using **SCREAMING_CASE**:
 
 ```hcl
 resource "aws_lambda_function" "ProcessFile" {
   function_name = "ProcessFile"
 
   environment {
-    variables = {
-      DynamoDBTableName        = aws_dynamodb_table.main.name
-      PlatformApplicationArn   = aws_sns_platform_application.apns.arn
-      PushNotificationTopicArn = aws_sns_topic.push_notifications.arn
-      FeedlyQueueUrl          = aws_sqs_queue.feedly.url
-      EnableXRay              = var.enable_xray ? "true" : "false"
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME          = "ProcessFile"
+      DYNAMODB_TABLE_NAME        = aws_dynamodb_table.main.name
+      PLATFORM_APPLICATION_ARN   = aws_sns_platform_application.apns.arn
+      PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.push_notifications.arn
+      SNS_QUEUE_URL              = aws_sqs_queue.feedly.url
+      ENABLE_XRAY                = var.enable_xray ? "true" : "false"
+    })
   }
 }
 ```
@@ -29,13 +30,13 @@ resource "aws_lambda_function" "ProcessFile" {
 
 ```hcl
 # From AWS resources
-DynamoDBTableName = aws_dynamodb_table.main.name
+DYNAMODB_TABLE_NAME = aws_dynamodb_table.main.name
 
 # From Terraform variables
-EnableXRay = var.enable_xray
+ENABLE_XRAY = var.enable_xray
 
-# From data sources
-ApiToken = data.aws_secretsmanager_secret_version.api_token.secret_string
+# From data sources (SOPS-encrypted secrets)
+API_TOKEN = data.sops_file.secrets.data["api_token"]
 ```
 
 ## LocalStack Support
@@ -46,10 +47,10 @@ variable "use_localstack" {
 }
 
 environment {
-  variables = {
-    UseLocalstack = var.use_localstack ? "true" : "false"
-    DynamoDBEndpoint = var.use_localstack ? "http://localhost:4566" : null
-  }
+  variables = merge(local.common_lambda_env, {
+    USE_LOCALSTACK     = var.use_localstack ? "true" : "false"
+    DYNAMODB_ENDPOINT  = var.use_localstack ? "http://localhost:4566" : null
+  })
 }
 ```
 
@@ -60,4 +61,4 @@ environment {
 
 ---
 
-*Configure Lambda environment variables in OpenTofu using CamelCase naming.*
+*Configure Lambda environment variables in OpenTofu using SCREAMING_CASE naming.*

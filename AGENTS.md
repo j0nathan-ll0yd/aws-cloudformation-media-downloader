@@ -384,8 +384,8 @@ The following patterns have caused issues in this project and should be avoided:
 **Why**: Partial failures leave orphaned data; children must be deleted before parents
 
 ### 4. Try-Catch for Required Environment Variables (CRITICAL)
-**Wrong**: `try { config = JSON.parse(process.env.Config) } catch { return fallback }`
-**Right**: `const config = getRequiredEnv('Config')` - let it fail fast
+**Wrong**: `try { config = JSON.parse(process.env.CONFIG) } catch { return fallback }`
+**Right**: `const config = getRequiredEnv('CONFIG')` - let it fail fast
 **Why**: Silent failures hide configuration errors that should break at cold start
 
 ### 5. Underscore-Prefixed Unused Variables (HIGH)
@@ -399,7 +399,7 @@ The following patterns have caused issues in this project and should be avoided:
 **Why**: Professional commits, code ownership clarity, industry standard
 
 ### 7. Module-Level Environment Variable Validation (HIGH)
-**Wrong**: `const config = getRequiredEnv('Config')` at top of module
+**Wrong**: `const config = getRequiredEnv('CONFIG')` at top of module
 **Right**: Call `getRequiredEnv()` inside functions (lazy evaluation)
 **Why**: Module-level calls break tests that need to set up mocks before import
 

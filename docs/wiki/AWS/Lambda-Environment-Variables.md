@@ -7,13 +7,13 @@
 
 ## Naming Convention
 
-Use **CamelCase** for Lambda environment variable names:
+Use **SCREAMING_CASE** for Lambda environment variable names:
 
 ```typescript
-process.env.DynamoDBTableName
-process.env.PlatformApplicationArn
-process.env.PushNotificationTopicArn
-process.env.FeedlyQueueUrl
+process.env.DYNAMODB_TABLE_NAME
+process.env.PLATFORM_APPLICATION_ARN
+process.env.PUSH_NOTIFICATION_TOPIC_ARN
+process.env.SNS_QUEUE_URL
 ```
 
 ## Centralized Access (REQUIRED)
@@ -24,13 +24,13 @@ Always use the `getRequiredEnv()` helper instead of direct `process.env` access:
 import {getRequiredEnv, getOptionalEnv, getOptionalEnvNumber} from '#lib/system/env'
 
 // ✅ CORRECT - Centralized access with clear error messages
-const tableName = getRequiredEnv('DynamoDBTableName')
+const tableName = getRequiredEnv('DYNAMODB_TABLE_NAME')
 const apiHost = getOptionalEnv('API_HOST', 'api.example.com')
 const batchSize = getOptionalEnvNumber('BATCH_SIZE', 10)
 
 // ❌ WRONG - Direct process.env access
-const tableName = process.env.DynamoDBTableName || 'default-table'
-const tableName = process.env.DynamoDBTableName as string
+const tableName = process.env.DYNAMODB_TABLE_NAME || 'default-table'
+const tableName = process.env.DYNAMODB_TABLE_NAME as string
 ```
 
 **Why**:
@@ -46,10 +46,10 @@ Environment variables are required and verified by unit tests. Don't provide def
 
 ```typescript
 // ❌ WRONG - Don't use defaults
-const tableName = process.env.DynamoDBTableName || 'default-table'
+const tableName = process.env.DYNAMODB_TABLE_NAME || 'default-table'
 
 // ✅ CORRECT - Use getRequiredEnv
-const tableName = getRequiredEnv('DynamoDBTableName')
+const tableName = getRequiredEnv('DYNAMODB_TABLE_NAME')
 ```
 
 ## No Try-Catch for Required Variables (CRITICAL)
@@ -59,13 +59,13 @@ const tableName = getRequiredEnv('DynamoDBTableName')
 ```typescript
 // ❌ WRONG - Silent failures hide configuration errors
 try {
-  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)
 } catch {
   return { clientId: 'fallback', teamId: 'fallback' }
 }
 
 // ✅ CORRECT - Let it fail if misconfigured
-const config = JSON.parse(process.env.SignInWithAppleConfig)
+const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)
 ```
 
 **Why**: Infrastructure tests enforce that all required environment variables are properly configured. Silent failures in production hide critical configuration errors that should fail fast and loud.
@@ -77,8 +77,8 @@ const config = JSON.parse(process.env.SignInWithAppleConfig)
 ```typescript
 // test/setup.ts
 beforeAll(() => {
-  process.env.DynamoDBTableName = 'test-table'
-  process.env.PlatformApplicationArn = 'arn:aws:sns:test'
+  process.env.DYNAMODB_TABLE_NAME = 'test-table'
+  process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:test'
 })
 ```
 
@@ -87,22 +87,31 @@ beforeAll(() => {
 ```hcl
 resource "aws_lambda_function" "ListFiles" {
   environment {
-    variables = {
-      DynamoDBTableName = aws_dynamodb_table.main.name
-      EnableXRay        = var.enable_xray
-    }
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME      = "ListFiles"
+      DYNAMODB_TABLE_NAME    = aws_dynamodb_table.main.name
+      ENABLE_XRAY            = var.enable_xray
+    })
   }
 }
 ```
 
 ## Common Variables
 
-- `DynamoDBTableName` - DynamoDB table (set in OpenTofu)
-- `PlatformApplicationArn` - SNS platform app
-- `PushNotificationTopicArn` - SNS topic
-- `FeedlyQueueUrl` - SQS queue
-- `EnableXRay` - X-Ray tracing (read as ENABLE_XRAY in code)
-- `UseLocalstack` - LocalStack testing (read as USE_LOCALSTACK in code)
+| Variable | Description |
+|----------|-------------|
+| `DYNAMODB_TABLE_NAME` | DynamoDB table name |
+| `PLATFORM_APPLICATION_ARN` | SNS platform application ARN |
+| `PUSH_NOTIFICATION_TOPIC_ARN` | SNS topic for push notifications |
+| `SNS_QUEUE_URL` | SQS queue URL for async processing |
+| `BUCKET` | S3 bucket name for media storage |
+| `CLOUDFRONT_DOMAIN` | CloudFront distribution domain |
+| `APNS_TEAM` | Apple Push Notification team ID |
+| `APNS_KEY_ID` | APNS signing key ID |
+| `APNS_SIGNING_KEY` | APNS signing key (P8 format) |
+| `APNS_DEFAULT_TOPIC` | Default APNS topic (bundle ID) |
+| `ENABLE_XRAY` | X-Ray tracing toggle |
+| `USE_LOCALSTACK` | LocalStack testing toggle |
 
 ## Related Patterns
 
@@ -111,4 +120,4 @@ resource "aws_lambda_function" "ListFiles" {
 
 ---
 
-*Use CamelCase for Lambda environment variables. Verify presence with unit tests, not defaults.*
+*Use SCREAMING_CASE for Lambda environment variables. Verify presence with unit tests, not defaults.*

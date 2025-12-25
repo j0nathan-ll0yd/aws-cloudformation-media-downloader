@@ -341,7 +341,7 @@ _All conventions from 2025-12-22 are now documented._
 3. **No Try-Catch for Required Environment Variables** (Rule)
    - **What**: Never wrap required environment variable access in try-catch blocks with fallback values
    - **Why**: Infrastructure tests enforce that all required environment variables are properly configured; silent failures hide configuration errors
-   - **Example**: `const config = JSON.parse(process.env.SignInWithAppleConfig)` NOT `try { const config = ... } catch { return fallback }`
+   - **Example**: `const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)` NOT `try { const config = ... } catch { return fallback }`
    - **Detected**: During Better Auth configuration cleanup
    - **Documented**: docs/wiki/AWS/Lambda-Environment-Variables.md
    - **Priority**: CRITICAL
@@ -532,8 +532,8 @@ _All conventions from 2025-12-22 are now documented._
    - **What**: Call `getRequiredEnv()` inside functions, not at module level
    - **Why**: Avoids test failures from env validation running at import time before mocks are set up
    - **Exception**: Module-level constants that are directly imported by consumers (e.g., `defaultFile` in constants.ts) should remain module-level to prevent esbuild tree-shaking. For these cases, tests should set env vars BEFORE importing the module rather than mocking env-validation.
-   - **Example for functions**: `function getConfig() { return getRequiredEnv('Config') }` (lazy)
-   - **Example for constants**: Set `process.env.DefaultFileUrl = 'value'` before import, NOT mock env-validation
+   - **Example for functions**: `function getConfig() { return getRequiredEnv('CONFIG') }` (lazy)
+   - **Example for constants**: Set `process.env.DEFAULT_FILE_URL = 'value'` before import, NOT mock env-validation
    - **Documented**: src/util/constants.ts, src/lib/vendor/YouTube.ts
    - **Priority**: HIGH
    - **Enforcement**: Prefer lazy evaluation; use env vars in tests for module-level constants

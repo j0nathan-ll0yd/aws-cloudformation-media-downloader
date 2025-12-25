@@ -35,7 +35,7 @@ import {fixtureLoggingHooks} from '../../better-auth/fixture-hooks'
 
 export const auth = betterAuth({
   database: createElectroDBAdapter(),
-  baseURL: process.env.ApplicationUrl,
+  baseURL: process.env.APPLICATION_URL,
   socialProviders: {
     apple: {
       clientId: '<from config>',
@@ -255,9 +255,9 @@ iOS App
 
 Required environment variables for Better Auth:
 
-- `ApplicationUrl`: Base URL for OAuth callbacks (e.g., `https://api.example.com`)
-- `SignInWithAppleConfig`: JSON with `{client_id, bundle_id}`
-- `DynamoDBTableName`: Name of DynamoDB table
+- `APPLICATION_URL`: Base URL for OAuth callbacks (e.g., `https://api.example.com`)
+- `SIGN_IN_WITH_APPLE_CONFIG`: JSON with `{client_id, bundle_id}`
+- `DYNAMODB_TABLE_NAME`: Name of DynamoDB table
 
 ### Error Handling
 
@@ -463,11 +463,11 @@ Per project conventions, required environment variables are accessed without fal
 
 ```typescript
 // ✓ Correct - fails fast if missing
-const config = JSON.parse(process.env.SignInWithAppleConfig)
+const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)
 
 // ✗ Wrong - silent failures hide configuration errors
 try {
-  const config = JSON.parse(process.env.SignInWithAppleConfig)
+  const config = JSON.parse(process.env.SIGN_IN_WITH_APPLE_CONFIG)
 } catch {
   return fallbackConfig
 }
