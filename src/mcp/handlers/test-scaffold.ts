@@ -81,9 +81,7 @@ function getAwsServiceMocks(service: string): string[] {
     S3: ['uploadToS3', 'getObject', 'deleteObject', 'listObjects'],
     Lambda: ['invokeFunction', 'invokeFunctionAsync'],
     SNS: ['publishToSNS', 'sendPushNotification'],
-    SQS: ['sendMessage', 'receiveMessage', 'deleteMessage'],
-    SecretsManager: ['getSecret'],
-    CloudWatch: ['putLogEvents']
+    SQS: ['sendMessage', 'receiveMessage', 'deleteMessage']
   }
   return serviceMocks[service] || ['mockFunction']
 }
