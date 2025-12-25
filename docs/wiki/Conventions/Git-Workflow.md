@@ -172,34 +172,74 @@ Brief description of changes
 
 ## Worktree Workflow
 
-### 🚨 CRITICAL: Never Work Directly on Master
+### CRITICAL: Never Work Directly on Master
 
 **All development work MUST be done in a git worktree on a feature branch.**
 
 ```bash
 # 1. Create worktree with feature branch
-git worktree add -b feature/my-feature ~/wt/project-name/feature/my-feature master
+git worktree add -b feature/my-feature ~/wt/my-feature master
 
-# 2. Navigate to worktree
-cd ~/wt/project-name/feature/my-feature
+# 2. Navigate to worktree (auto-setup runs via post-checkout hook)
+cd ~/wt/my-feature
+# Symlinks created automatically (.env, terraform state, etc.)
+# Dependencies installed (pnpm install)
+# Terraform initialized (tofu init)
 
-# 3. Set up symlinks (for credentials and state)
-ln -s ~/.env .env
-ln -s ~/project/terraform/terraform.tfstate terraform/terraform.tfstate
+# 3. Work on feature branch
+# ... make changes, commit, test, deploy ...
 
-# 4. Work on feature branch
-# ... make changes, commit, test ...
-
-# 5. Push branch to remote
+# 4. Push branch to remote
 git push -u origin feature/my-feature
 
-# 6. Create PR via GitHub
+# 5. Create PR via GitHub
 gh pr create --title "feat: description" --body "..."
 
-# 7. After merge, cleanup
-cd ~/project  # Return to main repo
-git worktree remove ~/wt/project-name/feature/my-feature
+# 6. After merge, cleanup
+cd ~/Repositories/aws-cloudformation-media-downloader
+git worktree remove ~/wt/my-feature
 git branch -d feature/my-feature
+```
+
+### Automatic Worktree Setup
+
+The `.husky/post-checkout` hook automatically configures worktrees:
+
+| What | How |
+|------|-----|
+| `.env` | Symlinked from main repo (for SOPS) |
+| `.claude/` | Symlinked from main repo |
+| `secrets.yaml` | Symlinked from main repo |
+| `.sops.yaml` | Symlinked from main repo |
+| `terraform/terraform.tfstate*` | Symlinked from main repo |
+| Dependencies | `pnpm install` runs automatically |
+| Terraform | `tofu init` runs automatically |
+| GraphRAG | `graphrag:extract` generates knowledge graph |
+| Semantic search | `index:codebase` runs in background |
+| Repomix | `pack:context` generates AI context (background) |
+
+After navigating to a new worktree, you can immediately run `pnpm run deploy`.
+
+### Claude Code and Worktrees
+
+Claude Code anchors to the directory where it was started. If you start Claude Code from the main repo and then work in a worktree, you'll see "Shell cwd was reset" messages.
+
+**Best Practice**: Start Claude Code from within the worktree:
+```bash
+cd ~/wt/my-feature
+claude
+```
+
+**Why this matters for MCP**: The MCP server uses relative paths for:
+- `.lancedb/` (semantic search)
+- `graphrag/knowledge-graph.json` (knowledge graph)
+- `build/graph.json` (dependency analysis)
+
+If you start from the main repo, MCP queries will use the **main repo's indexes**, not the worktree's.
+
+**Fallback**: If you must work from another directory, use `/add-dir` for file access (but MCP will still use the starting directory's indexes):
+```bash
+/add-dir ~/wt/my-feature
 ```
 
 ### Worktree Benefits
@@ -208,15 +248,17 @@ git branch -d feature/my-feature
 - **Multiple features**: Work on several features simultaneously
 - **Safe experimentation**: Easy to discard failed attempts
 - **Clean history**: Squash-and-merge keeps master clean
+- **Deploy-ready**: Automatic setup means immediate deployment capability
 
 ## Enforcement
 
 ### Automated Git Hooks
 
-| Hook | File | What It Blocks |
-|------|------|----------------|
-| `commit-msg` | `.husky/commit-msg` | AI attribution patterns in commit messages |
-| `pre-push` | `.husky/pre-push` | Direct pushes to master/main branch |
+| Hook | File | Purpose |
+|------|------|---------|
+| `commit-msg` | `.husky/commit-msg` | Blocks AI attribution patterns in commit messages |
+| `pre-push` | `.husky/pre-push` | Blocks direct pushes to master/main branch |
+| `post-checkout` | `.husky/post-checkout` | Auto-configures worktrees for deployment |
 
 #### commit-msg Hook
 
