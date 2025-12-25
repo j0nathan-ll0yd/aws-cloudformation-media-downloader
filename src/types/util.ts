@@ -36,8 +36,3 @@ export interface UserEventDetails {
   userId?: string
   userStatus: UserStatus
 }
-
-/**
- * Input for publishing CloudWatch metrics
- */
-export type MetricInput = {name: string; value: number; unit?: string; dimensions?: {Name: string; Value: string}[]}

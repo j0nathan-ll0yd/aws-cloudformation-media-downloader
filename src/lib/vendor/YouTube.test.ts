@@ -45,8 +45,7 @@ const mockCreateS3Upload = jest.fn<(bucket: string, key: string, body: unknown, 
 
 jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({createS3Upload: mockCreateS3Upload}))
 
-// Mock CloudWatch vendor wrapper
-jest.unstable_mockModule('#lib/vendor/AWS/CloudWatch', () => ({putMetricData: jest.fn(), getStandardUnit: (unit?: string) => unit || 'None'}))
+// Note: Metrics are now published via Powertools EMF logs (stdout), no mock needed
 
 // Set up environment variable before importing
 process.env.YTDLP_BINARY_PATH = '/opt/bin/yt-dlp_linux'

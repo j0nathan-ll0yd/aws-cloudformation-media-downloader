@@ -90,14 +90,10 @@ describe('Lambda:Middleware:API', () => {
 
       await handler({testField: 'value'}, mockContext)
 
-      // Should have at least 2 fixture logs (incoming and outgoing)
-      const fixtureLogs = consoleLogSpy.mock.calls.filter((call) => {
-        try {
-          const logData = JSON.parse(call[0] as string)
-          return logData.__FIXTURE_MARKER__
-        } catch {
-          return false // Skip non-JSON logs
-        }
+      // Should have at least 2 fixture logs via Powertools logger (incoming and outgoing)
+      const fixtureLogs = loggerInfoSpy.mock.calls.filter((call) => {
+        const message = call[0] as string
+        return message === 'fixture:incoming' || message === 'fixture:outgoing'
       })
       expect(fixtureLogs.length).toBe(2)
     })

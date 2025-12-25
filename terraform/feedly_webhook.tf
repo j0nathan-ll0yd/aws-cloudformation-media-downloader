@@ -1,9 +1,14 @@
-resource "aws_iam_role" "WebhookFeedlyRole" {
-  name               = "WebhookFeedlyRole"
+locals {
+  webhook_feedly_function_name    = "WebhookFeedly"
+  start_file_upload_function_name = "StartFileUpload"
+}
+
+resource "aws_iam_role" "WebhookFeedly" {
+  name               = local.webhook_feedly_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
-data "aws_iam_policy_document" "WebhookFeedlyRole" {
+data "aws_iam_policy_document" "WebhookFeedly" {
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
@@ -34,23 +39,23 @@ data "aws_iam_policy_document" "WebhookFeedlyRole" {
   }
 }
 
-resource "aws_iam_policy" "WebhookFeedlyRolePolicy" {
-  name   = "WebhookFeedlyRolePolicy"
-  policy = data.aws_iam_policy_document.WebhookFeedlyRole.json
+resource "aws_iam_policy" "WebhookFeedly" {
+  name   = local.webhook_feedly_function_name
+  policy = data.aws_iam_policy_document.WebhookFeedly.json
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicy" {
-  role       = aws_iam_role.WebhookFeedlyRole.name
-  policy_arn = aws_iam_policy.WebhookFeedlyRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "WebhookFeedly" {
+  role       = aws_iam_role.WebhookFeedly.name
+  policy_arn = aws_iam_policy.WebhookFeedly.arn
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyLogging" {
-  role       = aws_iam_role.WebhookFeedlyRole.name
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyLogging" {
+  role       = aws_iam_role.WebhookFeedly.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyPolicyXRay" {
-  role       = aws_iam_role.WebhookFeedlyRole.name
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyXRay" {
+  role       = aws_iam_role.WebhookFeedly.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -67,18 +72,18 @@ resource "aws_cloudwatch_log_group" "WebhookFeedly" {
 
 data "archive_file" "WebhookFeedly" {
   type        = "zip"
-  source_file = "./../build/lambdas/WebhookFeedly.mjs"
+  source_dir  = "./../build/lambdas/WebhookFeedly"
   output_path = "./../build/lambdas/WebhookFeedly.zip"
 }
 
 resource "aws_lambda_function" "WebhookFeedly" {
   description      = "A webhook from Feedly via IFTTT"
-  function_name    = "WebhookFeedly"
-  role             = aws_iam_role.WebhookFeedlyRole.arn
-  handler          = "WebhookFeedly.handler"
+  function_name    = local.webhook_feedly_function_name
+  role             = aws_iam_role.WebhookFeedly.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 512
-  depends_on       = [aws_iam_role_policy_attachment.WebhookFeedlyPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -88,14 +93,12 @@ resource "aws_lambda_function" "WebhookFeedly" {
   }
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
-      IDEMPOTENCY_TABLE_NAME      = aws_dynamodb_table.IdempotencyTable.name
-      OTEL_SERVICE_NAME           = "WebhookFeedly"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME    = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL          = aws_sqs_queue.SendPushNotification.id
+      IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
+      OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
+    })
   }
 }
 
@@ -163,34 +166,34 @@ data "aws_iam_policy_document" "MultipartUpload" {
   }
 }
 
-resource "aws_iam_role" "MultipartUploadRole" {
-  name               = "MultipartUploadRole"
+resource "aws_iam_role" "StartFileUpload" {
+  name               = local.start_file_upload_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
-resource "aws_iam_policy" "MultipartUploadRolePolicy" {
-  name   = "MultipartUploadRolePolicy"
+resource "aws_iam_policy" "StartFileUpload" {
+  name   = local.start_file_upload_function_name
   policy = data.aws_iam_policy_document.MultipartUpload.json
 }
 
-resource "aws_iam_role_policy_attachment" "MultipartUploadPolicy" {
-  role       = aws_iam_role.MultipartUploadRole.name
-  policy_arn = aws_iam_policy.MultipartUploadRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "StartFileUpload" {
+  role       = aws_iam_role.StartFileUpload.name
+  policy_arn = aws_iam_policy.StartFileUpload.arn
 }
 
-resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyLogging" {
-  role       = aws_iam_role.MultipartUploadRole.name
+resource "aws_iam_role_policy_attachment" "StartFileUploadLogging" {
+  role       = aws_iam_role.StartFileUpload.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "MultipartUploadPolicyXRay" {
-  role       = aws_iam_role.MultipartUploadRole.name
+resource "aws_iam_role_policy_attachment" "StartFileUploadXRay" {
+  role       = aws_iam_role.StartFileUpload.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
 data "archive_file" "StartFileUpload" {
   type        = "zip"
-  source_file = "./../build/lambdas/StartFileUpload.mjs"
+  source_dir  = "./../build/lambdas/StartFileUpload"
   output_path = "./../build/lambdas/StartFileUpload.zip"
 }
 
@@ -318,11 +321,11 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
 
 resource "aws_lambda_function" "StartFileUpload" {
   description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
-  function_name                  = "StartFileUpload"
-  role                           = aws_iam_role.MultipartUploadRole.arn
-  handler                        = "StartFileUpload.handler"
+  function_name                  = local.start_file_upload_function_name
+  role                           = aws_iam_role.StartFileUpload.arn
+  handler                        = "index.handler"
   runtime                        = "nodejs24.x"
-  depends_on                     = [aws_iam_role_policy_attachment.MultipartUploadPolicy]
+  depends_on                     = [aws_iam_role_policy_attachment.StartFileUpload]
   timeout                        = 900
   memory_size                    = 2048
   reserved_concurrent_executions = 10 # Prevent YouTube rate limiting
@@ -344,18 +347,16 @@ resource "aws_lambda_function" "StartFileUpload" {
   }
 
   environment {
-    variables = {
-      BUCKET                      = aws_s3_bucket.Files.id
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      CLOUDFRONT_DOMAIN           = aws_cloudfront_distribution.media_files.domain_name
-      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
-      YTDLP_BINARY_PATH           = "/opt/bin/yt-dlp_linux"
-      PATH                        = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      GITHUB_PERSONAL_TOKEN       = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME           = "StartFileUpload"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      BUCKET                = aws_s3_bucket.Files.id
+      DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
+      CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.MediaFiles.domain_name
+      SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
+      YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
+      PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME     = local.start_file_upload_function_name
+    })
   }
 }
 

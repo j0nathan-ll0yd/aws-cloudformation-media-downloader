@@ -1,5 +1,5 @@
 import {getOptionalEnv} from '#lib/system/env'
-import {logDebug, logInfo} from '#lib/system/logging'
+import {logDebug} from '#lib/system/logging'
 import {ServiceUnavailableError} from '#lib/system/errors'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import type {UserEventDetails} from '#types/util'
@@ -8,7 +8,7 @@ import {UserStatus} from '#types/enums'
 /*#__PURE__*/
 export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = getOptionalEnv('PLATFORM_APPLICATION_ARN', '')
-  logInfo('process.env.PLATFORM_APPLICATION_ARN <=', platformApplicationArn)
+  logDebug('process.env.PLATFORM_APPLICATION_ARN <=', platformApplicationArn)
   if (!platformApplicationArn) {
     throw new ServiceUnavailableError('requires configuration')
   }

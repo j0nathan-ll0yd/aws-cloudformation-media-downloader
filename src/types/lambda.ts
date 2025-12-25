@@ -8,6 +8,24 @@ import type {UserStatus} from './enums'
 /** Metadata passed to all wrapped handlers */
 export type WrapperMetadata = {traceId: string}
 
+/**
+ * Options for withPowertools middleware
+ */
+export interface PowertoolsOptions {
+  /**
+   * Enable full metrics middleware for lambdas that publish custom metrics.
+   * When true, enables the Powertools logMetrics middleware which flushes all
+   * stored metrics at request end.
+   *
+   * Cold start metrics are tracked automatically for ALL lambdas regardless
+   * of this setting - this option only controls custom metrics publishing.
+   *
+   * Defaults to false. Only set to true for lambdas that call metrics.addMetric().
+   * Currently: FileCoordinator and StartFileUpload publish custom metrics.
+   */
+  enableCustomMetrics?: boolean
+}
+
 /** Parameters passed to wrapped API Gateway handlers */
 export type ApiHandlerParams<TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {event: TEvent; context: Context; metadata: WrapperMetadata}
 

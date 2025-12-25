@@ -31,6 +31,10 @@ import {logInfo, response} from '../../../util/lambda-helpers'
 Lambda handlers use wrapper functions that eliminate boilerplate and ensure consistency:
 
 ```typescript
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {response} from '#util/lambda-helpers'
+
 // Helper functions first
 async function processFile(fileId: string): Promise<void> {
   const file = await Files.get({fileId}).go()
@@ -38,7 +42,7 @@ async function processFile(fileId: string): Promise<void> {
 }
 
 // Handler with wrappers - business logic only, no try-catch needed
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   await processFile(event.fileId)
   return response(context, 200, {success: true})
   // Errors automatically converted to 500 responses
@@ -55,11 +59,42 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
 | `wrapAuthorizer` | API Gateway authorizers | Propagates `Error('Unauthorized')` → 401 |
 | `wrapEventHandler` | S3/SQS batch processing | Per-record error handling |
 | `wrapScheduledHandler` | CloudWatch scheduled events | Logs and rethrows errors |
+| `wrapLambdaInvokeHandler` | Lambda-to-Lambda invocation | Logs and rethrows errors |
 
 All wrappers provide:
-- Automatic event logging via `logInfo`
+- Automatic request logging via `logIncomingFixture()` (compact summary ~150 bytes)
 - Fixture logging for test data extraction
 - `WrapperMetadata` with traceId passed to handler
+
+### Powertools Wrapper Options
+
+```typescript
+// Default - cold start metrics tracked automatically for ALL lambdas
+export const handler = withPowertools(wrapAuthorizer(...))
+
+// Enable full metrics middleware for lambdas that publish custom metrics
+export const handler = withPowertools(wrapScheduledHandler(...), {enableCustomMetrics: true})
+```
+
+**Cold Start Tracking**: All lambdas automatically track cold start metrics. For lambdas without
+`enableCustomMetrics`, this is done via manual tracking to avoid "No application metrics" warnings.
+
+**Custom Metrics**: Set `enableCustomMetrics: true` for lambdas that publish custom metrics:
+
+```typescript
+import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
+
+// Simple metric (no dimensions)
+metrics.addMetric('FilesProcessed', MetricUnit.Count, filesProcessed)
+
+// Metric with unique dimensions (use singleMetric)
+const m = metrics.singleMetric()
+m.addDimension('Category', classification.category)
+m.addMetric('RetryScheduled', MetricUnit.Count, 1)
+```
+
+**Why Powertools?** EMF logs have zero latency vs CloudWatch API calls (~50-100ms).
+Metrics are batched and flushed automatically by the middleware at request end.
 
 ## Response Format (REQUIRED)
 
@@ -112,11 +147,12 @@ export const handler = wrapApiHandler(async ({event, context}: ApiHandlerParams)
 ### Public API Gateway Handler
 ```typescript
 import type {ApiHandlerParams} from '#types/lambda'
-import {wrapApiHandler, response} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+import {response} from '#util/lambda-helpers'
 
 // Public endpoints - no authentication required
-export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   // Business logic - just throw errors, wrapper handles conversion
   return response(context, 200, {data: result})
 }))
@@ -125,12 +161,13 @@ export const handler = withXRay(wrapApiHandler(async ({event, context}: ApiHandl
 ### Authenticated API Gateway Handler (PREFERRED)
 ```typescript
 import type {AuthenticatedApiParams} from '#types/lambda'
-import {wrapAuthenticatedHandler, response} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
+import {response} from '#util/lambda-helpers'
 
 // Authenticated endpoints - userId guaranteed by wrapper
 // Rejects both Unauthenticated AND Anonymous users with 401
-export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
   // userId is guaranteed to be a string - no need to check
   await deleteUser(userId)
   return response(context, 204)
@@ -140,14 +177,15 @@ export const handler = withXRay(wrapAuthenticatedHandler(async ({context, userId
 ### Optional Auth API Gateway Handler
 ```typescript
 import type {OptionalAuthApiParams} from '#types/lambda'
-import {wrapOptionalAuthHandler, response} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
+import {response} from '#util/lambda-helpers'
 import {UserStatus} from '#types/enums'
 
 // Optional auth endpoints - allows anonymous but rejects invalid tokens
 // Rejects only Unauthenticated (invalid token) with 401
 // Anonymous users (no token) are allowed
-export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {
+export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {
   if (userStatus === UserStatus.Anonymous) {
     return response(context, 200, {demo: true})
   }
@@ -159,10 +197,10 @@ export const handler = withXRay(wrapOptionalAuthHandler(async ({context, userId,
 ### API Gateway Authorizer
 ```typescript
 import type {AuthorizerParams} from '#types/lambda'
-import {wrapAuthorizer} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapAuthorizer} from '#lib/lambda/middleware/legacy'
 
-export const handler = withXRay(wrapAuthorizer(async ({event}: AuthorizerParams) => {
+export const handler = withPowertools(wrapAuthorizer(async ({event}: AuthorizerParams) => {
   // Throw Error('Unauthorized') for 401 response
   if (!isValid) throw new Error('Unauthorized')
   return generateAllow(userId, event.methodArn)
@@ -172,8 +210,9 @@ export const handler = withXRay(wrapAuthorizer(async ({event}: AuthorizerParams)
 ### S3 Event Handler
 ```typescript
 import type {EventHandlerParams} from '#types/lambda'
-import {wrapEventHandler, s3Records} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
+import {s3Records} from '#util/lambda-helpers'
 
 // Process individual records - errors don't stop other records
 async function processS3Record({record}: EventHandlerParams<S3EventRecord>) {
@@ -181,14 +220,15 @@ async function processS3Record({record}: EventHandlerParams<S3EventRecord>) {
   await processFile(key)
 }
 
-export const handler = withXRay(wrapEventHandler(processS3Record, {getRecords: s3Records}))
+export const handler = withPowertools(wrapEventHandler(processS3Record, {getRecords: s3Records}))
 ```
 
 ### SQS Handler
 ```typescript
 import type {EventHandlerParams} from '#types/lambda'
-import {wrapEventHandler, sqsRecords} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
+import {sqsRecords} from '#util/lambda-helpers'
 
 // Process individual messages - errors logged but don't stop processing
 async function processSQSRecord({record}: EventHandlerParams<SQSRecord>) {
@@ -196,16 +236,16 @@ async function processSQSRecord({record}: EventHandlerParams<SQSRecord>) {
   await handleMessage(body)
 }
 
-export const handler = withXRay(wrapEventHandler(processSQSRecord, {getRecords: sqsRecords}))
+export const handler = withPowertools(wrapEventHandler(processSQSRecord, {getRecords: sqsRecords}))
 ```
 
 ### Scheduled Event Handler
 ```typescript
 import type {ScheduledHandlerParams} from '#types/lambda'
-import {wrapScheduledHandler} from '#util/lambda-helpers'
-import {withXRay} from '#lib/vendor/AWS/XRay'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 
-export const handler = withXRay(wrapScheduledHandler(async ({}: ScheduledHandlerParams) => {
+export const handler = withPowertools(wrapScheduledHandler(async ({}: ScheduledHandlerParams) => {
   // Scheduled task logic - errors propagate to CloudWatch
   await pruneOldRecords()
   return {pruned: count}
@@ -263,14 +303,16 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 
 ## Best Practices
 
-✅ Use `withXRay` wrapper for tracing
-✅ Use appropriate handler wrapper (`wrapApiHandler`, `wrapAuthorizer`, etc.)
+✅ Use `withPowertools` wrapper for all Lambda handlers (provides logging, cold start tracking, tracing)
+✅ Use appropriate handler wrapper (`wrapApiHandler`, `wrapAuthenticatedHandler`, etc.)
 ✅ Use vendor wrappers for AWS SDK (never import AWS SDK directly)
 ✅ Return responses using `response()` helper
 ✅ Throw errors instead of manual try-catch (wrapper handles it)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers
 ✅ Read environment variables inside functions, not at module scope
+✅ Cold start metrics are tracked automatically for all lambdas (no option needed)
+✅ Use `{enableCustomMetrics: true}` only if using Powertools `metrics.addMetric()` API
 
 ## Testing
 
@@ -291,10 +333,11 @@ test('processes file', async () => {
 
 ## Related Patterns
 
-- [X-Ray Integration](../AWS/X-Ray-Integration.md)
+- [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing via ADOT layer
+- [CloudWatch Logging](../AWS/CloudWatch-Logging.md) - Structured logging
 - [Error Handling](TypeScript-Error-Handling.md)
 - [Jest ESM Mocking](../Testing/Jest-ESM-Mocking-Strategy.md)
 
 ---
 
-*Consistent Lambda structure: imports → helpers → handler with X-Ray wrapper.*
+*Consistent Lambda structure: imports → helpers → handler with Powertools wrapper.*

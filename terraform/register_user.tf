@@ -1,5 +1,9 @@
-resource "aws_iam_role" "RegisterUserRole" {
-  name               = "RegisterUserRole"
+locals {
+  register_user_function_name = "RegisterUser"
+}
+
+resource "aws_iam_role" "RegisterUser" {
+  name               = local.register_user_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -20,23 +24,23 @@ data "aws_iam_policy_document" "RegisterUser" {
   }
 }
 
-resource "aws_iam_policy" "RegisterUserRolePolicy" {
-  name   = "RegisterUserRolePolicy"
+resource "aws_iam_policy" "RegisterUser" {
+  name   = local.register_user_function_name
   policy = data.aws_iam_policy_document.RegisterUser.json
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicy" {
-  role       = aws_iam_role.RegisterUserRole.name
-  policy_arn = aws_iam_policy.RegisterUserRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "RegisterUser" {
+  role       = aws_iam_role.RegisterUser.name
+  policy_arn = aws_iam_policy.RegisterUser.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicyLogging" {
-  role       = aws_iam_role.RegisterUserRole.name
+resource "aws_iam_role_policy_attachment" "RegisterUserLogging" {
+  role       = aws_iam_role.RegisterUser.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterUserPolicyXRay" {
-  role       = aws_iam_role.RegisterUserRole.name
+resource "aws_iam_role_policy_attachment" "RegisterUserXRay" {
+  role       = aws_iam_role.RegisterUser.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -53,18 +57,18 @@ resource "aws_cloudwatch_log_group" "RegisterUser" {
 
 data "archive_file" "RegisterUser" {
   type        = "zip"
-  source_file = "./../build/lambdas/RegisterUser.mjs"
+  source_dir  = "./../build/lambdas/RegisterUser"
   output_path = "./../build/lambdas/RegisterUser.zip"
 }
 
 resource "aws_lambda_function" "RegisterUser" {
   description      = "Registers a new user"
-  function_name    = "RegisterUser"
-  role             = aws_iam_role.RegisterUserRole.arn
-  handler          = "RegisterUser.handler"
+  function_name    = local.register_user_function_name
+  role             = aws_iam_role.RegisterUser.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 10
-  depends_on       = [aws_iam_role_policy_attachment.RegisterUserPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.RegisterUser]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = data.archive_file.RegisterUser.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -74,15 +78,13 @@ resource "aws_lambda_function" "RegisterUser" {
   }
 
   environment {
-    variables = {
-      APPLICATION_URL             = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      SIGN_IN_WITH_APPLE_CONFIG   = data.sops_file.secrets.data["signInWithApple.config"]
-      BETTER_AUTH_SECRET          = data.sops_file.secrets.data["platform.key"]
-      OTEL_SERVICE_NAME           = "RegisterUser"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
+      DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
+      SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
+      BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
+      OTEL_SERVICE_NAME         = local.register_user_function_name
+    })
   }
 }
 

@@ -123,7 +123,73 @@ _No pending conventions - all conventions are documented._
 
 ### Detected: 2025-12-23
 
-1. **External Template Files for Code Generation** (Code Organization Rule)
+1. **Workaround Tracking with Automated Monitoring** (Workflow Pattern)
+   - **What**: When implementing workarounds for upstream dependency issues, create a tracking GitHub issue AND an automated workflow to monitor upstream status
+   - **Why**: Prevents workarounds from becoming permanent technical debt; proactive notification when upstream fixes are available
+   - **Components**:
+     - GitHub Issue: Documents the workaround, links to upstream issue, explains impact
+     - GitHub Actions Workflow: Weekly check of upstream issue status (`.github/workflows/check-upstream-issues.yml`)
+     - Automated Comments: Posts to tracking issue when upstream is closed
+   - **Example**: OTEL collector deprecation warning workaround → Issue #216 + check-upstream-issues.yml
+   - **Template**: Add entries to `trackedIssues` array in workflow with `owner`, `repo`, `issue_number`, `our_issue`, `description`
+   - **Target**: docs/wiki/Conventions/Workaround-Tracking.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Implemented, pending documentation
+   - **Enforcement**: Code review when adding workarounds
+
+2. **Post-Deployment Log Verification** (Operational Pattern)
+   - **What**: After deploying Lambda changes, verify CloudWatch logs to confirm expected behavior
+   - **Why**: Catches deployment issues early; validates log noise reduction; confirms no new errors
+   - **Log Groups**: All follow `/aws/lambda/{FunctionName}` pattern, defined in Terraform alongside each Lambda
+   - **Reference**: See Lambda Log Groups table in `docs/wiki/AWS/CloudWatch-Logging.md`
+   - **Commands**:
+     - `aws logs tail /aws/lambda/{Lambda} --since 5m --format short --region us-west-2`
+     - `aws logs tail /aws/lambda/{Lambda} --since 10m --region us-west-2 | grep -i "deprecated"`
+   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
+   - **Priority**: MEDIUM
+   - **Status**: ✅ Documented
+   - **Enforcement**: Operational practice after deployments
+
+3. **Centralized Lambda Environment Configuration** (Infrastructure Pattern)
+   - **What**: Use `common_lambda_env` Terraform local with `merge()` to centralize OTEL and runtime configuration
+   - **Why**: DRY principle; ensures consistent configuration across all 14 lambdas; reduces ~90% log noise
+   - **Variables**: `OTEL_LOG_LEVEL=warn`, `NODE_OPTIONS=--no-deprecation`, `OTEL_PROPAGATORS=xray`, `LOG_LEVEL=DEBUG`
+   - **Pattern**: `environment { variables = merge(local.common_lambda_env, { OTEL_SERVICE_NAME = "LambdaName", ... }) }`
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/AWS/X-Ray-Integration.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Terraform/OpenTofu configuration
+
+2. **Compact Request Logging** (Observability Pattern)
+   - **What**: Use `getRequestSummary()` helper for INFO-level request logging (~150 bytes vs ~2.5KB)
+   - **Why**: Reduces CloudWatch costs and log noise while maintaining debuggability
+   - **Pattern**: `logInfo('request <=', getRequestSummary(event))` in middleware wrappers
+   - **Details**: Extracts only path, method, requestId, sourceIp; full event available via DEBUG level or X-Ray
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/AWS/CloudWatch-Logging.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Middleware implementation
+
+3. **Powertools Metrics for All Custom Metrics** (Observability Pattern)
+   - **What**: Use Powertools `metrics.addMetric()` for all custom metrics; use `{enableCustomMetrics: true}` on lambdas that publish metrics
+   - **Why**: EMF logs (zero latency) vs CloudWatch API calls (~50-100ms); automatic batching and flushing
+   - **Implementation**:
+     - Import `metrics, MetricUnit` from `#lib/lambda/middleware/powertools`
+     - Use `metrics.addMetric('Name', MetricUnit.Count, 1)` for simple metrics
+     - Use `metrics.singleMetric()` for metrics with unique dimensions
+     - Add `{enableCustomMetrics: true}` to handler's `withPowertools()` call
+   - **Cold Start**: Tracked automatically for ALL lambdas (manual tracking for lambdas without `enableCustomMetrics`)
+   - **Lambdas with Custom Metrics**: FileCoordinator, StartFileUpload, YouTube.ts (vendor)
+   - **Future Concern**: Manual cold start duplicates Powertools logic; monitor Powertools changelog on upgrades
+   - **Detected**: During log noise reduction implementation
+   - **Target**: docs/wiki/TypeScript/Lambda-Function-Patterns.md
+   - **Priority**: HIGH
+   - **Status**: ✅ Documented
+   - **Enforcement**: Code review; deprecated functions removed from observability.ts
+
+4. **External Template Files for Code Generation** (Code Organization Rule)
    - **What**: Code templates and fixtures must be stored in external `.template.txt` files, not embedded as string literals in source code
    - **Why**: Keeps generator code clean and maintainable; templates are easier to review, test, and modify independently; separates concerns between template content and interpolation logic
    - **Location**: `src/mcp/templates/` for MCP handlers; similar pattern for other generators
@@ -526,5 +592,5 @@ Detected → Pending Documentation → Documented in Wiki → Recently Documente
 
 - **Created**: 2025-11-22
 - **Last Updated**: 2025-12-23
-- **Total Conventions**: 42 detected (32 documented, 10 pending documentation)
+- **Total Conventions**: 44 detected (33 documented, 11 pending documentation)
 - **Convention Capture System**: Active

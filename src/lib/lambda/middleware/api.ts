@@ -1,7 +1,6 @@
 import type {ApiHandlerParams, AuthenticatedApiParams, OptionalAuthApiParams, WrapperMetadata} from '#types/lambda'
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {logInfo} from '#lib/system/logging'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {buildApiResponse} from '../responses'
 import {getUserDetailsFromEvent} from '../context'
@@ -29,7 +28,6 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event as object)
     logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId}})
@@ -67,7 +65,6 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event as object)
     logIncomingFixture(event)
     try {
       const {userId, userStatus} = getUserDetailsFromEvent(event as CustomAPIGatewayRequestAuthorizerEvent)
@@ -120,7 +117,6 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
     const traceId = metadata?.traceId || context.awsRequestId
-    logInfo('event <=', event as object)
     logIncomingFixture(event)
     try {
       const {userId, userStatus} = getUserDetailsFromEvent(event as CustomAPIGatewayRequestAuthorizerEvent)

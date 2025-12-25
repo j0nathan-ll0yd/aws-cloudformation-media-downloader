@@ -17,19 +17,58 @@ Group related resources in dedicated files:
 
 ### Resource Naming
 
-Use PascalCase for resource names to match AWS conventions:
+Use PascalCase for resource names to match AWS conventions.
+
+**IAM roles use the same name as Lambda functions** - Terraform differentiates by resource type, so no suffix needed. This applies to both:
+- The Terraform resource identifier (e.g., `aws_iam_role.WebhookFeedly`)
+- The AWS resource name (e.g., `name = local.webhook_feedly_function_name`)
 
 ```hcl
+locals {
+  webhook_feedly_function_name = "WebhookFeedly"
+}
+
 resource "aws_lambda_function" "WebhookFeedly" {
-  function_name = "WebhookFeedly"
+  function_name = local.webhook_feedly_function_name
   # ...
 }
 
-resource "aws_iam_role" "WebhookFeedlyRole" {
-  name = "WebhookFeedlyRole"
+resource "aws_iam_role" "WebhookFeedly" {  # No "Role" suffix in identifier
+  name = local.webhook_feedly_function_name  # Same as Lambda, no "Role" suffix
   # ...
 }
 ```
+
+### Using Locals for DRY Naming
+
+Define function names in locals to ensure consistency across Lambda, IAM role, OTEL service name, and other resources:
+
+```hcl
+locals {
+  webhook_feedly_function_name = "WebhookFeedly"
+}
+
+resource "aws_lambda_function" "WebhookFeedly" {
+  function_name = local.webhook_feedly_function_name
+  role          = aws_iam_role.WebhookFeedly.arn
+
+  environment {
+    variables = merge(local.common_lambda_env, {
+      OTEL_SERVICE_NAME = local.webhook_feedly_function_name
+    })
+  }
+}
+
+resource "aws_iam_role" "WebhookFeedly" {
+  name = local.webhook_feedly_function_name
+  # ...
+}
+```
+
+This pattern ensures:
+- Lambda `function_name` matches IAM role `name`
+- `OTEL_SERVICE_NAME` matches for distributed tracing correlation
+- Single source of truth for the function name
 
 ## Comments
 
@@ -117,9 +156,15 @@ resource "aws_lambda_function" "FunctionName" {
 
 ### IAM Role Pattern
 
+IAM roles use the same identifier and name as the Lambda function (via locals):
+
 ```hcl
-resource "aws_iam_role" "FunctionNameRole" {
-  name = "FunctionNameRole"
+locals {
+  function_name = "FunctionName"
+}
+
+resource "aws_iam_role" "FunctionName" {  # No "Role" suffix
+  name = local.function_name  # Same as Lambda
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -133,8 +178,8 @@ resource "aws_iam_role" "FunctionNameRole" {
   })
 }
 
-resource "aws_iam_policy" "FunctionNamePolicy" {
-  name = "FunctionNamePolicy"
+resource "aws_iam_policy" "FunctionName" {  # No "RolePolicy" suffix
+  name = "FunctionName"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -148,9 +193,19 @@ resource "aws_iam_policy" "FunctionNamePolicy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "FunctionNamePolicyAttachment" {
-  role       = aws_iam_role.FunctionNameRole.name
-  policy_arn = aws_iam_policy.FunctionNamePolicy.arn
+resource "aws_iam_role_policy_attachment" "FunctionName" {  # No "Policy" suffix
+  role       = aws_iam_role.FunctionName.name
+  policy_arn = aws_iam_policy.FunctionName.arn
+}
+
+resource "aws_iam_role_policy_attachment" "FunctionNameLogging" {  # Just "Logging", not "PolicyLogging"
+  role       = aws_iam_role.FunctionName.name
+  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+}
+
+resource "aws_iam_role_policy_attachment" "FunctionNameXRay" {  # Just "XRay", not "PolicyXRay"
+  role       = aws_iam_role.FunctionName.name
+  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 ```
 

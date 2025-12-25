@@ -28,7 +28,22 @@ data "aws_caller_identity" "current" {}
 # Layer version list: https://aws-otel.github.io/docs/getting-started/lambda/lambda-js#lambda-layer
 # AWS-managed layer published in account 901920570463
 locals {
-  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
+  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
+
+  # Common environment variables for all lambdas with ADOT layer
+  # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)
+  # OPENTELEMETRY_COLLECTOR_CONFIG_URI points to custom config that fixes deprecated telemetry.metrics.address
+  # NODE_OPTIONS suppresses url.parse() deprecation warning from AWS SDK v3
+  # LOG_LEVEL=DEBUG for development visibility (change to INFO for production)
+  #
+  # Note: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_PROPAGATORS are not needed as ADOT layer
+  # defaults to localhost:4318 (HTTP) and X-Ray propagation respectively.
+  common_lambda_env = {
+    OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
+    OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
+    NODE_OPTIONS                       = "--no-deprecation"
+    LOG_LEVEL                          = "DEBUG"
+  }
 }
 
 # Read encrypted secrets from YAML

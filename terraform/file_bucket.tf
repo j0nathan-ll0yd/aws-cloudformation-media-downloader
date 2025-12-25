@@ -1,8 +1,12 @@
+locals {
+  s3_object_created_function_name = "S3ObjectCreated"
+}
+
 resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
 }
 
-resource "aws_s3_bucket_intelligent_tiering_configuration" "files_tiering" {
+resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {
   bucket = aws_s3_bucket.Files.id
   name   = "EntireBucket"
 
@@ -18,7 +22,7 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "files_tiering" {
 }
 
 # Origin Access Control for CloudFront (replaces public-read ACL)
-resource "aws_cloudfront_origin_access_control" "media_files_oac" {
+resource "aws_cloudfront_origin_access_control" "MediaFilesOAC" {
   name                              = "media-files-oac"
   description                       = "OAC for media files S3 bucket"
   origin_access_control_origin_type = "s3"
@@ -27,7 +31,7 @@ resource "aws_cloudfront_origin_access_control" "media_files_oac" {
 }
 
 # CloudFront Distribution for S3 media files
-resource "aws_cloudfront_distribution" "media_files" {
+resource "aws_cloudfront_distribution" "MediaFiles" {
   enabled             = true
   default_root_object = ""
   price_class         = "PriceClass_100" # US, Canada, Europe - lowest cost
@@ -35,7 +39,7 @@ resource "aws_cloudfront_distribution" "media_files" {
   origin {
     domain_name              = aws_s3_bucket.Files.bucket_regional_domain_name
     origin_id                = "S3-media-files"
-    origin_access_control_id = aws_cloudfront_origin_access_control.media_files_oac.id
+    origin_access_control_id = aws_cloudfront_origin_access_control.MediaFilesOAC.id
   }
 
   default_cache_behavior {
@@ -73,7 +77,7 @@ resource "aws_cloudfront_distribution" "media_files" {
 }
 
 # S3 Bucket Policy for CloudFront OAC access
-resource "aws_s3_bucket_policy" "cloudfront_access" {
+resource "aws_s3_bucket_policy" "CloudfrontAccess" {
   bucket = aws_s3_bucket.Files.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -85,7 +89,7 @@ resource "aws_s3_bucket_policy" "cloudfront_access" {
       Resource  = "${aws_s3_bucket.Files.arn}/*"
       Condition = {
         StringEquals = {
-          "AWS:SourceArn" = aws_cloudfront_distribution.media_files.arn
+          "AWS:SourceArn" = aws_cloudfront_distribution.MediaFiles.arn
         }
       }
     }]
@@ -94,7 +98,7 @@ resource "aws_s3_bucket_policy" "cloudfront_access" {
 
 output "cloudfront_media_files_domain" {
   description = "CloudFront domain for media files (use this in iOS app)"
-  value       = aws_cloudfront_distribution.media_files.domain_name
+  value       = aws_cloudfront_distribution.MediaFiles.domain_name
 }
 
 resource "aws_s3_bucket_notification" "Files" {
@@ -119,17 +123,17 @@ resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
 
 data "archive_file" "S3ObjectCreated" {
   type        = "zip"
-  source_file = "./../build/lambdas/S3ObjectCreated.mjs"
+  source_dir  = "./../build/lambdas/S3ObjectCreated"
   output_path = "./../build/lambdas/S3ObjectCreated.zip"
 }
 
 resource "aws_lambda_function" "S3ObjectCreated" {
   description      = "Dispatches a notification after a file is uploaded to an S3 bucket"
-  function_name    = "S3ObjectCreated"
-  role             = aws_iam_role.S3ObjectCreatedRole.arn
-  handler          = "S3ObjectCreated.handler"
+  function_name    = local.s3_object_created_function_name
+  role             = aws_iam_role.S3ObjectCreated.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreatedPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreated]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -139,18 +143,16 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   }
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      SNS_QUEUE_URL               = aws_sqs_queue.SendPushNotification.id
-      OTEL_SERVICE_NAME           = "S3ObjectCreated"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
+      SNS_QUEUE_URL       = aws_sqs_queue.SendPushNotification.id
+      OTEL_SERVICE_NAME   = local.s3_object_created_function_name
+    })
   }
 }
 
-resource "aws_iam_role" "S3ObjectCreatedRole" {
-  name               = "S3ObjectCreatedRole"
+resource "aws_iam_role" "S3ObjectCreated" {
+  name               = local.s3_object_created_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
@@ -169,22 +171,22 @@ data "aws_iam_policy_document" "S3ObjectCreated" {
   }
 }
 
-resource "aws_iam_policy" "S3ObjectCreatedRolePolicy" {
-  name   = "S3ObjectCreatedRolePolicy"
+resource "aws_iam_policy" "S3ObjectCreated" {
+  name   = local.s3_object_created_function_name
   policy = data.aws_iam_policy_document.S3ObjectCreated.json
 }
 
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicy" {
-  role       = aws_iam_role.S3ObjectCreatedRole.name
-  policy_arn = aws_iam_policy.S3ObjectCreatedRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "S3ObjectCreated" {
+  role       = aws_iam_role.S3ObjectCreated.name
+  policy_arn = aws_iam_policy.S3ObjectCreated.arn
 }
 
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyLogging" {
-  role       = aws_iam_role.S3ObjectCreatedRole.name
+resource "aws_iam_role_policy_attachment" "S3ObjectCreatedLogging" {
+  role       = aws_iam_role.S3ObjectCreated.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedPolicyXRay" {
-  role       = aws_iam_role.S3ObjectCreatedRole.name
+resource "aws_iam_role_policy_attachment" "S3ObjectCreatedXRay" {
+  role       = aws_iam_role.S3ObjectCreated.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }

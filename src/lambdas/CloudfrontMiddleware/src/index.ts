@@ -34,8 +34,9 @@ async function handleQueryString(request: CloudFrontRequest) {
 }
 
 export const handler = async (event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontHandlerResult> => {
+  // Lambda@Edge can't use logIncomingFixture (no layers), log event for visibility
   logInfo('event <=', event)
-  logInfo('context <=', context)
+  logDebug('context <=', context)
   const request = event.Records[0].cf.request as CustomCloudFrontRequest
   await handleQueryString(request)
   logDebug('request <=', request)

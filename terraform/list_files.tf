@@ -1,5 +1,9 @@
-resource "aws_iam_role" "ListFilesRole" {
-  name               = "ListFilesRole"
+locals {
+  list_files_function_name = "ListFiles"
+}
+
+resource "aws_iam_role" "ListFiles" {
+  name               = local.list_files_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
 }
 
@@ -19,23 +23,23 @@ data "aws_iam_policy_document" "ListFiles" {
   }
 }
 
-resource "aws_iam_policy" "ListFilesRolePolicy" {
-  name   = "ListFilesRolePolicy"
+resource "aws_iam_policy" "ListFiles" {
+  name   = local.list_files_function_name
   policy = data.aws_iam_policy_document.ListFiles.json
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicy" {
-  role       = aws_iam_role.ListFilesRole.name
-  policy_arn = aws_iam_policy.ListFilesRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "ListFiles" {
+  role       = aws_iam_role.ListFiles.name
+  policy_arn = aws_iam_policy.ListFiles.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyLogging" {
-  role       = aws_iam_role.ListFilesRole.name
+resource "aws_iam_role_policy_attachment" "ListFilesLogging" {
+  role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesPolicyXRay" {
-  role       = aws_iam_role.ListFilesRole.name
+resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
+  role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -53,18 +57,18 @@ resource "aws_cloudwatch_log_group" "ListFiles" {
 # Create a payload zip file from the function source code bundle
 data "archive_file" "ListFiles" {
   type        = "zip"
-  source_file = "./../build/lambdas/ListFiles.mjs"
+  source_dir  = "./../build/lambdas/ListFiles"
   output_path = "./../build/lambdas/ListFiles.zip"
 }
 
 resource "aws_lambda_function" "ListFiles" {
   description      = "A lambda function that lists files in S3."
-  function_name    = "ListFiles"
-  role             = aws_iam_role.ListFilesRole.arn
-  handler          = "ListFiles.handler"
+  function_name    = local.list_files_function_name
+  role             = aws_iam_role.ListFiles.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 512
-  depends_on       = [aws_iam_role_policy_attachment.ListFilesPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.ListFiles]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -74,17 +78,14 @@ resource "aws_lambda_function" "ListFiles" {
   }
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      DEFAULT_FILE_SIZE           = 436743
-      DEFAULT_FILE_NAME           = aws_s3_object.DefaultFile.key
-      DEFAULT_FILE_URL            = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
-      DEFAULT_FILE_CONTENT_TYPE   = aws_s3_object.DefaultFile.content_type
-      ENABLE_XRAY                 = "false"
-      OTEL_SERVICE_NAME           = "ListFiles"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
+      DEFAULT_FILE_SIZE         = 436743
+      DEFAULT_FILE_NAME         = aws_s3_object.DefaultFile.key
+      DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
+      DEFAULT_FILE_CONTENT_TYPE = aws_s3_object.DefaultFile.content_type
+      OTEL_SERVICE_NAME         = local.list_files_function_name
+    })
   }
 }
 

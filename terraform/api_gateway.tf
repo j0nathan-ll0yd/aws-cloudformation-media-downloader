@@ -92,17 +92,17 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
   }
 }
 
-resource "aws_iam_role" "ApiGatewayCloudwatchRole" {
-  name               = "ApiGatewayCloudwatchRole"
-  assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatchRole.json
+resource "aws_iam_role" "ApiGatewayCloudwatch" {
+  name               = "ApiGatewayCloudwatch"
+  assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatch.json
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayCloudwatchRolePolicyAttachment" {
-  role       = aws_iam_role.ApiGatewayCloudwatchRole.name
+resource "aws_iam_role_policy_attachment" "ApiGatewayCloudwatchLogging" {
+  role       = aws_iam_role.ApiGatewayCloudwatch.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
-data "aws_iam_policy_document" "ApiGatewayCloudwatchRole" {
+data "aws_iam_policy_document" "ApiGatewayCloudwatch" {
   statement {
     actions = ["sts:AssumeRole"]
     effect  = "Allow"
@@ -113,14 +113,14 @@ data "aws_iam_policy_document" "ApiGatewayCloudwatchRole" {
   }
 }
 
-resource "aws_iam_role_policy" "ApiGatewayCloudwatchRolePolicy" {
-  name   = "ApiGatewayCloudwatchRolePolicy"
-  role   = aws_iam_role.ApiGatewayCloudwatchRole.id
+resource "aws_iam_role_policy" "ApiGatewayCloudwatch" {
+  name   = "ApiGatewayCloudwatch"
+  role   = aws_iam_role.ApiGatewayCloudwatch.id
   policy = data.aws_iam_policy_document.CommonLambdaLogging.json
 }
 
 resource "aws_api_gateway_account" "Main" {
-  cloudwatch_role_arn = aws_iam_role.ApiGatewayCloudwatchRole.arn
+  cloudwatch_role_arn = aws_iam_role.ApiGatewayCloudwatch.arn
 }
 
 output "api_gateway_subdomain" {

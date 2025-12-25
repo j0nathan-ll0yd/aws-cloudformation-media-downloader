@@ -17,6 +17,10 @@ const excludedSourceVariables: Record<string, number> = {
   t: 1,
   http_proxy: 1,
   https_proxy: 1,
+  // Infrastructure-level variables (used by Lambda runtime/ADOT, not source code)
+  OPENTELEMETRY_EXTENSION_LOG_LEVEL: 1, // ADOT Lambda extension log level
+  OPENTELEMETRY_COLLECTOR_CONFIG_URI: 1, // Custom OTEL collector config path
+  NODE_OPTIONS: 1, // Node.js runtime options (--no-deprecation)
   // Library false positives (Zod literals, HTTP headers, etc.)
   Exclusive: 1, // Zod validation literal
   Connection: 1, // HTTP header
@@ -71,11 +75,9 @@ const excludedSourceVariables: Record<string, number> = {
   POWERTOOLS_METRICS_DISABLED: 1,
   // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
   OTEL_SERVICE_NAME: 1,
-  OTEL_EXPORTER_OTLP_ENDPOINT: 1,
   OTEL_EXPORTER_OTLP_COMPRESSION: 1,
   OTEL_EXPORTER_OTLP_HEADERS: 1,
   OTEL_EXPORTER_OTLP_TIMEOUT: 1,
-  OTEL_PROPAGATORS: 1,
   // AWS Lambda runtime environment variables (set by AWS, not in source)
   AWS_EXECUTION_ENV: 1,
   AWS_LAMBDA_BENCHMARK_MODE: 1,
@@ -183,6 +185,32 @@ function filterSourceVariables(extractedVariables: string[]): string[] {
   })
 }
 
+// Variables from common_lambda_env local in terraform/main.tf that are merged into all lambdas
+// These are infrastructure-level settings, not accessed by source code
+// Keep in sync with terraform/main.tf locals.common_lambda_env
+const commonLambdaEnvVars = ['OPENTELEMETRY_EXTENSION_LOG_LEVEL', 'OPENTELEMETRY_COLLECTOR_CONFIG_URI', 'NODE_OPTIONS', 'LOG_LEVEL']
+
+// Parse environment variables from a Terraform merge() expression string.
+// hcl2json outputs merge() expressions as raw strings, not evaluated objects.
+function parseEnvVarsFromMergeExpression(mergeExpr: string): string[] {
+  const envVars: string[] = []
+
+  // Add common_lambda_env variables (the first argument to merge)
+  if (mergeExpr.includes('local.common_lambda_env')) {
+    envVars.push(...commonLambdaEnvVars)
+  }
+
+  // Extract variable names from the inline object (second argument to merge)
+  // Matches patterns like: VAR_NAME = value or VAR_NAME = "value"
+  const inlineVarPattern = /^\s*([A-Z][A-Z0-9_]*)\s*=/gm
+  let match
+  while ((match = inlineVarPattern.exec(mergeExpr)) !== null) {
+    envVars.push(match[1])
+  }
+
+  return envVars
+}
+
 function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   const cloudFrontDistributionNames: Record<string, number> = {}
   const environmentVariablesForFunction: Record<string, string[]> = {}
@@ -191,11 +219,17 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
   for (const functionName of lambdaFunctionNames) {
     logDebug('aws_lambda_function.name', functionName)
     const resources = lambdaFunctions[functionName]
-    const resource = resources[0] as {environment?: {variables?: Record<string, unknown>}[]}
+    const resource = resources[0] as {environment?: {variables?: Record<string, unknown> | string}[]}
     const environments = resource.environment
     logDebug('aws_lambda_function.resource', resource)
     if (environments && environments[0].variables) {
-      environmentVariablesForFunction[functionName] = Object.keys(environments[0].variables)
+      const variables = environments[0].variables
+      // Handle merge() expressions (hcl2json outputs these as strings)
+      if (typeof variables === 'string' && variables.includes('merge(')) {
+        environmentVariablesForFunction[functionName] = parseEnvVarsFromMergeExpression(variables)
+      } else if (typeof variables === 'object') {
+        environmentVariablesForFunction[functionName] = Object.keys(variables)
+      }
       logDebug(`environmentVariablesForFunction[${functionName}] = ${environmentVariablesForFunction[functionName]}`)
     }
   }
@@ -207,7 +241,8 @@ function preprocessInfrastructurePlan(infrastructurePlan: InfrastructureD) {
 
 function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex: RegExp, matchSubstring: number, matchSlice = [0]) {
   // You need to use the build version here to see dependent environment variables
-  const functionPath = `${__dirname}/../../build/lambdas/${functionName}.mjs`
+  // Build output is in subdirectories for each Lambda (with collector.yaml for packaging)
+  const functionPath = `${__dirname}/../../build/lambdas/${functionName}/index.mjs`
   const functionSource = fs.readFileSync(functionPath, 'utf8')
   let environmentVariablesSource: string[] = []
 

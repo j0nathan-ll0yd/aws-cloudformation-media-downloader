@@ -1,15 +1,19 @@
-resource "aws_iam_role" "SendPushNotificationRole" {
-  name               = "SendPushNotificationRole"
+locals {
+  send_push_notification_function_name = "SendPushNotification"
+}
+
+resource "aws_iam_role" "SendPushNotification" {
+  name               = local.send_push_notification_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyLogging" {
-  role       = aws_iam_role.SendPushNotificationRole.name
+resource "aws_iam_role_policy_attachment" "SendPushNotificationLogging" {
+  role       = aws_iam_role.SendPushNotification.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationPolicyXRay" {
-  role       = aws_iam_role.SendPushNotificationRole.name
+resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
+  role       = aws_iam_role.SendPushNotification.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -46,14 +50,14 @@ data "aws_iam_policy_document" "SendPushNotification" {
   }
 }
 
-resource "aws_iam_policy" "SendPushNotificationRolePolicy" {
-  name   = "SendPushNotificationRolePolicy"
+resource "aws_iam_policy" "SendPushNotification" {
+  name   = local.send_push_notification_function_name
   policy = data.aws_iam_policy_document.SendPushNotification.json
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationRolePolicy" {
-  role       = aws_iam_role.SendPushNotificationRole.name
-  policy_arn = aws_iam_policy.SendPushNotificationRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "SendPushNotification" {
+  role       = aws_iam_role.SendPushNotification.name
+  policy_arn = aws_iam_policy.SendPushNotification.arn
 }
 
 resource "aws_lambda_permission" "SendPushNotification" {
@@ -69,17 +73,17 @@ resource "aws_cloudwatch_log_group" "SendPushNotification" {
 
 data "archive_file" "SendPushNotification" {
   type        = "zip"
-  source_file = "./../build/lambdas/SendPushNotification.mjs"
+  source_dir  = "./../build/lambdas/SendPushNotification"
   output_path = "./../build/lambdas/SendPushNotification.zip"
 }
 
 resource "aws_lambda_function" "SendPushNotification" {
   description      = "Records an event from a client environment (e.g. App or Web)."
-  function_name    = "SendPushNotification"
-  role             = aws_iam_role.SendPushNotificationRole.arn
-  handler          = "SendPushNotification.handler"
+  function_name    = local.send_push_notification_function_name
+  role             = aws_iam_role.SendPushNotification.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationPolicyLogging]
+  depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -88,12 +92,10 @@ resource "aws_lambda_function" "SendPushNotification" {
     mode = "Active"
   }
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME           = "SendPushNotification"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
+      OTEL_SERVICE_NAME   = local.send_push_notification_function_name
+    })
   }
 }
 

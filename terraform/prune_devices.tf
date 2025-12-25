@@ -1,5 +1,9 @@
-resource "aws_iam_role" "PruneDevicesRole" {
-  name               = "PruneDevicesRole"
+locals {
+  prune_devices_function_name = "PruneDevices"
+}
+
+resource "aws_iam_role" "PruneDevices" {
+  name               = local.prune_devices_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
 }
 
@@ -27,23 +31,23 @@ data "aws_iam_policy_document" "PruneDevices" {
   }
 }
 
-resource "aws_iam_policy" "PruneDevicesRolePolicy" {
-  name   = "PruneDevicesRolePolicy"
+resource "aws_iam_policy" "PruneDevices" {
+  name   = local.prune_devices_function_name
   policy = data.aws_iam_policy_document.PruneDevices.json
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicy" {
-  role       = aws_iam_role.PruneDevicesRole.name
-  policy_arn = aws_iam_policy.PruneDevicesRolePolicy.arn
+resource "aws_iam_role_policy_attachment" "PruneDevices" {
+  role       = aws_iam_role.PruneDevices.name
+  policy_arn = aws_iam_policy.PruneDevices.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyLogging" {
-  role       = aws_iam_role.PruneDevicesRole.name
+resource "aws_iam_role_policy_attachment" "PruneDevicesLogging" {
+  role       = aws_iam_role.PruneDevices.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesPolicyXRay" {
-  role       = aws_iam_role.PruneDevicesRole.name
+resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {
+  role       = aws_iam_role.PruneDevices.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
@@ -73,17 +77,17 @@ resource "aws_cloudwatch_log_group" "PruneDevices" {
 
 data "archive_file" "PruneDevices" {
   type        = "zip"
-  source_file = "./../build/lambdas/PruneDevices.mjs"
+  source_dir  = "./../build/lambdas/PruneDevices"
   output_path = "./../build/lambdas/PruneDevices.zip"
 }
 
 resource "aws_lambda_function" "PruneDevices" {
   description      = "Validates iOS devices are still reachable; otherwise removes them."
-  function_name    = "PruneDevices"
-  role             = aws_iam_role.PruneDevicesRole.arn
-  handler          = "PruneDevices.handler"
+  function_name    = local.prune_devices_function_name
+  role             = aws_iam_role.PruneDevices.arn
+  handler          = "index.handler"
   runtime          = "nodejs24.x"
-  depends_on       = [aws_iam_role_policy_attachment.PruneDevicesPolicy]
+  depends_on       = [aws_iam_role_policy_attachment.PruneDevices]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -94,16 +98,14 @@ resource "aws_lambda_function" "PruneDevices" {
   timeout = 300
 
   environment {
-    variables = {
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
-      APNS_SIGNING_KEY            = data.sops_file.secrets.data["apns.staging.signingKey"]
-      APNS_TEAM                   = data.sops_file.secrets.data["apns.staging.team"]
-      APNS_KEY_ID                 = data.sops_file.secrets.data["apns.staging.keyId"]
-      APNS_DEFAULT_TOPIC          = data.sops_file.secrets.data["apns.staging.defaultTopic"]
-      APNS_HOST                   = "api.sandbox.push.apple.com"
-      OTEL_SERVICE_NAME           = "PruneDevices"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      OTEL_PROPAGATORS            = "xray"
-    }
+    variables = merge(local.common_lambda_env, {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
+      APNS_SIGNING_KEY    = data.sops_file.secrets.data["apns.staging.signingKey"]
+      APNS_TEAM           = data.sops_file.secrets.data["apns.staging.team"]
+      APNS_KEY_ID         = data.sops_file.secrets.data["apns.staging.keyId"]
+      APNS_DEFAULT_TOPIC  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      APNS_HOST           = "api.sandbox.push.apple.com"
+      OTEL_SERVICE_NAME   = local.prune_devices_function_name
+    })
   }
 }

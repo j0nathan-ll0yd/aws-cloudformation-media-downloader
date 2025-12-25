@@ -1,0 +1,27 @@
+# Custom OpenTelemetry Collector configuration for AWS Lambda
+# This config removes the deprecated telemetry.metrics.address setting
+# that causes: "service::telemetry::metrics::address is being deprecated"
+#
+# Reference: https://opentelemetry.io/docs/platforms/faas/lambda-collector/
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 'localhost:4317'
+      http:
+        endpoint: 'localhost:4318'
+
+exporters:
+  # AWS X-Ray exporter for distributed tracing
+  awsxray:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [awsxray]
+  # Disable internal collector telemetry metrics to avoid deprecated address warning
+  telemetry:
+    metrics:
+      level: none

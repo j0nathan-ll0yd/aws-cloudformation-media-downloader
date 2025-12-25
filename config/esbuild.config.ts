@@ -53,13 +53,17 @@ async function build() {
     const lambdasIndex = parts.indexOf('lambdas')
     const functionName = parts[lambdasIndex + 1]
 
+    // Create subdirectory for each Lambda (for packaging with collector.yaml)
+    const lambdaDir = `build/lambdas/${functionName}`
+    fs.mkdirSync(lambdaDir, {recursive: true})
+
     const result = await esbuild.build({
       entryPoints: [entryFile],
       bundle: true,
       platform: 'node',
       target: 'es2022', // Node.js 24 supports ES2022
       format: 'esm', // ESM for Node.js 24
-      outfile: `build/lambdas/${functionName}.mjs`,
+      outfile: `${lambdaDir}/index.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
       external: awsSdkExternals,
       banner: {js: nodeBuiltinRequireShim},
@@ -76,16 +80,24 @@ async function build() {
       logLevel: 'warning'
     })
 
+    // Copy OTEL collector config to Lambda directory for packaging
+    // This config fixes: "service::telemetry::metrics::address is being deprecated"
+    // Upstream issue: ADOT Lambda layer v1.30.2 uses deprecated collector config format
+    // See: https://github.com/aws-observability/aws-otel-lambda/issues/1039
+    // When ADOT layer is updated with fixed config, this custom collector.yaml can be removed
+    // and OPENTELEMETRY_COLLECTOR_CONFIG_URI env var can be deleted from terraform/main.tf
+    fs.copyFileSync('config/otel-collector.yaml', `${lambdaDir}/collector.yaml`)
+
     // Write metafile for bundle analysis
     if (result.metafile && isAnalyze) {
       fs.writeFileSync(`build/reports/${functionName}-meta.json`, JSON.stringify(result.metafile, null, 2))
     }
 
     // Get bundle size
-    const stats = fs.statSync(`build/lambdas/${functionName}.mjs`)
+    const stats = fs.statSync(`${lambdaDir}/index.mjs`)
     const sizeKb = (stats.size / 1024).toFixed(1)
 
-    console.log(`  ${functionName}.mjs (${sizeKb} KB)`)
+    console.log(`  ${functionName}/index.mjs (${sizeKb} KB)`)
 
     return {functionName, size: stats.size, metafile: result.metafile}
   }))
