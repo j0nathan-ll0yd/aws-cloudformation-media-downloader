@@ -51,7 +51,6 @@ export interface AwsIamPolicyDocument {
     ApiGatewayCloudwatch:           APIGatewayCloudwatch[];
     CommonLambdaLogging:            APIGatewayAuthorizerInvocationElement[];
     CommonLambdaXRay:               APIGatewayAuthorizerInvocationElement[];
-    FileCoordinator:                APIGatewayAuthorizerInvocationElement[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
     LamdbaEdgeAssumeRole:           AssumeRole[];
@@ -165,10 +164,12 @@ export interface Local {
     lambda_functions?:                     string[];
     lambda_functions_api?:                 string[];
     lambda_functions_background?:          string[];
+    download_queue_name?:                  string;
+    download_queue_visibility_timeout?:    number;
+    event_bus_name?:                       string;
     start_file_upload_function_name?:      string;
     webhook_feedly_function_name?:         string;
     s3_object_created_function_name?:      string;
-    file_coordinator_function_name?:       string;
     list_files_function_name?:             string;
     log_client_event_function_name?:       string;
     login_user_function_name?:             string;
@@ -197,6 +198,10 @@ export interface Output {
     cloudfront_distribution_domain: APIGatewayStage[];
     cloudfront_media_files_domain:  APIGatewayStage[];
     cloudwatch_dashboard_url:       APIGatewayStage[];
+    download_queue_arn:             APIGatewayStage[];
+    download_queue_url:             APIGatewayStage[];
+    event_bus_arn:                  APIGatewayStage[];
+    event_bus_name:                 APIGatewayStage[];
     idempotency_table_arn:          APIGatewayStage[];
     idempotency_table_name:         APIGatewayStage[];
     public_ip:                      APIGatewayStage[];
@@ -240,6 +245,7 @@ export interface Resource {
     aws_cloudfront_distribution:                     AwsCloudfrontDistribution;
     aws_cloudfront_origin_access_control:            AwsCloudfrontOriginAccessControl;
     aws_cloudwatch_dashboard:                        AwsCloudwatchDashboard;
+    aws_cloudwatch_event_bus:                        AwsCloudwatchEventBus;
     aws_cloudwatch_event_rule:                       AwsCloudwatchEventRule;
     aws_cloudwatch_event_target:                     AwsCloudwatchEventTarget;
     aws_cloudwatch_log_group:                        { [key: string]: AwsCloudwatchLogGroup[] };
@@ -261,6 +267,7 @@ export interface Resource {
     aws_sns_platform_application:                    AwsSnsPlatformApplication;
     aws_sns_topic:                                   AwsSnsTopic;
     aws_sqs_queue:                                   AwsSqsQueue;
+    aws_sqs_queue_policy:                            AwsSqsQueuePolicy;
     null_resource:                                   NullResource;
 }
 
@@ -584,23 +591,63 @@ export interface AwsCloudwatchDashboardMain {
     dashboard_name: string;
 }
 
-export interface AwsCloudwatchEventRule {
-    FileCoordinator: AwsCloudwatchEventRuleFileCoordinator[];
-    PruneDevices:    AwsCloudwatchEventRuleFileCoordinator[];
+export interface AwsCloudwatchEventBus {
+    MediaDownloader: AwsCloudwatchEventBusMediaDownloader[];
 }
 
-export interface AwsCloudwatchEventRuleFileCoordinator {
+export interface AwsCloudwatchEventBusMediaDownloader {
+    name: string;
+    tags: PurpleTags;
+}
+
+export interface PurpleTags {
+    Description: string;
+}
+
+export interface AwsCloudwatchEventRule {
+    DownloadRequested: DownloadRequested[];
+    PruneDevices:      AwsCloudwatchEventRulePruneDevice[];
+}
+
+export interface DownloadRequested {
+    description:    string;
+    event_bus_name: string;
+    event_pattern:  string;
+    name:           string;
+}
+
+export interface AwsCloudwatchEventRulePruneDevice {
     name:                string;
     schedule_expression: string;
     state:               string;
 }
 
 export interface AwsCloudwatchEventTarget {
-    FileCoordinator: AwsCloudwatchEventTargetFileCoordinator[];
-    PruneDevices:    AwsCloudwatchEventTargetFileCoordinator[];
+    DownloadRequestedToSQS: DownloadRequestedToSQ[];
+    PruneDevices:           AwsCloudwatchEventTargetPruneDevice[];
 }
 
-export interface AwsCloudwatchEventTargetFileCoordinator {
+export interface DownloadRequestedToSQ {
+    arn:               string;
+    event_bus_name:    string;
+    input_transformer: InputTransformer[];
+    rule:              string;
+    target_id:         string;
+}
+
+export interface InputTransformer {
+    input_paths:    InputPaths;
+    input_template: string;
+}
+
+export interface InputPaths {
+    correlationId: string;
+    fileId:        string;
+    sourceUrl:     string;
+    userId:        string;
+}
+
+export interface AwsCloudwatchEventTargetPruneDevice {
     arn:  string;
     rule: string;
 }
@@ -611,12 +658,31 @@ export interface AwsCloudwatchLogGroup {
 }
 
 export interface AwsCloudwatchMetricAlarm {
+    DownloadDLQMessages:       Age[];
     LambdaErrorsApi:           Lambda[];
     LambdaErrorsBackground:    Lambda[];
     LambdaThrottlesApi:        Lambda[];
     LambdaThrottlesBackground: Lambda[];
-    SqsDlqMessages:            SqsAge[];
-    SqsQueueAge:               SqsAge[];
+    SqsDlqMessages:            Age[];
+    SqsQueueAge:               Age[];
+}
+
+export interface Age {
+    alarm_description:   string;
+    alarm_name:          string;
+    comparison_operator: string;
+    dimensions:          DownloadDLQMessageDimensions;
+    evaluation_periods:  number;
+    metric_name:         string;
+    namespace:           string;
+    period:              number;
+    statistic:           string;
+    threshold:           number;
+    treat_missing_data:  string;
+}
+
+export interface DownloadDLQMessageDimensions {
+    QueueName: string;
 }
 
 export interface Lambda {
@@ -663,27 +729,9 @@ export interface LambdaErrorsAPIMetricQuery {
     return_data: boolean;
 }
 
-export interface SqsAge {
-    alarm_description:   string;
-    alarm_name:          string;
-    comparison_operator: string;
-    dimensions:          SqsDlqMessageDimensions;
-    evaluation_periods:  number;
-    metric_name:         string;
-    namespace:           string;
-    period:              number;
-    statistic:           string;
-    threshold:           number;
-    treat_missing_data:  string;
-}
-
-export interface SqsDlqMessageDimensions {
-    QueueName: string;
-}
-
 export interface AwsDynamodbTable {
     IdempotencyTable: IdempotencyTable[];
-    MediaDownloader:  MediaDownloader[];
+    MediaDownloader:  AwsDynamodbTableMediaDownloader[];
 }
 
 export interface IdempotencyTable {
@@ -716,14 +764,14 @@ export interface TTL {
     enabled:        boolean;
 }
 
-export interface MediaDownloader {
+export interface AwsDynamodbTableMediaDownloader {
     attribute:              Attribute[];
     billing_mode:           string;
     global_secondary_index: GlobalSecondaryIndex[];
     hash_key:               string;
     name:                   string;
     range_key:              string;
-    tags:                   MediaDownloaderTags;
+    tags:                   FluffyTags;
     ttl:                    TTL[];
 }
 
@@ -734,7 +782,7 @@ export interface GlobalSecondaryIndex {
     range_key?:      string;
 }
 
-export interface MediaDownloaderTags {
+export interface FluffyTags {
     Description: string;
     Name:        string;
 }
@@ -743,7 +791,6 @@ export interface AwsIamPolicy {
     ApiGatewayAuthorizer: AwsIamPolicyAPIGatewayAuthorizer[];
     CommonLambdaLogging:  CommonLambda[];
     CommonLambdaXRay:     CommonLambda[];
-    FileCoordinator:      AwsIamPolicyAPIGatewayAuthorizer[];
     ListFiles:            AwsIamPolicyAPIGatewayAuthorizer[];
     LoginUser:            AwsIamPolicyAPIGatewayAuthorizer[];
     PruneDevices:         AwsIamPolicyAPIGatewayAuthorizer[];
@@ -791,19 +838,20 @@ export interface AwsIamRolePolicyAttachment {
 }
 
 export interface AwsLambdaEventSourceMapping {
-    SendPushNotification: AwsLambdaEventSourceMappingSendPushNotification[];
+    SendPushNotification: SendPushNotification[];
+    StartFileUploadSQS:   SendPushNotification[];
 }
 
-export interface AwsLambdaEventSourceMappingSendPushNotification {
+export interface SendPushNotification {
     event_source_arn:        string;
     function_name:           string;
     function_response_types: string[];
+    batch_size?:             number;
 }
 
 export interface AwsLambdaFunction {
     ApiGatewayAuthorizer: LogClientEventElement[];
     CloudfrontMiddleware: CloudfrontMiddleware[];
-    FileCoordinator:      LogClientEventElement[];
     ListFiles:            LogClientEventElement[];
     LogClientEvent:       LogClientEventElement[];
     LoginUser:            LogClientEventElement[];
@@ -992,8 +1040,32 @@ export interface PushNotification {
 }
 
 export interface AwsSqsQueue {
+    DownloadDLQ:             Dlq[];
+    DownloadQueue:           DownloadQueue[];
     SendPushNotification:    AwsSqsQueueSendPushNotification[];
-    SendPushNotificationDLQ: SendPushNotificationDLQ[];
+    SendPushNotificationDLQ: Dlq[];
+}
+
+export interface Dlq {
+    message_retention_seconds: number;
+    name:                      string;
+    tags:                      DownloadDLQTags;
+}
+
+export interface DownloadDLQTags {
+    Environment: string;
+    Purpose:     string;
+}
+
+export interface DownloadQueue {
+    delay_seconds:              number;
+    max_message_size:           number;
+    message_retention_seconds:  number;
+    name:                       string;
+    receive_wait_time_seconds:  number;
+    redrive_policy:             string;
+    tags:                       DownloadDLQTags;
+    visibility_timeout_seconds: string;
 }
 
 export interface AwsSqsQueueSendPushNotification {
@@ -1011,15 +1083,13 @@ export interface SendPushNotificationTags {
     Environment: string;
 }
 
-export interface SendPushNotificationDLQ {
-    message_retention_seconds: number;
-    name:                      string;
-    tags:                      SendPushNotificationDLQTags;
+export interface AwsSqsQueuePolicy {
+    DownloadQueueEventBridge: DownloadQueueEventBridge[];
 }
 
-export interface SendPushNotificationDLQTags {
-    Environment: string;
-    Purpose:     string;
+export interface DownloadQueueEventBridge {
+    policy:    string;
+    queue_url: string;
 }
 
 export interface NullResource {
@@ -1267,7 +1337,6 @@ const typeMap: any = {
         { json: "ApiGatewayCloudwatch", js: "ApiGatewayCloudwatch", typ: a(r("APIGatewayCloudwatch")) },
         { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LamdbaEdgeAssumeRole", js: "LamdbaEdgeAssumeRole", typ: a(r("AssumeRole")) },
@@ -1360,10 +1429,12 @@ const typeMap: any = {
         { json: "lambda_functions", js: "lambda_functions", typ: u(undefined, a("")) },
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
+        { json: "download_queue_name", js: "download_queue_name", typ: u(undefined, "") },
+        { json: "download_queue_visibility_timeout", js: "download_queue_visibility_timeout", typ: u(undefined, 0) },
+        { json: "event_bus_name", js: "event_bus_name", typ: u(undefined, "") },
         { json: "start_file_upload_function_name", js: "start_file_upload_function_name", typ: u(undefined, "") },
         { json: "webhook_feedly_function_name", js: "webhook_feedly_function_name", typ: u(undefined, "") },
         { json: "s3_object_created_function_name", js: "s3_object_created_function_name", typ: u(undefined, "") },
-        { json: "file_coordinator_function_name", js: "file_coordinator_function_name", typ: u(undefined, "") },
         { json: "list_files_function_name", js: "list_files_function_name", typ: u(undefined, "") },
         { json: "log_client_event_function_name", js: "log_client_event_function_name", typ: u(undefined, "") },
         { json: "login_user_function_name", js: "login_user_function_name", typ: u(undefined, "") },
@@ -1390,6 +1461,10 @@ const typeMap: any = {
         { json: "cloudfront_distribution_domain", js: "cloudfront_distribution_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_media_files_domain", js: "cloudfront_media_files_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudwatch_dashboard_url", js: "cloudwatch_dashboard_url", typ: a(r("APIGatewayStage")) },
+        { json: "download_queue_arn", js: "download_queue_arn", typ: a(r("APIGatewayStage")) },
+        { json: "download_queue_url", js: "download_queue_url", typ: a(r("APIGatewayStage")) },
+        { json: "event_bus_arn", js: "event_bus_arn", typ: a(r("APIGatewayStage")) },
+        { json: "event_bus_name", js: "event_bus_name", typ: a(r("APIGatewayStage")) },
         { json: "idempotency_table_arn", js: "idempotency_table_arn", typ: a(r("APIGatewayStage")) },
         { json: "idempotency_table_name", js: "idempotency_table_name", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
@@ -1428,6 +1503,7 @@ const typeMap: any = {
         { json: "aws_cloudfront_distribution", js: "aws_cloudfront_distribution", typ: r("AwsCloudfrontDistribution") },
         { json: "aws_cloudfront_origin_access_control", js: "aws_cloudfront_origin_access_control", typ: r("AwsCloudfrontOriginAccessControl") },
         { json: "aws_cloudwatch_dashboard", js: "aws_cloudwatch_dashboard", typ: r("AwsCloudwatchDashboard") },
+        { json: "aws_cloudwatch_event_bus", js: "aws_cloudwatch_event_bus", typ: r("AwsCloudwatchEventBus") },
         { json: "aws_cloudwatch_event_rule", js: "aws_cloudwatch_event_rule", typ: r("AwsCloudwatchEventRule") },
         { json: "aws_cloudwatch_event_target", js: "aws_cloudwatch_event_target", typ: r("AwsCloudwatchEventTarget") },
         { json: "aws_cloudwatch_log_group", js: "aws_cloudwatch_log_group", typ: m(a(r("AwsCloudwatchLogGroup"))) },
@@ -1449,6 +1525,7 @@ const typeMap: any = {
         { json: "aws_sns_platform_application", js: "aws_sns_platform_application", typ: r("AwsSnsPlatformApplication") },
         { json: "aws_sns_topic", js: "aws_sns_topic", typ: r("AwsSnsTopic") },
         { json: "aws_sqs_queue", js: "aws_sqs_queue", typ: r("AwsSqsQueue") },
+        { json: "aws_sqs_queue_policy", js: "aws_sqs_queue_policy", typ: r("AwsSqsQueuePolicy") },
         { json: "null_resource", js: "null_resource", typ: r("NullResource") },
     ], false),
     "AwsAPIGatewayAccount": o([
@@ -1719,20 +1796,53 @@ const typeMap: any = {
         { json: "dashboard_body", js: "dashboard_body", typ: "" },
         { json: "dashboard_name", js: "dashboard_name", typ: "" },
     ], false),
-    "AwsCloudwatchEventRule": o([
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsCloudwatchEventRuleFileCoordinator")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventRuleFileCoordinator")) },
+    "AwsCloudwatchEventBus": o([
+        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("AwsCloudwatchEventBusMediaDownloader")) },
     ], false),
-    "AwsCloudwatchEventRuleFileCoordinator": o([
+    "AwsCloudwatchEventBusMediaDownloader": o([
+        { json: "name", js: "name", typ: "" },
+        { json: "tags", js: "tags", typ: r("PurpleTags") },
+    ], false),
+    "PurpleTags": o([
+        { json: "Description", js: "Description", typ: "" },
+    ], false),
+    "AwsCloudwatchEventRule": o([
+        { json: "DownloadRequested", js: "DownloadRequested", typ: a(r("DownloadRequested")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventRulePruneDevice")) },
+    ], false),
+    "DownloadRequested": o([
+        { json: "description", js: "description", typ: "" },
+        { json: "event_bus_name", js: "event_bus_name", typ: "" },
+        { json: "event_pattern", js: "event_pattern", typ: "" },
+        { json: "name", js: "name", typ: "" },
+    ], false),
+    "AwsCloudwatchEventRulePruneDevice": o([
         { json: "name", js: "name", typ: "" },
         { json: "schedule_expression", js: "schedule_expression", typ: "" },
         { json: "state", js: "state", typ: "" },
     ], false),
     "AwsCloudwatchEventTarget": o([
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsCloudwatchEventTargetFileCoordinator")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventTargetFileCoordinator")) },
+        { json: "DownloadRequestedToSQS", js: "DownloadRequestedToSQS", typ: a(r("DownloadRequestedToSQ")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventTargetPruneDevice")) },
     ], false),
-    "AwsCloudwatchEventTargetFileCoordinator": o([
+    "DownloadRequestedToSQ": o([
+        { json: "arn", js: "arn", typ: "" },
+        { json: "event_bus_name", js: "event_bus_name", typ: "" },
+        { json: "input_transformer", js: "input_transformer", typ: a(r("InputTransformer")) },
+        { json: "rule", js: "rule", typ: "" },
+        { json: "target_id", js: "target_id", typ: "" },
+    ], false),
+    "InputTransformer": o([
+        { json: "input_paths", js: "input_paths", typ: r("InputPaths") },
+        { json: "input_template", js: "input_template", typ: "" },
+    ], false),
+    "InputPaths": o([
+        { json: "correlationId", js: "correlationId", typ: "" },
+        { json: "fileId", js: "fileId", typ: "" },
+        { json: "sourceUrl", js: "sourceUrl", typ: "" },
+        { json: "userId", js: "userId", typ: "" },
+    ], false),
+    "AwsCloudwatchEventTargetPruneDevice": o([
         { json: "arn", js: "arn", typ: "" },
         { json: "rule", js: "rule", typ: "" },
     ], false),
@@ -1741,12 +1851,29 @@ const typeMap: any = {
         { json: "retention_in_days", js: "retention_in_days", typ: 0 },
     ], false),
     "AwsCloudwatchMetricAlarm": o([
+        { json: "DownloadDLQMessages", js: "DownloadDLQMessages", typ: a(r("Age")) },
         { json: "LambdaErrorsApi", js: "LambdaErrorsApi", typ: a(r("Lambda")) },
         { json: "LambdaErrorsBackground", js: "LambdaErrorsBackground", typ: a(r("Lambda")) },
         { json: "LambdaThrottlesApi", js: "LambdaThrottlesApi", typ: a(r("Lambda")) },
         { json: "LambdaThrottlesBackground", js: "LambdaThrottlesBackground", typ: a(r("Lambda")) },
-        { json: "SqsDlqMessages", js: "SqsDlqMessages", typ: a(r("SqsAge")) },
-        { json: "SqsQueueAge", js: "SqsQueueAge", typ: a(r("SqsAge")) },
+        { json: "SqsDlqMessages", js: "SqsDlqMessages", typ: a(r("Age")) },
+        { json: "SqsQueueAge", js: "SqsQueueAge", typ: a(r("Age")) },
+    ], false),
+    "Age": o([
+        { json: "alarm_description", js: "alarm_description", typ: "" },
+        { json: "alarm_name", js: "alarm_name", typ: "" },
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "dimensions", js: "dimensions", typ: r("DownloadDLQMessageDimensions") },
+        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
+        { json: "metric_name", js: "metric_name", typ: "" },
+        { json: "namespace", js: "namespace", typ: "" },
+        { json: "period", js: "period", typ: 0 },
+        { json: "statistic", js: "statistic", typ: "" },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+    ], false),
+    "DownloadDLQMessageDimensions": o([
+        { json: "QueueName", js: "QueueName", typ: "" },
     ], false),
     "Lambda": o([
         { json: "alarm_description", js: "alarm_description", typ: "" },
@@ -1785,25 +1912,9 @@ const typeMap: any = {
         { json: "label", js: "label", typ: "" },
         { json: "return_data", js: "return_data", typ: true },
     ], false),
-    "SqsAge": o([
-        { json: "alarm_description", js: "alarm_description", typ: "" },
-        { json: "alarm_name", js: "alarm_name", typ: "" },
-        { json: "comparison_operator", js: "comparison_operator", typ: "" },
-        { json: "dimensions", js: "dimensions", typ: r("SqsDlqMessageDimensions") },
-        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
-        { json: "metric_name", js: "metric_name", typ: "" },
-        { json: "namespace", js: "namespace", typ: "" },
-        { json: "period", js: "period", typ: 0 },
-        { json: "statistic", js: "statistic", typ: "" },
-        { json: "threshold", js: "threshold", typ: 0 },
-        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
-    ], false),
-    "SqsDlqMessageDimensions": o([
-        { json: "QueueName", js: "QueueName", typ: "" },
-    ], false),
     "AwsDynamodbTable": o([
         { json: "IdempotencyTable", js: "IdempotencyTable", typ: a(r("IdempotencyTable")) },
-        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloader")) },
+        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("AwsDynamodbTableMediaDownloader")) },
     ], false),
     "IdempotencyTable": o([
         { json: "attribute", js: "attribute", typ: a(r("Attribute")) },
@@ -1826,14 +1937,14 @@ const typeMap: any = {
         { json: "attribute_name", js: "attribute_name", typ: "" },
         { json: "enabled", js: "enabled", typ: true },
     ], false),
-    "MediaDownloader": o([
+    "AwsDynamodbTableMediaDownloader": o([
         { json: "attribute", js: "attribute", typ: a(r("Attribute")) },
         { json: "billing_mode", js: "billing_mode", typ: "" },
         { json: "global_secondary_index", js: "global_secondary_index", typ: a(r("GlobalSecondaryIndex")) },
         { json: "hash_key", js: "hash_key", typ: "" },
         { json: "name", js: "name", typ: "" },
         { json: "range_key", js: "range_key", typ: "" },
-        { json: "tags", js: "tags", typ: r("MediaDownloaderTags") },
+        { json: "tags", js: "tags", typ: r("FluffyTags") },
         { json: "ttl", js: "ttl", typ: a(r("TTL")) },
     ], false),
     "GlobalSecondaryIndex": o([
@@ -1842,7 +1953,7 @@ const typeMap: any = {
         { json: "projection_type", js: "projection_type", typ: "" },
         { json: "range_key", js: "range_key", typ: u(undefined, "") },
     ], false),
-    "MediaDownloaderTags": o([
+    "FluffyTags": o([
         { json: "Description", js: "Description", typ: "" },
         { json: "Name", js: "Name", typ: "" },
     ], false),
@@ -1850,7 +1961,6 @@ const typeMap: any = {
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsIamPolicyAPIGatewayAuthorizer")) },
         { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("CommonLambda")) },
         { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("CommonLambda")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("AwsIamPolicyAPIGatewayAuthorizer")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("AwsIamPolicyAPIGatewayAuthorizer")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("AwsIamPolicyAPIGatewayAuthorizer")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsIamPolicyAPIGatewayAuthorizer")) },
@@ -1891,17 +2001,18 @@ const typeMap: any = {
         { json: "role", js: "role", typ: "" },
     ], false),
     "AwsLambdaEventSourceMapping": o([
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsLambdaEventSourceMappingSendPushNotification")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("SendPushNotification")) },
+        { json: "StartFileUploadSQS", js: "StartFileUploadSQS", typ: a(r("SendPushNotification")) },
     ], false),
-    "AwsLambdaEventSourceMappingSendPushNotification": o([
+    "SendPushNotification": o([
         { json: "event_source_arn", js: "event_source_arn", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "function_response_types", js: "function_response_types", typ: a("") },
+        { json: "batch_size", js: "batch_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaFunction": o([
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("LogClientEventElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "FileCoordinator", js: "FileCoordinator", typ: a(r("LogClientEventElement")) },
         { json: "ListFiles", js: "ListFiles", typ: a(r("LogClientEventElement")) },
         { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("LogClientEventElement")) },
         { json: "LoginUser", js: "LoginUser", typ: a(r("LogClientEventElement")) },
@@ -2037,8 +2148,29 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "AwsSqsQueue": o([
+        { json: "DownloadDLQ", js: "DownloadDLQ", typ: a(r("Dlq")) },
+        { json: "DownloadQueue", js: "DownloadQueue", typ: a(r("DownloadQueue")) },
         { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("AwsSqsQueueSendPushNotification")) },
-        { json: "SendPushNotificationDLQ", js: "SendPushNotificationDLQ", typ: a(r("SendPushNotificationDLQ")) },
+        { json: "SendPushNotificationDLQ", js: "SendPushNotificationDLQ", typ: a(r("Dlq")) },
+    ], false),
+    "Dlq": o([
+        { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
+        { json: "name", js: "name", typ: "" },
+        { json: "tags", js: "tags", typ: r("DownloadDLQTags") },
+    ], false),
+    "DownloadDLQTags": o([
+        { json: "Environment", js: "Environment", typ: "" },
+        { json: "Purpose", js: "Purpose", typ: "" },
+    ], false),
+    "DownloadQueue": o([
+        { json: "delay_seconds", js: "delay_seconds", typ: 0 },
+        { json: "max_message_size", js: "max_message_size", typ: 0 },
+        { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
+        { json: "name", js: "name", typ: "" },
+        { json: "receive_wait_time_seconds", js: "receive_wait_time_seconds", typ: 0 },
+        { json: "redrive_policy", js: "redrive_policy", typ: "" },
+        { json: "tags", js: "tags", typ: r("DownloadDLQTags") },
+        { json: "visibility_timeout_seconds", js: "visibility_timeout_seconds", typ: "" },
     ], false),
     "AwsSqsQueueSendPushNotification": o([
         { json: "delay_seconds", js: "delay_seconds", typ: 0 },
@@ -2053,14 +2185,12 @@ const typeMap: any = {
     "SendPushNotificationTags": o([
         { json: "Environment", js: "Environment", typ: "" },
     ], false),
-    "SendPushNotificationDLQ": o([
-        { json: "message_retention_seconds", js: "message_retention_seconds", typ: 0 },
-        { json: "name", js: "name", typ: "" },
-        { json: "tags", js: "tags", typ: r("SendPushNotificationDLQTags") },
+    "AwsSqsQueuePolicy": o([
+        { json: "DownloadQueueEventBridge", js: "DownloadQueueEventBridge", typ: a(r("DownloadQueueEventBridge")) },
     ], false),
-    "SendPushNotificationDLQTags": o([
-        { json: "Environment", js: "Environment", typ: "" },
-        { json: "Purpose", js: "Purpose", typ: "" },
+    "DownloadQueueEventBridge": o([
+        { json: "policy", js: "policy", typ: "" },
+        { json: "queue_url", js: "queue_url", typ: "" },
     ], false),
     "NullResource": o([
         { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadFfmpegBinary")) },

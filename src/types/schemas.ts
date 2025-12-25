@@ -3,10 +3,7 @@ import {z} from 'zod'
 // YouTube URL regex pattern
 const youtubeUrlPattern = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(?:-nocookie)?\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|live\/|v\/)?)([\w-]+)(\S+)?$/
 
-export const feedlyEventSchema = z.object({
-  articleURL: z.string().regex(youtubeUrlPattern, 'is not a valid YouTube URL'),
-  backgroundMode: z.boolean().optional()
-})
+export const feedlyEventSchema = z.object({articleURL: z.string().regex(youtubeUrlPattern, 'is not a valid YouTube URL')})
 
 export const registerDeviceSchema = z.object({
   deviceId: z.string().min(1),

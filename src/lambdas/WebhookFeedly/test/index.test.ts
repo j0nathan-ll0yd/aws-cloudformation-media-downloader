@@ -11,6 +11,21 @@ jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 const userFilesMock = createElectroDBEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
+const fileDownloadsMock = createElectroDBEntityMock()
+jest.unstable_mockModule('#entities/FileDownloads',
+  () => ({
+    FileDownloads: fileDownloadsMock.entity,
+    DownloadStatus: {Pending: 'pending', InProgress: 'in_progress', Completed: 'completed', Failed: 'failed', Scheduled: 'scheduled'}
+  }))
+
+// Mock Powertools idempotency to bypass DynamoDB persistence
+jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
+  createPersistenceStore: jest.fn(),
+  defaultIdempotencyConfig: {},
+  // makeIdempotent passes through the function unchanged (no idempotency wrapping in tests)
+  makeIdempotent: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
+}))
+
 jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
   sendMessage: jest.fn().mockReturnValue({
     MD5OfMessageBody: '44dd2fc26e4186dc12b8e67ccb9a9435',
@@ -45,8 +60,8 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
   })
 }))
 
-const invokeAsyncMock = jest.fn()
-jest.unstable_mockModule('#lib/vendor/AWS/Lambda', () => ({invokeAsync: invokeAsyncMock}))
+const publishEventMock = jest.fn<(eventType: string, detail: unknown) => Promise<unknown>>()
+jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 
@@ -58,15 +73,22 @@ describe('#WebhookFeedly', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
+    jest.clearAllMocks()
+    process.env.EVENT_BUS_NAME = 'MediaDownloader'
+    process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
+    process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
+    publishEventMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
+    fileDownloadsMock.mocks.create.mockResolvedValue({data: {}})
   })
-  test('should fail gracefully if the ElectroDB update fails', async () => {
+  test('should continue processing even if user-file association fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
     filesMock.mocks.get.mockResolvedValue({data: undefined})
     filesMock.mocks.create.mockResolvedValue({data: {}})
     userFilesMock.mocks.create.mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
-    expect(output.statusCode).toEqual(500)
+    // Handler uses Promise.allSettled and continues even if association fails
+    expect(output.statusCode).toEqual(202)
   })
   test('should handle an invalid request body', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
@@ -99,5 +121,24 @@ describe('#WebhookFeedly', () => {
     const body = JSON.parse(output.body)
     expect(body.error.code).toEqual('custom-4XX-generic')
     expect(body.error.message).toEqual('Request body must be valid JSON')
+  })
+  test('should publish DownloadRequested event for new files', async () => {
+    event.requestContext.authorizer!.principalId = fakeUserId
+    event.body = JSON.stringify(handleFeedlyEventResponse)
+    filesMock.mocks.get.mockResolvedValue({data: undefined})
+    filesMock.mocks.create.mockResolvedValue({data: {}})
+    userFilesMock.mocks.create.mockResolvedValue({data: {}})
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(202)
+    const body = JSON.parse(output.body)
+    expect(body.body.status).toEqual('Accepted')
+    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested',
+      expect.objectContaining({
+        fileId: expect.any(String),
+        userId: fakeUserId,
+        sourceUrl: handleFeedlyEventResponse.articleURL,
+        correlationId: expect.any(String),
+        requestedAt: expect.any(String)
+      }))
   })
 })

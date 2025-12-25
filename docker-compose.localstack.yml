@@ -6,7 +6,7 @@ services:
       - "4566:4566"
     environment:
       # Enable specific AWS services
-      - SERVICES=s3,dynamodb,sns,sqs,lambda,cloudwatch,apigateway
+      - SERVICES=s3,dynamodb,sns,sqs,lambda,cloudwatch,apigateway,events
       # Enable debug mode for troubleshooting
       - DEBUG=1
       # Use single edge port (4566) for all services

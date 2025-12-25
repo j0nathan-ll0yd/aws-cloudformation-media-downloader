@@ -79,6 +79,7 @@
     "@aws-sdk/client-api-gateway": "3.953.0",
     "@aws-sdk/client-cloudwatch": "3.953.0",
     "@aws-sdk/client-dynamodb": "3.953.0",
+    "@aws-sdk/client-eventbridge": "3.953.0",
     "@aws-sdk/client-lambda": "3.953.0",
     "@aws-sdk/client-s3": "3.953.0",
     "@aws-sdk/client-sns": "3.953.0",

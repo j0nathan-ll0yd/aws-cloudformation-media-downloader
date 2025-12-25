@@ -61,8 +61,7 @@ export const feedlyWebhookRequestSchema = z.object({
   createdAt: z.string().optional(),
   sourceFeedURL: z.string().url().optional(),
   sourceTitle: z.string().optional(),
-  sourceURL: z.string().url().optional(),
-  backgroundMode: z.boolean().optional()
+  sourceURL: z.string().url().optional()
 })
 
 export const webhookResponseSchema = z.object({status: z.union([z.literal('Dispatched'), z.literal('Initiated'), z.literal('Accepted')])})

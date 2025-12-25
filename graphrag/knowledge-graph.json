@@ -19,15 +19,6 @@
       }
     },
     {
-      "id": "lambda:FileCoordinator",
-      "type": "Lambda",
-      "properties": {
-        "name": "FileCoordinator",
-        "trigger": "CloudWatch Events",
-        "purpose": "Scheduled job to orchestrate pending file downloads"
-      }
-    },
-    {
       "id": "lambda:ListFiles",
       "type": "Lambda",
       "properties": {
@@ -113,8 +104,8 @@
       "type": "Lambda",
       "properties": {
         "name": "StartFileUpload",
-        "trigger": "Lambda Invoke",
-        "purpose": "Initiate file download from YouTube"
+        "trigger": "SQS",
+        "purpose": "Download video from YouTube to S3 (event-driven via DownloadQueue)"
       }
     },
     {
@@ -141,7 +132,7 @@
       "properties": {
         "name": "WebhookFeedly",
         "trigger": "API Gateway",
-        "purpose": "Process incoming Feedly webhook articles"
+        "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
       }
     },
     {
@@ -277,6 +268,14 @@
       "properties": {
         "name": "XRay",
         "type": "tracing"
+      }
+    },
+    {
+      "id": "service:EventBridge",
+      "type": "Service",
+      "properties": {
+        "name": "EventBridge",
+        "type": "events"
       }
     },
     {
@@ -724,6 +723,11 @@
       "relationship": "triggers"
     },
     {
+      "source": "service:SQS",
+      "target": "lambda:StartFileUpload",
+      "relationship": "triggers"
+    },
+    {
       "source": "service:API Gateway",
       "target": "lambda:UserDelete",
       "relationship": "triggers"
@@ -737,14 +741,6 @@
       "source": "service:API Gateway",
       "target": "lambda:WebhookFeedly",
       "relationship": "triggers"
-    },
-    {
-      "source": "lambda:FileCoordinator",
-      "target": "lambda:StartFileUpload",
-      "relationship": "invokes",
-      "properties": {
-        "via": "Lambda invokeAsync"
-      }
     },
     {
       "source": "lambda:S3ObjectCreated",
@@ -859,6 +855,14 @@
       "source": "service:SQS",
       "target": "service:Lambda",
       "relationship": "triggers"
+    },
+    {
+      "source": "service:EventBridge",
+      "target": "service:SQS",
+      "relationship": "routes",
+      "properties": {
+        "event": "DownloadRequested"
+      }
     }
   ],
   "metadata": {

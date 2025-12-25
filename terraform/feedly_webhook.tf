@@ -13,9 +13,10 @@ data "aws_iam_policy_document" "WebhookFeedly" {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
   }
+  # Publish DownloadRequested events to EventBridge
   statement {
-    actions   = ["lambda:InvokeFunction"]
-    resources = [aws_lambda_function.StartFileUpload.arn]
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
   }
   # PutItem/UpdateItem on base table for Files and UserFiles
   # GetItem to check existing files
@@ -97,6 +98,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       DYNAMODB_TABLE_NAME    = aws_dynamodb_table.MediaDownloader.name
       SNS_QUEUE_URL          = aws_sqs_queue.SendPushNotification.id
       IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
+      EVENT_BUS_NAME         = aws_cloudwatch_event_bus.MediaDownloader.name
       OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
     })
   }
@@ -142,6 +144,23 @@ data "aws_iam_policy_document" "MultipartUpload" {
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]
+  }
+  # Receive messages from DownloadQueue (event-driven architecture)
+  statement {
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes"
+    ]
+    resources = [
+      aws_sqs_queue.DownloadQueue.arn,
+      aws_sqs_queue.DownloadDLQ.arn
+    ]
+  }
+  # Publish DownloadCompleted/DownloadFailed events to EventBridge
+  statement {
+    actions   = ["events:PutEvents"]
+    resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
   }
   statement {
     actions = [
@@ -352,18 +371,13 @@ resource "aws_lambda_function" "StartFileUpload" {
       DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
       CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.MediaFiles.domain_name
       SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
+      EVENT_BUS_NAME        = aws_cloudwatch_event_bus.MediaDownloader.name
       YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
       PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.start_file_upload_function_name
     })
   }
-}
-
-resource "aws_lambda_permission" "StartFileUpload" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.StartFileUpload.function_name
-  principal     = "events.amazonaws.com"
 }
 
 resource "aws_cloudwatch_log_group" "StartFileUpload" {

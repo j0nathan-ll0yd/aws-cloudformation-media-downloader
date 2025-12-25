@@ -6,7 +6,6 @@ locals {
   lambda_functions = [
     "ApiGatewayAuthorizer",
     "CloudfrontMiddleware",
-    "FileCoordinator",
     "ListFiles",
     "LogClientEvent",
     "LoginUser",
@@ -38,7 +37,6 @@ locals {
 
   lambda_functions_background = [
     "CloudfrontMiddleware",
-    "FileCoordinator",
     "PruneDevices",
     "S3ObjectCreated",
     "SendPushNotification",
@@ -260,8 +258,10 @@ resource "aws_cloudwatch_dashboard" "Main" {
           period = 300
           view   = "timeSeries"
           metrics = [
-            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.SendPushNotification.name, { label = "Main Queue" }],
-            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.SendPushNotificationDLQ.name, { label = "DLQ", color = "#d62728" }]
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.SendPushNotification.name, { label = "Push Notification Queue" }],
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.SendPushNotificationDLQ.name, { label = "Push Notification DLQ", color = "#d62728" }],
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.DownloadQueue.name, { label = "Download Queue" }],
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.DownloadDLQ.name, { label = "Download DLQ", color = "#ff7f0e" }]
           ]
         }
       },
@@ -279,7 +279,8 @@ resource "aws_cloudwatch_dashboard" "Main" {
           period = 300
           view   = "timeSeries"
           metrics = [
-            ["AWS/SQS", "ApproximateAgeOfOldestMessage", "QueueName", aws_sqs_queue.SendPushNotification.name]
+            ["AWS/SQS", "ApproximateAgeOfOldestMessage", "QueueName", aws_sqs_queue.SendPushNotification.name, { label = "Push Notification Queue" }],
+            ["AWS/SQS", "ApproximateAgeOfOldestMessage", "QueueName", aws_sqs_queue.DownloadQueue.name, { label = "Download Queue" }]
           ]
           annotations = {
             horizontal = [
