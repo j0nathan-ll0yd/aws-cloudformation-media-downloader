@@ -19,7 +19,7 @@ Central registry of all project conventions with their documentation and enforce
 
 | Rule | Alias | Severity | Documentation |
 |------|-------|----------|---------------|
-| aws-sdk-encapsulation | aws-sdk | CRITICAL | [Vendor Encapsulation Policy](../AWS/Vendor-Encapsulation-Policy.md) |
+| aws-sdk-encapsulation | aws-sdk | CRITICAL | [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) |
 | electrodb-mocking | electrodb | CRITICAL | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) |
 | config-enforcement | config | CRITICAL | [MCP Convention Tools](../MCP/Convention-Tools.md) |
 | env-validation | env | CRITICAL | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) |
@@ -47,7 +47,7 @@ Central registry of all project conventions with their documentation and enforce
 | Convention | Documentation | Enforcement |
 |------------|---------------|-------------|
 | Zero AI References in Commits | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `commit-msg` |
-| Vendor Library Encapsulation | [Vendor Encapsulation Policy](../AWS/Vendor-Encapsulation-Policy.md) | MCP + ESLint + Dependency Cruiser |
+| Vendor Library Encapsulation | [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) | MCP + ESLint + Dependency Cruiser |
 | ElectroDB Test Mocking | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) | MCP + ESLint |
 | No Try-Catch for Required Env Vars | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) | MCP + ESLint |
 | Cascade Deletion Order | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |

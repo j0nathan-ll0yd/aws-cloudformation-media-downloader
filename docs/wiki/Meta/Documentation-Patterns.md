@@ -149,7 +149,7 @@ function validateCredentials(username: string, password: string) {
 ### Language-Specific
 - [Lambda](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
 - [Testing](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
-- [AWS SDK](docs/wiki/AWS/Vendor-Encapsulation-Policy.md) - ZERO tolerance
+- [AWS SDK](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 ```
 
 ## Multi-Project Documentation

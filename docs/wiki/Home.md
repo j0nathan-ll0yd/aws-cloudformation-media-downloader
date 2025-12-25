@@ -38,7 +38,7 @@ Comprehensive testing strategies and patterns:
 ### ☁️ AWS
 AWS-specific patterns and policies:
 
-- [SDK Encapsulation Policy](AWS/Vendor-Encapsulation-Policy.md) - **ZERO-TOLERANCE** vendor wrapper pattern
+- [SDK Encapsulation Policy](Conventions/Vendor-Encapsulation-Policy.md) - **ZERO-TOLERANCE** vendor wrapper pattern
 - [Lambda Environment Variables](AWS/Lambda-Environment-Variables.md) - Naming conventions
 - [CloudWatch Logging](AWS/CloudWatch-Logging.md) - Logging patterns
 - [X-Ray Integration](AWS/X-Ray-Integration.md) - Tracing patterns
@@ -79,7 +79,7 @@ Meta-documentation about the documentation system itself:
 
 ### 🚨 Zero-Tolerance Rules
 These patterns have **ZERO exceptions**:
-- [AWS SDK Encapsulation](AWS/Vendor-Encapsulation-Policy.md) - NEVER import AWS SDK directly
+- [AWS SDK Encapsulation](Conventions/Vendor-Encapsulation-Policy.md) - NEVER import AWS SDK directly
 - [No AI Attribution](Conventions/Git-Workflow.md) - NEVER include AI references in commits
 - [Git as Source of Truth](Conventions/Code-Comments.md) - NEVER explain removed code in comments
 

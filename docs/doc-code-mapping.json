@@ -33,7 +33,7 @@
     {
       "documentedPath": "src/lib/vendor/AWS/",
       "mustExist": true,
-      "documentedIn": ["AGENTS.md", "docs/wiki/AWS/Vendor-Encapsulation-Policy.md"]
+      "documentedIn": ["AGENTS.md", "docs/wiki/Conventions/Vendor-Encapsulation-Policy.md"]
     },
     {
       "documentedPath": "src/lib/vendor/BetterAuth/",

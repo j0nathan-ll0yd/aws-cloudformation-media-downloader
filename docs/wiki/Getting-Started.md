@@ -75,7 +75,7 @@ From your AGENTS.md or documentation:
 ```markdown
 ## Conventions to Follow
 - [Naming](Conventions/Naming-Conventions.md)
-- [AWS SDK](AWS/Vendor-Encapsulation-Policy.md)
+- [AWS SDK](Conventions/Vendor-Encapsulation-Policy.md)
 - [Testing](Testing/Jest-ESM-Mocking-Strategy.md)
 ```
 
@@ -148,7 +148,7 @@ Each wiki page follows a standard template:
 ```
 User: "How should I handle AWS SDK imports?"
 
-AI: Per [AWS SDK Encapsulation Policy](AWS/Vendor-Encapsulation-Policy.md),
+AI: Per [AWS SDK Encapsulation Policy](Conventions/Vendor-Encapsulation-Policy.md),
 NEVER import AWS SDK directly. Use vendor wrappers in lib/vendor/AWS/.
 
 This is a zero-tolerance rule to maintain encapsulation and testability.

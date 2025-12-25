@@ -360,7 +360,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
 
 ### AWS & Infrastructure
-- **Vendor Encapsulation**: [docs/wiki/AWS/Vendor-Encapsulation-Policy.md](docs/wiki/AWS/Vendor-Encapsulation-Policy.md) - ZERO tolerance
+- **Vendor Encapsulation**: [docs/wiki/Conventions/Vendor-Encapsulation-Policy.md](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 - **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
 - **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
 

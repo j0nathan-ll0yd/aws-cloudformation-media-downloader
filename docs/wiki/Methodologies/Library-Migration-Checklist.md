@@ -80,7 +80,7 @@ npm update electrodb
 ## Related Patterns
 
 - [Dependabot Resolution](Dependabot-Resolution.md)
-- [Vendor Wrappers](../AWS/Vendor-Encapsulation-Policy.md)
+- [Vendor Wrappers](../Conventions/Vendor-Encapsulation-Policy.md)
 
 ---
 
