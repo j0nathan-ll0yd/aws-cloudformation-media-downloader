@@ -10,7 +10,7 @@ process.env.EVENT_BUS_NAME = 'test-eventbridge-integration'
 
 import {afterAll, beforeAll, describe, expect, test} from '@jest/globals'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
-import {createTestEventBus, deleteTestEventBus, verifyEventBusExists} from '../../helpers/eventbridge-helpers'
+import {createTestEventBus, deleteTestEventBus, verifyEventBusExists} from '../../../helpers/eventbridge-helpers'
 
 describe('EventBridge Vendor Wrapper Integration', () => {
   beforeAll(async () => {
