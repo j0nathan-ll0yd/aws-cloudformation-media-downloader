@@ -38,8 +38,7 @@ const ALLOWED_DOCS_SUBDIRS = ['wiki', 'api', 'source']
 
 export const docsStructureRule: ValidationRule = {
   name: RULE_NAME,
-  description:
-    'Enforces documentation directory conventions: markdown in docs/wiki/, machine files in docs/ root, API specs in docs/api/',
+  description: 'Enforces documentation directory conventions: markdown in docs/wiki/, machine files in docs/ root, API specs in docs/api/',
   severity: SEVERITY,
   appliesTo: ['docs/**/*'],
   excludes: ['docs/wiki/**', 'docs/api/**', 'docs/source/**'],
@@ -67,7 +66,8 @@ export const docsStructureRule: ValidationRule = {
         if (fileName.endsWith('.md')) {
           violations.push(
             createViolation(RULE_NAME, SEVERITY, 1, `Markdown file "${fileName}" should be in docs/wiki/, not docs/ root`, {
-              suggestion: `Move to docs/wiki/[Category]/${fileName} where Category is one of: AWS, Conventions, Infrastructure, Integration, MCP, Meta, Testing, TypeScript`
+              suggestion:
+                `Move to docs/wiki/[Category]/${fileName} where Category is one of: AWS, Conventions, Infrastructure, Integration, MCP, Meta, Testing, TypeScript`
             })
           )
         } else {

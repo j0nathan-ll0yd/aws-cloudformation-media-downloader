@@ -49,16 +49,10 @@ export const powertoolsMetricsRule: ValidationRule = {
         : 1
 
       violations.push(
-        createViolation(
-          RULE_NAME,
-          'HIGH',
-          lineNumber,
-          'Lambda uses metrics.addMetric() but withPowertools() is missing {enableCustomMetrics: true}',
-          {
-            suggestion: 'Add {enableCustomMetrics: true} as the second argument to withPowertools()',
-            codeSnippet: 'withPowertools(handler, {enableCustomMetrics: true})'
-          }
-        )
+        createViolation(RULE_NAME, 'HIGH', lineNumber, 'Lambda uses metrics.addMetric() but withPowertools() is missing {enableCustomMetrics: true}', {
+          suggestion: 'Add {enableCustomMetrics: true} as the second argument to withPowertools()',
+          codeSnippet: 'withPowertools(handler, {enableCustomMetrics: true})'
+        })
       )
     }
 
@@ -73,16 +67,11 @@ export const powertoolsMetricsRule: ValidationRule = {
       const beforeContext = text.substring(Math.max(0, (match.index ?? 0) - 500), match.index)
       if (!beforeContext.includes('singleMetric()')) {
         violations.push(
-          createViolation(
-            RULE_NAME,
-            SEVERITY,
-            lineNumber,
-            'metrics.addDimension() used without singleMetric() - dimensions will persist across all metrics',
+          createViolation(RULE_NAME, SEVERITY, lineNumber, 'metrics.addDimension() used without singleMetric() - dimensions will persist across all metrics',
             {
               suggestion: 'Use metrics.singleMetric().addDimension() to create isolated metrics with unique dimensions',
               codeSnippet: 'const metric = metrics.singleMetric()\nmetric.addDimension("Type", value)\nmetric.addMetric("Count", MetricUnit.Count, 1)'
-            }
-          )
+            })
         )
       }
     }
