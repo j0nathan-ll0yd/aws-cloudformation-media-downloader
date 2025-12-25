@@ -76,6 +76,18 @@ if [ ! -d "node_modules" ]; then
     (cd terraform && tofu init -input=false) 2>/dev/null
   fi
 
+  # Generate MCP context (GraphRAG knowledge graph)
+  if [ -f "graphrag/extract.ts" ]; then
+    echo "Generating GraphRAG knowledge graph..."
+    pnpm run graphrag:extract 2>/dev/null
+  fi
+
+  # Index codebase for semantic search (runs in background)
+  if [ -f "scripts/indexCodebase.ts" ]; then
+    echo "Indexing codebase for semantic search (background)..."
+    (pnpm run index:codebase 2>/dev/null &)
+  fi
+
   echo ""
   echo "Worktree setup complete!"
   echo ""

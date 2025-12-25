@@ -214,6 +214,8 @@ The `.husky/post-checkout` hook automatically configures worktrees:
 | `terraform/terraform.tfstate*` | Symlinked from main repo |
 | Dependencies | `pnpm install` runs automatically |
 | Terraform | `tofu init` runs automatically |
+| GraphRAG | `graphrag:extract` generates knowledge graph |
+| Semantic search | `index:codebase` runs in background |
 
 After navigating to a new worktree, you can immediately run `pnpm run deploy`.
 
