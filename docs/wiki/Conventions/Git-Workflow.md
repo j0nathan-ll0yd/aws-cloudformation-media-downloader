@@ -216,6 +216,7 @@ The `.husky/post-checkout` hook automatically configures worktrees:
 | Terraform | `tofu init` runs automatically |
 | GraphRAG | `graphrag:extract` generates knowledge graph |
 | Semantic search | `index:codebase` runs in background |
+| Repomix | `pack:context` generates AI context (background) |
 
 After navigating to a new worktree, you can immediately run `pnpm run deploy`.
 

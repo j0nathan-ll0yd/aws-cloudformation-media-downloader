@@ -88,6 +88,12 @@ if [ ! -d "node_modules" ]; then
     (pnpm run index:codebase 2>/dev/null &)
   fi
 
+  # Generate repomix context for AI tools (runs in background)
+  if command -v repomix &> /dev/null || [ -f "node_modules/.bin/repomix" ]; then
+    echo "Generating repomix context (background)..."
+    (pnpm run pack:context 2>/dev/null &)
+  fi
+
   echo ""
   echo "Worktree setup complete!"
   echo ""
