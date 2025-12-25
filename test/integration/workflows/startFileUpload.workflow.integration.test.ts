@@ -23,7 +23,7 @@ process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:456
 process.env.EVENT_BUS_NAME = 'MediaDownloader'
 
 import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {Context, SQSEvent} from 'aws-lambda'
+import type {Context} from 'aws-lambda'
 import {DownloadStatus, FileStatus} from '#types/enums'
 
 // Test helpers
@@ -31,6 +31,7 @@ import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/hel
 import {createTestBucket, deleteTestBucket} from '#test/integration/helpers/s3-helpers'
 import {createMockContext} from '#test/integration/helpers/lambda-context'
 import {createMockVideoInfo} from '#test/integration/helpers/mock-youtube'
+import {createMockDownloadQueueEvent} from '#test/integration/helpers/test-data'
 import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
 
 const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
@@ -106,32 +107,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
 
   test('should complete video download workflow with correct DynamoDB state transitions', async () => {
     const fileId = 'test-video-123'
-
-    // Create SQS event (StartFileUpload now consumes from SQS)
-    const event: SQSEvent = {
-      Records: [{
-        messageId: 'test-message-id',
-        receiptHandle: 'test-receipt-handle',
-        body: JSON.stringify({
-          fileId,
-          sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
-          correlationId: 'test-corr-id',
-          userId: 'test-user',
-          attempt: 1
-        }),
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: '1666060600624',
-          SenderId: 'AIDAIT2UOQQY3AUEKVGXU',
-          ApproximateFirstReceiveTimestamp: '1666060600632'
-        },
-        messageAttributes: {},
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
-        awsRegion: 'us-west-2'
-      }]
-    }
+    const event = createMockDownloadQueueEvent(fileId, {correlationId: 'test-corr-id'})
 
     const result = await handler(event, mockContext)
 

@@ -1,8 +1,17 @@
 /**
  * EventBridge Test Vendor Wrapper
  *
- * Encapsulates AWS SDK EventBridge operations used in integration tests.
+ * Encapsulates AWS SDK EventBridge operations for integration test infrastructure setup.
  * This wrapper exists to maintain the AWS SDK Encapsulation Policy even in test code.
+ *
+ * IMPORTANT: These functions are for TEST INFRASTRUCTURE setup (creating/deleting event buses),
+ * NOT for testing EventBridge functionality. Workflow tests should mock EventBridge via
+ * jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', ...) to test business logic.
+ *
+ * Use cases:
+ * - Setting up LocalStack EventBridge resources before workflow tests
+ * - Cleaning up resources after tests
+ * - Future infrastructure-level integration tests (if needed)
  */
 
 import {CreateEventBusCommand, DeleteEventBusCommand, DescribeEventBusCommand, ListRulesCommand, PutRuleCommand} from '@aws-sdk/client-eventbridge'

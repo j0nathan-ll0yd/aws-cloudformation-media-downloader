@@ -59,9 +59,9 @@ jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
 
 const {handler} = await import('../../../src/lambdas/WebhookFeedly/src/index')
 
-function createWebhookEvent(articleURL: string, backgroundMode: boolean, userId: string): CustomAPIGatewayRequestAuthorizerEvent {
+function createWebhookEvent(articleURL: string, userId: string): CustomAPIGatewayRequestAuthorizerEvent {
   const event = JSON.parse(JSON.stringify(apiGatewayEventFixture)) as CustomAPIGatewayRequestAuthorizerEvent
-  event.body = JSON.stringify({articleURL, backgroundMode})
+  event.body = JSON.stringify({articleURL})
   event.requestContext.authorizer.principalId = userId
   return event
 }
@@ -96,7 +96,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should create new file and publish DownloadRequested event', async () => {
-    const event = createWebhookEvent('https://www.youtube.com/watch?v=new-video-123', false, 'user-uuid-123')
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=new-video-123', 'user-uuid-123')
 
     const result = await handler(event, mockContext)
 
@@ -127,7 +127,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       contentType: 'video/mp4'
     })
 
-    const event = createWebhookEvent('https://www.youtube.com/watch?v=existing-video', false, 'user-uuid-456')
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=existing-video', 'user-uuid-456')
 
     const result = await handler(event, mockContext)
 
@@ -149,28 +149,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     expect(file!.status).toBe(FileStatus.Downloaded)
   })
 
-  test('should publish event for backgroundMode requests', async () => {
-    const event = createWebhookEvent('https://www.youtube.com/watch?v=background-video', true, 'user-uuid-789')
-
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(202)
-    const response = JSON.parse(result.body)
-    expect(response.body.status).toBe('Accepted')
-
-    const file = await getFile('background-video')
-    expect(file).not.toBeNull()
-    expect(file!.fileId).toBe('background-video')
-    expect(file!.status).toBe(FileStatus.Queued)
-
-    // EventBridge publishes event (backgroundMode no longer changes behavior)
-    expect(publishEventMock).toHaveBeenCalledTimes(1)
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.objectContaining({fileId: 'background-video'}))
-    expect(sendMessageMock).not.toHaveBeenCalled()
-  })
-
   test('should be idempotent when receiving duplicate webhooks', async () => {
-    const event = createWebhookEvent('https://www.youtube.com/watch?v=duplicate-video', false, 'user-uuid-101')
+    const event = createWebhookEvent('https://www.youtube.com/watch?v=duplicate-video', 'user-uuid-101')
 
     const result1 = await handler(event, mockContext)
     const result2 = await handler(event, mockContext)
@@ -189,8 +169,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   test('should associate file with multiple users', async () => {
     await insertFile({fileId: 'shared-video', status: FileStatus.Downloaded, key: 'shared-video.mp4', size: 5242880, title: 'Shared Video'})
 
-    const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-alice')
-    const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', false, 'user-bob')
+    const event1 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', 'user-alice')
+    const event2 = createWebhookEvent('https://www.youtube.com/watch?v=shared-video', 'user-bob')
 
     const result1 = await handler(event1, mockContext)
     const result2 = await handler(event2, mockContext)
@@ -212,7 +192,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   test('should handle invalid video URL gracefully', async () => {
-    const event = createWebhookEvent('https://invalid-url.com/not-youtube', false, 'user-uuid-999')
+    const event = createWebhookEvent('https://invalid-url.com/not-youtube', 'user-uuid-999')
 
     const result = await handler(event, mockContext)
 

@@ -128,6 +128,41 @@ export function createMockSQSFileNotificationEvent(
 }
 
 /**
+ * Creates an SQS event for the DownloadQueue (StartFileUpload consumer)
+ * @param fileId - Video file ID
+ * @param options - Optional overrides for message fields
+ */
+export function createMockDownloadQueueEvent(
+  fileId: string,
+  options?: {messageId?: string; sourceUrl?: string; correlationId?: string; userId?: string; attempt?: number}
+): SQSEvent {
+  const messageId = options?.messageId ?? `msg-${fileId}`
+  const sourceUrl = options?.sourceUrl ?? `https://www.youtube.com/watch?v=${fileId}`
+  const correlationId = options?.correlationId ?? `corr-${fileId}`
+  const userId = options?.userId ?? 'test-user'
+  const attempt = options?.attempt ?? 1
+
+  return {
+    Records: [{
+      messageId,
+      receiptHandle: `receipt-${messageId}`,
+      body: JSON.stringify({fileId, sourceUrl, correlationId, userId, attempt}),
+      attributes: {
+        ApproximateReceiveCount: String(attempt),
+        SentTimestamp: String(Date.now()),
+        SenderId: 'AIDAIT2UOQQY3AUEKVGXU',
+        ApproximateFirstReceiveTimestamp: String(Date.now())
+      },
+      messageAttributes: {},
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
+      awsRegion: 'us-west-2'
+    }]
+  }
+}
+
+/**
  * Creates a CloudWatch Events / EventBridge scheduled event
  * @param eventId - Unique event ID
  * @param ruleName - Name of the EventBridge rule (default: 'ScheduledEvent')

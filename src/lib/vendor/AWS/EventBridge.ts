@@ -46,17 +46,7 @@ export async function putEvents(entries: PutEventsRequestEntry[]): Promise<PutEv
  * @param detail - Event payload (will be JSON-stringified)
  * @returns PutEvents response
  * @throws Error if EVENT_BUS_NAME environment variable is not set
- *
- * @example
- * ```typescript
- * await publishEvent('DownloadRequested', {
- *   fileId: 'abc123',
- *   userId: 'user-1',
- *   sourceUrl: 'https://youtube.com/...',
- *   correlationId: 'corr-1',
- *   requestedAt: new Date().toISOString()
- * })
- * ```
+ * @see src/types/events.ts for event type definitions and usage examples
  */
 export async function publishEvent<TDetail>(detailType: MediaDownloaderEventType, detail: TDetail): Promise<PutEventsResponse> {
   const eventBusName = getRequiredEnv('EVENT_BUS_NAME')

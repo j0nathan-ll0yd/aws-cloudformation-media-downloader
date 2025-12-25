@@ -21,7 +21,7 @@ locals {
 # Dead Letter Queue for failed download requests
 # Messages that fail maxReceiveCount times are moved here for investigation
 resource "aws_sqs_queue" "DownloadDLQ" {
-  name                      = "DownloadQueue-DLQ"
+  name                      = "${local.download_queue_name}-DLQ"
   message_retention_seconds = 1209600 # 14 days for investigation
 
   tags = {
