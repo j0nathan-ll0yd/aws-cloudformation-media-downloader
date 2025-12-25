@@ -32,6 +32,26 @@ import {handleIndexCodebase, handleSemanticSearch} from './handlers/semantics.js
 import type {SemanticSearchArgs} from './handlers/semantics.js'
 import {handleApplyConvention} from './handlers/apply-convention.js'
 import type {ApplyConventionArgs} from './handlers/apply-convention.js'
+import {handleSemanticDiffQuery} from './handlers/git/semantic-diff.js'
+import type {SemanticDiffArgs} from './handlers/git/semantic-diff.js'
+import {handleRenameSymbolQuery} from './handlers/refactoring/rename-symbol.js'
+import type {RenameSymbolArgs} from './handlers/refactoring/rename-symbol.js'
+import {handleMigrationQuery} from './handlers/migrations/generator.js'
+import type {MigrationArgs} from './handlers/migrations/generator.js'
+import {handleGitHistoryQuery} from './handlers/git/history-query.js'
+import type {GitHistoryArgs} from './handlers/git/history-query.js'
+import {handlePatternConsistencyQuery} from './handlers/cross-repo/pattern-consistency.js'
+import type {PatternConsistencyArgs} from './handlers/cross-repo/pattern-consistency.js'
+import {handleConventionSyncQuery} from './handlers/cross-repo/convention-sync.js'
+import type {SyncConventionsArgs} from './handlers/cross-repo/convention-sync.js'
+import {handleExtractModuleQuery} from './handlers/refactoring/extract-module.js'
+import type {ExtractModuleArgs} from './handlers/refactoring/extract-module.js'
+import {handleInlineConstantQuery} from './handlers/refactoring/inline-constant.js'
+import type {InlineConstantArgs} from './handlers/refactoring/inline-constant.js'
+import {handleBundleSizeQuery} from './handlers/performance/bundle-size.js'
+import type {BundleSizeArgs} from './handlers/performance/bundle-size.js'
+import {handleColdStartQuery} from './handlers/performance/cold-start.js'
+import type {ColdStartArgs} from './handlers/performance/cold-start.js'
 
 // Create server instance
 const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {capabilities: {tools: {}}})
@@ -239,6 +259,194 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ['file', 'convention']
         }
+      },
+      {
+        name: 'diff_semantic',
+        description: 'Analyze structural code changes between git refs (breaking changes, impact analysis)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: changes (all structural changes), breaking (only breaking), impact (affected Lambdas/tests)',
+              enum: ['changes', 'breaking', 'impact']
+            },
+            baseRef: {type: 'string', description: 'Base git ref (default: HEAD~1)'},
+            headRef: {type: 'string', description: 'Head git ref (default: HEAD)'},
+            scope: {type: 'string', description: 'Scope filter: all, src, entities, lambdas', enum: ['all', 'src', 'entities', 'lambdas']}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'refactor_rename_symbol',
+        description: 'Type-aware symbol renaming across the codebase with preview, validation, and atomic execution',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: preview (find occurrences), validate (check conflicts), execute (apply rename)',
+              enum: ['preview', 'validate', 'execute']
+            },
+            symbol: {type: 'string', description: 'Current symbol name to rename'},
+            newName: {type: 'string', description: 'New name for the symbol (required for validate/execute)'},
+            scope: {type: 'string', description: 'Scope: file, module, or project (default: project)', enum: ['file', 'module', 'project']},
+            file: {type: 'string', description: 'File path (required when scope is file or module)'},
+            type: {type: 'string', description: 'Symbol type filter', enum: ['function', 'variable', 'type', 'interface', 'class', 'all']},
+            dryRun: {type: 'boolean', description: 'Preview changes without applying (default: true)'}
+          },
+          required: ['query', 'symbol']
+        }
+      },
+      {
+        name: 'generate_migration',
+        description: 'Generate multi-file migration scripts from convention violations',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: plan (analyze violations), script (generate executable), verify (check completeness)',
+              enum: ['plan', 'script', 'verify']
+            },
+            convention: {type: 'string', description: 'Convention to migrate (default: all)', enum: ['aws-sdk', 'electrodb', 'imports', 'response', 'all']},
+            scope: {type: 'array', items: {type: 'string'}, description: 'File/directory patterns to include'},
+            outputFormat: {type: 'string', description: 'Script format: ts-morph or shell', enum: ['ts-morph', 'codemod', 'shell']},
+            execute: {type: 'boolean', description: 'Execute the migration immediately (default: false)'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'query_git_history',
+        description: 'Semantic git history queries for tracking symbol evolution and blame',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: file (annotated history), symbol (evolution tracking), pattern (commit search), blame_semantic (who modified)',
+              enum: ['file', 'symbol', 'pattern', 'blame_semantic']
+            },
+            target: {type: 'string', description: 'Target file path or pattern (for symbol: file:symbolName format)'},
+            since: {type: 'string', description: 'Since date filter (e.g., 2024-01-01)'},
+            limit: {type: 'number', description: 'Maximum commits to return (default: 10)'}
+          },
+          required: ['query', 'target']
+        }
+      },
+      {
+        name: 'analyze_pattern_consistency',
+        description: 'Detect pattern drift and consistency issues across the codebase',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: scan (find patterns), compare (against reference), drift (detect deviations)',
+              enum: ['scan', 'compare', 'drift']
+            },
+            pattern: {
+              type: 'string',
+              description: 'Pattern to analyze',
+              enum: ['error-handling', 'entity-access', 'aws-vendor', 'env-access', 'handler-export']
+            },
+            paths: {type: 'array', items: {type: 'string'}, description: 'File/directory paths to analyze'},
+            referenceImpl: {type: 'string', description: 'Reference implementation file path for comparison'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'sync_conventions',
+        description: 'Import/export conventions for multi-repo consistency',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: export (to shareable format), import (from external), diff (compare with external)',
+              enum: ['import', 'export', 'diff']
+            },
+            source: {type: 'string', description: 'Source URL or file path for import/diff'},
+            format: {type: 'string', description: 'Export format', enum: ['json', 'yaml', 'markdown']},
+            merge: {type: 'boolean', description: 'Merge with existing conventions on import (default: false)'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'refactor_extract_module',
+        description: 'Extract symbols to a new module with import updates',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: analyze (list extractable symbols), preview (show extraction plan), execute (perform extraction)',
+              enum: ['analyze', 'preview', 'execute']
+            },
+            sourceFile: {type: 'string', description: 'Source file path'},
+            symbols: {type: 'array', items: {type: 'string'}, description: 'Symbols to extract'},
+            targetModule: {type: 'string', description: 'Target module path for extraction'},
+            createBarrel: {type: 'boolean', description: 'Create/update barrel (index.ts) file (default: false)'}
+          },
+          required: ['query', 'sourceFile', 'targetModule']
+        }
+      },
+      {
+        name: 'refactor_inline_constant',
+        description: 'Find and inline single-use exported constants',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: find (discover low-use constants), preview (show inlining plan), execute (guidance for manual inlining)',
+              enum: ['find', 'preview', 'execute']
+            },
+            file: {type: 'string', description: 'File to analyze for constants'},
+            constant: {type: 'string', description: 'Specific constant name to inline'},
+            maxUses: {type: 'number', description: 'Maximum usage count to consider for inlining (default: 3)'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'analyze_bundle_size',
+        description: 'Analyze Lambda bundle sizes and provide optimization suggestions',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: summary (all bundles), breakdown (detailed analysis), compare (between refs), optimize (suggestions)',
+              enum: ['summary', 'breakdown', 'compare', 'optimize']
+            },
+            lambda: {type: 'string', description: 'Lambda function name'},
+            compareRef: {type: 'string', description: 'Git ref for comparison (default: HEAD~1)'},
+            threshold: {type: 'number', description: 'Size threshold in bytes for alerts (default: 100000)'}
+          },
+          required: ['query']
+        }
+      },
+      {
+        name: 'analyze_cold_start',
+        description: 'Estimate cold start impact from bundle and import analysis',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Query type: estimate (predict cold start), compare (different memory configs), optimize (recommendations)',
+              enum: ['estimate', 'compare', 'optimize']
+            },
+            lambda: {type: 'string', description: 'Lambda function name'},
+            memory: {type: 'number', description: 'Memory allocation in MB (default: 1024)'}
+          },
+          required: ['query']
+        }
       }
     ]
   }
@@ -291,6 +499,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'apply_convention':
         return wrapResult(await handleApplyConvention(args as unknown as ApplyConventionArgs))
+
+      case 'diff_semantic':
+        return wrapResult(await handleSemanticDiffQuery(args as unknown as SemanticDiffArgs))
+
+      case 'refactor_rename_symbol':
+        return wrapResult(await handleRenameSymbolQuery(args as unknown as RenameSymbolArgs))
+
+      case 'generate_migration':
+        return wrapResult(await handleMigrationQuery(args as unknown as MigrationArgs))
+
+      case 'query_git_history':
+        return wrapResult(await handleGitHistoryQuery(args as unknown as GitHistoryArgs))
+
+      case 'analyze_pattern_consistency':
+        return wrapResult(await handlePatternConsistencyQuery(args as unknown as PatternConsistencyArgs))
+
+      case 'sync_conventions':
+        return wrapResult(await handleConventionSyncQuery(args as unknown as SyncConventionsArgs))
+
+      case 'refactor_extract_module':
+        return wrapResult(await handleExtractModuleQuery(args as unknown as ExtractModuleArgs))
+
+      case 'refactor_inline_constant':
+        return wrapResult(await handleInlineConstantQuery(args as unknown as InlineConstantArgs))
+
+      case 'analyze_bundle_size':
+        return wrapResult(await handleBundleSizeQuery(args as unknown as BundleSizeArgs))
+
+      case 'analyze_cold_start':
+        return wrapResult(await handleColdStartQuery(args as unknown as ColdStartArgs))
 
       default:
         throw new Error(`Unknown tool: ${name}`)
