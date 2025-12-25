@@ -275,4 +275,37 @@ export async function searchWikiPages(term: string): Promise<Array<{path: string
   return results
 }
 
+/**
+ * Get transitive dependencies for a file
+ */
+export async function getTransitiveDependencies(filePath: string): Promise<string[]> {
+  const depGraph = await loadDependencyGraph()
+  const normalizedPath = filePath.startsWith('src/') ? filePath : `src/${filePath}`
+  return depGraph.transitiveDependencies[normalizedPath] || []
+}
+
+/**
+ * Find all files that import a given file (reverse dependency lookup)
+ */
+export async function findDependents(filePath: string): Promise<string[]> {
+  const depGraph = await loadDependencyGraph()
+  const normalizedPath = filePath.startsWith('src/') ? filePath : `src/${filePath}`
+  const dependents: string[] = []
+
+  for (const [file, data] of Object.entries(depGraph.files)) {
+    if (data.imports?.includes(normalizedPath)) {
+      dependents.push(file)
+    }
+  }
+
+  return dependents.sort()
+}
+
+/**
+ * Get project root path
+ */
+export function getProjectRoot(): string {
+  return projectRoot
+}
+
 export type { Convention, DependencyGraph, EntityRelationship, LambdaMetadata, Metadata, ServiceMetadata }
