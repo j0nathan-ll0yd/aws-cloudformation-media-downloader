@@ -12,7 +12,7 @@
 
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import {eq} from 'drizzle-orm'
+import {eq, sql} from 'drizzle-orm'
 import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
 import type {Device, File, User} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
@@ -75,12 +75,11 @@ export async function createAllTables(): Promise<void> {
   const schema = getWorkerSchema()
 
   // Set search_path for this connection to use worker's schema
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   // Create tables in worker schema (parents first)
   // Using TEXT for UUID columns to avoid parallel test race conditions
-  await db.execute({
-    sql: `
+  await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS ${schema}.users (
       user_id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
@@ -206,9 +205,7 @@ export async function createAllTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
     CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
     CREATE INDEX IF NOT EXISTS ${schema}_user_devices_device_idx ON ${schema}.user_devices(device_id);
-  `,
-    params: []
-  })
+  `))
 }
 
 /**
@@ -220,8 +217,7 @@ export async function dropAllTables(): Promise<void> {
   const schema = getWorkerSchema()
 
   // Drop in reverse dependency order (children first)
-  await db.execute({
-    sql: `
+  await db.execute(sql.raw(`
     DROP TABLE IF EXISTS ${schema}.user_devices CASCADE;
     DROP TABLE IF EXISTS ${schema}.user_files CASCADE;
     DROP TABLE IF EXISTS ${schema}.file_downloads CASCADE;
@@ -232,9 +228,7 @@ export async function dropAllTables(): Promise<void> {
     DROP TABLE IF EXISTS ${schema}.devices CASCADE;
     DROP TABLE IF EXISTS ${schema}.files CASCADE;
     DROP TABLE IF EXISTS ${schema}.users CASCADE;
-  `,
-    params: []
-  })
+  `))
 }
 
 /**
@@ -244,15 +238,12 @@ export async function truncateAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({
-    sql: `
+  await db.execute(sql.raw(`
     TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,
              ${schema}.verification_tokens, ${schema}.accounts, ${schema}.sessions,
              ${schema}.identity_providers, ${schema}.devices, ${schema}.files, ${schema}.users
     CASCADE;
-  `,
-    params: []
-  })
+  `))
 }
 
 // ============================================================================
@@ -267,7 +258,7 @@ export async function insertFile(fileData: Partial<File>): Promise<void> {
   const schema = getWorkerSchema()
 
   // Set search_path for this query
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const defaults = createMockFile(fileData.fileId!, fileData.status || FileStatus.Queued, fileData)
 
@@ -294,7 +285,7 @@ export async function getFile(fileId: string): Promise<Partial<File> | null> {
   const schema = getWorkerSchema()
 
   // Set search_path for this query
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const result = await db.select().from(files).where(eq(files.fileId, fileId))
   if (!result[0]) {
@@ -313,7 +304,7 @@ export async function updateFile(fileId: string, updates: Partial<File>): Promis
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.update(files).set(updates).where(eq(files.fileId, fileId))
 }
 
@@ -324,7 +315,7 @@ export async function deleteFile(fileId: string): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.delete(files).where(eq(files.fileId, fileId))
 }
 
@@ -339,7 +330,7 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const defaults = createMockUser(userData)
 
@@ -360,7 +351,7 @@ export async function getUser(userId: string): Promise<Partial<User> | null> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const result = await db.select().from(users).where(eq(users.userId, userId))
   if (!result[0]) {
@@ -383,7 +374,7 @@ export async function insertDevice(deviceData: Partial<Device>): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const defaults = createMockDevice(deviceData)
 
@@ -404,7 +395,7 @@ export async function getDevice(deviceId: string): Promise<Partial<Device> | nul
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
   const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId))
   return result[0] || null
@@ -421,7 +412,7 @@ export async function linkUserFile(userId: string, fileId: string): Promise<void
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.insert(userFiles).values({userId, fileId})
 }
 
@@ -432,7 +423,7 @@ export async function linkUserDevice(userId: string, deviceId: string): Promise<
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.insert(userDevices).values({userId, deviceId})
 }
 
