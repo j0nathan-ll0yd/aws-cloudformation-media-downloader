@@ -25,8 +25,8 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
  *
  * Access Patterns:
  * - Primary: Get session by sessionId
- * - byUser (GSI1): Get all sessions for a user (logout-all, session list)
- * - byToken (GSI2): Validate session token (request authentication)
+ * - byUser (UserCollection/GSI1): Get all sessions for a user (logout-all, session list)
+ * - byToken (TokenIndex/GSI9): Validate session token (request authentication)
  *
  * @see LoginUser Lambda for session creation
  * @see ApiGatewayAuthorizer for session validation
@@ -54,8 +54,8 @@ export const Sessions = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['sessionId']}, sk: {field: 'sk', composite: []}},
-      byUser: {collection: 'userSessions', index: 'gsi1', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}},
-      byToken: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['token']}, sk: {field: 'gsi2sk', composite: []}}
+      byUser: {collection: 'userSessions', index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}},
+      byToken: {index: 'TokenIndex', pk: {field: 'gsi9pk', composite: ['token']}, sk: {field: 'gsi9sk', composite: []}}
     }
   } as const,
   {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}

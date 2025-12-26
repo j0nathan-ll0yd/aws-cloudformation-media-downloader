@@ -24,8 +24,8 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
  *
  * Access Patterns:
  * - Primary: Get account by accountId
- * - byUser (GSI1): Get all OAuth providers linked to user
- * - byProvider (GSI2): Look up account by provider + providerAccountId
+ * - byUser (UserCollection/GSI1): Get all OAuth providers linked to user
+ * - byProvider (ProviderIndex/GSI10): Look up account by provider + providerAccountId
  *
  * @see RegisterUser Lambda for initial account creation
  * @see LoginUser Lambda for authentication via existing account
@@ -57,8 +57,8 @@ export const Accounts = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['accountId']}, sk: {field: 'sk', composite: []}},
-      byUser: {collection: 'userAccounts', index: 'gsi1', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['providerId']}},
-      byProvider: {index: 'gsi2', pk: {field: 'gsi2pk', composite: ['providerId', 'providerAccountId']}, sk: {field: 'gsi2sk', composite: []}}
+      byUser: {collection: 'userAccounts', index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['providerId']}},
+      byProvider: {index: 'ProviderIndex', pk: {field: 'gsi10pk', composite: ['providerId', 'providerAccountId']}, sk: {field: 'gsi10sk', composite: []}}
     }
   } as const,
   {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}

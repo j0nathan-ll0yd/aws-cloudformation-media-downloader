@@ -315,6 +315,46 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     projection_type = "ALL"
   }
 
+  # TokenIndex: Query sessions by token
+  # Access pattern: "Validate session token for authentication"
+  # Used by: ApiGatewayAuthorizer (Better Auth session validation)
+  attribute {
+    name = "gsi9pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi9sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "TokenIndex"
+    hash_key        = "gsi9pk"
+    range_key       = "gsi9sk"
+    projection_type = "ALL"
+  }
+
+  # ProviderIndex: Query accounts by OAuth provider
+  # Access pattern: "Find account by providerId + providerAccountId"
+  # Used by: LoginUser, RegisterUser (Better Auth adapter)
+  attribute {
+    name = "gsi10pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi10sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "ProviderIndex"
+    hash_key        = "gsi10pk"
+    range_key       = "gsi10sk"
+    projection_type = "ALL"
+  }
+
   # TTL for automatic cleanup of completed/failed FileDownloads
   ttl {
     attribute_name = "ttl"

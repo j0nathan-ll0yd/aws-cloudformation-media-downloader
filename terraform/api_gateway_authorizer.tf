@@ -81,6 +81,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   role          = aws_iam_role.ApiGatewayAuthorizer.arn
   handler       = "index.handler"
   runtime       = "nodejs24.x"
+  timeout       = 10
   depends_on = [
     aws_iam_role_policy_attachment.ApiGatewayAuthorizer,
     aws_iam_role_policy_attachment.ApiGatewayAuthorizerLogging
