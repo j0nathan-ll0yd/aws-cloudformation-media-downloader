@@ -31,7 +31,7 @@ import {FileStatus, UserStatus} from '../../../src/types/enums'
 import type {File} from '../../../src/types/domain-models'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createMockFile, createMockUserFile} from '../helpers/test-data'

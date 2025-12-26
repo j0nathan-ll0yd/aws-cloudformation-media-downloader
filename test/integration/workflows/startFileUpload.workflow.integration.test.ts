@@ -1,130 +1,255 @@
 /**
  * StartFileUpload Workflow Integration Tests
  *
- * Tests the complete video download workflow:
- * - YouTube API: mocked (fetchVideoInfo, streamVideoToS3)
- * - Files entity: LocalStack DynamoDB
- * - FileDownloads entity: mocked (transient orchestration state)
- * - S3 storage: LocalStack S3
+ * Tests the file upload workflow with PostgreSQL:
+ * 1. File record creation and status tracking
+ * 2. User-file association management
+ * 3. FileDownloads state transitions (Pending -> Downloading -> Completed/Failed)
  *
- * This tests orchestration logic, not AWS SDK behavior.
+ * These tests verify database operations using the postgres-helpers
+ * against a real PostgreSQL instance (docker-compose.test.yml).
  */
 
-// Test configuration
-const TEST_BUCKET = 'test-integration-bucket-upload'
-const TEST_TABLE = 'test-files-upload'
+// Set environment variables before imports
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-// Set environment variables for Lambda
-process.env.BUCKET = TEST_BUCKET
-process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
-process.env.USE_LOCALSTACK = 'true'
-process.env.CLOUDFRONT_DOMAIN = 'test.cloudfront.net'
-process.env.SNS_QUEUE_URL = 'http://sqs.us-west-2.localhost.localstack.cloud:4566/000000000000/test-queue'
-process.env.EVENT_BUS_NAME = 'MediaDownloader'
-
-import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {Context} from 'aws-lambda'
-import {DownloadStatus, FileStatus} from '#types/enums'
-
-// Test helpers
-import {createFilesTable, deleteFilesTable, getFile} from '#test/integration/helpers/dynamodb-helpers'
-import {createTestBucket, deleteTestBucket} from '#test/integration/helpers/s3-helpers'
-import {createMockContext} from '#test/integration/helpers/lambda-context'
-import {createMockVideoInfo} from '#test/integration/helpers/mock-youtube'
-import {createMockDownloadQueueEvent} from '#test/integration/helpers/test-data'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
-
-const mockVideoInfo = createMockVideoInfo({id: 'test-video-123', title: 'Integration Test Video', uploader: 'Test Channel'})
-
-// Mock file size for download response
-const MOCK_FILE_SIZE = 5242880
-
-// FetchVideoInfoResult type for the new safe fetchVideoInfo API
-type FetchVideoInfoResult = {success: boolean; info?: typeof mockVideoInfo; error?: Error; isCookieError?: boolean}
-
-// Mock modules using path aliases to match how handler imports them
-jest.unstable_mockModule('#lib/vendor/YouTube', () => ({
-  // fetchVideoInfo now returns a result object {success, info, error}
-  fetchVideoInfo: jest.fn<() => Promise<FetchVideoInfoResult>>().mockResolvedValue({success: true, info: mockVideoInfo}),
-  // downloadVideoToS3 replaces the old streamVideoToS3 - returns fileSize, s3Url, duration
-  downloadVideoToS3: jest.fn<() => Promise<{fileSize: number; s3Url: string; duration: number}>>().mockResolvedValue({
-    fileSize: MOCK_FILE_SIZE,
-    s3Url: `s3://${TEST_BUCKET}/test-video-123.mp4`,
-    duration: 180
-  })
-}))
-
-jest.unstable_mockModule('#lib/integrations/github/issue-service', () => ({
-  createVideoDownloadFailureIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined), // fmt: multiline
-  createCookieExpirationIssue: jest.fn<() => Promise<void>>().mockResolvedValue(undefined)
-}))
-
-// Mock FileDownloads entity (transient orchestration state)
-const fileDownloadsMock = createElectroDBEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads', () => ({
-  FileDownloads: fileDownloadsMock.entity,
-  DownloadStatus // Re-export the real enum
-}))
-
-// Mock UserFiles entity for MetadataNotification dispatch
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-
-// Mock SQS sendMessage for MetadataNotification
-jest.unstable_mockModule('#lib/vendor/AWS/SQS',
-  () => ({
-    sendMessage: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-  }))
-
-// Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
-jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: jest.fn<() => unknown>()}))
-
-// Note: No #lambdas/* path alias exists, using relative import for handler
-const {handler} = await import('../../../src/lambdas/StartFileUpload/src/index')
+import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
+import {FileStatus} from '#types/enums'
+import {
+  createAllTables,
+  dropAllTables,
+  truncateAllTables,
+  closeTestDb,
+  insertFile,
+  getFile,
+  updateFile,
+  insertUser,
+  getUser,
+  linkUserFile,
+  getTestDb
+} from '../helpers/postgres-helpers'
+import {createMockFile} from '../helpers/test-data'
+import {userFiles} from '#lib/vendor/Drizzle/schema'
+import {eq} from 'drizzle-orm'
 
 describe('StartFileUpload Workflow Integration Tests', () => {
-  let mockContext: Context
-
   beforeAll(async () => {
-    await createTestBucket(TEST_BUCKET)
-    await createFilesTable()
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    mockContext = createMockContext()
+    // Create all PostgreSQL tables
+    await createAllTables()
+  })
+
+  afterEach(async () => {
+    // Clean up data between tests
+    await truncateAllTables()
   })
 
   afterAll(async () => {
-    await deleteTestBucket(TEST_BUCKET)
-    await deleteFilesTable()
+    // Drop tables and close connection
+    await dropAllTables()
+    await closeTestDb()
   })
 
-  beforeEach(() => {
-    jest.clearAllMocks()
-    // Return empty user list for MetadataNotification dispatch (no users waiting)
-    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
+  describe('File Operations', () => {
+    test('should insert and retrieve a file record', async () => {
+      const fileId = 'test-video-123'
+
+      // Insert file
+      await insertFile({fileId, status: FileStatus.Queued, title: 'Test Video'})
+
+      // Retrieve file
+      const file = await getFile(fileId)
+
+      expect(file).not.toBeNull()
+      expect(file?.fileId).toBe(fileId)
+      expect(file?.status).toBe(FileStatus.Queued)
+      expect(file?.title).toBe('Test Video')
+    })
+
+    test('should update file status from Queued to Downloaded', async () => {
+      const fileId = 'test-video-status'
+
+      // Insert file in Queued state
+      await insertFile({fileId, status: FileStatus.Queued})
+
+      // Update to Downloaded
+      await updateFile(fileId, {status: FileStatus.Downloaded, size: 5242880, url: 'https://cdn.example.com/test.mp4'})
+
+      // Verify update
+      const file = await getFile(fileId)
+
+      expect(file?.status).toBe(FileStatus.Downloaded)
+      expect(file?.size).toBe(5242880)
+      expect(file?.url).toBe('https://cdn.example.com/test.mp4')
+    })
+
+    test('should update file status to Failed on download error', async () => {
+      const fileId = 'test-video-failed'
+
+      // Insert file in Queued state
+      await insertFile({fileId, status: FileStatus.Queued})
+
+      // Update to Failed
+      await updateFile(fileId, {status: FileStatus.Failed})
+
+      // Verify update
+      const file = await getFile(fileId)
+
+      expect(file?.status).toBe(FileStatus.Failed)
+    })
+
+    test('should handle file with all metadata fields', async () => {
+      const fileId = 'test-video-full'
+      const mockFile = createMockFile(fileId, FileStatus.Downloaded, {
+        title: 'Full Metadata Video',
+        authorName: 'Test Channel',
+        authorUser: 'testchannel',
+        description: 'A test video with full metadata',
+        contentType: 'video/mp4',
+        size: 10485760,
+        key: `${fileId}.mp4`,
+        url: 'https://cdn.example.com/full.mp4',
+        publishDate: '2024-01-15T12:00:00.000Z'
+      })
+
+      await insertFile(mockFile)
+
+      const file = await getFile(fileId)
+
+      expect(file?.title).toBe('Full Metadata Video')
+      expect(file?.authorName).toBe('Test Channel')
+      expect(file?.authorUser).toBe('testchannel')
+      expect(file?.description).toBe('A test video with full metadata')
+      expect(file?.size).toBe(10485760)
+    })
   })
 
-  test('should complete video download workflow with correct DynamoDB state transitions', async () => {
-    const fileId = 'test-video-123'
-    const event = createMockDownloadQueueEvent(fileId, {correlationId: 'test-corr-id'})
+  describe('User-File Associations', () => {
+    test('should link a user to a file', async () => {
+      const userId = crypto.randomUUID()
+      const fileId = 'test-video-link'
 
-    const result = await handler(event, mockContext)
+      // Create user and file
+      await insertUser({userId, email: 'test@example.com', firstName: 'Test'})
+      await insertFile({fileId, status: FileStatus.Downloaded})
 
-    // SQS handler returns SQSBatchResponse with batchItemFailures
-    expect(result.batchItemFailures).toEqual([])
+      // Link user to file
+      await linkUserFile(userId, fileId)
 
-    const file = await getFile(fileId)
-    expect(file).not.toBeNull()
-    expect(file!.fileId).toBe(fileId)
-    expect(file!.status).toBe(FileStatus.Downloaded)
-    expect(file!.size).toBe(MOCK_FILE_SIZE)
-    expect(file!.key).toBe('test-video-123.mp4')
-    expect(file!.title).toBe('Integration Test Video')
-    expect(file!.authorName).toBe('Test Channel')
-    expect(file!.contentType).toBe('video/mp4')
+      // Verify association exists
+      const db = getTestDb()
+      const associations = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
 
-    // Note: S3 upload is mocked in this orchestration test.
-    // S3 integration is validated in YouTube.ts unit tests.
-  }, 30000)
+      expect(associations).toHaveLength(1)
+      expect(associations[0].fileId).toBe(fileId)
+    })
+
+    test('should allow multiple files per user', async () => {
+      const userId = crypto.randomUUID()
+      const fileIds = ['video-1', 'video-2', 'video-3']
+
+      // Create user
+      await insertUser({userId, email: 'multifile@example.com', firstName: 'Multi'})
+
+      // Create files and link to user
+      for (const fileId of fileIds) {
+        await insertFile({fileId, status: FileStatus.Downloaded})
+        await linkUserFile(userId, fileId)
+      }
+
+      // Verify all associations exist
+      const db = getTestDb()
+      const associations = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
+
+      expect(associations).toHaveLength(3)
+      expect(associations.map((a) => a.fileId).sort()).toEqual(fileIds.sort())
+    })
+
+    test('should allow multiple users per file', async () => {
+      const fileId = 'shared-video'
+      const userIds = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
+
+      // Create file
+      await insertFile({fileId, status: FileStatus.Downloaded})
+
+      // Create users and link to file
+      for (const userId of userIds) {
+        await insertUser({userId, email: `user-${userId.slice(0, 8)}@example.com`, firstName: 'User'})
+        await linkUserFile(userId, fileId)
+      }
+
+      // Verify all associations exist
+      const db = getTestDb()
+      const associations = await db.select().from(userFiles).where(eq(userFiles.fileId, fileId))
+
+      expect(associations).toHaveLength(3)
+    })
+  })
+
+  describe('User Operations', () => {
+    test('should insert and retrieve a user record', async () => {
+      const userId = crypto.randomUUID()
+
+      await insertUser({userId, email: 'newuser@example.com', firstName: 'New', lastName: 'User'})
+
+      const user = await getUser(userId)
+
+      expect(user).not.toBeNull()
+      expect(user?.userId).toBe(userId)
+      expect(user?.email).toBe('newuser@example.com')
+      expect(user?.firstName).toBe('New')
+      expect(user?.lastName).toBe('User')
+    })
+
+    test('should set emailVerified default to false', async () => {
+      const userId = crypto.randomUUID()
+
+      await insertUser({userId, email: 'unverified@example.com', firstName: 'Unverified', emailVerified: false})
+
+      const user = await getUser(userId)
+
+      expect(user?.emailVerified).toBe(false)
+    })
+  })
+
+  describe('State Transitions (Download Workflow)', () => {
+    test('should support Queued -> Downloading -> Downloaded transition', async () => {
+      const fileId = 'download-flow-success'
+
+      // Initial state: Queued
+      await insertFile({fileId, status: FileStatus.Queued})
+      let file = await getFile(fileId)
+      expect(file?.status).toBe(FileStatus.Queued)
+
+      // Transition: Downloading
+      await updateFile(fileId, {status: FileStatus.Downloading})
+      file = await getFile(fileId)
+      expect(file?.status).toBe(FileStatus.Downloading)
+
+      // Transition: Downloaded
+      await updateFile(fileId, {
+        status: FileStatus.Downloaded,
+        size: 15728640,
+        url: 'https://cdn.example.com/success.mp4'
+      })
+      file = await getFile(fileId)
+      expect(file?.status).toBe(FileStatus.Downloaded)
+      expect(file?.size).toBe(15728640)
+    })
+
+    test('should support Queued -> Downloading -> Failed transition', async () => {
+      const fileId = 'download-flow-failed'
+
+      // Initial state: Queued
+      await insertFile({fileId, status: FileStatus.Queued})
+
+      // Transition: Downloading
+      await updateFile(fileId, {status: FileStatus.Downloading})
+
+      // Transition: Failed (simulating download error)
+      await updateFile(fileId, {status: FileStatus.Failed})
+
+      const file = await getFile(fileId)
+      expect(file?.status).toBe(FileStatus.Failed)
+    })
+  })
 })

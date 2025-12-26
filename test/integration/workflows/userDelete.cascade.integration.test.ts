@@ -33,7 +33,7 @@ import type {Context} from 'aws-lambda'
 import {UserStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createMockDevice, createMockUserDevice, createMockUserFile} from '../helpers/test-data'
@@ -146,7 +146,7 @@ describe('UserDelete Cascade Integration Tests', () => {
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: deviceIds.map((deviceId) => createMockUserDevice(userId, deviceId))})
 
     // Mock Devices.get batch - returns actual device records
-    devicesMock.mocks.get.mockResolvedValue({data: deviceIds.map((deviceId) => createMockDevice(deviceId)), unprocessed: []})
+    devicesMock.mocks.get.mockResolvedValue({data: deviceIds.map((deviceId) => createMockDevice({deviceId})), unprocessed: []})
 
     // Mock UserFiles query
     userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: fileIds.map((fileId) => createMockUserFile(userId, fileId))})
@@ -182,7 +182,7 @@ describe('UserDelete Cascade Integration Tests', () => {
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, 'device-1')]})
 
     // Mock Devices.get batch
-    devicesMock.mocks.get.mockResolvedValue({data: [createMockDevice('device-1')], unprocessed: []})
+    devicesMock.mocks.get.mockResolvedValue({data: [createMockDevice({deviceId: 'device-1'})], unprocessed: []})
 
     // Mock UserFiles query - simulate failure
     userFilesMock.mocks.query.byUser!.go.mockRejectedValue(new Error('DynamoDB error'))

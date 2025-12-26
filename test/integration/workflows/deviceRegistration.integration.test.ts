@@ -34,7 +34,7 @@ import type {Context} from 'aws-lambda'
 import {UserStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 import {createMockDevice, createMockUserDevice} from '../helpers/test-data'
@@ -155,7 +155,7 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice({deviceId, endpointArn}), token}})
 
     // Mock userDevice upsert
     userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
@@ -191,7 +191,7 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert - idempotent
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice({deviceId, endpointArn}), token}})
 
     // Mock userDevice upsert - idempotent
     userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
@@ -231,7 +231,7 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice({deviceId, endpointArn}), token}})
 
     // Mock subscribe for anonymous user
     subscribeMock.mockResolvedValue({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'})
@@ -258,7 +258,7 @@ describe('Device Registration Integration Tests', () => {
     createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
 
     // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice({deviceId, endpointArn}), token}})
 
     const body = createDeviceBody(deviceId, token)
     // Create event with Authorization header but invalid/no userId

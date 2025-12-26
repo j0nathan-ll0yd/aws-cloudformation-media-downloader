@@ -30,7 +30,7 @@ import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@je
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
 
