@@ -179,6 +179,7 @@ describe('Better Auth Entities Integration Tests', () => {
   describe('Sessions Entity Operations', () => {
     test('should create and retrieve a session', async () => {
       const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
       const db = getTestDb()
 
       await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
@@ -186,6 +187,7 @@ describe('Better Auth Entities Integration Tests', () => {
       // Create session
       const now = Math.floor(Date.now() / 1000)
       await db.insert(sessions).values({
+        sessionId,
         userId,
         token: 'session-token-123',
         expiresAt: now + 86400, // 24 hours from now
@@ -204,13 +206,14 @@ describe('Better Auth Entities Integration Tests', () => {
 
     test('should query sessions by token', async () => {
       const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
       const token = 'unique-session-token'
       const db = getTestDb()
 
       await insertUser({userId, email: 'token-query@example.com', firstName: 'Token'})
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({userId, token, expiresAt: now + 86400, createdAt: now, updatedAt: now})
+      await db.insert(sessions).values({sessionId, userId, token, expiresAt: now + 86400, createdAt: now, updatedAt: now})
 
       const results = await db.select().from(sessions).where(eq(sessions.token, token))
 
@@ -220,6 +223,7 @@ describe('Better Auth Entities Integration Tests', () => {
 
     test('should delete expired sessions', async () => {
       const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
       const db = getTestDb()
 
       await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
@@ -228,7 +232,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const expired = now - 3600 // 1 hour ago
 
       // Create expired session
-      await db.insert(sessions).values({userId, token: 'expired-token', expiresAt: expired, createdAt: expired - 86400, updatedAt: expired})
+      await db.insert(sessions).values({sessionId, userId, token: 'expired-token', expiresAt: expired, createdAt: expired - 86400, updatedAt: expired})
 
       // Delete expired sessions (simulating cleanup Lambda)
       await db.delete(sessions).where(eq(sessions.expiresAt, expired))
@@ -242,12 +246,14 @@ describe('Better Auth Entities Integration Tests', () => {
   describe('Accounts Entity Operations', () => {
     test('should create OAuth account for user', async () => {
       const userId = crypto.randomUUID()
+      const accountId = crypto.randomUUID()
       const db = getTestDb()
 
       await insertUser({userId, email: 'oauth@example.com', firstName: 'OAuth'})
 
       const now = Math.floor(Date.now() / 1000)
       await db.insert(accounts).values({
+        accountId,
         userId,
         providerId: 'apple',
         providerAccountId: 'apple-user-123',
@@ -268,12 +274,13 @@ describe('Better Auth Entities Integration Tests', () => {
 
     test('should query account by provider', async () => {
       const userId = crypto.randomUUID()
+      const accountId = crypto.randomUUID()
       const db = getTestDb()
 
       await insertUser({userId, email: 'provider@example.com', firstName: 'Provider'})
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(accounts).values({userId, providerId: 'apple', providerAccountId: 'unique-apple-id', createdAt: now, updatedAt: now})
+      await db.insert(accounts).values({accountId, userId, providerId: 'apple', providerAccountId: 'unique-apple-id', createdAt: now, updatedAt: now})
 
       const results = await db.select().from(accounts).where(eq(accounts.providerAccountId, 'unique-apple-id'))
 
@@ -285,6 +292,7 @@ describe('Better Auth Entities Integration Tests', () => {
   describe('Cascade Delete Behavior', () => {
     test('should clean up user associations when deleting user', async () => {
       const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
       const deviceId = 'cascade-device'
       const db = getTestDb()
 
@@ -294,7 +302,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await linkUserDevice(userId, deviceId)
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({userId, token: 'cascade-token', expiresAt: now + 86400, createdAt: now, updatedAt: now})
+      await db.insert(sessions).values({sessionId, userId, token: 'cascade-token', expiresAt: now + 86400, createdAt: now, updatedAt: now})
 
       // Delete associations first (application-layer cascade)
       await db.delete(userDevices).where(eq(userDevices.userId, userId))

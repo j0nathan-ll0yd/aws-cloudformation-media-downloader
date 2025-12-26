@@ -49,8 +49,9 @@ const config = {
     ]
   ],
 
-  // Limit workers to prevent Jest worker hang issues with AWS SDK
-  maxWorkers: 2,
+  // Run integration tests serially to prevent PostgreSQL race conditions
+  // Multiple test files create/drop/truncate the same tables
+  maxWorkers: 1,
 
   // Root directory for Jest
   rootDir: '../',
