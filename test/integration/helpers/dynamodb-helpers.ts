@@ -40,7 +40,15 @@ export async function createMediaDownloaderTable(): Promise<void> {
         {AttributeName: 'gsi5pk', AttributeType: 'S'},
         {AttributeName: 'gsi5sk', AttributeType: 'S'},
         {AttributeName: 'gsi6pk', AttributeType: 'S'},
-        {AttributeName: 'gsi6sk', AttributeType: 'S'}
+        {AttributeName: 'gsi6sk', AttributeType: 'S'},
+        {AttributeName: 'gsi7pk', AttributeType: 'S'},
+        {AttributeName: 'gsi7sk', AttributeType: 'S'},
+        {AttributeName: 'gsi8pk', AttributeType: 'S'},
+        {AttributeName: 'gsi8sk', AttributeType: 'S'},
+        {AttributeName: 'gsi9pk', AttributeType: 'S'},
+        {AttributeName: 'gsi9sk', AttributeType: 'S'},
+        {AttributeName: 'gsi10pk', AttributeType: 'S'},
+        {AttributeName: 'gsi10sk', AttributeType: 'S'}
       ],
       GlobalSecondaryIndexes: [{
         IndexName: 'UserCollection',
@@ -65,6 +73,22 @@ export async function createMediaDownloaderTable(): Promise<void> {
       }, {
         IndexName: 'GSI6',
         KeySchema: [{AttributeName: 'gsi6pk', KeyType: 'HASH'}, {AttributeName: 'gsi6sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'AppleDeviceIndex',
+        KeySchema: [{AttributeName: 'gsi7pk', KeyType: 'HASH'}, {AttributeName: 'gsi7sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'EmailIndex',
+        KeySchema: [{AttributeName: 'gsi8pk', KeyType: 'HASH'}, {AttributeName: 'gsi8sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'TokenIndex',
+        KeySchema: [{AttributeName: 'gsi9pk', KeyType: 'HASH'}, {AttributeName: 'gsi9sk', KeyType: 'RANGE'}],
+        Projection: {ProjectionType: 'ALL'}
+      }, {
+        IndexName: 'ProviderIndex',
+        KeySchema: [{AttributeName: 'gsi10pk', KeyType: 'HASH'}, {AttributeName: 'gsi10sk', KeyType: 'RANGE'}],
         Projection: {ProjectionType: 'ALL'}
       }],
       BillingMode: 'PAY_PER_REQUEST'
