@@ -53,6 +53,7 @@ Central registry of all project conventions with their documentation and enforce
 | Cascade Deletion Order | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
 | pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
+| Use pnpm deploy, never tofu apply | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Script enforcement (pre-deploy-check.sh) |
 
 ### HIGH Severity
 
@@ -72,6 +73,8 @@ Central registry of all project conventions with their documentation and enforce
 | Comment Conventions | [Code Comments](../Conventions/Code-Comments.md) | ESLint + MCP |
 | External Template Files | [Template Organization](../MCP/Template-Organization.md) | Code review |
 | Workaround Tracking | [Workaround Tracking](../Conventions/Workaround-Tracking.md) | GitHub Actions |
+| ManagedBy Tag on All Resources | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Audit script (aws-audit.sh) |
+| Post-Deploy State Verification | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Manual (`pnpm run state:verify`) |
 
 ### MEDIUM Severity
 

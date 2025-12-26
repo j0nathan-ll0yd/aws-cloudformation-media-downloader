@@ -1,6 +1,7 @@
 resource "aws_iam_role" "CloudfrontMiddleware" {
   name               = "CloudfrontMiddleware"
   assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewareLogging" {
@@ -38,6 +39,10 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   tracing_config {
     mode = "Active"
   }
+
+  tags = merge(local.common_tags, {
+    Name = "CloudfrontMiddleware"
+  })
 }
 
 resource "aws_cloudfront_distribution" "Production" {
@@ -85,6 +90,10 @@ resource "aws_cloudfront_distribution" "Production" {
   viewer_certificate {
     cloudfront_default_certificate = true
   }
+
+  tags = merge(local.common_tags, {
+    Name = "Production"
+  })
 }
 
 output "cloudfront_distribution_domain" {

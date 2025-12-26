@@ -17,11 +17,10 @@ resource "aws_dynamodb_table" "IdempotencyTable" {
     enabled        = true
   }
 
-  tags = {
-    Name        = "MediaDownloader-Idempotency"
-    Environment = "production"
-    Purpose     = "Powertools idempotency storage"
-  }
+  tags = merge(local.common_tags, {
+    Name    = "MediaDownloader-Idempotency"
+    Purpose = "Powertools idempotency storage"
+  })
 }
 
 output "idempotency_table_name" {

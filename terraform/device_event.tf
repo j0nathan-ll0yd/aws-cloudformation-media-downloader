@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "DeviceEvent" {
   name               = local.device_event_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "DeviceEventLogging" {
@@ -26,6 +27,7 @@ resource "aws_lambda_permission" "DeviceEvent" {
 resource "aws_cloudwatch_log_group" "DeviceEvent" {
   name              = "/aws/lambda/${aws_lambda_function.DeviceEvent.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "DeviceEvent" {
@@ -54,6 +56,10 @@ resource "aws_lambda_function" "DeviceEvent" {
       OTEL_SERVICE_NAME = local.device_event_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.device_event_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "DeviceEvent" {

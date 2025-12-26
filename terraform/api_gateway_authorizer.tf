@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "ApiGatewayAuthorizer" {
   name               = local.api_gateway_authorizer_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "ApiGatewayAuthorizerInvocation" {
@@ -23,6 +24,7 @@ resource "aws_iam_role_policy" "ApiGatewayAuthorizerInvocation" {
 resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
   name              = "/aws/lambda/${aws_lambda_function.ApiGatewayAuthorizer.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerLogging" {
@@ -65,6 +67,7 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
 resource "aws_iam_policy" "ApiGatewayAuthorizer" {
   name   = local.api_gateway_authorizer_function_name
   policy = data.aws_iam_policy_document.ApiGatewayAuthorizer.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizer" {
@@ -100,6 +103,10 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
       OTEL_SERVICE_NAME               = local.api_gateway_authorizer_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.api_gateway_authorizer_function_name
+  })
 }
 
 data "archive_file" "ApiGatewayAuthorizer" {

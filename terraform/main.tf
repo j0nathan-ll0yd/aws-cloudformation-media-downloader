@@ -30,6 +30,13 @@ data "aws_caller_identity" "current" {}
 locals {
   adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
+  # Common tags for all resources (drift detection & identification)
+  common_tags = {
+    ManagedBy   = "terraform"
+    Project     = "media-downloader"
+    Environment = "production"
+  }
+
   # Common environment variables for all lambdas with ADOT layer
   # OPENTELEMETRY_EXTENSION_LOG_LEVEL=warn silences extension INFO logs (~14 lines per cold start)
   # OPENTELEMETRY_COLLECTOR_CONFIG_URI points to custom config that fixes deprecated telemetry.metrics.address
@@ -66,6 +73,7 @@ resource "aws_iam_policy" "CommonLambdaLogging" {
   name        = "CommonLambdaLogging"
   description = "Allows Lambda functions to write to ALL CloudWatch logs"
   policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
+  tags        = local.common_tags
 }
 
 data "aws_iam_policy_document" "CommonLambdaXRay" {
@@ -82,6 +90,7 @@ resource "aws_iam_policy" "CommonLambdaXRay" {
   name        = "CommonLambdaXRay"
   description = "Allows Lambda functions to write X-Ray traces"
   policy      = data.aws_iam_policy_document.CommonLambdaXRay.json
+  tags        = local.common_tags
 }
 
 data "aws_iam_policy_document" "LambdaGatewayAssumeRole" {
@@ -292,10 +301,10 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     enabled        = true
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name        = "MediaDownloader"
     Description = "Single-table design for all entities"
-  }
+  })
 }
 
 data "http" "icanhazip" {

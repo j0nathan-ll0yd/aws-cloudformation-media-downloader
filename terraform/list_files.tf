@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "ListFiles" {
   name               = local.list_files_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "ListFiles" {
@@ -26,6 +27,7 @@ data "aws_iam_policy_document" "ListFiles" {
 resource "aws_iam_policy" "ListFiles" {
   name   = local.list_files_function_name
   policy = data.aws_iam_policy_document.ListFiles.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ListFiles" {
@@ -52,6 +54,7 @@ resource "aws_lambda_permission" "ListFiles" {
 resource "aws_cloudwatch_log_group" "ListFiles" {
   name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 # Create a payload zip file from the function source code bundle
@@ -87,6 +90,10 @@ resource "aws_lambda_function" "ListFiles" {
       OTEL_SERVICE_NAME         = local.list_files_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.list_files_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "Files" {

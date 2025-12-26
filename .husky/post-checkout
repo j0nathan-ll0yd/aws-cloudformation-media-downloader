@@ -59,6 +59,19 @@ if [ -n "$LINKED" ]; then
   echo "Linked from main repo:$LINKED"
 fi
 
+# Validate state file integrity
+if [ -L "terraform/terraform.tfstate" ]; then
+  STATE_TARGET=$(readlink "terraform/terraform.tfstate")
+  if [ ! -f "$STATE_TARGET" ]; then
+    echo ""
+    echo "WARNING: State file symlink target does not exist: $STATE_TARGET"
+    echo "Run 'tofu init' from main repository first, then re-run post-checkout."
+  else
+    RESOURCE_COUNT=$(grep -c '"type":' "$STATE_TARGET" 2>/dev/null || echo "0")
+    echo "State file linked: $RESOURCE_COUNT resources"
+  fi
+fi
+
 # --- Auto-setup: Only run for fresh worktrees (no node_modules) ---
 if [ ! -d "node_modules" ]; then
   echo ""

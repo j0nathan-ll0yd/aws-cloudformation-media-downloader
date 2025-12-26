@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "RegisterDevice" {
   name               = local.register_device_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "RegisterDevice" {
@@ -38,6 +39,7 @@ data "aws_iam_policy_document" "RegisterDevice" {
 resource "aws_iam_policy" "RegisterDevice" {
   name   = local.register_device_function_name
   policy = data.aws_iam_policy_document.RegisterDevice.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterDevice" {
@@ -64,6 +66,7 @@ resource "aws_lambda_permission" "RegisterDevice" {
 resource "aws_cloudwatch_log_group" "RegisterDevice" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterDevice.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "RegisterDevice" {
@@ -95,6 +98,10 @@ resource "aws_lambda_function" "RegisterDevice" {
       OTEL_SERVICE_NAME           = local.register_device_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.register_device_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "DeviceRegister" {
@@ -138,6 +145,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
 resource "aws_iam_role" "SNSLoggingRole" {
   name               = "SNSLoggingRole"
   assume_role_policy = data.aws_iam_policy_document.SNSAssumeRole.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {

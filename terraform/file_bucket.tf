@@ -4,6 +4,7 @@ locals {
 
 resource "aws_s3_bucket" "Files" {
   bucket = "lifegames-media-downloader-files"
+  tags   = local.common_tags
 }
 
 resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {
@@ -71,9 +72,9 @@ resource "aws_cloudfront_distribution" "MediaFiles" {
     cloudfront_default_certificate = true
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = "MediaFilesDistribution"
-  }
+  })
 }
 
 # S3 Bucket Policy for CloudFront OAC access
@@ -119,6 +120,7 @@ resource "aws_lambda_permission" "S3ObjectCreated" {
 resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
   name              = "/aws/lambda/${aws_lambda_function.S3ObjectCreated.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "S3ObjectCreated" {
@@ -149,11 +151,16 @@ resource "aws_lambda_function" "S3ObjectCreated" {
       OTEL_SERVICE_NAME   = local.s3_object_created_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.s3_object_created_function_name
+  })
 }
 
 resource "aws_iam_role" "S3ObjectCreated" {
   name               = local.s3_object_created_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
@@ -174,6 +181,7 @@ data "aws_iam_policy_document" "S3ObjectCreated" {
 resource "aws_iam_policy" "S3ObjectCreated" {
   name   = local.s3_object_created_function_name
   policy = data.aws_iam_policy_document.S3ObjectCreated.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "S3ObjectCreated" {
