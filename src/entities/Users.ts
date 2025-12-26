@@ -20,8 +20,8 @@ import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
  *
  * Access Patterns:
  * - Primary: Get user by userId
- * - byEmail (GSI3): Look up user by email (login flow)
- * - byAppleDeviceId (GSI7): Look up user by Apple device ID (token refresh)
+ * - byEmail (EmailIndex/GSI8): Look up user by email (login flow)
+ * - byAppleDeviceId (AppleDeviceIndex/GSI7): Look up user by Apple device ID (token refresh)
  *
  * @see RegisterUser Lambda for account creation
  * @see LoginUser Lambda for authentication
@@ -55,8 +55,8 @@ export const Users = new Entity({
   },
   indexes: {
     primary: {pk: {field: 'pk', composite: ['userId']}, sk: {field: 'sk', composite: []}},
-    byEmail: {index: 'gsi3', pk: {field: 'gsi3pk', composite: ['email']}, sk: {field: 'gsi3sk', composite: []}},
-    byAppleDeviceId: {index: 'gsi7', pk: {field: 'gsi7pk', composite: ['appleDeviceId']}, sk: {field: 'gsi7sk', composite: []}}
+    byEmail: {index: 'EmailIndex', pk: {field: 'gsi8pk', composite: ['email']}, sk: {field: 'gsi8sk', composite: []}},
+    byAppleDeviceId: {index: 'AppleDeviceIndex', pk: {field: 'gsi7pk', composite: ['appleDeviceId']}, sk: {field: 'gsi7sk', composite: []}}
   }
 } as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
 

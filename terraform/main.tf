@@ -295,6 +295,26 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     projection_type = "ALL"
   }
 
+  # EmailIndex: Query users by email address
+  # Access pattern: "Find user by email for login/registration"
+  # Used by: RegisterUser, LoginUser (Better Auth adapter)
+  attribute {
+    name = "gsi8pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi8sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "EmailIndex"
+    hash_key        = "gsi8pk"
+    range_key       = "gsi8sk"
+    projection_type = "ALL"
+  }
+
   # TTL for automatic cleanup of completed/failed FileDownloads
   ttl {
     attribute_name = "ttl"
