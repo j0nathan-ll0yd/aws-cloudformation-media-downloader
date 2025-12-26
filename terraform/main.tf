@@ -258,6 +258,7 @@ resource "aws_dynamodb_table" "MediaDownloader" {
   # GSI6: Query FileDownloads by status and retryAfter
   # Access pattern: "Find downloads ready for retry"
   # Used by: FileCoordinator
+  # Note: gsi6sk is String because ElectroDB composite keys serialize as strings
   attribute {
     name = "gsi6pk"
     type = "S"
@@ -265,7 +266,7 @@ resource "aws_dynamodb_table" "MediaDownloader" {
 
   attribute {
     name = "gsi6sk"
-    type = "N"
+    type = "S"
   }
 
   global_secondary_index {
