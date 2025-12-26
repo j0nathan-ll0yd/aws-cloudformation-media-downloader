@@ -38,7 +38,9 @@ export default [
       '.dependency-cruiser.cjs',
       'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
-      'eslint-local-rules/**/*'
+      'eslint-local-rules/**/*',
+      'test/integration/globalSetup.js',
+      'test/integration/globalTeardown.js'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
