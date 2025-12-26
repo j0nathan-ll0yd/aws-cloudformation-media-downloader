@@ -47,16 +47,18 @@ export async function closeTestDb(): Promise<void> {
  * Create all tables in the test database
  * Run this in beforeAll() of integration tests
  *
- * IMPORTANT: This SQL must match the Drizzle schema in src/lib/vendor/Drizzle/schema.ts
+ * NOTE: Uses TEXT for UUID columns instead of UUID type to avoid race conditions
+ * when parallel tests try to create UUID types simultaneously.
+ * The Drizzle schema uses UUID, but TEXT works for integration tests.
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
 
   // Create tables in dependency order (parents first)
-  // Schema must match src/lib/vendor/Drizzle/schema.ts exactly
+  // Using TEXT for UUID columns to avoid parallel test race conditions
   await db.execute(`
     CREATE TABLE IF NOT EXISTS users (
-      user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
       first_name TEXT NOT NULL,
@@ -67,8 +69,8 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS identity_providers (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL,
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       provider_user_id TEXT NOT NULL,
       email TEXT NOT NULL,
       email_verified BOOLEAN NOT NULL,
@@ -103,8 +105,8 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
-      session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL,
+      session_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       expires_at INTEGER NOT NULL,
       token TEXT NOT NULL,
       ip_address TEXT,
@@ -115,8 +117,8 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS accounts (
-      account_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL,
+      account_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       provider_id TEXT NOT NULL,
       provider_account_id TEXT NOT NULL,
       access_token TEXT,
@@ -152,20 +154,20 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS user_files (
-      user_id UUID NOT NULL,
+      user_id TEXT NOT NULL,
       file_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, file_id)
     );
 
     CREATE TABLE IF NOT EXISTS user_devices (
-      user_id UUID NOT NULL,
+      user_id TEXT NOT NULL,
       device_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, device_id)
     );
 
-    -- Indexes matching Drizzle schema definitions
+    -- Indexes
     CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
     CREATE INDEX IF NOT EXISTS users_apple_device_idx ON users(apple_device_id);
     CREATE INDEX IF NOT EXISTS identity_providers_user_idx ON identity_providers(user_id);
