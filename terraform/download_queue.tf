@@ -24,10 +24,9 @@ resource "aws_sqs_queue" "DownloadDLQ" {
   name                      = "${local.download_queue_name}-DLQ"
   message_retention_seconds = 1209600 # 14 days for investigation
 
-  tags = {
-    Environment = "production"
-    Purpose     = "Dead letter queue for failed download requests"
-  }
+  tags = merge(local.common_tags, {
+    Purpose = "Dead letter queue for failed download requests"
+  })
 }
 
 # Main Download Queue
@@ -45,10 +44,9 @@ resource "aws_sqs_queue" "DownloadQueue" {
     maxReceiveCount     = 3 # 3 retries before DLQ
   })
 
-  tags = {
-    Environment = "production"
-    Purpose     = "Queue for video download requests"
-  }
+  tags = merge(local.common_tags, {
+    Purpose = "Queue for video download requests"
+  })
 }
 
 # Event Source Mapping: DownloadQueue -> StartFileUpload

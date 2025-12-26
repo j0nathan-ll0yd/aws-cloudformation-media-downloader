@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "RefreshToken" {
   name               = local.refresh_token_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "RefreshToken" {
@@ -25,6 +26,7 @@ data "aws_iam_policy_document" "RefreshToken" {
 resource "aws_iam_policy" "RefreshToken" {
   name   = local.refresh_token_function_name
   policy = data.aws_iam_policy_document.RefreshToken.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "RefreshToken" {
@@ -51,6 +53,7 @@ resource "aws_lambda_permission" "RefreshToken" {
 resource "aws_cloudwatch_log_group" "RefreshToken" {
   name              = "/aws/lambda/${aws_lambda_function.RefreshToken.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "RefreshToken" {
@@ -81,6 +84,10 @@ resource "aws_lambda_function" "RefreshToken" {
       OTEL_SERVICE_NAME   = local.refresh_token_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.refresh_token_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "UserRefresh" {

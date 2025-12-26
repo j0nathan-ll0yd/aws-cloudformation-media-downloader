@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "UserSubscribe" {
   name               = local.user_subscribe_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "UserSubscribe" {
@@ -20,6 +21,7 @@ data "aws_iam_policy_document" "UserSubscribe" {
 resource "aws_iam_policy" "UserSubscribe" {
   name   = local.user_subscribe_function_name
   policy = data.aws_iam_policy_document.UserSubscribe.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "UserSubscribe" {
@@ -46,6 +48,7 @@ resource "aws_lambda_permission" "UserSubscribe" {
 resource "aws_cloudwatch_log_group" "UserSubscribe" {
   name              = "/aws/lambda/${aws_lambda_function.UserSubscribe.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "UserSubscribe" {
@@ -75,6 +78,10 @@ resource "aws_lambda_function" "UserSubscribe" {
       OTEL_SERVICE_NAME        = local.user_subscribe_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.user_subscribe_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "UserSubscribe" {

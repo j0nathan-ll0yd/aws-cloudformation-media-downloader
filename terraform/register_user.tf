@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "RegisterUser" {
   name               = local.register_user_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "RegisterUser" {
@@ -27,6 +28,7 @@ data "aws_iam_policy_document" "RegisterUser" {
 resource "aws_iam_policy" "RegisterUser" {
   name   = local.register_user_function_name
   policy = data.aws_iam_policy_document.RegisterUser.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterUser" {
@@ -53,6 +55,7 @@ resource "aws_lambda_permission" "RegisterUser" {
 resource "aws_cloudwatch_log_group" "RegisterUser" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterUser.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "RegisterUser" {
@@ -86,6 +89,10 @@ resource "aws_lambda_function" "RegisterUser" {
       OTEL_SERVICE_NAME         = local.register_user_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.register_user_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "UserRegister" {

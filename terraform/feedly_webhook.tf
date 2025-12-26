@@ -6,6 +6,7 @@ locals {
 resource "aws_iam_role" "WebhookFeedly" {
   name               = local.webhook_feedly_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "WebhookFeedly" {
@@ -43,6 +44,7 @@ data "aws_iam_policy_document" "WebhookFeedly" {
 resource "aws_iam_policy" "WebhookFeedly" {
   name   = local.webhook_feedly_function_name
   policy = data.aws_iam_policy_document.WebhookFeedly.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "WebhookFeedly" {
@@ -69,6 +71,7 @@ resource "aws_lambda_permission" "WebhookFeedly" {
 resource "aws_cloudwatch_log_group" "WebhookFeedly" {
   name              = "/aws/lambda/${aws_lambda_function.WebhookFeedly.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "WebhookFeedly" {
@@ -102,6 +105,10 @@ resource "aws_lambda_function" "WebhookFeedly" {
       OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.webhook_feedly_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "Feedly" {
@@ -188,11 +195,13 @@ data "aws_iam_policy_document" "MultipartUpload" {
 resource "aws_iam_role" "StartFileUpload" {
   name               = local.start_file_upload_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_policy" "StartFileUpload" {
   name   = local.start_file_upload_function_name
   policy = data.aws_iam_policy_document.MultipartUpload.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "StartFileUpload" {
@@ -378,9 +387,14 @@ resource "aws_lambda_function" "StartFileUpload" {
       OTEL_SERVICE_NAME     = local.start_file_upload_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.start_file_upload_function_name
+  })
 }
 
 resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }

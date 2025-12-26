@@ -19,9 +19,9 @@ locals {
 resource "aws_cloudwatch_event_bus" "MediaDownloader" {
   name = local.event_bus_name
 
-  tags = {
+  tags = merge(local.common_tags, {
     Description = "Event bus for media-downloader domain events"
-  }
+  })
 }
 
 # Rule: Route DownloadRequested events to DownloadQueue

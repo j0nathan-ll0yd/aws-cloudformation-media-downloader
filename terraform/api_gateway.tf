@@ -6,6 +6,8 @@ resource "aws_api_gateway_rest_api" "Main" {
   endpoint_configuration {
     types = ["REGIONAL"]
   }
+
+  tags = local.common_tags
 }
 
 resource "aws_api_gateway_deployment" "Main" {
@@ -46,6 +48,7 @@ resource "aws_api_gateway_stage" "Production" {
   deployment_id = aws_api_gateway_deployment.Main.id
 
   xray_tracing_enabled = true
+  tags                 = local.common_tags
 }
 
 resource "aws_api_gateway_method_settings" "Production" {
@@ -72,6 +75,7 @@ resource "aws_api_gateway_api_key" "iOSApp" {
   name        = "iOSAppKey"
   description = "The key for the iOS App"
   enabled     = true
+  tags        = local.common_tags
 }
 
 resource "aws_api_gateway_usage_plan_key" "iOSApp" {
@@ -99,6 +103,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 resource "aws_iam_role" "ApiGatewayCloudwatch" {
   name               = "ApiGatewayCloudwatch"
   assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatch.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayCloudwatchLogging" {

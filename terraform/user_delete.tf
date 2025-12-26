@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "UserDelete" {
   name               = local.user_delete_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "UserDelete" {
@@ -33,6 +34,7 @@ data "aws_iam_policy_document" "UserDelete" {
 resource "aws_iam_policy" "UserDelete" {
   name   = local.user_delete_function_name
   policy = data.aws_iam_policy_document.UserDelete.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "UserDelete" {
@@ -59,6 +61,7 @@ resource "aws_lambda_permission" "UserDelete" {
 resource "aws_cloudwatch_log_group" "UserDelete" {
   name              = "/aws/lambda/${aws_lambda_function.UserDelete.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "UserDelete" {
@@ -89,6 +92,10 @@ resource "aws_lambda_function" "UserDelete" {
       OTEL_SERVICE_NAME     = local.user_delete_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.user_delete_function_name
+  })
 }
 
 # RESTful DELETE /user - no separate resource needed, uses User resource from api_gateway_paths.tf

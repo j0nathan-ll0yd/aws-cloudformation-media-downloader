@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "SendPushNotification" {
   name               = local.send_push_notification_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
+  tags               = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "SendPushNotificationLogging" {
@@ -53,6 +54,7 @@ data "aws_iam_policy_document" "SendPushNotification" {
 resource "aws_iam_policy" "SendPushNotification" {
   name   = local.send_push_notification_function_name
   policy = data.aws_iam_policy_document.SendPushNotification.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "SendPushNotification" {
@@ -69,6 +71,7 @@ resource "aws_lambda_permission" "SendPushNotification" {
 resource "aws_cloudwatch_log_group" "SendPushNotification" {
   name              = "/aws/lambda/${aws_lambda_function.SendPushNotification.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "SendPushNotification" {
@@ -97,16 +100,19 @@ resource "aws_lambda_function" "SendPushNotification" {
       OTEL_SERVICE_NAME   = local.send_push_notification_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.send_push_notification_function_name
+  })
 }
 
 # Dead Letter Queue for failed push notifications
 resource "aws_sqs_queue" "SendPushNotificationDLQ" {
   name                      = "SendPushNotification-DLQ"
   message_retention_seconds = 1209600 # 14 days for investigation
-  tags = {
-    Environment = "production"
-    Purpose     = "Dead letter queue for failed push notifications"
-  }
+  tags = merge(local.common_tags, {
+    Purpose = "Dead letter queue for failed push notifications"
+  })
 }
 
 resource "aws_sqs_queue" "SendPushNotification" {
@@ -122,9 +128,7 @@ resource "aws_sqs_queue" "SendPushNotification" {
     maxReceiveCount     = 3
   })
 
-  tags = {
-    Environment = "production"
-  }
+  tags = local.common_tags
 }
 
 resource "aws_lambda_event_source_mapping" "SendPushNotification" {

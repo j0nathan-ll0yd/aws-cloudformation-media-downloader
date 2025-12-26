@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "LoginUser" {
   name               = local.login_user_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "LoginUser" {
@@ -28,6 +29,7 @@ data "aws_iam_policy_document" "LoginUser" {
 resource "aws_iam_policy" "LoginUser" {
   name   = local.login_user_function_name
   policy = data.aws_iam_policy_document.LoginUser.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "LoginUser" {
@@ -54,6 +56,7 @@ resource "aws_lambda_permission" "LoginUser" {
 resource "aws_cloudwatch_log_group" "LoginUser" {
   name              = "/aws/lambda/${aws_lambda_function.LoginUser.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "LoginUser" {
@@ -87,6 +90,10 @@ resource "aws_lambda_function" "LoginUser" {
       OTEL_SERVICE_NAME         = local.login_user_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.login_user_function_name
+  })
 }
 
 resource "aws_api_gateway_resource" "UserLogin" {

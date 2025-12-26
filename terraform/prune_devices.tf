@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "PruneDevices" {
   name               = local.prune_devices_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
+  tags               = local.common_tags
 }
 
 data "aws_iam_policy_document" "PruneDevices" {
@@ -34,6 +35,7 @@ data "aws_iam_policy_document" "PruneDevices" {
 resource "aws_iam_policy" "PruneDevices" {
   name   = local.prune_devices_function_name
   policy = data.aws_iam_policy_document.PruneDevices.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "PruneDevices" {
@@ -61,6 +63,7 @@ resource "aws_cloudwatch_event_rule" "PruneDevices" {
   name                = "PruneDevices"
   schedule_expression = "rate(1 day)"
   state               = "ENABLED"
+  tags                = local.common_tags
 }
 
 resource "aws_lambda_permission" "PruneDevices" {
@@ -73,6 +76,7 @@ resource "aws_lambda_permission" "PruneDevices" {
 resource "aws_cloudwatch_log_group" "PruneDevices" {
   name              = "/aws/lambda/${aws_lambda_function.PruneDevices.function_name}"
   retention_in_days = 14
+  tags              = local.common_tags
 }
 
 data "archive_file" "PruneDevices" {
@@ -108,4 +112,8 @@ resource "aws_lambda_function" "PruneDevices" {
       OTEL_SERVICE_NAME   = local.prune_devices_function_name
     })
   }
+
+  tags = merge(local.common_tags, {
+    Name = local.prune_devices_function_name
+  })
 }
