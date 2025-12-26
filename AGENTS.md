@@ -33,7 +33,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 - **Storage**: Amazon S3
 - **API**: AWS API Gateway with custom authorizer
 - **Notifications**: Apple Push Notification Service (APNS)
-- **Database**: DynamoDB with ElectroDB ORM (single-table design)
+- **Database**: Aurora DSQL with Drizzle ORM
 - **Monitoring**: CloudWatch, X-Ray (optional)
 
 ### Project Structure
@@ -41,8 +41,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 .
 ├── terraform/             # AWS Infrastructure definitions (OpenTofu)
 ├── src/
-│   ├── entities/          # ElectroDB entity definitions (single-table design)
-│   │   ├── Collections.ts # Service combining entities for JOIN-like queries
+│   ├── entities/          # Entity definitions (Drizzle ORM with Aurora DSQL)
 │   │   ├── Files.ts       # File entity
 │   │   ├── FileDownloads.ts # Download tracking entity
 │   │   ├── Users.ts       # User entity
@@ -58,15 +57,16 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │   │       └── test/index.test.ts   # Unit tests
 │   ├── lib/vendor/        # 3rd party API wrappers & AWS SDK encapsulation
 │   │   ├── AWS/           # AWS SDK vendor wrappers (src/lib/vendor/AWS/)
-│   │   ├── BetterAuth/    # Better Auth configuration & ElectroDB adapter
-│   │   ├── ElectroDB/     # ElectroDB configuration & service
+│   │   ├── BetterAuth/    # Better Auth configuration & adapter
+│   │   ├── Drizzle/       # Drizzle ORM configuration & schema
 │   │   └── YouTube.ts     # YouTube/yt-dlp wrapper
 │   └── mcp/               # Model Context Protocol server & validation
 │       ├── server.ts      # MCP server entry point
 │       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
 │       └── validation/    # AST-based convention enforcement (13 rules)
 ├── test/helpers/          # Test utilities
-│   └── electrodb-mock.ts  # ElectroDB mock helper for unit tests
+│   ├── electrodb-mock.ts  # Entity mock helper for unit tests
+│   └── drizzle-mock.ts    # Drizzle mock helper for unit tests
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
@@ -222,8 +222,8 @@ erDiagram
 ┌─────────────────────────────────────────────────────────────┐
 │                     AWS Services Layer                      │
 ├─────────────────────┬───────────────┬──────────────────────┤
-│    DynamoDB         │      S3       │    CloudWatch        │
-│  (ElectroDB ORM)    │  (Media Files)│   (Logs/Metrics)     │
+│   Aurora DSQL       │      S3       │    CloudWatch        │
+│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
 └─────────────────────┴───────────────┴──────────────────────┘
 ```
 
@@ -276,6 +276,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | LogClientEvent | API Gateway | POST /events | Log client-side events |
 | LoginUser | API Gateway | POST /auth/login | Authenticate user |
 | PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
+| CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
 | RefreshToken | API Gateway | POST /auth/refresh | Refresh authentication token |
 | RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
 | RegisterUser | API Gateway | POST /auth/register | Register new user |
@@ -314,15 +315,15 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 6. **LocalStack integration** for local AWS testing via vendor wrappers
 7. **Webpack externals** must be updated when adding AWS SDK packages
 
-## ElectroDB Architecture
+## Drizzle ORM Architecture
 
-**CRITICAL**: This project uses ElectroDB as the DynamoDB ORM for type-safe, maintainable database operations.
+**CRITICAL**: This project uses Drizzle ORM with Aurora DSQL for type-safe, serverless database operations.
 
-### Key ElectroDB Features
-- **Single-table design**: All entities in one DynamoDB table with optimized GSIs
+### Key Drizzle Features
+- **Serverless Aurora DSQL**: PostgreSQL-compatible with automatic scaling, no VPC required
+- **IAM Authentication**: Secure connection using AWS IAM tokens (auto-refreshed)
 - **Type-safe queries**: Full TypeScript type inference for all operations
-- **Collections**: JOIN-like queries across entity boundaries (see `src/entities/Collections.ts`)
-- **Batch operations**: Efficient bulk reads/writes with automatic chunking
+- **Relational support**: Standard SQL JOINs, foreign keys (application-enforced)
 
 ### Entity Relationships
 - **Users** ↔ **Files**: Many-to-many via UserFiles entity
@@ -331,16 +332,9 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Users** ↔ **Accounts**: One-to-many (Better Auth OAuth accounts)
 - **Files** ↔ **FileDownloads**: One-to-many (download tracking)
 
-### Collections (JOIN-like Queries)
-- **Collections.userResources**: Query all files & devices for a user in one call
-- **Collections.fileUsers**: Get all users associated with a file (for notifications)
-- **Collections.deviceUsers**: Get all users associated with a device (for cleanup)
-- **Collections.userSessions**: Get all sessions for a user (Better Auth)
-- **Collections.userAccounts**: Get all OAuth accounts for a user (Better Auth)
-
-### Testing with ElectroDB
-- **ALWAYS** use `test/helpers/electrodb-mock.ts` for mocking entities
-- **NEVER** create manual mocks for ElectroDB entities
+### Testing with Drizzle
+- **ALWAYS** use `test/helpers/electrodb-mock.ts` or `test/helpers/drizzle-mock.ts` for mocking entities
+- **NEVER** create manual mocks for entities
 - See test style guide for detailed mocking patterns
 
 ## Wiki Conventions to Follow
@@ -372,11 +366,11 @@ The following patterns have caused issues in this project and should be avoided:
 **Wrong**: `import {DynamoDBClient} from '@aws-sdk/client-dynamodb'`
 **Right**: `import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'`
 **Why**: Breaks encapsulation, makes testing difficult, loses environment detection (LocalStack/X-Ray)
-**Applies to**: AWS SDK, ElectroDB, Better Auth, yt-dlp, and all third-party services
+**Applies to**: AWS SDK, Drizzle, Better Auth, yt-dlp, and all third-party services
 
-### 2. Manual ElectroDB Entity Mocks (CRITICAL)
+### 2. Manual Entity Mocks (CRITICAL)
 **Wrong**: Hand-crafted mock objects for entities in tests
-**Right**: `const mock = createElectroDBEntityMock({queryIndexes: ['byUser']})`
+**Right**: `const mock = createElectroDBEntityMock({queryIndexes: ['byUser']})` or use `drizzle-mock.ts`
 **Why**: Inconsistent mocking leads to false positives and maintenance burden
 
 ### 3. Promise.all for Cascade Deletions (CRITICAL)
@@ -414,7 +408,7 @@ The following patterns have caused issues in this project and should be avoided:
 | Pattern | Usage | Examples |
 |---------|-------|----------|
 | Simple nouns | Domain entities | `User`, `File`, `Device`, `Session` |
-| `*Item` | ElectroDB parsed types | `UserItem`, `FileItem`, `DeviceItem` |
+| `*Item` | Entity row types | `UserItem`, `FileItem`, `DeviceItem` |
 | `*Input` | Request payloads & mutations | `UserLoginInput`, `CreateFileInput` |
 | `*Response` | API response wrappers | `FileResponse`, `LoginResponse` |
 | `*Error` | Error classes | `AuthorizationError`, `ValidationError` |
@@ -522,7 +516,7 @@ Then drag `repomix-output.xml` into the Claude Code conversation or copy relevan
 ### AWS Services
 - **Lambda**: Event-driven compute (all business logic)
 - **S3**: Media storage with transfer acceleration
-- **DynamoDB**: Single-table design via ElectroDB ORM for all entities
+- **Aurora DSQL**: Serverless PostgreSQL-compatible database via Drizzle ORM for all entities
 - **API Gateway**: REST endpoints with custom authorizer
 - **SNS**: Push notification delivery
 - **CloudWatch**: Logging and metrics

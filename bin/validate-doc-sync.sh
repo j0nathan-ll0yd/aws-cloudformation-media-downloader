@@ -42,7 +42,7 @@ ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index
 
 # Count entity files listed in AGENTS.md between entities/ and lambdas/ sections
 # Each entity file is listed with │   │   ├── or │   │   └──
-DOCUMENTED_ENTITY_COUNT=$(awk '/entities\/.*ElectroDB/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.ts' | wc -l | tr -d ' ')
+DOCUMENTED_ENTITY_COUNT=$(awk '/entities\/.*Entity definitions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.ts' | wc -l | tr -d ' ')
 
 if [ "$ENTITY_COUNT" -ne "$DOCUMENTED_ENTITY_COUNT" ]; then
   echo -e "${RED}MISMATCH${NC}"
@@ -94,7 +94,7 @@ PATHS_OK=true
 REQUIRED_PATHS=(
   "src/lib/vendor/AWS"
   "src/lib/vendor/BetterAuth"
-  "src/lib/vendor/ElectroDB"
+  "src/lib/vendor/Drizzle"
   "src/mcp"
   "src/mcp/validation"
   "test/helpers"

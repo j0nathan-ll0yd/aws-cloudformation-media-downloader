@@ -57,6 +57,11 @@ resource "aws_iam_role_policy_attachment" "RegisterDeviceXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterDeviceDSQL" {
+  role       = aws_iam_role.RegisterDevice.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 resource "aws_lambda_permission" "RegisterDevice" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterDevice.function_name

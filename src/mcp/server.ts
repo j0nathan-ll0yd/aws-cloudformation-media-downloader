@@ -2,7 +2,7 @@
 /**
  * Model Context Protocol (MCP) Server for Media Downloader
  * Provides queryable interfaces for:
- * - ElectroDB entity schemas and relationships
+ * - Entity schemas and relationships (Drizzle ORM with Aurora DSQL)
  * - Lambda function configurations
  * - AWS infrastructure queries
  * - Dependency graph analysis
@@ -69,7 +69,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       { // fmt: multiline
         name: 'query_entities',
-        description: 'Query ElectroDB entity schemas and relationships',
+        description: 'Query entity schemas and relationships (uses Drizzle ORM with Aurora DSQL)',
         inputSchema: {
           type: 'object',
           properties: {

@@ -282,6 +282,11 @@ function getEnvironmentVariablesFromSource(functionName: string, sourceCodeRegex
 
 describe('#Infrastructure', () => {
   const jsonFilePath = `${__dirname}/../../build/infrastructure.json`
+  // Skip if infrastructure.json doesn't exist (not yet deployed)
+  if (!fs.existsSync(jsonFilePath)) {
+    test.skip('Infrastructure tests require terraform apply to generate infrastructure.json', () => {})
+    return
+  }
   logDebug('Retrieving infrastructure configuration')
   const jsonFile = fs.readFileSync(jsonFilePath, 'utf8')
   logDebug('JSON file', jsonFile)

@@ -1,66 +1,227 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
-
 /**
  * Users Entity - Core user account management.
  *
  * Manages user accounts with Sign In With Apple integration.
- * Each user has embedded identity provider tokens for OAuth refresh.
+ * Identity providers are stored in a separate normalized table.
+ *
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
  *
  * Lifecycle:
  * 1. Created when user signs in with Apple for the first time (RegisterUser Lambda)
  * 2. Updated when tokens are refreshed or profile changes (LoginUser, RefreshToken)
  * 3. Deleted when user requests account deletion (UserDelete Lambda)
  *
- * Identity Provider Structure:
- * The `identityProviders` map contains Apple OAuth tokens:
- * - userId: Apple's unique user identifier
- * - accessToken/refreshToken: OAuth tokens for API access
- * - email: May be Apple's private relay email
- * - isPrivateEmail: Whether user chose to hide their email
- *
  * Access Patterns:
  * - Primary: Get user by userId
- * - byEmail (EmailIndex/GSI8): Look up user by email (login flow)
- * - byAppleDeviceId (AppleDeviceIndex/GSI7): Look up user by Apple device ID (token refresh)
+ * - byEmail: Look up user by email (login flow)
+ * - byAppleDeviceId: Look up user by Apple device ID (token refresh)
  *
  * @see RegisterUser Lambda for account creation
  * @see LoginUser Lambda for authentication
  * @see UserDelete Lambda for cascade deletion
- * @see Collections.userResources for querying user's files/devices
  */
-export const Users = new Entity({
-  model: {entity: 'User', version: '1', service: 'MediaDownloader'},
-  attributes: {
-    userId: {type: 'string', required: true, readOnly: true},
-    email: {type: 'string', required: true},
-    emailVerified: {type: 'boolean', required: true, default: false},
-    firstName: {type: 'string', required: true},
-    lastName: {type: 'string', required: false},
-    /** Flattened Apple device ID for GSI lookup (denormalized from identityProviders.userId) */
-    appleDeviceId: {type: 'string', required: false},
-    identityProviders: {
-      type: 'map',
-      required: true,
-      properties: {
-        userId: {type: 'string', required: true},
-        email: {type: 'string', required: true},
-        emailVerified: {type: 'boolean', required: true},
-        isPrivateEmail: {type: 'boolean', required: true},
-        accessToken: {type: 'string', required: true},
-        refreshToken: {type: 'string', required: true},
-        tokenType: {type: 'string', required: true},
-        expiresAt: {type: 'number', required: true}
+import {eq} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+
+export type UserRow = InferSelectModel<typeof users>
+export type IdentityProviderRow = InferSelectModel<typeof identityProviders>
+
+export interface IdentityProviderData {
+  userId: string
+  email: string
+  emailVerified: boolean
+  isPrivateEmail: boolean
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresAt: number
+}
+
+export type UserItem = UserRow & {identityProviders?: IdentityProviderData}
+
+export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'userId' | 'createdAt' | 'updatedAt'> & {
+  userId?: string
+  identityProviders?: IdentityProviderData
+}
+
+export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'userId' | 'createdAt'>>
+
+export const Users = {
+  get(key: {userId: string}): {go: () => Promise<{data: UserItem | null}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const userResult = await db.select().from(users).where(eq(users.userId, key.userId)).limit(1)
+
+        if (userResult.length === 0) {
+          return {data: null}
+        }
+
+        const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.userId)).limit(1)
+
+        const user = userResult[0]
+        const idp = idpResult[0]
+
+        return {
+          data: {
+            ...user,
+            identityProviders: idp
+              ? {
+                userId: idp.providerUserId,
+                email: idp.email,
+                emailVerified: idp.emailVerified,
+                isPrivateEmail: idp.isPrivateEmail,
+                accessToken: idp.accessToken,
+                refreshToken: idp.refreshToken,
+                tokenType: idp.tokenType,
+                expiresAt: idp.expiresAt
+              }
+              : undefined
+          }
+        }
       }
     }
   },
-  indexes: {
-    primary: {pk: {field: 'pk', composite: ['userId']}, sk: {field: 'sk', composite: []}},
-    byEmail: {index: 'EmailIndex', pk: {field: 'gsi8pk', composite: ['email']}, sk: {field: 'gsi8sk', composite: []}},
-    byAppleDeviceId: {index: 'AppleDeviceIndex', pk: {field: 'gsi7pk', composite: ['appleDeviceId']}, sk: {field: 'gsi7sk', composite: []}}
-  }
-} as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
 
-// Type exports for use in application code
-export type UserItem = ReturnType<typeof Users.parse>
-export type CreateUserInput = Parameters<typeof Users.create>[0]
-export type UpdateUserInput = Parameters<typeof Users.update>[0]
+  create(input: CreateUserInput): {go: () => Promise<{data: UserItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const {identityProviders: idpData, ...userData} = input
+
+        const [user] = await db.insert(users).values({...userData, updatedAt: new Date()}).returning()
+
+        if (idpData) {
+          await db.insert(identityProviders).values({
+            userId: user.userId,
+            providerUserId: idpData.userId,
+            email: idpData.email,
+            emailVerified: idpData.emailVerified,
+            isPrivateEmail: idpData.isPrivateEmail,
+            accessToken: idpData.accessToken,
+            refreshToken: idpData.refreshToken,
+            tokenType: idpData.tokenType,
+            expiresAt: idpData.expiresAt
+          })
+        }
+
+        return {data: {...user, identityProviders: idpData}}
+      }
+    }
+  },
+
+  update(key: {userId: string}): {set: (data: UpdateUserInput) => {go: () => Promise<{data: UserItem}>}} {
+    return {
+      set: (data: UpdateUserInput) => ({
+        go: async () => {
+          const db = await getDrizzleClient()
+          const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.userId, key.userId)).returning()
+
+          const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.userId)).limit(1)
+
+          const idp = idpResult[0]
+
+          return {
+            data: {
+              ...updated,
+              identityProviders: idp
+                ? {
+                  userId: idp.providerUserId,
+                  email: idp.email,
+                  emailVerified: idp.emailVerified,
+                  isPrivateEmail: idp.isPrivateEmail,
+                  accessToken: idp.accessToken,
+                  refreshToken: idp.refreshToken,
+                  tokenType: idp.tokenType,
+                  expiresAt: idp.expiresAt
+                }
+                : undefined
+            }
+          }
+        }
+      })
+    }
+  },
+
+  delete(key: {userId: string}): {go: () => Promise<Record<string, never>>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        await db.delete(identityProviders).where(eq(identityProviders.userId, key.userId))
+        await db.delete(users).where(eq(users.userId, key.userId))
+        return {}
+      }
+    }
+  },
+
+  query: {
+    byEmail(key: {email: string}): {go: () => Promise<{data: UserItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const userResult = await db.select().from(users).where(eq(users.email, key.email))
+
+          const results: UserItem[] = []
+          for (const user of userResult) {
+            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.userId)).limit(1)
+
+            const idp = idpResult[0]
+            results.push({
+              ...user,
+              identityProviders: idp
+                ? {
+                  userId: idp.providerUserId,
+                  email: idp.email,
+                  emailVerified: idp.emailVerified,
+                  isPrivateEmail: idp.isPrivateEmail,
+                  accessToken: idp.accessToken,
+                  refreshToken: idp.refreshToken,
+                  tokenType: idp.tokenType,
+                  expiresAt: idp.expiresAt
+                }
+                : undefined
+            })
+          }
+
+          return {data: results}
+        }
+      }
+    },
+
+    byAppleDeviceId(key: {appleDeviceId: string}): {go: () => Promise<{data: UserItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const userResult = await db.select().from(users).where(eq(users.appleDeviceId, key.appleDeviceId))
+
+          const results: UserItem[] = []
+          for (const user of userResult) {
+            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.userId)).limit(1)
+
+            const idp = idpResult[0]
+            results.push({
+              ...user,
+              identityProviders: idp
+                ? {
+                  userId: idp.providerUserId,
+                  email: idp.email,
+                  emailVerified: idp.emailVerified,
+                  isPrivateEmail: idp.isPrivateEmail,
+                  accessToken: idp.accessToken,
+                  refreshToken: idp.refreshToken,
+                  tokenType: idp.tokenType,
+                  expiresAt: idp.expiresAt
+                }
+                : undefined
+            })
+          }
+
+          return {data: results}
+        }
+      }
+    }
+  }
+}

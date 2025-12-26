@@ -1,72 +1,100 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
-
 /**
  * Sessions Entity - Better Auth user session management.
  *
- * Manages authentication sessions with automatic expiration.
- * Used by Better Auth for session-based authentication.
+ * Stores authentication sessions with automatic expiration.
+ * Expired sessions cleaned up by CleanupExpiredRecords Lambda.
  *
- * Lifecycle:
- * 1. Created when user logs in successfully (LoginUser Lambda)
- * 2. Updated when session is refreshed (activity extends expiration)
- * 3. Expires automatically when expiresAt timestamp is reached
- * 4. Deleted when user logs out or session is invalidated
- *
- * Session Token Flow:
- * - User authenticates with Sign In With Apple
- * - Better Auth creates session with hashed token
- * - Token returned to client as HTTP-only cookie
- * - Subsequent requests validate token via byToken index
- *
- * Security Features:
- * - ipAddress: Tracks originating IP for anomaly detection
- * - userAgent: Identifies client device/browser
- * - updatedAt: Auto-updates on any change for activity tracking
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
  *
  * Access Patterns:
  * - Primary: Get session by sessionId
- * - byUser (UserCollection/GSI1): Get all sessions for a user (logout-all, session list)
- * - byToken (TokenIndex/GSI9): Validate session token (request authentication)
+ * - byUser: Get all sessions for a user (logout-all, session list)
+ * - byToken: Validate session token (request authentication)
  *
  * @see LoginUser Lambda for session creation
  * @see ApiGatewayAuthorizer for session validation
- * @see Collections.userSessions for batch session queries
+ * @see RefreshToken Lambda for session refresh
  */
-export const Sessions = new Entity(
-  {
-    model: {entity: 'Session', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      sessionId: {type: 'string', required: true, readOnly: true},
-      userId: {type: 'string', required: true},
-      expiresAt: {type: 'number', required: true},
-      token: {type: 'string', required: true},
-      ipAddress: {type: 'string', required: false},
-      userAgent: {type: 'string', required: false},
-      deviceId: {type: 'string', required: false},
-      createdAt: {type: 'number', required: true, default: () => Date.now(), readOnly: true},
-      updatedAt: {
-        type: 'number',
-        required: true,
-        default: () => Date.now(),
-        watch: '*',
-        set: () => Date.now()
+import {eq} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {sessions} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+
+export type SessionItem = InferSelectModel<typeof sessions>
+export type CreateSessionInput = Omit<InferInsertModel<typeof sessions>, 'sessionId' | 'createdAt' | 'updatedAt'> & {
+  sessionId?: string
+  createdAt?: number
+  updatedAt?: number
+}
+export type UpdateSessionInput = Partial<Omit<InferInsertModel<typeof sessions>, 'sessionId' | 'createdAt'>>
+
+export const Sessions = {
+  get(key: {sessionId: string}): {go: () => Promise<{data: SessionItem | null}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const result = await db.select().from(sessions).where(eq(sessions.sessionId, key.sessionId)).limit(1)
+
+        return {data: result.length > 0 ? result[0] : null}
+      }
+    }
+  },
+
+  create(input: CreateSessionInput): {go: () => Promise<{data: SessionItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const now = Math.floor(Date.now() / 1000)
+        const [session] = await db.insert(sessions).values({...input, createdAt: input.createdAt ?? now, updatedAt: input.updatedAt ?? now}).returning()
+
+        return {data: session}
+      }
+    }
+  },
+
+  update(key: {sessionId: string}): {set: (data: UpdateSessionInput) => {go: () => Promise<{data: SessionItem}>}} {
+    return {
+      set: (data: UpdateSessionInput) => ({
+        go: async () => {
+          const db = await getDrizzleClient()
+          const now = Math.floor(Date.now() / 1000)
+          const [updated] = await db.update(sessions).set({...data, updatedAt: now}).where(eq(sessions.sessionId, key.sessionId)).returning()
+
+          return {data: updated}
+        }
+      })
+    }
+  },
+
+  delete(key: {sessionId: string}): {go: () => Promise<void>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        await db.delete(sessions).where(eq(sessions.sessionId, key.sessionId))
+      }
+    }
+  },
+
+  query: {
+    byUser(key: {userId: string}): {go: () => Promise<{data: SessionItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(sessions).where(eq(sessions.userId, key.userId))
+          return {data: result}
+        }
       }
     },
-    indexes: {
-      primary: {pk: {field: 'pk', composite: ['sessionId']}, sk: {field: 'sk', composite: []}},
-      byUser: {
-        collection: 'userSessions',
-        index: 'UserCollection',
-        pk: {field: 'gsi1pk', composite: ['userId']},
-        sk: {field: 'gsi1sk', composite: ['expiresAt']}
-      },
-      byToken: {index: 'TokenIndex', pk: {field: 'gsi9pk', composite: ['token']}, sk: {field: 'gsi9sk', composite: []}}
-    }
-  } as const,
-  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
-)
 
-// Type exports for use in application code
-export type SessionItem = ReturnType<typeof Sessions.parse>
-export type CreateSessionInput = Parameters<typeof Sessions.create>[0]
-export type UpdateSessionInput = Parameters<typeof Sessions.update>[0]
+    byToken(key: {token: string}): {go: () => Promise<{data: SessionItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(sessions).where(eq(sessions.token, key.token))
+          return {data: result}
+        }
+      }
+    }
+  }
+}
