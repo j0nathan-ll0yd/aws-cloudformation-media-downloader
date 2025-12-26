@@ -1,8 +1,11 @@
 /**
- * PostgreSQL Test Helpers
+ * PostgreSQL Test Helpers - Worker-Isolated Version
  *
  * Utilities for setting up and querying test data in PostgreSQL
  * for Drizzle/Aurora DSQL integration tests.
+ *
+ * Each Jest worker gets its own PostgreSQL schema for complete isolation
+ * during parallel test execution. Schema is determined by JEST_WORKER_ID.
  *
  * Requires: docker-compose -f docker-compose.test.yml up -d
  */
@@ -18,34 +21,50 @@ import {createMockDevice, createMockFile, createMockUser} from './test-data'
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-let testDb: ReturnType<typeof drizzle> | null = null
-let testSql: ReturnType<typeof postgres> | null = null
+// Worker-aware connection cache (not singleton - each worker gets its own)
+const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>}>()
 
 /**
- * Get or create the test database connection
+ * Get the current worker's schema name.
+ * Uses JEST_WORKER_ID environment variable set by Jest.
+ */
+function getWorkerSchema(): string {
+  const workerId = process.env.JEST_WORKER_ID || '1'
+  return `worker_${workerId}`
+}
+
+/**
+ * Get or create the test database connection for current worker.
+ * Each worker has its own connection and operates in its own schema.
  */
 export function getTestDb() {
-  if (!testDb) {
-    testSql = postgres(TEST_DATABASE_URL)
-    testDb = drizzle(testSql)
+  const schema = getWorkerSchema()
+
+  if (!workerConnections.has(schema)) {
+    const sqlClient = postgres(TEST_DATABASE_URL)
+    const db = drizzle(sqlClient)
+    workerConnections.set(schema, {db, sqlClient})
   }
-  return testDb
+
+  return workerConnections.get(schema)!.db
 }
 
 /**
- * Close the test database connection
+ * Close the test database connection for current worker
  */
 export async function closeTestDb(): Promise<void> {
-  if (testSql) {
-    await testSql.end()
-    testSql = null
-    testDb = null
+  const schema = getWorkerSchema()
+  const conn = workerConnections.get(schema)
+
+  if (conn) {
+    await conn.sqlClient.end()
+    workerConnections.delete(schema)
   }
 }
 
 /**
- * Create all tables in the test database
- * Run this in beforeAll() of integration tests
+ * Create all tables in the worker's schema.
+ * Run this in beforeAll() of integration tests.
  *
  * NOTE: Uses TEXT for UUID columns instead of UUID type to avoid race conditions
  * when parallel tests try to create UUID types simultaneously.
@@ -53,11 +72,16 @@ export async function closeTestDb(): Promise<void> {
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
 
-  // Create tables in dependency order (parents first)
+  // Set search_path for this connection to use worker's schema
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
+  // Create tables in worker schema (parents first)
   // Using TEXT for UUID columns to avoid parallel test race conditions
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS users (
+  await db.execute({
+    sql: `
+    CREATE TABLE IF NOT EXISTS ${schema}.users (
       user_id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
@@ -68,7 +92,7 @@ export async function createAllTables(): Promise<void> {
       updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );
 
-    CREATE TABLE IF NOT EXISTS identity_providers (
+    CREATE TABLE IF NOT EXISTS ${schema}.identity_providers (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       provider_user_id TEXT NOT NULL,
@@ -81,7 +105,7 @@ export async function createAllTables(): Promise<void> {
       expires_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS files (
+    CREATE TABLE IF NOT EXISTS ${schema}.files (
       file_id TEXT PRIMARY KEY,
       size INTEGER NOT NULL DEFAULT 0,
       author_name TEXT NOT NULL,
@@ -95,7 +119,7 @@ export async function createAllTables(): Promise<void> {
       status TEXT NOT NULL DEFAULT 'Queued'
     );
 
-    CREATE TABLE IF NOT EXISTS devices (
+    CREATE TABLE IF NOT EXISTS ${schema}.devices (
       device_id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       token TEXT NOT NULL,
@@ -104,7 +128,7 @@ export async function createAllTables(): Promise<void> {
       endpoint_arn TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS sessions (
+    CREATE TABLE IF NOT EXISTS ${schema}.sessions (
       session_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       expires_at INTEGER NOT NULL,
@@ -116,7 +140,7 @@ export async function createAllTables(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS accounts (
+    CREATE TABLE IF NOT EXISTS ${schema}.accounts (
       account_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       provider_id TEXT NOT NULL,
@@ -131,14 +155,14 @@ export async function createAllTables(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS verification_tokens (
+    CREATE TABLE IF NOT EXISTS ${schema}.verification_tokens (
       token TEXT PRIMARY KEY,
       identifier TEXT NOT NULL,
       expires_at INTEGER NOT NULL,
       created_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS file_downloads (
+    CREATE TABLE IF NOT EXISTS ${schema}.file_downloads (
       file_id TEXT PRIMARY KEY,
       status TEXT NOT NULL DEFAULT 'Pending',
       retry_count INTEGER NOT NULL DEFAULT 0,
@@ -153,14 +177,14 @@ export async function createAllTables(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS user_files (
+    CREATE TABLE IF NOT EXISTS ${schema}.user_files (
       user_id TEXT NOT NULL,
       file_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, file_id)
     );
 
-    CREATE TABLE IF NOT EXISTS user_devices (
+    CREATE TABLE IF NOT EXISTS ${schema}.user_devices (
       user_id TEXT NOT NULL,
       device_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -168,43 +192,49 @@ export async function createAllTables(): Promise<void> {
     );
 
     -- Indexes
-    CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
-    CREATE INDEX IF NOT EXISTS users_apple_device_idx ON users(apple_device_id);
-    CREATE INDEX IF NOT EXISTS identity_providers_user_idx ON identity_providers(user_id);
-    CREATE INDEX IF NOT EXISTS files_key_idx ON files(key);
-    CREATE INDEX IF NOT EXISTS file_downloads_status_idx ON file_downloads(status, retry_after);
-    CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id);
-    CREATE INDEX IF NOT EXISTS sessions_token_idx ON sessions(token);
-    CREATE INDEX IF NOT EXISTS accounts_user_idx ON accounts(user_id);
-    CREATE INDEX IF NOT EXISTS accounts_provider_idx ON accounts(provider_id, provider_account_id);
-    CREATE INDEX IF NOT EXISTS verification_tokens_identifier_idx ON verification_tokens(identifier);
-    CREATE INDEX IF NOT EXISTS user_files_user_idx ON user_files(user_id);
-    CREATE INDEX IF NOT EXISTS user_files_file_idx ON user_files(file_id);
-    CREATE INDEX IF NOT EXISTS user_devices_user_idx ON user_devices(user_id);
-    CREATE INDEX IF NOT EXISTS user_devices_device_idx ON user_devices(device_id);
-  `)
+    CREATE INDEX IF NOT EXISTS ${schema}_users_email_idx ON ${schema}.users(email);
+    CREATE INDEX IF NOT EXISTS ${schema}_users_apple_device_idx ON ${schema}.users(apple_device_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_identity_providers_user_idx ON ${schema}.identity_providers(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_files_key_idx ON ${schema}.files(key);
+    CREATE INDEX IF NOT EXISTS ${schema}_file_downloads_status_idx ON ${schema}.file_downloads(status, retry_after);
+    CREATE INDEX IF NOT EXISTS ${schema}_sessions_user_idx ON ${schema}.sessions(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
+    CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, provider_account_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_verification_tokens_identifier_idx ON ${schema}.verification_tokens(identifier);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_device_idx ON ${schema}.user_devices(device_id);
+  `,
+    params: []
+  })
 }
 
 /**
- * Drop all tables in the test database
- * Run this in afterAll() of integration tests
+ * Drop all tables from worker's schema.
+ * Run this in afterAll() of integration tests.
  */
 export async function dropAllTables(): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
 
   // Drop in reverse dependency order (children first)
-  await db.execute(`
-    DROP TABLE IF EXISTS user_devices CASCADE;
-    DROP TABLE IF EXISTS user_files CASCADE;
-    DROP TABLE IF EXISTS file_downloads CASCADE;
-    DROP TABLE IF EXISTS verification_tokens CASCADE;
-    DROP TABLE IF EXISTS accounts CASCADE;
-    DROP TABLE IF EXISTS sessions CASCADE;
-    DROP TABLE IF EXISTS identity_providers CASCADE;
-    DROP TABLE IF EXISTS devices CASCADE;
-    DROP TABLE IF EXISTS files CASCADE;
-    DROP TABLE IF EXISTS users CASCADE;
-  `)
+  await db.execute({
+    sql: `
+    DROP TABLE IF EXISTS ${schema}.user_devices CASCADE;
+    DROP TABLE IF EXISTS ${schema}.user_files CASCADE;
+    DROP TABLE IF EXISTS ${schema}.file_downloads CASCADE;
+    DROP TABLE IF EXISTS ${schema}.verification_tokens CASCADE;
+    DROP TABLE IF EXISTS ${schema}.accounts CASCADE;
+    DROP TABLE IF EXISTS ${schema}.sessions CASCADE;
+    DROP TABLE IF EXISTS ${schema}.identity_providers CASCADE;
+    DROP TABLE IF EXISTS ${schema}.devices CASCADE;
+    DROP TABLE IF EXISTS ${schema}.files CASCADE;
+    DROP TABLE IF EXISTS ${schema}.users CASCADE;
+  `,
+    params: []
+  })
 }
 
 /**
@@ -212,11 +242,17 @@ export async function dropAllTables(): Promise<void> {
  */
 export async function truncateAllTables(): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
 
-  await db.execute(`
-    TRUNCATE user_devices, user_files, file_downloads, verification_tokens,
-             accounts, sessions, identity_providers, devices, files, users CASCADE;
-  `)
+  await db.execute({
+    sql: `
+    TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,
+             ${schema}.verification_tokens, ${schema}.accounts, ${schema}.sessions,
+             ${schema}.identity_providers, ${schema}.devices, ${schema}.files, ${schema}.users
+    CASCADE;
+  `,
+    params: []
+  })
 }
 
 // ============================================================================
@@ -228,6 +264,11 @@ export async function truncateAllTables(): Promise<void> {
  */
 export async function insertFile(fileData: Partial<File>): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  // Set search_path for this query
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const defaults = createMockFile(fileData.fileId!, fileData.status || FileStatus.Queued, fileData)
 
   await db.insert(files).values({
@@ -250,6 +291,11 @@ export async function insertFile(fileData: Partial<File>): Promise<void> {
  */
 export async function getFile(fileId: string): Promise<Partial<File> | null> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  // Set search_path for this query
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const result = await db.select().from(files).where(eq(files.fileId, fileId))
   if (!result[0]) {
     return null
@@ -265,6 +311,9 @@ export async function getFile(fileId: string): Promise<Partial<File> | null> {
  */
 export async function updateFile(fileId: string, updates: Partial<File>): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
   await db.update(files).set(updates).where(eq(files.fileId, fileId))
 }
 
@@ -273,6 +322,9 @@ export async function updateFile(fileId: string, updates: Partial<File>): Promis
  */
 export async function deleteFile(fileId: string): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
   await db.delete(files).where(eq(files.fileId, fileId))
 }
 
@@ -285,6 +337,10 @@ export async function deleteFile(fileId: string): Promise<void> {
  */
 export async function insertUser(userData: Partial<User> & {appleDeviceId?: string}): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const defaults = createMockUser(userData)
 
   await db.insert(users).values({
@@ -302,6 +358,10 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
  */
 export async function getUser(userId: string): Promise<Partial<User> | null> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const result = await db.select().from(users).where(eq(users.userId, userId))
   if (!result[0]) {
     return null
@@ -321,6 +381,10 @@ export async function getUser(userId: string): Promise<Partial<User> | null> {
  */
 export async function insertDevice(deviceData: Partial<Device>): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const defaults = createMockDevice(deviceData)
 
   await db.insert(devices).values({
@@ -338,6 +402,10 @@ export async function insertDevice(deviceData: Partial<Device>): Promise<void> {
  */
 export async function getDevice(deviceId: string): Promise<Partial<Device> | null> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
+
   const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId))
   return result[0] || null
 }
@@ -351,6 +419,9 @@ export async function getDevice(deviceId: string): Promise<Partial<Device> | nul
  */
 export async function linkUserFile(userId: string, fileId: string): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
   await db.insert(userFiles).values({userId, fileId})
 }
 
@@ -359,6 +430,9 @@ export async function linkUserFile(userId: string, fileId: string): Promise<void
  */
 export async function linkUserDevice(userId: string, deviceId: string): Promise<void> {
   const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute({sql: `SET search_path TO ${schema}, public`, params: []})
   await db.insert(userDevices).values({userId, deviceId})
 }
 

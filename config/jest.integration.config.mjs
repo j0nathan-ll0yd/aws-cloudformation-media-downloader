@@ -49,9 +49,15 @@ const config = {
     ]
   ],
 
-  // Run integration tests serially to prevent PostgreSQL race conditions
-  // Multiple test files create/drop/truncate the same tables
-  maxWorkers: 1,
+  // Run integration tests in parallel with worker-isolated PostgreSQL schemas
+  // Each worker operates in its own schema (worker_1, worker_2, etc.)
+  maxWorkers: 4,
+
+  // Global setup creates worker schemas before tests run
+  globalSetup: '<rootDir>/test/integration/globalSetup.ts',
+
+  // Global teardown drops worker schemas after all tests complete
+  globalTeardown: '<rootDir>/test/integration/globalTeardown.ts',
 
   // Root directory for Jest
   rootDir: '../',
