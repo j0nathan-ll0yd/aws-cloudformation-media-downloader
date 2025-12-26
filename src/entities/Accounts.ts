@@ -57,7 +57,12 @@ export const Accounts = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['accountId']}, sk: {field: 'sk', composite: []}},
-      byUser: {collection: 'userAccounts', index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['providerId']}},
+      byUser: {
+        collection: 'userAccounts',
+        index: 'UserCollection',
+        pk: {field: 'gsi1pk', composite: ['userId']},
+        sk: {field: 'gsi1sk', composite: ['providerId']}
+      },
       byProvider: {index: 'ProviderIndex', pk: {field: 'gsi10pk', composite: ['providerId', 'providerAccountId']}, sk: {field: 'gsi10sk', composite: []}}
     }
   } as const,

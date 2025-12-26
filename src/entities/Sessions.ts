@@ -54,7 +54,12 @@ export const Sessions = new Entity(
     },
     indexes: {
       primary: {pk: {field: 'pk', composite: ['sessionId']}, sk: {field: 'sk', composite: []}},
-      byUser: {collection: 'userSessions', index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}},
+      byUser: {
+        collection: 'userSessions',
+        index: 'UserCollection',
+        pk: {field: 'gsi1pk', composite: ['userId']},
+        sk: {field: 'gsi1sk', composite: ['expiresAt']}
+      },
       byToken: {index: 'TokenIndex', pk: {field: 'gsi9pk', composite: ['token']}, sk: {field: 'gsi9sk', composite: []}}
     }
   } as const,
