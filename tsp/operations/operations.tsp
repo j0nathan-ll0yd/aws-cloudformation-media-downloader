@@ -33,7 +33,7 @@ interface Files {
     @header("X-API-Key") apiKey: string,
   ): {
     @statusCode statusCode: 200;
-    @body body: FileListResponse;
+    @body body: ApiResponse<FileListResponse>;
   } | {
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
@@ -77,10 +77,10 @@ interface Devices {
     @body device: DeviceRegistrationRequest,
   ): {
     @statusCode statusCode: 200;
-    @body body: DeviceRegistrationResponse;
+    @body body: ApiResponse<DeviceRegistrationResponse>;
   } | {
     @statusCode statusCode: 201;
-    @body body: DeviceRegistrationResponse;
+    @body body: ApiResponse<DeviceRegistrationResponse>;
   } | {
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
@@ -152,10 +152,10 @@ interface Webhooks {
     @body webhook: FeedlyWebhookRequest,
   ): {
     @statusCode statusCode: 200;
-    @body body: WebhookResponse;
+    @body body: ApiResponse<WebhookResponse>;
   } | {
     @statusCode statusCode: 202;
-    @body body: WebhookResponse;
+    @body body: ApiResponse<WebhookResponse>;
   } | {
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
@@ -196,7 +196,7 @@ interface Authentication {
     @body registration: UserRegistrationRequest,
   ): {
     @statusCode statusCode: 200;
-    @body body: UserRegistrationResponse;
+    @body body: ApiResponse<UserRegistrationResponse>;
   } | {
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
@@ -229,7 +229,7 @@ interface Authentication {
     @body login: UserLoginRequest,
   ): {
     @statusCode statusCode: 200;
-    @body body: UserLoginResponse;
+    @body body: ApiResponse<UserLoginResponse>;
   } | {
     @statusCode statusCode: 409;
     @body body: ErrorResponse;
@@ -263,7 +263,7 @@ interface Authentication {
     @header("X-API-Key") apiKey: string,
   ): {
     @statusCode statusCode: 200;
-    @body body: TokenRefreshResponse;
+    @body body: ApiResponse<TokenRefreshResponse>;
   } | {
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
@@ -314,7 +314,7 @@ interface Authentication {
     @body subscription: UserSubscriptionRequest,
   ): {
     @statusCode statusCode: 201;
-    @body body: UserSubscriptionResponse;
+    @body body: ApiResponse<UserSubscriptionResponse>;
   } | {
     @statusCode statusCode: 400;
     @body body: ErrorResponse;

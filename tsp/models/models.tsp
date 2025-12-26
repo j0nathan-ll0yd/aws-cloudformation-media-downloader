@@ -5,6 +5,22 @@ using TypeSpec.Http;
 namespace OfflineMediaDownloader.Models;
 
 /**
+ * Standard API response wrapper for successful responses.
+ * All 2xx responses are wrapped in this format.
+ */
+model ApiResponse<T> {
+  /**
+   * The actual response data
+   */
+  body: T;
+
+  /**
+   * Unique request identifier for tracing
+   */
+  requestId: string;
+}
+
+/**
  * File status enumeration
  */
 enum FileStatus {
