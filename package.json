@@ -41,6 +41,7 @@
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "validate:conventions": "node --import tsx scripts/validateConventions.ts",
     "validate:config": "node --import tsx scripts/validateConfig.ts",
+    "validate:api-paths": "node --import tsx scripts/validateApiPaths.ts",
     "index:codebase": "node --import tsx scripts/indexCodebase.ts",
     "search:codebase": "node --import tsx scripts/searchCodebase.ts",
     "typespec:compile": "tsp compile tsp/",

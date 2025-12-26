@@ -54,18 +54,18 @@ interface Files {
 interface Devices {
   /**
    * Register a device to receive push notifications.
-   * 
+   *
    * This is an idempotent operation that:
    * 1. Creates an AWS SNS endpoint for the device
    * 2. Associates the device with the authenticated user
    * 3. Subscribes the device to push notification topics
-   * 
+   *
    * Example request: See `tsp/examples/register-device-request.json`
    * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json`)
-   * 
+   *
    * Example response: See `tsp/examples/register-device-response.json`
    * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json`)
-   * 
+   *
    * @returns Device registration confirmation with endpoint ARN
    */
   @post
@@ -90,6 +90,31 @@ interface Devices {
   } | {
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
+   * Log a client-side event for debugging and analytics.
+   *
+   * Receives event data from the iOS client and logs it to CloudWatch
+   * for later analysis. Used for debugging and usage analytics.
+   *
+   * @returns No content on success
+   */
+  @post
+  @route("/event")
+  @summary("Log client event")
+  logClientEvent(
+    @header("X-API-Key") apiKey: string,
+    @header("X-Device-UUID") deviceId?: string,
+    @body event: ClientEventRequest,
+  ): {
+    @statusCode statusCode: 204;
+  } | {
+    @statusCode statusCode: 400;
+    @body body: ErrorResponse;
   } | {
     @statusCode statusCode: 500;
     @body body: InternalServerError;
@@ -185,15 +210,15 @@ interface Authentication {
 
   /**
    * Login an existing user with Sign in with Apple.
-   * 
+   *
    * Authenticates a user and returns a JWT access token.
-   * 
+   *
    * Example request: See `tsp/examples/login-user-request.json`
    * (sourced from `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json`)
-   * 
+   *
    * Example response: See `tsp/examples/login-user-response.json`
    * (sourced from `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json`)
-   * 
+   *
    * @returns JWT access token
    */
   @post
@@ -221,4 +246,84 @@ interface Authentication {
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
+
+  /**
+   * Refresh an existing session token.
+   *
+   * Extends the session expiration time without re-authenticating.
+   * The same token is returned with an updated expiration time.
+   *
+   * @returns Refreshed session information
+   */
+  @post
+  @route("/refresh")
+  @summary("Refresh session token")
+  refreshToken(
+    @header("Authorization") authorization: string,
+    @header("X-API-Key") apiKey: string,
+  ): {
+    @statusCode statusCode: 200;
+    @body body: TokenRefreshResponse;
+  } | {
+    @statusCode statusCode: 401;
+    @body body: UnauthorizedError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
+   * Delete user account and all associated data.
+   *
+   * Required for Sign in with Apple compliance (account deletion requirement).
+   * Deletes user files, devices, and the user record itself.
+   *
+   * @returns No content on success
+   */
+  @delete
+  @summary("Delete user account")
+  deleteUser(
+    @header("Authorization") authorization: string,
+    @header("X-API-Key") apiKey: string,
+  ): {
+    @statusCode statusCode: 204;
+  } | {
+    @statusCode statusCode: 207;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 401;
+    @body body: UnauthorizedError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
+
+  /**
+   * Subscribe a user's device to push notification topics.
+   *
+   * Links an SNS endpoint (device) to an SNS topic for receiving notifications.
+   *
+   * @returns Subscription ARN
+   */
+  @post
+  @route("/subscribe")
+  @summary("Subscribe to notifications")
+  subscribeUser(
+    @header("Authorization") authorization: string,
+    @header("X-API-Key") apiKey: string,
+    @body subscription: UserSubscriptionRequest,
+  ): {
+    @statusCode statusCode: 201;
+    @body body: UserSubscriptionResponse;
+  } | {
+    @statusCode statusCode: 400;
+    @body body: ErrorResponse;
+  } | {
+    @statusCode statusCode: 401;
+    @body body: UnauthorizedError;
+  } | {
+    @statusCode statusCode: 500;
+    @body body: InternalServerError;
+  };
 }
+

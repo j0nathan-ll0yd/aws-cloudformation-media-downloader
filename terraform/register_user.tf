@@ -88,15 +88,15 @@ resource "aws_lambda_function" "RegisterUser" {
   }
 }
 
-resource "aws_api_gateway_resource" "RegisterUser" {
+resource "aws_api_gateway_resource" "UserRegister" {
   rest_api_id = aws_api_gateway_rest_api.Main.id
-  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
-  path_part   = "registerUser"
+  parent_id   = aws_api_gateway_resource.User.id
+  path_part   = "register"
 }
 
 resource "aws_api_gateway_method" "RegisterUserPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
-  resource_id      = aws_api_gateway_resource.RegisterUser.id
+  resource_id      = aws_api_gateway_resource.UserRegister.id
   http_method      = "POST"
   authorization    = "NONE"
   api_key_required = true
@@ -104,7 +104,7 @@ resource "aws_api_gateway_method" "RegisterUserPost" {
 
 resource "aws_api_gateway_integration" "RegisterUserPost" {
   rest_api_id             = aws_api_gateway_rest_api.Main.id
-  resource_id             = aws_api_gateway_resource.RegisterUser.id
+  resource_id             = aws_api_gateway_resource.UserRegister.id
   http_method             = aws_api_gateway_method.RegisterUserPost.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"

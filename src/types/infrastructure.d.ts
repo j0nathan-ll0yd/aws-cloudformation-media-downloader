@@ -164,6 +164,7 @@ export interface Local {
     lambda_functions?:                     string[];
     lambda_functions_api?:                 string[];
     lambda_functions_background?:          string[];
+    device_event_function_name?:           string;
     download_queue_name?:                  string;
     download_queue_visibility_timeout?:    number;
     event_bus_name?:                       string;
@@ -171,7 +172,6 @@ export interface Local {
     webhook_feedly_function_name?:         string;
     s3_object_created_function_name?:      string;
     list_files_function_name?:             string;
-    log_client_event_function_name?:       string;
     login_user_function_name?:             string;
     adot_layer_arn?:                       string;
     common_lambda_env?:                    CommonLambdaEnv;
@@ -299,8 +299,12 @@ export interface APIGatewayAuthorizer {
     authorizer_uri:                   string;
     identity_source:                  string;
     name:                             string;
-    rest_api_id:                      string;
+    rest_api_id:                      APIID;
     type:                             string;
+}
+
+export enum APIID {
+    AwsAPIGatewayRESTAPIMainID = "${aws_api_gateway_rest_api.Main.id}",
 }
 
 export interface AwsAPIGatewayDeployment {
@@ -310,7 +314,7 @@ export interface AwsAPIGatewayDeployment {
 export interface AwsAPIGatewayDeploymentMain {
     depends_on:  string[];
     lifecycle:   Lifecycle[];
-    rest_api_id: string;
+    rest_api_id: APIID;
     triggers:    MainTriggers;
 }
 
@@ -330,7 +334,7 @@ export interface AwsAPIGatewayGatewayResponse {
 export interface Default00GatewayResponse {
     response_templates: ResponseTemplates;
     response_type:      string;
-    rest_api_id:        string;
+    rest_api_id:        APIID;
 }
 
 export interface ResponseTemplates {
@@ -338,45 +342,45 @@ export interface ResponseTemplates {
 }
 
 export interface AwsAPIGatewayIntegration {
-    ListFilesGet:       AwsAPIGatewayIntegrationListFilesGet[];
-    LogClientEventPost: AwsAPIGatewayIntegrationListFilesGet[];
-    LoginUserPost:      AwsAPIGatewayIntegrationListFilesGet[];
-    RefreshTokenPost:   AwsAPIGatewayIntegrationListFilesGet[];
-    RegisterDevicePost: AwsAPIGatewayIntegrationListFilesGet[];
-    RegisterUserPost:   AwsAPIGatewayIntegrationListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayIntegrationListFilesGet[];
-    UserSubscribePost:  AwsAPIGatewayIntegrationListFilesGet[];
-    WebhookFeedlyPost:  AwsAPIGatewayIntegrationListFilesGet[];
+    DeviceEventPost:    AwsAPIGatewayIntegrationDeviceEventPost[];
+    ListFilesGet:       AwsAPIGatewayIntegrationDeviceEventPost[];
+    LoginUserPost:      AwsAPIGatewayIntegrationDeviceEventPost[];
+    RefreshTokenPost:   AwsAPIGatewayIntegrationDeviceEventPost[];
+    RegisterDevicePost: AwsAPIGatewayIntegrationDeviceEventPost[];
+    RegisterUserPost:   AwsAPIGatewayIntegrationDeviceEventPost[];
+    UserDelete:         AwsAPIGatewayIntegrationDeviceEventPost[];
+    UserSubscribePost:  AwsAPIGatewayIntegrationDeviceEventPost[];
+    WebhookFeedlyPost:  AwsAPIGatewayIntegrationDeviceEventPost[];
 }
 
-export interface AwsAPIGatewayIntegrationListFilesGet {
+export interface AwsAPIGatewayIntegrationDeviceEventPost {
     http_method:             string;
     integration_http_method: string;
     resource_id:             string;
-    rest_api_id:             string;
+    rest_api_id:             APIID;
     type:                    string;
     uri:                     string;
 }
 
 export interface AwsAPIGatewayMethod {
-    ListFilesGet:       AwsAPIGatewayMethodListFilesGet[];
-    LogClientEventPost: AwsAPIGatewayMethodListFilesGet[];
-    LoginUserPost:      AwsAPIGatewayMethodListFilesGet[];
-    RefreshTokenPost:   AwsAPIGatewayMethodListFilesGet[];
-    RegisterDevicePost: AwsAPIGatewayMethodListFilesGet[];
-    RegisterUserPost:   AwsAPIGatewayMethodListFilesGet[];
-    UserDeletePost:     AwsAPIGatewayMethodListFilesGet[];
-    UserSubscribePost:  AwsAPIGatewayMethodListFilesGet[];
-    WebhookFeedlyPost:  AwsAPIGatewayMethodListFilesGet[];
+    DeviceEventPost:    AwsAPIGatewayMethodDeviceEventPost[];
+    ListFilesGet:       AwsAPIGatewayMethodDeviceEventPost[];
+    LoginUserPost:      AwsAPIGatewayMethodDeviceEventPost[];
+    RefreshTokenPost:   AwsAPIGatewayMethodDeviceEventPost[];
+    RegisterDevicePost: AwsAPIGatewayMethodDeviceEventPost[];
+    RegisterUserPost:   AwsAPIGatewayMethodDeviceEventPost[];
+    UserDelete:         AwsAPIGatewayMethodDeviceEventPost[];
+    UserSubscribePost:  AwsAPIGatewayMethodDeviceEventPost[];
+    WebhookFeedlyPost:  AwsAPIGatewayMethodDeviceEventPost[];
 }
 
-export interface AwsAPIGatewayMethodListFilesGet {
+export interface AwsAPIGatewayMethodDeviceEventPost {
     api_key_required: boolean;
     authorization:    string;
-    authorizer_id?:   string;
     http_method:      string;
     resource_id:      string;
-    rest_api_id:      string;
+    rest_api_id:      APIID;
+    authorizer_id?:   string;
 }
 
 export interface AwsAPIGatewayMethodSettings {
@@ -385,7 +389,7 @@ export interface AwsAPIGatewayMethodSettings {
 
 export interface AwsAPIGatewayMethodSettingsProduction {
     method_path: string;
-    rest_api_id: string;
+    rest_api_id: APIID;
     settings:    Setting[];
     stage_name:  string;
 }
@@ -397,21 +401,28 @@ export interface Setting {
 }
 
 export interface AwsAPIGatewayResource {
-    Feedly:         Feedly[];
-    Files:          Feedly[];
-    LogEvent:       Feedly[];
-    Login:          Feedly[];
-    RefreshToken:   Feedly[];
-    RegisterDevice: Feedly[];
-    RegisterUser:   Feedly[];
-    UserDelete:     Feedly[];
-    UserSubscribe:  Feedly[];
+    Device:         Device[];
+    DeviceEvent:    Device[];
+    DeviceRegister: Device[];
+    Feedly:         Device[];
+    Files:          Device[];
+    User:           Device[];
+    UserLogin:      Device[];
+    UserRefresh:    Device[];
+    UserRegister:   Device[];
+    UserSubscribe:  Device[];
 }
 
-export interface Feedly {
-    parent_id:   string;
+export interface Device {
+    parent_id:   ParentID;
     path_part:   string;
-    rest_api_id: string;
+    rest_api_id: APIID;
+}
+
+export enum ParentID {
+    AwsAPIGatewayRESTAPIMainRootResourceID = "${aws_api_gateway_rest_api.Main.root_resource_id}",
+    AwsAPIGatewayResourceDeviceID = "${aws_api_gateway_resource.Device.id}",
+    AwsAPIGatewayResourceUserID = "${aws_api_gateway_resource.User.id}",
 }
 
 export interface AwsAPIGatewayRESTAPI {
@@ -435,7 +446,7 @@ export interface AwsAPIGatewayStage {
 
 export interface AwsAPIGatewayStageProduction {
     deployment_id:        string;
-    rest_api_id:          string;
+    rest_api_id:          APIID;
     stage_name:           string;
     xray_tracing_enabled: boolean;
 }
@@ -451,7 +462,7 @@ export interface AwsAPIGatewayUsagePlanIOSApp {
 }
 
 export interface APIStage {
-    api_id: string;
+    api_id: APIID;
     stage:  string;
 }
 
@@ -850,24 +861,24 @@ export interface SendPushNotification {
 }
 
 export interface AwsLambdaFunction {
-    ApiGatewayAuthorizer: LogClientEventElement[];
+    ApiGatewayAuthorizer: DeviceEventElement[];
     CloudfrontMiddleware: CloudfrontMiddleware[];
-    ListFiles:            LogClientEventElement[];
-    LogClientEvent:       LogClientEventElement[];
-    LoginUser:            LogClientEventElement[];
-    PruneDevices:         LogClientEventElement[];
-    RefreshToken:         LogClientEventElement[];
-    RegisterDevice:       LogClientEventElement[];
-    RegisterUser:         LogClientEventElement[];
-    S3ObjectCreated:      LogClientEventElement[];
-    SendPushNotification: LogClientEventElement[];
-    StartFileUpload:      LogClientEventElement[];
-    UserDelete:           LogClientEventElement[];
-    UserSubscribe:        LogClientEventElement[];
-    WebhookFeedly:        LogClientEventElement[];
+    DeviceEvent:          DeviceEventElement[];
+    ListFiles:            DeviceEventElement[];
+    LoginUser:            DeviceEventElement[];
+    PruneDevices:         DeviceEventElement[];
+    RefreshToken:         DeviceEventElement[];
+    RegisterDevice:       DeviceEventElement[];
+    RegisterUser:         DeviceEventElement[];
+    S3ObjectCreated:      DeviceEventElement[];
+    SendPushNotification: DeviceEventElement[];
+    StartFileUpload:      DeviceEventElement[];
+    UserDelete:           DeviceEventElement[];
+    UserSubscribe:        DeviceEventElement[];
+    WebhookFeedly:        DeviceEventElement[];
 }
 
-export interface LogClientEventElement {
+export interface DeviceEventElement {
     depends_on:                      string[];
     description:                     string;
     environment:                     Environment[];
@@ -1429,6 +1440,7 @@ const typeMap: any = {
         { json: "lambda_functions", js: "lambda_functions", typ: u(undefined, a("")) },
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
+        { json: "device_event_function_name", js: "device_event_function_name", typ: u(undefined, "") },
         { json: "download_queue_name", js: "download_queue_name", typ: u(undefined, "") },
         { json: "download_queue_visibility_timeout", js: "download_queue_visibility_timeout", typ: u(undefined, 0) },
         { json: "event_bus_name", js: "event_bus_name", typ: u(undefined, "") },
@@ -1436,7 +1448,6 @@ const typeMap: any = {
         { json: "webhook_feedly_function_name", js: "webhook_feedly_function_name", typ: u(undefined, "") },
         { json: "s3_object_created_function_name", js: "s3_object_created_function_name", typ: u(undefined, "") },
         { json: "list_files_function_name", js: "list_files_function_name", typ: u(undefined, "") },
-        { json: "log_client_event_function_name", js: "log_client_event_function_name", typ: u(undefined, "") },
         { json: "login_user_function_name", js: "login_user_function_name", typ: u(undefined, "") },
         { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
@@ -1551,7 +1562,7 @@ const typeMap: any = {
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
         { json: "identity_source", js: "identity_source", typ: "" },
         { json: "name", js: "name", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "type", js: "type", typ: "" },
     ], false),
     "AwsAPIGatewayDeployment": o([
@@ -1560,7 +1571,7 @@ const typeMap: any = {
     "AwsAPIGatewayDeploymentMain": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "lifecycle", js: "lifecycle", typ: a(r("Lifecycle")) },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "triggers", js: "triggers", typ: r("MainTriggers") },
     ], false),
     "Lifecycle": o([
@@ -1576,55 +1587,55 @@ const typeMap: any = {
     "Default00GatewayResponse": o([
         { json: "response_templates", js: "response_templates", typ: r("ResponseTemplates") },
         { json: "response_type", js: "response_type", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
     ], false),
     "ResponseTemplates": o([
         { json: "application/json", js: "application/json", typ: "" },
     ], false),
     "AwsAPIGatewayIntegration": o([
-        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
-        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayIntegrationListFilesGet")) },
+        { json: "DeviceEventPost", js: "DeviceEventPost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
+        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayIntegrationDeviceEventPost")) },
     ], false),
-    "AwsAPIGatewayIntegrationListFilesGet": o([
+    "AwsAPIGatewayIntegrationDeviceEventPost": o([
         { json: "http_method", js: "http_method", typ: "" },
         { json: "integration_http_method", js: "integration_http_method", typ: "" },
         { json: "resource_id", js: "resource_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "type", js: "type", typ: "" },
         { json: "uri", js: "uri", typ: "" },
     ], false),
     "AwsAPIGatewayMethod": o([
-        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "LogClientEventPost", js: "LogClientEventPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "UserDeletePost", js: "UserDeletePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
-        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayMethodListFilesGet")) },
+        { json: "DeviceEventPost", js: "DeviceEventPost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "ListFilesGet", js: "ListFilesGet", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "LoginUserPost", js: "LoginUserPost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "RefreshTokenPost", js: "RefreshTokenPost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "RegisterDevicePost", js: "RegisterDevicePost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "RegisterUserPost", js: "RegisterUserPost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "UserSubscribePost", js: "UserSubscribePost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
+        { json: "WebhookFeedlyPost", js: "WebhookFeedlyPost", typ: a(r("AwsAPIGatewayMethodDeviceEventPost")) },
     ], false),
-    "AwsAPIGatewayMethodListFilesGet": o([
+    "AwsAPIGatewayMethodDeviceEventPost": o([
         { json: "api_key_required", js: "api_key_required", typ: true },
         { json: "authorization", js: "authorization", typ: "" },
-        { json: "authorizer_id", js: "authorizer_id", typ: u(undefined, "") },
         { json: "http_method", js: "http_method", typ: "" },
         { json: "resource_id", js: "resource_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
+        { json: "authorizer_id", js: "authorizer_id", typ: u(undefined, "") },
     ], false),
     "AwsAPIGatewayMethodSettings": o([
         { json: "Production", js: "Production", typ: a(r("AwsAPIGatewayMethodSettingsProduction")) },
     ], false),
     "AwsAPIGatewayMethodSettingsProduction": o([
         { json: "method_path", js: "method_path", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "settings", js: "settings", typ: a(r("Setting")) },
         { json: "stage_name", js: "stage_name", typ: "" },
     ], false),
@@ -1634,20 +1645,21 @@ const typeMap: any = {
         { json: "metrics_enabled", js: "metrics_enabled", typ: true },
     ], false),
     "AwsAPIGatewayResource": o([
-        { json: "Feedly", js: "Feedly", typ: a(r("Feedly")) },
-        { json: "Files", js: "Files", typ: a(r("Feedly")) },
-        { json: "LogEvent", js: "LogEvent", typ: a(r("Feedly")) },
-        { json: "Login", js: "Login", typ: a(r("Feedly")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("Feedly")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("Feedly")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("Feedly")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("Feedly")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("Feedly")) },
+        { json: "Device", js: "Device", typ: a(r("Device")) },
+        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("Device")) },
+        { json: "DeviceRegister", js: "DeviceRegister", typ: a(r("Device")) },
+        { json: "Feedly", js: "Feedly", typ: a(r("Device")) },
+        { json: "Files", js: "Files", typ: a(r("Device")) },
+        { json: "User", js: "User", typ: a(r("Device")) },
+        { json: "UserLogin", js: "UserLogin", typ: a(r("Device")) },
+        { json: "UserRefresh", js: "UserRefresh", typ: a(r("Device")) },
+        { json: "UserRegister", js: "UserRegister", typ: a(r("Device")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("Device")) },
     ], false),
-    "Feedly": o([
-        { json: "parent_id", js: "parent_id", typ: "" },
+    "Device": o([
+        { json: "parent_id", js: "parent_id", typ: r("ParentID") },
         { json: "path_part", js: "path_part", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
     ], false),
     "AwsAPIGatewayRESTAPI": o([
         { json: "Main", js: "Main", typ: a(r("AwsAPIGatewayRESTAPIMain")) },
@@ -1666,7 +1678,7 @@ const typeMap: any = {
     ], false),
     "AwsAPIGatewayStageProduction": o([
         { json: "deployment_id", js: "deployment_id", typ: "" },
-        { json: "rest_api_id", js: "rest_api_id", typ: "" },
+        { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
         { json: "stage_name", js: "stage_name", typ: "" },
         { json: "xray_tracing_enabled", js: "xray_tracing_enabled", typ: true },
     ], false),
@@ -1679,7 +1691,7 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "APIStage": o([
-        { json: "api_id", js: "api_id", typ: "" },
+        { json: "api_id", js: "api_id", typ: r("APIID") },
         { json: "stage", js: "stage", typ: "" },
     ], false),
     "AwsAPIGatewayUsagePlanKey": o([
@@ -2011,23 +2023,23 @@ const typeMap: any = {
         { json: "batch_size", js: "batch_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaFunction": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("LogClientEventElement")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("DeviceEventElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("LogClientEventElement")) },
-        { json: "LogClientEvent", js: "LogClientEvent", typ: a(r("LogClientEventElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("LogClientEventElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("LogClientEventElement")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("LogClientEventElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("LogClientEventElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("LogClientEventElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("LogClientEventElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("LogClientEventElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("LogClientEventElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("LogClientEventElement")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("LogClientEventElement")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("LogClientEventElement")) },
+        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("DeviceEventElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("DeviceEventElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("DeviceEventElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("DeviceEventElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("DeviceEventElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("DeviceEventElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("DeviceEventElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("DeviceEventElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("DeviceEventElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("DeviceEventElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("DeviceEventElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("DeviceEventElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("DeviceEventElement")) },
     ], false),
-    "LogClientEventElement": o([
+    "DeviceEventElement": o([
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("Environment")) },
@@ -2230,6 +2242,14 @@ const typeMap: any = {
     ], false),
     "ArchiveFileType": [
         "zip",
+    ],
+    "APIID": [
+        "${aws_api_gateway_rest_api.Main.id}",
+    ],
+    "ParentID": [
+        "${aws_api_gateway_rest_api.Main.root_resource_id}",
+        "${aws_api_gateway_resource.Device.id}",
+        "${aws_api_gateway_resource.User.id}",
     ],
     "AttributeType": [
         "N",

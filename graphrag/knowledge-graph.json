@@ -19,21 +19,21 @@
       }
     },
     {
+      "id": "lambda:DeviceEvent",
+      "type": "Lambda",
+      "properties": {
+        "name": "DeviceEvent",
+        "trigger": "API Gateway",
+        "purpose": "Log client-side events for analytics"
+      }
+    },
+    {
       "id": "lambda:ListFiles",
       "type": "Lambda",
       "properties": {
         "name": "ListFiles",
         "trigger": "API Gateway",
         "purpose": "List files available to authenticated user"
-      }
-    },
-    {
-      "id": "lambda:LogClientEvent",
-      "type": "Lambda",
-      "properties": {
-        "name": "LogClientEvent",
-        "trigger": "API Gateway",
-        "purpose": "Log client-side events for analytics"
       }
     },
     {
@@ -516,6 +516,45 @@
       }
     },
     {
+      "id": "apimodel:UserSubscriptionResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "UserSubscriptionResponse",
+        "modelType": "model",
+        "description": "User subscription response",
+        "fields": [
+          "subscriptionArn"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:TokenRefreshResponse",
+      "type": "ApiModel",
+      "properties": {
+        "name": "TokenRefreshResponse",
+        "modelType": "model",
+        "description": "Token refresh response",
+        "fields": [
+          "token",
+          "expiresAt",
+          "sessionId",
+          "userId"
+        ]
+      }
+    },
+    {
+      "id": "apimodel:ClientEventRequest",
+      "type": "ApiModel",
+      "properties": {
+        "name": "ClientEventRequest",
+        "modelType": "model",
+        "description": "Client event request for logging",
+        "fields": [
+          "message"
+        ]
+      }
+    },
+    {
       "id": "apimodel:FileStatus",
       "type": "ApiModel",
       "properties": {
@@ -689,12 +728,12 @@
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:ListFiles",
+      "target": "lambda:DeviceEvent",
       "relationship": "triggers"
     },
     {
       "source": "service:API Gateway",
-      "target": "lambda:LogClientEvent",
+      "target": "lambda:ListFiles",
       "relationship": "triggers"
     },
     {

@@ -83,15 +83,15 @@ resource "aws_lambda_function" "RefreshToken" {
   }
 }
 
-resource "aws_api_gateway_resource" "RefreshToken" {
+resource "aws_api_gateway_resource" "UserRefresh" {
   rest_api_id = aws_api_gateway_rest_api.Main.id
-  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
+  parent_id   = aws_api_gateway_resource.User.id
   path_part   = "refresh"
 }
 
 resource "aws_api_gateway_method" "RefreshTokenPost" {
   rest_api_id      = aws_api_gateway_rest_api.Main.id
-  resource_id      = aws_api_gateway_resource.RefreshToken.id
+  resource_id      = aws_api_gateway_resource.UserRefresh.id
   http_method      = "POST"
   authorization    = "CUSTOM"
   authorizer_id    = aws_api_gateway_authorizer.ApiGatewayAuthorizer.id
@@ -100,7 +100,7 @@ resource "aws_api_gateway_method" "RefreshTokenPost" {
 
 resource "aws_api_gateway_integration" "RefreshTokenPost" {
   rest_api_id             = aws_api_gateway_rest_api.Main.id
-  resource_id             = aws_api_gateway_resource.RefreshToken.id
+  resource_id             = aws_api_gateway_resource.UserRefresh.id
   http_method             = aws_api_gateway_method.RefreshTokenPost.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"

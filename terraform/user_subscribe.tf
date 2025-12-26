@@ -79,8 +79,8 @@ resource "aws_lambda_function" "UserSubscribe" {
 
 resource "aws_api_gateway_resource" "UserSubscribe" {
   rest_api_id = aws_api_gateway_rest_api.Main.id
-  parent_id   = aws_api_gateway_rest_api.Main.root_resource_id
-  path_part   = "userSubscribe"
+  parent_id   = aws_api_gateway_resource.User.id
+  path_part   = "subscribe"
 }
 
 resource "aws_api_gateway_method" "UserSubscribePost" {

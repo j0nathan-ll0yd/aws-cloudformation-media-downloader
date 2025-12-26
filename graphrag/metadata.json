@@ -14,7 +14,7 @@
       "trigger": "API Gateway",
       "purpose": "List files available to authenticated user"
     },
-    "LogClientEvent": {
+    "DeviceEvent": {
       "trigger": "API Gateway",
       "purpose": "Log client-side events for analytics"
     },

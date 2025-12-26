@@ -44,3 +44,7 @@ repomix-output.xml
 # LLM context (llms-full.txt generated on demand, llms.txt committed)
 docs/llms-full.txt
 local_cache/
+
+# TypeSpec generated output
+tsp-output/
+tsp/examples/
