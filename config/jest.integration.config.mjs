@@ -54,10 +54,10 @@ const config = {
   maxWorkers: 4,
 
   // Global setup creates worker schemas before tests run
-  globalSetup: '<rootDir>/test/integration/globalSetup.ts',
+  globalSetup: '<rootDir>/test/integration/globalSetup.js',
 
   // Global teardown drops worker schemas after all tests complete
-  globalTeardown: '<rootDir>/test/integration/globalTeardown.ts',
+  globalTeardown: '<rootDir>/test/integration/globalTeardown.js',
 
   // Root directory for Jest
   rootDir: '../',

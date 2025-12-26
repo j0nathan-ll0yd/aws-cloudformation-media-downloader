@@ -6,11 +6,11 @@
  *
  * Runs ONCE after all test files complete.
  */
-import postgres from 'postgres'
+const postgres = require('postgres')
 
 const MAX_WORKERS = 4
 
-export default async function globalTeardown(): Promise<void> {
+module.exports = async function globalTeardown() {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
   const sql = postgres(databaseUrl)

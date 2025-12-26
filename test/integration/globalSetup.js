@@ -7,11 +7,11 @@
  *
  * Runs ONCE before all test files, not per-worker.
  */
-import postgres from 'postgres'
+const postgres = require('postgres')
 
 const MAX_WORKERS = 4
 
-export default async function globalSetup(): Promise<void> {
+module.exports = async function globalSetup() {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
   const sql = postgres(databaseUrl)
