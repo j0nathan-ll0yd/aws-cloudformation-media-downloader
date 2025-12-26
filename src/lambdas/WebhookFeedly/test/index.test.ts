@@ -96,7 +96,9 @@ describe('#WebhookFeedly', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    expect(body.error.message).toHaveProperty('articleURL')
+    // Validation errors are now formatted as human-readable strings
+    expect(body.error.code).toEqual('validation-error')
+    expect(body.error.message).toContain('articleURL')
   })
   test('should return 401 when user ID is missing (unauthenticated)', async () => {
     // With Authorization header but unknown principalId = Unauthenticated
@@ -119,7 +121,8 @@ describe('#WebhookFeedly', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-4XX-generic')
+    // JSON parse errors also use validation-error code (they're validation failures)
+    expect(body.error.code).toEqual('validation-error')
     expect(body.error.message).toEqual('Request body must be valid JSON')
   })
   test('should publish DownloadRequested event for new files', async () => {

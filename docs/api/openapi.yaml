@@ -646,14 +646,8 @@ components:
               type: string
               description: Error code
             message:
-              description: Error message - can be a string or validation errors object
-              oneOf:
-                - type: string
-                - type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: string
+              type: string
+              description: Human-readable error message
           required:
             - code
             - message
