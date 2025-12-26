@@ -41,18 +41,14 @@ describe('#UserSubscribe', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    // Validation errors are now formatted as human-readable strings
-    expect(body.error.code).toEqual('validation-error')
-    expect(body.error.message).toContain('endpointArn')
+    expect(body.error.message).toHaveProperty('endpointArn')
   })
   test('should handle an invalid request (no topicArn)', async () => {
     event.body = '{}'
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    // Validation errors are now formatted as human-readable strings
-    expect(body.error.code).toEqual('validation-error')
-    expect(body.error.message).toContain('topicArn')
+    expect(body.error.message).toHaveProperty('topicArn')
   })
   test('should return 401 when user ID is missing (unauthenticated)', async () => {
     // With Authorization header but unknown principalId = Unauthenticated

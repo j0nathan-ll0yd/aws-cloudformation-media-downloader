@@ -93,9 +93,8 @@ describe('#RegisterDevice', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    // Validation errors are now formatted as human-readable strings
-    expect(body.error.code).toEqual('validation-error')
-    expect(body.error.message).toContain('token')
+    expect(typeof body.error.message).toEqual('object')
+    expect(body.error.message).toHaveProperty('token')
   })
   describe('#AWSFailure', () => {
     test('AWS.SNS.createPlatformEndpoint', async () => {

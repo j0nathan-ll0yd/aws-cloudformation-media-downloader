@@ -1,5 +1,5 @@
 import type {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
-import {CustomLambdaError, ValidationError} from '#lib/system/errors'
+import {CustomLambdaError} from '#lib/system/errors'
 import {logDebug, logError} from '#lib/system/logging'
 
 /**
@@ -20,20 +20,6 @@ export function getErrorMessage(error: unknown): string {
   }
 }
 
-/**
- * Converts a validation errors object to a human-readable string.
- * @param errors - Object mapping field names to arrays of error messages
- * @returns Formatted string like "field1: error1, field2: error2"
- * @example
- * formatValidationErrors({articleURL: ["is not a valid YouTube URL"]})
- * // Returns: "articleURL: is not a valid YouTube URL"
- */
-export function formatValidationErrors(errors: Record<string, string[]>): string {
-  return Object.entries(errors)
-    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-    .join('; ')
-}
-
 /** @deprecated Use getErrorMessage instead. Kept for backwards compatibility. */
 export function formatUnknownError(unknownVariable: unknown): string {
   return getErrorMessage(unknownVariable)
@@ -42,27 +28,15 @@ export function formatUnknownError(unknownVariable: unknown): string {
 /**
  * Internal function to format API Gateway responses.
  * Automatically detects error vs success based on status code.
- * @param context - Lambda context for request ID
- * @param statusCode - HTTP status code
- * @param body - Response body (string for errors, object for success)
- * @param headers - Optional response headers
- * @param errorCode - Optional specific error code (defaults to generic based on status)
  */
-function formatResponse(
-  context: Context,
-  statusCode: number,
-  body?: string | object,
-  headers?: APIGatewayProxyEventHeaders,
-  errorCode?: string
-): APIGatewayProxyResult {
+function formatResponse(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'
   let isError = false
   const statusCodeString = statusCode.toString()
   if (/^4/.test(statusCodeString)) {
-    code = errorCode ?? 'custom-4XX-generic'
+    code = 'custom-4XX-generic'
     isError = true
   } else if (/^5/.test(statusCodeString)) {
-    code = errorCode ?? 'custom-5XX-generic'
     isError = true
   }
   // Note: 3xx responses are treated as success (not wrapped in error format)
@@ -95,43 +69,13 @@ export function buildApiResponse(context: Context, statusCodeOrError: number | E
     return formatResponse(context, statusCodeOrError, body)
   }
 
-  // Handle ValidationError with special formatting
-  if (statusCodeOrError instanceof ValidationError) {
-    const error = statusCodeOrError
-    const statusCode = error.statusCode || 400
-    // Log original error details for debugging
-    logError('buildApiResponse (validation)', {
-      message: error.message,
-      errors: error.errors,
-      statusCode
-    })
-    // Format validation errors object to human-readable string
-    const message = error.errors
-      ? formatValidationErrors(error.errors as Record<string, string[]>)
-      : error.message
-    return formatResponse(context, statusCode, message, undefined, 'validation-error')
-  }
-
-  // Handle other CustomLambdaError instances
-  if (statusCodeOrError instanceof CustomLambdaError) {
-    const error = statusCodeOrError
-    const statusCode = error.statusCode || 500
-    // If errors is an object (shouldn't happen for non-ValidationError), convert to string
-    let message: string
-    if (error.errors && typeof error.errors === 'object') {
-      message = formatValidationErrors(error.errors as Record<string, string[]>)
-    } else {
-      message = error.message
-    }
-    logError('buildApiResponse', JSON.stringify(error))
-    return formatResponse(context, statusCode, message)
-  }
-
-  // Handle other Error instances
+  // Handle Error instances
   if (statusCodeOrError instanceof Error) {
     const error = statusCodeOrError
+    const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
+    const message = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
     logError('buildApiResponse', JSON.stringify(error))
-    return formatResponse(context, 500, error.message)
+    return formatResponse(context, statusCode, message)
   }
 
   // Handle plain objects (e.g., Better Auth error responses like {status: 404, message: '...'})
