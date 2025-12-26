@@ -15,13 +15,9 @@ import {fileDownloads, sessions, verificationTokens} from '#lib/vendor/Drizzle/s
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
+import type {CleanupResult} from '#types/lambda'
 
-export interface CleanupResult {
-  fileDownloadsDeleted: number
-  sessionsDeleted: number
-  verificationTokensDeleted: number
-  errors: string[]
-}
+export type {CleanupResult}
 
 const TWENTY_FOUR_HOURS_SEC = 24 * 60 * 60
 
