@@ -65,8 +65,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
 │       └── validation/    # AST-based convention enforcement (13 rules)
 ├── test/helpers/          # Test utilities
-│   ├── electrodb-mock.ts  # Entity mock helper for unit tests
-│   └── drizzle-mock.ts    # Drizzle mock helper for unit tests
+│   └── entity-mock.ts     # Entity mock helper for unit tests
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
@@ -333,7 +332,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Files** ↔ **FileDownloads**: One-to-many (download tracking)
 
 ### Testing with Drizzle
-- **ALWAYS** use `test/helpers/electrodb-mock.ts` or `test/helpers/drizzle-mock.ts` for mocking entities
+- **ALWAYS** use `test/helpers/entity-mock.ts` for mocking entities
 - **NEVER** create manual mocks for entities
 - See test style guide for detailed mocking patterns
 
@@ -370,7 +369,7 @@ The following patterns have caused issues in this project and should be avoided:
 
 ### 2. Manual Entity Mocks (CRITICAL)
 **Wrong**: Hand-crafted mock objects for entities in tests
-**Right**: `const mock = createElectroDBEntityMock({queryIndexes: ['byUser']})` or use `drizzle-mock.ts`
+**Right**: `const mock = createEntityMock({queryIndexes: ['byUser']})`
 **Why**: Inconsistent mocking leads to false positives and maintenance burden
 
 ### 3. Promise.all for Cascade Deletions (CRITICAL)

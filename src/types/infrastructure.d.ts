@@ -142,7 +142,6 @@ export interface DsqlAccess {
 
 export interface DsqlAccessStatement {
     actions:   string[];
-    effect:    string;
     resources: string[];
     sid:       string;
 }
@@ -1379,7 +1378,6 @@ const typeMap: any = {
     ], false),
     "DsqlAccessStatement": o([
         { json: "actions", js: "actions", typ: a("") },
-        { json: "effect", js: "effect", typ: "" },
         { json: "resources", js: "resources", typ: a("") },
         { json: "sid", js: "sid", typ: "" },
     ], false),

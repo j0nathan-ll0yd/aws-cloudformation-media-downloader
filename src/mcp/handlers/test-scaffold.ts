@@ -94,7 +94,7 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const vendorMocks = mocks.filter((m) => m.type === 'vendor')
 
   // Build entity mock import
-  const entityMockImport = entityMocks.length > 0 ? "import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'" : ''
+  const entityMockImport = entityMocks.length > 0 ? "import {createEntityMock} from '#test/helpers/entity-mock'" : ''
 
   // Build entity mocks section
   const entityMocksSection = entityMocks.length > 0 ? '// Entity mocks\n' + entityMocks.map((m) => m.mockCode).join('\n\n') + '\n' : ''
@@ -197,7 +197,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           vendors: vendorMocks.map((m) => ({name: m.name, importAlias: m.importAlias, code: m.mockCode}))
         },
         mockOrder: [
-          '1. Entity mocks (createElectroDBEntityMock)',
+          '1. Entity mocks (createEntityMock)',
           '2. Vendor mocks (jest.unstable_mockModule)',
           '3. Handler import (await import)'
         ],
@@ -245,7 +245,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           imports: [
             '@jest/globals (beforeAll, beforeEach, describe, expect, jest, test)',
             'aws-lambda types',
-            entityNames.length > 0 ? 'createElectroDBEntityMock from test helpers' : null
+            entityNames.length > 0 ? 'createEntityMock from test helpers' : null
           ].filter(Boolean),
           setup: {beforeAll: 'Environment variables', mocks: mocks.map((m) => `${m.type}: ${m.name}`), handlerImport: 'await import after mocks'},
           testSuites: ['success cases', 'error cases', 'edge cases'],

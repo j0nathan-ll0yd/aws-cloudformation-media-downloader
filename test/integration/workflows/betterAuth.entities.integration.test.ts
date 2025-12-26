@@ -16,18 +16,18 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
 import {
+  closeTestDb,
   createAllTables,
   dropAllTables,
-  truncateAllTables,
-  closeTestDb,
-  insertUser,
+  getDevice,
+  getTestDb,
   getUser,
   insertDevice,
-  getDevice,
+  insertUser,
   linkUserDevice,
-  getTestDb
+  truncateAllTables
 } from '../helpers/postgres-helpers'
-import {users, devices, userDevices, sessions, accounts} from '#lib/vendor/Drizzle/schema'
+import {accounts, devices, sessions, userDevices, users} from '#lib/vendor/Drizzle/schema'
 import {eq} from 'drizzle-orm'
 
 describe('Better Auth Entities Integration Tests', () => {
@@ -51,13 +51,7 @@ describe('Better Auth Entities Integration Tests', () => {
     test('should create and retrieve a user', async () => {
       const userId = crypto.randomUUID()
 
-      await insertUser({
-        userId,
-        email: 'auth-test@example.com',
-        firstName: 'Auth',
-        lastName: 'Test',
-        emailVerified: true
-      })
+      await insertUser({userId, email: 'auth-test@example.com', firstName: 'Auth', lastName: 'Test', emailVerified: true})
 
       const user = await getUser(userId)
 
@@ -216,13 +210,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertUser({userId, email: 'token-query@example.com', firstName: 'Token'})
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({
-        userId,
-        token,
-        expiresAt: now + 86400,
-        createdAt: now,
-        updatedAt: now
-      })
+      await db.insert(sessions).values({userId, token, expiresAt: now + 86400, createdAt: now, updatedAt: now})
 
       const results = await db.select().from(sessions).where(eq(sessions.token, token))
 
@@ -240,13 +228,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const expired = now - 3600 // 1 hour ago
 
       // Create expired session
-      await db.insert(sessions).values({
-        userId,
-        token: 'expired-token',
-        expiresAt: expired,
-        createdAt: expired - 86400,
-        updatedAt: expired
-      })
+      await db.insert(sessions).values({userId, token: 'expired-token', expiresAt: expired, createdAt: expired - 86400, updatedAt: expired})
 
       // Delete expired sessions (simulating cleanup Lambda)
       await db.delete(sessions).where(eq(sessions.expiresAt, expired))
@@ -291,13 +273,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertUser({userId, email: 'provider@example.com', firstName: 'Provider'})
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(accounts).values({
-        userId,
-        providerId: 'apple',
-        providerAccountId: 'unique-apple-id',
-        createdAt: now,
-        updatedAt: now
-      })
+      await db.insert(accounts).values({userId, providerId: 'apple', providerAccountId: 'unique-apple-id', createdAt: now, updatedAt: now})
 
       const results = await db.select().from(accounts).where(eq(accounts.providerAccountId, 'unique-apple-id'))
 
@@ -318,13 +294,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await linkUserDevice(userId, deviceId)
 
       const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({
-        userId,
-        token: 'cascade-token',
-        expiresAt: now + 86400,
-        createdAt: now,
-        updatedAt: now
-      })
+      await db.insert(sessions).values({userId, token: 'cascade-token', expiresAt: now + 86400, createdAt: now, updatedAt: now})
 
       // Delete associations first (application-layer cascade)
       await db.delete(userDevices).where(eq(userDevices.userId, userId))

@@ -13,7 +13,7 @@ import type {SourceFile} from 'ts-morph'
 import * as path from 'node:path'
 import type {ValidationResult, ValidationRule, Violation} from './types'
 import {awsSdkEncapsulationRule} from './rules/aws-sdk-encapsulation'
-import {electrodbMockingRule} from './rules/electrodb-mocking'
+import {entityMockingRule} from './rules/entity-mocking'
 import {importOrderRule} from './rules/import-order'
 import {responseHelpersRule} from './rules/response-helpers'
 import {configEnforcementRule} from './rules/config-enforcement'
@@ -35,7 +35,7 @@ import {powertoolsMetricsRule} from './rules/powertools-metrics'
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
-  electrodbMockingRule,
+  entityMockingRule,
   configEnforcementRule,
   envValidationRule,
   cascadeSafetyRule,
@@ -66,8 +66,9 @@ export const rulesByName: Record<string, ValidationRule> = {
   // CRITICAL rules
   'aws-sdk-encapsulation': awsSdkEncapsulationRule,
   'aws-sdk': awsSdkEncapsulationRule, // alias
-  'electrodb-mocking': electrodbMockingRule,
-  electrodb: electrodbMockingRule, // alias
+  'entity-mocking': entityMockingRule,
+  entity: entityMockingRule, // alias
+  electrodb: entityMockingRule, // legacy alias
   'config-enforcement': configEnforcementRule,
   config: configEnforcementRule, // alias
   'env-validation': envValidationRule,
@@ -119,7 +120,7 @@ export {
   configEnforcementRule,
   docsStructureRule,
   docSyncRule,
-  electrodbMockingRule,
+  entityMockingRule,
   envValidationRule,
   importOrderRule,
   mockFormattingRule,

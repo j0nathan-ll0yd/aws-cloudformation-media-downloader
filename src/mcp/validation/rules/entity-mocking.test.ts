@@ -1,39 +1,39 @@
 /**
- * Unit tests for electrodb-mocking rule
- * CRITICAL: Test files must use createElectroDBEntityMock() helper
+ * Unit tests for entity-mocking rule
+ * CRITICAL: Test files must use createEntityMock() helper
  */
 
 import {beforeAll, describe, expect, test} from '@jest/globals'
 import {Project} from 'ts-morph'
 
 // Module loaded via dynamic import
-let electrodbMockingRule: typeof import('./electrodb-mocking').electrodbMockingRule
+let entityMockingRule: typeof import('./entity-mocking').entityMockingRule
 
 // Create ts-morph project for in-memory source files
 const project = new Project({skipFileDependencyResolution: true, skipAddingFilesFromTsConfig: true})
 
 beforeAll(async () => {
-  const module = await import('./electrodb-mocking')
-  electrodbMockingRule = module.electrodbMockingRule
+  const module = await import('./entity-mocking')
+  entityMockingRule = module.entityMockingRule
 })
 
-describe('electrodb-mocking rule', () => {
+describe('entity-mocking rule', () => {
   describe('rule metadata', () => {
     test('should have correct name', () => {
-      expect(electrodbMockingRule.name).toBe('electrodb-mocking')
+      expect(entityMockingRule.name).toBe('entity-mocking')
     })
 
     test('should have CRITICAL severity', () => {
-      expect(electrodbMockingRule.severity).toBe('CRITICAL')
+      expect(entityMockingRule.severity).toBe('CRITICAL')
     })
 
     test('should apply to test files', () => {
-      expect(electrodbMockingRule.appliesTo).toContain('src/**/*.test.ts')
-      expect(electrodbMockingRule.appliesTo).toContain('test/**/*.ts')
+      expect(entityMockingRule.appliesTo).toContain('src/**/*.test.ts')
+      expect(entityMockingRule.appliesTo).toContain('test/**/*.ts')
     })
 
     test('should exclude helper files', () => {
-      expect(electrodbMockingRule.excludes).toContain('test/helpers/**/*.ts')
+      expect(entityMockingRule.excludes).toContain('test/helpers/**/*.ts')
     })
   })
 
@@ -44,7 +44,7 @@ jest.unstable_mockModule('#entities/Users', () => ({
   Users: { get: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
       expect(violations).toHaveLength(0)
     })
@@ -55,7 +55,7 @@ jest.unstable_mockModule('#entities/Users', () => ({
   Users: { get: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'test/helpers/electrodb-mock.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'test/helpers/entity-mock.ts')
 
       expect(violations).toHaveLength(0)
     })
@@ -73,12 +73,12 @@ jest.unstable_mockModule('#entities/Users', () => ({
   }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(1)
       expect(violations[0].severity).toBe('CRITICAL')
       expect(violations[0].message).toContain('#entities/Users')
-      expect(violations[0].message).toContain('createElectroDBEntityMock')
+      expect(violations[0].message).toContain('createEntityMock')
     })
 
     test('should detect jest.mock without helper', () => {
@@ -92,7 +92,7 @@ jest.mock('#entities/Files', () => ({
   }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(1)
       expect(violations[0].message).toContain('#entities/Files')
@@ -103,7 +103,7 @@ jest.mock('#entities/Files', () => ({
   UserFiles: { query: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'test/integration/user.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'test/integration/user.test.ts')
 
       expect(violations).toHaveLength(1)
     })
@@ -113,27 +113,27 @@ jest.mock('#entities/Files', () => ({
   Devices: { scan: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'test/unit/devices.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'test/unit/devices.test.ts')
 
       expect(violations).toHaveLength(1)
     })
   })
 
   describe('allows correct mocking patterns', () => {
-    test('should allow createElectroDBEntityMock usage', () => {
-      const sourceFile = project.createSourceFile('test-correct-mock.ts', `import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+    test('should allow createEntityMock usage', () => {
+      const sourceFile = project.createSourceFile('test-correct-mock.ts', `import {createEntityMock} from '../../../../test/helpers/entity-mock'
 import {Users} from '#entities/Users'
 
-const UsersMock = createElectroDBEntityMock({
+const UsersMock = createEntityMock({
   get: jest.fn(),
   create: jest.fn()
 })
 
 jest.unstable_mockModule('#entities/Users', () => ({
-  Users: createElectroDBEntityMock({get: jest.fn()})
+  Users: createEntityMock({get: jest.fn()})
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(0)
     })
@@ -147,7 +147,7 @@ describe('utility function', () => {
   })
 })`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/util/test/helpers.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/util/test/helpers.test.ts')
 
       expect(violations).toHaveLength(0)
     })
@@ -163,7 +163,7 @@ jest.unstable_mockModule('#util/lambda-helpers', () => ({
   response: jest.fn()
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(0)
     })
@@ -182,10 +182,10 @@ jest.unstable_mockModule('#entities/Users', () => ({
   Users: mockUsers
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations.length).toBeGreaterThan(0)
-      expect(violations[0].suggestion).toContain('createElectroDBEntityMock')
+      expect(violations[0].suggestion).toContain('createEntityMock')
     })
   })
 
@@ -195,10 +195,10 @@ jest.unstable_mockModule('#entities/Users', () => ({
   Users: { get: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations[0].suggestion).toBeDefined()
-      expect(violations[0].suggestion).toContain('createElectroDBEntityMock')
+      expect(violations[0].suggestion).toContain('createEntityMock')
     })
 
     test('should include code snippet', () => {
@@ -206,7 +206,7 @@ jest.unstable_mockModule('#entities/Users', () => ({
   Files: { query: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'test/lambdas/files.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'test/lambdas/files.test.ts')
 
       expect(violations[0].codeSnippet).toBeDefined()
       expect(violations[0].codeSnippet).toContain('#entities/Files')
@@ -227,7 +227,7 @@ jest.unstable_mockModule('#entities/Devices', () => ({
   Devices: { scan: jest.fn() }
 }))`, {overwrite: true})
 
-      const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations.length).toBeGreaterThanOrEqual(3)
     })
@@ -242,7 +242,7 @@ jest.unstable_mockModule('#entities/Devices', () => ({
   ${entity}: { get: jest.fn() }
 }))`, {overwrite: true})
 
-        const violations = electrodbMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+        const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
         expect(violations).toHaveLength(1)
         expect(violations[0].message).toContain(entity)

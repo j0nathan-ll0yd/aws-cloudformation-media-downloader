@@ -2,16 +2,16 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
 
-const filesMock = createElectroDBEntityMock()
+const filesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
-const userFilesMock = createElectroDBEntityMock()
+const userFilesMock = createEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
-const fileDownloadsMock = createElectroDBEntityMock()
+const fileDownloadsMock = createEntityMock()
 jest.unstable_mockModule('#entities/FileDownloads',
   () => ({
     FileDownloads: fileDownloadsMock.entity,

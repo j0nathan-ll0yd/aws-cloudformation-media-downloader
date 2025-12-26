@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -14,8 +14,8 @@ const fakeUserId = uuidv4()
 const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-const filesMock = createElectroDBEntityMock()
+const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
+const filesMock = createEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 

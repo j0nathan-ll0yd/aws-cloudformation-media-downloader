@@ -1,12 +1,13 @@
 import {jest} from '@jest/globals'
 
 /**
- * ElectroDB Entity Mock Structure
- * Provides type-safe mocks for all common ElectroDB operations
+ * Entity Mock Structure
+ * Provides type-safe mocks for all common entity operations
+ * (ElectroDB-compatible API over Drizzle implementation)
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy | Jest ESM Mocking Strategy}
  */
-interface ElectroDBEntityMock<TData> {
+interface EntityMock<TData> {
   /** The entity object to pass to jest.unstable_mockModule */
   entity: {
     get: jest.Mock
@@ -54,16 +55,17 @@ interface ElectroDBEntityMock<TData> {
 }
 
 /**
- * Creates a complete mock for an ElectroDB entity
+ * Creates a complete mock for an entity
  *
- * Supports all common ElectroDB operations: get, scan, query, create, update, delete
+ * Supports all common entity operations: get, scan, query, create, update, delete
+ * Entities use Drizzle internally but expose ElectroDB-compatible API
  *
  * @param options - Configuration options with queryIndexes array
  * @returns Object with entity mock and individual mock functions
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#electrodb-mock-helper-critical | ElectroDB Mock Helper}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#entity-mock-helper-critical | Entity Mock Helper}
  */
-export function createElectroDBEntityMock<TData = unknown>(options?: {
+export function createEntityMock<TData = unknown>(options?: {
   queryIndexes?: Array<
     | 'byUser'
     | 'byFile'
@@ -77,7 +79,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     | 'byToken'
     | 'byAppleDeviceId'
   >
-}): ElectroDBEntityMock<TData> {
+}): EntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
   // Supports both single and batch operations
   const getMock = jest.fn<() => Promise<{data: TData | TData[] | undefined; unprocessed?: unknown[]} | undefined>>()
@@ -140,7 +142,7 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     mocks: {
       get: getMock,
       scan: {go: scanGoMock, where: scanWhereMock},
-      query: queryMocks as ElectroDBEntityMock<TData>['mocks']['query'],
+      query: queryMocks as EntityMock<TData>['mocks']['query'],
       create: createGoMock,
       upsert: {go: upsertGoMock},
       update: {go: updateGoMock, set: updateSetMock, add: updateAddMock, delete: updateDeleteMock},
@@ -148,3 +150,6 @@ export function createElectroDBEntityMock<TData = unknown>(options?: {
     }
   }
 }
+
+/** @deprecated Use createEntityMock instead */
+export const createElectroDBEntityMock = createEntityMock

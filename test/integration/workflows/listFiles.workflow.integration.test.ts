@@ -33,7 +33,7 @@ import type {File} from '../../../src/types/domain-models'
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createEntityMock} from '../../helpers/entity-mock'
 import {createMockFile, createMockUserFile} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
@@ -45,10 +45,10 @@ const __dirname = dirname(__filename)
 const userFilesModulePath = resolve(__dirname, '../../../src/entities/UserFiles')
 const filesModulePath = resolve(__dirname, '../../../src/entities/Files')
 
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule(userFilesModulePath, () => ({UserFiles: userFilesMock.entity}))
 
-const filesMock = createElectroDBEntityMock()
+const filesMock = createEntityMock()
 jest.unstable_mockModule(filesModulePath, () => ({Files: filesMock.entity}))
 
 const {handler} = await import('../../../src/lambdas/ListFiles/src/index')

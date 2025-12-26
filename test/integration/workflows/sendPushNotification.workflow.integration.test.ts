@@ -23,7 +23,7 @@ import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
 
@@ -31,10 +31,10 @@ import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevi
 const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
 jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock}))
 
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
@@ -68,7 +68,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     // First query: getUserDevicesByUserId returns array of individual UserDevice records
     userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice('user-123', 'device-abc')]})
 
-    devicesMock.mocks.get.mockResolvedValue({data: createMockDevice({deviceId: 'device-abc', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'})})
+    devicesMock.mocks.get.mockResolvedValue({
+      data: createMockDevice({deviceId: 'device-abc', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint'})
+    })
 
     const event = createMockSQSFileNotificationEvent('user-123', 'video-123')
 
@@ -90,11 +92,17 @@ describe('SendPushNotification Workflow Integration Tests', () => {
       data: [createMockUserDevice('user-456', 'device-1'), createMockUserDevice('user-456', 'device-2'), createMockUserDevice('user-456', 'device-3')]
     })
 
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice({deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'})})
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: createMockDevice({deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1'})
+    })
 
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice({deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'})})
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: createMockDevice({deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2'})
+    })
 
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice({deviceId: 'device-3', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'})})
+    devicesMock.mocks.get.mockResolvedValueOnce({
+      data: createMockDevice({deviceId: 'device-3', endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'})
+    })
 
     const event = createMockSQSFileNotificationEvent('user-456', 'video-456', {title: 'Multi-Device Video'})
 

@@ -1,16 +1,16 @@
 import {beforeAll, describe, expect, jest, test} from '@jest/globals'
 import type {S3Event} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
+import {createEntityMock} from '../../../../test/helpers/entity-mock'
 
 beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
 })
 
-const filesMock = createElectroDBEntityMock({queryIndexes: ['byKey']})
+const filesMock = createEntityMock({queryIndexes: ['byKey']})
 jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
+const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({

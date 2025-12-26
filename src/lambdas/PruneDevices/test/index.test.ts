@@ -3,7 +3,7 @@ import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#lib/system/errors'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 
 // Set APNS env vars for ApnsClient
 process.env.APNS_SIGNING_KEY = fakePrivateKey
@@ -46,10 +46,10 @@ const fakeGetDevicesResponse = {
   ScannedCount: 4
 }
 
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byDevice']})
+const userDevicesMock = createEntityMock({queryIndexes: ['byDevice']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({

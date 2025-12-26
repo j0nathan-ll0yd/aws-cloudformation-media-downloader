@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {SQSEvent, SQSRecord} from 'aws-lambda'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
@@ -43,18 +43,18 @@ const downloadVideoToS3Mock = jest.fn<(url: string, bucket: string, key: string)
 jest.unstable_mockModule('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
 // Mock ElectroDB Files entity (for permanent metadata)
-const filesMock = createElectroDBEntityMock()
+const filesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 // Mock ElectroDB FileDownloads entity (for transient download state)
-const fileDownloadsMock = createElectroDBEntityMock()
+const fileDownloadsMock = createEntityMock()
 jest.unstable_mockModule('#entities/FileDownloads', () => ({
   FileDownloads: fileDownloadsMock.entity,
   DownloadStatus // Re-export the real enum
 }))
 
 // Mock ElectroDB UserFiles entity (for querying users waiting for a file)
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byFile']})
+const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 // Mock SQS sendMessage for MetadataNotification dispatch

@@ -7,7 +7,7 @@
  */
 
 import {betterAuth} from 'better-auth'
-import {electroDBAdapter} from './electrodb-adapter'
+import {drizzleAdapter} from './drizzle-adapter'
 import {logDebug} from '#lib/system/logging'
 import {getRequiredEnv} from '#lib/system/env'
 
@@ -27,7 +27,7 @@ import {getRequiredEnv} from '#lib/system/env'
  * token verification - Better Auth verifies ID tokens using Apple's public keys).
  */
 export const auth = betterAuth({
-  database: electroDBAdapter,
+  database: drizzleAdapter,
 
   // Secret for signing tokens and sessions
   secret: getRequiredEnv('BETTER_AUTH_SECRET'),

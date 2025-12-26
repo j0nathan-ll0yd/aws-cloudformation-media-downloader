@@ -10,10 +10,10 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {eq} from 'drizzle-orm'
-import {users, files, devices, userFiles, userDevices} from '#lib/vendor/Drizzle/schema'
-import type {File, User, Device} from '#types/domain-models'
+import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
+import type {Device, File, User} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
-import {createMockFile, createMockUser, createMockDevice} from './test-data'
+import {createMockDevice, createMockFile, createMockUser} from './test-data'
 
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
@@ -232,15 +232,13 @@ export async function insertFile(fileData: Partial<File>): Promise<void> {
 export async function getFile(fileId: string): Promise<Partial<File> | null> {
   const db = getTestDb()
   const result = await db.select().from(files).where(eq(files.fileId, fileId))
-  if (!result[0]) return null
+  if (!result[0]) {
+    return null
+  }
 
   // Convert null to undefined for optional fields and cast status to enum
   const row = result[0]
-  return {
-    ...row,
-    url: row.url ?? undefined,
-    status: row.status as FileStatus
-  }
+  return {...row, url: row.url ?? undefined, status: row.status as FileStatus}
 }
 
 /**
@@ -286,14 +284,13 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
 export async function getUser(userId: string): Promise<Partial<User> | null> {
   const db = getTestDb()
   const result = await db.select().from(users).where(eq(users.userId, userId))
-  if (!result[0]) return null
+  if (!result[0]) {
+    return null
+  }
 
   // Convert null to undefined for optional fields (PostgreSQL returns null, domain uses undefined)
   const row = result[0]
-  return {
-    ...row,
-    lastName: row.lastName ?? undefined
-  }
+  return {...row, lastName: row.lastName ?? undefined}
 }
 
 // ============================================================================

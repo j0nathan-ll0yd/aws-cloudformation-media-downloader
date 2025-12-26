@@ -36,7 +36,7 @@ import {UserStatus} from '../../../src/types/enums'
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createEntityMock} from '../../helpers/entity-mock'
 import {createMockDevice, createMockUserDevice} from '../helpers/test-data'
 
 import {fileURLToPath} from 'url'
@@ -71,10 +71,10 @@ jest.unstable_mockModule(snsModulePath,
   }))
 
 // Create entity mocks
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule(devicesModulePath, () => ({Devices: devicesMock.entity}))
 
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule(userDevicesModulePath, () => ({UserDevices: userDevicesMock.entity}))
 
 // Import handler after mocking

@@ -140,7 +140,7 @@ type WhereClause = Array<{field: string; value: unknown; operator?: string}>
 /**
  * Creates a Better Auth adapter using the entity layer (Drizzle ORM with Aurora DSQL).
  */
-export const electroDBAdapter = createAdapterFactory({
+export const drizzleAdapter = createAdapterFactory({
   config: {
     adapterId: 'drizzle-dsql',
     adapterName: 'Drizzle DSQL',
@@ -461,3 +461,6 @@ export function splitFullName(fullName?: string): {firstName: string; lastName: 
   const parts = (fullName || '').split(' ')
   return {firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || ''}
 }
+
+/** @deprecated Use drizzleAdapter instead */
+export const electroDBAdapter = drizzleAdapter

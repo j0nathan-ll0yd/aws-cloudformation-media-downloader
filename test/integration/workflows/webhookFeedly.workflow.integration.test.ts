@@ -17,18 +17,18 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
 import {FileStatus} from '#types/enums'
 import {
+  closeTestDb,
   createAllTables,
   dropAllTables,
-  truncateAllTables,
-  closeTestDb,
-  insertFile,
   getFile,
+  getTestDb,
+  insertFile,
   insertUser,
   linkUserFile,
-  getTestDb
+  truncateAllTables
 } from '../helpers/postgres-helpers'
-import {userFiles, files} from '#lib/vendor/Drizzle/schema'
-import {eq, and} from 'drizzle-orm'
+import {files, userFiles} from '#lib/vendor/Drizzle/schema'
+import {and, eq} from 'drizzle-orm'
 
 describe('WebhookFeedly Workflow Integration Tests', () => {
   beforeAll(async () => {
@@ -104,9 +104,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
 
       // Verify association
       const db = getTestDb()
-      const associations = await db.select().from(userFiles).where(
-        and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))
-      )
+      const associations = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
 
       expect(associations).toHaveLength(1)
     })
@@ -158,12 +156,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
       const fileId = 'already-downloaded'
 
       // Create file that was already downloaded
-      await insertFile({
-        fileId,
-        status: FileStatus.Downloaded,
-        size: 10485760,
-        url: 'https://cdn.example.com/already-downloaded.mp4'
-      })
+      await insertFile({fileId, status: FileStatus.Downloaded, size: 10485760, url: 'https://cdn.example.com/already-downloaded.mp4'})
 
       const file = await getFile(fileId)
 
@@ -218,9 +211,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
 
       // Check for existing association before creating duplicate
       const db = getTestDb()
-      const existing = await db.select().from(userFiles).where(
-        and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))
-      )
+      const existing = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
 
       expect(existing).toHaveLength(1)
       // In real workflow, we'd skip if association exists

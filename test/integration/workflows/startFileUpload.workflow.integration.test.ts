@@ -16,17 +16,17 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
 import {FileStatus} from '#types/enums'
 import {
+  closeTestDb,
   createAllTables,
   dropAllTables,
-  truncateAllTables,
-  closeTestDb,
-  insertFile,
   getFile,
-  updateFile,
-  insertUser,
+  getTestDb,
   getUser,
+  insertFile,
+  insertUser,
   linkUserFile,
-  getTestDb
+  truncateAllTables,
+  updateFile
 } from '../helpers/postgres-helpers'
 import {createMockFile} from '../helpers/test-data'
 import {userFiles} from '#lib/vendor/Drizzle/schema'
@@ -226,11 +226,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
       expect(file?.status).toBe(FileStatus.Downloading)
 
       // Transition: Downloaded
-      await updateFile(fileId, {
-        status: FileStatus.Downloaded,
-        size: 15728640,
-        url: 'https://cdn.example.com/success.mp4'
-      })
+      await updateFile(fileId, {status: FileStatus.Downloaded, size: 15728640, url: 'https://cdn.example.com/success.mp4'})
       file = await getFile(fileId)
       expect(file?.status).toBe(FileStatus.Downloaded)
       expect(file?.size).toBe(15728640)

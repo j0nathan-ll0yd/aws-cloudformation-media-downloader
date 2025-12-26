@@ -37,7 +37,7 @@ describe('validation exports', () => {
       const ruleNames = allRules.map((r) => r.name)
       // CRITICAL rules
       expect(ruleNames).toContain('aws-sdk-encapsulation')
-      expect(ruleNames).toContain('electrodb-mocking')
+      expect(ruleNames).toContain('entity-mocking')
       expect(ruleNames).toContain('config-enforcement')
       expect(ruleNames).toContain('env-validation')
       expect(ruleNames).toContain('cascade-safety')
@@ -67,7 +67,7 @@ describe('validation exports', () => {
     test('should have all rules by name', () => {
       // CRITICAL rules
       expect(rulesByName['aws-sdk-encapsulation']).toBeDefined()
-      expect(rulesByName['electrodb-mocking']).toBeDefined()
+      expect(rulesByName['entity-mocking']).toBeDefined()
       expect(rulesByName['config-enforcement']).toBeDefined()
       expect(rulesByName['env-validation']).toBeDefined()
       expect(rulesByName['cascade-safety']).toBeDefined()
@@ -93,7 +93,7 @@ describe('validation exports', () => {
     test('should have aliases', () => {
       // CRITICAL aliases
       expect(rulesByName['aws-sdk']).toBe(rulesByName['aws-sdk-encapsulation'])
-      expect(rulesByName['electrodb']).toBe(rulesByName['electrodb-mocking'])
+      expect(rulesByName['electrodb']).toBe(rulesByName['entity-mocking'])
       expect(rulesByName['config']).toBe(rulesByName['config-enforcement'])
       expect(rulesByName['env']).toBe(rulesByName['env-validation'])
       expect(rulesByName['cascade']).toBe(rulesByName['cascade-safety'])

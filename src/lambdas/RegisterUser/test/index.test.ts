@@ -1,7 +1,7 @@
 import {beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
@@ -10,7 +10,7 @@ const authMock = createBetterAuthMock()
 jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
 
 // Mock Users entity for name updates
-const usersMock = createElectroDBEntityMock()
+const usersMock = createEntityMock()
 jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
