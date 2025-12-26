@@ -31,8 +31,8 @@ export const FileDownloads = new Entity({
     retryCount: {type: 'number', required: true, default: 0},
     /** Maximum retries allowed for this download */
     maxRetries: {type: 'number', required: true, default: 5},
-    /** Unix timestamp (seconds) when retry should be attempted */
-    retryAfter: {type: 'number', required: false},
+    /** Unix timestamp (seconds) when retry should be attempted (0 = immediate) */
+    retryAfter: {type: 'number', required: true, default: 0},
     /** Error category from video-error-classifier */
     errorCategory: {type: 'string', required: false},
     /** Human-readable error message */
