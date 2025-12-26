@@ -46,120 +46,136 @@ export async function closeTestDb(): Promise<void> {
 /**
  * Create all tables in the test database
  * Run this in beforeAll() of integration tests
+ *
+ * IMPORTANT: This SQL must match the Drizzle schema in src/lib/vendor/Drizzle/schema.ts
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
 
   // Create tables in dependency order (parents first)
+  // Schema must match src/lib/vendor/Drizzle/schema.ts exactly
   await db.execute(`
     CREATE TABLE IF NOT EXISTS users (
-      user_id TEXT PRIMARY KEY,
-      email TEXT,
-      email_verified BOOLEAN DEFAULT FALSE,
-      first_name TEXT,
+      user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL,
+      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+      first_name TEXT NOT NULL,
       last_name TEXT,
       apple_device_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS identity_providers (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      provider_user_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      email_verified BOOLEAN NOT NULL,
+      is_private_email BOOLEAN NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      token_type TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS files (
       file_id TEXT PRIMARY KEY,
-      size INTEGER,
-      author_name TEXT,
-      author_user TEXT,
-      publish_date TEXT,
-      description TEXT,
-      key TEXT,
+      size INTEGER NOT NULL DEFAULT 0,
+      author_name TEXT NOT NULL,
+      author_user TEXT NOT NULL,
+      publish_date TEXT NOT NULL,
+      description TEXT NOT NULL,
+      key TEXT NOT NULL,
       url TEXT,
-      content_type TEXT,
-      title TEXT,
-      status TEXT DEFAULT 'Queued',
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      content_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Queued'
     );
 
     CREATE TABLE IF NOT EXISTS devices (
       device_id TEXT PRIMARY KEY,
-      name TEXT,
-      token TEXT,
-      system_version TEXT,
-      system_name TEXT,
-      endpoint_arn TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      name TEXT NOT NULL,
+      token TEXT NOT NULL,
+      system_version TEXT NOT NULL,
+      system_name TEXT NOT NULL,
+      endpoint_arn TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
-      session_id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(user_id),
-      expires_at BIGINT,
-      token TEXT,
+      session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      expires_at INTEGER NOT NULL,
+      token TEXT NOT NULL,
       ip_address TEXT,
       user_agent TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      device_id TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS accounts (
-      account_id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(user_id),
-      provider_id TEXT,
-      provider_account_id TEXT,
+      account_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL,
+      provider_id TEXT NOT NULL,
+      provider_account_id TEXT NOT NULL,
       access_token TEXT,
       refresh_token TEXT,
-      expires_at BIGINT,
+      expires_at INTEGER,
       scope TEXT,
       token_type TEXT,
       id_token TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS verification_tokens (
       token TEXT PRIMARY KEY,
-      identifier TEXT,
-      expires_at BIGINT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      identifier TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS file_downloads (
-      file_id TEXT PRIMARY KEY REFERENCES files(file_id),
-      status TEXT DEFAULT 'Pending',
-      retry_count INTEGER DEFAULT 0,
-      max_retries INTEGER DEFAULT 3,
-      retry_after BIGINT,
+      file_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'Pending',
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      max_retries INTEGER NOT NULL DEFAULT 5,
+      retry_after INTEGER,
       error_category TEXT,
       last_error TEXT,
-      scheduled_release_time BIGINT,
+      scheduled_release_time INTEGER,
       source_url TEXT,
       correlation_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS user_files (
-      user_id TEXT REFERENCES users(user_id),
-      file_id TEXT REFERENCES files(file_id),
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      user_id UUID NOT NULL,
+      file_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, file_id)
     );
 
     CREATE TABLE IF NOT EXISTS user_devices (
-      user_id TEXT REFERENCES users(user_id),
-      device_id TEXT REFERENCES devices(device_id),
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      user_id UUID NOT NULL,
+      device_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, device_id)
     );
 
-    -- Indexes matching Aurora DSQL requirements
+    -- Indexes matching Drizzle schema definitions
     CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
     CREATE INDEX IF NOT EXISTS users_apple_device_idx ON users(apple_device_id);
+    CREATE INDEX IF NOT EXISTS identity_providers_user_idx ON identity_providers(user_id);
+    CREATE INDEX IF NOT EXISTS files_key_idx ON files(key);
+    CREATE INDEX IF NOT EXISTS file_downloads_status_idx ON file_downloads(status, retry_after);
     CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS sessions_token_idx ON sessions(token);
     CREATE INDEX IF NOT EXISTS accounts_user_idx ON accounts(user_id);
-    CREATE INDEX IF NOT EXISTS files_key_idx ON files(key);
-    CREATE INDEX IF NOT EXISTS file_downloads_status_idx ON file_downloads(status, retry_after);
+    CREATE INDEX IF NOT EXISTS accounts_provider_idx ON accounts(provider_id, provider_account_id);
+    CREATE INDEX IF NOT EXISTS verification_tokens_identifier_idx ON verification_tokens(identifier);
     CREATE INDEX IF NOT EXISTS user_files_user_idx ON user_files(user_id);
     CREATE INDEX IF NOT EXISTS user_files_file_idx ON user_files(file_id);
     CREATE INDEX IF NOT EXISTS user_devices_user_idx ON user_devices(user_id);
@@ -182,6 +198,7 @@ export async function dropAllTables(): Promise<void> {
     DROP TABLE IF EXISTS verification_tokens CASCADE;
     DROP TABLE IF EXISTS accounts CASCADE;
     DROP TABLE IF EXISTS sessions CASCADE;
+    DROP TABLE IF EXISTS identity_providers CASCADE;
     DROP TABLE IF EXISTS devices CASCADE;
     DROP TABLE IF EXISTS files CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
@@ -196,7 +213,7 @@ export async function truncateAllTables(): Promise<void> {
 
   await db.execute(`
     TRUNCATE user_devices, user_files, file_downloads, verification_tokens,
-             accounts, sessions, devices, files, users CASCADE;
+             accounts, sessions, identity_providers, devices, files, users CASCADE;
   `)
 }
 
