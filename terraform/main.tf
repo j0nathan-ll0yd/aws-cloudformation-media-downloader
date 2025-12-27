@@ -258,6 +258,7 @@ resource "aws_dynamodb_table" "MediaDownloader" {
   # GSI6: Query FileDownloads by status and retryAfter
   # Access pattern: "Find downloads ready for retry"
   # Used by: FileCoordinator
+  # Note: gsi6sk is String because ElectroDB composite keys serialize as strings
   attribute {
     name = "gsi6pk"
     type = "S"
@@ -265,7 +266,7 @@ resource "aws_dynamodb_table" "MediaDownloader" {
 
   attribute {
     name = "gsi6sk"
-    type = "N"
+    type = "S"
   }
 
   global_secondary_index {
@@ -292,6 +293,66 @@ resource "aws_dynamodb_table" "MediaDownloader" {
     name            = "AppleDeviceIndex"
     hash_key        = "gsi7pk"
     range_key       = "gsi7sk"
+    projection_type = "ALL"
+  }
+
+  # EmailIndex: Query users by email address
+  # Access pattern: "Find user by email for login/registration"
+  # Used by: RegisterUser, LoginUser (Better Auth adapter)
+  attribute {
+    name = "gsi8pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi8sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "EmailIndex"
+    hash_key        = "gsi8pk"
+    range_key       = "gsi8sk"
+    projection_type = "ALL"
+  }
+
+  # TokenIndex: Query sessions by token
+  # Access pattern: "Validate session token for authentication"
+  # Used by: ApiGatewayAuthorizer (Better Auth session validation)
+  attribute {
+    name = "gsi9pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi9sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "TokenIndex"
+    hash_key        = "gsi9pk"
+    range_key       = "gsi9sk"
+    projection_type = "ALL"
+  }
+
+  # ProviderIndex: Query accounts by OAuth provider
+  # Access pattern: "Find account by providerId + providerAccountId"
+  # Used by: LoginUser, RegisterUser (Better Auth adapter)
+  attribute {
+    name = "gsi10pk"
+    type = "S"
+  }
+
+  attribute {
+    name = "gsi10sk"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "ProviderIndex"
+    hash_key        = "gsi10pk"
+    range_key       = "gsi10sk"
     projection_type = "ALL"
   }
 

@@ -136,10 +136,12 @@ resource "aws_api_gateway_integration" "WebhookFeedlyPost" {
 }
 
 data "aws_iam_policy_document" "MultipartUpload" {
-  # UpdateItem on base table to update File metadata during upload
-  # GetItem to retrieve existing file for retry count
+  # DynamoDB access for File metadata and FileDownloads tracking
+  # - UpdateItem: Update File metadata during upload
+  # - GetItem: Retrieve existing file for retry count
+  # - PutItem: Create FileDownloads record when update fails (new download)
   statement {
-    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
+    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem"]
     resources = [aws_dynamodb_table.MediaDownloader.arn]
   }
   # Query FileCollection GSI to find users waiting for file (for MetadataNotification)

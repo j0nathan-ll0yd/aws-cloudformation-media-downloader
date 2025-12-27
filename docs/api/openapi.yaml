@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: aws-cloudformation-media-downloader
+  title: Offline Media Downloader API
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 1.0.0
+  version: 0.0.0
 tags:
   - name: Files
   - name: Devices
@@ -91,13 +91,41 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '201':
           description: Device registration confirmation with endpoint ARN
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.DeviceRegistrationResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '400':
           description: Device registration confirmation with endpoint ARN
           content:
@@ -165,13 +193,41 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.WebhookResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.WebhookResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '202':
           description: Webhook processing status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.WebhookResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.WebhookResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '400':
           description: Webhook processing status
           content:
@@ -229,7 +285,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.FileListResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.FileListResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '401':
           description: List of available files
           content:
@@ -319,7 +389,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.UserLoginResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.UserLoginResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '400':
           description: JWT access token
           content:
@@ -384,7 +468,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.TokenRefreshResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.TokenRefreshResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '401':
           description: Refreshed session information
           content:
@@ -426,7 +524,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.UserRegistrationResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.UserRegistrationResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '400':
           description: JWT access token
           content:
@@ -478,7 +590,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Models.UserSubscriptionResponse'
+                type: object
+                required:
+                  - body
+                  - requestId
+                properties:
+                  body:
+                    allOf:
+                      - $ref: '#/components/schemas/Models.UserSubscriptionResponse'
+                    description: The actual response data
+                  requestId:
+                    type: string
+                    description: Unique request identifier for tracing
+                description: |-
+                  Standard API response wrapper for successful responses.
+                  All 2xx responses are wrapped in this format.
         '400':
           description: Subscription ARN
           content:
@@ -520,8 +646,14 @@ components:
               type: string
               description: Error code
             message:
-              type: string
-              description: Error message
+              description: Error message - can be a string or validation errors object
+              oneOf:
+                - type: string
+                - type: object
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
           required:
             - code
             - message

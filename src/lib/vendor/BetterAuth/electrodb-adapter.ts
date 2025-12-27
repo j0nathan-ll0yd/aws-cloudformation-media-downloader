@@ -31,25 +31,26 @@ function transformInputData(model: string, data: Record<string, unknown>): Recor
   const pkField = primaryKeyFields[model as ModelName]
 
   for (const [key, value] of Object.entries(data)) {
-    // Map 'id' to the appropriate primary key field
-    const mappedKey = key === 'id' ? pkField : key
+    // Skip Better Auth's 'id' field - we always generate our own UUID
+    // Better Auth uses nanoid format which doesn't match our UUID requirement
+    if (key === 'id') {
+      continue
+    }
 
     // Convert Date objects or ISO strings to timestamps for ElectroDB
     if (value instanceof Date) {
-      result[mappedKey] = value.getTime()
+      result[key] = value.getTime()
     } else if (typeof value === 'string' && (key === 'createdAt' || key === 'updatedAt' || key === 'expiresAt')) {
       // Handle ISO date strings from Better Auth
       const parsed = Date.parse(value)
-      result[mappedKey] = isNaN(parsed) ? value : parsed
+      result[key] = isNaN(parsed) ? value : parsed
     } else {
-      result[mappedKey] = value
+      result[key] = value
     }
   }
 
-  // Ensure primary key is set
-  if (!result[pkField]) {
-    result[pkField] = uuidv4()
-  }
+  // Always generate our own UUID for primary key
+  result[pkField] = uuidv4()
 
   // Handle user-specific fields
   if (model === 'user') {

@@ -3,12 +3,7 @@ import {CreateTableCommand, DynamoDBClient} from '@aws-sdk/client-dynamodb'
 /**
  * Setup MediaDownloader DynamoDB table in LocalStack
  * Creates table with all required GSIs for ElectroDB entities
- *
- * Table Design (lowercase to match ElectroDB entity field names):
- * - Primary Key: pk (HASH), sk (RANGE)
- * - gsi1: gsi1pk (HASH), gsi1sk (RANGE) - UserCollection (userResources)
- * - gsi2: gsi2pk (HASH), gsi2sk (RANGE) - FileCollection (fileUsers)
- * - gsi3: gsi3pk (HASH), gsi3sk (RANGE) - DeviceCollection (deviceUsers)
+ * Matches production Terraform configuration (main.tf)
  *
  * @returns Promise that resolves when table is created
  */
@@ -32,7 +27,20 @@ export async function setupLocalStackTable(): Promise<void> {
         {AttributeName: 'gsi2pk', AttributeType: 'S'},
         {AttributeName: 'gsi2sk', AttributeType: 'S'},
         {AttributeName: 'gsi3pk', AttributeType: 'S'},
-        {AttributeName: 'gsi3sk', AttributeType: 'S'}
+        {AttributeName: 'gsi3sk', AttributeType: 'S'},
+        {AttributeName: 'gsi4pk', AttributeType: 'S'},
+        {AttributeName: 'gsi4sk', AttributeType: 'S'},
+        {AttributeName: 'gsi5pk', AttributeType: 'S'},
+        {AttributeName: 'gsi6pk', AttributeType: 'S'},
+        {AttributeName: 'gsi6sk', AttributeType: 'S'},
+        {AttributeName: 'gsi7pk', AttributeType: 'S'},
+        {AttributeName: 'gsi7sk', AttributeType: 'S'},
+        {AttributeName: 'gsi8pk', AttributeType: 'S'},
+        {AttributeName: 'gsi8sk', AttributeType: 'S'},
+        {AttributeName: 'gsi9pk', AttributeType: 'S'},
+        {AttributeName: 'gsi9sk', AttributeType: 'S'},
+        {AttributeName: 'gsi10pk', AttributeType: 'S'},
+        {AttributeName: 'gsi10sk', AttributeType: 'S'}
       ],
       KeySchema: [
         {AttributeName: 'pk', KeyType: 'HASH'},
@@ -40,27 +48,49 @@ export async function setupLocalStackTable(): Promise<void> {
       ],
       GlobalSecondaryIndexes: [
         {
-          IndexName: 'gsi1',
-          KeySchema: [
-            {AttributeName: 'gsi1pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi1sk', KeyType: 'RANGE'}
-          ],
+          IndexName: 'UserCollection',
+          KeySchema: [{AttributeName: 'gsi1pk', KeyType: 'HASH'}, {AttributeName: 'gsi1sk', KeyType: 'RANGE'}],
           Projection: {ProjectionType: 'ALL'}
         },
         {
-          IndexName: 'gsi2',
-          KeySchema: [
-            {AttributeName: 'gsi2pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi2sk', KeyType: 'RANGE'}
-          ],
+          IndexName: 'FileCollection',
+          KeySchema: [{AttributeName: 'gsi2pk', KeyType: 'HASH'}, {AttributeName: 'gsi2sk', KeyType: 'RANGE'}],
           Projection: {ProjectionType: 'ALL'}
         },
         {
-          IndexName: 'gsi3',
-          KeySchema: [
-            {AttributeName: 'gsi3pk', KeyType: 'HASH'},
-            {AttributeName: 'gsi3sk', KeyType: 'RANGE'}
-          ],
+          IndexName: 'DeviceCollection',
+          KeySchema: [{AttributeName: 'gsi3pk', KeyType: 'HASH'}, {AttributeName: 'gsi3sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'StatusIndex',
+          KeySchema: [{AttributeName: 'gsi4pk', KeyType: 'HASH'}, {AttributeName: 'gsi4sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {IndexName: 'KeyIndex', KeySchema: [{AttributeName: 'gsi5pk', KeyType: 'HASH'}], Projection: {ProjectionType: 'ALL'}},
+        {
+          IndexName: 'GSI6',
+          KeySchema: [{AttributeName: 'gsi6pk', KeyType: 'HASH'}, {AttributeName: 'gsi6sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'AppleDeviceIndex',
+          KeySchema: [{AttributeName: 'gsi7pk', KeyType: 'HASH'}, {AttributeName: 'gsi7sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'EmailIndex',
+          KeySchema: [{AttributeName: 'gsi8pk', KeyType: 'HASH'}, {AttributeName: 'gsi8sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'TokenIndex',
+          KeySchema: [{AttributeName: 'gsi9pk', KeyType: 'HASH'}, {AttributeName: 'gsi9sk', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        },
+        {
+          IndexName: 'ProviderIndex',
+          KeySchema: [{AttributeName: 'gsi10pk', KeyType: 'HASH'}, {AttributeName: 'gsi10sk', KeyType: 'RANGE'}],
           Projection: {ProjectionType: 'ALL'}
         }
       ],

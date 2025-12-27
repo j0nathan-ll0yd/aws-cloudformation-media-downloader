@@ -1,5 +1,10 @@
-import YTDlpWrap from 'yt-dlp-wrap'
+import YTDlpWrapModule from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
+
+// ESM/CJS interop: yt-dlp-wrap uses `exports.default = YTDlpWrap` (CommonJS with default export)
+// When esbuild bundles CJS to ESM, the import may be wrapped differently depending on minification.
+// Handle both cases: direct class or wrapper object with .default property.
+const YTDlpWrap = (YTDlpWrapModule as unknown as {default?: typeof YTDlpWrapModule}).default ?? YTDlpWrapModule
 import {createReadStream} from 'fs'
 import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'

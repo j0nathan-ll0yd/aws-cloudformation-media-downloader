@@ -95,6 +95,7 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
     logDebug('FileDownloads.update =>', updateResponse)
   } catch {
     // If record doesn't exist, create it
+    // Note: retryAfter must be explicitly defaulted to 0 (not undefined) because GSI6 expects Number type
     const createData = {
       fileId,
       status,
@@ -102,7 +103,7 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       maxRetries: classification?.maxRetries ?? 5,
       errorCategory: classification?.category,
       lastError: classification?.reason,
-      retryAfter: classification?.retryAfter,
+      retryAfter: classification?.retryAfter ?? 0,
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
       ttl: update.ttl as number | undefined
     }

@@ -46,31 +46,31 @@ export interface Current {
 }
 
 export interface AwsIamPolicyDocument {
-    ApiGatewayAuthorizer:           APIGatewayAuthorizer[];
-    ApiGatewayAuthorizerInvocation: APIGatewayAuthorizer[];
+    ApiGatewayAuthorizer:           APIGatewayAuthorizerInvocationElement[];
+    ApiGatewayAuthorizerInvocation: APIGatewayAuthorizerInvocationElement[];
     ApiGatewayCloudwatch:           APIGatewayCloudwatch[];
-    CommonLambdaLogging:            APIGatewayAuthorizer[];
-    CommonLambdaXRay:               APIGatewayAuthorizer[];
+    CommonLambdaLogging:            APIGatewayAuthorizerInvocationElement[];
+    CommonLambdaXRay:               APIGatewayAuthorizerInvocationElement[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
     LamdbaEdgeAssumeRole:           AssumeRole[];
-    ListFiles:                      APIGatewayAuthorizer[];
-    LoginUser:                      APIGatewayAuthorizer[];
-    MultipartUpload:                APIGatewayAuthorizer[];
+    ListFiles:                      APIGatewayAuthorizerInvocationElement[];
+    LoginUser:                      APIGatewayAuthorizerInvocationElement[];
+    MultipartUpload:                APIGatewayAuthorizerInvocationElement[];
     PruneDevices:                   PruneDevice[];
-    RefreshToken:                   APIGatewayAuthorizer[];
+    RefreshToken:                   APIGatewayAuthorizerInvocationElement[];
     RegisterDevice:                 RegisterDevice[];
-    RegisterUser:                   APIGatewayAuthorizer[];
-    S3ObjectCreated:                APIGatewayAuthorizer[];
+    RegisterUser:                   APIGatewayAuthorizerInvocationElement[];
+    S3ObjectCreated:                APIGatewayAuthorizerInvocationElement[];
     SNSAssumeRole:                  AssumeRole[];
     SendPushNotification:           PruneDevice[];
     StatesAssumeRole:               AssumeRole[];
     UserDelete:                     PruneDevice[];
     UserSubscribe:                  UserSubscribe[];
-    WebhookFeedly:                  APIGatewayAuthorizer[];
+    WebhookFeedly:                  APIGatewayAuthorizerInvocationElement[];
 }
 
-export interface APIGatewayAuthorizer {
+export interface APIGatewayAuthorizerInvocationElement {
     statement: Ent[];
 }
 
@@ -263,7 +263,7 @@ export interface Resource {
     aws_iam_role_policy:                             AwsIamRolePolicy;
     aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
     aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
-    aws_lambda_function:                             { [key: string]: AwsLambdaFunction[] };
+    aws_lambda_function:                             AwsLambdaFunction;
     aws_lambda_layer_version:                        AwsLambdaLayerVersion;
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
@@ -302,10 +302,10 @@ export enum Tags {
 }
 
 export interface AwsAPIGatewayAuthorizer {
-    ApiGatewayAuthorizer: AwsAPIGatewayAuthorizerAPIGatewayAuthorizer[];
+    ApiGatewayAuthorizer: APIGatewayAuthorizer[];
 }
 
-export interface AwsAPIGatewayAuthorizerAPIGatewayAuthorizer {
+export interface APIGatewayAuthorizer {
     authorizer_credentials:           string;
     authorizer_result_ttl_in_seconds: number;
     authorizer_uri:                   string;
@@ -778,8 +778,12 @@ export enum AttributeType {
 export interface GlobalSecondaryIndex {
     hash_key:        string;
     name:            string;
-    projection_type: string;
+    projection_type: ProjectionType;
     range_key?:      string;
+}
+
+export enum ProjectionType {
+    All = "ALL",
 }
 
 export interface TTL {
@@ -829,22 +833,38 @@ export interface SendPushNotification {
 }
 
 export interface AwsLambdaFunction {
-    depends_on?:                     string[];
+    ApiGatewayAuthorizer: DeviceEventElement[];
+    CloudfrontMiddleware: CloudfrontMiddleware[];
+    DeviceEvent:          DeviceEventElement[];
+    ListFiles:            DeviceEventElement[];
+    LoginUser:            DeviceEventElement[];
+    PruneDevices:         DeviceEventElement[];
+    RefreshToken:         DeviceEventElement[];
+    RegisterDevice:       DeviceEventElement[];
+    RegisterUser:         DeviceEventElement[];
+    S3ObjectCreated:      DeviceEventElement[];
+    SendPushNotification: DeviceEventElement[];
+    StartFileUpload:      DeviceEventElement[];
+    UserDelete:           CloudfrontMiddleware[];
+    UserSubscribe:        CloudfrontMiddleware[];
+    WebhookFeedly:        CloudfrontMiddleware[];
+}
+
+export interface DeviceEventElement {
+    depends_on:                      string[];
     description:                     string;
-    environment?:                    Environment[];
+    environment:                     Environment[];
     filename:                        string;
     function_name:                   string;
     handler:                         Handler;
-    layers?:                         Layer[];
+    layers:                          Layer[];
     role:                            string;
     runtime:                         Runtime;
     source_code_hash:                string;
     tags:                            string;
-    tracing_config:                  TracingConfig[];
-    provider?:                       string;
-    publish?:                        boolean;
-    memory_size?:                    number;
     timeout?:                        number;
+    tracing_config:                  TracingConfig[];
+    memory_size?:                    number;
     ephemeral_storage?:              EphemeralStorage[];
     reserved_concurrent_executions?: number;
 }
@@ -877,6 +897,24 @@ export interface TracingConfig {
 
 export enum Mode {
     Active = "Active",
+}
+
+export interface CloudfrontMiddleware {
+    description:      string;
+    filename:         string;
+    function_name:    string;
+    handler:          Handler;
+    provider?:        string;
+    publish?:         boolean;
+    role:             string;
+    runtime:          Runtime;
+    source_code_hash: string;
+    tags:             string;
+    tracing_config:   TracingConfig[];
+    depends_on?:      string[];
+    environment?:     Environment[];
+    layers?:          Layer[];
+    memory_size?:     number;
 }
 
 export interface AwsLambdaLayerVersion {
@@ -1275,30 +1313,30 @@ const typeMap: any = {
     "Current": o([
     ], false),
     "AwsIamPolicyDocument": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
-        { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "ApiGatewayCloudwatch", js: "ApiGatewayCloudwatch", typ: a(r("APIGatewayCloudwatch")) },
-        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizer")) },
-        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LamdbaEdgeAssumeRole", js: "LamdbaEdgeAssumeRole", typ: a(r("AssumeRole")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("APIGatewayAuthorizer")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizer")) },
-        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizer")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
         { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("PruneDevice")) },
         { json: "StatesAssumeRole", js: "StatesAssumeRole", typ: a(r("AssumeRole")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("UserSubscribe")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
     ], false),
-    "APIGatewayAuthorizer": o([
+    "APIGatewayAuthorizerInvocationElement": o([
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
     "Ent": o([
@@ -1463,7 +1501,7 @@ const typeMap: any = {
         { json: "aws_iam_role_policy", js: "aws_iam_role_policy", typ: r("AwsIamRolePolicy") },
         { json: "aws_iam_role_policy_attachment", js: "aws_iam_role_policy_attachment", typ: m(a(r("AwsIamRolePolicyAttachment"))) },
         { json: "aws_lambda_event_source_mapping", js: "aws_lambda_event_source_mapping", typ: r("AwsLambdaEventSourceMapping") },
-        { json: "aws_lambda_function", js: "aws_lambda_function", typ: m(a(r("AwsLambdaFunction"))) },
+        { json: "aws_lambda_function", js: "aws_lambda_function", typ: r("AwsLambdaFunction") },
         { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("AwsLambdaLayerVersion") },
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
@@ -1493,9 +1531,9 @@ const typeMap: any = {
         { json: "tags", js: "tags", typ: r("Tags") },
     ], false),
     "AwsAPIGatewayAuthorizer": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsAPIGatewayAuthorizerAPIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
     ], false),
-    "AwsAPIGatewayAuthorizerAPIGatewayAuthorizer": o([
+    "APIGatewayAuthorizer": o([
         { json: "authorizer_credentials", js: "authorizer_credentials", typ: "" },
         { json: "authorizer_result_ttl_in_seconds", js: "authorizer_result_ttl_in_seconds", typ: 0 },
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
@@ -1883,7 +1921,7 @@ const typeMap: any = {
     "GlobalSecondaryIndex": o([
         { json: "hash_key", js: "hash_key", typ: "" },
         { json: "name", js: "name", typ: "" },
-        { json: "projection_type", js: "projection_type", typ: "" },
+        { json: "projection_type", js: "projection_type", typ: r("ProjectionType") },
         { json: "range_key", js: "range_key", typ: u(undefined, "") },
     ], false),
     "TTL": o([
@@ -1925,22 +1963,37 @@ const typeMap: any = {
         { json: "batch_size", js: "batch_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaFunction": o([
-        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("DeviceEventElement")) },
+        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
+        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("DeviceEventElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("DeviceEventElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("DeviceEventElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("DeviceEventElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("DeviceEventElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("DeviceEventElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("DeviceEventElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("DeviceEventElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("DeviceEventElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("DeviceEventElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("CloudfrontMiddleware")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CloudfrontMiddleware")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CloudfrontMiddleware")) },
+    ], false),
+    "DeviceEventElement": o([
+        { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: u(undefined, a(r("Environment"))) },
+        { json: "environment", js: "environment", typ: a(r("Environment")) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: r("Handler") },
-        { json: "layers", js: "layers", typ: u(undefined, a(r("Layer"))) },
+        { json: "layers", js: "layers", typ: a(r("Layer")) },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tags", js: "tags", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-        { json: "provider", js: "provider", typ: u(undefined, "") },
-        { json: "publish", js: "publish", typ: u(undefined, true) },
-        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
         { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
         { json: "ephemeral_storage", js: "ephemeral_storage", typ: u(undefined, a(r("EphemeralStorage"))) },
         { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: u(undefined, 0) },
     ], false),
@@ -1952,6 +2005,23 @@ const typeMap: any = {
     ], false),
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
+    ], false),
+    "CloudfrontMiddleware": o([
+        { json: "description", js: "description", typ: "" },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: r("Handler") },
+        { json: "provider", js: "provider", typ: u(undefined, "") },
+        { json: "publish", js: "publish", typ: u(undefined, true) },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tags", js: "tags", typ: "" },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
+        { json: "environment", js: "environment", typ: u(undefined, a(r("Environment"))) },
+        { json: "layers", js: "layers", typ: u(undefined, a(r("Layer"))) },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaLayerVersion": o([
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
@@ -2127,6 +2197,9 @@ const typeMap: any = {
     "AttributeType": [
         "N",
         "S",
+    ],
+    "ProjectionType": [
+        "ALL",
     ],
     "Handler": [
         "index.handler",
