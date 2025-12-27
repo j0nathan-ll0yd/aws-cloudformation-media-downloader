@@ -19,16 +19,6 @@ data "aws_iam_policy_document" "WebhookFeedly" {
     actions   = ["events:PutEvents"]
     resources = [aws_cloudwatch_event_bus.MediaDownloader.arn]
   }
-  # PutItem/UpdateItem on base table for Files and UserFiles
-  # GetItem to check existing files
-  statement {
-    actions = [
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:GetItem"
-    ]
-    resources = [aws_dynamodb_table.MediaDownloader.arn]
-  }
   # Powertools Idempotency - read/write to idempotency table
   statement {
     actions = [
@@ -103,7 +93,6 @@ resource "aws_lambda_function" "WebhookFeedly" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME    = aws_dynamodb_table.MediaDownloader.name
       SNS_QUEUE_URL          = aws_sqs_queue.SendPushNotification.id
       IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
       EVENT_BUS_NAME         = aws_cloudwatch_event_bus.MediaDownloader.name
@@ -141,19 +130,6 @@ resource "aws_api_gateway_integration" "WebhookFeedlyPost" {
 }
 
 data "aws_iam_policy_document" "MultipartUpload" {
-  # DynamoDB access for File metadata and FileDownloads tracking
-  # - UpdateItem: Update File metadata during upload
-  # - GetItem: Retrieve existing file for retry count
-  # - PutItem: Create FileDownloads record when update fails (new download)
-  statement {
-    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem"]
-    resources = [aws_dynamodb_table.MediaDownloader.arn]
-  }
-  # Query FileCollection GSI to find users waiting for file (for MetadataNotification)
-  statement {
-    actions   = ["dynamodb:Query"]
-    resources = ["${aws_dynamodb_table.MediaDownloader.arn}/index/FileCollection"]
-  }
   # Send MetadataNotification to push notification queue
   statement {
     actions   = ["sqs:SendMessage"]
@@ -389,7 +365,6 @@ resource "aws_lambda_function" "StartFileUpload" {
   environment {
     variables = merge(local.common_lambda_env, {
       BUCKET                = aws_s3_bucket.Files.id
-      DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
       CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.MediaFiles.domain_name
       SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
       EVENT_BUS_NAME        = aws_cloudwatch_event_bus.MediaDownloader.name

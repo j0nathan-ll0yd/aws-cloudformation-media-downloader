@@ -1,8 +1,35 @@
+import type {Context} from 'aws-lambda'
 import {afterAll, beforeAll, jest} from '@jest/globals'
 
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDAxODUuNzcyMDMxNTU3MGZjNDlkOTlhMjY1ZjlhZjRiNDY4NzkuMjAzNCJ9.wtotJzwuBIEHfBZssiA18NNObn70s9hk-M_ClRMXc8M'
+
+/** Default test context values */
+const defaultContext: Context = {
+  callbackWaitsForEmptyEventLoop: true,
+  functionName: 'TestFunction',
+  functionVersion: '$LATEST',
+  invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:TestFunction',
+  memoryLimitInMB: '256',
+  awsRequestId: 'test-request-id',
+  logGroupName: '/aws/lambda/TestFunction',
+  logStreamName: '2024/01/01/[$LATEST]test',
+  getRemainingTimeInMillis: () => 30000,
+  done: () => {},
+  fail: () => {},
+  succeed: () => {}
+}
+
+/**
+ * Creates a mock Lambda context with optional overrides.
+ * Use this instead of duplicating context creation in tests.
+ */
+export function createMockContext(overrides: Partial<Context> = {}): Context {
+  return {...defaultContext, ...overrides}
+}
+
+/** @deprecated Use createMockContext() instead for new tests */
 export const testContext = {
   callbackWaitsForEmptyEventLoop: true,
   logGroupName: 'The log group for the function.',

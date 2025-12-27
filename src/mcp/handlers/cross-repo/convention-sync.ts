@@ -57,7 +57,6 @@ function toJSON(conventions: Convention[]): string {
     enforcement: c.enforcement,
     documentation: c.wikiPath
   }))
-
   return JSON.stringify({version: '1.0', conventions: exported}, null, 2)
 }
 
@@ -66,7 +65,6 @@ function toJSON(conventions: Convention[]): string {
  */
 function toYAML(conventions: Convention[]): string {
   const lines = ['# Project Conventions', `# Exported: ${new Date().toISOString()}`, '', 'conventions:']
-
   for (const c of conventions) {
     lines.push(`  - name: "${c.name}"`)
     lines.push(`    description: "${c.what.replace(/"/g, '\\"')}"`)
@@ -81,7 +79,6 @@ function toYAML(conventions: Convention[]): string {
     }
     lines.push('')
   }
-
   return lines.join('\n')
 }
 
@@ -266,7 +263,6 @@ async function diffConventions(source: string): Promise<ConventionDiff> {
  */
 export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
   const {query, source, format = 'json', merge = false} = args
-
   switch (query) {
     case 'export': {
       const conventions = await loadConventions()

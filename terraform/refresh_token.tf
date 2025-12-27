@@ -8,32 +8,6 @@ resource "aws_iam_role" "RefreshToken" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "RefreshToken" {
-  # Better Auth session refresh requires GetItem/UpdateItem/Query on sessions
-  statement {
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:Query"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
-    ]
-  }
-}
-
-resource "aws_iam_policy" "RefreshToken" {
-  name   = local.refresh_token_function_name
-  policy = data.aws_iam_policy_document.RefreshToken.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "RefreshToken" {
-  role       = aws_iam_role.RefreshToken.name
-  policy_arn = aws_iam_policy.RefreshToken.arn
-}
-
 resource "aws_iam_role_policy_attachment" "RefreshTokenLogging" {
   role       = aws_iam_role.RefreshToken.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -74,7 +48,7 @@ resource "aws_lambda_function" "RefreshToken" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
-  depends_on       = [aws_iam_role_policy_attachment.RefreshToken]
+  depends_on       = [aws_iam_role_policy_attachment.RefreshTokenLogging]
   filename         = data.archive_file.RefreshToken.output_path
   source_code_hash = data.archive_file.RefreshToken.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -85,8 +59,7 @@ resource "aws_lambda_function" "RefreshToken" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME   = local.refresh_token_function_name
+      OTEL_SERVICE_NAME = local.refresh_token_function_name
     })
   }
 

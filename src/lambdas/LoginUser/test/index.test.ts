@@ -6,9 +6,9 @@ import {v4 as uuidv4} from 'uuid'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-// Mock Better Auth API
+// Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
+jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({getAuth: jest.fn(async () => authMock.auth)}))
 
 const {handler} = await import('./../src')
 

@@ -57,7 +57,6 @@ export const UserDevices = {
       go: async () => {
         const db = await getDrizzleClient()
         const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, key.userId), eq(userDevices.deviceId, key.deviceId))).limit(1)
-
         return {data: result.length > 0 ? result[0] : null}
       }
     }

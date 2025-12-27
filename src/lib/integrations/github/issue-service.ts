@@ -32,6 +32,7 @@ async function getOctokitInstance() {
   })
 }
 
+/** Creates GitHub issue when user deletion fails, for manual investigation. */
 export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
   const title = `User Deletion Failed: ${userId}`
   const body = renderGithubIssueTemplate('user-deletion-failure', {userId, devices, error, requestId})
@@ -51,6 +52,7 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
   }
 }
 
+/** Creates GitHub issue when video download fails permanently. */
 export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string) {
   const title = `Video Download Failed: ${fileId}`
   const body = renderGithubIssueTemplate('video-download-failure', {fileId, fileUrl, error, errorDetails})
@@ -70,6 +72,7 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
   }
 }
 
+/** Creates priority GitHub issue when YouTube cookies expire and need refresh. */
 export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
   const title = '🍪 YouTube Cookie Expiration Detected'
   const body = renderGithubIssueTemplate('cookie-expiration', {fileId, fileUrl, error})

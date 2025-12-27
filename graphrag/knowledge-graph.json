@@ -55,6 +55,15 @@
       }
     },
     {
+      "id": "lambda:MigrateDSQL",
+      "type": "Lambda",
+      "properties": {
+        "name": "MigrateDSQL",
+        "trigger": "Unknown",
+        "purpose": "Unknown"
+      }
+    },
+    {
       "id": "lambda:PruneDevices",
       "type": "Lambda",
       "properties": {

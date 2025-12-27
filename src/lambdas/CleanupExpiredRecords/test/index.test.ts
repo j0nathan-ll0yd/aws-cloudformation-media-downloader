@@ -1,23 +1,22 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import type {Context, ScheduledEvent} from 'aws-lambda'
+import type {ScheduledEvent} from 'aws-lambda'
+import {createMockContext} from '#util/jest-setup'
 
 // Mock Drizzle client with proper chaining
-const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; sessionId?: string; token?: string}>>>()
+const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
 const mockWhere = jest.fn(() => ({returning: mockReturning}))
 const mockDelete = jest.fn(() => ({where: mockWhere}))
 
 jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: jest.fn(async () => ({delete: mockDelete}))}))
 
 // Mock Drizzle schema - provide table references for delete()
+// Updated to use Better Auth aligned schema (id instead of sessionId, verification instead of verificationTokens)
 jest.unstable_mockModule('#lib/vendor/Drizzle/schema',
   () => ({
     fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
-    sessions: {sessionId: 'sessionId', expiresAt: 'expiresAt'},
-    verificationTokens: {token: 'token', expiresAt: 'expiresAt'}
+    sessions: {id: 'id', expiresAt: 'expiresAt'},
+    verification: {id: 'id', expiresAt: 'expiresAt'}
   }))
-
-// Mock logging
-jest.unstable_mockModule('#lib/system/logging', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
 
 // Mock middleware
 jest.unstable_mockModule('#lib/lambda/middleware/powertools',
@@ -50,20 +49,7 @@ const createScheduledEvent = (): ScheduledEvent => ({
   detail: {}
 })
 
-const createContext = (): Context => ({
-  callbackWaitsForEmptyEventLoop: true,
-  functionName: 'CleanupExpiredRecords',
-  functionVersion: '$LATEST',
-  invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:CleanupExpiredRecords',
-  memoryLimitInMB: '256',
-  awsRequestId: 'test-request-id',
-  logGroupName: '/aws/lambda/CleanupExpiredRecords',
-  logStreamName: '2024/01/01/[$LATEST]test',
-  getRemainingTimeInMillis: () => 30000,
-  done: () => {},
-  fail: () => {},
-  succeed: () => {}
-})
+const context = createMockContext({functionName: 'CleanupExpiredRecords'})
 
 describe('CleanupExpiredRecords Lambda', () => {
   beforeEach(() => {
@@ -73,20 +59,20 @@ describe('CleanupExpiredRecords Lambda', () => {
 
   it('should successfully cleanup all record types', async () => {
     mockReturning.mockResolvedValueOnce([{fileId: 'file1'}]) // fileDownloads
-      .mockResolvedValueOnce([{sessionId: 'session1'}, {sessionId: 'session2'}]) // sessions
-      .mockResolvedValueOnce([]) // verificationTokens
+      .mockResolvedValueOnce([{id: 'session1'}, {id: 'session2'}]) // sessions
+      .mockResolvedValueOnce([]) // verification
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result).toEqual({fileDownloadsDeleted: 1, sessionsDeleted: 2, verificationTokensDeleted: 0, errors: []})
   })
 
   it('should continue cleanup when one type fails', async () => {
     mockReturning.mockRejectedValueOnce(new Error('Database connection failed')) // fileDownloads fails
-      .mockResolvedValueOnce([{sessionId: 'session1'}]) // sessions succeeds
-      .mockResolvedValueOnce([{token: 'token1'}]) // verificationTokens succeeds
+      .mockResolvedValueOnce([{id: 'session1'}]) // sessions succeeds
+      .mockResolvedValueOnce([{id: 'verification1'}]) // verification succeeds
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.fileDownloadsDeleted).toBe(0)
     expect(result.sessionsDeleted).toBe(1)
@@ -98,11 +84,62 @@ describe('CleanupExpiredRecords Lambda', () => {
   it('should collect all errors when multiple cleanups fail', async () => {
     mockReturning.mockRejectedValueOnce(new Error('Error 1')).mockRejectedValueOnce(new Error('Error 2')).mockRejectedValueOnce(new Error('Error 3'))
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.errors).toHaveLength(3)
     expect(result.fileDownloadsDeleted).toBe(0)
     expect(result.sessionsDeleted).toBe(0)
     expect(result.verificationTokensDeleted).toBe(0)
+  })
+
+  it('should handle empty tables gracefully (no records to delete)', async () => {
+    // All tables return empty arrays - nothing to cleanup
+    mockReturning.mockResolvedValueOnce([]) // fileDownloads
+      .mockResolvedValueOnce([]) // sessions
+      .mockResolvedValueOnce([]) // verification
+
+    const result = await handler(createScheduledEvent(), context)
+
+    expect(result).toEqual({fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []})
+    // Should still call delete for each table
+    expect(mockDelete).toHaveBeenCalledTimes(3)
+  })
+
+  it('should handle large batch deletions correctly', async () => {
+    // Simulate 100 expired file downloads
+    const manyFileDownloads = Array.from({length: 100}, (_, i) => ({fileId: `file-${i}`}))
+    const manySessions = Array.from({length: 50}, (_, i) => ({id: `session-${i}`}))
+
+    mockReturning.mockResolvedValueOnce(manyFileDownloads).mockResolvedValueOnce(manySessions).mockResolvedValueOnce([])
+
+    const result = await handler(createScheduledEvent(), context)
+
+    expect(result.fileDownloadsDeleted).toBe(100)
+    expect(result.sessionsDeleted).toBe(50)
+    expect(result.verificationTokensDeleted).toBe(0)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('should call delete operations in correct order', async () => {
+    mockReturning.mockResolvedValue([])
+
+    await handler(createScheduledEvent(), context)
+
+    // Verify delete was called 3 times (once per table)
+    expect(mockDelete).toHaveBeenCalledTimes(3)
+    // Verify where was called for each delete
+    expect(mockWhere).toHaveBeenCalledTimes(3)
+    // Verify returning was called to get deleted record IDs
+    expect(mockReturning).toHaveBeenCalledTimes(3)
+  })
+
+  it('should handle non-Error objects in catch blocks', async () => {
+    // Some libraries throw strings or other non-Error objects
+    mockReturning.mockRejectedValueOnce('String error').mockResolvedValueOnce([]).mockResolvedValueOnce([])
+
+    const result = await handler(createScheduledEvent(), context)
+
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('String error')
   })
 })

@@ -2,7 +2,7 @@
  * Files Entity - Video metadata storage.
  *
  * Stores permanent metadata about downloaded media files.
- * Status values: Queued -> Downloading -> Downloaded | Failed
+ * Status values: Queued -\> Downloading -\> Downloaded | Failed
  *
  * This entity provides an ElectroDB-compatible interface over Drizzle ORM
  * to minimize changes to Lambda handlers during the migration.
@@ -59,7 +59,6 @@ export const Files = {
       go: async () => {
         const db = await getDrizzleClient()
         const [file] = await db.insert(files).values({...input, size: input.size ?? 0}).returning()
-
         return {data: file}
       }
     }
@@ -90,7 +89,6 @@ export const Files = {
         go: async () => {
           const db = await getDrizzleClient()
           const [updated] = await db.update(files).set(data).where(eq(files.fileId, key.fileId)).returning()
-
           return {data: updated}
         }
       })

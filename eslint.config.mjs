@@ -59,29 +59,23 @@ export default [
       // Documentation - TSDoc syntax validation
       'tsdoc/syntax': 'warn',
 
-      // Documentation - JSDoc enforcement (per Code-Comments.md conventions)
-      // Require JSDoc on exported functions (warn to allow gradual adoption)
+      // Documentation - JSDoc enforcement
+      // TypeScript provides type information, so we only require a brief description block
+      // for exported functions. No @param/@returns tags required - types are the docs.
       'jsdoc/require-jsdoc': ['warn', {
         publicOnly: true,
-        require: {FunctionDeclaration: true, MethodDefinition: true, ArrowFunctionExpression: false},
+        require: {FunctionDeclaration: true, MethodDefinition: false, ArrowFunctionExpression: false},
         contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
       }],
-      // Require @param tags for function parameters (warn for gradual adoption)
-      'jsdoc/require-param': 'warn',
-      // Require @param descriptions (not just names)
-      'jsdoc/require-param-description': 'warn',
-      // Enforce hyphen before @param description (TSDoc standard)
+      // Turned off: TypeScript types serve as documentation
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-returns-description': 'off',
+      // If you DO write JSDoc, enforce consistency
       'jsdoc/require-hyphen-before-param-description': ['warn', 'always'],
-      // Validate @param names match function parameters (warn for gradual adoption)
-      // Note: Destructured params may not match exactly - use checkDestructured: false
       'jsdoc/check-param-names': ['warn', {checkDestructured: false}],
-      // Require @returns tag for functions with return values
-      'jsdoc/require-returns': 'warn',
-      // Require @returns description
-      'jsdoc/require-returns-description': 'warn',
-      // Don't allow types in JSDoc (TypeScript provides types)
       'jsdoc/no-types': 'error',
-      // Check that @returns is not used for void functions
       'jsdoc/require-returns-check': 'warn',
       // NOTE: Formatting rules (quotes, semi, comma-dangle, max-len) removed.
       // dprint handles all formatting via dprint.json
@@ -110,16 +104,16 @@ export default [
       'jsdoc/require-returns-description': 'off'
     }
   },
-  // Stricter JSDoc for Lambda handlers (required per Code-Comments.md)
+  // Lambda handlers require a JSDoc description block (purpose documentation)
+  // No @param/@returns tags required - TypeScript types are sufficient
   {
     files: ['src/lambdas/*/src/index.ts'],
     rules: {
       'jsdoc/require-jsdoc': ['error', {
         publicOnly: true,
-        require: {FunctionDeclaration: true, MethodDefinition: true, ArrowFunctionExpression: false},
+        require: {FunctionDeclaration: true, MethodDefinition: false, ArrowFunctionExpression: false},
         contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
-      }],
-      'jsdoc/require-returns': 'error'
+      }]
     }
   }
 ]

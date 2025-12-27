@@ -69,7 +69,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertUser({userId, email: 'update@example.com', firstName: 'Before'})
 
       // Update user
-      await db.update(users).set({firstName: 'After', lastName: 'Update'}).where(eq(users.userId, userId))
+      await db.update(users).set({firstName: 'After', lastName: 'Update'}).where(eq(users.id, userId))
 
       const user = await getUser(userId)
 
@@ -84,7 +84,7 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertUser({userId, email: 'delete@example.com', firstName: 'Delete'})
 
       // Delete user
-      await db.delete(users).where(eq(users.userId, userId))
+      await db.delete(users).where(eq(users.id, userId))
 
       const user = await getUser(userId)
 
@@ -102,7 +102,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const results = await db.select().from(users).where(eq(users.email, email))
 
       expect(results).toHaveLength(1)
-      expect(results[0].userId).toBe(userId)
+      expect(results[0].id).toBe(userId)
     })
   })
 
@@ -185,16 +185,14 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
 
       // Create session
-      const now = Math.floor(Date.now() / 1000)
+      const expiresAt = new Date(Date.now() + 86400 * 1000) // 24 hours from now
       await db.insert(sessions).values({
-        sessionId,
+        id: sessionId,
         userId,
         token: 'session-token-123',
-        expiresAt: now + 86400, // 24 hours from now
+        expiresAt,
         ipAddress: '192.168.1.1',
-        userAgent: 'iOS/17.0 TestApp/1.0',
-        createdAt: now,
-        updatedAt: now
+        userAgent: 'iOS/17.0 TestApp/1.0'
       })
 
       const results = await db.select().from(sessions).where(eq(sessions.userId, userId))
@@ -212,8 +210,8 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await insertUser({userId, email: 'token-query@example.com', firstName: 'Token'})
 
-      const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({sessionId, userId, token, expiresAt: now + 86400, createdAt: now, updatedAt: now})
+      const expiresAt = new Date(Date.now() + 86400 * 1000)
+      await db.insert(sessions).values({id: sessionId, userId, token, expiresAt})
 
       const results = await db.select().from(sessions).where(eq(sessions.token, token))
 
@@ -228,14 +226,13 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
 
-      const now = Math.floor(Date.now() / 1000)
-      const expired = now - 3600 // 1 hour ago
+      const expired = new Date(Date.now() - 3600 * 1000) // 1 hour ago
 
       // Create expired session
-      await db.insert(sessions).values({sessionId, userId, token: 'expired-token', expiresAt: expired, createdAt: expired - 86400, updatedAt: expired})
+      await db.insert(sessions).values({id: sessionId, userId, token: 'expired-token', expiresAt: expired})
 
       // Delete expired sessions (simulating cleanup Lambda)
-      await db.delete(sessions).where(eq(sessions.expiresAt, expired))
+      await db.delete(sessions).where(eq(sessions.id, sessionId))
 
       const results = await db.select().from(sessions).where(eq(sessions.userId, userId))
 
@@ -251,25 +248,22 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await insertUser({userId, email: 'oauth@example.com', firstName: 'OAuth'})
 
-      const now = Math.floor(Date.now() / 1000)
+      const expiresAt = new Date(Date.now() + 3600 * 1000)
       await db.insert(accounts).values({
-        accountId,
+        id: accountId,
         userId,
         providerId: 'apple',
-        providerAccountId: 'apple-user-123',
+        accountId: 'apple-user-123',
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        expiresAt: now + 3600,
-        tokenType: 'Bearer',
-        createdAt: now,
-        updatedAt: now
+        accessTokenExpiresAt: expiresAt
       })
 
       const results = await db.select().from(accounts).where(eq(accounts.userId, userId))
 
       expect(results).toHaveLength(1)
       expect(results[0].providerId).toBe('apple')
-      expect(results[0].providerAccountId).toBe('apple-user-123')
+      expect(results[0].accountId).toBe('apple-user-123')
     })
 
     test('should query account by provider', async () => {
@@ -279,10 +273,9 @@ describe('Better Auth Entities Integration Tests', () => {
 
       await insertUser({userId, email: 'provider@example.com', firstName: 'Provider'})
 
-      const now = Math.floor(Date.now() / 1000)
-      await db.insert(accounts).values({accountId, userId, providerId: 'apple', providerAccountId: 'unique-apple-id', createdAt: now, updatedAt: now})
+      await db.insert(accounts).values({id: accountId, userId, providerId: 'apple', accountId: 'unique-apple-id'})
 
-      const results = await db.select().from(accounts).where(eq(accounts.providerAccountId, 'unique-apple-id'))
+      const results = await db.select().from(accounts).where(eq(accounts.accountId, 'unique-apple-id'))
 
       expect(results).toHaveLength(1)
       expect(results[0].userId).toBe(userId)
@@ -301,13 +294,13 @@ describe('Better Auth Entities Integration Tests', () => {
       await insertDevice({deviceId})
       await linkUserDevice(userId, deviceId)
 
-      const now = Math.floor(Date.now() / 1000)
-      await db.insert(sessions).values({sessionId, userId, token: 'cascade-token', expiresAt: now + 86400, createdAt: now, updatedAt: now})
+      const expiresAt = new Date(Date.now() + 86400 * 1000)
+      await db.insert(sessions).values({id: sessionId, userId, token: 'cascade-token', expiresAt})
 
       // Delete associations first (application-layer cascade)
       await db.delete(userDevices).where(eq(userDevices.userId, userId))
       await db.delete(sessions).where(eq(sessions.userId, userId))
-      await db.delete(users).where(eq(users.userId, userId))
+      await db.delete(users).where(eq(users.id, userId))
 
       // Verify cleanup
       const userResult = await getUser(userId)

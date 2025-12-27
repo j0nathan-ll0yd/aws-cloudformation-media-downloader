@@ -95,6 +95,67 @@ describe('#UserDelete', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
+  test('should delete user with no devices successfully', async () => {
+    // User has no devices - should still complete deletion
+    getUserDevicesMock.mockReturnValue([])
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(204)
+  })
+
+  test('should delete user files during cascade deletion', async () => {
+    getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+    // User has 3 files to delete
+    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
+      data: [
+        {userId: fakeUserId, fileId: 'file-1'},
+        {userId: fakeUserId, fileId: 'file-2'},
+        {userId: fakeUserId, fileId: 'file-3'}
+      ]
+    })
+    const output = await handler(event, context)
+    expect(output.statusCode).toEqual(204)
+    expect(userFilesMock.mocks.delete).toHaveBeenCalled()
+  })
+
+  describe('#PartialFailures', () => {
+    test('should return 207 when UserFiles deletion fails', async () => {
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+      // UserFiles query succeeds, but delete fails
+      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: [{userId: fakeUserId, fileId: 'file-1'}]})
+      userFilesMock.mocks.delete.mockRejectedValue(new Error('UserFiles deletion failed'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(207)
+      const body = JSON.parse(output.body)
+      expect(body.body.message).toContain('Partial deletion')
+      expect(body.body.failedOperations).toBeGreaterThan(0)
+    })
+
+    test('should return 207 when device deletion fails', async () => {
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+      // Relations delete successfully, but device deletion fails
+      deleteDeviceMock.mockRejectedValue(new Error('Device deletion failed'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(207)
+      const body = JSON.parse(output.body)
+      expect(body.body.message).toContain('devices could not be removed')
+    })
+
+    test('should not delete user when relation deletion fails', async () => {
+      getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
+      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+      // UserDevices deletion fails
+      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [{userId: fakeUserId, deviceId: 'device-1'}]})
+      userDevicesMock.mocks.delete.mockRejectedValue(new Error('UserDevices deletion failed'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(207)
+      // User should NOT be deleted when children fail
+      expect(usersMock.mocks.delete).not.toHaveBeenCalled()
+    })
+  })
+
   describe('#AWSFailure', () => {
     test('should return 500 error when user device retrieval fails', async () => {
       getUserDevicesMock.mockReturnValue(undefined)

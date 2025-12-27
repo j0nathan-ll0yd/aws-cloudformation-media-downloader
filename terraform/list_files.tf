@@ -8,34 +8,6 @@ resource "aws_iam_role" "ListFiles" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "ListFiles" {
-  # Query UserCollection to get user's file associations
-  # Query and BatchGet base table to retrieve file details
-  # TODO: Remove DynamoDB permissions after Aurora DSQL migration complete
-  statement {
-    actions = [
-      "dynamodb:Query",
-      "dynamodb:BatchGetItem",
-      "dynamodb:GetItem"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
-    ]
-  }
-}
-
-resource "aws_iam_policy" "ListFiles" {
-  name   = local.list_files_function_name
-  policy = data.aws_iam_policy_document.ListFiles.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "ListFiles" {
-  role       = aws_iam_role.ListFiles.name
-  policy_arn = aws_iam_policy.ListFiles.arn
-}
-
 resource "aws_iam_role_policy_attachment" "ListFilesLogging" {
   role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -77,7 +49,7 @@ resource "aws_lambda_function" "ListFiles" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   memory_size      = 512
-  depends_on       = [aws_iam_role_policy_attachment.ListFiles]
+  depends_on       = [aws_iam_role_policy_attachment.ListFilesLogging]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -88,7 +60,6 @@ resource "aws_lambda_function" "ListFiles" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
       DEFAULT_FILE_SIZE         = 436743
       DEFAULT_FILE_NAME         = aws_s3_object.DefaultFile.key
       DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"

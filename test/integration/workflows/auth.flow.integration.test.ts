@@ -45,7 +45,8 @@ const betterAuthConfigPath = resolve(__dirname, '../../../src/lib/vendor/BetterA
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const signInSocialMock = jest.fn<any>()
 
-jest.unstable_mockModule(betterAuthConfigPath, () => ({auth: {api: {signInSocial: signInSocialMock}}}))
+// getAuth is now async - return a Promise resolving to the auth object
+jest.unstable_mockModule(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
 
 // Mock Users entity for RegisterUser name update
 const usersModulePath = resolve(__dirname, '../../../src/entities/Users')
@@ -211,8 +212,8 @@ describe('Auth Flow Integration Tests', () => {
       expect(response.body.token).toBe(token)
       expect(response.body.userId).toBe(userId)
 
-      // Verify name update was called for new user
-      expect(usersMock.entity.update).toHaveBeenCalledWith({userId})
+      // Verify name update was called for new user (uses 'id' per Better Auth schema)
+      expect(usersMock.entity.update).toHaveBeenCalledWith({id: userId})
     })
 
     test('should not update name for existing user', async () => {

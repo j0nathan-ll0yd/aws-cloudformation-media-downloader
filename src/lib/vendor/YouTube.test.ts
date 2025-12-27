@@ -2,15 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
 
-// Mock yt-dlp-wrap
-const mockGetVideoInfo = jest.fn()
-class MockYTDlpWrap {
-  constructor(public binaryPath: string) {}
-  getVideoInfo = mockGetVideoInfo
-}
-jest.unstable_mockModule('yt-dlp-wrap', () => ({default: MockYTDlpWrap}))
-
-// Mock child_process - only yt-dlp spawning now (no ffmpeg)
+// Mock child_process for yt-dlp spawning
 const mockSpawn = jest.fn()
 jest.unstable_mockModule('child_process', () => ({spawn: mockSpawn}))
 

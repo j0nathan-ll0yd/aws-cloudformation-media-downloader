@@ -246,3 +246,20 @@ export interface CustomCloudFrontRequest extends CloudFrontRequest {
   /** Custom origin configuration for routing */
   origin: CustomCloudFrontOrigin
 }
+
+// ============================================================================
+// Migration Types
+// ============================================================================
+
+/**
+ * Result of running database migrations.
+ * Returned by MigrateDSQL Lambda to indicate migration status.
+ */
+export interface MigrationResult {
+  /** Migration versions that were applied in this run */
+  applied: string[]
+  /** Migration versions that were skipped (already applied) */
+  skipped: string[]
+  /** Error messages for failed migrations */
+  errors: string[]
+}

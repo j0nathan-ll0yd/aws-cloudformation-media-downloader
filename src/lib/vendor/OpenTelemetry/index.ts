@@ -147,14 +147,12 @@ export function withTracing<TEvent = unknown, TResult = unknown>(
 ) {
   return async (event: TEvent, ctx: Context): Promise<TResult> => {
     let traceId = ctx.awsRequestId
-
     if (isTracingEnabled()) {
       const activeSpan = trace.getActiveSpan()
       if (activeSpan) {
         traceId = activeSpan.spanContext().traceId
       }
     }
-
     return handler(event, ctx, {traceId})
   }
 }

@@ -4,16 +4,21 @@
  * This module defines all database tables for the MediaDownloader service.
  * All tables are normalized (no JSONB, as Aurora DSQL doesn't support it).
  *
+ * Better Auth Integration:
+ * - Tables: users, sessions, accounts, verification (Better Auth core tables)
+ * - Primary keys: 'id' field (Better Auth convention)
+ * - Timestamps: All use TIMESTAMP WITH TIME ZONE (Better Auth expects Date objects)
+ *
  * Key changes from ElectroDB/DynamoDB:
  * - Users.identityProviders embedded map -> separate identity_providers table
  * - GSI patterns -> PostgreSQL indexes
  * - Single-table design -> normalized relational tables
  * - TTL attribute -> scheduled cleanup Lambda
  */
-import {boolean, index, integer, pgTable, primaryKey, text, timestamp, uuid} from 'drizzle-orm/pg-core'
+import {boolean, index, integer, pgTable, primaryKey, text, timestamp, unique, uuid} from 'drizzle-orm/pg-core'
 
 /**
- * Users table - Core user account management.
+ * Users table - Core user account management (Better Auth).
  *
  * Manages user accounts with Sign In With Apple integration.
  * Identity providers are now in a separate normalized table.
@@ -23,10 +28,12 @@ import {boolean, index, integer, pgTable, primaryKey, text, timestamp, uuid} fro
  * - usersAppleDeviceIdx: Lookup by Apple device ID (token refresh)
  */
 export const users = pgTable('users', {
-  userId: uuid('user_id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull(),
   emailVerified: boolean('email_verified').notNull().default(false),
-  firstName: text('first_name').notNull(),
+  name: text('name'),
+  image: text('image'),
+  firstName: text('first_name'),
   lastName: text('last_name'),
   appleDeviceId: text('apple_device_id'),
   createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
@@ -100,14 +107,14 @@ export const fileDownloads = pgTable('file_downloads', {
   status: text('status').notNull().default('Pending'),
   retryCount: integer('retry_count').notNull().default(0),
   maxRetries: integer('max_retries').notNull().default(5),
-  retryAfter: integer('retry_after'),
+  retryAfter: timestamp('retry_after', {withTimezone: true}),
   errorCategory: text('error_category'),
   lastError: text('last_error'),
-  scheduledReleaseTime: integer('scheduled_release_time'),
+  scheduledReleaseTime: timestamp('scheduled_release_time', {withTimezone: true}),
   sourceUrl: text('source_url'),
   correlationId: text('correlation_id'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull()
+  createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
   index('file_downloads_status_idx').on(table.status, table.retryAfter)
 ])
@@ -138,16 +145,16 @@ export const devices = pgTable('devices', {
  * - sessionsTokenIdx: Validate session token (request auth)
  */
 export const sessions = pgTable('sessions', {
-  sessionId: uuid('session_id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
-  expiresAt: integer('expires_at').notNull(),
   token: text('token').notNull(),
+  expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
-  deviceId: text('device_id'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull()
+  createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
+  unique('sessions_token_unique').on(table.token),
   index('sessions_user_idx').on(table.userId),
   index('sessions_token_idx').on(table.token)
 ])
@@ -159,42 +166,45 @@ export const sessions = pgTable('sessions', {
  *
  * Indexes:
  * - accountsUserIdx: Get all accounts for a user
- * - accountsProviderIdx: Lookup by provider + providerAccountId
+ * - accountsProviderIdx: Lookup by provider + accountId
  */
 export const accounts = pgTable('accounts', {
-  accountId: uuid('account_id').primaryKey().defaultRandom(),
+  id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
+  accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
-  providerAccountId: text('provider_account_id').notNull(),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
-  expiresAt: integer('expires_at'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at', {withTimezone: true}),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at', {withTimezone: true}),
   scope: text('scope'),
-  tokenType: text('token_type'),
   idToken: text('id_token'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull()
+  password: text('password'),
+  createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
   index('accounts_user_idx').on(table.userId),
-  index('accounts_provider_idx').on(table.providerId, table.providerAccountId)
+  index('accounts_provider_idx').on(table.providerId, table.accountId)
 ])
 
 /**
- * VerificationTokens table - Better Auth verification tokens.
+ * Verification table - Better Auth verification tokens.
  *
  * Stores email verification and password reset tokens.
  * Expired tokens cleaned up by CleanupExpiredRecords Lambda.
  *
  * Indexes:
- * - verificationTokensIdentifierIdx: Lookup by identifier
+ * - verificationIdentifierIdx: Lookup by identifier
  */
-export const verificationTokens = pgTable('verification_tokens', {
-  token: text('token').primaryKey(),
+export const verification = pgTable('verification', {
+  id: uuid('id').primaryKey().defaultRandom(),
   identifier: text('identifier').notNull(),
-  expiresAt: integer('expires_at').notNull(),
-  createdAt: integer('created_at').notNull()
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
+  createdAt: timestamp('created_at', {withTimezone: true}).defaultNow(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow()
 }, (table) => [
-  index('verification_tokens_identifier_idx').on(table.identifier)
+  index('verification_identifier_idx').on(table.identifier)
 ])
 
 /**

@@ -77,6 +77,18 @@ async function build() {
     // and OPENTELEMETRY_COLLECTOR_CONFIG_URI env var can be deleted from terraform/main.tf
     fs.copyFileSync('config/otel-collector.yaml', `${lambdaDir}/collector.yaml`)
 
+    // Copy migration SQL files for MigrateDSQL Lambda
+    // These files are read at runtime to apply database schema changes
+    if (functionName === 'MigrateDSQL') {
+      const migrationsDir = `${lambdaDir}/migrations`
+      fs.mkdirSync(migrationsDir, {recursive: true})
+      const migrationFiles = fs.readdirSync('migrations').filter((f: string) => f.endsWith('.sql'))
+      for (const file of migrationFiles) {
+        fs.copyFileSync(`migrations/${file}`, `${migrationsDir}/${file}`)
+      }
+      console.log(`    Copied ${migrationFiles.length} migration files`)
+    }
+
     // Write metafile for bundle analysis
     if (result.metafile && isAnalyze) {
       fs.writeFileSync(`build/reports/${functionName}-meta.json`, JSON.stringify(result.metafile, null, 2))

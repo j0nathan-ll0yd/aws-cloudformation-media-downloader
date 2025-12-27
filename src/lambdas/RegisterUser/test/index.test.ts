@@ -5,9 +5,9 @@ import {createEntityMock} from '#test/helpers/entity-mock'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
-// Mock Better Auth API
+// Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({auth: authMock.auth}))
+jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({getAuth: jest.fn(async () => authMock.auth)}))
 
 // Mock Users entity for name updates
 const usersMock = createEntityMock()

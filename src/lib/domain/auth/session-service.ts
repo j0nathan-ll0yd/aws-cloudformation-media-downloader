@@ -19,7 +19,6 @@ import type {SessionPayload} from '#types/util'
  */
 export async function validateSessionToken(token: string): Promise<SessionPayload> {
   logDebug('validateSessionToken: validating token')
-
   try {
     // Use GSI for O(1) lookup instead of table scan
     const result = await Sessions.query.byToken({token}).go()
@@ -31,16 +30,17 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
 
     const session = result.data[0]
 
-    if (session.expiresAt < Date.now()) {
-      logError('validateSessionToken: session expired', {expiresAt: session.expiresAt, now: Date.now()})
+    // Compare Date objects - expiresAt is now a TIMESTAMP WITH TIME ZONE
+    if (session.expiresAt < new Date()) {
+      logError('validateSessionToken: session expired', {expiresAt: session.expiresAt.toISOString(), now: new Date().toISOString()})
       throw new UnauthorizedError('Session expired')
     }
 
-    await Sessions.update({sessionId: session.sessionId}).set({updatedAt: Date.now()}).go()
+    await Sessions.update({id: session.id}).set({updatedAt: new Date()}).go()
 
-    logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.sessionId})
+    logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.id})
 
-    return {userId: session.userId, sessionId: session.sessionId, expiresAt: session.expiresAt}
+    return {userId: session.userId, sessionId: session.id, expiresAt: session.expiresAt.getTime()}
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       throw error
@@ -54,16 +54,16 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
  * Refreshes a session by extending its expiration.
  *
  * @param sessionId - The session ID to refresh
- * @returns New expiration timestamp
+ * @returns New expiration timestamp (milliseconds since epoch)
  */
 export async function refreshSession(sessionId: string): Promise<{expiresAt: number}> {
   logDebug('refreshSession: refreshing session', {sessionId})
 
-  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
-  await Sessions.update({sessionId}).set({expiresAt, updatedAt: Date.now()}).go()
+  await Sessions.update({id: sessionId}).set({expiresAt, updatedAt: new Date()}).go()
 
-  logDebug('refreshSession: session refreshed', {expiresAt})
+  logDebug('refreshSession: session refreshed', {expiresAt: expiresAt.toISOString()})
 
-  return {expiresAt}
+  return {expiresAt: expiresAt.getTime()}
 }

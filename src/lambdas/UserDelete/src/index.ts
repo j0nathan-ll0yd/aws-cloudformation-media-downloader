@@ -40,7 +40,7 @@ async function deleteUserDevices(userId: string): Promise<void> {
 
 async function deleteUser(userId: string): Promise<void> {
   logDebug('deleteUser <=', userId)
-  const response = await Users.delete({userId}).go()
+  const response = await Users.delete({id: userId}).go()
   logDebug('deleteUser =>', response)
 }
 

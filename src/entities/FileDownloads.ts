@@ -22,7 +22,7 @@ import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 export { DownloadStatus } from '#types/enums'
 
 export type FileDownloadItem = InferSelectModel<typeof fileDownloads>
-export type CreateFileDownloadInput = Omit<InferInsertModel<typeof fileDownloads>, 'createdAt' | 'updatedAt'> & {createdAt?: number; updatedAt?: number}
+export type CreateFileDownloadInput = Omit<InferInsertModel<typeof fileDownloads>, 'createdAt' | 'updatedAt'> & {createdAt?: Date; updatedAt?: Date}
 export type UpdateFileDownloadInput = Partial<Omit<InferInsertModel<typeof fileDownloads>, 'fileId' | 'createdAt'>>
 
 export const FileDownloads = {
@@ -31,7 +31,6 @@ export const FileDownloads = {
       go: async () => {
         const db = await getDrizzleClient()
         const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, key.fileId)).limit(1)
-
         return {data: result.length > 0 ? result[0] : null}
       }
     }
@@ -41,7 +40,7 @@ export const FileDownloads = {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const now = Math.floor(Date.now() / 1000)
+        const now = new Date()
         const [download] = await db.insert(fileDownloads).values({...input, createdAt: input.createdAt ?? now, updatedAt: input.updatedAt ?? now})
           .returning()
 
@@ -55,7 +54,7 @@ export const FileDownloads = {
       set: (data: UpdateFileDownloadInput) => ({
         go: async () => {
           const db = await getDrizzleClient()
-          const now = Math.floor(Date.now() / 1000)
+          const now = new Date()
           const [updated] = await db.update(fileDownloads).set({...data, updatedAt: now}).where(eq(fileDownloads.fileId, key.fileId)).returning()
 
           return {data: updated}
@@ -84,14 +83,12 @@ export const FileDownloads = {
         go: async () => {
           const db = await getDrizzleClient()
           const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
-
           return {data: result}
         },
         where: () => ({
           go: async () => {
             const db = await getDrizzleClient()
             const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
-
             return {data: result}
           }
         })

@@ -17,7 +17,7 @@
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {Users} from '#entities/Users'
-import {auth} from '#lib/vendor/BetterAuth/config'
+import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {userRegistrationRequestSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
@@ -58,6 +58,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const ipAddress = event.requestContext?.identity?.sourceIp
   const userAgent = event.headers?.['User-Agent'] || ''
 
+  const auth = await getAuth()
   const rawResult = await auth.api.signInSocial({
     headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
     body: {
@@ -91,7 +92,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
   if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-    await Users.update({userId: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()
+    await Users.update({id: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()
 
     logInfo('RegisterUser: Updated new user with name from iOS app', {
       userId: result.user.id,

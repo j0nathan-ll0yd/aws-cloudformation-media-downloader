@@ -45,7 +45,6 @@ function getBaseConfig() {
   if (isLocalStackMode()) {
     return {endpoint: LOCALSTACK_ENDPOINT, region: AWS_REGION, credentials: {accessKeyId: 'test', secretAccessKey: 'test'}}
   }
-
   return {region: AWS_REGION}
 }
 
@@ -60,7 +59,6 @@ export function createS3Client(): S3Client {
     // forcePathStyle required for LocalStack S3
     forcePathStyle: isLocalStackMode()
   }
-
   return new S3Client(config)
 }
 

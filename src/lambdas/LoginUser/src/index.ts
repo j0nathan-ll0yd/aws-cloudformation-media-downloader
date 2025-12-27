@@ -10,7 +10,7 @@
  * 3. Better Auth handles user lookup, session creation, and account linking
  */
 
-import {auth} from '#lib/vendor/BetterAuth/config'
+import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {userLoginRequestSchema} from '#types/api-schema'
 import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
@@ -49,6 +49,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   const ipAddress = event.requestContext?.identity?.sourceIp
   const userAgent = event.headers?.['User-Agent'] || ''
 
+  const auth = await getAuth()
   const rawResult = await auth.api.signInSocial({
     headers: {'user-agent': userAgent, 'x-forwarded-for': ipAddress || ''},
     body: {

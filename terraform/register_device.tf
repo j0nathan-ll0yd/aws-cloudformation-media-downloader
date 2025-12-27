@@ -21,19 +21,6 @@ data "aws_iam_policy_document" "RegisterDevice" {
       length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
     ])
   }
-  # Query UserCollection to check existing devices
-  # PutItem on base table to create UserDevice and Device records
-  statement {
-    actions = [
-      "dynamodb:Query",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
-    ]
-  }
 }
 
 resource "aws_iam_policy" "RegisterDevice" {
@@ -100,7 +87,6 @@ resource "aws_lambda_function" "RegisterDevice" {
     variables = merge(local.common_lambda_env, {
       PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.PushNotifications.arn
-      DYNAMODB_TABLE_NAME         = aws_dynamodb_table.MediaDownloader.name
       OTEL_SERVICE_NAME           = local.register_device_function_name
     })
   }
