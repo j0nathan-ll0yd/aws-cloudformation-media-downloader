@@ -7,10 +7,15 @@
  * This entity provides an ElectroDB-compatible interface over Drizzle ORM
  * to minimize changes to Lambda handlers during the migration.
  *
+ * Schema aligned with Better Auth official adapter expectations:
+ * - Primary key: 'id' (UUID)
+ * - Provider account ID: 'accountId' (Better Auth convention)
+ * - Timestamps: Date objects (TIMESTAMP WITH TIME ZONE)
+ *
  * Access Patterns:
- * - Primary: Get account by accountId
+ * - Primary: Get account by id
  * - byUser: Get all accounts for a user
- * - byProvider: Lookup by providerId + providerAccountId
+ * - byProvider: Lookup by providerId + accountId
  *
  * @see LoginUser Lambda for account lookup
  * @see RegisterUser Lambda for account creation
@@ -21,20 +26,19 @@ import {accounts} from '#lib/vendor/Drizzle/schema'
 import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
 export type AccountItem = InferSelectModel<typeof accounts>
-export type CreateAccountInput = Omit<InferInsertModel<typeof accounts>, 'accountId' | 'createdAt' | 'updatedAt'> & {
-  accountId?: string
-  createdAt?: number
-  updatedAt?: number
+export type CreateAccountInput = Omit<InferInsertModel<typeof accounts>, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
-export type UpdateAccountInput = Partial<Omit<InferInsertModel<typeof accounts>, 'accountId' | 'createdAt'>>
+export type UpdateAccountInput = Partial<Omit<InferInsertModel<typeof accounts>, 'id' | 'createdAt'>>
 
 export const Accounts = {
-  get(key: {accountId: string}): {go: () => Promise<{data: AccountItem | null}>} {
+  get(key: {id: string}): {go: () => Promise<{data: AccountItem | null}>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const result = await db.select().from(accounts).where(eq(accounts.accountId, key.accountId)).limit(1)
-
+        const result = await db.select().from(accounts).where(eq(accounts.id, key.id)).limit(1)
         return {data: result.length > 0 ? result[0] : null}
       }
     }
@@ -44,7 +48,7 @@ export const Accounts = {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const now = Math.floor(Date.now() / 1000)
+        const now = new Date()
         const [account] = await db.insert(accounts).values({...input, createdAt: input.createdAt ?? now, updatedAt: input.updatedAt ?? now}).returning()
 
         return {data: account}
@@ -52,13 +56,13 @@ export const Accounts = {
     }
   },
 
-  update(key: {accountId: string}): {set: (data: UpdateAccountInput) => {go: () => Promise<{data: AccountItem}>}} {
+  update(key: {id: string}): {set: (data: UpdateAccountInput) => {go: () => Promise<{data: AccountItem}>}} {
     return {
       set: (data: UpdateAccountInput) => ({
         go: async () => {
           const db = await getDrizzleClient()
-          const now = Math.floor(Date.now() / 1000)
-          const [updated] = await db.update(accounts).set({...data, updatedAt: now}).where(eq(accounts.accountId, key.accountId)).returning()
+          const now = new Date()
+          const [updated] = await db.update(accounts).set({...data, updatedAt: now}).where(eq(accounts.id, key.id)).returning()
 
           return {data: updated}
         }
@@ -66,11 +70,11 @@ export const Accounts = {
     }
   },
 
-  delete(key: {accountId: string}): {go: () => Promise<void>} {
+  delete(key: {id: string}): {go: () => Promise<void>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        await db.delete(accounts).where(eq(accounts.accountId, key.accountId))
+        await db.delete(accounts).where(eq(accounts.id, key.id))
       }
     }
   },
@@ -86,14 +90,13 @@ export const Accounts = {
       }
     },
 
-    byProvider(key: {providerId: string; providerAccountId: string}): {go: () => Promise<{data: AccountItem[]}>} {
+    byProvider(key: {providerId: string; accountId: string}): {go: () => Promise<{data: AccountItem[]}>} {
       return {
         go: async () => {
           const db = await getDrizzleClient()
           const result = await db.select().from(accounts).where(
-            and(eq(accounts.providerId, key.providerId), eq(accounts.providerAccountId, key.providerAccountId))
+            and(eq(accounts.providerId, key.providerId), eq(accounts.accountId, key.accountId))
           )
-
           return {data: result}
         }
       }

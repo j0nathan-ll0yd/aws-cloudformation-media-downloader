@@ -242,7 +242,6 @@ async function loadMetadata(): Promise<Metadata> {
  */
 function extractAwsServices(deps: string[], awsServices: ServiceMetadata[]): string[] {
   const services: Set<string> = new Set()
-
   for (const dep of deps) {
     // Match src/lib/vendor/AWS/* patterns
     const awsMatch = dep.match(/src\/lib\/vendor\/AWS\/(\w+)/)
@@ -255,7 +254,6 @@ function extractAwsServices(deps: string[], awsServices: ServiceMetadata[]): str
       }
     }
   }
-
   return Array.from(services)
 }
 
@@ -264,7 +262,6 @@ function extractAwsServices(deps: string[], awsServices: ServiceMetadata[]): str
  */
 function extractExternalServices(deps: string[], externalServices: ServiceMetadata[]): string[] {
   const services: Set<string> = new Set()
-
   for (const dep of deps) {
     // Match src/lib/vendor/* patterns (non-AWS)
     const vendorMatch = dep.match(/src\/lib\/vendor\/(\w+)/)
@@ -286,7 +283,6 @@ function extractExternalServices(deps: string[], externalServices: ServiceMetada
       }
     }
   }
-
   return Array.from(services)
 }
 
@@ -295,7 +291,6 @@ function extractExternalServices(deps: string[], externalServices: ServiceMetada
  */
 function extractEntities(deps: string[], knownEntities: string[]): string[] {
   const entities: Set<string> = new Set()
-
   for (const dep of deps) {
     const entityMatch = dep.match(/src\/entities\/(\w+)/)
     if (entityMatch) {
@@ -305,7 +300,6 @@ function extractEntities(deps: string[], knownEntities: string[]): string[] {
       }
     }
   }
-
   return Array.from(entities)
 }
 

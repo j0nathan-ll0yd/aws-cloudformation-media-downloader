@@ -33,10 +33,9 @@ export class ForeignKeyViolationError extends Error {
  */
 export async function assertUserExists(userId: string): Promise<void> {
   const db = await getDrizzleClient()
-  const result = await db.select({userId: users.userId}).from(users).where(eq(users.userId, userId)).limit(1)
-
+  const result = await db.select({id: users.id}).from(users).where(eq(users.id, userId)).limit(1)
   if (result.length === 0) {
-    throw new ForeignKeyViolationError('users', 'userId', userId)
+    throw new ForeignKeyViolationError('users', 'id', userId)
   }
 }
 
@@ -50,7 +49,6 @@ export async function assertUserExists(userId: string): Promise<void> {
 export async function assertFileExists(fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   const result = await db.select({fileId: files.fileId}).from(files).where(eq(files.fileId, fileId)).limit(1)
-
   if (result.length === 0) {
     throw new ForeignKeyViolationError('files', 'fileId', fileId)
   }
@@ -66,7 +64,6 @@ export async function assertFileExists(fileId: string): Promise<void> {
 export async function assertDeviceExists(deviceId: string): Promise<void> {
   const db = await getDrizzleClient()
   const result = await db.select({deviceId: devices.deviceId}).from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
-
   if (result.length === 0) {
     throw new ForeignKeyViolationError('devices', 'deviceId', deviceId)
   }
@@ -86,12 +83,12 @@ export async function assertUsersExist(userIds: string[]): Promise<void> {
 
   const db = await getDrizzleClient()
   const {inArray} = await import('drizzle-orm')
-  const result = await db.select({userId: users.userId}).from(users).where(inArray(users.userId, userIds))
+  const result = await db.select({id: users.id}).from(users).where(inArray(users.id, userIds))
 
-  const foundIds = new Set(result.map((r) => r.userId))
+  const foundIds = new Set(result.map((r) => r.id))
   for (const userId of userIds) {
     if (!foundIds.has(userId)) {
-      throw new ForeignKeyViolationError('users', 'userId', userId)
+      throw new ForeignKeyViolationError('users', 'id', userId)
     }
   }
 }

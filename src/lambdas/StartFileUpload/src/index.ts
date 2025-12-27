@@ -51,7 +51,6 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
  */
 async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const span = startSpan('yt-dlp-download-to-s3')
-
   try {
     const result = await downloadVideoToS3(fileUrl, bucket, fileName)
     addAnnotation(span, 's3Bucket', bucket)

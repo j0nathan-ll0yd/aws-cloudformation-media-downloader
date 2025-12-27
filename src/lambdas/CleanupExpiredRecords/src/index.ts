@@ -7,11 +7,11 @@
  * Records cleaned:
  * - FileDownloads: Completed/Failed downloads older than 24 hours
  * - Sessions: Expired sessions (expiresAt less than now)
- * - VerificationTokens: Expired tokens (expiresAt less than now)
+ * - Verification: Expired tokens (expiresAt less than now)
  */
 import {and, eq, lt, or} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
-import {fileDownloads, sessions, verificationTokens} from '#lib/vendor/Drizzle/schema'
+import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -38,26 +38,28 @@ async function cleanupFileDownloads(): Promise<number> {
 
 /**
  * Deletes expired sessions.
+ * Sessions now use TIMESTAMP WITH TIME ZONE for expiresAt.
  * @returns Count of deleted records
  */
 async function cleanupSessions(): Promise<number> {
   const db = await getDrizzleClient()
-  const now = Math.floor(Date.now() / 1000)
+  const now = new Date()
 
-  const result = await db.delete(sessions).where(lt(sessions.expiresAt, now)).returning({sessionId: sessions.sessionId})
+  const result = await db.delete(sessions).where(lt(sessions.expiresAt, now)).returning({id: sessions.id})
 
   return result.length
 }
 
 /**
  * Deletes expired verification tokens.
+ * Verification table uses TIMESTAMP WITH TIME ZONE for expiresAt.
  * @returns Count of deleted records
  */
 async function cleanupVerificationTokens(): Promise<number> {
   const db = await getDrizzleClient()
-  const now = Math.floor(Date.now() / 1000)
+  const now = new Date()
 
-  const result = await db.delete(verificationTokens).where(lt(verificationTokens.expiresAt, now)).returning({token: verificationTokens.token})
+  const result = await db.delete(verification).where(lt(verification.expiresAt, now)).returning({id: verification.id})
 
   return result.length
 }
@@ -68,7 +70,7 @@ async function cleanupVerificationTokens(): Promise<number> {
  * Runs daily at 3 AM UTC to delete:
  * - FileDownloads: Completed/Failed older than 24 hours
  * - Sessions: expiresAt in the past
- * - VerificationTokens: expiresAt in the past
+ * - Verification: expiresAt in the past
  *
  * @returns CleanupResult with counts of deleted records
  */
@@ -101,7 +103,7 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Cle
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     logError('Failed to cleanup verification tokens', {error: message})
-    result.errors.push(`VerificationTokens cleanup failed: ${message}`)
+    result.errors.push(`Verification cleanup failed: ${message}`)
   }
 
   logInfo('CleanupExpiredRecords completed', result)

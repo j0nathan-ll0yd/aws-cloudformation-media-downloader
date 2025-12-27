@@ -22,27 +22,28 @@ const {Sessions} = await import('#entities/Sessions')
  * Mock session data overrides for testing
  */
 interface MockSessionOverrides {
-  sessionId?: string
+  id?: string
   userId?: string
   token?: string
-  expiresAt?: number
-  deviceId?: string
+  expiresAt?: Date
   ipAddress?: string
   userAgent?: string
-  createdAt?: number
-  updatedAt?: number
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 /**
  * Helper to create mock session objects with sensible defaults
+ * Now uses Date objects for timestamps to match Better Auth schema.
  */
 function createMockSession(overrides?: MockSessionOverrides) {
-  const now = Date.now()
+  const now = new Date()
+  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
   return {
-    sessionId: 'session-123',
+    id: 'session-123',
     userId: 'user-123',
     token: 'valid-token',
-    expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30 days future
+    expiresAt: thirtyDaysFromNow, // 30 days future
     createdAt: now,
     updatedAt: now,
     ...overrides
@@ -79,10 +80,10 @@ describe('Better Auth Helpers', () => {
 
       const result = await validateSessionToken('valid-token')
 
-      expect(result).toEqual({userId: 'user-123', sessionId: 'session-123', expiresAt: mockSession.expiresAt})
+      expect(result).toEqual({userId: 'user-123', sessionId: 'session-123', expiresAt: mockSession.expiresAt.getTime()})
 
       // Should update lastActiveAt
-      expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
+      expect(Sessions.update).toHaveBeenCalledWith({id: 'session-123'})
     })
 
     it('should throw UnauthorizedError for non-existent session', async () => {
@@ -93,12 +94,12 @@ describe('Better Auth Helpers', () => {
     })
 
     it('should throw UnauthorizedError for expired session', async () => {
-      const now = Date.now()
+      const now = new Date()
       const mockSession = createMockSession({
         token: 'expired-token',
-        expiresAt: now - 1000, // Expired 1 second ago
-        createdAt: now - 31 * 24 * 60 * 60 * 1000,
-        updatedAt: now - 31 * 24 * 60 * 60 * 1000
+        expiresAt: new Date(now.getTime() - 1000), // Expired 1 second ago
+        createdAt: new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000)
       })
 
       sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: [mockSession]})
@@ -121,8 +122,8 @@ describe('Better Auth Helpers', () => {
       expect(result.expiresAt).toBeGreaterThan(originalExpiration)
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
-      expect(Sessions.update).toHaveBeenCalledWith({sessionId: 'session-123'})
-      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(expect.objectContaining({expiresAt: expect.any(Number), updatedAt: expect.any(Number)}))
+      expect(Sessions.update).toHaveBeenCalledWith({id: 'session-123'})
+      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(expect.objectContaining({expiresAt: expect.any(Date), updatedAt: expect.any(Date)}))
     })
   })
 })

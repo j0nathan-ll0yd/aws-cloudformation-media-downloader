@@ -89,7 +89,6 @@ export const Devices = {
         go: async () => {
           const db = await getDrizzleClient()
           const [updated] = await db.update(devices).set(data).where(eq(devices.deviceId, key.deviceId)).returning()
-
           return {data: updated}
         }
       })

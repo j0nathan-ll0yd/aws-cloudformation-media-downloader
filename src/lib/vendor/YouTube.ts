@@ -47,7 +47,6 @@ export function isCookieExpirationError(errorMessage: string): boolean {
     'HTTP Error 403',
     'Forbidden'
   ]
-
   const lowerMessage = errorMessage.toLowerCase()
   return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
 }
@@ -67,10 +66,8 @@ import type {FetchVideoInfoResult} from '#types/video'
 export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult> {
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
-
   try {
     const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
-
     // Copy cookies from read-only /opt to writable /tmp (yt-dlp needs write access)
     const fs = await import('fs')
     await fs.promises.copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
@@ -121,14 +118,12 @@ export function getVideoID(url: string): string {
     /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
   ]
-
   for (const pattern of patterns) {
     const match = url.match(pattern)
     if (match) {
       return match[1]
     }
   }
-
   throw new UnexpectedError('Invalid YouTube URL format')
 }
 

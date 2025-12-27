@@ -2,18 +2,19 @@ import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import type {Context, ScheduledEvent} from 'aws-lambda'
 
 // Mock Drizzle client with proper chaining
-const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; sessionId?: string; token?: string}>>>()
+const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
 const mockWhere = jest.fn(() => ({returning: mockReturning}))
 const mockDelete = jest.fn(() => ({where: mockWhere}))
 
 jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: jest.fn(async () => ({delete: mockDelete}))}))
 
 // Mock Drizzle schema - provide table references for delete()
+// Updated to use Better Auth aligned schema (id instead of sessionId, verification instead of verificationTokens)
 jest.unstable_mockModule('#lib/vendor/Drizzle/schema',
   () => ({
     fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
-    sessions: {sessionId: 'sessionId', expiresAt: 'expiresAt'},
-    verificationTokens: {token: 'token', expiresAt: 'expiresAt'}
+    sessions: {id: 'id', expiresAt: 'expiresAt'},
+    verification: {id: 'id', expiresAt: 'expiresAt'}
   }))
 
 // Mock logging
@@ -73,8 +74,8 @@ describe('CleanupExpiredRecords Lambda', () => {
 
   it('should successfully cleanup all record types', async () => {
     mockReturning.mockResolvedValueOnce([{fileId: 'file1'}]) // fileDownloads
-      .mockResolvedValueOnce([{sessionId: 'session1'}, {sessionId: 'session2'}]) // sessions
-      .mockResolvedValueOnce([]) // verificationTokens
+      .mockResolvedValueOnce([{id: 'session1'}, {id: 'session2'}]) // sessions
+      .mockResolvedValueOnce([]) // verification
 
     const result = await handler(createScheduledEvent(), createContext())
 
@@ -83,8 +84,8 @@ describe('CleanupExpiredRecords Lambda', () => {
 
   it('should continue cleanup when one type fails', async () => {
     mockReturning.mockRejectedValueOnce(new Error('Database connection failed')) // fileDownloads fails
-      .mockResolvedValueOnce([{sessionId: 'session1'}]) // sessions succeeds
-      .mockResolvedValueOnce([{token: 'token1'}]) // verificationTokens succeeds
+      .mockResolvedValueOnce([{id: 'session1'}]) // sessions succeeds
+      .mockResolvedValueOnce([{id: 'verification1'}]) // verification succeeds
 
     const result = await handler(createScheduledEvent(), createContext())
 

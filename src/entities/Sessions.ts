@@ -7,8 +7,12 @@
  * This entity provides an ElectroDB-compatible interface over Drizzle ORM
  * to minimize changes to Lambda handlers during the migration.
  *
+ * Schema aligned with Better Auth official adapter expectations:
+ * - Primary key: 'id' (UUID)
+ * - Timestamps: Date objects (TIMESTAMP WITH TIME ZONE)
+ *
  * Access Patterns:
- * - Primary: Get session by sessionId
+ * - Primary: Get session by id
  * - byUser: Get all sessions for a user (logout-all, session list)
  * - byToken: Validate session token (request authentication)
  *
@@ -22,20 +26,19 @@ import {sessions} from '#lib/vendor/Drizzle/schema'
 import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
 export type SessionItem = InferSelectModel<typeof sessions>
-export type CreateSessionInput = Omit<InferInsertModel<typeof sessions>, 'sessionId' | 'createdAt' | 'updatedAt'> & {
-  sessionId?: string
-  createdAt?: number
-  updatedAt?: number
+export type CreateSessionInput = Omit<InferInsertModel<typeof sessions>, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
-export type UpdateSessionInput = Partial<Omit<InferInsertModel<typeof sessions>, 'sessionId' | 'createdAt'>>
+export type UpdateSessionInput = Partial<Omit<InferInsertModel<typeof sessions>, 'id' | 'createdAt'>>
 
 export const Sessions = {
-  get(key: {sessionId: string}): {go: () => Promise<{data: SessionItem | null}>} {
+  get(key: {id: string}): {go: () => Promise<{data: SessionItem | null}>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const result = await db.select().from(sessions).where(eq(sessions.sessionId, key.sessionId)).limit(1)
-
+        const result = await db.select().from(sessions).where(eq(sessions.id, key.id)).limit(1)
         return {data: result.length > 0 ? result[0] : null}
       }
     }
@@ -45,7 +48,7 @@ export const Sessions = {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const now = Math.floor(Date.now() / 1000)
+        const now = new Date()
         const [session] = await db.insert(sessions).values({...input, createdAt: input.createdAt ?? now, updatedAt: input.updatedAt ?? now}).returning()
 
         return {data: session}
@@ -53,13 +56,13 @@ export const Sessions = {
     }
   },
 
-  update(key: {sessionId: string}): {set: (data: UpdateSessionInput) => {go: () => Promise<{data: SessionItem}>}} {
+  update(key: {id: string}): {set: (data: UpdateSessionInput) => {go: () => Promise<{data: SessionItem}>}} {
     return {
       set: (data: UpdateSessionInput) => ({
         go: async () => {
           const db = await getDrizzleClient()
-          const now = Math.floor(Date.now() / 1000)
-          const [updated] = await db.update(sessions).set({...data, updatedAt: now}).where(eq(sessions.sessionId, key.sessionId)).returning()
+          const now = new Date()
+          const [updated] = await db.update(sessions).set({...data, updatedAt: now}).where(eq(sessions.id, key.id)).returning()
 
           return {data: updated}
         }
@@ -67,11 +70,11 @@ export const Sessions = {
     }
   },
 
-  delete(key: {sessionId: string}): {go: () => Promise<void>} {
+  delete(key: {id: string}): {go: () => Promise<void>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        await db.delete(sessions).where(eq(sessions.sessionId, key.sessionId))
+        await db.delete(sessions).where(eq(sessions.id, key.id))
       }
     }
   },

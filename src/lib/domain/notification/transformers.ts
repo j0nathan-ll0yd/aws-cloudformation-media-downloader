@@ -40,7 +40,6 @@ export function createMetadataNotification(
     contentType: 'video/mp4',
     status: 'pending'
   }
-
   return {
     messageBody: JSON.stringify({file, notificationType: 'MetadataNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('MetadataNotification')}
@@ -58,7 +57,6 @@ export function createDownloadReadyNotification(
   userId: string
 ): {messageBody: string; messageAttributes: Record<string, MessageAttributeValue>} {
   const file: DownloadReadyNotification = {fileId: dbFile.fileId, key: dbFile.key, size: dbFile.size, url: dbFile.url!}
-
   return {
     messageBody: JSON.stringify({file, notificationType: 'DownloadReadyNotification'}),
     messageAttributes: {userId: stringAttribute(userId), notificationType: stringAttribute('DownloadReadyNotification')}
@@ -74,7 +72,6 @@ export function createDownloadReadyNotification(
  */
 export function transformToAPNSNotification(messageBody: string, targetArn: string): PublishInput {
   const payload = JSON.parse(messageBody)
-
   return {
     Message: JSON.stringify({
       APNS_SANDBOX: JSON.stringify({aps: {'content-available': 1}, notificationType: payload.notificationType, file: payload.file}),

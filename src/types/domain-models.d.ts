@@ -20,14 +20,18 @@ import {FileStatus} from './enums'
  * @see wrapAuthenticatedHandler for access control
  */
 export interface User {
-  /** Unique user identifier (UUID format) */
-  userId: string
+  /** Unique user identifier (UUID format) - Better Auth uses 'id' convention */
+  id: string
   /** User's email address (from Apple ID or registration) */
   email: string
   /** Whether email has been verified */
   emailVerified: boolean
+  /** User's display name (Better Auth convention) */
+  name?: string
+  /** User's profile image URL (Better Auth convention) */
+  image?: string
   /** User's first name (from Apple ID or registration) */
-  firstName: string
+  firstName?: string
   /** User's last name (optional, from Apple ID) */
   lastName?: string
 }

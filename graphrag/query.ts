@@ -177,7 +177,6 @@ export class GraphQuery {
       {step: 7, node: 'entity:Files', action: 'Update status to downloaded'},
       {step: 8, node: 'lambda:SendPushNotification', action: 'Notify user of completion'}
     ]
-
     return flow
   }
 

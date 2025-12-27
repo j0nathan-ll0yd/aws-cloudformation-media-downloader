@@ -31,7 +31,6 @@ export const FileDownloads = {
       go: async () => {
         const db = await getDrizzleClient()
         const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, key.fileId)).limit(1)
-
         return {data: result.length > 0 ? result[0] : null}
       }
     }
@@ -84,14 +83,12 @@ export const FileDownloads = {
         go: async () => {
           const db = await getDrizzleClient()
           const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
-
           return {data: result}
         },
         where: () => ({
           go: async () => {
             const db = await getDrizzleClient()
             const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
-
             return {data: result}
           }
         })

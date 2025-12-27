@@ -7,13 +7,17 @@
  * This entity provides an ElectroDB-compatible interface over Drizzle ORM
  * to minimize changes to Lambda handlers during the migration.
  *
+ * Schema aligned with Better Auth official adapter expectations:
+ * - Primary key: 'id' (UUID)
+ * - Timestamps: Date objects (TIMESTAMP WITH TIME ZONE)
+ *
  * Lifecycle:
  * 1. Created when user signs in with Apple for the first time (RegisterUser Lambda)
  * 2. Updated when tokens are refreshed or profile changes (LoginUser, RefreshToken)
  * 3. Deleted when user requests account deletion (UserDelete Lambda)
  *
  * Access Patterns:
- * - Primary: Get user by userId
+ * - Primary: Get user by id
  * - byEmail: Look up user by email (login flow)
  * - byAppleDeviceId: Look up user by Apple device ID (token refresh)
  *
@@ -42,25 +46,25 @@ export interface IdentityProviderData {
 
 export type UserItem = UserRow & {identityProviders?: IdentityProviderData}
 
-export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'userId' | 'createdAt' | 'updatedAt'> & {
-  userId?: string
+export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'id' | 'createdAt' | 'updatedAt'> & {
+  id?: string
   identityProviders?: IdentityProviderData
 }
 
-export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'userId' | 'createdAt'>>
+export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'id' | 'createdAt'>>
 
 export const Users = {
-  get(key: {userId: string}): {go: () => Promise<{data: UserItem | null}>} {
+  get(key: {id: string}): {go: () => Promise<{data: UserItem | null}>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        const userResult = await db.select().from(users).where(eq(users.userId, key.userId)).limit(1)
+        const userResult = await db.select().from(users).where(eq(users.id, key.id)).limit(1)
 
         if (userResult.length === 0) {
           return {data: null}
         }
 
-        const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.userId)).limit(1)
+        const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.id)).limit(1)
 
         const user = userResult[0]
         const idp = idpResult[0]
@@ -96,7 +100,7 @@ export const Users = {
 
         if (idpData) {
           await db.insert(identityProviders).values({
-            userId: user.userId,
+            userId: user.id,
             providerUserId: idpData.userId,
             email: idpData.email,
             emailVerified: idpData.emailVerified,
@@ -113,14 +117,14 @@ export const Users = {
     }
   },
 
-  update(key: {userId: string}): {set: (data: UpdateUserInput) => {go: () => Promise<{data: UserItem}>}} {
+  update(key: {id: string}): {set: (data: UpdateUserInput) => {go: () => Promise<{data: UserItem}>}} {
     return {
       set: (data: UpdateUserInput) => ({
         go: async () => {
           const db = await getDrizzleClient()
-          const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.userId, key.userId)).returning()
+          const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.id, key.id)).returning()
 
-          const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.userId)).limit(1)
+          const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, key.id)).limit(1)
 
           const idp = idpResult[0]
 
@@ -146,12 +150,12 @@ export const Users = {
     }
   },
 
-  delete(key: {userId: string}): {go: () => Promise<Record<string, never>>} {
+  delete(key: {id: string}): {go: () => Promise<Record<string, never>>} {
     return {
       go: async () => {
         const db = await getDrizzleClient()
-        await db.delete(identityProviders).where(eq(identityProviders.userId, key.userId))
-        await db.delete(users).where(eq(users.userId, key.userId))
+        await db.delete(identityProviders).where(eq(identityProviders.userId, key.id))
+        await db.delete(users).where(eq(users.id, key.id))
         return {}
       }
     }
@@ -166,7 +170,7 @@ export const Users = {
 
           const results: UserItem[] = []
           for (const user of userResult) {
-            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.userId)).limit(1)
+            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.id)).limit(1)
 
             const idp = idpResult[0]
             results.push({
@@ -199,7 +203,7 @@ export const Users = {
 
           const results: UserItem[] = []
           for (const user of userResult) {
-            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.userId)).limit(1)
+            const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, user.id)).limit(1)
 
             const idp = idpResult[0]
             results.push({
