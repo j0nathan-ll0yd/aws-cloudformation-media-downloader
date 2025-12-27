@@ -60,8 +60,8 @@ test/integration/
 └── helpers/                                      # Test utilities
     ├── dynamodb-helpers.ts                       # DynamoDB test data helpers
     ├── s3-helpers.ts                             # S3 test utilities
-    ├── lambda-helpers.ts                         # Lambda invocation helpers
-    └── sqs-helpers.ts                            # SQS test utilities
+    ├── sns-helpers.ts                            # SNS test utilities
+    └── lambda-helpers.ts                         # Lambda invocation helpers
 ```
 
 **Why Workflow-Based?**
