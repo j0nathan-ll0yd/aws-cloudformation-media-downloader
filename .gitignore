@@ -48,3 +48,4 @@ local_cache/
 # TypeSpec generated output
 tsp-output/
 tsp/examples/
+coverage-reports/
