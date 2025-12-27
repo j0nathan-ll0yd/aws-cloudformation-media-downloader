@@ -11,7 +11,6 @@ import postgres from 'postgres'
 
 const MAX_WORKERS = 4
 
-/** */
 export async function setup(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -27,7 +26,6 @@ export async function setup(): Promise<void> {
   }
 }
 
-/** */
 export async function teardown(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
