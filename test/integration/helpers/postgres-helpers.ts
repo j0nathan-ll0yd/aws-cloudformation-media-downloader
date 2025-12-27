@@ -502,7 +502,9 @@ export async function insertSession(data: {id?: string; userId: string; token: s
   const id = data.id ?? crypto.randomUUID()
   await db.execute(sql`
     INSERT INTO sessions (id, user_id, token, expires_at, created_at, updated_at)
-    VALUES (${id}, ${data.userId}, ${data.token}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${data.updatedAt?.toISOString() ?? now})
+    VALUES (${id}, ${data.userId}, ${data.token}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${
+    data.updatedAt?.toISOString() ?? now
+  })
   `)
 }
 
@@ -538,7 +540,9 @@ export async function insertVerification(
   const id = data.id ?? crypto.randomUUID()
   await db.execute(sql`
     INSERT INTO verification (id, identifier, value, expires_at, created_at, updated_at)
-    VALUES (${id}, ${data.identifier}, ${data.value}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${data.updatedAt?.toISOString() ?? now})
+    VALUES (${id}, ${data.identifier}, ${data.value}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${
+    data.updatedAt?.toISOString() ?? now
+  })
   `)
 }
 
