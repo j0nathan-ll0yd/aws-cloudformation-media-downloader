@@ -356,7 +356,6 @@ function formatBytes(bytes: number): string {
  */
 export async function handleBundleSizeQuery(args: BundleSizeArgs) {
   const {query, lambda, compareRef, threshold = 100000} = args
-
   switch (query) {
     case 'summary': {
       const summaries = await getBundleSummary()

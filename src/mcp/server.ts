@@ -455,7 +455,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const {name, arguments: args} = request.params
-
   try {
     switch (name) {
       case 'query_entities':

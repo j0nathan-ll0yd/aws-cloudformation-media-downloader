@@ -234,7 +234,6 @@ function formatMs(ms: number): string {
  */
 export async function handleColdStartQuery(args: ColdStartArgs) {
   const {query, lambda, memory = 1024} = args
-
   switch (query) {
     case 'estimate': {
       const lambdas = lambda ? [lambda] : await discoverLambdas()

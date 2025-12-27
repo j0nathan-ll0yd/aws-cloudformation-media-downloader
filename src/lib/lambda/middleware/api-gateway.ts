@@ -7,6 +7,7 @@ import {validateSchema} from '#lib/validation/constraints'
 
 type PayloadEvent = CustomAPIGatewayRequestAuthorizerEvent | APIGatewayEvent
 
+/** Validates request body against Zod schema, throwing ValidationError on failure. */
 export function validateRequest<T>(requestBody: unknown, schema: z.ZodSchema<T>): void {
   const validationResult = validateSchema(schema, requestBody)
   if (validationResult && validationResult.errors) {
@@ -15,6 +16,7 @@ export function validateRequest<T>(requestBody: unknown, schema: z.ZodSchema<T>)
   }
 }
 
+/** Parses and returns JSON body from API Gateway event. */
 export function getPayloadFromEvent(event: PayloadEvent): unknown {
   if ('body' in event) {
     if (typeof event.body === 'string') {

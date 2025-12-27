@@ -32,8 +32,7 @@ export const responseHelpersRule: ValidationRule = {
     const imports = sourceFile.getImportDeclarations()
     const hasResponseImport = imports.some((imp) => {
       const moduleSpec = imp.getModuleSpecifierValue()
-      // Check for both old location (lambda-helpers) and new location (responses)
-      if (moduleSpec.includes('lambda-helpers') || moduleSpec.includes('lambda/responses')) {
+      if (moduleSpec.includes('lambda-helpers') || moduleSpec.includes('lambda/responses')) { // Check both import locations
         const namedImports = imp.getNamedImports().map((n) => n.getName())
         return namedImports.includes('buildApiResponse')
       }

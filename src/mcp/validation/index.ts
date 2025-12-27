@@ -141,7 +141,6 @@ export * from './types'
 function matchesPattern(filePath: string, pattern: string): boolean {
   // Simple glob matching: ** matches any path segment, * matches within segment
   const regexPattern = pattern.replace(/\*\*/g, '{{DOUBLE_STAR}}').replace(/\*/g, '[^/]*').replace(/{{DOUBLE_STAR}}/g, '.*').replace(/\//g, '\\/')
-
   const regex = new RegExp(`^${regexPattern}$`)
   return regex.test(filePath)
 }
@@ -238,12 +237,10 @@ export async function validateFile(filePath: string, options: ValidateFileOption
  */
 export async function validateFiles(filePaths: string[], options: ValidateFileOptions = {}): Promise<ValidationResult[]> {
   const results: ValidationResult[] = []
-
   for (const filePath of filePaths) {
     const result = await validateFile(filePath, options)
     results.push(result)
   }
-
   return results
 }
 

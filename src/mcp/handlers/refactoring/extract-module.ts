@@ -344,7 +344,6 @@ async function executeExtraction(
  */
 export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
   const {query, sourceFile, symbols, targetModule, createBarrel = false} = args
-
   if (!sourceFile) {
     return {
       error: 'Source file required',
@@ -354,7 +353,6 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
       ]
     }
   }
-
   switch (query) {
     case 'analyze': {
       const extractable = await analyzeExtractableSymbols(sourceFile)

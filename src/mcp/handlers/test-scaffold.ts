@@ -121,6 +121,7 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   })
 }
 
+/** Handles MCP queries for generating test scaffolds and mock templates. */
 export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const {file, query} = args
 

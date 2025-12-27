@@ -12,7 +12,9 @@ import type {PgTable} from 'drizzle-orm/pg-core'
  * Use this for return types and entity interfaces.
  *
  * @example
+ * ```typescript
  * type UserItem = SelectModel<typeof users>
+ * ```
  */
 export type SelectModel<T extends PgTable> = InferSelectModel<T>
 
@@ -21,7 +23,9 @@ export type SelectModel<T extends PgTable> = InferSelectModel<T>
  * Use this for create input types.
  *
  * @example
+ * ```typescript
  * type CreateUserInput = InsertModel<typeof users>
+ * ```
  */
 export type InsertModel<T extends PgTable> = InferInsertModel<T>
 
@@ -30,7 +34,9 @@ export type InsertModel<T extends PgTable> = InferInsertModel<T>
  * Use this for update input types.
  *
  * @example
- * type UpdateUserInput = Partial<Omit<InsertModel<typeof users>, 'userId'>>
+ * ```typescript
+ * type UpdateUserInput = Partial\<Omit\<InsertModel\<typeof users\>, 'userId'\>\>
+ * ```
  */
 export type UpdateModel<T extends PgTable, K extends keyof InferInsertModel<T>> = Partial<Omit<InferInsertModel<T>, K>>
 

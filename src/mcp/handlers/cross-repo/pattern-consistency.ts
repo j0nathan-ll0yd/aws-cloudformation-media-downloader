@@ -362,7 +362,6 @@ async function detectDrift(patternName?: string, paths?: string[]): Promise<Patt
  */
 export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs) {
   const {query, pattern, paths, referenceImpl} = args
-
   switch (query) {
     case 'scan': {
       const results = await scanPatterns(pattern, paths)

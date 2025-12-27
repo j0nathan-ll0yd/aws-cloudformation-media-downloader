@@ -11,6 +11,7 @@ import postgres from 'postgres'
 
 const MAX_WORKERS = 4
 
+/** Creates worker-specific database schemas before test execution. */
 export async function setup(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
@@ -26,6 +27,7 @@ export async function setup(): Promise<void> {
   }
 }
 
+/** Drops all worker schemas after test execution completes. */
 export async function teardown(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 

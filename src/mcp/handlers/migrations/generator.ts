@@ -77,18 +77,14 @@ const AWS_SDK_MAPPING: Record<string, {wrapper: string; functions: string[]}> = 
  */
 async function getViolations(convention: string, scope?: string[]): Promise<Violation[]> {
   const result = await handleValidationQuery({query: convention === 'all' ? 'all' : convention as 'aws-sdk' | 'electrodb' | 'imports' | 'response'})
-
   if ('violations' in result) {
     let violations = result.violations as Violation[]
-
     // Filter by scope if provided
     if (scope && scope.length > 0) {
       violations = violations.filter((v) => scope.some((s) => v.file.includes(s)))
     }
-
     return violations
   }
-
   return []
 }
 
@@ -171,7 +167,6 @@ async function createMigrationPlan(convention: string, scope?: string[]): Promis
  */
 function generateTsMorphScript(plan: MigrationPlan): string {
   const imports = [`import {Project, SyntaxKind} from 'ts-morph'`, `import path from 'path'`]
-
   const migrationCode = plan.migrations.map((m) => {
     const changeCode = m.changes.map((c) => {
       if (c.type === 'replace_import') {
@@ -196,7 +191,6 @@ function generateTsMorphScript(plan: MigrationPlan): string {
       }
       return `    // TODO: ${c.type} - manual intervention required`
     }).join('\n\n')
-
     return `  // File: ${m.file}
   {
     const sourceFile = project.getSourceFileOrThrow('${m.file}')
@@ -204,7 +198,6 @@ function generateTsMorphScript(plan: MigrationPlan): string {
 ${changeCode}
   }`
   }).join('\n\n')
-
   return `#!/usr/bin/env tsx
 /**
  * Auto-generated migration script for: ${plan.convention}
@@ -262,7 +255,6 @@ function generateShellScript(plan: MigrationPlan): string {
       return `# TODO: ${c.type} in ${m.file}`
     })
   )
-
   return `#!/bin/bash
 # Auto-generated migration script for: ${plan.convention}
 # Total files: ${plan.totalFiles}
@@ -285,9 +277,7 @@ echo "Done!"
  */
 async function verifyMigration(convention: string, scope?: string[]): Promise<{complete: boolean; remaining: number; files: string[]}> {
   const violations = await getViolations(convention, scope)
-
   const remainingFiles = [...new Set(violations.map((v) => v.file))]
-
   return {complete: violations.length === 0, remaining: violations.length, files: remainingFiles}
 }
 
@@ -333,7 +323,6 @@ async function executeMigration(plan: MigrationPlan): Promise<{success: boolean;
  */
 export async function handleMigrationQuery(args: MigrationArgs) {
   const {query, convention = 'all', scope, outputFormat = 'ts-morph', execute = false} = args
-
   switch (query) {
     case 'plan': {
       const plan = await createMigrationPlan(convention, scope)

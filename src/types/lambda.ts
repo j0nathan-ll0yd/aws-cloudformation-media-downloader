@@ -223,7 +223,7 @@ export interface ApplePushNotificationResponse {
 // ============================================================================
 
 /**
- * Union type for CloudFront Lambda@Edge handler results.
+ * Union type for CloudFront Lambda\@Edge handler results.
  * Allows returning modified request, generated response, or pass-through.
  */
 export type CloudFrontHandlerResult = CloudFrontRequest | CloudFrontResultResponse | CloudFrontResponse

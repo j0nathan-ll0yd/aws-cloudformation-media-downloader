@@ -65,6 +65,10 @@
     "CleanupExpiredRecords": {
       "trigger": "CloudWatch Events",
       "purpose": "Scheduled cleanup of expired FileDownloads, Sessions, and VerificationTokens"
+    },
+    "MigrateDSQL": {
+      "trigger": "Manual",
+      "purpose": "Apply Drizzle ORM migrations to Aurora DSQL database"
     }
   },
   "externalServices": [

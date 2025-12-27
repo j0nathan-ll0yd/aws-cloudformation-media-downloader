@@ -72,9 +72,7 @@ type QueryIndexName =
  * Supports all common entity operations: get, scan, query, create, update, delete
  * Matches the ElectroDB-compatible interface layer over Drizzle ORM
  *
- * @param options - Configuration options
- * @param options.queryIndexes - Array of query index names to mock
- * @param options.hasScan - Whether the entity has a scan operation
+ * @param options - Configuration options (queryIndexes: array of index names, hasScan: enable scan)
  * @returns Object with entity mock and individual mock functions
  *
  * @example

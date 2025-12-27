@@ -307,7 +307,6 @@ async function previewInline(constantName: string, sourceFilePath: string): Prom
  */
 export async function handleInlineConstantQuery(args: InlineConstantArgs) {
   const {query, file, constant, maxUses = 3} = args
-
   switch (query) {
     case 'find': {
       const constants = await findExportedConstants(file)

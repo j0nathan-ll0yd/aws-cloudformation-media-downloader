@@ -41,7 +41,6 @@ interface SemanticBlame {
  */
 function extractSymbols(content: string, filePath: string): Map<string, {kind: string; startLine: number; endLine: number}> {
   const symbols = new Map<string, {kind: string; startLine: number; endLine: number}>()
-
   try {
     const project = new Project({useInMemoryFileSystem: true, compilerOptions: {strict: true}})
     const sourceFile = project.createSourceFile(filePath, content)
@@ -90,7 +89,6 @@ function extractSymbols(content: string, filePath: string): Map<string, {kind: s
   } catch {
     // Parsing failed, return empty map
   }
-
   return symbols
 }
 
@@ -240,7 +238,6 @@ function getSemanticBlame(filePath: string): SemanticBlame[] {
  */
 export async function handleGitHistoryQuery(args: GitHistoryArgs) {
   const {query, target, limit = 10} = args
-
   if (!target) {
     return {
       error: 'Target required',
@@ -252,7 +249,6 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
       ]
     }
   }
-
   switch (query) {
     case 'file': {
       // Get annotated file history

@@ -55,10 +55,8 @@ export const batchRetryRule: ValidationRule = {
             if (parent?.getKind() === SyntaxKind.CallExpression) {
               return parent.getText().includes(wrapper)
             }
-            // Also check if the call itself starts with the wrapper
-            return callText.startsWith(wrapper)
+            return callText.startsWith(wrapper) // Also check if the call itself starts with the wrapper
           })
-
           // Also check if retryUnprocessed is called on the same line/nearby
           const lineText = sourceFile.getFullText().split('\n')[call.getStartLineNumber() - 1] || ''
           const hasRetryNearby = RETRY_WRAPPERS.some((w) => lineText.includes(w))

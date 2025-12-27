@@ -9,11 +9,10 @@
 
 import {getAwsServices, getExternalServices, getLambdaConfigs} from './data-loader.js'
 
+/** Handles MCP queries for AWS and external service infrastructure. */
 export async function handleInfrastructureQuery(args: {resource?: string; query: string}) {
   const {resource, query} = args
-
   const [awsServices, externalServices] = await Promise.all([getAwsServices(), getExternalServices()])
-
   switch (query) {
     case 'services':
       return {aws: awsServices, external: externalServices}

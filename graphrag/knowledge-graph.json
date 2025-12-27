@@ -59,8 +59,8 @@
       "type": "Lambda",
       "properties": {
         "name": "MigrateDSQL",
-        "trigger": "Unknown",
-        "purpose": "Unknown"
+        "trigger": "Manual",
+        "purpose": "Apply Drizzle ORM migrations to Aurora DSQL database"
       }
     },
     {

@@ -8,7 +8,7 @@
  * 1. Feedly detects new article in subscribed YouTube channel
  * 2. IFTTT forwards article to WebhookFeedly Lambda
  * 3. Lambda publishes DownloadRequested event to EventBridge
- * 4. EventBridge routes to DownloadQueue -> StartFileUpload
+ * 4. EventBridge routes to DownloadQueue then StartFileUpload
  *
  * @see WebhookFeedly Lambda for processing implementation
  * @see {@link https://ifttt.com/feedly | Feedly IFTTT Integration}

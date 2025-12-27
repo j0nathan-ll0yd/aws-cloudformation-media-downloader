@@ -50,8 +50,7 @@ function toPascalCase(str: string): string {
   if (str.includes('_')) {
     return str.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join('')
   }
-  // Handle already lowercase
-  if (str === str.toLowerCase()) {
+  if (str === str.toLowerCase()) { // Handle already lowercase
     return str.charAt(0).toUpperCase() + str.slice(1)
   }
   return str

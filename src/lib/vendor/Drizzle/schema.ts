@@ -10,10 +10,10 @@
  * - Timestamps: All use TIMESTAMP WITH TIME ZONE (Better Auth expects Date objects)
  *
  * Key changes from ElectroDB/DynamoDB:
- * - Users.identityProviders embedded map -> separate identity_providers table
- * - GSI patterns -> PostgreSQL indexes
- * - Single-table design -> normalized relational tables
- * - TTL attribute -> scheduled cleanup Lambda
+ * - Users.identityProviders embedded map becomes separate identity_providers table
+ * - GSI patterns become PostgreSQL indexes
+ * - Single-table design becomes normalized relational tables
+ * - TTL attribute becomes scheduled cleanup Lambda
  */
 import {boolean, index, integer, pgTable, primaryKey, text, timestamp, unique, uuid} from 'drizzle-orm/pg-core'
 
@@ -70,7 +70,7 @@ export const identityProviders = pgTable('identity_providers', {
  * Files table - Video metadata storage.
  *
  * Stores permanent metadata about downloaded media files.
- * Status transitions: Queued -> Downloading -> Downloaded | Failed
+ * Status transitions: Queued, Downloading, Downloaded, Failed
  *
  * Indexes:
  * - filesKeyIdx: Lookup by S3 object key (S3ObjectCreated Lambda)

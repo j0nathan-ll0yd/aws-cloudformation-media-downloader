@@ -68,7 +68,6 @@ const NAMING_RULES = {
  */
 async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
   const models: TypeDefinition[] = []
-
   try {
     const content = await fs.readFile(tspPath, 'utf-8')
     const lines = content.split('\n')
@@ -117,7 +116,6 @@ async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
   } catch {
     // File doesn't exist or can't be read
   }
-
   return models
 }
 
