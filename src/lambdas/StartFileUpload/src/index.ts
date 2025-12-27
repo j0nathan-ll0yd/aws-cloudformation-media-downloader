@@ -82,7 +82,6 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
  */
 async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}
-
   if (classification) {
     update.errorCategory = classification.category
     update.lastError = classification.reason
@@ -92,7 +91,6 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       update.retryAfter = new Date(classification.retryAfter * 1000)
     }
   }
-
   try {
     // Try to update existing record first
     logDebug('FileDownloads.update <=', {fileId, update})

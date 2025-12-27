@@ -1,7 +1,7 @@
 /**
  * CloudfrontMiddleware Lambda
  *
- * Lambda@Edge function for CloudFront request processing.
+ * Lambda\@Edge function for CloudFront request processing.
  * Extracts API key from query string and adds as header.
  *
  * Trigger: CloudFront (viewer-request)

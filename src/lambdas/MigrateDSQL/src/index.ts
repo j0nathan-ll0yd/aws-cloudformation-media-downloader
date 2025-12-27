@@ -102,8 +102,7 @@ function splitStatements(sqlContent: string): string[] {
     if (!stmt) {
       return false
     }
-    // Filter out comment-only statements
-    const withoutComments = stmt.replace(/--[^\n]*/g, '').trim()
+    const withoutComments = stmt.replace(/--[^\n]*/g, '').trim() // Filter out comment-only statements
     return withoutComments.length > 0
   })
 }
