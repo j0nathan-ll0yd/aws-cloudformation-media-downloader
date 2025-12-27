@@ -12,7 +12,7 @@ export default defineConfig({
     pool: 'threads',
     poolOptions: {
       threads: {
-        maxThreads: 2,
+        maxThreads: 4,
         minThreads: 1
       }
     },
