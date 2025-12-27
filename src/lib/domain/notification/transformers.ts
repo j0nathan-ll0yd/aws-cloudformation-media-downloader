@@ -9,7 +9,6 @@ const MAX_DESCRIPTION_LENGTH = 500
 
 /**
  * Truncates description to MAX_DESCRIPTION_LENGTH to fit within APNS payload limits
- * @param description
  */
 export function truncateDescription(description: string): string {
   if (!description || description.length <= MAX_DESCRIPTION_LENGTH) {

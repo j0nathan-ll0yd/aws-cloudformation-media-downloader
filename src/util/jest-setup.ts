@@ -24,7 +24,6 @@ const defaultContext: Context = {
 /**
  * Creates a mock Lambda context with optional overrides.
  * Use this instead of duplicating context creation in tests.
- * @param overrides
  */
 export function createMockContext(overrides: Partial<Context> = {}): Context {
   return {...defaultContext, ...overrides}

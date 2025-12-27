@@ -50,8 +50,6 @@ const AWS_SDK_MAPPING: Record<string, {wrapper: string; functions: string[]}> = 
 /**
  * Apply AWS SDK wrapper convention
  * Replaces direct AWS SDK imports with vendor wrapper imports
- * @param filePath
- * @param dryRun
  */
 async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -87,8 +85,6 @@ async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<Ap
 /**
  * Apply entity mock convention
  * Fixes mock patterns to use createEntityMock correctly
- * @param filePath
- * @param dryRun
  */
 async function applyEntityMock(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -139,8 +135,6 @@ async function applyEntityMock(filePath: string, dryRun: boolean): Promise<Apply
 /**
  * Apply response helper convention
  * Replaces raw response objects with buildApiResponse
- * @param filePath
- * @param dryRun
  */
 async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -191,8 +185,6 @@ async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<A
 /**
  * Apply environment validation convention
  * Replaces direct process.env access with getRequiredEnv
- * @param filePath
- * @param dryRun
  */
 async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -235,8 +227,6 @@ async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<Ap
 /**
  * Apply powertools convention
  * Wraps handlers with withPowertools
- * @param filePath
- * @param dryRun
  */
 async function applyPowertools(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -271,7 +261,6 @@ async function applyPowertools(filePath: string, dryRun: boolean): Promise<Apply
 
 /**
  * Main handler for apply_convention MCP tool
- * @param args
  */
 export async function handleApplyConvention(args: ApplyConventionArgs): Promise<ApplyResult> {
   const {file, convention, dryRun = true} = args

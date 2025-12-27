@@ -4,10 +4,6 @@
  */
 
 export class MissingEnvVarError extends Error {
-  /**
-   *
-   * @param name
-   */
   constructor(name: string) {
     super(`Missing required environment variable: ${name}`)
     this.name = 'MissingEnvVarError'

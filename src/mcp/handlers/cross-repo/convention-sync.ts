@@ -46,7 +46,6 @@ interface ConventionDiff {
 
 /**
  * Convert conventions to JSON format
- * @param conventions
  */
 function toJSON(conventions: Convention[]): string {
   const exported: ExportedConvention[] = conventions.map((c) => ({
@@ -63,7 +62,6 @@ function toJSON(conventions: Convention[]): string {
 
 /**
  * Convert conventions to YAML format
- * @param conventions
  */
 function toYAML(conventions: Convention[]): string {
   const lines = ['# Project Conventions', `# Exported: ${new Date().toISOString()}`, '', 'conventions:']
@@ -86,7 +84,6 @@ function toYAML(conventions: Convention[]): string {
 
 /**
  * Convert conventions to Markdown format
- * @param conventions
  */
 function toMarkdown(conventions: Convention[]): string {
   const lines = ['# Project Conventions', '', `> Exported: ${new Date().toISOString()}`, '']
@@ -146,7 +143,6 @@ function toMarkdown(conventions: Convention[]): string {
 
 /**
  * Parse conventions from JSON
- * @param content
  */
 function fromJSON(content: string): ExportedConvention[] {
   try {
@@ -159,7 +155,6 @@ function fromJSON(content: string): ExportedConvention[] {
 
 /**
  * Parse conventions from YAML (simple parser)
- * @param content
  */
 function fromYAML(content: string): ExportedConvention[] {
   const conventions: ExportedConvention[] = []
@@ -204,7 +199,6 @@ function fromYAML(content: string): ExportedConvention[] {
 
 /**
  * Load conventions from a source
- * @param source
  */
 async function loadFromSource(source: string): Promise<ExportedConvention[]> {
   let content: string
@@ -237,7 +231,6 @@ async function loadFromSource(source: string): Promise<ExportedConvention[]> {
 
 /**
  * Diff conventions with external source
- * @param source
  */
 async function diffConventions(source: string): Promise<ConventionDiff> {
   const [local, remote] = await Promise.all([loadConventions(), loadFromSource(source)])
@@ -267,7 +260,6 @@ async function diffConventions(source: string): Promise<ConventionDiff> {
 
 /**
  * Main handler for convention sync queries
- * @param args
  */
 export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
   const {query, source, format = 'json', merge = false} = args

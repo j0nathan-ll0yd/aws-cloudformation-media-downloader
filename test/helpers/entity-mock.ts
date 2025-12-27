@@ -61,7 +61,6 @@ interface EntityMock<TData> {
  * Entities use Drizzle internally but expose ElectroDB-compatible API
  *
  * @param options - Configuration options with queryIndexes array
- * @param options.queryIndexes
  * @returns Object with entity mock and individual mock functions
  *
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy#entity-mock-helper-critical | Entity Mock Helper}

@@ -137,8 +137,6 @@ export * from './types'
 
 /**
  * Check if a file path matches a glob-like pattern
- * @param filePath
- * @param pattern
  */
 function matchesPattern(filePath: string, pattern: string): boolean {
   // Simple glob matching: ** matches any path segment, * matches within segment
@@ -150,8 +148,6 @@ function matchesPattern(filePath: string, pattern: string): boolean {
 
 /**
  * Check if a rule applies to a given file
- * @param rule
- * @param filePath
  */
 function ruleApplies(rule: ValidationRule, filePath: string): boolean {
   // Check if file matches any of the appliesTo patterns
@@ -181,8 +177,6 @@ interface ValidateFileOptions {
 
 /**
  * Validate a single file against convention rules
- * @param filePath
- * @param options
  */
 export async function validateFile(filePath: string, options: ValidateFileOptions = {}): Promise<ValidationResult> {
   const projectRoot = options.projectRoot || process.cwd()
@@ -241,8 +235,6 @@ export async function validateFile(filePath: string, options: ValidateFileOption
 
 /**
  * Validate multiple files
- * @param filePaths
- * @param options
  */
 export async function validateFiles(filePaths: string[], options: ValidateFileOptions = {}): Promise<ValidationResult[]> {
   const results: ValidationResult[] = []
@@ -257,7 +249,6 @@ export async function validateFiles(filePaths: string[], options: ValidateFileOp
 
 /**
  * Get validation summary for multiple results
- * @param results
  */
 export function getValidationSummary(
   results: ValidationResult[]

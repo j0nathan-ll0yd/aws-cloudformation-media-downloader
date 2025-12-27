@@ -69,10 +69,6 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
  * Cleanup handled by CleanupExpiredRecords scheduled Lambda.
- * @param fileId - The file identifier
- * @param status - Current download status
- * @param classification - Error classification if failed
- * @param retryCount - Number of retry attempts
  */
 async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}

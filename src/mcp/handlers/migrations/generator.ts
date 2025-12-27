@@ -74,8 +74,6 @@ const AWS_SDK_MAPPING: Record<string, {wrapper: string; functions: string[]}> = 
 
 /**
  * Get violations for a specific convention
- * @param convention
- * @param scope
  */
 async function getViolations(convention: string, scope?: string[]): Promise<Violation[]> {
   const result = await handleValidationQuery({query: convention === 'all' ? 'all' : convention as 'aws-sdk' | 'electrodb' | 'imports' | 'response'})
@@ -96,8 +94,6 @@ async function getViolations(convention: string, scope?: string[]): Promise<Viol
 
 /**
  * Analyze violations and create migration plan
- * @param convention
- * @param scope
  */
 async function createMigrationPlan(convention: string, scope?: string[]): Promise<MigrationPlan> {
   const violations = await getViolations(convention, scope)
@@ -172,7 +168,6 @@ async function createMigrationPlan(convention: string, scope?: string[]): Promis
 
 /**
  * Generate ts-morph migration script
- * @param plan
  */
 function generateTsMorphScript(plan: MigrationPlan): string {
   const imports = [`import {Project, SyntaxKind} from 'ts-morph'`, `import path from 'path'`]
@@ -257,7 +252,6 @@ migrate().catch(console.error)
 
 /**
  * Generate shell script for simple migrations
- * @param plan
  */
 function generateShellScript(plan: MigrationPlan): string {
   const commands = plan.migrations.flatMap((m) =>
@@ -288,8 +282,6 @@ echo "Done!"
 
 /**
  * Verify migration completeness
- * @param convention
- * @param scope
  */
 async function verifyMigration(convention: string, scope?: string[]): Promise<{complete: boolean; remaining: number; files: string[]}> {
   const violations = await getViolations(convention, scope)
@@ -301,7 +293,6 @@ async function verifyMigration(convention: string, scope?: string[]): Promise<{c
 
 /**
  * Execute migration (apply changes)
- * @param plan
  */
 async function executeMigration(plan: MigrationPlan): Promise<{success: boolean; filesModified: number; errors: string[]}> {
   const errors: string[] = []
@@ -339,7 +330,6 @@ async function executeMigration(plan: MigrationPlan): Promise<{success: boolean;
 
 /**
  * Main handler for migration queries
- * @param args
  */
 export async function handleMigrationQuery(args: MigrationArgs) {
   const {query, convention = 'all', scope, outputFormat = 'ts-morph', execute = false} = args

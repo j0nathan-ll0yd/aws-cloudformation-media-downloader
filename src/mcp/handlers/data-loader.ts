@@ -207,7 +207,6 @@ export async function loadConventions(): Promise<Convention[]> {
 
 /**
  * Load a specific wiki page by relative path
- * @param relativePath
  */
 export async function loadWikiPage(relativePath: string): Promise<string> {
   const wikiPath = path.join(projectRoot, relativePath)
@@ -247,7 +246,6 @@ export async function discoverWikiPages(): Promise<string[]> {
 
 /**
  * Search wiki pages for a term (searches file names and content)
- * @param term
  */
 export async function searchWikiPages(term: string): Promise<Array<{path: string; matches: string[]}>> {
   const pages = await discoverWikiPages()
@@ -279,7 +277,6 @@ export async function searchWikiPages(term: string): Promise<Array<{path: string
 
 /**
  * Get transitive dependencies for a file
- * @param filePath
  */
 export async function getTransitiveDependencies(filePath: string): Promise<string[]> {
   const depGraph = await loadDependencyGraph()
@@ -289,7 +286,6 @@ export async function getTransitiveDependencies(filePath: string): Promise<strin
 
 /**
  * Find all files that import a given file (reverse dependency lookup)
- * @param filePath
  */
 export async function findDependents(filePath: string): Promise<string[]> {
   const depGraph = await loadDependencyGraph()

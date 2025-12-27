@@ -64,7 +64,6 @@ async function getProject(): Promise<Project> {
 
 /**
  * Find exported constants with their usage counts
- * @param filePath
  */
 async function findExportedConstants(filePath?: string): Promise<SingleUseConstant[]> {
   const project = await getProject()
@@ -160,7 +159,6 @@ async function findExportedConstants(filePath?: string): Promise<SingleUseConsta
 
 /**
  * Check if a value can be safely inlined
- * @param node
  */
 function isInlineable(node: VariableDeclaration['getInitializer'] extends () => infer R ? NonNullable<R> : never): boolean {
   const kind = node.getKind()
@@ -198,7 +196,6 @@ function isInlineable(node: VariableDeclaration['getInitializer'] extends () => 
 
 /**
  * Get a human-readable type for the value
- * @param node
  */
 function getValueType(node: VariableDeclaration['getInitializer'] extends () => infer R ? NonNullable<R> : never): string {
   const kind = node.getKind()
@@ -224,8 +221,6 @@ function getValueType(node: VariableDeclaration['getInitializer'] extends () => 
 
 /**
  * Preview inlining a constant
- * @param constantName
- * @param sourceFilePath
  */
 async function previewInline(constantName: string, sourceFilePath: string): Promise<InlinePreview | null> {
   const project = await getProject()
@@ -309,7 +304,6 @@ async function previewInline(constantName: string, sourceFilePath: string): Prom
 
 /**
  * Main handler for inline constant queries
- * @param args
  */
 export async function handleInlineConstantQuery(args: InlineConstantArgs) {
   const {query, file, constant, maxUses = 3} = args

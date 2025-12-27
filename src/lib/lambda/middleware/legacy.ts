@@ -46,7 +46,6 @@ export function wrapAuthorizer(
  *
  * @param handler - Handler for individual records
  * @param options - Configuration with getRecords extractor function
- * @param options.getRecords
  * @returns Wrapped handler that processes all records
  *
  * @example
@@ -88,12 +87,10 @@ export function wrapEventHandler<TEvent, TRecord>(
 
 /**
  * Convenience extractor for S3 event records
- * @param event
  */
 export const s3Records = (event: S3Event): S3EventRecord[] => event.Records
 
 /**
  * Convenience extractor for SQS event records
- * @param event
  */
 export const sqsRecords = (event: SQSEvent): SQSRecord[] => event.Records

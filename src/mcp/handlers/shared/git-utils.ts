@@ -24,9 +24,6 @@ const CACHE_TTL = 30000 // 30 seconds for git operations
 
 /**
  * Execute a git command and return stdout
- * @param args
- * @param options
- * @param options.cwd
  */
 export function execGit(args: string[], options: {cwd?: string} = {}): string {
   const cwd = options.cwd || projectRoot
@@ -40,9 +37,6 @@ export function execGit(args: string[], options: {cwd?: string} = {}): string {
 
 /**
  * Execute a git command asynchronously with streaming output
- * @param args
- * @param options
- * @param options.cwd
  */
 export function execGitAsync(args: string[], options: {cwd?: string} = {}): Promise<string> {
   const cwd = options.cwd || projectRoot
@@ -69,8 +63,6 @@ export function execGitAsync(args: string[], options: {cwd?: string} = {}): Prom
 
 /**
  * Get the list of changed files between two refs
- * @param baseRef
- * @param headRef
  */
 export function getChangedFiles(baseRef: string, headRef: string): string[] {
   const cacheKey = `${baseRef}..${headRef}`
@@ -91,8 +83,6 @@ export function getChangedFiles(baseRef: string, headRef: string): string[] {
 
 /**
  * Get file content at a specific git ref
- * @param filePath
- * @param ref
  */
 export function getFileAtRef(filePath: string, ref: string): string {
   const cacheKey = `${ref}:${filePath}`
@@ -113,8 +103,6 @@ export function getFileAtRef(filePath: string, ref: string): string {
 
 /**
  * Check if a file exists at a specific ref
- * @param filePath
- * @param ref
  */
 export function fileExistsAtRef(filePath: string, ref: string): boolean {
   try {
@@ -141,8 +129,6 @@ export function getCurrentCommit(): string {
 
 /**
  * Get the merge base between two refs
- * @param ref1
- * @param ref2
  */
 export function getMergeBase(ref1: string, ref2: string): string {
   return execGit(['merge-base', ref1, ref2])
@@ -150,9 +136,6 @@ export function getMergeBase(ref1: string, ref2: string): string {
 
 /**
  * Get the diff for a specific file between two refs
- * @param filePath
- * @param baseRef
- * @param headRef
  */
 export function getFileDiff(filePath: string, baseRef: string, headRef: string): string {
   try {
@@ -173,12 +156,6 @@ export interface BlameInfo {
   content: string
 }
 
-/**
- *
- * @param filePath
- * @param startLine
- * @param endLine
- */
 export function getBlame(filePath: string, startLine?: number, endLine?: number): BlameInfo[] {
   const lineArgs = startLine !== undefined && endLine !== undefined ? ['-L', `${startLine},${endLine}`] : []
 
@@ -221,11 +198,6 @@ export interface CommitInfo {
   message: string
 }
 
-/**
- *
- * @param filePath
- * @param limit
- */
 export function getFileHistory(filePath: string, limit = 10): CommitInfo[] {
   try {
     const output = execGit(['log', '--format=%H|%an|%ai|%s', `-n${limit}`, '--', filePath])
@@ -240,8 +212,6 @@ export function getFileHistory(filePath: string, limit = 10): CommitInfo[] {
 
 /**
  * Get commits containing a pattern
- * @param pattern
- * @param limit
  */
 export function searchCommits(pattern: string, limit = 20): CommitInfo[] {
   try {
@@ -257,7 +227,6 @@ export function searchCommits(pattern: string, limit = 20): CommitInfo[] {
 
 /**
  * Get all TypeScript files that changed in a specific commit
- * @param commit
  */
 export function getCommitFiles(commit: string): string[] {
   try {

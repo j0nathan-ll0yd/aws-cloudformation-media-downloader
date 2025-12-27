@@ -7,11 +7,6 @@ import {validateSchema} from '#lib/validation/constraints'
 
 type PayloadEvent = CustomAPIGatewayRequestAuthorizerEvent | APIGatewayEvent
 
-/**
- *
- * @param requestBody
- * @param schema
- */
 export function validateRequest<T>(requestBody: unknown, schema: z.ZodSchema<T>): void {
   const validationResult = validateSchema(schema, requestBody)
   if (validationResult && validationResult.errors) {
@@ -20,10 +15,6 @@ export function validateRequest<T>(requestBody: unknown, schema: z.ZodSchema<T>)
   }
 }
 
-/**
- *
- * @param event
- */
 export function getPayloadFromEvent(event: PayloadEvent): unknown {
   if ('body' in event) {
     if (typeof event.body === 'string') {

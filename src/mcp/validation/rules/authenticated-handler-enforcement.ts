@@ -25,8 +25,6 @@ const AUTH_PATTERNS = {
 
 /**
  * Determine which wrapper to suggest based on context
- * @param hasAnonymousCheck
- * @param hasUnauthenticatedCheck
  */
 function getSuggestion(hasAnonymousCheck: boolean, hasUnauthenticatedCheck: boolean): string {
   if (hasAnonymousCheck && hasUnauthenticatedCheck) {

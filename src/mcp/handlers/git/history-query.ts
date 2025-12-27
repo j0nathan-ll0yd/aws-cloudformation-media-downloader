@@ -38,8 +38,6 @@ interface SemanticBlame {
 
 /**
  * Extract exported symbols from source code
- * @param content
- * @param filePath
  */
 function extractSymbols(content: string, filePath: string): Map<string, {kind: string; startLine: number; endLine: number}> {
   const symbols = new Map<string, {kind: string; startLine: number; endLine: number}>()
@@ -98,8 +96,6 @@ function extractSymbols(content: string, filePath: string): Map<string, {kind: s
 
 /**
  * Annotate file history with semantic changes
- * @param filePath
- * @param limit
  */
 async function getAnnotatedFileHistory(
   filePath: string,
@@ -152,9 +148,6 @@ async function getAnnotatedFileHistory(
 
 /**
  * Track symbol evolution across commits
- * @param filePath
- * @param symbolName
- * @param limit
  */
 async function trackSymbolHistory(filePath: string, symbolName: string, limit: number): Promise<SymbolHistory | null> {
   const history = getFileHistory(filePath, limit)
@@ -210,7 +203,6 @@ async function trackSymbolHistory(filePath: string, symbolName: string, limit: n
 
 /**
  * Get semantic blame for symbols in a file
- * @param filePath
  */
 function getSemanticBlame(filePath: string): SemanticBlame[] {
   const content = getFileAtRef(filePath, 'HEAD')
@@ -245,7 +237,6 @@ function getSemanticBlame(filePath: string): SemanticBlame[] {
 
 /**
  * Main handler for git history queries
- * @param args
  */
 export async function handleGitHistoryQuery(args: GitHistoryArgs) {
   const {query, target, limit = 10} = args

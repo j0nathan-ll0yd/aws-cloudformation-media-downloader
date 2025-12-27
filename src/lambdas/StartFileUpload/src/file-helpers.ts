@@ -10,7 +10,6 @@ import type {File} from '#types/domain-models'
 /**
  * Upsert a File object in DynamoDB
  * @param item - The DynamoDB item to be added
- * @returns The upsert response from DynamoDB
  */
 export async function upsertFile(item: File) {
   logDebug('upsertFile <=', item)

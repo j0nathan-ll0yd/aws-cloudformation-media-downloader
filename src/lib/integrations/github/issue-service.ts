@@ -32,13 +32,6 @@ async function getOctokitInstance() {
   })
 }
 
-/**
- *
- * @param userId
- * @param devices
- * @param error
- * @param requestId
- */
 export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
   const title = `User Deletion Failed: ${userId}`
   const body = renderGithubIssueTemplate('user-deletion-failure', {userId, devices, error, requestId})
@@ -58,13 +51,6 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
   }
 }
 
-/**
- *
- * @param fileId
- * @param fileUrl
- * @param error
- * @param errorDetails
- */
 export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string) {
   const title = `Video Download Failed: ${fileId}`
   const body = renderGithubIssueTemplate('video-download-failure', {fileId, fileUrl, error, errorDetails})
@@ -84,12 +70,6 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
   }
 }
 
-/**
- *
- * @param fileId
- * @param fileUrl
- * @param error
- */
 export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
   const title = '🍪 YouTube Cookie Expiration Detected'
   const body = renderGithubIssueTemplate('cookie-expiration', {fileId, fileUrl, error})

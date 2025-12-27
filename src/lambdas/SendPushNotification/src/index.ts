@@ -50,7 +50,6 @@ async function getDevice(deviceId: string): Promise<Device> {
 /**
  * Process a single SQS record - send push notifications to all user devices.
  * Throws on failure to enable batch item failure reporting.
- * @param record - The SQS record containing notification details
  * @notExported
  */
 async function processSQSRecord(record: SQSRecord): Promise<void> {

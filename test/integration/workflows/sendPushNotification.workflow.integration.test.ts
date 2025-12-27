@@ -31,11 +31,6 @@ const {handler} = await import('../../../src/lambdas/SendPushNotification/src/in
 
 /**
  * Creates an SQS event for file notification testing
- * @param userId
- * @param fileId
- * @param options
- * @param options.title
- * @param options.notificationType
  */
 function createSQSFileNotificationEvent(userId: string, fileId: string, options?: {title?: string; notificationType?: string}): SQSEvent {
   const title = options?.title || 'Test Video'

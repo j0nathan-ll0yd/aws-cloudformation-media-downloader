@@ -26,10 +26,6 @@ const snsClient = createSNSClient()
 export type { PublishInput }
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> {
   const command = new PublishCommand(params)
   return snsClient.send(command)
@@ -37,10 +33,6 @@ export function publishSnsEvent(params: PublishInput): Promise<PublishResponse> 
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
   const command = new SubscribeCommand(params)
   return snsClient.send(command)
@@ -48,10 +40,6 @@ export function subscribe(params: SubscribeInput): Promise<SubscribeResponse> {
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput): Promise<ListSubscriptionsByTopicResponse> {
   const command = new ListSubscriptionsByTopicCommand(params)
   return snsClient.send(command)
@@ -59,10 +47,6 @@ export function listSubscriptionsByTopic(params: ListSubscriptionsByTopicInput):
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Promise<CreateEndpointResponse> {
   const command = new CreatePlatformEndpointCommand(params)
   return snsClient.send(command)
@@ -70,10 +54,6 @@ export function createPlatformEndpoint(params: CreatePlatformEndpointInput): Pro
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function unsubscribe(params: UnsubscribeInput): Promise<object> {
   const command = new UnsubscribeCommand(params)
   return snsClient.send(command)
@@ -81,10 +61,6 @@ export function unsubscribe(params: UnsubscribeInput): Promise<object> {
 /* c8 ignore stop */
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/**
- *
- * @param params
- */
 export function deleteEndpoint(params: DeleteEndpointInput): Promise<object> {
   const command = new DeleteEndpointCommand(params)
   return snsClient.send(command)

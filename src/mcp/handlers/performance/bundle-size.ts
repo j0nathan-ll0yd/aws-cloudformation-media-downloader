@@ -54,7 +54,6 @@ interface OptimizationSuggestion {
 
 /**
  * Get build output directory for a Lambda
- * @param lambdaName
  */
 function getLambdaBuildPath(lambdaName: string): string {
   return path.join(projectRoot, 'dist', lambdaName)
@@ -62,7 +61,6 @@ function getLambdaBuildPath(lambdaName: string): string {
 
 /**
  * Get metafile path for a Lambda
- * @param lambdaName
  */
 function getMetafilePath(lambdaName: string): string {
   return path.join(projectRoot, 'build', 'reports', `${lambdaName}-meta.json`)
@@ -70,7 +68,6 @@ function getMetafilePath(lambdaName: string): string {
 
 /**
  * Read esbuild metafile if available
- * @param lambdaName
  */
 async function readMetafile(lambdaName: string): Promise<Record<string, unknown> | null> {
   const metaPath = getMetafilePath(lambdaName)
@@ -84,7 +81,6 @@ async function readMetafile(lambdaName: string): Promise<Record<string, unknown>
 
 /**
  * Estimate bundle size by analyzing dist directory
- * @param lambdaName
  */
 async function estimateBundleSize(lambdaName: string): Promise<number> {
   const distPath = getLambdaBuildPath(lambdaName)
@@ -104,7 +100,6 @@ async function estimateBundleSize(lambdaName: string): Promise<number> {
 
 /**
  * Estimate bundle size from source files
- * @param lambdaName
  */
 async function estimateFromSource(lambdaName: string): Promise<number> {
   const srcPath = path.join(projectRoot, 'src', 'lambdas', lambdaName, 'src')
@@ -168,7 +163,6 @@ async function getBundleSummary(): Promise<BundleInfo[]> {
 
 /**
  * Get detailed breakdown for a Lambda
- * @param lambdaName
  */
 async function getBundleBreakdown(lambdaName: string): Promise<BundleBreakdown | null> {
   const metafile = await readMetafile(lambdaName)
@@ -234,8 +228,6 @@ async function getBundleBreakdown(lambdaName: string): Promise<BundleBreakdown |
 
 /**
  * Compare bundle sizes between refs
- * @param lambdaName
- * @param compareRef
  */
 async function compareBundles(lambdaName: string | undefined, compareRef: string): Promise<
   {current: BundleInfo[]; previous: BundleInfo[]; changes: Array<{lambda: string; current: number; previous: number; delta: number; deltaPercent: number}>}
@@ -280,7 +272,6 @@ async function compareBundles(lambdaName: string | undefined, compareRef: string
 
 /**
  * Generate optimization suggestions
- * @param lambdaName
  */
 async function getOptimizationSuggestions(lambdaName: string): Promise<OptimizationSuggestion[]> {
   const breakdown = await getBundleBreakdown(lambdaName)
@@ -349,7 +340,6 @@ async function getOptimizationSuggestions(lambdaName: string): Promise<Optimizat
 
 /**
  * Format bytes to human readable
- * @param bytes
  */
 function formatBytes(bytes: number): string {
   if (bytes < 1024) {
@@ -363,7 +353,6 @@ function formatBytes(bytes: number): string {
 
 /**
  * Main handler for bundle size queries
- * @param args
  */
 export async function handleBundleSizeQuery(args: BundleSizeArgs) {
   const {query, lambda, compareRef, threshold = 100000} = args

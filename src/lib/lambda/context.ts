@@ -6,9 +6,6 @@ import type {UserEventDetails} from '#types/util'
 import {UserStatus} from '#types/enums'
 
 /*#__PURE__*/
-/**
- *
- */
 export function verifyPlatformConfiguration(): void {
   const platformApplicationArn = getOptionalEnv('PLATFORM_APPLICATION_ARN', '')
   logDebug('process.env.PLATFORM_APPLICATION_ARN <=', platformApplicationArn)
@@ -17,10 +14,6 @@ export function verifyPlatformConfiguration(): void {
   }
 }
 
-/**
- *
- * @param event
- */
 export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizerEvent): UserEventDetails {
   let principalId = 'unknown'
   // This should always be present, via the API Gateway

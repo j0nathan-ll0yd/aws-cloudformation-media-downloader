@@ -37,7 +37,6 @@ const PASCAL_CASE_PATTERN = /^[A-Z][a-zA-Z0-9]*$/
 
 /**
  * Check if a string is in PascalCase
- * @param str
  */
 function isPascalCase(str: string): boolean {
   return PASCAL_CASE_PATTERN.test(str)
@@ -45,7 +44,6 @@ function isPascalCase(str: string): boolean {
 
 /**
  * Convert to suggested PascalCase
- * @param str
  */
 function toPascalCase(str: string): string {
   // Handle snake_case

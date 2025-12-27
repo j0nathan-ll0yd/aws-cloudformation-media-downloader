@@ -27,7 +27,6 @@ interface MockInfo {
 
 /**
  * Extract Lambda name from file path
- * @param filePath
  */
 function extractLambdaName(filePath: string): string | null {
   const match = filePath.match(/src\/lambdas\/([^/]+)/)
@@ -36,8 +35,6 @@ function extractLambdaName(filePath: string): string | null {
 
 /**
  * Generate mock code for a dependency using templates
- * @param dep
- * @param entityNames
  */
 function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
   // Entity mocks
@@ -77,7 +74,6 @@ function generateMockCode(dep: string, entityNames: string[]): MockInfo | null {
 
 /**
  * Get common mock functions for AWS services
- * @param service
  */
 function getAwsServiceMocks(service: string): string[] {
   const serviceMocks: Record<string, string[]> = {
@@ -92,8 +88,6 @@ function getAwsServiceMocks(service: string): string[] {
 
 /**
  * Generate complete test file scaffold using templates
- * @param lambdaName
- * @param mocks
  */
 function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   const entityMocks = mocks.filter((m) => m.type === 'entity')
@@ -127,10 +121,6 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   })
 }
 
-/**
- *
- * @param args
- */
 export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const {file, query} = args
 

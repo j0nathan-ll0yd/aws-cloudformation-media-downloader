@@ -58,7 +58,6 @@ const server = new Server({name: 'media-downloader-mcp', version: '1.0.0'}, {cap
 
 /**
  * Wrap handler result in MCP content format
- * @param result
  */
 function wrapResult(result: unknown) {
   return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
@@ -551,9 +550,6 @@ interface GraphData {
 
 /**
  * Handle dependency graph queries
- * @param args
- * @param args.file
- * @param args.query
  */
 async function handleDependencyQuery(args: {file?: string; query: string}) {
   const fs = await import('fs/promises')

@@ -5,7 +5,6 @@ import {logDebug, logError} from '#lib/system/logging'
 /**
  * Extracts a human-readable message from an unknown error value.
  * Used as fallback when error is not an Error instance.
- * @param error
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -21,10 +20,7 @@ export function getErrorMessage(error: unknown): string {
   }
 }
 
-/**
- * @param unknownVariable
- * @deprecated Use getErrorMessage instead. Kept for backwards compatibility.
- */
+/** @deprecated Use getErrorMessage instead. Kept for backwards compatibility. */
 export function formatUnknownError(unknownVariable: unknown): string {
   return getErrorMessage(unknownVariable)
 }
@@ -32,10 +28,6 @@ export function formatUnknownError(unknownVariable: unknown): string {
 /**
  * Internal function to format API Gateway responses.
  * Automatically detects error vs success based on status code.
- * @param context
- * @param statusCode
- * @param body
- * @param headers
  */
 function formatResponse(context: Context, statusCode: number, body?: string | object, headers?: APIGatewayProxyEventHeaders): APIGatewayProxyResult {
   let code = 'custom-5XX-generic'

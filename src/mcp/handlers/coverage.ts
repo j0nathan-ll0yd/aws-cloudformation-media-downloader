@@ -25,8 +25,6 @@ interface MockCategory {
 
 /**
  * Categorize a dependency for mocking purposes
- * @param dep
- * @param entityNames
  */
 function categorizeDependency(dep: string, entityNames: string[]): {category: keyof MockCategory; name: string; details: Record<string, unknown>} | null {
   // Entity files
@@ -68,7 +66,6 @@ function categorizeDependency(dep: string, entityNames: string[]): {category: ke
 
 /**
  * Analyze an existing test file for current mocks
- * @param testFilePath
  */
 async function analyzeExistingTestMocks(testFilePath: string): Promise<string[]> {
   try {
@@ -96,17 +93,12 @@ async function analyzeExistingTestMocks(testFilePath: string): Promise<string[]>
 
 /**
  * Convert file path to test file path
- * @param filePath
  */
 function getTestFilePath(filePath: string): string {
   // src/lambdas/Name/src/index.ts -> src/lambdas/Name/test/index.test.ts
   return filePath.replace('/src/', '/test/').replace(/\.ts$/, '.test.ts')
 }
 
-/**
- *
- * @param args
- */
 export async function handleCoverageQuery(args: CoverageQueryArgs) {
   const {file, query} = args
 

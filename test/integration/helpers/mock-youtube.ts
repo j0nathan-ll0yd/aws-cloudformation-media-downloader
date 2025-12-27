@@ -11,7 +11,6 @@ import type {YtDlpFormat, YtDlpVideoInfo} from '#types/youtube'
 
 /**
  * Create mock video info for testing
- * @param overrides
  */
 export function createMockVideoInfo(overrides?: Partial<YtDlpVideoInfo>): YtDlpVideoInfo {
   const defaultFormat: YtDlpFormat = {
@@ -42,7 +41,6 @@ export function createMockVideoInfo(overrides?: Partial<YtDlpVideoInfo>): YtDlpV
 
 /**
  * Create mock video format for testing
- * @param overrides
  */
 export function createMockVideoFormat(overrides?: Partial<YtDlpFormat>): YtDlpFormat {
   return {
@@ -90,7 +88,6 @@ export function createMockVideoStream(sizeInBytes: number, contentPattern: strin
 
 /**
  * Mock streamVideoToS3 result
- * @param sizeInBytes
  */
 export function createMockStreamResult(sizeInBytes: number): {fileSize: number; s3Url: string; duration: number} {
   return {
@@ -102,7 +99,6 @@ export function createMockStreamResult(sizeInBytes: number): {fileSize: number; 
 
 /**
  * Create mock implementation of fetchVideoInfo
- * @param videoInfo
  */
 export function mockFetchVideoInfo(videoInfo?: YtDlpVideoInfo): jest.Mock {
   return jest.fn<() => Promise<YtDlpVideoInfo>>().mockResolvedValue(videoInfo || createMockVideoInfo())
@@ -110,7 +106,6 @@ export function mockFetchVideoInfo(videoInfo?: YtDlpVideoInfo): jest.Mock {
 
 /**
  * Create mock implementation of chooseVideoFormat
- * @param format
  */
 export function mockChooseVideoFormat(format?: YtDlpFormat): jest.Mock {
   return jest.fn<() => YtDlpFormat>().mockReturnValue(format || createMockVideoFormat())
@@ -154,7 +149,6 @@ export function createMockStreamVideoToS3WithRealUpload(createS3Upload: S3Upload
 
 /**
  * Create mock implementation of streamVideoToS3 that fails for testing error handling
- * @param errorMessage
  */
 export function createMockStreamVideoToS3WithFailure(errorMessage: string = 'Mock S3 upload failed'): jest.Mock {
   return jest.fn<() => Promise<never>>().mockRejectedValue(new Error(errorMessage))

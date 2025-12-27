@@ -157,7 +157,6 @@ export function createMockVerificationToken(overrides?: Partial<MockVerification
 /**
  * Create minimal user for testing edge cases
  * Only required fields populated
- * @param overrides
  */
 export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserData {
   return createMockUser({
@@ -171,7 +170,6 @@ export function createMinimalUser(overrides?: Partial<MockUserData>): MockUserDa
 /**
  * Create session without optional fields
  * Tests that optional fields are handled correctly
- * @param overrides
  */
 export function createMinimalSession(overrides?: Partial<MockSessionData>): MockSessionData {
   const full = createMockSession(overrides)
@@ -181,7 +179,6 @@ export function createMinimalSession(overrides?: Partial<MockSessionData>): Mock
 /**
  * Create account without optional OAuth metadata
  * Tests basic account linking without token details
- * @param overrides
  */
 export function createMinimalAccount(overrides?: Partial<MockAccountData>): MockAccountData {
   const now = Date.now()

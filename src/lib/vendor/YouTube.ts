@@ -162,7 +162,6 @@ export function getVideoID(url: string): string {
 /**
  * Parse yt-dlp progress line and extract useful info.
  * Progress lines look like: "[download]  45.2% of ~151.23MiB at 2.50MiB/s ETA 00:35"
- * @param line
  */
 function parseProgressLine(line: string): {percent?: number; size?: string; speed?: string; eta?: string} | null {
   // Match download progress line

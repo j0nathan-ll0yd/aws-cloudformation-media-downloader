@@ -9,7 +9,6 @@ import {Readable} from 'stream'
 
 /**
  * Create a test bucket in LocalStack S3
- * @param bucketName
  */
 export async function createTestBucket(bucketName: string): Promise<void> {
   try {
@@ -24,7 +23,6 @@ export async function createTestBucket(bucketName: string): Promise<void> {
 
 /**
  * Delete a test bucket and all its contents from LocalStack S3
- * @param bucketName
  */
 export async function deleteTestBucket(bucketName: string): Promise<void> {
   try {
@@ -44,8 +42,6 @@ export async function deleteTestBucket(bucketName: string): Promise<void> {
 
 /**
  * Check if an object exists in S3
- * @param bucketName
- * @param key
  */
 export async function objectExists(bucketName: string, key: string): Promise<boolean> {
   try {
@@ -58,8 +54,6 @@ export async function objectExists(bucketName: string, key: string): Promise<boo
 
 /**
  * Get object metadata from S3
- * @param bucketName
- * @param key
  */
 export async function getObjectMetadata(bucketName: string, key: string): Promise<{contentLength: number; contentType: string} | null> {
   try {
@@ -73,8 +67,6 @@ export async function getObjectMetadata(bucketName: string, key: string): Promis
 
 /**
  * Get object content from S3 as buffer
- * @param bucketName
- * @param key
  */
 export async function getObjectContent(bucketName: string, key: string): Promise<Buffer | null> {
   try {
@@ -100,8 +92,6 @@ export async function getObjectContent(bucketName: string, key: string): Promise
 
 /**
  * Delete an object from S3
- * @param bucketName
- * @param key
  */
 export async function deleteObject(bucketName: string, key: string): Promise<void> {
   try {
@@ -113,7 +103,6 @@ export async function deleteObject(bucketName: string, key: string): Promise<voi
 
 /**
  * List all objects in a bucket
- * @param bucketName
  */
 export async function listObjects(bucketName: string): Promise<string[]> {
   const response = await listObjectsV2(bucketName)

@@ -64,14 +64,6 @@ export interface ValidationContext {
 
 /**
  * Helper to create a violation object
- * @param rule
- * @param severity
- * @param line
- * @param message
- * @param options
- * @param options.column
- * @param options.suggestion
- * @param options.codeSnippet
  */
 export function createViolation(
   rule: string,
@@ -85,8 +77,6 @@ export function createViolation(
 
 /**
  * Determine validation context from file path
- * @param filePath
- * @param projectRoot
  */
 export function getValidationContext(filePath: string, projectRoot: string): ValidationContext {
   return {

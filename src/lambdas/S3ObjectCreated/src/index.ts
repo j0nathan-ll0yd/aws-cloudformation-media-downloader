@@ -65,7 +65,6 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
 
 /**
  * Process a single S3 record - dispatch notifications to all users of the file
- * @param params - Event handler parameters containing the S3 record
  * @notExported
  */
 async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Promise<void> {

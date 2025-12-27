@@ -26,20 +26,12 @@ const {default: getFileByKeyResponse} = await import('./fixtures/getFileByKey-20
 const {default: getUsersByFileIdResponse} = await import('./fixtures/getUsersByFileId-200-OK.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
-/**
- * Creates an S3 event record with a custom object key
- * @param objectKey
- * @param baseRecord
- */
+/** Creates an S3 event record with a custom object key */
 function createS3Record(objectKey: string, baseRecord: S3EventRecord): S3EventRecord {
   return {...baseRecord, s3: {...baseRecord.s3, object: {...baseRecord.s3.object, key: objectKey}}}
 }
 
-/**
- * Creates a multi-record S3 event for batch processing tests
- * @param keys
- * @param baseRecord
- */
+/** Creates a multi-record S3 event for batch processing tests */
 function createMultiRecordEvent(keys: string[], baseRecord: S3EventRecord): S3Event {
   return {Records: keys.map((key) => createS3Record(key, baseRecord))}
 }
