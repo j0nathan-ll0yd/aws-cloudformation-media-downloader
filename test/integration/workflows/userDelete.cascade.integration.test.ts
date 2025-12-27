@@ -48,11 +48,7 @@ import {
   truncateAllTables
 } from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createTestEndpoint,
-  createTestPlatformApplication,
-  deleteTestPlatformApplication
-} from '../helpers/sns-helpers'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
 import {userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {eq} from 'drizzle-orm'
 

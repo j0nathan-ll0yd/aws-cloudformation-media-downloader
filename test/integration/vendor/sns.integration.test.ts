@@ -92,9 +92,7 @@ describe('SNS Vendor Wrapper Integration Tests', () => {
       const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
 
       // Publish to endpoint (LocalStack accepts but doesn't deliver)
-      const messageId = await publishToEndpoint(endpointArn, JSON.stringify({
-        aps: {alert: 'Test notification', sound: 'default'}
-      }))
+      const messageId = await publishToEndpoint(endpointArn, JSON.stringify({aps: {alert: 'Test notification', sound: 'default'}}))
 
       expect(messageId).toBeDefined()
 

@@ -22,21 +22,9 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/glob
 import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
-import {
-  closeTestDb,
-  createAllTables,
-  dropAllTables,
-  insertDevice,
-  insertUser,
-  linkUserDevice,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, dropAllTables, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createTestEndpoint,
-  createTestPlatformApplication,
-  deleteTestPlatformApplication
-} from '../helpers/sns-helpers'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
 
 // Import handler directly (no mocking - uses real services)
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
@@ -44,11 +32,7 @@ const {handler} = await import('../../../src/lambdas/SendPushNotification/src/in
 /**
  * Creates an SQS event for file notification testing
  */
-function createSQSFileNotificationEvent(
-  userId: string,
-  fileId: string,
-  options?: {title?: string; notificationType?: string}
-): SQSEvent {
+function createSQSFileNotificationEvent(userId: string, fileId: string, options?: {title?: string; notificationType?: string}): SQSEvent {
   const title = options?.title || 'Test Video'
   const notificationType = options?.notificationType || 'DownloadReadyNotification'
 
@@ -56,12 +40,7 @@ function createSQSFileNotificationEvent(
     Records: [{
       messageId: `test-message-${Date.now()}`,
       receiptHandle: 'test-receipt',
-      body: JSON.stringify({
-        fileId,
-        title,
-        authorName: 'Test Channel',
-        status: 'Downloaded'
-      }),
+      body: JSON.stringify({fileId, title, authorName: 'Test Channel', status: 'Downloaded'}),
       attributes: {
         ApproximateReceiveCount: '1',
         SentTimestamp: String(Date.now()),
@@ -227,9 +206,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await linkUserDevice(userId, 'device-skip')
 
     // Act: Send unsupported notification type
-    const event = createSQSFileNotificationEvent(userId, 'video-skip', {
-      notificationType: 'UnsupportedNotificationType'
-    })
+    const event = createSQSFileNotificationEvent(userId, 'video-skip', {notificationType: 'UnsupportedNotificationType'})
     const result = await handler(event, createMockContext())
 
     // Assert: No failures (skipped gracefully)
@@ -247,10 +224,7 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     await linkUserDevice(userId, 'device-metadata')
 
     // Act: Send MetadataNotification
-    const event = createSQSFileNotificationEvent(userId, 'video-metadata', {
-      notificationType: 'MetadataNotification',
-      title: 'Metadata Update'
-    })
+    const event = createSQSFileNotificationEvent(userId, 'video-metadata', {notificationType: 'MetadataNotification', title: 'Metadata Update'})
     const result = await handler(event, createMockContext())
 
     // Assert: Processed successfully

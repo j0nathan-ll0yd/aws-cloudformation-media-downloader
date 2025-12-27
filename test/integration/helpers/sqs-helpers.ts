@@ -30,11 +30,7 @@ const AWS_ACCOUNT_ID = '000000000000' // LocalStack default account ID
  */
 export async function createTestQueue(
   queueName: string,
-  options?: {
-    visibilityTimeout?: number
-    delaySeconds?: number
-    messageRetentionPeriod?: number
-  }
+  options?: {visibilityTimeout?: number; delaySeconds?: number; messageRetentionPeriod?: number}
 ): Promise<string> {
   try {
     const attributes: Record<string, string> = {}
@@ -130,18 +126,9 @@ export async function sendJsonMessage(
  */
 export async function receiveTestMessages(
   queueUrl: string,
-  options?: {
-    maxMessages?: number
-    waitTimeSeconds?: number
-    visibilityTimeout?: number
-  }
+  options?: {maxMessages?: number; waitTimeSeconds?: number; visibilityTimeout?: number}
 ): Promise<Message[]> {
-  const result = await receiveMessage(
-    queueUrl,
-    options?.maxMessages ?? 10,
-    options?.waitTimeSeconds ?? 0,
-    options?.visibilityTimeout
-  )
+  const result = await receiveMessage(queueUrl, options?.maxMessages ?? 10, options?.waitTimeSeconds ?? 0, options?.visibilityTimeout)
   return result.Messages || []
 }
 
@@ -153,10 +140,7 @@ export async function receiveTestMessages(
  * @returns The message, or null if no message available
  */
 export async function receiveOneMessage(queueUrl: string, waitTimeSeconds: number = 5): Promise<Message | null> {
-  const messages = await receiveTestMessages(queueUrl, {
-    maxMessages: 1,
-    waitTimeSeconds
-  })
+  const messages = await receiveTestMessages(queueUrl, {maxMessages: 1, waitTimeSeconds})
   return messages[0] || null
 }
 
@@ -265,4 +249,4 @@ export function numberAttribute(value: number): MessageAttributeValue {
 }
 
 // Re-export Message type for convenience
-export type {Message}
+export type { Message }

@@ -27,23 +27,9 @@ import type {Context} from 'aws-lambda'
 import {UserStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {
-  closeTestDb,
-  createAllTables,
-  dropAllTables,
-  getDevice,
-  getTestDb,
-  insertUser,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, dropAllTables, getDevice, getTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  createTestPlatformApplication,
-  createTestTopic,
-  deleteTestPlatformApplication,
-  deleteTestTopic,
-  listTestEndpoints
-} from '../helpers/sns-helpers'
+import {createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic, listTestEndpoints} from '../helpers/sns-helpers'
 import {userDevices} from '#lib/vendor/Drizzle/schema'
 import {eq} from 'drizzle-orm'
 
@@ -92,12 +78,7 @@ function createRegisterDeviceEvent(
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/devices',
-      authorizer: {
-        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
-        userId,
-        userStatus,
-        integrationLatency: 342
-      },
+      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/devices'
@@ -251,12 +232,7 @@ describe('Device Registration Integration Tests', () => {
         requestTimeEpoch: Date.now(),
         resourceId: 'test-resource',
         resourcePath: '/devices',
-        authorizer: {
-          principalId: 'unknown',
-          userId: undefined,
-          userStatus: UserStatus.Unauthenticated,
-          integrationLatency: 342
-        },
+        authorizer: {principalId: 'unknown', userId: undefined, userStatus: UserStatus.Unauthenticated, integrationLatency: 342},
         identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
       },
       resource: '/devices'
@@ -286,13 +262,7 @@ describe('Device Registration Integration Tests', () => {
 
     await insertUser({userId, email: 'fullinfo@example.com', firstName: 'FullInfo'})
 
-    const body: DeviceRegistrationBody = {
-      deviceId,
-      token,
-      name: 'iPhone 15 Pro Max',
-      systemName: 'iOS',
-      systemVersion: '17.2'
-    }
+    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 

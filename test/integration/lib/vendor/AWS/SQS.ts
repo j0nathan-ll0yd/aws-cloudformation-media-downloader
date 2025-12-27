@@ -16,13 +16,7 @@ import {
   ReceiveMessageCommand,
   SendMessageCommand
 } from '@aws-sdk/client-sqs'
-import type {
-  GetQueueAttributesResult,
-  Message,
-  MessageAttributeValue,
-  ReceiveMessageResult,
-  SendMessageResult
-} from '@aws-sdk/client-sqs'
+import type {GetQueueAttributesResult, Message, MessageAttributeValue, ReceiveMessageResult, SendMessageResult} from '@aws-sdk/client-sqs'
 import {createSQSClient} from '#lib/vendor/AWS/clients'
 
 const sqsClient = createSQSClient()
@@ -35,12 +29,7 @@ const sqsClient = createSQSClient()
  * @returns Queue URL
  */
 export async function createQueue(queueName: string, attributes?: Record<string, string>): Promise<string> {
-  const result = await sqsClient.send(
-    new CreateQueueCommand({
-      QueueName: queueName,
-      Attributes: attributes
-    })
-  )
+  const result = await sqsClient.send(new CreateQueueCommand({QueueName: queueName, Attributes: attributes}))
   return result.QueueUrl!
 }
 
@@ -75,12 +64,7 @@ export async function getQueueAttributes(
   queueUrl: string,
   attributeNames: QueueAttributeName[] = [QueueAttributeName.All]
 ): Promise<GetQueueAttributesResult> {
-  return sqsClient.send(
-    new GetQueueAttributesCommand({
-      QueueUrl: queueUrl,
-      AttributeNames: attributeNames
-    })
-  )
+  return sqsClient.send(new GetQueueAttributesCommand({QueueUrl: queueUrl, AttributeNames: attributeNames}))
 }
 
 /**
@@ -99,12 +83,7 @@ export async function sendMessage(
   delaySeconds?: number
 ): Promise<SendMessageResult> {
   return sqsClient.send(
-    new SendMessageCommand({
-      QueueUrl: queueUrl,
-      MessageBody: messageBody,
-      MessageAttributes: messageAttributes,
-      DelaySeconds: delaySeconds
-    })
+    new SendMessageCommand({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes, DelaySeconds: delaySeconds})
   )
 }
 
@@ -142,12 +121,7 @@ export async function receiveMessage(
  * @param receiptHandle - Receipt handle from receive operation
  */
 export async function deleteMessage(queueUrl: string, receiptHandle: string): Promise<void> {
-  await sqsClient.send(
-    new DeleteMessageCommand({
-      QueueUrl: queueUrl,
-      ReceiptHandle: receiptHandle
-    })
-  )
+  await sqsClient.send(new DeleteMessageCommand({QueueUrl: queueUrl, ReceiptHandle: receiptHandle}))
 }
 
 /**
@@ -160,5 +134,5 @@ export async function purgeQueue(queueUrl: string): Promise<void> {
 }
 
 // Re-export types and enums for convenience
-export type {Message, MessageAttributeValue}
-export {QueueAttributeName}
+export type { Message, MessageAttributeValue }
+export { QueueAttributeName }

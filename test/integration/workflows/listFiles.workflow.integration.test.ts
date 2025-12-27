@@ -28,15 +28,7 @@ import {FileStatus, UserStatus} from '../../../src/types/enums'
 import type {File} from '../../../src/types/domain-models'
 
 // Test helpers
-import {
-  closeTestDb,
-  createAllTables,
-  dropAllTables,
-  insertFile,
-  insertUser,
-  linkUserFile,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
@@ -49,8 +41,8 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
     headers: userId && userStatus === UserStatus.Authenticated
       ? {Authorization: 'Bearer test-token'}
       : userStatus === UserStatus.Unauthenticated
-        ? {Authorization: 'Bearer invalid-token'}
-        : {},
+      ? {Authorization: 'Bearer invalid-token'}
+      : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
     isBase64Encoded: false,
@@ -71,12 +63,7 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: '/files',
-      authorizer: {
-        principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous',
-        userId,
-        userStatus,
-        integrationLatency: 342
-      },
+      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
       identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: '/files'

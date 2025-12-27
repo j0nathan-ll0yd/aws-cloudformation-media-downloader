@@ -55,10 +55,7 @@ describe('SQS Vendor Wrapper Integration Tests', () => {
 
     test('should create queue with custom attributes', async () => {
       const customQueueName = `test-custom-${Date.now()}`
-      const customQueueUrl = await createTestQueue(customQueueName, {
-        visibilityTimeout: 60,
-        delaySeconds: 5
-      })
+      const customQueueUrl = await createTestQueue(customQueueName, {visibilityTimeout: 60, delaySeconds: 5})
 
       expect(customQueueUrl).toContain(customQueueName)
 
@@ -80,12 +77,7 @@ describe('SQS Vendor Wrapper Integration Tests', () => {
     })
 
     test('should send and receive JSON message', async () => {
-      const payload = {
-        action: 'processFile',
-        fileId: 'file-123',
-        userId: 'user-456',
-        metadata: {size: 1024, type: 'video/mp4'}
-      }
+      const payload = {action: 'processFile', fileId: 'file-123', userId: 'user-456', metadata: {size: 1024, type: 'video/mp4'}}
 
       await sendJsonMessage(queueUrl, payload)
 
@@ -98,11 +90,7 @@ describe('SQS Vendor Wrapper Integration Tests', () => {
 
     test('should send message with attributes', async () => {
       const messageBody = 'Message with attributes'
-      const attributes = {
-        EventType: stringAttribute('FileUploaded'),
-        FileSize: numberAttribute(2048),
-        Priority: stringAttribute('high')
-      }
+      const attributes = {EventType: stringAttribute('FileUploaded'), FileSize: numberAttribute(2048), Priority: stringAttribute('high')}
 
       await sendTestMessage(queueUrl, messageBody, attributes)
 

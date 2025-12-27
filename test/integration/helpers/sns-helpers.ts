@@ -52,8 +52,8 @@ export async function deleteTestTopic(topicArn: string): Promise<void> {
     const subscriptions = await listSubscriptionsByTopic(topicArn)
     if (subscriptions.Subscriptions) {
       await Promise.all(
-        subscriptions.Subscriptions.filter((sub) => sub.SubscriptionArn && sub.SubscriptionArn !== 'PendingConfirmation').map(
-          (sub) => unsubscribe(sub.SubscriptionArn!)
+        subscriptions.Subscriptions.filter((sub) => sub.SubscriptionArn && sub.SubscriptionArn !== 'PendingConfirmation').map((sub) =>
+          unsubscribe(sub.SubscriptionArn!)
         )
       )
     }
@@ -115,11 +115,7 @@ export async function deleteTestPlatformApplication(platformApplicationArn: stri
  * @param userData - Optional custom user data
  * @returns Endpoint ARN
  */
-export async function createTestEndpoint(
-  platformApplicationArn: string,
-  deviceToken: string,
-  userData?: string
-): Promise<string> {
+export async function createTestEndpoint(platformApplicationArn: string, deviceToken: string, userData?: string): Promise<string> {
   const result = await createPlatformEndpoint(platformApplicationArn, deviceToken, userData)
   return result.EndpointArn!
 }
@@ -160,10 +156,7 @@ export async function isEndpointEnabled(endpointArn: string): Promise<boolean> {
  * @returns MessageId
  */
 export async function publishToEndpoint(endpointArn: string, message: string): Promise<string> {
-  const result = await publish({
-    TargetArn: endpointArn,
-    Message: message
-  })
+  const result = await publish({TargetArn: endpointArn, Message: message})
   return result.MessageId!
 }
 
@@ -175,10 +168,7 @@ export async function publishToEndpoint(endpointArn: string, message: string): P
  * @returns MessageId
  */
 export async function publishToTopic(topicArn: string, message: string): Promise<string> {
-  const result = await publish({
-    TopicArn: topicArn,
-    Message: message
-  })
+  const result = await publish({TopicArn: topicArn, Message: message})
   return result.MessageId!
 }
 

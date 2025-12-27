@@ -59,18 +59,8 @@ export async function deleteTopic(topicArn: string): Promise<void> {
  * @param attributes - Platform-specific attributes (e.g., credentials)
  * @returns Platform application ARN
  */
-export async function createPlatformApplication(
-  name: string,
-  platform: string,
-  attributes: Record<string, string>
-): Promise<string> {
-  const result = await snsClient.send(
-    new CreatePlatformApplicationCommand({
-      Name: name,
-      Platform: platform,
-      Attributes: attributes
-    })
-  )
+export async function createPlatformApplication(name: string, platform: string, attributes: Record<string, string>): Promise<string> {
+  const result = await snsClient.send(new CreatePlatformApplicationCommand({Name: name, Platform: platform, Attributes: attributes}))
   return result.PlatformApplicationArn!
 }
 
@@ -91,18 +81,8 @@ export async function deletePlatformApplication(platformApplicationArn: string):
  * @param customUserData - Optional custom user data
  * @returns Endpoint ARN
  */
-export async function createPlatformEndpoint(
-  platformApplicationArn: string,
-  token: string,
-  customUserData?: string
-): Promise<CreateEndpointResponse> {
-  return snsClient.send(
-    new CreatePlatformEndpointCommand({
-      PlatformApplicationArn: platformApplicationArn,
-      Token: token,
-      CustomUserData: customUserData
-    })
-  )
+export async function createPlatformEndpoint(platformApplicationArn: string, token: string, customUserData?: string): Promise<CreateEndpointResponse> {
+  return snsClient.send(new CreatePlatformEndpointCommand({PlatformApplicationArn: platformApplicationArn, Token: token, CustomUserData: customUserData}))
 }
 
 /**
@@ -130,9 +110,7 @@ export async function getEndpointAttributes(endpointArn: string): Promise<GetEnd
  * @param platformApplicationArn - ARN of the platform application
  * @returns List of endpoints
  */
-export async function listPlatformEndpoints(
-  platformApplicationArn: string
-): Promise<ListEndpointsByPlatformApplicationResponse> {
+export async function listPlatformEndpoints(platformApplicationArn: string): Promise<ListEndpointsByPlatformApplicationResponse> {
   return snsClient.send(new ListEndpointsByPlatformApplicationCommand({PlatformApplicationArn: platformApplicationArn}))
 }
 
@@ -142,13 +120,15 @@ export async function listPlatformEndpoints(
  * @param params - Publish parameters (TopicArn/TargetArn, Message, etc.)
  * @returns Publish response with MessageId
  */
-export async function publish(params: {
-  TopicArn?: string
-  TargetArn?: string
-  Message: string
-  MessageStructure?: string
-  MessageAttributes?: Record<string, {DataType: string; StringValue?: string}>
-}): Promise<PublishResponse> {
+export async function publish(
+  params: {
+    TopicArn?: string
+    TargetArn?: string
+    Message: string
+    MessageStructure?: string
+    MessageAttributes?: Record<string, {DataType: string; StringValue?: string}>
+  }
+): Promise<PublishResponse> {
   return snsClient.send(new PublishCommand(params))
 }
 
@@ -161,13 +141,7 @@ export async function publish(params: {
  * @returns Subscription ARN
  */
 export async function subscribe(topicArn: string, protocol: string, endpoint: string): Promise<SubscribeResponse> {
-  return snsClient.send(
-    new SubscribeCommand({
-      TopicArn: topicArn,
-      Protocol: protocol,
-      Endpoint: endpoint
-    })
-  )
+  return snsClient.send(new SubscribeCommand({TopicArn: topicArn, Protocol: protocol, Endpoint: endpoint}))
 }
 
 /**
