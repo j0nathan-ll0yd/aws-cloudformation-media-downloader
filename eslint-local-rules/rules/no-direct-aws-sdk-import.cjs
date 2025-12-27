@@ -3,6 +3,11 @@
  * CRITICAL: Blocks direct AWS SDK imports outside vendor directory
  *
  * Mirrors: src/mcp/validation/rules/aws-sdk-encapsulation.ts
+ *
+ * Exceptions:
+ * - Vendor wrapper directories (lib/vendor/AWS, lib/vendor/Powertools, etc.)
+ * - Integration test helpers (test/integration/helpers)
+ * - Type-only imports in test files (import type { ... } for mock typing)
  */
 
 const FORBIDDEN_PACKAGES = [
@@ -83,6 +88,15 @@ module.exports = {
         const moduleSpecifier = node.source.value
 
         if (isForbiddenImport(moduleSpecifier)) {
+          // Allow type-only imports in test files (for mock typing)
+          // Test files need to import AWS SDK types to properly type their mocks
+          const isTypeOnlyImport = node.importKind === 'type'
+          const isTestFile = filename.includes('.test.ts') || filename.includes('.test.js')
+
+          if (isTypeOnlyImport && isTestFile) {
+            return // Allow type imports in tests
+          }
+
           context.report({
             node,
             messageId: 'forbidden',
