@@ -203,7 +203,7 @@ export async function createAllTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ${schema}_sessions_user_idx ON ${schema}.sessions(user_id);
     CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
     CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, provider_account_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, account_id);
     CREATE INDEX IF NOT EXISTS ${schema}_verification_identifier_idx ON ${schema}.verification(identifier);
     CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
     CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
