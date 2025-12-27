@@ -6,27 +6,26 @@
  */
 
 import {
-  createQueue,
-  deleteMessage,
-  deleteQueue,
-  getQueueAttributes,
-  getQueueUrl,
-  purgeQueue,
+  CreateQueueCommand,
+  DeleteMessageCommand,
+  DeleteQueueCommand,
+  GetQueueAttributesCommand,
+  GetQueueUrlCommand,
+  PurgeQueueCommand,
   QueueAttributeName,
-  receiveMessage,
-  sendMessage
-} from '../lib/vendor/AWS/SQS'
-import type {Message, MessageAttributeValue} from '../lib/vendor/AWS/SQS'
+  ReceiveMessageCommand,
+  SendMessageCommand,
+  SQSClient
+} from '@aws-sdk/client-sqs'
+import type {Message, MessageAttributeValue} from '@aws-sdk/client-sqs'
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 const AWS_ACCOUNT_ID = '000000000000' // LocalStack default account ID
 
+const sqsClient = new SQSClient({region: AWS_REGION, endpoint: 'http://localhost:4566', credentials: {accessKeyId: 'test', secretAccessKey: 'test'}})
+
 /**
  * Creates a test SQS queue in LocalStack
- *
- * @param queueName - Name of the queue
- * @param options - Optional queue configuration
- * @returns Queue URL
  */
 export async function createTestQueue(
   queueName: string,
@@ -45,11 +44,14 @@ export async function createTestQueue(
       attributes['MessageRetentionPeriod'] = options.messageRetentionPeriod.toString()
     }
 
-    return await createQueue(queueName, Object.keys(attributes).length > 0 ? attributes : undefined)
+    const result = await sqsClient.send(
+      new CreateQueueCommand({QueueName: queueName, Attributes: Object.keys(attributes).length > 0 ? attributes : undefined})
+    )
+    return result.QueueUrl!
   } catch (error) {
-    // Queue might already exist
     if (error instanceof Error && error.name === 'QueueAlreadyExists') {
-      return await getQueueUrl(queueName)
+      const result = await sqsClient.send(new GetQueueUrlCommand({QueueName: queueName}))
+      return result.QueueUrl!
     }
     throw error
   }
@@ -57,12 +59,10 @@ export async function createTestQueue(
 
 /**
  * Deletes a test SQS queue from LocalStack
- *
- * @param queueUrl - URL of the queue to delete
  */
 export async function deleteTestQueue(queueUrl: string): Promise<void> {
   try {
-    await deleteQueue(queueUrl)
+    await sqsClient.send(new DeleteQueueCommand({QueueUrl: queueUrl}))
   } catch {
     // Queue might not exist
   }
@@ -70,13 +70,8 @@ export async function deleteTestQueue(queueUrl: string): Promise<void> {
 
 /**
  * Gets the ARN of a queue from its URL
- *
- * @param queueUrl - URL of the queue
- * @returns Queue ARN
  */
 export function getQueueArnFromUrl(queueUrl: string): string {
-  // Extract queue name from URL
-  // URL format: http://localhost:4566/000000000000/queue-name or similar
   const parts = queueUrl.split('/')
   const queueName = parts[parts.length - 1]
   return `arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:${queueName}`
@@ -84,12 +79,6 @@ export function getQueueArnFromUrl(queueUrl: string): string {
 
 /**
  * Sends a test message to an SQS queue
- *
- * @param queueUrl - URL of the queue
- * @param body - Message body
- * @param attributes - Optional message attributes
- * @param delaySeconds - Optional delay before message is visible
- * @returns MessageId
  */
 export async function sendTestMessage(
   queueUrl: string,
@@ -97,17 +86,14 @@ export async function sendTestMessage(
   attributes?: Record<string, MessageAttributeValue>,
   delaySeconds?: number
 ): Promise<string> {
-  const result = await sendMessage(queueUrl, body, attributes, delaySeconds)
+  const result = await sqsClient.send(
+    new SendMessageCommand({QueueUrl: queueUrl, MessageBody: body, MessageAttributes: attributes, DelaySeconds: delaySeconds})
+  )
   return result.MessageId!
 }
 
 /**
  * Sends a JSON message to an SQS queue
- *
- * @param queueUrl - URL of the queue
- * @param payload - Object to serialize as JSON
- * @param attributes - Optional message attributes
- * @returns MessageId
  */
 export async function sendJsonMessage(
   queueUrl: string,
@@ -119,25 +105,25 @@ export async function sendJsonMessage(
 
 /**
  * Receives messages from a queue with optional long polling
- *
- * @param queueUrl - URL of the queue
- * @param options - Receive options
- * @returns Array of received messages
  */
 export async function receiveTestMessages(
   queueUrl: string,
   options?: {maxMessages?: number; waitTimeSeconds?: number; visibilityTimeout?: number}
 ): Promise<Message[]> {
-  const result = await receiveMessage(queueUrl, options?.maxMessages ?? 10, options?.waitTimeSeconds ?? 0, options?.visibilityTimeout)
+  const result = await sqsClient.send(
+    new ReceiveMessageCommand({
+      QueueUrl: queueUrl,
+      MaxNumberOfMessages: options?.maxMessages ?? 10,
+      WaitTimeSeconds: options?.waitTimeSeconds ?? 0,
+      VisibilityTimeout: options?.visibilityTimeout,
+      MessageAttributeNames: ['All']
+    })
+  )
   return result.Messages || []
 }
 
 /**
  * Receives a single message from a queue
- *
- * @param queueUrl - URL of the queue
- * @param waitTimeSeconds - How long to wait for a message (default: 5)
- * @returns The message, or null if no message available
  */
 export async function receiveOneMessage(queueUrl: string, waitTimeSeconds: number = 5): Promise<Message | null> {
   const messages = await receiveTestMessages(queueUrl, {maxMessages: 1, waitTimeSeconds})
@@ -146,22 +132,16 @@ export async function receiveOneMessage(queueUrl: string, waitTimeSeconds: numbe
 
 /**
  * Deletes a message from a queue after processing
- *
- * @param queueUrl - URL of the queue
- * @param message - Message to delete (must have ReceiptHandle)
  */
 export async function deleteTestMessage(queueUrl: string, message: Message): Promise<void> {
   if (!message.ReceiptHandle) {
     throw new Error('Message must have a ReceiptHandle to delete')
   }
-  await deleteMessage(queueUrl, message.ReceiptHandle)
+  await sqsClient.send(new DeleteMessageCommand({QueueUrl: queueUrl, ReceiptHandle: message.ReceiptHandle}))
 }
 
 /**
  * Drains all messages from a queue (for cleanup)
- *
- * @param queueUrl - URL of the queue
- * @returns Number of messages drained
  */
 export async function drainQueue(queueUrl: string): Promise<number> {
   let totalDrained = 0
@@ -181,15 +161,10 @@ export async function drainQueue(queueUrl: string): Promise<number> {
 
 /**
  * Purges all messages from a queue
- *
- * Note: SQS limits purge operations to once per 60 seconds.
- * For immediate cleanup, use drainQueue instead.
- *
- * @param queueUrl - URL of the queue to purge
  */
 export async function purgeTestQueue(queueUrl: string): Promise<void> {
   try {
-    await purgeQueue(queueUrl)
+    await sqsClient.send(new PurgeQueueCommand({QueueUrl: queueUrl}))
   } catch {
     // Purge might fail if called too frequently
   }
@@ -197,21 +172,14 @@ export async function purgeTestQueue(queueUrl: string): Promise<void> {
 
 /**
  * Gets the approximate number of messages in a queue
- *
- * @param queueUrl - URL of the queue
- * @returns Approximate message count
  */
 export async function getMessageCount(queueUrl: string): Promise<number> {
-  const attributes = await getQueueAttributes(queueUrl, [QueueAttributeName.ApproximateNumberOfMessages])
-  return parseInt(attributes.Attributes?.ApproximateNumberOfMessages || '0', 10)
+  const result = await sqsClient.send(new GetQueueAttributesCommand({QueueUrl: queueUrl, AttributeNames: [QueueAttributeName.ApproximateNumberOfMessages]}))
+  return parseInt(result.Attributes?.ApproximateNumberOfMessages || '0', 10)
 }
 
 /**
  * Waits for a queue to have at least one message
- *
- * @param queueUrl - URL of the queue
- * @param timeoutMs - Maximum time to wait in milliseconds
- * @returns true if message arrived, false if timeout
  */
 export async function waitForMessage(queueUrl: string, timeoutMs: number = 10000): Promise<boolean> {
   const startTime = Date.now()
@@ -230,9 +198,6 @@ export async function waitForMessage(queueUrl: string, timeoutMs: number = 10000
 
 /**
  * Creates a string message attribute for SQS
- *
- * @param value - String value
- * @returns MessageAttributeValue
  */
 export function stringAttribute(value: string): MessageAttributeValue {
   return {DataType: 'String', StringValue: value}
@@ -240,13 +205,9 @@ export function stringAttribute(value: string): MessageAttributeValue {
 
 /**
  * Creates a number message attribute for SQS
- *
- * @param value - Number value
- * @returns MessageAttributeValue
  */
 export function numberAttribute(value: number): MessageAttributeValue {
   return {DataType: 'Number', StringValue: value.toString()}
 }
 
-// Re-export Message type for convenience
-export type { Message }
+export type { Message, MessageAttributeValue }
