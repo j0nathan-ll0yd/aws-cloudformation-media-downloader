@@ -99,6 +99,9 @@ function getTestFilePath(filePath: string): string {
   return filePath.replace('/src/', '/test/').replace(/\.ts$/, '.test.ts')
 }
 
+/**
+ *
+ */
 export async function handleCoverageQuery(args: CoverageQueryArgs) {
   const {file, query} = args
 

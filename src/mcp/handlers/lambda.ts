@@ -10,6 +10,9 @@
 
 import {getLambdaConfigs, getLambdaInvocations} from './data-loader.js'
 
+/**
+ *
+ */
 export async function handleLambdaQuery(args: {lambda?: string; query: string}) {
   const {lambda, query} = args
 
