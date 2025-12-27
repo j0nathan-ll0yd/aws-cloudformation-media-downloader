@@ -1,3 +1,13 @@
+/**
+ * S3ObjectCreated Lambda
+ *
+ * Handles S3 object creation events when videos are uploaded.
+ * Updates file records and queues push notifications for users.
+ *
+ * Trigger: S3 Event (s3:ObjectCreated)
+ * Input: S3Event with object creation records
+ * Output: void (processes all records, logs errors)
+ */
 import type {S3EventRecord} from 'aws-lambda'
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'

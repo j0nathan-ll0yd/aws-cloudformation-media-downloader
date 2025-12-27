@@ -1,3 +1,13 @@
+/**
+ * SendPushNotification Lambda
+ *
+ * Sends APNS push notifications to user devices.
+ * Processes notification messages from SQS queue.
+ *
+ * Trigger: SQS Queue (from S3ObjectCreated)
+ * Input: SQSEvent with FileNotificationType records
+ * Output: SQSBatchResponse with item failures for retry
+ */
 import type {SQSBatchResponse, SQSEvent, SQSRecord} from 'aws-lambda'
 import {UserDevices} from '#entities/UserDevices'
 import {Devices} from '#entities/Devices'

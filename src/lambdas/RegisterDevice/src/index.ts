@@ -1,3 +1,13 @@
+/**
+ * RegisterDevice Lambda
+ *
+ * Registers iOS devices for push notifications via APNS.
+ * Creates platform endpoint and subscribes to notification topics.
+ *
+ * Trigger: API Gateway POST /devices
+ * Input: DeviceRegistrationRequest with device token
+ * Output: APIGatewayProxyResult with device registration
+ */
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'

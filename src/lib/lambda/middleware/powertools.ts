@@ -35,22 +35,9 @@ let isColdStart = true
  *
  * @example
  * ```typescript
- * // Standard usage - cold start tracked automatically, no custom metrics
- * export const handler = withPowertools(wrapAuthenticatedHandler(
- *   async ({event, context, userId}) => {
- *     const files = await getFilesByUser(userId)
- *     return response(context, 200, files)
- *   }
- * ))
- *
- * // Enable custom metrics for lambdas that publish them
- * export const handler = withPowertools(wrapScheduledHandler(
- *   async ({event, context}) => {
- *     metrics.addMetric('FilesProcessed', MetricUnit.Count, filesProcessed)
- *     return result
- *   }
- * ), {enableCustomMetrics: true})
+ * export const handler = withPowertools(wrapAuthenticatedHandler(async (p) => { ... }))
  * ```
+ * @see docs/wiki/TypeScript/Lambda-Middleware-Patterns.md
  */
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>,

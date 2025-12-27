@@ -12,10 +12,10 @@
 import {and, eq, lt, or} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
+import type {CleanupResult} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import type {CleanupResult} from '#types/lambda'
 
 export type { CleanupResult }
 

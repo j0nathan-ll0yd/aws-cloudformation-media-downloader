@@ -17,10 +17,10 @@ import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {sql} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import type {MigrationResult} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import type {MigrationResult} from '#types/lambda'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

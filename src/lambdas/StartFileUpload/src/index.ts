@@ -1,3 +1,13 @@
+/**
+ * StartFileUpload Lambda
+ *
+ * Downloads YouTube videos to S3 using yt-dlp. Processes messages from
+ * the download queue, handles retries, and publishes completion events.
+ *
+ * Trigger: SQS DownloadQueue (via EventBridge)
+ * Input: SQSEvent with DownloadQueueMessage records
+ * Output: SQSBatchResponse with item failures for retry
+ */
 import type {SQSBatchResponse, SQSEvent} from 'aws-lambda'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {UserFiles} from '#entities/UserFiles'
@@ -10,6 +20,7 @@ import type {DownloadCompletedDetail, DownloadFailedDetail, DownloadQueueMessage
 import {FileStatus} from '#types/enums'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
+import {upsertFile} from './file-helpers'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issue-service'
@@ -17,7 +28,6 @@ import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powert
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createMetadataNotification} from '#lib/domain/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/error-classifier'
-import {upsertFile} from './file-helpers'
 
 /**
  * Fetch video info with OpenTelemetry tracing.

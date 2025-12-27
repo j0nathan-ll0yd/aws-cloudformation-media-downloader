@@ -53,17 +53,7 @@ export function getCurrentSpan(): Span | undefined {
  * @returns New span or null if tracing disabled
  *
  * @example
- * ```typescript
- * const span = startSpan('database-query')
- * try {
- *   const result = await query()
- *   endSpan(span)
- *   return result
- * } catch (error) {
- *   endSpan(span, error as Error)
- *   throw error
- * }
- * ```
+ * const span = startSpan('db-query'); endSpan(span) // or endSpan(span, err)
  */
 export function startSpan(name: string, kind: SpanKind = SpanKind.INTERNAL): Span | null {
   if (!isTracingEnabled()) {
@@ -136,10 +126,7 @@ export function endSpan(span: Span | null, error?: Error): void {
  *
  * @example
  * ```typescript
- * export const handler = withTracing(async (event, context, metadata) => {
- *   console.log('Trace ID:', metadata?.traceId)
- *   // ... handler logic
- * })
+ * export const handler = withTracing(async (event, ctx, meta) => { ... })
  * ```
  */
 export function withTracing<TEvent = unknown, TResult = unknown>(
