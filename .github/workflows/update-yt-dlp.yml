@@ -27,14 +27,14 @@ jobs:
 
           CURRENT=$(cat layers/yt-dlp/VERSION 2>/dev/null | tr -d '[:space:]' || echo "none")
 
-          echo "latest=${LATEST}" >> $GITHUB_OUTPUT
-          echo "current=${CURRENT}" >> $GITHUB_OUTPUT
+          echo "latest=${LATEST}" >> "$GITHUB_OUTPUT"
+          echo "current=${CURRENT}" >> "$GITHUB_OUTPUT"
 
           if [ "$LATEST" != "$CURRENT" ]; then
-            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "update_needed=true" >> "$GITHUB_OUTPUT"
             echo "✅ Update available: ${CURRENT} → ${LATEST}"
           else
-            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "update_needed=false" >> "$GITHUB_OUTPUT"
             echo "ℹ️  Already on latest version: ${CURRENT}"
           fi
         env:

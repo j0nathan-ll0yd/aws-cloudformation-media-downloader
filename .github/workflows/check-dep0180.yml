@@ -36,16 +36,16 @@ jobs:
 
           # Check if DEP0180 appears in the output
           if echo "$OUTPUT" | grep -q "DEP0180"; then
-            echo "still_broken=true" >> $GITHUB_OUTPUT
+            echo "still_broken=true" >> "$GITHUB_OUTPUT"
             echo "⚠️ DEP0180 warning still appears - ts-morph or dependencies not yet fixed"
           else
-            echo "still_broken=false" >> $GITHUB_OUTPUT
+            echo "still_broken=false" >> "$GITHUB_OUTPUT"
             echo "✅ No DEP0180 warning detected!"
           fi
 
           # Get current ts-morph version for the report
           TS_MORPH_VERSION=$(pnpm list ts-morph --depth=0 | grep ts-morph || echo "unknown")
-          echo "ts_morph_version=${TS_MORPH_VERSION}" >> $GITHUB_OUTPUT
+          echo "ts_morph_version=${TS_MORPH_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Comment on issue if fixed
         if: steps.check.outputs.still_broken == 'false'

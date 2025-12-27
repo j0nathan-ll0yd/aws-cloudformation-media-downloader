@@ -96,8 +96,8 @@ jobs:
       - name: Post coverage to job summary
         if: always() && hashFiles('coverage/integration/coverage-summary.md') != ''
         run: |
-          echo "## Integration Test Coverage" >> $GITHUB_STEP_SUMMARY
-          cat coverage/integration/coverage-summary.md >> $GITHUB_STEP_SUMMARY
+          echo "## Integration Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          cat coverage/integration/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test results
         if: always()

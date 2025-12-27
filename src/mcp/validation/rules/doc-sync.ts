@@ -42,7 +42,8 @@ const EXPECTED_COUNTS = {
 const REQUIRED_VENDOR_PATHS = [
   'src/lib/vendor/AWS',
   'src/lib/vendor/BetterAuth',
-  'src/lib/vendor/ElectroDB',
+  'src/lib/vendor/Drizzle',
+  'src/lib/vendor/OpenTelemetry',
   'src/lib/vendor/Powertools',
   'src/lib/vendor/YouTube'
 ]
