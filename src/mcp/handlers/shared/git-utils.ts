@@ -156,7 +156,6 @@ export interface BlameInfo {
   content: string
 }
 
-/** */
 export function getBlame(filePath: string, startLine?: number, endLine?: number): BlameInfo[] {
   const lineArgs = startLine !== undefined && endLine !== undefined ? ['-L', `${startLine},${endLine}`] : []
 
@@ -199,7 +198,6 @@ export interface CommitInfo {
   message: string
 }
 
-/** */
 export function getFileHistory(filePath: string, limit = 10): CommitInfo[] {
   try {
     const output = execGit(['log', '--format=%H|%an|%ai|%s', `-n${limit}`, '--', filePath])

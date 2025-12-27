@@ -64,7 +64,8 @@ export default [
       'jsdoc/require-jsdoc': ['warn', {
         publicOnly: true,
         require: {FunctionDeclaration: true, MethodDefinition: false, ArrowFunctionExpression: false},
-        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
+        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration'],
+        enableFixer: false
       }],
       // Turned off: TypeScript types serve as documentation
       'jsdoc/require-param': 'off',
@@ -111,7 +112,8 @@ export default [
       'jsdoc/require-jsdoc': ['error', {
         publicOnly: true,
         require: {FunctionDeclaration: true, MethodDefinition: false, ArrowFunctionExpression: false},
-        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration']
+        contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration'],
+        enableFixer: false
       }]
     }
   }

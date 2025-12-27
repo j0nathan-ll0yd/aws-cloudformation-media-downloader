@@ -82,7 +82,6 @@ function findCascade(filePath: string, graph: Record<string, {imports: string[]}
   return Array.from(affected).sort()
 }
 
-/** */
 export async function handleImpactQuery(args: ImpactQueryArgs) {
   const {file, query} = args
 

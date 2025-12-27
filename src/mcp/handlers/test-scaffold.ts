@@ -121,7 +121,6 @@ function generateTestScaffold(lambdaName: string, mocks: MockInfo[]): string {
   })
 }
 
-/** */
 export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const {file, query} = args
 
