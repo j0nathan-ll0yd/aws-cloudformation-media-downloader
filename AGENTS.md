@@ -270,12 +270,13 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | Lambda | Trigger Type | Source | Purpose |
 |--------|-------------|--------|---------|
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
-| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| ListFiles | API Gateway | GET /files | List user's available files |
-| LogClientEvent | API Gateway | POST /events | Log client-side events |
-| LoginUser | API Gateway | POST /auth/login | Authenticate user |
-| PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
 | CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
+| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
+| DeviceEvent | API Gateway | POST /events | Log client-side device events |
+| ListFiles | API Gateway | GET /files | List user's available files |
+| LoginUser | API Gateway | POST /auth/login | Authenticate user |
+| MigrateDSQL | Manual | CLI invocation | Run Drizzle migrations on Aurora DSQL |
+| PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
 | RefreshToken | API Gateway | POST /auth/refresh | Refresh authentication token |
 | RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
 | RegisterUser | API Gateway | POST /auth/register | Register new user |

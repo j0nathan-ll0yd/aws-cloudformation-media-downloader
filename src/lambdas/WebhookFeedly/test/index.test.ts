@@ -3,6 +3,11 @@ import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createEntityMock} from '#test/helpers/entity-mock'
+import {FileStatus} from '#types/enums'
+import type {SendMessageRequest} from '@aws-sdk/client-sqs'
+import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
+import type {MediaDownloaderEventType} from '#types/events'
+
 const fakeUserId = uuidv4()
 
 const filesMock = createEntityMock()
@@ -26,12 +31,9 @@ jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
   makeIdempotent: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 
+const sendMessageMock = jest.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
 jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
-  sendMessage: jest.fn().mockReturnValue({
-    MD5OfMessageBody: '44dd2fc26e4186dc12b8e67ccb9a9435',
-    MD5OfMessageAttributes: 'e95833d661f4007f9575877843f475ed',
-    MessageId: 'e990c66f-23f6-4982-9274-a5a533ceb6dc'
-  }), // fmt: multiline
+  sendMessage: sendMessageMock,
   subscribe: jest.fn(),
   stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
@@ -53,7 +55,7 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
   })
 }))
 
-const publishEventMock = jest.fn<(eventType: string, detail: unknown) => Promise<unknown>>()
+const publishEventMock = jest.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
 jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
@@ -72,6 +74,7 @@ describe('#WebhookFeedly', () => {
     process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
     publishEventMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
     fileDownloadsMock.mocks.create.mockResolvedValue({data: {}})
+    sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
   })
   test('should continue processing even if user-file association fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
@@ -133,5 +136,101 @@ describe('#WebhookFeedly', () => {
         correlationId: expect.any(String),
         requestedAt: expect.any(String)
       }))
+  })
+
+  describe('#AlreadyDownloadedFile', () => {
+    test('should send notification and return 200 when file is already downloaded', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      event.body = JSON.stringify(handleFeedlyEventResponse)
+      userFilesMock.mocks.create.mockResolvedValue({data: {}})
+      // Return an already-downloaded file
+      filesMock.mocks.get.mockResolvedValue({
+        data: {
+          fileId: 'wRG7lAGdRII',
+          key: 'wRG7lAGdRII.mp4',
+          status: FileStatus.Downloaded,
+          size: 50000000,
+          url: 'https://example.com/wRG7lAGdRII.mp4'
+        }
+      })
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.status).toEqual('Dispatched')
+      // Should send notification, NOT publish download event
+      expect(sendMessageMock).toHaveBeenCalledWith(expect.objectContaining({
+        QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
+        MessageBody: expect.stringContaining('DownloadReadyNotification')
+      }))
+      expect(publishEventMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('#ExistingNonDownloadedFile', () => {
+    test('should skip file creation but publish event for existing queued file', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      event.body = JSON.stringify(handleFeedlyEventResponse)
+      userFilesMock.mocks.create.mockResolvedValue({data: {}})
+      // Return an existing file that is still queued
+      filesMock.mocks.get.mockResolvedValue({
+        data: {
+          fileId: 'wRG7lAGdRII',
+          key: 'wRG7lAGdRII.mp4',
+          status: FileStatus.Queued,
+          size: 0
+        }
+      })
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(202)
+      // Should NOT create a new file record
+      expect(filesMock.mocks.create).not.toHaveBeenCalled()
+      // Should still publish DownloadRequested event
+      expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object))
+    })
+
+    test('should skip file creation for existing downloading file', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      event.body = JSON.stringify(handleFeedlyEventResponse)
+      userFilesMock.mocks.create.mockResolvedValue({data: {}})
+      // Return an existing file that is currently downloading
+      filesMock.mocks.get.mockResolvedValue({
+        data: {
+          fileId: 'wRG7lAGdRII',
+          key: 'wRG7lAGdRII.mp4',
+          status: FileStatus.Downloading,
+          size: 0
+        }
+      })
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(202)
+      expect(filesMock.mocks.create).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('#FailureHandling', () => {
+    test('should return 500 when EventBridge publish fails', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      event.body = JSON.stringify(handleFeedlyEventResponse)
+      filesMock.mocks.get.mockResolvedValue({data: undefined})
+      filesMock.mocks.create.mockResolvedValue({data: {}})
+      userFilesMock.mocks.create.mockResolvedValue({data: {}})
+      publishEventMock.mockRejectedValue(new Error('EventBridge failure'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(body.error.message).toEqual('EventBridge failure')
+    })
+
+    test('should return 500 when file creation fails', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      event.body = JSON.stringify(handleFeedlyEventResponse)
+      filesMock.mocks.get.mockResolvedValue({data: undefined})
+      filesMock.mocks.create.mockRejectedValue(new Error('DynamoDB write failed'))
+      userFilesMock.mocks.create.mockResolvedValue({data: {}})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(body.error.message).toEqual('DynamoDB write failed')
+    })
   })
 })

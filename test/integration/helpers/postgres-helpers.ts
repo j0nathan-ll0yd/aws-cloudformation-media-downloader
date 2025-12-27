@@ -81,10 +81,12 @@ export async function createAllTables(): Promise<void> {
   // Using TEXT for UUID columns to avoid parallel test race conditions
   await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS ${schema}.users (
-      user_id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-      first_name TEXT NOT NULL,
+      name TEXT,
+      image TEXT,
+      first_name TEXT,
       last_name TEXT,
       apple_device_id TEXT,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -128,15 +130,14 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.sessions (
-      session_id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
       token TEXT NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
       ip_address TEXT,
       user_agent TEXT,
-      device_id TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.accounts (
@@ -154,11 +155,13 @@ export async function createAllTables(): Promise<void> {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS ${schema}.verification_tokens (
-      token TEXT PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS ${schema}.verification (
+      id TEXT PRIMARY KEY,
       identifier TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
+      value TEXT NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.file_downloads (
@@ -166,14 +169,14 @@ export async function createAllTables(): Promise<void> {
       status TEXT NOT NULL DEFAULT 'Pending',
       retry_count INTEGER NOT NULL DEFAULT 0,
       max_retries INTEGER NOT NULL DEFAULT 5,
-      retry_after INTEGER,
+      retry_after TIMESTAMP WITH TIME ZONE,
       error_category TEXT,
       last_error TEXT,
-      scheduled_release_time INTEGER,
+      scheduled_release_time TIMESTAMP WITH TIME ZONE,
       source_url TEXT,
       correlation_id TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.user_files (
@@ -200,7 +203,7 @@ export async function createAllTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
     CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
     CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, provider_account_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_verification_tokens_identifier_idx ON ${schema}.verification_tokens(identifier);
+    CREATE INDEX IF NOT EXISTS ${schema}_verification_identifier_idx ON ${schema}.verification(identifier);
     CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
     CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
     CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
@@ -221,7 +224,7 @@ export async function dropAllTables(): Promise<void> {
     DROP TABLE IF EXISTS ${schema}.user_devices CASCADE;
     DROP TABLE IF EXISTS ${schema}.user_files CASCADE;
     DROP TABLE IF EXISTS ${schema}.file_downloads CASCADE;
-    DROP TABLE IF EXISTS ${schema}.verification_tokens CASCADE;
+    DROP TABLE IF EXISTS ${schema}.verification CASCADE;
     DROP TABLE IF EXISTS ${schema}.accounts CASCADE;
     DROP TABLE IF EXISTS ${schema}.sessions CASCADE;
     DROP TABLE IF EXISTS ${schema}.identity_providers CASCADE;
@@ -240,7 +243,7 @@ export async function truncateAllTables(): Promise<void> {
 
   await db.execute(sql.raw(`
     TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,
-             ${schema}.verification_tokens, ${schema}.accounts, ${schema}.sessions,
+             ${schema}.verification, ${schema}.accounts, ${schema}.sessions,
              ${schema}.identity_providers, ${schema}.devices, ${schema}.files, ${schema}.users
     CASCADE;
   `))
@@ -325,8 +328,9 @@ export async function deleteFile(fileId: string): Promise<void> {
 
 /**
  * Insert a user record into PostgreSQL
+ * Accepts either 'id' (domain type) or 'userId' (legacy tests) for backwards compatibility
  */
-export async function insertUser(userData: Partial<User> & {appleDeviceId?: string}): Promise<void> {
+export async function insertUser(userData: Partial<User> & {appleDeviceId?: string; userId?: string}): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
@@ -335,10 +339,11 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
   const defaults = createMockUser(userData)
 
   await db.insert(users).values({
-    userId: defaults.userId!,
+    id: defaults.id!,
     email: defaults.email!,
     emailVerified: defaults.emailVerified ?? false,
-    firstName: defaults.firstName!,
+    name: defaults.name,
+    firstName: defaults.firstName,
     lastName: defaults.lastName,
     appleDeviceId: defaults.appleDeviceId
   })
@@ -347,20 +352,27 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
 /**
  * Get a user record from PostgreSQL
  */
-export async function getUser(userId: string): Promise<Partial<User> | null> {
+export async function getUser(id: string): Promise<Partial<User> | null> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
-  const result = await db.select().from(users).where(eq(users.userId, userId))
+  const result = await db.select().from(users).where(eq(users.id, id))
   if (!result[0]) {
     return null
   }
 
   // Convert null to undefined for optional fields (PostgreSQL returns null, domain uses undefined)
   const row = result[0]
-  return {...row, lastName: row.lastName ?? undefined}
+  return {
+    id: row.id,
+    email: row.email,
+    emailVerified: row.emailVerified,
+    name: row.name ?? undefined,
+    firstName: row.firstName ?? undefined,
+    lastName: row.lastName ?? undefined
+  }
 }
 
 // ============================================================================
@@ -425,6 +437,132 @@ export async function linkUserDevice(userId: string, deviceId: string): Promise<
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.insert(userDevices).values({userId, deviceId})
+}
+
+// ============================================================================
+// FileDownloads Operations
+// ============================================================================
+
+/**
+ * Insert a file download record into PostgreSQL
+ */
+export async function insertFileDownload(data: {
+  fileId: string
+  status: string
+  updatedAt?: Date
+  createdAt?: Date
+  retryCount?: number
+  maxRetries?: number
+  sourceUrl?: string
+  correlationId?: string
+}): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const now = new Date()
+  await db.execute(sql`
+    INSERT INTO file_downloads (file_id, status, retry_count, max_retries, source_url, correlation_id, created_at, updated_at)
+    VALUES (${data.fileId}, ${data.status}, ${data.retryCount ?? 0}, ${data.maxRetries ?? 5},
+            ${data.sourceUrl ?? null}, ${data.correlationId ?? null},
+            ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+  `)
+}
+
+/**
+ * Get all file downloads from PostgreSQL
+ */
+export async function getFileDownloads(): Promise<Array<{fileId: string; status: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT file_id, status FROM file_downloads`)
+  const rows = [...result] as Array<{file_id: string; status: string}>
+  return rows.map((row) => ({fileId: row.file_id, status: row.status}))
+}
+
+// ============================================================================
+// Sessions Operations
+// ============================================================================
+
+/**
+ * Insert a session record into PostgreSQL
+ */
+export async function insertSession(data: {
+  id?: string
+  userId: string
+  token: string
+  expiresAt: Date
+  createdAt?: Date
+  updatedAt?: Date
+}): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const now = new Date()
+  const id = data.id ?? crypto.randomUUID()
+  await db.execute(sql`
+    INSERT INTO sessions (id, user_id, token, expires_at, created_at, updated_at)
+    VALUES (${id}, ${data.userId}, ${data.token}, ${data.expiresAt}, ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+  `)
+}
+
+/**
+ * Get all sessions from PostgreSQL
+ */
+export async function getSessions(): Promise<Array<{id: string; userId: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, user_id FROM sessions`)
+  const rows = [...result] as Array<{id: string; user_id: string}>
+  return rows.map((row) => ({id: row.id, userId: row.user_id}))
+}
+
+// ============================================================================
+// Verification Operations
+// ============================================================================
+
+/**
+ * Insert a verification token record into PostgreSQL
+ */
+export async function insertVerification(data: {
+  id?: string
+  identifier: string
+  value: string
+  expiresAt: Date
+  createdAt?: Date
+  updatedAt?: Date
+}): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const now = new Date()
+  const id = data.id ?? crypto.randomUUID()
+  await db.execute(sql`
+    INSERT INTO verification (id, identifier, value, expires_at, created_at, updated_at)
+    VALUES (${id}, ${data.identifier}, ${data.value}, ${data.expiresAt}, ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+  `)
+}
+
+/**
+ * Get all verification tokens from PostgreSQL
+ */
+export async function getVerificationTokens(): Promise<Array<{id: string; identifier: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, identifier FROM verification`)
+  const rows = [...result] as Array<{id: string; identifier: string}>
+  return rows.map((row) => ({id: row.id, identifier: row.identifier}))
 }
 
 // ============================================================================

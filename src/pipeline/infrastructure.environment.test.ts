@@ -85,6 +85,11 @@ const excludedSourceVariables: Record<string, number> = {
   AWS_LAMBDA_INITIALIZATION_TYPE: 1,
   AWS_REGION: 1,
   AWS_SDK_UA_APP_ID: 1,
+  // DSQL/Aurora connection variables (set by Terraform/runtime, not source code env vars)
+  AWS_LOGIN_CACHE_DIRECTORY: 1, // Drizzle connection caching
+  DSQL_CLUSTER_ENDPOINT: 1, // Aurora DSQL endpoint
+  DSQL_REGION: 1, // Aurora DSQL region
+  TEST_DATABASE_URL: 1, // Test database URL (integration tests only)
   // CI/debug environment variables
   CI: 1,
   DEBUG: 1,

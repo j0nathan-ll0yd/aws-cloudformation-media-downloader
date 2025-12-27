@@ -1,9 +1,11 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {SQSEvent, SQSRecord} from 'aws-lambda'
+import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import {createEntityMock} from '#test/helpers/entity-mock'
 import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
+import type {MediaDownloaderEventType} from '#types/events'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/jest-setup'
 
@@ -67,7 +69,7 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS',
   }))
 
 // Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
-const publishEventMock = jest.fn<(eventType: string, detail: unknown) => Promise<unknown>>()
+const publishEventMock = jest.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
 jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 // Mock GitHub issue creation (for permanent failures)

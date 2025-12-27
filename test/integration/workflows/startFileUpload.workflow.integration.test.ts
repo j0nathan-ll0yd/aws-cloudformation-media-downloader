@@ -194,7 +194,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
       const user = await getUser(userId)
 
       expect(user).not.toBeNull()
-      expect(user?.userId).toBe(userId)
+      expect(user?.id).toBe(userId)
       expect(user?.email).toBe('newuser@example.com')
       expect(user?.firstName).toBe('New')
       expect(user?.lastName).toBe('User')
