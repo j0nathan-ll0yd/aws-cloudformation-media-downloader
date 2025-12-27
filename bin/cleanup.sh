@@ -31,11 +31,11 @@ NC='\033[0m'
 
 # Calculate total steps
 if [ "$FAST_MODE" = true ]; then
-  TOTAL=26
+  TOTAL=27
 elif [ "$CHECK_ONLY" = true ]; then
-  TOTAL=20
+  TOTAL=21
 else
-  TOTAL=29
+  TOTAL=30
 fi
 STEP=0
 ERRORS=0
@@ -166,7 +166,44 @@ run_cmd "TypeSpec valid" pnpm run --silent typespec:check
 
 # Phase 6: Testing
 log_step $((++STEP)) "Running unit tests..."
-run_cmd_verbose "Unit tests passed" pnpm run --silent test
+TEST_OUTPUT=$(pnpm run test 2>&1)
+TEST_EXIT_CODE=$?
+
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  log_success "Unit tests passed"
+else
+  log_error "Unit tests failed"
+fi
+
+# Validate test output is clean
+log_step $((++STEP)) "Validating test output..."
+TEST_ISSUES=0
+
+# Check for Vitest deprecation warnings
+if echo "$TEST_OUTPUT" | grep -q "DEPRECATED"; then
+  log_error "Found Vitest deprecation warnings in test output"
+  echo "$TEST_OUTPUT" | grep "DEPRECATED" | head -3
+  TEST_ISSUES=$((TEST_ISSUES + 1))
+fi
+
+# Check for EMF metrics spam (Powertools not silenced)
+if echo "$TEST_OUTPUT" | grep -q '"_aws".*"CloudWatchMetrics"'; then
+  log_error "Found Powertools EMF metrics in test output (should be silenced)"
+  TEST_ISSUES=$((TEST_ISSUES + 1))
+fi
+
+# Check for MCR source content warnings
+if echo "$TEST_OUTPUT" | grep -q "\[MCR\] not found source content"; then
+  log_error "Found MCR source content warnings in test output"
+  echo "$TEST_OUTPUT" | grep "\[MCR\] not found" | head -3
+  TEST_ISSUES=$((TEST_ISSUES + 1))
+fi
+
+if [ $TEST_ISSUES -eq 0 ]; then
+  log_success "Test output is clean"
+else
+  ERRORS=$((ERRORS + TEST_ISSUES))
+fi
 
 # Phase 7: Documentation (skip in check mode)
 if [ "$CHECK_ONLY" = false ]; then
