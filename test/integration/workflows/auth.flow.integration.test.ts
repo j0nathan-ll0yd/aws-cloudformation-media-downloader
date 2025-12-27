@@ -45,7 +45,8 @@ const betterAuthConfigPath = resolve(__dirname, '../../../src/lib/vendor/BetterA
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const signInSocialMock = jest.fn<any>()
 
-jest.unstable_mockModule(betterAuthConfigPath, () => ({auth: {api: {signInSocial: signInSocialMock}}}))
+// getAuth is now async - return a Promise resolving to the auth object
+jest.unstable_mockModule(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
 
 // Mock Users entity for RegisterUser name update
 const usersModulePath = resolve(__dirname, '../../../src/entities/Users')

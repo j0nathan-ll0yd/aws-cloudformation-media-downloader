@@ -463,12 +463,12 @@ export async function insertFileDownload(
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
-  const now = new Date()
+  const now = new Date().toISOString()
   await db.execute(sql`
     INSERT INTO file_downloads (file_id, status, retry_count, max_retries, source_url, correlation_id, created_at, updated_at)
     VALUES (${data.fileId}, ${data.status}, ${data.retryCount ?? 0}, ${data.maxRetries ?? 5},
             ${data.sourceUrl ?? null}, ${data.correlationId ?? null},
-            ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+            ${data.createdAt?.toISOString() ?? now}, ${data.updatedAt?.toISOString() ?? now})
   `)
 }
 
@@ -498,11 +498,11 @@ export async function insertSession(data: {id?: string; userId: string; token: s
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
-  const now = new Date()
+  const now = new Date().toISOString()
   const id = data.id ?? crypto.randomUUID()
   await db.execute(sql`
     INSERT INTO sessions (id, user_id, token, expires_at, created_at, updated_at)
-    VALUES (${id}, ${data.userId}, ${data.token}, ${data.expiresAt}, ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+    VALUES (${id}, ${data.userId}, ${data.token}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${data.updatedAt?.toISOString() ?? now})
   `)
 }
 
@@ -534,11 +534,11 @@ export async function insertVerification(
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
-  const now = new Date()
+  const now = new Date().toISOString()
   const id = data.id ?? crypto.randomUUID()
   await db.execute(sql`
     INSERT INTO verification (id, identifier, value, expires_at, created_at, updated_at)
-    VALUES (${id}, ${data.identifier}, ${data.value}, ${data.expiresAt}, ${data.createdAt ?? now}, ${data.updatedAt ?? now})
+    VALUES (${id}, ${data.identifier}, ${data.value}, ${data.expiresAt.toISOString()}, ${data.createdAt?.toISOString() ?? now}, ${data.updatedAt?.toISOString() ?? now})
   `)
 }
 
