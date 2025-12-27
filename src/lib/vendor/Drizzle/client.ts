@@ -32,6 +32,15 @@ function isTestMode(): boolean {
 }
 
 /**
+ * Get the worker schema name for test mode.
+ * Matches the schema used by test helpers for isolation.
+ */
+function getWorkerSchema(): string {
+  const workerId = process.env.JEST_WORKER_ID || '1'
+  return `worker_${workerId}`
+}
+
+/**
  * Token refresh buffer in milliseconds.
  * Refresh 3 minutes before expiration (15 min validity).
  */
@@ -69,8 +78,13 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
 
   // Test mode: use TEST_DATABASE_URL with local PostgreSQL
   if (isTestMode()) {
+    const workerSchema = getWorkerSchema()
     cachedSql = postgres(process.env.TEST_DATABASE_URL!, {max: 1, idle_timeout: 20, connect_timeout: 10})
     cachedClient = drizzle(cachedSql, {schema})
+
+    // Set search_path to match test helpers' worker schema
+    await cachedSql`SET search_path TO ${cachedSql(workerSchema)}, public`
+
     tokenExpiry = now + TOKEN_VALIDITY_MS
     return cachedClient
   }
