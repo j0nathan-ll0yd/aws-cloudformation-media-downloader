@@ -8,35 +8,6 @@ resource "aws_iam_role" "LoginUser" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "LoginUser" {
-  # Better Auth adapter needs full CRUD on base table for user/session/account/verification
-  statement {
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem",
-      "dynamodb:Query",
-      "dynamodb:Scan"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
-    ]
-  }
-}
-
-resource "aws_iam_policy" "LoginUser" {
-  name   = local.login_user_function_name
-  policy = data.aws_iam_policy_document.LoginUser.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "LoginUser" {
-  role       = aws_iam_role.LoginUser.name
-  policy_arn = aws_iam_policy.LoginUser.arn
-}
-
 resource "aws_iam_role_policy_attachment" "LoginUserLogging" {
   role       = aws_iam_role.LoginUser.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -77,7 +48,7 @@ resource "aws_lambda_function" "LoginUser" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 30
-  depends_on       = [aws_iam_role_policy_attachment.LoginUser]
+  depends_on       = [aws_iam_role_policy_attachment.LoginUserLogging]
   filename         = data.archive_file.LoginUser.output_path
   source_code_hash = data.archive_file.LoginUser.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -89,7 +60,6 @@ resource "aws_lambda_function" "LoginUser" {
   environment {
     variables = merge(local.common_lambda_env, {
       APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
-      DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.login_user_function_name

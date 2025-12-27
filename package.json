@@ -63,6 +63,8 @@
     "mcp:inspect": "pnpm exec mcp-inspector src/mcp/server.ts",
     "graphrag:extract": "node --import tsx graphrag/extract.ts",
     "graphrag:query": "pnpm dlx tsx graphrag/query.ts",
+    "db:export": "drizzle-kit export --sql --dialect postgresql",
+    "db:generate": "drizzle-kit generate",
     "update:agents-prs": "./bin/update-agents-prs.sh",
     "plan": "eval export $(cat .env) && cd terraform && tofu plan",
     "deploy:check": "./bin/pre-deploy-check.sh",

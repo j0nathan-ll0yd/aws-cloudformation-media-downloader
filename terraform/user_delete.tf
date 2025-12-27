@@ -9,19 +9,6 @@ resource "aws_iam_role" "UserDelete" {
 }
 
 data "aws_iam_policy_document" "UserDelete" {
-  # Query UserCollection to get user's files and devices
-  # GetItem/DeleteItem on base table for Users, Devices, UserFiles, UserDevices
-  statement {
-    actions = [
-      "dynamodb:Query",
-      "dynamodb:GetItem",
-      "dynamodb:DeleteItem"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
-    ]
-  }
   dynamic "statement" {
     for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
     content {
@@ -92,7 +79,6 @@ resource "aws_lambda_function" "UserDelete" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME   = aws_dynamodb_table.MediaDownloader.name
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.user_delete_function_name
     })

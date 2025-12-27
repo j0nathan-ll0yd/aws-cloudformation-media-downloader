@@ -146,9 +146,8 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      SNS_QUEUE_URL       = aws_sqs_queue.SendPushNotification.id
-      OTEL_SERVICE_NAME   = local.s3_object_created_function_name
+      SNS_QUEUE_URL     = aws_sqs_queue.SendPushNotification.id
+      OTEL_SERVICE_NAME = local.s3_object_created_function_name
     })
   }
 
@@ -164,14 +163,6 @@ resource "aws_iam_role" "S3ObjectCreated" {
 }
 
 data "aws_iam_policy_document" "S3ObjectCreated" {
-  # Query base table and indexes to find files and users
-  statement {
-    actions = ["dynamodb:Query"]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
-    ]
-  }
   statement {
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.SendPushNotification.arn]

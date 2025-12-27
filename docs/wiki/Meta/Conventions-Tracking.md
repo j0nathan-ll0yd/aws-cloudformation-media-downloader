@@ -75,6 +75,8 @@ Central registry of all project conventions with their documentation and enforce
 | Workaround Tracking | [Workaround Tracking](../Conventions/Workaround-Tracking.md) | GitHub Actions |
 | ManagedBy Tag on All Resources | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Audit script (aws-audit.sh) |
 | Post-Deploy State Verification | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Manual (`pnpm run state:verify`) |
+| Database Migrations via SQL Files | [Database Migrations](../Conventions/Database-Migrations.md) | MigrateDSQL Lambda + Terraform |
+| Aurora DSQL CREATE INDEX ASYNC | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
 
 ### MEDIUM Severity
 

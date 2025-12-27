@@ -52,21 +52,6 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
       "arn:aws:apigateway:${data.aws_region.current.id}::/usageplans/*/usage"
     ]
   }
-  # Better Auth session validation requires DynamoDB access (including UpdateItem for session refresh)
-  statement {
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem",
-      "dynamodb:Query",
-      "dynamodb:Scan"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
-    ]
-  }
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizer" {
@@ -101,7 +86,6 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
       # Full paths for endpoints that support multi-authentication mode
       # (both authenticated and anonymous/demo access)
       MULTI_AUTHENTICATION_PATH_PARTS = "device/register,device/event,files",

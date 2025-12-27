@@ -8,34 +8,6 @@ resource "aws_iam_role" "RegisterUser" {
   tags               = local.common_tags
 }
 
-data "aws_iam_policy_document" "RegisterUser" {
-  # Better Auth adapter needs full CRUD on base table for user/session/account/verification
-  statement {
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem",
-      "dynamodb:Query"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/*"
-    ]
-  }
-}
-
-resource "aws_iam_policy" "RegisterUser" {
-  name   = local.register_user_function_name
-  policy = data.aws_iam_policy_document.RegisterUser.json
-  tags   = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "RegisterUser" {
-  role       = aws_iam_role.RegisterUser.name
-  policy_arn = aws_iam_policy.RegisterUser.arn
-}
-
 resource "aws_iam_role_policy_attachment" "RegisterUserLogging" {
   role       = aws_iam_role.RegisterUser.name
   policy_arn = aws_iam_policy.CommonLambdaLogging.arn
@@ -76,7 +48,7 @@ resource "aws_lambda_function" "RegisterUser" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   timeout          = 10
-  depends_on       = [aws_iam_role_policy_attachment.RegisterUser]
+  depends_on       = [aws_iam_role_policy_attachment.RegisterUserLogging]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = data.archive_file.RegisterUser.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -88,7 +60,6 @@ resource "aws_lambda_function" "RegisterUser" {
   environment {
     variables = merge(local.common_lambda_env, {
       APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
-      DYNAMODB_TABLE_NAME       = aws_dynamodb_table.MediaDownloader.name
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.register_user_function_name

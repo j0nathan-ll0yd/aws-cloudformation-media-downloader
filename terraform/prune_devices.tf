@@ -9,20 +9,6 @@ resource "aws_iam_role" "PruneDevices" {
 }
 
 data "aws_iam_policy_document" "PruneDevices" {
-  # Query DeviceCollection to find users by device
-  # Scan base table for all devices, GetItem/DeleteItem on base table
-  statement {
-    actions = [
-      "dynamodb:Scan",
-      "dynamodb:Query",
-      "dynamodb:GetItem",
-      "dynamodb:DeleteItem"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/DeviceCollection"
-    ]
-  }
   dynamic "statement" {
     for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
     content {
@@ -108,13 +94,12 @@ resource "aws_lambda_function" "PruneDevices" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      APNS_SIGNING_KEY    = data.sops_file.secrets.data["apns.staging.signingKey"]
-      APNS_TEAM           = data.sops_file.secrets.data["apns.staging.team"]
-      APNS_KEY_ID         = data.sops_file.secrets.data["apns.staging.keyId"]
-      APNS_DEFAULT_TOPIC  = data.sops_file.secrets.data["apns.staging.defaultTopic"]
-      APNS_HOST           = "api.sandbox.push.apple.com"
-      OTEL_SERVICE_NAME   = local.prune_devices_function_name
+      APNS_SIGNING_KEY   = data.sops_file.secrets.data["apns.staging.signingKey"]
+      APNS_TEAM          = data.sops_file.secrets.data["apns.staging.team"]
+      APNS_KEY_ID        = data.sops_file.secrets.data["apns.staging.keyId"]
+      APNS_DEFAULT_TOPIC = data.sops_file.secrets.data["apns.staging.defaultTopic"]
+      APNS_HOST          = "api.sandbox.push.apple.com"
+      OTEL_SERVICE_NAME  = local.prune_devices_function_name
     })
   }
 

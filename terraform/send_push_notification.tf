@@ -35,18 +35,6 @@ data "aws_iam_policy_document" "SendPushNotification" {
       aws_sqs_queue.SendPushNotificationDLQ.arn
     ]
   }
-  # Query UserCollection to get user's devices
-  # GetItem on base table to retrieve device details
-  statement {
-    actions = [
-      "dynamodb:Query",
-      "dynamodb:GetItem"
-    ]
-    resources = [
-      aws_dynamodb_table.MediaDownloader.arn,
-      "${aws_dynamodb_table.MediaDownloader.arn}/index/UserCollection"
-    ]
-  }
   dynamic "statement" {
     for_each = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? [1] : []
     content {
@@ -101,8 +89,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   }
   environment {
     variables = merge(local.common_lambda_env, {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.MediaDownloader.name
-      OTEL_SERVICE_NAME   = local.send_push_notification_function_name
+      OTEL_SERVICE_NAME = local.send_push_notification_function_name
     })
   }
 

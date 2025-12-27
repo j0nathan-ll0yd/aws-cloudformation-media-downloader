@@ -150,31 +150,12 @@ resource "aws_cloudwatch_dashboard" "Main" {
           }
         }
       },
-      # Row 3: DynamoDB Capacity
+      # Row 3: S3 Storage
       {
         type   = "metric"
         x      = 0
         y      = 12
-        width  = 8
-        height = 6
-        properties = {
-          title  = "DynamoDB Consumed Capacity"
-          region = data.aws_region.current.id
-          stat   = "Sum"
-          period = 300
-          view   = "timeSeries"
-          metrics = [
-            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.MediaDownloader.name],
-            ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", aws_dynamodb_table.MediaDownloader.name]
-          ]
-        }
-      },
-      # Row 3: S3 Storage
-      {
-        type   = "metric"
-        x      = 8
-        y      = 12
-        width  = 8
+        width  = 12
         height = 6
         properties = {
           title  = "S3 Storage (Bytes)"
@@ -190,9 +171,9 @@ resource "aws_cloudwatch_dashboard" "Main" {
       # Row 3: S3 Object Count
       {
         type   = "metric"
-        x      = 16
+        x      = 12
         y      = 12
-        width  = 8
+        width  = 12
         height = 6
         properties = {
           title  = "S3 Object Count"
