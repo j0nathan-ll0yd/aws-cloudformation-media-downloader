@@ -37,13 +37,6 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
   numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
 }))
 
-// Mock yt-dlp-wrap to prevent YouTube module from failing
-class MockYTDlpWrap {
-  constructor(public binaryPath: string) {}
-  getVideoInfo = jest.fn()
-}
-jest.unstable_mockModule('yt-dlp-wrap', () => ({default: MockYTDlpWrap}))
-
 // Mock child_process for YouTube spawn operations
 jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
 

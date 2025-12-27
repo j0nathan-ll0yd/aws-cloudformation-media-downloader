@@ -1,10 +1,4 @@
-import YTDlpWrapModule from 'yt-dlp-wrap'
 import {spawn} from 'child_process'
-
-// ESM/CJS interop: yt-dlp-wrap uses `exports.default = YTDlpWrap` (CommonJS with default export)
-// When esbuild bundles CJS to ESM, the import may be wrapped differently depending on minification.
-// Handle both cases: direct class or wrapper object with .default property.
-const YTDlpWrap = (YTDlpWrapModule as unknown as {default?: typeof YTDlpWrapModule}).default ?? YTDlpWrapModule
 import {createReadStream} from 'fs'
 import {copyFile, stat, unlink} from 'fs/promises'
 import type {YtDlpVideoInfo} from '#types/youtube'
@@ -54,6 +48,45 @@ export function isCookieExpirationError(errorMessage: string): boolean {
 import type {FetchVideoInfoResult} from '#types/video'
 
 /**
+ * Execute yt-dlp --dump-json to get video metadata.
+ * Direct replacement for yt-dlp-wrap's getVideoInfo method.
+ *
+ * @param binaryPath - Path to yt-dlp binary
+ * @param args - Command line arguments (URL should be last)
+ * @returns Parsed video info JSON
+ */
+function getVideoInfo(binaryPath: string, args: string[]): Promise<YtDlpVideoInfo> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(binaryPath, ['--dump-json', ...args])
+    let stdout = ''
+    let stderr = ''
+
+    proc.stdout.on('data', (chunk) => {
+      stdout += chunk
+    })
+    proc.stderr.on('data', (chunk) => {
+      stderr += chunk
+    })
+
+    proc.on('error', (error) => {
+      reject(error)
+    })
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        try {
+          resolve(JSON.parse(stdout))
+        } catch (parseError) {
+          reject(new Error(`Failed to parse yt-dlp JSON output: ${parseError}`))
+        }
+      } else {
+        reject(new Error(stderr || `yt-dlp exited with code ${code}`))
+      }
+    })
+  })
+}
+
+/**
  * Safely fetch video metadata using yt-dlp.
  *
  * This function is designed to be "safe" - it never throws, instead returning
@@ -67,10 +100,8 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
   const ytdlpBinaryPath = getRequiredEnv('YTDLP_BINARY_PATH')
   logDebug('fetchVideoInfo =>', {uri, binaryPath: ytdlpBinaryPath})
   try {
-    const ytDlp = new YTDlpWrap(ytdlpBinaryPath)
     // Copy cookies from read-only /opt to writable /tmp (yt-dlp needs write access)
-    const fs = await import('fs')
-    await fs.promises.copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
+    await copyFile(YTDLP_CONFIG.COOKIES_SOURCE, YTDLP_CONFIG.COOKIES_DEST)
 
     // Configure yt-dlp with flags to work around YouTube restrictions
     const ytdlpFlags = [
@@ -79,11 +110,12 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
       '--no-warnings',
       '--cookies',
       YTDLP_CONFIG.COOKIES_DEST,
-      '--ignore-errors'
+      '--ignore-errors',
+      uri
     ]
 
     // Get video info in JSON format
-    const info = (await ytDlp.getVideoInfo([uri, ...ytdlpFlags])) as YtDlpVideoInfo
+    const info = await getVideoInfo(ytdlpBinaryPath, ytdlpFlags)
 
     logDebug('fetchVideoInfo <=', {
       id: info?.id,
