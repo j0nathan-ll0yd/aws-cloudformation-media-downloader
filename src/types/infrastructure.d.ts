@@ -46,31 +46,32 @@ export interface Current {
 }
 
 export interface AwsIamPolicyDocument {
-    ApiGatewayAuthorizer:           APIGatewayAuthorizerInvocationElement[];
-    ApiGatewayAuthorizerInvocation: APIGatewayAuthorizerInvocationElement[];
+    ApiGatewayAuthorizer:           APIGatewayAuthorizer[];
+    ApiGatewayAuthorizerInvocation: APIGatewayAuthorizer[];
     ApiGatewayCloudwatch:           APIGatewayCloudwatch[];
-    CommonLambdaLogging:            APIGatewayAuthorizerInvocationElement[];
-    CommonLambdaXRay:               APIGatewayAuthorizerInvocationElement[];
+    CommonLambdaLogging:            APIGatewayAuthorizer[];
+    CommonLambdaXRay:               APIGatewayAuthorizer[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
     LamdbaEdgeAssumeRole:           AssumeRole[];
-    ListFiles:                      APIGatewayAuthorizerInvocationElement[];
-    LoginUser:                      APIGatewayAuthorizerInvocationElement[];
-    MultipartUpload:                APIGatewayAuthorizerInvocationElement[];
+    ListFiles:                      APIGatewayAuthorizer[];
+    LoginUser:                      APIGatewayAuthorizer[];
+    MultipartUpload:                APIGatewayAuthorizer[];
     PruneDevices:                   PruneDevice[];
-    RefreshToken:                   APIGatewayAuthorizerInvocationElement[];
+    RefreshToken:                   APIGatewayAuthorizer[];
     RegisterDevice:                 RegisterDevice[];
-    RegisterUser:                   APIGatewayAuthorizerInvocationElement[];
-    S3ObjectCreated:                APIGatewayAuthorizerInvocationElement[];
+    RegisterUser:                   APIGatewayAuthorizer[];
+    S3ObjectCreated:                APIGatewayAuthorizer[];
     SNSAssumeRole:                  AssumeRole[];
     SendPushNotification:           PruneDevice[];
     StatesAssumeRole:               AssumeRole[];
     UserDelete:                     PruneDevice[];
     UserSubscribe:                  UserSubscribe[];
-    WebhookFeedly:                  APIGatewayAuthorizerInvocationElement[];
+    WebhookFeedly:                  APIGatewayAuthorizer[];
+    dsql_access:                    DsqlAccess[];
 }
 
-export interface APIGatewayAuthorizerInvocationElement {
+export interface APIGatewayAuthorizer {
     statement: Ent[];
 }
 
@@ -135,6 +136,16 @@ export interface UserSubscribeStatement {
     resources: string;
 }
 
+export interface DsqlAccess {
+    statement: DsqlAccessStatement[];
+}
+
+export interface DsqlAccessStatement {
+    actions:   string[];
+    resources: string[];
+    sid:       string;
+}
+
 export interface HTTP {
     icanhazip: Icanhazip[];
 }
@@ -160,32 +171,35 @@ export interface Secret {
 }
 
 export interface Local {
-    api_gateway_authorizer_function_name?: string;
-    lambda_functions?:                     string[];
-    lambda_functions_api?:                 string[];
-    lambda_functions_background?:          string[];
-    device_event_function_name?:           string;
-    download_queue_name?:                  string;
-    download_queue_visibility_timeout?:    number;
-    event_bus_name?:                       string;
-    start_file_upload_function_name?:      string;
-    webhook_feedly_function_name?:         string;
-    s3_object_created_function_name?:      string;
-    list_files_function_name?:             string;
-    login_user_function_name?:             string;
-    adot_layer_arn?:                       string;
-    common_lambda_env?:                    CommonLambdaEnv;
-    common_tags?:                          CommonTags;
-    prune_devices_function_name?:          string;
-    refresh_token_function_name?:          string;
-    register_device_function_name?:        string;
-    register_user_function_name?:          string;
-    send_push_notification_function_name?: string;
-    user_delete_function_name?:            string;
-    user_subscribe_function_name?:         string;
+    api_gateway_authorizer_function_name?:  string;
+    cleanup_expired_records_function_name?: string;
+    lambda_functions?:                      string[];
+    lambda_functions_api?:                  string[];
+    lambda_functions_background?:           string[];
+    device_event_function_name?:            string;
+    download_queue_name?:                   string;
+    download_queue_visibility_timeout?:     number;
+    event_bus_name?:                        string;
+    start_file_upload_function_name?:       string;
+    webhook_feedly_function_name?:          string;
+    s3_object_created_function_name?:       string;
+    list_files_function_name?:              string;
+    login_user_function_name?:              string;
+    adot_layer_arn?:                        string;
+    common_lambda_env?:                     CommonLambdaEnv;
+    common_tags?:                           CommonTags;
+    prune_devices_function_name?:           string;
+    refresh_token_function_name?:           string;
+    register_device_function_name?:         string;
+    register_user_function_name?:           string;
+    send_push_notification_function_name?:  string;
+    user_delete_function_name?:             string;
+    user_subscribe_function_name?:          string;
 }
 
 export interface CommonLambdaEnv {
+    DSQL_CLUSTER_ENDPOINT:              string;
+    DSQL_REGION:                        string;
     LOG_LEVEL:                          string;
     NODE_OPTIONS:                       string;
     OPENTELEMETRY_COLLECTOR_CONFIG_URI: string;
@@ -207,6 +221,8 @@ export interface Output {
     cloudwatch_dashboard_url:       APIGatewayStage[];
     download_queue_arn:             APIGatewayStage[];
     download_queue_url:             APIGatewayStage[];
+    dsql_cluster_arn:               APIGatewayStage[];
+    dsql_cluster_endpoint:          APIGatewayStage[];
     event_bus_arn:                  APIGatewayStage[];
     event_bus_name:                 APIGatewayStage[];
     idempotency_table_arn:          APIGatewayStage[];
@@ -257,13 +273,14 @@ export interface Resource {
     aws_cloudwatch_event_target:                     AwsCloudwatchEventTarget;
     aws_cloudwatch_log_group:                        { [key: string]: AwsCloudwatchLogGroup[] };
     aws_cloudwatch_metric_alarm:                     AwsCloudwatchMetricAlarm;
+    aws_dsql_cluster:                                AwsDsqlCluster;
     aws_dynamodb_table:                              AwsDynamodbTable;
     aws_iam_policy:                                  { [key: string]: AwsIamPolicy[] };
     aws_iam_role:                                    { [key: string]: AwsIamRole[] };
     aws_iam_role_policy:                             AwsIamRolePolicy;
     aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
     aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
-    aws_lambda_function:                             AwsLambdaFunction;
+    aws_lambda_function:                             { [key: string]: AwsLambdaFunction[] };
     aws_lambda_layer_version:                        AwsLambdaLayerVersion;
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
@@ -287,14 +304,16 @@ export interface AwsAPIGatewayAccountMain {
 }
 
 export interface AwsAPIGatewayAPIKey {
-    iOSApp: AwsAPIGatewayAPIKeyIOSApp[];
+    iOSApp: IOSApp[];
 }
 
-export interface AwsAPIGatewayAPIKeyIOSApp {
-    description: string;
-    enabled:     boolean;
-    name:        string;
-    tags:        Tags;
+export interface IOSApp {
+    description?:         string;
+    enabled?:             boolean;
+    name:                 string;
+    tags:                 Tags;
+    schedule_expression?: string;
+    state?:               string;
 }
 
 export enum Tags {
@@ -302,10 +321,10 @@ export enum Tags {
 }
 
 export interface AwsAPIGatewayAuthorizer {
-    ApiGatewayAuthorizer: APIGatewayAuthorizer[];
+    ApiGatewayAuthorizer: AwsAPIGatewayAuthorizerAPIGatewayAuthorizer[];
 }
 
-export interface APIGatewayAuthorizer {
+export interface AwsAPIGatewayAuthorizerAPIGatewayAuthorizer {
     authorizer_credentials:           string;
     authorizer_result_ttl_in_seconds: number;
     authorizer_uri:                   string;
@@ -623,8 +642,9 @@ export interface MediaDownloader {
 }
 
 export interface AwsCloudwatchEventRule {
-    DownloadRequested: DownloadRequested[];
-    PruneDevices:      AwsCloudwatchEventRulePruneDevice[];
+    CleanupExpiredRecords: IOSApp[];
+    DownloadRequested:     DownloadRequested[];
+    PruneDevices:          IOSApp[];
 }
 
 export interface DownloadRequested {
@@ -634,16 +654,15 @@ export interface DownloadRequested {
     name:           string;
 }
 
-export interface AwsCloudwatchEventRulePruneDevice {
-    name:                string;
-    schedule_expression: string;
-    state:               string;
-    tags:                Tags;
+export interface AwsCloudwatchEventTarget {
+    CleanupExpiredRecords:  CleanupExpiredRecord[];
+    DownloadRequestedToSQS: DownloadRequestedToSQ[];
+    PruneDevices:           CleanupExpiredRecord[];
 }
 
-export interface AwsCloudwatchEventTarget {
-    DownloadRequestedToSQS: DownloadRequestedToSQ[];
-    PruneDevices:           AwsCloudwatchEventTargetPruneDevice[];
+export interface CleanupExpiredRecord {
+    arn:  string;
+    rule: string;
 }
 
 export interface DownloadRequestedToSQ {
@@ -664,11 +683,6 @@ export interface InputPaths {
     fileId:        string;
     sourceUrl:     string;
     userId:        string;
-}
-
-export interface AwsCloudwatchEventTargetPruneDevice {
-    arn:  string;
-    rule: string;
 }
 
 export interface AwsCloudwatchLogGroup {
@@ -749,6 +763,15 @@ export interface LambdaErrorsAPIMetricQuery {
     return_data: boolean;
 }
 
+export interface AwsDsqlCluster {
+    media_downloader: MediaDownloaderElement[];
+}
+
+export interface MediaDownloaderElement {
+    deletion_protection_enabled: boolean;
+    tags:                        string;
+}
+
 export interface AwsDynamodbTable {
     IdempotencyTable: IdempotencyTable[];
     MediaDownloader:  IdempotencyTable[];
@@ -778,12 +801,8 @@ export enum AttributeType {
 export interface GlobalSecondaryIndex {
     hash_key:        string;
     name:            string;
-    projection_type: ProjectionType;
+    projection_type: string;
     range_key?:      string;
-}
-
-export enum ProjectionType {
-    All = "ALL",
 }
 
 export interface TTL {
@@ -833,37 +852,21 @@ export interface SendPushNotification {
 }
 
 export interface AwsLambdaFunction {
-    ApiGatewayAuthorizer: DeviceEventElement[];
-    CloudfrontMiddleware: CloudfrontMiddleware[];
-    DeviceEvent:          DeviceEventElement[];
-    ListFiles:            DeviceEventElement[];
-    LoginUser:            DeviceEventElement[];
-    PruneDevices:         DeviceEventElement[];
-    RefreshToken:         DeviceEventElement[];
-    RegisterDevice:       DeviceEventElement[];
-    RegisterUser:         DeviceEventElement[];
-    S3ObjectCreated:      DeviceEventElement[];
-    SendPushNotification: DeviceEventElement[];
-    StartFileUpload:      DeviceEventElement[];
-    UserDelete:           CloudfrontMiddleware[];
-    UserSubscribe:        CloudfrontMiddleware[];
-    WebhookFeedly:        CloudfrontMiddleware[];
-}
-
-export interface DeviceEventElement {
-    depends_on:                      string[];
+    depends_on?:                     string[];
     description:                     string;
-    environment:                     Environment[];
+    environment?:                    Environment[];
     filename:                        string;
     function_name:                   string;
     handler:                         Handler;
-    layers:                          Layer[];
+    layers?:                         Layer[];
     role:                            string;
     runtime:                         Runtime;
     source_code_hash:                string;
     tags:                            string;
-    timeout?:                        number;
     tracing_config:                  TracingConfig[];
+    timeout?:                        number;
+    provider?:                       string;
+    publish?:                        boolean;
     memory_size?:                    number;
     ephemeral_storage?:              EphemeralStorage[];
     reserved_concurrent_executions?: number;
@@ -897,24 +900,6 @@ export interface TracingConfig {
 
 export enum Mode {
     Active = "Active",
-}
-
-export interface CloudfrontMiddleware {
-    description:      string;
-    filename:         string;
-    function_name:    string;
-    handler:          Handler;
-    provider?:        string;
-    publish?:         boolean;
-    role:             string;
-    runtime:          Runtime;
-    source_code_hash: string;
-    tags:             string;
-    tracing_config:   TracingConfig[];
-    depends_on?:      string[];
-    environment?:     Environment[];
-    layers?:          Layer[];
-    memory_size?:     number;
 }
 
 export interface AwsLambdaLayerVersion {
@@ -1313,30 +1298,31 @@ const typeMap: any = {
     "Current": o([
     ], false),
     "AwsIamPolicyDocument": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGatewayAuthorizer")) },
         { json: "ApiGatewayCloudwatch", js: "ApiGatewayCloudwatch", typ: a(r("APIGatewayCloudwatch")) },
-        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizer")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LamdbaEdgeAssumeRole", js: "LamdbaEdgeAssumeRole", typ: a(r("AssumeRole")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizer")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("APIGatewayAuthorizer")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizer")) },
         { json: "SNSAssumeRole", js: "SNSAssumeRole", typ: a(r("AssumeRole")) },
         { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("PruneDevice")) },
         { json: "StatesAssumeRole", js: "StatesAssumeRole", typ: a(r("AssumeRole")) },
         { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("UserSubscribe")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "dsql_access", js: "dsql_access", typ: a(r("DsqlAccess")) },
     ], false),
-    "APIGatewayAuthorizerInvocationElement": o([
+    "APIGatewayAuthorizer": o([
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
     "Ent": o([
@@ -1387,6 +1373,14 @@ const typeMap: any = {
         { json: "actions", js: "actions", typ: a("") },
         { json: "resources", js: "resources", typ: "" },
     ], false),
+    "DsqlAccess": o([
+        { json: "statement", js: "statement", typ: a(r("DsqlAccessStatement")) },
+    ], false),
+    "DsqlAccessStatement": o([
+        { json: "actions", js: "actions", typ: a("") },
+        { json: "resources", js: "resources", typ: a("") },
+        { json: "sid", js: "sid", typ: "" },
+    ], false),
     "HTTP": o([
         { json: "icanhazip", js: "icanhazip", typ: a(r("Icanhazip")) },
     ], false),
@@ -1407,6 +1401,7 @@ const typeMap: any = {
     ], false),
     "Local": o([
         { json: "api_gateway_authorizer_function_name", js: "api_gateway_authorizer_function_name", typ: u(undefined, "") },
+        { json: "cleanup_expired_records_function_name", js: "cleanup_expired_records_function_name", typ: u(undefined, "") },
         { json: "lambda_functions", js: "lambda_functions", typ: u(undefined, a("")) },
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
@@ -1431,6 +1426,8 @@ const typeMap: any = {
         { json: "user_subscribe_function_name", js: "user_subscribe_function_name", typ: u(undefined, "") },
     ], false),
     "CommonLambdaEnv": o([
+        { json: "DSQL_CLUSTER_ENDPOINT", js: "DSQL_CLUSTER_ENDPOINT", typ: "" },
+        { json: "DSQL_REGION", js: "DSQL_REGION", typ: "" },
         { json: "LOG_LEVEL", js: "LOG_LEVEL", typ: "" },
         { json: "NODE_OPTIONS", js: "NODE_OPTIONS", typ: "" },
         { json: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", js: "OPENTELEMETRY_COLLECTOR_CONFIG_URI", typ: "" },
@@ -1450,6 +1447,8 @@ const typeMap: any = {
         { json: "cloudwatch_dashboard_url", js: "cloudwatch_dashboard_url", typ: a(r("APIGatewayStage")) },
         { json: "download_queue_arn", js: "download_queue_arn", typ: a(r("APIGatewayStage")) },
         { json: "download_queue_url", js: "download_queue_url", typ: a(r("APIGatewayStage")) },
+        { json: "dsql_cluster_arn", js: "dsql_cluster_arn", typ: a(r("APIGatewayStage")) },
+        { json: "dsql_cluster_endpoint", js: "dsql_cluster_endpoint", typ: a(r("APIGatewayStage")) },
         { json: "event_bus_arn", js: "event_bus_arn", typ: a(r("APIGatewayStage")) },
         { json: "event_bus_name", js: "event_bus_name", typ: a(r("APIGatewayStage")) },
         { json: "idempotency_table_arn", js: "idempotency_table_arn", typ: a(r("APIGatewayStage")) },
@@ -1495,13 +1494,14 @@ const typeMap: any = {
         { json: "aws_cloudwatch_event_target", js: "aws_cloudwatch_event_target", typ: r("AwsCloudwatchEventTarget") },
         { json: "aws_cloudwatch_log_group", js: "aws_cloudwatch_log_group", typ: m(a(r("AwsCloudwatchLogGroup"))) },
         { json: "aws_cloudwatch_metric_alarm", js: "aws_cloudwatch_metric_alarm", typ: r("AwsCloudwatchMetricAlarm") },
+        { json: "aws_dsql_cluster", js: "aws_dsql_cluster", typ: r("AwsDsqlCluster") },
         { json: "aws_dynamodb_table", js: "aws_dynamodb_table", typ: r("AwsDynamodbTable") },
         { json: "aws_iam_policy", js: "aws_iam_policy", typ: m(a(r("AwsIamPolicy"))) },
         { json: "aws_iam_role", js: "aws_iam_role", typ: m(a(r("AwsIamRole"))) },
         { json: "aws_iam_role_policy", js: "aws_iam_role_policy", typ: r("AwsIamRolePolicy") },
         { json: "aws_iam_role_policy_attachment", js: "aws_iam_role_policy_attachment", typ: m(a(r("AwsIamRolePolicyAttachment"))) },
         { json: "aws_lambda_event_source_mapping", js: "aws_lambda_event_source_mapping", typ: r("AwsLambdaEventSourceMapping") },
-        { json: "aws_lambda_function", js: "aws_lambda_function", typ: r("AwsLambdaFunction") },
+        { json: "aws_lambda_function", js: "aws_lambda_function", typ: m(a(r("AwsLambdaFunction"))) },
         { json: "aws_lambda_layer_version", js: "aws_lambda_layer_version", typ: r("AwsLambdaLayerVersion") },
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
@@ -1522,18 +1522,20 @@ const typeMap: any = {
         { json: "cloudwatch_role_arn", js: "cloudwatch_role_arn", typ: "" },
     ], false),
     "AwsAPIGatewayAPIKey": o([
-        { json: "iOSApp", js: "iOSApp", typ: a(r("AwsAPIGatewayAPIKeyIOSApp")) },
+        { json: "iOSApp", js: "iOSApp", typ: a(r("IOSApp")) },
     ], false),
-    "AwsAPIGatewayAPIKeyIOSApp": o([
-        { json: "description", js: "description", typ: "" },
-        { json: "enabled", js: "enabled", typ: true },
+    "IOSApp": o([
+        { json: "description", js: "description", typ: u(undefined, "") },
+        { json: "enabled", js: "enabled", typ: u(undefined, true) },
         { json: "name", js: "name", typ: "" },
         { json: "tags", js: "tags", typ: r("Tags") },
+        { json: "schedule_expression", js: "schedule_expression", typ: u(undefined, "") },
+        { json: "state", js: "state", typ: u(undefined, "") },
     ], false),
     "AwsAPIGatewayAuthorizer": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizer")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("AwsAPIGatewayAuthorizerAPIGatewayAuthorizer")) },
     ], false),
-    "APIGatewayAuthorizer": o([
+    "AwsAPIGatewayAuthorizerAPIGatewayAuthorizer": o([
         { json: "authorizer_credentials", js: "authorizer_credentials", typ: "" },
         { json: "authorizer_result_ttl_in_seconds", js: "authorizer_result_ttl_in_seconds", typ: 0 },
         { json: "authorizer_uri", js: "authorizer_uri", typ: "" },
@@ -1793,8 +1795,9 @@ const typeMap: any = {
         { json: "tags", js: "tags", typ: "" },
     ], false),
     "AwsCloudwatchEventRule": o([
+        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("IOSApp")) },
         { json: "DownloadRequested", js: "DownloadRequested", typ: a(r("DownloadRequested")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventRulePruneDevice")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("IOSApp")) },
     ], false),
     "DownloadRequested": o([
         { json: "description", js: "description", typ: "" },
@@ -1802,15 +1805,14 @@ const typeMap: any = {
         { json: "event_pattern", js: "event_pattern", typ: "" },
         { json: "name", js: "name", typ: "" },
     ], false),
-    "AwsCloudwatchEventRulePruneDevice": o([
-        { json: "name", js: "name", typ: "" },
-        { json: "schedule_expression", js: "schedule_expression", typ: "" },
-        { json: "state", js: "state", typ: "" },
-        { json: "tags", js: "tags", typ: r("Tags") },
-    ], false),
     "AwsCloudwatchEventTarget": o([
+        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("CleanupExpiredRecord")) },
         { json: "DownloadRequestedToSQS", js: "DownloadRequestedToSQS", typ: a(r("DownloadRequestedToSQ")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventTargetPruneDevice")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("CleanupExpiredRecord")) },
+    ], false),
+    "CleanupExpiredRecord": o([
+        { json: "arn", js: "arn", typ: "" },
+        { json: "rule", js: "rule", typ: "" },
     ], false),
     "DownloadRequestedToSQ": o([
         { json: "arn", js: "arn", typ: "" },
@@ -1828,10 +1830,6 @@ const typeMap: any = {
         { json: "fileId", js: "fileId", typ: "" },
         { json: "sourceUrl", js: "sourceUrl", typ: "" },
         { json: "userId", js: "userId", typ: "" },
-    ], false),
-    "AwsCloudwatchEventTargetPruneDevice": o([
-        { json: "arn", js: "arn", typ: "" },
-        { json: "rule", js: "rule", typ: "" },
     ], false),
     "AwsCloudwatchLogGroup": o([
         { json: "name", js: "name", typ: "" },
@@ -1900,6 +1898,13 @@ const typeMap: any = {
         { json: "label", js: "label", typ: "" },
         { json: "return_data", js: "return_data", typ: true },
     ], false),
+    "AwsDsqlCluster": o([
+        { json: "media_downloader", js: "media_downloader", typ: a(r("MediaDownloaderElement")) },
+    ], false),
+    "MediaDownloaderElement": o([
+        { json: "deletion_protection_enabled", js: "deletion_protection_enabled", typ: true },
+        { json: "tags", js: "tags", typ: "" },
+    ], false),
     "AwsDynamodbTable": o([
         { json: "IdempotencyTable", js: "IdempotencyTable", typ: a(r("IdempotencyTable")) },
         { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("IdempotencyTable")) },
@@ -1921,7 +1926,7 @@ const typeMap: any = {
     "GlobalSecondaryIndex": o([
         { json: "hash_key", js: "hash_key", typ: "" },
         { json: "name", js: "name", typ: "" },
-        { json: "projection_type", js: "projection_type", typ: r("ProjectionType") },
+        { json: "projection_type", js: "projection_type", typ: "" },
         { json: "range_key", js: "range_key", typ: u(undefined, "") },
     ], false),
     "TTL": o([
@@ -1963,36 +1968,21 @@ const typeMap: any = {
         { json: "batch_size", js: "batch_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaFunction": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("DeviceEventElement")) },
-        { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("DeviceEventElement")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("DeviceEventElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("DeviceEventElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("DeviceEventElement")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("DeviceEventElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("DeviceEventElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("DeviceEventElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("DeviceEventElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("DeviceEventElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("DeviceEventElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("CloudfrontMiddleware")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CloudfrontMiddleware")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CloudfrontMiddleware")) },
-    ], false),
-    "DeviceEventElement": o([
-        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
         { json: "description", js: "description", typ: "" },
-        { json: "environment", js: "environment", typ: a(r("Environment")) },
+        { json: "environment", js: "environment", typ: u(undefined, a(r("Environment"))) },
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: r("Handler") },
-        { json: "layers", js: "layers", typ: a(r("Layer")) },
+        { json: "layers", js: "layers", typ: u(undefined, a(r("Layer"))) },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tags", js: "tags", typ: "" },
-        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "provider", js: "provider", typ: u(undefined, "") },
+        { json: "publish", js: "publish", typ: u(undefined, true) },
         { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
         { json: "ephemeral_storage", js: "ephemeral_storage", typ: u(undefined, a(r("EphemeralStorage"))) },
         { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: u(undefined, 0) },
@@ -2005,23 +1995,6 @@ const typeMap: any = {
     ], false),
     "TracingConfig": o([
         { json: "mode", js: "mode", typ: r("Mode") },
-    ], false),
-    "CloudfrontMiddleware": o([
-        { json: "description", js: "description", typ: "" },
-        { json: "filename", js: "filename", typ: "" },
-        { json: "function_name", js: "function_name", typ: "" },
-        { json: "handler", js: "handler", typ: r("Handler") },
-        { json: "provider", js: "provider", typ: u(undefined, "") },
-        { json: "publish", js: "publish", typ: u(undefined, true) },
-        { json: "role", js: "role", typ: "" },
-        { json: "runtime", js: "runtime", typ: r("Runtime") },
-        { json: "source_code_hash", js: "source_code_hash", typ: "" },
-        { json: "tags", js: "tags", typ: "" },
-        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
-        { json: "environment", js: "environment", typ: u(undefined, a(r("Environment"))) },
-        { json: "layers", js: "layers", typ: u(undefined, a(r("Layer"))) },
-        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaLayerVersion": o([
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
@@ -2197,9 +2170,6 @@ const typeMap: any = {
     "AttributeType": [
         "N",
         "S",
-    ],
-    "ProjectionType": [
-        "ALL",
     ],
     "Handler": [
         "index.handler",

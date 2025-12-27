@@ -11,6 +11,7 @@ resource "aws_iam_role" "ListFiles" {
 data "aws_iam_policy_document" "ListFiles" {
   # Query UserCollection to get user's file associations
   # Query and BatchGet base table to retrieve file details
+  # TODO: Remove DynamoDB permissions after Aurora DSQL migration complete
   statement {
     actions = [
       "dynamodb:Query",
@@ -43,6 +44,11 @@ resource "aws_iam_role_policy_attachment" "ListFilesLogging" {
 resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
   role       = aws_iam_role.ListFiles.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ListFilesDSQL" {
+  role       = aws_iam_role.ListFiles.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
 }
 
 resource "aws_lambda_permission" "ListFiles" {

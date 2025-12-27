@@ -189,6 +189,23 @@ export interface PruneDevicesResult {
 }
 
 /**
+ * Result of the CleanupExpiredRecords scheduled operation.
+ * Returned to indicate cleanup statistics for expired records.
+ *
+ * @see CleanupExpiredRecords Lambda for implementation
+ */
+export interface CleanupResult {
+  /** Number of file downloads deleted */
+  fileDownloadsDeleted: number
+  /** Number of sessions deleted */
+  sessionsDeleted: number
+  /** Number of verification tokens deleted */
+  verificationTokensDeleted: number
+  /** Error messages for any failed operations */
+  errors: string[]
+}
+
+/**
  * Response from Apple Push Notification Service.
  * Used to track delivery success/failure.
  *

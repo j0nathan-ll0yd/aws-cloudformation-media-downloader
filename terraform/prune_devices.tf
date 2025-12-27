@@ -53,6 +53,11 @@ resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "PruneDevicesDSQL" {
+  role       = aws_iam_role.PruneDevices.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 resource "aws_cloudwatch_event_target" "PruneDevices" {
   rule = aws_cloudwatch_event_rule.PruneDevices.name
   arn  = aws_lambda_function.PruneDevices.arn

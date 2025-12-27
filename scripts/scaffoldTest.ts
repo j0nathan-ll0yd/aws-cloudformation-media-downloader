@@ -54,9 +54,9 @@ function analyzeSourceFile(filePath: string): ImportInfo[] {
  */
 function generateMockSetup(imp: ImportInfo): string {
   if (imp.isElectroDB) {
-    return `// Mock ElectroDB entity
+    return `// Mock entity
 jest.unstable_mockModule('${imp.modulePath}', () =>
-  createElectroDBEntityMock({
+  createEntityMock({
     get: jest.fn().mockResolvedValue({data: null}),
     query: jest.fn().mockResolvedValue({data: []}),
     put: jest.fn().mockResolvedValue({data: {}}),
@@ -107,9 +107,9 @@ function generateTestFile(sourceFilePath: string, imports: ImportInfo[]): string
     .map(imp => generateMockSetup(imp))
     .join('\n\n')
   
-  const hasElectroDB = imports.some(imp => imp.isElectroDB)
-  const helperImports = hasElectroDB 
-    ? "import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'\n" 
+  const hasEntityImport = imports.some(imp => imp.isElectroDB)
+  const helperImports = hasEntityImport
+    ? "import {createEntityMock} from '#test/helpers/entity-mock'\n"
     : ""
 
   return `/**

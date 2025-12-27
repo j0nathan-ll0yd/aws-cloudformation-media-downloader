@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import type {SQSEvent} from 'aws-lambda'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
 const getUserDevicesByUserIdResponse = [{deviceId: fakeDeviceId, userId: fakeUserId}]
@@ -14,10 +14,10 @@ const getDeviceResponse = {
   endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
 }
 
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const publishSnsEventMock = jest.fn<() => unknown>()

@@ -52,6 +52,11 @@ resource "aws_iam_role_policy_attachment" "UserDeleteXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "UserDeleteDSQL" {
+  role       = aws_iam_role.UserDelete.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 resource "aws_lambda_permission" "UserDelete" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.UserDelete.function_name

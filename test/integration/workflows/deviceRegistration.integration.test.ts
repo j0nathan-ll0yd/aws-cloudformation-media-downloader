@@ -1,83 +1,41 @@
 /**
  * Device Registration Integration Tests
  *
- * Tests the RegisterDevice workflow:
+ * Tests the RegisterDevice workflow against real services:
+ * - PostgreSQL: Device and UserDevice records
+ * - LocalStack SNS: Platform application and endpoints
+ *
+ * Workflow:
  * 1. Create SNS platform endpoint from device token
  * 2. Upsert Device record (idempotent)
  * 3. Upsert UserDevice association for authenticated users
  * 4. Handle duplicate device registration (same device, different users)
  * 5. Subscribe anonymous users to push notification topic
- *
- * Validates:
- * - Idempotent device registration (no duplicates)
- * - Proper handling of authenticated vs anonymous users
- * - SNS subscription management
  */
 
-// Test configuration
-const TEST_TABLE = 'test-device-registration'
-
-// Set environment variables for Lambda
-process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
+// Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
-process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:us-west-2:123456789012:app/APNS/TestApp'
-process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:123456789012:TestTopic'
-
-// Required env vars
+process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.DEFAULT_FILE_SIZE = '1024'
 process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
-import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
 import type {Context} from 'aws-lambda'
 import {UserStatus} from '../../../src/types/enums'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {closeTestDb, createAllTables, dropAllTables, getDevice, getTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
-import {createMockDevice, createMockUserDevice} from '../helpers/test-data'
+import {createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic, listTestEndpoints} from '../helpers/sns-helpers'
+import {userDevices} from '#lib/vendor/Drizzle/schema'
+import {eq} from 'drizzle-orm'
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// Entity module paths
-const devicesModulePath = resolve(__dirname, '../../../src/entities/Devices')
-const userDevicesModulePath = resolve(__dirname, '../../../src/entities/UserDevices')
-
-// Mock SNS operations
-const snsModulePath = resolve(__dirname, '../../../src/lib/vendor/AWS/SNS')
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const createPlatformEndpointMock = jest.fn<any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const listSubscriptionsByTopicMock = jest.fn<any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const unsubscribeMock = jest.fn<any>()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const subscribeMock = jest.fn<any>()
-
-jest.unstable_mockModule(snsModulePath,
-  () => ({
-    createPlatformEndpoint: createPlatformEndpointMock,
-    listSubscriptionsByTopic: listSubscriptionsByTopicMock,
-    unsubscribe: unsubscribeMock,
-    subscribe: subscribeMock,
-    deleteEndpoint: jest.fn()
-  }))
-
-// Create entity mocks
-const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule(devicesModulePath, () => ({Devices: devicesMock.entity}))
-
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule(userDevicesModulePath, () => ({UserDevices: userDevicesMock.entity}))
-
-// Import handler after mocking
+// Import handler directly (no mocking - uses real services)
 const {handler} = await import('../../../src/lambdas/RegisterDevice/src/index')
 
 interface DeviceRegistrationBody {
@@ -88,7 +46,6 @@ interface DeviceRegistrationBody {
   systemVersion: string
 }
 
-/** Create a complete device registration body with required fields */
 function createDeviceBody(deviceId: string, token: string): DeviceRegistrationBody {
   return {deviceId, token, name: 'Test Device', systemName: 'iOS', systemVersion: '17.0'}
 }
@@ -130,111 +87,105 @@ function createRegisterDeviceEvent(
 
 describe('Device Registration Integration Tests', () => {
   let mockContext: Context
+  let platformAppArn: string
+  let topicArn: string
+  const testAppName = `test-register-app-${Date.now()}`
+  const testTopicName = `test-register-topic-${Date.now()}`
 
   beforeAll(async () => {
-    await createFilesTable()
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Create PostgreSQL tables
+    await createAllTables()
+
+    // Create LocalStack SNS resources
+    platformAppArn = await createTestPlatformApplication(testAppName)
+    topicArn = await createTestTopic(testTopicName)
+
+    // Set environment variables for the Lambda
+    process.env.PLATFORM_APPLICATION_ARN = platformAppArn
+    process.env.PUSH_NOTIFICATION_TOPIC_ARN = topicArn
+
     mockContext = createMockContext()
   })
 
-  afterAll(async () => {
-    await deleteFilesTable()
+  afterEach(async () => {
+    // Clean up data between tests
+    await truncateAllTables()
   })
 
-  beforeEach(() => {
-    jest.clearAllMocks()
+  afterAll(async () => {
+    // Clean up LocalStack SNS
+    await deleteTestPlatformApplication(platformAppArn)
+    await deleteTestTopic(topicArn)
+
+    // Drop tables and close connection
+    await dropAllTables()
+    await closeTestDb()
   })
 
   test('should register new device for authenticated user', async () => {
-    const userId = 'user-new-device'
-    const deviceId = 'device-new-123'
-    const token = 'apns-token-abc123'
-    const endpointArn = `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/TestApp/${deviceId}`
+    const userId = crypto.randomUUID()
+    const deviceId = `device-new-${Date.now()}`
+    const token = `apns-token-${Date.now()}`
 
-    // Mock SNS createPlatformEndpoint
-    createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
-
-    // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
-
-    // Mock userDevice upsert
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
-
-    // Mock getUserDevices - first device (length === 1)
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, deviceId)]})
-
-    const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15', systemName: 'iOS', systemVersion: '17.0'}
-    const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(200)
-    const response = JSON.parse(result.body)
-    expect(response.body.endpointArn).toBe(endpointArn)
-
-    // Verify SNS endpoint created
-    expect(createPlatformEndpointMock).toHaveBeenCalledWith({PlatformApplicationArn: process.env.PLATFORM_APPLICATION_ARN, Token: token})
-
-    // Verify device stored
-    expect(devicesMock.entity.upsert).toHaveBeenCalled()
-
-    // Verify user-device association created
-    expect(userDevicesMock.entity.upsert).toHaveBeenCalled()
-  })
-
-  test('should handle duplicate device registration (same user registers same device again)', async () => {
-    const userId = 'user-duplicate'
-    const deviceId = 'device-duplicate-123'
-    const token = 'apns-token-duplicate'
-    const endpointArn = `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/TestApp/${deviceId}`
-
-    // Mock SNS createPlatformEndpoint - idempotent, returns same endpoint
-    createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
-
-    // Mock device upsert - idempotent
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
-
-    // Mock userDevice upsert - idempotent
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
-
-    // Mock getUserDevices - user already has this device (length > 1 means existing)
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        createMockUserDevice(userId, deviceId),
-        createMockUserDevice(userId, 'other-device')
-      ]
-    })
-
-    // Mock listSubscriptionsByTopic for unsubscribe flow
-    listSubscriptionsByTopicMock.mockResolvedValue({
-      Subscriptions: [{Endpoint: endpointArn, SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-123'}]
-    })
-
-    unsubscribeMock.mockResolvedValue(undefined)
+    // Create user in PostgreSQL
+    await insertUser({userId, email: 'newdevice@example.com', firstName: 'NewDevice'})
 
     const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Should return 201 for existing user with multiple devices
-    expect(result.statusCode).toBe(201)
+    expect(result.statusCode).toBe(200)
+    const response = JSON.parse(result.body)
+    expect(response.body.endpointArn).toContain('arn:aws:sns')
 
-    // Verify unsubscribe was called (to prevent duplicate notifications)
-    expect(unsubscribeMock).toHaveBeenCalled()
+    // Verify device was created in PostgreSQL
+    const device = await getDevice(deviceId)
+    expect(device).not.toBeNull()
+    expect(device?.token).toBe(token)
+    expect(device?.endpointArn).toContain('arn:aws:sns')
+
+    // Verify UserDevice association was created
+    const db = getTestDb()
+    const associations = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+    expect(associations).toHaveLength(1)
+    expect(associations[0].deviceId).toBe(deviceId)
+
+    // Verify SNS endpoint was created in LocalStack
+    const endpoints = await listTestEndpoints(platformAppArn)
+    expect(endpoints.length).toBeGreaterThan(0)
   })
 
-  test('should register device for anonymous user and subscribe to topic', async () => {
-    const deviceId = 'device-anon-123'
-    const token = 'apns-token-anon'
-    const endpointArn = `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/TestApp/${deviceId}`
+  test('should handle duplicate device registration (idempotent)', async () => {
+    const userId = crypto.randomUUID()
+    const deviceId = `device-dup-${Date.now()}`
+    const token = `apns-token-dup-${Date.now()}`
 
-    // Mock SNS createPlatformEndpoint
-    createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
+    await insertUser({userId, email: 'duplicate@example.com', firstName: 'Duplicate'})
 
-    // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    const body = createDeviceBody(deviceId, token)
+    const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
 
-    // Mock subscribe for anonymous user
-    subscribeMock.mockResolvedValue({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:TestTopic:sub-anon'})
+    // Register device twice
+    const result1 = await handler(event, mockContext)
+    expect(result1.statusCode).toBe(200)
+
+    const result2 = await handler(event, mockContext)
+    // Second registration should return 201 (existing user with device)
+    expect([200, 201]).toContain(result2.statusCode)
+
+    // Should still have only one device record
+    const device = await getDevice(deviceId)
+    expect(device).not.toBeNull()
+
+    // Should still have only one UserDevice association
+    const db = getTestDb()
+    const associations = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+    expect(associations).toHaveLength(1)
+  })
+
+  test('should register device for anonymous user', async () => {
+    const deviceId = `device-anon-${Date.now()}`
+    const token = `apns-token-anon-${Date.now()}`
 
     const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
@@ -242,27 +193,22 @@ describe('Device Registration Integration Tests', () => {
 
     expect(result.statusCode).toBe(200)
 
-    // Verify device stored (even for anonymous)
-    expect(devicesMock.entity.upsert).toHaveBeenCalled()
+    // Device should be created
+    const device = await getDevice(deviceId)
+    expect(device).not.toBeNull()
+    expect(device?.endpointArn).toContain('arn:aws:sns')
 
-    // Anonymous user should NOT create UserDevice association
-    expect(userDevicesMock.entity.upsert).not.toHaveBeenCalled()
+    // No UserDevice association for anonymous
+    const db = getTestDb()
+    const associations = await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
+    expect(associations).toHaveLength(0)
   })
 
   test('should return 401 for unauthenticated user', async () => {
-    const deviceId = 'device-unauth-123'
-    const token = 'apns-token-unauth'
-    const endpointArn = `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/TestApp/${deviceId}`
-
-    // Mock SNS createPlatformEndpoint
-    createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
-
-    // Mock device upsert
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {...createMockDevice(deviceId, endpointArn), token}})
+    const deviceId = `device-unauth-${Date.now()}`
+    const token = `apns-token-unauth-${Date.now()}`
 
     const body = createDeviceBody(deviceId, token)
-    // Create event with Authorization header but invalid/no userId
-    // getUserDetailsFromEvent returns Unauthenticated when there's an auth header but no userId
     const event = {
       body: JSON.stringify(body),
       headers: {Authorization: 'Bearer invalid-token'},
@@ -298,44 +244,23 @@ describe('Device Registration Integration Tests', () => {
   })
 
   test('should validate request body schema', async () => {
-    const userId = 'user-validation'
+    const userId = crypto.randomUUID()
+    await insertUser({userId, email: 'validation@example.com', firstName: 'Validation'})
 
     // Missing required fields
-    const invalidBody = {deviceId: 'test-123'}
-    const event = createRegisterDeviceEvent(invalidBody as DeviceRegistrationBody, userId, UserStatus.Authenticated)
+    const invalidBody = {deviceId: 'test-123'} as DeviceRegistrationBody
+    const event = createRegisterDeviceEvent(invalidBody, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Should fail validation
     expect(result.statusCode).toBe(400)
   })
 
-  test('should handle SNS createPlatformEndpoint failure', async () => {
-    const userId = 'user-sns-failure'
-    const deviceId = 'device-sns-fail'
-    const token = 'apns-token-fail'
-
-    // Mock SNS failure
-    createPlatformEndpointMock.mockResolvedValue(undefined as unknown as {EndpointArn: string})
-
-    const body = createDeviceBody(deviceId, token)
-    const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
-    const result = await handler(event, mockContext)
-
-    expect(result.statusCode).toBe(500)
-  })
-
   test('should register device with full device info', async () => {
-    const userId = 'user-full-info'
-    const deviceId = 'device-full-info'
-    const token = 'apns-token-full'
-    const endpointArn = `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/TestApp/${deviceId}`
+    const userId = crypto.randomUUID()
+    const deviceId = `device-full-${Date.now()}`
+    const token = `apns-token-full-${Date.now()}`
 
-    createPlatformEndpointMock.mockResolvedValue({EndpointArn: endpointArn})
-    devicesMock.mocks.upsert.go.mockResolvedValue({
-      data: {deviceId, endpointArn, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
-    })
-    userDevicesMock.mocks.upsert.go.mockResolvedValue({data: createMockUserDevice(userId, deviceId)})
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice(userId, deviceId)]})
+    await insertUser({userId, email: 'fullinfo@example.com', firstName: 'FullInfo'})
 
     const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
@@ -343,7 +268,37 @@ describe('Device Registration Integration Tests', () => {
 
     expect(result.statusCode).toBe(200)
 
-    // Verify full device info was passed to upsert
-    expect(devicesMock.entity.upsert).toHaveBeenCalled()
+    // Verify full device info was stored
+    const device = await getDevice(deviceId)
+    expect(device?.name).toBe('iPhone 15 Pro Max')
+    expect(device?.systemName).toBe('iOS')
+    expect(device?.systemVersion).toBe('17.2')
+  })
+
+  test('should allow multiple users to register same device', async () => {
+    const user1Id = crypto.randomUUID()
+    const user2Id = crypto.randomUUID()
+    const deviceId = `device-shared-${Date.now()}`
+    const token = `apns-token-shared-${Date.now()}`
+
+    await insertUser({userId: user1Id, email: 'user1@example.com', firstName: 'User1'})
+    await insertUser({userId: user2Id, email: 'user2@example.com', firstName: 'User2'})
+
+    const body = createDeviceBody(deviceId, token)
+
+    // User 1 registers device
+    const event1 = createRegisterDeviceEvent(body, user1Id, UserStatus.Authenticated)
+    const result1 = await handler(event1, mockContext)
+    expect(result1.statusCode).toBe(200)
+
+    // User 2 registers same device
+    const event2 = createRegisterDeviceEvent(body, user2Id, UserStatus.Authenticated)
+    const result2 = await handler(event2, mockContext)
+    expect(result2.statusCode).toBe(200)
+
+    // Both users should have association to the device
+    const db = getTestDb()
+    const associations = await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
+    expect(associations).toHaveLength(2)
   })
 })

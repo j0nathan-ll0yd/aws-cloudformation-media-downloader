@@ -1,396 +1,322 @@
 /**
  * Better Auth Entities Integration Tests
  *
- * Tests Better Auth ElectroDB entities (Users, Sessions, Accounts, VerificationTokens)
- * against LocalStack DynamoDB to validate:
- * - Entity CRUD operations
- * - GSI queries (byEmail, byUser, byToken, byProvider)
- * - Collections queries (userSessions, userAccounts)
- * - Complete authentication flows
+ * Tests the Better Auth entity operations with PostgreSQL:
+ * 1. Users table CRUD operations
+ * 2. Sessions table with user associations
+ * 3. Accounts table for OAuth providers
+ * 4. Devices and UserDevices associations
+ *
+ * These tests verify database operations using the postgres-helpers
+ * against a real PostgreSQL instance (docker-compose.test.yml).
  */
 
-// CRITICAL: Set environment variables BEFORE any imports that use them
-// ES modules evaluate imports before file code runs, but we can set env vars
-// before the dynamic imports below are resolved
-const TEST_TABLE = 'MediaDownloader'
-process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
-process.env.USE_LOCALSTACK = 'true'
-process.env.AWS_REGION = 'us-west-2'
+// Set environment variables before imports
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, afterEach, beforeAll, describe, expect, it} from '@jest/globals'
-import {cleanupLocalStackTable, setupLocalStackTable} from '../helpers/electrodb-localstack'
-
-// Dynamic imports to ensure env vars are set before entity instantiation
-const {Users} = await import('../../../src/entities/Users')
-const {Sessions} = await import('../../../src/entities/Sessions')
-const {Accounts} = await import('../../../src/entities/Accounts')
-const {VerificationTokens} = await import('../../../src/entities/VerificationTokens')
-const {MediaDownloaderService} = await import('../../../src/entities/Collections')
-const {createMockUser, createMockSession, createMockAccount, createMockVerificationToken, createMinimalUser} = await import(
-  '../../helpers/better-auth-test-data'
-)
-const {splitFullName} = await import('../../../src/lib/vendor/BetterAuth/electrodb-adapter')
-
-// Type helpers for ElectroDB service collections
-// ElectroDB collections return an object with entity-named arrays (using the keys from service creation)
-// Keys match the service registration: sessions, accounts (lowercase)
-interface UserSessionsData {
-  sessions: Array<{sessionId: string; [key: string]: unknown}>
-}
-
-interface UserAccountsData {
-  accounts: Array<{accountId: string; providerId: string; [key: string]: unknown}>
-}
-
-type ServiceCollections = {
-  userSessions: (params: {userId: string}) => {go: () => Promise<{data: UserSessionsData}>}
-  userAccounts: (params: {userId: string}) => {go: () => Promise<{data: UserAccountsData}>}
-}
-
-const collections = MediaDownloaderService.collections as unknown as ServiceCollections
+import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
+import {
+  closeTestDb,
+  createAllTables,
+  dropAllTables,
+  getDevice,
+  getTestDb,
+  getUser,
+  insertDevice,
+  insertUser,
+  linkUserDevice,
+  truncateAllTables
+} from '../helpers/postgres-helpers'
+import {accounts, devices, sessions, userDevices, users} from '#lib/vendor/Drizzle/schema'
+import {eq} from 'drizzle-orm'
 
 describe('Better Auth Entities Integration Tests', () => {
   beforeAll(async () => {
-    await setupLocalStackTable()
-  })
-
-  afterAll(async () => {
-    await cleanupLocalStackTable()
+    // Create all PostgreSQL tables
+    await createAllTables()
   })
 
   afterEach(async () => {
-    // Clean up test data after each test
-    // Note: In production, you'd want more sophisticated cleanup
+    // Clean up data between tests
+    await truncateAllTables()
   })
 
-  describe('Users Entity', () => {
-    it('should create and retrieve user by userId', async () => {
-      const userData = createMockUser({
-        userId: 'user-test-1',
-        emailVerified: true,
-        identityProviders: {
-          userId: 'apple-123',
-          email: 'test@example.com',
-          emailVerified: true,
-          isPrivateEmail: false,
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-          tokenType: 'Bearer',
-          expiresAt: Date.now() + 3600000
-        }
-      })
+  afterAll(async () => {
+    // Drop tables and close connection
+    await dropAllTables()
+    await closeTestDb()
+  })
 
-      await Users.create(userData).go()
+  describe('Users Entity Operations', () => {
+    test('should create and retrieve a user', async () => {
+      const userId = crypto.randomUUID()
 
-      const result = await Users.get({userId: 'user-test-1'}).go()
+      await insertUser({userId, email: 'auth-test@example.com', firstName: 'Auth', lastName: 'Test', emailVerified: true})
 
-      expect(result.data).toBeDefined()
-      expect(result.data?.userId).toBe('user-test-1')
-      expect(result.data?.email).toBe('test@example.com')
-      expect(result.data?.firstName).toBe('John')
-      expect(result.data?.lastName).toBe('Doe')
-      // Note: createdAt/updatedAt are auto-generated by DynamoDB and verified in other tests
+      const user = await getUser(userId)
+
+      expect(user).not.toBeNull()
+      expect(user?.email).toBe('auth-test@example.com')
+      expect(user?.firstName).toBe('Auth')
+      expect(user?.lastName).toBe('Test')
+      expect(user?.emailVerified).toBe(true)
     })
 
-    it('should query user by email using byEmail GSI', async () => {
-      const userData = createMockUser({userId: 'user-test-2', email: 'unique@example.com', firstName: 'Jane', lastName: 'Smith'})
+    test('should update user fields', async () => {
+      const userId = crypto.randomUUID()
+      const db = getTestDb()
 
-      await Users.create(userData).go()
+      await insertUser({userId, email: 'update@example.com', firstName: 'Before'})
 
-      const result = await Users.query.byEmail({email: 'unique@example.com'}).go()
+      // Update user
+      await db.update(users).set({firstName: 'After', lastName: 'Update'}).where(eq(users.userId, userId))
 
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0].userId).toBe('user-test-2')
-      expect(result.data[0].email).toBe('unique@example.com')
+      const user = await getUser(userId)
+
+      expect(user?.firstName).toBe('After')
+      expect(user?.lastName).toBe('Update')
     })
 
-    it('should return empty array for non-existent email', async () => {
-      const result = await Users.query.byEmail({email: 'nonexistent@example.com'}).go()
+    test('should delete user', async () => {
+      const userId = crypto.randomUUID()
+      const db = getTestDb()
 
-      expect(result.data).toHaveLength(0)
+      await insertUser({userId, email: 'delete@example.com', firstName: 'Delete'})
+
+      // Delete user
+      await db.delete(users).where(eq(users.userId, userId))
+
+      const user = await getUser(userId)
+
+      expect(user).toBeNull()
     })
 
-    it('should update user fields', async () => {
-      const userData = createMinimalUser({userId: 'user-test-3', email: 'update@example.com', firstName: 'Old', lastName: 'Name'})
+    test('should query user by email', async () => {
+      const userId = crypto.randomUUID()
+      const email = 'query-by-email@example.com'
+      const db = getTestDb()
 
-      await Users.create(userData).go()
+      await insertUser({userId, email, firstName: 'Query'})
 
-      await Users.update({userId: 'user-test-3'}).set({firstName: 'New', lastName: 'Updated', emailVerified: true}).go()
+      // Query by email
+      const results = await db.select().from(users).where(eq(users.email, email))
 
-      const result = await Users.get({userId: 'user-test-3'}).go()
-
-      expect(result.data?.firstName).toBe('New')
-      expect(result.data?.lastName).toBe('Updated')
-      expect(result.data?.emailVerified).toBe(true)
+      expect(results).toHaveLength(1)
+      expect(results[0].userId).toBe(userId)
     })
   })
 
-  describe('Sessions Entity', () => {
-    it('should create and retrieve session', async () => {
-      const sessionData = createMockSession({
-        sessionId: 'session-test-1',
-        userId: 'user-session-1',
-        token: 'hashed-token-123',
-        ipAddress: '192.168.1.1',
-        userAgent: 'Mozilla/5.0...',
-        expiresAt: Date.now() + 86400000
+  describe('Devices Entity Operations', () => {
+    test('should create and retrieve a device', async () => {
+      const deviceId = 'device-auth-test'
+
+      await insertDevice({
+        deviceId,
+        name: 'Test iPhone',
+        token: 'apns-token-123',
+        systemName: 'iOS',
+        systemVersion: '17.0',
+        endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/App/device-auth-test'
       })
 
-      await Sessions.create(sessionData).go()
+      const device = await getDevice(deviceId)
 
-      const result = await Sessions.get({sessionId: 'session-test-1'}).go()
-
-      expect(result.data).toBeDefined()
-      expect(result.data?.sessionId).toBe('session-test-1')
-      expect(result.data?.userId).toBe('user-session-1')
-      expect(result.data?.token).toBe('hashed-token-123')
-      expect(result.data?.deviceId).toBe('device-123')
-      expect(result.data?.createdAt).toBeDefined()
-      expect(result.data?.updatedAt).toBeDefined()
+      expect(device).not.toBeNull()
+      expect(device?.name).toBe('Test iPhone')
+      expect(device?.systemName).toBe('iOS')
     })
 
-    it('should query sessions by user using byUser GSI', async () => {
-      const userId = 'user-multi-session'
+    test('should update device token', async () => {
+      const deviceId = 'device-update-token'
+      const db = getTestDb()
 
-      await Sessions.create(createMockSession({sessionId: 'session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
+      await insertDevice({deviceId, name: 'Update Device', token: 'old-token'})
 
-      await Sessions.create(createMockSession({sessionId: 'session-2', userId, token: 'token-2', expiresAt: Date.now() + 172800000})).go()
+      // Update token
+      await db.update(devices).set({token: 'new-token'}).where(eq(devices.deviceId, deviceId))
 
-      await Sessions.create(createMockSession({sessionId: 'session-3', userId, token: 'token-3', expiresAt: Date.now() + 259200000})).go()
+      const device = await getDevice(deviceId)
 
-      const result = await Sessions.query.byUser({userId}).go()
+      expect(device?.token).toBe('new-token')
+    })
+  })
 
-      expect(result.data).toHaveLength(3)
-      expect(result.data.every((s) => s.userId === userId)).toBe(true)
-      // Verify sorted by expiresAt (composite sort key)
-      for (let i = 0; i < result.data.length - 1; i++) {
-        expect(result.data[i].expiresAt).toBeLessThanOrEqual(result.data[i + 1].expiresAt)
+  describe('UserDevices Association', () => {
+    test('should link user to device', async () => {
+      const userId = crypto.randomUUID()
+      const deviceId = 'device-link-test'
+      const db = getTestDb()
+
+      await insertUser({userId, email: 'device-owner@example.com', firstName: 'Owner'})
+      await insertDevice({deviceId})
+
+      await linkUserDevice(userId, deviceId)
+
+      const associations = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+
+      expect(associations).toHaveLength(1)
+      expect(associations[0].deviceId).toBe(deviceId)
+    })
+
+    test('should support multiple devices per user', async () => {
+      const userId = crypto.randomUUID()
+      const deviceIds = ['device-1', 'device-2', 'device-3']
+      const db = getTestDb()
+
+      await insertUser({userId, email: 'multi-device@example.com', firstName: 'Multi'})
+
+      for (const deviceId of deviceIds) {
+        await insertDevice({deviceId})
+        await linkUserDevice(userId, deviceId)
       }
-    })
 
-    it('should update session expiration', async () => {
-      await Sessions.create(createMockSession({sessionId: 'session-update-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
+      const associations = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
 
-      const newExpiresAt = Date.now() + 172800000
-
-      await Sessions.update({sessionId: 'session-update-1'}).set({expiresAt: newExpiresAt}).go()
-
-      const result = await Sessions.get({sessionId: 'session-update-1'}).go()
-
-      expect(result.data?.expiresAt).toBe(newExpiresAt)
-    })
-
-    it('should delete session', async () => {
-      await Sessions.create(createMockSession({sessionId: 'session-delete-1', userId: 'user-1', token: 'token-1', expiresAt: Date.now() + 86400000})).go()
-
-      await Sessions.delete({sessionId: 'session-delete-1'}).go()
-
-      const result = await Sessions.get({sessionId: 'session-delete-1'}).go()
-
-      expect(result.data).toBeNull()
+      expect(associations).toHaveLength(3)
     })
   })
 
-  describe('Accounts Entity', () => {
-    it('should create and retrieve OAuth account', async () => {
-      const accountData = createMockAccount({
-        accountId: 'account-test-1',
-        userId: 'user-oauth-1',
-        providerAccountId: 'apple-user-123',
-        accessToken: 'access-token-123',
-        refreshToken: 'refresh-token-123',
-        expiresAt: Date.now() + 3600000,
-        scope: 'email name',
-        idToken: 'id-token-123'
+  describe('Sessions Entity Operations', () => {
+    test('should create and retrieve a session', async () => {
+      const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      const db = getTestDb()
+
+      await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
+
+      // Create session
+      const now = Math.floor(Date.now() / 1000)
+      await db.insert(sessions).values({
+        sessionId,
+        userId,
+        token: 'session-token-123',
+        expiresAt: now + 86400, // 24 hours from now
+        ipAddress: '192.168.1.1',
+        userAgent: 'iOS/17.0 TestApp/1.0',
+        createdAt: now,
+        updatedAt: now
       })
 
-      await Accounts.create(accountData).go()
+      const results = await db.select().from(sessions).where(eq(sessions.userId, userId))
 
-      const result = await Accounts.get({accountId: 'account-test-1'}).go()
-
-      expect(result.data).toBeDefined()
-      expect(result.data?.accountId).toBe('account-test-1')
-      expect(result.data?.providerId).toBe('apple')
-      expect(result.data?.providerAccountId).toBe('apple-user-123')
-      expect(result.data?.accessToken).toBe('access-token-123')
-      expect(result.data?.createdAt).toBeDefined()
-      expect(result.data?.updatedAt).toBeDefined()
+      expect(results).toHaveLength(1)
+      expect(results[0].token).toBe('session-token-123')
+      expect(results[0].ipAddress).toBe('192.168.1.1')
     })
 
-    it('should query accounts by user using byUser GSI', async () => {
-      const userId = 'user-multi-provider'
+    test('should query sessions by token', async () => {
+      const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      const token = 'unique-session-token'
+      const db = getTestDb()
 
-      await Accounts.create(createMockAccount({accountId: 'account-apple', userId, providerId: 'apple', providerAccountId: 'apple-123'})).go()
+      await insertUser({userId, email: 'token-query@example.com', firstName: 'Token'})
 
-      await Accounts.create(createMockAccount({accountId: 'account-google', userId, providerId: 'google', providerAccountId: 'google-123'})).go()
+      const now = Math.floor(Date.now() / 1000)
+      await db.insert(sessions).values({sessionId, userId, token, expiresAt: now + 86400, createdAt: now, updatedAt: now})
 
-      const result = await Accounts.query.byUser({userId}).go()
+      const results = await db.select().from(sessions).where(eq(sessions.token, token))
 
-      expect(result.data).toHaveLength(2)
-      expect(result.data.map((a) => a.providerId).sort()).toEqual(['apple', 'google'])
+      expect(results).toHaveLength(1)
+      expect(results[0].userId).toBe(userId)
     })
 
-    it('should query account by provider using byProvider GSI', async () => {
-      await Accounts.create(createMockAccount({accountId: 'account-lookup-1', userId: 'user-lookup-1', providerAccountId: 'apple-unique-id'})).go()
+    test('should delete expired sessions', async () => {
+      const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      const db = getTestDb()
 
-      const result = await Accounts.query.byProvider({providerId: 'apple', providerAccountId: 'apple-unique-id'}).go()
+      await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
 
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0].userId).toBe('user-lookup-1')
-      expect(result.data[0].accountId).toBe('account-lookup-1')
-    })
-  })
-
-  describe('VerificationTokens Entity', () => {
-    it('should create and retrieve verification token', async () => {
-      const tokenData = createMockVerificationToken({token: 'verify-token-123'})
-
-      await VerificationTokens.create(tokenData).go()
-
-      const result = await VerificationTokens.get({token: 'verify-token-123'}).go()
-
-      expect(result.data).toBeDefined()
-      expect(result.data?.token).toBe('verify-token-123')
-      expect(result.data?.identifier).toBe('test@example.com')
-      expect(result.data?.expiresAt).toBeGreaterThan(Date.now())
-    })
-
-    it('should delete verification token after use', async () => {
-      await VerificationTokens.create(createMockVerificationToken({token: 'temp-token-123', identifier: 'user@example.com'})).go()
-
-      await VerificationTokens.delete({token: 'temp-token-123'}).go()
-
-      const result = await VerificationTokens.get({token: 'temp-token-123'}).go()
-
-      expect(result.data).toBeNull()
-    })
-  })
-
-  describe('Collections - Better Auth Queries', () => {
-    it('should query userSessions collection', async () => {
-      const userId = 'user-collection-1'
-
-      // Create sessions for the user
-      await Sessions.create(createMockSession({sessionId: 'coll-session-1', userId, token: 'token-1', expiresAt: Date.now() + 86400000})).go()
-
-      await Sessions.create(createMockSession({sessionId: 'coll-session-2', userId, token: 'token-2', expiresAt: Date.now() + 86400000})).go()
-
-      // Query collection - returns only Sessions (entity key matches service registration: sessions)
-      const result = await collections.userSessions({userId}).go()
-
-      expect(result.data.sessions).toHaveLength(2)
-      expect(result.data.sessions.map((s: {sessionId: string}) => s.sessionId).sort()).toEqual(['coll-session-1', 'coll-session-2'])
-    })
-
-    it('should query userAccounts collection', async () => {
-      const userId = 'user-collection-2'
-
-      // Create OAuth accounts for the user
-      await Accounts.create(createMockAccount({accountId: 'coll-acc-apple', userId, providerId: 'apple', providerAccountId: 'apple-coll-123'})).go()
-
-      await Accounts.create(createMockAccount({accountId: 'coll-acc-google', userId, providerId: 'google', providerAccountId: 'google-coll-123'})).go()
-
-      // Query collection - returns only Accounts (entity key matches service registration: accounts)
-      const result = await collections.userAccounts({userId}).go()
-
-      expect(result.data.accounts).toHaveLength(2)
-      expect(result.data.accounts.map((a: {providerId: string}) => a.providerId).sort()).toEqual(['apple', 'google'])
-    })
-  })
-
-  describe('Complete Authentication Flow', () => {
-    it('should handle complete user registration and login flow', async () => {
-      const userId = 'user-complete-flow'
-      const email = 'complete@example.com'
-
-      // Step 1: Register user
-      await Users.create(createMockUser({userId, email, firstName: 'Complete', lastName: 'Flow'})).go()
-
-      // Step 2: Link OAuth account (Apple)
-      await Accounts.create(
-        createMockAccount({
-          accountId: 'flow-account-1',
-          userId,
-          providerAccountId: 'apple-flow-123',
-          accessToken: 'flow-access-token',
-          refreshToken: 'flow-refresh-token',
-          expiresAt: Date.now() + 3600000
-        })
-      ).go()
-
-      // Step 3: Create session
-      await Sessions.create(
-        createMockSession({
-          sessionId: 'flow-session-1',
-          userId,
-          token: 'flow-session-token',
-          expiresAt: Date.now() + 86400000,
-          ipAddress: '192.168.1.100',
-          userAgent: 'iOS App/1.0'
-        })
-      ).go()
-
-      // Verify: User can be found by email
-      const userByEmail = await Users.query.byEmail({email}).go()
-      expect(userByEmail.data).toHaveLength(1)
-      expect(userByEmail.data[0].userId).toBe(userId)
-
-      // Verify: Account can be found by provider
-      const accountByProvider = await Accounts.query.byProvider({providerId: 'apple', providerAccountId: 'apple-flow-123'}).go()
-      expect(accountByProvider.data).toHaveLength(1)
-      expect(accountByProvider.data[0].userId).toBe(userId)
-
-      // Verify: Sessions can be queried
-      const userSessions = await Sessions.query.byUser({userId}).go()
-      expect(userSessions.data).toHaveLength(1)
-      expect(userSessions.data[0].token).toBe('flow-session-token')
-
-      // Verify: Accounts can be queried by user
-      const userAccounts = await Accounts.query.byUser({userId}).go()
-      expect(userAccounts.data).toHaveLength(1)
-      expect(userAccounts.data[0].providerId).toBe('apple')
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('should handle session expiration filtering', async () => {
-      const userId = 'user-expiration-test'
-      const now = Date.now()
+      const now = Math.floor(Date.now() / 1000)
+      const expired = now - 3600 // 1 hour ago
 
       // Create expired session
-      await Sessions.create(createMockSession({sessionId: 'expired-session', userId, token: 'expired-token', expiresAt: now - 1000})).go()
+      await db.insert(sessions).values({sessionId, userId, token: 'expired-token', expiresAt: expired, createdAt: expired - 86400, updatedAt: expired})
 
-      // Create active session
-      await Sessions.create(createMockSession({sessionId: 'active-session', userId, token: 'active-token', expiresAt: now + 86400000})).go()
+      // Delete expired sessions (simulating cleanup Lambda)
+      await db.delete(sessions).where(eq(sessions.expiresAt, expired))
 
-      // Query all sessions
-      const allSessions = await Sessions.query.byUser({userId}).go()
+      const results = await db.select().from(sessions).where(eq(sessions.userId, userId))
 
-      // Filter to active only (application-level filtering)
-      const activeSessions = allSessions.data.filter((s) => s.expiresAt > now)
-
-      expect(allSessions.data).toHaveLength(2)
-      expect(activeSessions).toHaveLength(1)
-      expect(activeSessions[0].sessionId).toBe('active-session')
-    })
-
-    it('should handle duplicate account creation gracefully', async () => {
-      await Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-1', providerAccountId: 'apple-dup-123'})).go()
-
-      // Attempting to create account with same accountId should fail
-      await expect(
-        Accounts.create(createMockAccount({accountId: 'dup-account-1', userId: 'user-dup-2', providerId: 'google', providerAccountId: 'google-456'})).go()
-      ).rejects.toThrow()
+      expect(results).toHaveLength(0)
     })
   })
 
-  describe('Helper Functions', () => {
-    it('should handle name splitting edge cases', () => {
-      expect(splitFullName('John Doe')).toEqual({firstName: 'John', lastName: 'Doe'})
-      expect(splitFullName('John')).toEqual({firstName: 'John', lastName: ''})
-      expect(splitFullName('')).toEqual({firstName: '', lastName: ''})
-      expect(splitFullName('John Doe Smith')).toEqual({firstName: 'John', lastName: 'Doe Smith'})
-      expect(splitFullName('Jean-Claude Van Damme')).toEqual({firstName: 'Jean-Claude', lastName: 'Van Damme'})
+  describe('Accounts Entity Operations', () => {
+    test('should create OAuth account for user', async () => {
+      const userId = crypto.randomUUID()
+      const accountId = crypto.randomUUID()
+      const db = getTestDb()
+
+      await insertUser({userId, email: 'oauth@example.com', firstName: 'OAuth'})
+
+      const now = Math.floor(Date.now() / 1000)
+      await db.insert(accounts).values({
+        accountId,
+        userId,
+        providerId: 'apple',
+        providerAccountId: 'apple-user-123',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: now + 3600,
+        tokenType: 'Bearer',
+        createdAt: now,
+        updatedAt: now
+      })
+
+      const results = await db.select().from(accounts).where(eq(accounts.userId, userId))
+
+      expect(results).toHaveLength(1)
+      expect(results[0].providerId).toBe('apple')
+      expect(results[0].providerAccountId).toBe('apple-user-123')
+    })
+
+    test('should query account by provider', async () => {
+      const userId = crypto.randomUUID()
+      const accountId = crypto.randomUUID()
+      const db = getTestDb()
+
+      await insertUser({userId, email: 'provider@example.com', firstName: 'Provider'})
+
+      const now = Math.floor(Date.now() / 1000)
+      await db.insert(accounts).values({accountId, userId, providerId: 'apple', providerAccountId: 'unique-apple-id', createdAt: now, updatedAt: now})
+
+      const results = await db.select().from(accounts).where(eq(accounts.providerAccountId, 'unique-apple-id'))
+
+      expect(results).toHaveLength(1)
+      expect(results[0].userId).toBe(userId)
+    })
+  })
+
+  describe('Cascade Delete Behavior', () => {
+    test('should clean up user associations when deleting user', async () => {
+      const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      const deviceId = 'cascade-device'
+      const db = getTestDb()
+
+      // Create user with device and session
+      await insertUser({userId, email: 'cascade@example.com', firstName: 'Cascade'})
+      await insertDevice({deviceId})
+      await linkUserDevice(userId, deviceId)
+
+      const now = Math.floor(Date.now() / 1000)
+      await db.insert(sessions).values({sessionId, userId, token: 'cascade-token', expiresAt: now + 86400, createdAt: now, updatedAt: now})
+
+      // Delete associations first (application-layer cascade)
+      await db.delete(userDevices).where(eq(userDevices.userId, userId))
+      await db.delete(sessions).where(eq(sessions.userId, userId))
+      await db.delete(users).where(eq(users.userId, userId))
+
+      // Verify cleanup
+      const userResult = await getUser(userId)
+      const deviceAssocs = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+      const sessionResults = await db.select().from(sessions).where(eq(sessions.userId, userId))
+
+      expect(userResult).toBeNull()
+      expect(deviceAssocs).toHaveLength(0)
+      expect(sessionResults).toHaveLength(0)
     })
   })
 })

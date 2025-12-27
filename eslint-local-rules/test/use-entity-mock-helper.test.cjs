@@ -1,9 +1,9 @@
 /**
- * Tests for use-electrodb-mock-helper ESLint rule
+ * Tests for use-entity-mock-helper ESLint rule
  */
 
 const {RuleTester} = require('eslint')
-const rule = require('../rules/use-electrodb-mock-helper.cjs')
+const rule = require('../rules/use-entity-mock-helper.cjs')
 
 const ruleTester = new RuleTester({
   languageOptions: {
@@ -12,9 +12,16 @@ const ruleTester = new RuleTester({
   }
 })
 
-ruleTester.run('use-electrodb-mock-helper', rule, {
+ruleTester.run('use-entity-mock-helper', rule, {
   valid: [
-    // Allowed: Using createElectroDBEntityMock in test file
+    // Allowed: Using createEntityMock in test file
+    {
+      code: `jest.unstable_mockModule('#entities/Users', () => createEntityMock({
+        queryIndexes: ['byEmail']
+      }))`,
+      filename: 'src/lambdas/LoginUser/test/index.test.ts'
+    },
+    // Allowed: Using legacy createElectroDBEntityMock in test file
     {
       code: `jest.unstable_mockModule('#entities/Users', () => createElectroDBEntityMock({
         queryIndexes: ['byEmail']
@@ -35,24 +42,24 @@ ruleTester.run('use-electrodb-mock-helper', rule, {
       }))`,
       filename: 'src/lambdas/ListFiles/src/index.ts'
     },
-    // Allowed: electrodb-mock helper file itself
+    // Allowed: entity-mock helper file itself
     {
-      code: `export function createElectroDBEntityMock(config) {
+      code: `export function createEntityMock(config) {
         return { entity: mockEntity, mockFunctions: {} }
       }`,
-      filename: 'test/helpers/electrodb-mock.ts'
+      filename: 'test/helpers/entity-mock.ts'
     },
-    // Allowed: Mock uses createElectroDBEntityMock (jest.mock)
+    // Allowed: Mock uses createEntityMock (jest.mock)
     {
-      code: `jest.mock('#entities/Files', () => createElectroDBEntityMock({
+      code: `jest.mock('#entities/Files', () => createEntityMock({
         queryIndexes: ['byStatus']
       }))`,
       filename: 'src/lambdas/FileCoordinator/test/index.test.ts'
     },
-    // Allowed: Variable assigned from createElectroDBEntityMock, then .entity used
+    // Allowed: Variable assigned from createEntityMock, then .entity used
     {
-      code: `const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-const filesMock = createElectroDBEntityMock()
+      code: `const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
+const filesMock = createEntityMock()
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))`,
       filename: 'src/lambdas/ListFiles/test/index.test.ts'
@@ -97,4 +104,4 @@ jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))`,
   ]
 })
 
-console.log('use-electrodb-mock-helper: All tests passed!')
+console.log('use-entity-mock-helper: All tests passed!')

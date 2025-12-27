@@ -1,63 +1,101 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
+/**
+ * FileDownloads Entity - Download orchestration state.
+ *
+ * Tracks transient download state (retries, scheduling, errors).
+ * Separated from Files to keep permanent metadata clean.
+ *
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
+ *
+ * Note: TTL is no longer handled by DynamoDB. Completed/failed records are
+ * cleaned up by the CleanupExpiredRecords scheduled Lambda.
+ *
+ * Access Patterns:
+ * - Primary: Get download by fileId
+ * - byStatusRetryAfter: Query by status and retryAfter (scheduler)
+ */
+import {eq} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {fileDownloads} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
-// Re-export DownloadStatus enum from enums for consumers of this module
 export { DownloadStatus } from '#types/enums'
 
-/**
- * ElectroDB entity schema for tracking download attempts.
- *
- * This entity manages transient download state, separating download orchestration
- * concerns from the permanent File entity. This enables:
- *
- * - Clean separation: Files = media metadata, FileDownloads = download state
- * - Retry tracking without polluting file records
- * - Easy cleanup of transient state after successful downloads
- * - Better querying for pending/scheduled downloads
- *
- * Lifecycle:
- * 1. Created when a download is initiated (status: 'pending' or 'in_progress')
- * 2. Updated on errors with retry scheduling (status: 'scheduled')
- * 3. Marked 'completed' on success (can be deleted after File updated)
- * 4. Marked 'failed' when retries exhausted
- */
-export const FileDownloads = new Entity({
-  model: {entity: 'FileDownload', version: '1', service: 'MediaDownloader'},
-  attributes: {
-    /** YouTube video ID - matches File.fileId */
-    fileId: {type: 'string', required: true, readOnly: true},
-    /** Current download status */
-    status: {type: ['Pending', 'InProgress', 'Scheduled', 'Completed', 'Failed'] as const, required: true, default: 'Pending'},
-    /** Number of download attempts made */
-    retryCount: {type: 'number', required: true, default: 0},
-    /** Maximum retries allowed for this download */
-    maxRetries: {type: 'number', required: true, default: 5},
-    /** Unix timestamp (seconds) when retry should be attempted (0 = immediate) */
-    retryAfter: {type: 'number', required: true, default: 0},
-    /** Error category from video-error-classifier */
-    errorCategory: {type: 'string', required: false},
-    /** Human-readable error message */
-    lastError: {type: 'string', required: false},
-    /** Scheduled video release timestamp from yt-dlp (if known) */
-    scheduledReleaseTime: {type: 'number', required: false},
-    /** Source URL for the download */
-    sourceUrl: {type: 'string', required: false},
-    /** Timestamp when download was first initiated */
-    createdAt: {type: 'number', required: true, default: () => Math.floor(Date.now() / 1000)},
-    /** Timestamp when download state was last updated */
-    updatedAt: {type: 'number', required: true, default: () => Math.floor(Date.now() / 1000), watch: '*'},
-    /** Correlation ID for end-to-end request tracing across Lambda chain */
-    correlationId: {type: 'string', required: false},
-    /** Unix timestamp (seconds) for DynamoDB TTL - auto-delete completed/failed records */
-    ttl: {type: 'number', required: false}
-  },
-  indexes: {
-    primary: {pk: {field: 'pk', composite: ['fileId'] as const}, sk: {field: 'sk', composite: [] as const}},
-    /** Query downloads by status and retry time - enables FileCoordinator to find ready downloads */
-    byStatusRetryAfter: {index: 'GSI6', pk: {field: 'gsi6pk', composite: ['status'] as const}, sk: {field: 'gsi6sk', composite: ['retryAfter'] as const}}
-  }
-} as const, {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient})
+export type FileDownloadItem = InferSelectModel<typeof fileDownloads>
+export type CreateFileDownloadInput = Omit<InferInsertModel<typeof fileDownloads>, 'createdAt' | 'updatedAt'> & {createdAt?: number; updatedAt?: number}
+export type UpdateFileDownloadInput = Partial<Omit<InferInsertModel<typeof fileDownloads>, 'fileId' | 'createdAt'>>
 
-// Type exports for use in application code
-export type FileDownloadItem = ReturnType<typeof FileDownloads.parse>
-export type CreateFileDownloadInput = Parameters<typeof FileDownloads.create>[0]
-export type UpdateFileDownloadInput = Parameters<typeof FileDownloads.update>[0]
+export const FileDownloads = {
+  get(key: {fileId: string}): {go: () => Promise<{data: FileDownloadItem | null}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, key.fileId)).limit(1)
+
+        return {data: result.length > 0 ? result[0] : null}
+      }
+    }
+  },
+
+  create(input: CreateFileDownloadInput): {go: () => Promise<{data: FileDownloadItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const now = Math.floor(Date.now() / 1000)
+        const [download] = await db.insert(fileDownloads).values({...input, createdAt: input.createdAt ?? now, updatedAt: input.updatedAt ?? now})
+          .returning()
+
+        return {data: download}
+      }
+    }
+  },
+
+  update(key: {fileId: string}): {set: (data: UpdateFileDownloadInput) => {go: () => Promise<{data: FileDownloadItem}>}} {
+    return {
+      set: (data: UpdateFileDownloadInput) => ({
+        go: async () => {
+          const db = await getDrizzleClient()
+          const now = Math.floor(Date.now() / 1000)
+          const [updated] = await db.update(fileDownloads).set({...data, updatedAt: now}).where(eq(fileDownloads.fileId, key.fileId)).returning()
+
+          return {data: updated}
+        }
+      })
+    }
+  },
+
+  delete(key: {fileId: string}): {go: () => Promise<void>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        await db.delete(fileDownloads).where(eq(fileDownloads.fileId, key.fileId))
+      }
+    }
+  },
+
+  query: {
+    byStatusRetryAfter(
+      key: {status: string}
+    ): {
+      go: () => Promise<{data: FileDownloadItem[]}>
+      where: (fn: (attr: {retryAfter: {lte: (val: number) => unknown}}) => unknown) => {go: () => Promise<{data: FileDownloadItem[]}>}
+    } {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
+
+          return {data: result}
+        },
+        where: () => ({
+          go: async () => {
+            const db = await getDrizzleClient()
+            const result = await db.select().from(fileDownloads).where(eq(fileDownloads.status, key.status))
+
+            return {data: result}
+          }
+        })
+      }
+    }
+  }
+}

@@ -49,8 +49,15 @@ const config = {
     ]
   ],
 
-  // Limit workers to prevent Jest worker hang issues with AWS SDK
-  maxWorkers: 2,
+  // Run integration tests in parallel with worker-isolated PostgreSQL schemas
+  // Each worker operates in its own schema (worker_1, worker_2, etc.)
+  maxWorkers: 4,
+
+  // Global setup creates worker schemas before tests run
+  globalSetup: '<rootDir>/test/integration/globalSetup.js',
+
+  // Global teardown drops worker schemas after all tests complete
+  globalTeardown: '<rootDir>/test/integration/globalTeardown.js',
 
   // Root directory for Jest
   rootDir: '../',

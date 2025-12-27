@@ -1,7 +1,8 @@
 /**
- * Better Auth ElectroDB Adapter
+ * Better Auth Database Adapter
  *
- * Custom database adapter for Better Auth that uses ElectroDB with DynamoDB single-table design.
+ * Custom database adapter for Better Auth that uses the entity layer.
+ * The entity layer provides an ElectroDB-compatible interface over Drizzle ORM with Aurora DSQL.
  * Uses Better Auth's createAdapterFactory for proper integration.
  *
  * @see https://www.better-auth.com/docs/guides/create-a-db-adapter
@@ -24,7 +25,7 @@ type ModelName = 'user' | 'session' | 'account' | 'verification'
 const primaryKeyFields: Record<ModelName, string> = {user: 'userId', session: 'sessionId', account: 'accountId', verification: 'token'}
 
 /**
- * Transform input data from Better Auth format to ElectroDB format
+ * Transform input data from Better Auth format to entity format
  */
 function transformInputData(model: string, data: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}
@@ -94,7 +95,7 @@ function transformInputData(model: string, data: Record<string, unknown>): Recor
 }
 
 /**
- * Transform output data from ElectroDB format to Better Auth format
+ * Transform output data from entity format to Better Auth format
  */
 function transformOutputData(model: string, data: Record<string, unknown> | null): Record<string, unknown> | null {
   if (!data) {
@@ -137,13 +138,20 @@ function transformOutputData(model: string, data: Record<string, unknown> | null
 type WhereClause = Array<{field: string; value: unknown; operator?: string}>
 
 /**
- * Creates a Better Auth adapter for ElectroDB/DynamoDB.
+ * Creates a Better Auth adapter using the entity layer (Drizzle ORM with Aurora DSQL).
  */
-export const electroDBAdapter = createAdapterFactory({
-  config: {adapterId: 'electrodb', adapterName: 'ElectroDB', supportsJSON: true, supportsDates: false, supportsBooleans: true, supportsNumericIds: false},
+export const drizzleAdapter = createAdapterFactory({
+  config: {
+    adapterId: 'drizzle-dsql',
+    adapterName: 'Drizzle DSQL',
+    supportsJSON: false,
+    supportsDates: true,
+    supportsBooleans: true,
+    supportsNumericIds: false
+  },
   adapter: () => ({
     async create<T>({model, data}: {model: string; data: Record<string, unknown>}): Promise<T> {
-      logDebug('ElectroDB Adapter: create', {model, data})
+      logDebug('Entity Adapter: create', {model, data})
       const transformedData = transformInputData(model, data)
 
       try {
@@ -176,13 +184,13 @@ export const electroDBAdapter = createAdapterFactory({
 
         return transformOutputData(model, result.data) as T
       } catch (error) {
-        logError('ElectroDB Adapter: create failed', {model, error})
+        logError('Entity Adapter: create failed', {model, error})
         throw error
       }
     },
 
     async findOne<T>({model, where}: {model: string; where: WhereClause}): Promise<T | null> {
-      logDebug('ElectroDB Adapter: findOne', {model, where})
+      logDebug('Entity Adapter: findOne', {model, where})
       const pkField = primaryKeyFields[model as ModelName]
       const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
 
@@ -245,15 +253,12 @@ export const electroDBAdapter = createAdapterFactory({
             const providerIdCondition = where.find((w) => w.field === 'providerId')
             const accountIdCondition = where.find((w) => w.field === 'accountId' || w.field === 'providerAccountId')
             if (providerIdCondition && accountIdCondition) {
-              logDebug('ElectroDB Adapter: querying account by provider', {
-                providerId: providerIdCondition.value,
-                providerAccountId: accountIdCondition.value
-              })
+              logDebug('Entity Adapter: querying account by provider', {providerId: providerIdCondition.value, providerAccountId: accountIdCondition.value})
               const result = await Accounts.query.byProvider({
                 providerId: providerIdCondition.value as string,
                 providerAccountId: accountIdCondition.value as string
               }).go()
-              logDebug('ElectroDB Adapter: account by provider result', {
+              logDebug('Entity Adapter: account by provider result', {
                 found: result.data?.length || 0,
                 data: result.data?.[0] ? {accountId: result.data[0].accountId, providerId: result.data[0].providerId} : null
               })
@@ -293,16 +298,16 @@ export const electroDBAdapter = createAdapterFactory({
           }
         }
 
-        logDebug('ElectroDB Adapter: findOne - no matching query pattern', {model, where})
+        logDebug('Entity Adapter: findOne - no matching query pattern', {model, where})
         return null
       } catch (error) {
-        logError('ElectroDB Adapter: findOne failed', {model, where, error})
+        logError('Entity Adapter: findOne failed', {model, where, error})
         return null
       }
     },
 
     async findMany<T>({model, where}: {model: string; where?: WhereClause}): Promise<T[]> {
-      logDebug('ElectroDB Adapter: findMany', {model, where})
+      logDebug('Entity Adapter: findMany', {model, where})
 
       try {
         switch (model) {
@@ -326,18 +331,18 @@ export const electroDBAdapter = createAdapterFactory({
 
         return []
       } catch (error) {
-        logError('ElectroDB Adapter: findMany failed', {model, where, error})
+        logError('Entity Adapter: findMany failed', {model, where, error})
         return []
       }
     },
 
     async update<T>({model, where, update}: {model: string; where: WhereClause; update: T}): Promise<T | null> {
-      logDebug('ElectroDB Adapter: update', {model, where, update})
+      logDebug('Entity Adapter: update', {model, where, update})
       const pkField = primaryKeyFields[model as ModelName]
       const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
 
       if (!pkCondition) {
-        logError('ElectroDB Adapter: update requires id in where clause', {model, where})
+        logError('Entity Adapter: update requires id in where clause', {model, where})
         return null
       }
 
@@ -374,7 +379,7 @@ export const electroDBAdapter = createAdapterFactory({
 
         return transformOutputData(model, result.data) as T
       } catch (error) {
-        logError('ElectroDB Adapter: update failed', {model, where, error})
+        logError('Entity Adapter: update failed', {model, where, error})
         return null
       }
     },
@@ -385,12 +390,12 @@ export const electroDBAdapter = createAdapterFactory({
     },
 
     async delete({model, where}: {model: string; where: WhereClause}): Promise<void> {
-      logDebug('ElectroDB Adapter: delete', {model, where})
+      logDebug('Entity Adapter: delete', {model, where})
       const pkField = primaryKeyFields[model as ModelName]
       const pkCondition = where.find((w) => w.field === 'id' || w.field === pkField)
 
       if (!pkCondition) {
-        logError('ElectroDB Adapter: delete requires id in where clause', {model, where})
+        logError('Entity Adapter: delete requires id in where clause', {model, where})
         return
       }
 
@@ -410,12 +415,12 @@ export const electroDBAdapter = createAdapterFactory({
             break
         }
       } catch (error) {
-        logError('ElectroDB Adapter: delete failed', {model, where, error})
+        logError('Entity Adapter: delete failed', {model, where, error})
       }
     },
 
     async deleteMany({model, where}: {model: string; where: WhereClause}): Promise<number> {
-      logDebug('ElectroDB Adapter: deleteMany', {model, where})
+      logDebug('Entity Adapter: deleteMany', {model, where})
 
       if (model === 'session') {
         const userIdCondition = where.find((w) => w.field === 'userId')
@@ -434,7 +439,7 @@ export const electroDBAdapter = createAdapterFactory({
     },
 
     async count({model, where}: {model: string; where?: WhereClause}): Promise<number> {
-      logDebug('ElectroDB Adapter: count', {model, where})
+      logDebug('Entity Adapter: count', {model, where})
 
       if (model === 'session' && where) {
         const userIdCondition = where.find((w) => w.field === 'userId')
@@ -456,3 +461,6 @@ export function splitFullName(fullName?: string): {firstName: string; lastName: 
   const parts = (fullName || '').split(' ')
   return {firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || ''}
 }
+
+/** @deprecated Use drizzleAdapter instead */
+export const electroDBAdapter = drizzleAdapter

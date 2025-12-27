@@ -1,15 +1,15 @@
 /**
  * Unit tests for Better Auth Helper Functions
  *
- * Tests session management, validation, and token generation using electrodb-mock.
+ * Tests session management, validation, and token generation using entity-mock.
  */
 
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
 import {UnauthorizedError} from '#lib/system/errors'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 
 // Create entity mocks
-const sessionsMock = createElectroDBEntityMock({queryIndexes: ['byUser', 'byToken']})
+const sessionsMock = createEntityMock({queryIndexes: ['byUser', 'byToken']})
 
 // Mock Sessions entity
 jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))

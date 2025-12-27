@@ -30,9 +30,9 @@ import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@je
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
+import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createElectroDBEntityMock} from '../../helpers/electrodb-mock'
+import {createEntityMock} from '../../helpers/entity-mock'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -49,7 +49,7 @@ jest.unstable_mockModule(betterAuthConfigPath, () => ({auth: {api: {signInSocial
 
 // Mock Users entity for RegisterUser name update
 const usersModulePath = resolve(__dirname, '../../../src/entities/Users')
-const usersMock = createElectroDBEntityMock()
+const usersMock = createEntityMock()
 jest.unstable_mockModule(usersModulePath, () => ({Users: usersMock.entity}))
 
 // Import handlers after mocking

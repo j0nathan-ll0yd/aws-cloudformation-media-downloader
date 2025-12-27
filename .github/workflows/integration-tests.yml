@@ -37,10 +37,11 @@ jobs:
       - name: Lint code
         run: pnpm run lint
 
-      - name: Start LocalStack
+      - name: Start LocalStack and PostgreSQL
         run: |
           docker compose -f docker-compose.localstack.yml up -d
-          echo "Waiting for LocalStack to be ready..."
+          docker compose -f docker-compose.test.yml up -d
+          echo "Waiting for services to be ready..."
 
       - name: Wait for LocalStack health check
         run: |
@@ -51,6 +52,28 @@ jobs:
             if curl -sf http://localhost:4566/_localstack/health > /dev/null 2>&1; then
               echo "LocalStack is healthy"
               curl -s http://localhost:4566/_localstack/health | jq
+              break
+            fi
+
+            retry_count=$((retry_count + 1))
+            echo "Attempt $retry_count of $max_retries..."
+            sleep 1
+          done
+
+          if [ $retry_count -eq $max_retries ]; then
+            echo "LocalStack failed to become healthy"
+            docker compose -f docker-compose.localstack.yml logs
+            exit 1
+          fi
+
+      - name: Wait for PostgreSQL health check
+        run: |
+          max_retries=30
+          retry_count=0
+
+          while [ $retry_count -lt $max_retries ]; do
+            if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d media_downloader_test > /dev/null 2>&1; then
+              echo "PostgreSQL is healthy"
               exit 0
             fi
 
@@ -59,8 +82,8 @@ jobs:
             sleep 1
           done
 
-          echo "LocalStack failed to become healthy"
-          docker compose -f docker-compose.localstack.yml logs
+          echo "PostgreSQL failed to become healthy"
+          docker compose -f docker-compose.test.yml logs
           exit 1
 
       - name: Run integration tests
@@ -68,6 +91,7 @@ jobs:
         env:
           CI: true
           USE_LOCALSTACK: true
+          TEST_DATABASE_URL: postgres://test:test@localhost:5432/media_downloader_test
 
       - name: Post coverage to job summary
         if: always() && hashFiles('coverage/integration/coverage-summary.md') != ''
@@ -85,10 +109,14 @@ jobs:
             test-results/
           retention-days: 7
 
-      - name: Show LocalStack logs on failure
+      - name: Show service logs on failure
         if: failure()
-        run: docker compose -f docker-compose.localstack.yml logs
+        run: |
+          docker compose -f docker-compose.localstack.yml logs
+          docker compose -f docker-compose.test.yml logs
 
-      - name: Stop LocalStack
+      - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.localstack.yml down
+        run: |
+          docker compose -f docker-compose.localstack.yml down
+          docker compose -f docker-compose.test.yml down

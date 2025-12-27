@@ -198,3 +198,8 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedXRay" {
   role       = aws_iam_role.S3ObjectCreated.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
+
+resource "aws_iam_role_policy_attachment" "S3ObjectCreatedDSQL" {
+  role       = aws_iam_role.S3ObjectCreated.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}

@@ -62,6 +62,11 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "WebhookFeedlyDSQL" {
+  role       = aws_iam_role.WebhookFeedly.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 resource "aws_lambda_permission" "WebhookFeedly" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.WebhookFeedly.function_name
@@ -219,6 +224,11 @@ resource "aws_iam_role_policy_attachment" "StartFileUploadLogging" {
 resource "aws_iam_role_policy_attachment" "StartFileUploadXRay" {
   role       = aws_iam_role.StartFileUpload.name
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
+}
+
+resource "aws_iam_role_policy_attachment" "StartFileUploadDSQL" {
+  role       = aws_iam_role.StartFileUpload.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
 }
 
 data "archive_file" "StartFileUpload" {

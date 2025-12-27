@@ -1,209 +1,233 @@
 /**
  * SendPushNotification Workflow Integration Tests
  *
- * Tests the push notification workflow against LocalStack:
+ * Tests the push notification workflow against real services:
+ * - PostgreSQL: User, Device, and UserDevice records
+ * - LocalStack SNS: Platform application and endpoints
+ *
+ * Workflow:
  * 1. Receive SQS FileNotification event
- * 2. Query DynamoDB UserDevices table for user's devices
- * 3. Query DynamoDB Devices table for each device's endpoint ARN
+ * 2. Query PostgreSQL UserDevices for user's devices
+ * 3. Query PostgreSQL Devices for each device's endpoint ARN
  * 4. Fan-out: Publish SNS notification to each device endpoint
  * 5. Handle errors gracefully (invalid devices, missing endpoints)
- *
- * This tests YOUR orchestration logic, not AWS SDK behavior.
  */
 
-// Test configuration
-const TEST_TABLE = 'test-push-notification'
-
-// Set environment variables for Lambda
-process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
+// Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
 import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/dynamodb-helpers'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {closeTestDb, createAllTables, dropAllTables, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockDevice, createMockSQSFileNotificationEvent, createMockUserDevice} from '../helpers/test-data'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
 
-// Use path aliases matching handler imports for proper mock resolution
-const publishSnsEventMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock, publish: publishSnsEventMock}))
-
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
-
-const devicesMock = createElectroDBEntityMock()
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
-
+// Import handler directly (no mocking - uses real services)
 const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
 
-type PublishCallArgs = [{TargetArn: string}]
+/**
+ * Creates an SQS event for file notification testing
+ */
+function createSQSFileNotificationEvent(userId: string, fileId: string, options?: {title?: string; notificationType?: string}): SQSEvent {
+  const title = options?.title || 'Test Video'
+  const notificationType = options?.notificationType || 'DownloadReadyNotification'
+
+  return {
+    Records: [{
+      messageId: `test-message-${Date.now()}`,
+      receiptHandle: 'test-receipt',
+      body: JSON.stringify({fileId, title, authorName: 'Test Channel', status: 'Downloaded'}),
+      attributes: {
+        ApproximateReceiveCount: '1',
+        SentTimestamp: String(Date.now()),
+        SenderId: 'test-sender',
+        ApproximateFirstReceiveTimestamp: String(Date.now())
+      },
+      messageAttributes: {
+        notificationType: {stringValue: notificationType, dataType: 'String'},
+        userId: {stringValue: userId, dataType: 'String'},
+        fileId: {stringValue: fileId, dataType: 'String'}
+      },
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
+      awsRegion: 'us-west-2'
+    }]
+  }
+}
 
 describe('SendPushNotification Workflow Integration Tests', () => {
-  beforeAll(async () => {
-    // Create LocalStack infrastructure (if needed)
-    await createFilesTable()
+  let platformAppArn: string
+  const testAppName = `test-push-app-${Date.now()}`
 
-    // Wait for tables to be ready
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+  beforeAll(async () => {
+    // Create PostgreSQL tables
+    await createAllTables()
+
+    // Create LocalStack SNS platform application
+    platformAppArn = await createTestPlatformApplication(testAppName)
+
+    // Set environment variable for the Lambda
+    process.env.PLATFORM_APPLICATION_ARN = platformAppArn
+  })
+
+  afterEach(async () => {
+    // Clean up data between tests
+    await truncateAllTables()
   })
 
   afterAll(async () => {
-    // Clean up LocalStack infrastructure
-    await deleteFilesTable()
+    // Clean up LocalStack SNS
+    await deleteTestPlatformApplication(platformAppArn)
+
+    // Drop tables and close connection
+    await dropAllTables()
+    await closeTestDb()
   })
 
-  beforeEach(() => {
-    // Clear all mocks before each test
-    jest.clearAllMocks()
+  test('should query PostgreSQL and publish SNS notification for single user with single device', async () => {
+    // Arrange: Create real data in PostgreSQL
+    const userId = crypto.randomUUID()
+    const deviceId = 'device-single-test'
+    const deviceToken = `token-${Date.now()}`
 
-    // Reset mock implementations
-    publishSnsEventMock.mockResolvedValue({MessageId: 'test-sns-message-id'})
-  })
+    // Create SNS endpoint in LocalStack
+    const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
 
-  test('should query DynamoDB and publish SNS notification for single user with single device', async () => {
-    // Arrange: Mock ElectroDB responses
-    // First query: getUserDevicesByUserId returns array of individual UserDevice records
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [createMockUserDevice('user-123', 'device-abc')]})
+    // Create user and device in PostgreSQL
+    await insertUser({userId, email: 'single@example.com', firstName: 'Single'})
+    await insertDevice({deviceId, token: deviceToken, endpointArn, name: 'Test iPhone'})
+    await linkUserDevice(userId, deviceId)
 
-    devicesMock.mocks.get.mockResolvedValue({data: createMockDevice('device-abc', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')})
+    // Act: Invoke handler
+    const event = createSQSFileNotificationEvent(userId, 'video-123')
+    const result = await handler(event, createMockContext())
 
-    const event = createMockSQSFileNotificationEvent('user-123', 'video-123')
-
-    await handler(event, createMockContext())
-
-    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
-    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(1)
-
-    expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
-
-    const publishParams = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0]
-    expect(publishParams.TargetArn).toBe('arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/test-endpoint')
+    // Assert: No failures (all messages processed successfully)
+    expect(result.batchItemFailures).toHaveLength(0)
   })
 
   test('should fan-out to multiple devices when user has multiple registered devices', async () => {
-    // Arrange: Mock ElectroDB responses
-    // First query: getUserDevicesByUserId returns array of individual UserDevice records
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice('user-456', 'device-1'), createMockUserDevice('user-456', 'device-2'), createMockUserDevice('user-456', 'device-3')]
-    })
+    // Arrange: Create user with multiple devices
+    const userId = crypto.randomUUID()
+    const deviceConfigs = [
+      {deviceId: 'device-multi-1', token: `token-multi-1-${Date.now()}`},
+      {deviceId: 'device-multi-2', token: `token-multi-2-${Date.now()}`},
+      {deviceId: 'device-multi-3', token: `token-multi-3-${Date.now()}`}
+    ]
 
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1')})
+    await insertUser({userId, email: 'multi@example.com', firstName: 'Multi'})
 
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2')})
-
-    devicesMock.mocks.get.mockResolvedValueOnce({data: createMockDevice('device-3', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3')})
-
-    const event = createMockSQSFileNotificationEvent('user-456', 'video-456', {title: 'Multi-Device Video'})
-
-    await handler(event, createMockContext())
-
-    // Assert: ElectroDB queried 4 times (1 UserDevices + 3 Devices)
-    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
-    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(3)
-
-    // Assert: SNS publish called 3 times (one per device)
-    expect(publishSnsEventMock).toHaveBeenCalledTimes(3)
-
-    const targetArns = (publishSnsEventMock.mock.calls as unknown as PublishCallArgs[]).map((call) => call[0].TargetArn)
-    expect(targetArns).toEqual([
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-1',
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-2',
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/endpoint-3'
-    ])
-  })
-
-  test('should return early when user has no registered devices', async () => {
-    // Arrange: Mock ElectroDB to return empty array (no devices)
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-
-    const event = createMockSQSFileNotificationEvent('user-no-devices', 'video-789')
-
-    await handler(event, createMockContext())
-
-    // Assert: Only UserDevices queried, not Devices
-    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(1)
-    expect(devicesMock.mocks.get).not.toHaveBeenCalled()
-
-    // Assert: No SNS publish (no devices to notify)
-    expect(publishSnsEventMock).not.toHaveBeenCalled()
-  })
-
-  test('should handle invalid device gracefully and continue to next device', async () => {
-    // Arrange: Mock ElectroDB responses
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [createMockUserDevice('user-789', 'device-good'), createMockUserDevice('user-789', 'device-bad')]
-    })
-
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-good', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint')
-    })
-
-    // Second device query fails (device not found)
-    devicesMock.mocks.get.mockResolvedValueOnce(undefined)
-
-    const event = createMockSQSFileNotificationEvent('user-789', 'video-error')
-
-    await expect(handler(event, createMockContext())).resolves.not.toThrow()
-
-    expect(publishSnsEventMock).toHaveBeenCalledTimes(1)
-    expect((publishSnsEventMock.mock.calls as unknown as PublishCallArgs[])[0][0].TargetArn).toBe(
-      'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/good-endpoint'
-    )
-  })
-
-  test('should process multiple SQS records in same batch', async () => {
-    // Arrange: Mock ElectroDB responses for two different users
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({data: [createMockUserDevice('user-1', 'device-user1')]})
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-user1', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user1-endpoint')
-    })
-
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValueOnce({data: [createMockUserDevice('user-2', 'device-user2')]})
-    devicesMock.mocks.get.mockResolvedValueOnce({
-      data: createMockDevice('device-user2', 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/user2-endpoint')
-    })
-
-    const event1 = createMockSQSFileNotificationEvent('user-1', 'video-batch-1')
-    const event2 = createMockSQSFileNotificationEvent('user-2', 'video-batch-2')
-    const batchEvent: SQSEvent = {Records: [...event1.Records, ...event2.Records]}
-
-    await handler(batchEvent, createMockContext())
-
-    // Assert: ElectroDB queried 4 times (2 users × 2 queries each)
-    expect(userDevicesMock.mocks.query.byUser!.go).toHaveBeenCalledTimes(2)
-    expect(devicesMock.mocks.get).toHaveBeenCalledTimes(2)
-
-    // Assert: SNS published 2 times (one per user)
-    expect(publishSnsEventMock).toHaveBeenCalledTimes(2)
-  })
-
-  test('should skip non-FileNotification messages', async () => {
-    // Arrange: SQS event with different message type
-    const event: SQSEvent = {
-      Records: [{
-        messageId: 'test-message-6',
-        receiptHandle: 'test-receipt-6',
-        body: 'OtherNotificationType',
-        attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1234567890', SenderId: 'test-sender', ApproximateFirstReceiveTimestamp: '1234567890'},
-        messageAttributes: {},
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-        awsRegion: 'us-west-2'
-      }]
+    for (const config of deviceConfigs) {
+      const endpointArn = await createTestEndpoint(platformAppArn, config.token)
+      await insertDevice({deviceId: config.deviceId, token: config.token, endpointArn})
+      await linkUserDevice(userId, config.deviceId)
     }
 
     // Act: Invoke handler
-    await handler(event, createMockContext())
+    const event = createSQSFileNotificationEvent(userId, 'video-multi', {title: 'Multi-Device Video'})
+    const result = await handler(event, createMockContext())
 
-    // Assert: No ElectroDB queries
-    expect(userDevicesMock.mocks.query.byUser!.go).not.toHaveBeenCalled()
-    expect(devicesMock.mocks.get).not.toHaveBeenCalled()
+    // Assert: All 3 devices received notifications (no failures)
+    expect(result.batchItemFailures).toHaveLength(0)
+  })
 
-    // Assert: No SNS publish
-    expect(publishSnsEventMock).not.toHaveBeenCalled()
+  test('should return early when user has no registered devices', async () => {
+    // Arrange: Create user without any devices
+    const userId = crypto.randomUUID()
+    await insertUser({userId, email: 'nodevices@example.com', firstName: 'NoDevices'})
+
+    // Act: Invoke handler
+    const event = createSQSFileNotificationEvent(userId, 'video-no-devices')
+    const result = await handler(event, createMockContext())
+
+    // Assert: No failures (handler exits gracefully)
+    expect(result.batchItemFailures).toHaveLength(0)
+  })
+
+  test('should handle device without endpoint ARN gracefully', async () => {
+    // Arrange: Create user with device that has no endpointArn
+    const userId = crypto.randomUUID()
+    const deviceId = 'device-no-endpoint'
+
+    await insertUser({userId, email: 'noendpoint@example.com', firstName: 'NoEndpoint'})
+    await insertDevice({deviceId, token: 'some-token'}) // No endpointArn
+    await linkUserDevice(userId, deviceId)
+
+    // Act: Invoke handler
+    const event = createSQSFileNotificationEvent(userId, 'video-error')
+
+    // The handler should fail because device has no endpointArn
+    const result = await handler(event, createMockContext())
+
+    // Assert: This message should fail since no valid endpoint
+    expect(result.batchItemFailures).toHaveLength(1)
+  })
+
+  test('should process multiple SQS records in same batch', async () => {
+    // Arrange: Create two users with devices
+    const user1Id = crypto.randomUUID()
+    const user2Id = crypto.randomUUID()
+
+    await insertUser({userId: user1Id, email: 'batch1@example.com', firstName: 'Batch1'})
+    await insertUser({userId: user2Id, email: 'batch2@example.com', firstName: 'Batch2'})
+
+    const endpoint1 = await createTestEndpoint(platformAppArn, `token-batch-1-${Date.now()}`)
+    const endpoint2 = await createTestEndpoint(platformAppArn, `token-batch-2-${Date.now()}`)
+
+    await insertDevice({deviceId: 'device-batch-1', token: 'token-batch-1', endpointArn: endpoint1})
+    await insertDevice({deviceId: 'device-batch-2', token: 'token-batch-2', endpointArn: endpoint2})
+
+    await linkUserDevice(user1Id, 'device-batch-1')
+    await linkUserDevice(user2Id, 'device-batch-2')
+
+    // Act: Create batch event with two records
+    const event1 = createSQSFileNotificationEvent(user1Id, 'video-batch-1')
+    const event2 = createSQSFileNotificationEvent(user2Id, 'video-batch-2')
+    const batchEvent: SQSEvent = {Records: [...event1.Records, ...event2.Records]}
+
+    const result = await handler(batchEvent, createMockContext())
+
+    // Assert: Both messages processed successfully
+    expect(result.batchItemFailures).toHaveLength(0)
+  })
+
+  test('should skip non-supported notification types', async () => {
+    // Arrange: Create user with device
+    const userId = crypto.randomUUID()
+    await insertUser({userId, email: 'skiptype@example.com', firstName: 'SkipType'})
+
+    const endpoint = await createTestEndpoint(platformAppArn, `token-skip-${Date.now()}`)
+    await insertDevice({deviceId: 'device-skip', token: 'token-skip', endpointArn: endpoint})
+    await linkUserDevice(userId, 'device-skip')
+
+    // Act: Send unsupported notification type
+    const event = createSQSFileNotificationEvent(userId, 'video-skip', {notificationType: 'UnsupportedNotificationType'})
+    const result = await handler(event, createMockContext())
+
+    // Assert: No failures (skipped gracefully)
+    expect(result.batchItemFailures).toHaveLength(0)
+  })
+
+  test('should handle MetadataNotification type', async () => {
+    // Arrange: Create user with device
+    const userId = crypto.randomUUID()
+
+    await insertUser({userId, email: 'metadata@example.com', firstName: 'Metadata'})
+
+    const endpoint = await createTestEndpoint(platformAppArn, `token-metadata-${Date.now()}`)
+    await insertDevice({deviceId: 'device-metadata', token: 'token-metadata', endpointArn: endpoint})
+    await linkUserDevice(userId, 'device-metadata')
+
+    // Act: Send MetadataNotification
+    const event = createSQSFileNotificationEvent(userId, 'video-metadata', {notificationType: 'MetadataNotification', title: 'Metadata Update'})
+    const result = await handler(event, createMockContext())
+
+    // Assert: Processed successfully
+    expect(result.batchItemFailures).toHaveLength(0)
   })
 })

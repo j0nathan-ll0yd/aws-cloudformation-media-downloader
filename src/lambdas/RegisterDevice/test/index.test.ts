@@ -2,13 +2,13 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
 
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
-const userDevicesMock = createElectroDBEntityMock()
+const userDevicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const getUserDevicesMock = jest.fn()

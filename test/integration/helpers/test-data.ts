@@ -7,7 +7,7 @@
 
 import type {ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
-import type {File} from '#types/domain-models'
+import type {Device, File, User} from '#types/domain-models'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -72,8 +72,34 @@ export function createMockUserDevice(userId: string, deviceId: string) {
  * @param deviceId - Device UUID
  * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
  */
-export function createMockDevice(deviceId: string, endpointArn?: string) {
-  return {deviceId, endpointArn: endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`}
+export function createMockDevice(partial?: Partial<Device>): Partial<Device> {
+  const deviceId = partial?.deviceId || `device-${Math.random().toString(36).substring(7)}`
+  return {
+    deviceId,
+    name: partial?.name || 'Test iPhone',
+    token: partial?.token || `token-${deviceId}`,
+    systemVersion: partial?.systemVersion || '17.0',
+    systemName: partial?.systemName || 'iOS',
+    endpointArn: partial?.endpointArn || `arn:aws:sns:us-west-2:123456789012:endpoint/APNS/MyApp/${deviceId}`,
+    ...partial
+  }
+}
+
+/**
+ * Creates a mock User record with sensible defaults
+ * @param partial - Partial user data to override defaults
+ */
+export function createMockUser(partial?: Partial<User> & {appleDeviceId?: string}): Partial<User> & {appleDeviceId?: string} {
+  const userId = partial?.userId || `user-${Math.random().toString(36).substring(7)}`
+  return {
+    userId,
+    email: partial?.email || `${userId}@example.com`,
+    emailVerified: partial?.emailVerified ?? true,
+    firstName: partial?.firstName || 'Test',
+    lastName: partial?.lastName || 'User',
+    appleDeviceId: partial?.appleDeviceId,
+    ...partial
+  }
 }
 
 /**

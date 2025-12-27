@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 import {testContext} from '#util/jest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
 const fakeUserDevicesResponse = [
   {deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1', userId: fakeUserId}, // fmt: multiline
@@ -41,16 +41,16 @@ jest.unstable_mockModule('#lib/domain/device/device-service', () => ({
   deleteUserDevice: jest.fn()
 }))
 
-const devicesMock = createElectroDBEntityMock()
+const devicesMock = createEntityMock()
 jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
-const usersMock = createElectroDBEntityMock()
+const usersMock = createEntityMock()
 jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
 
-const userFilesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
-const userDevicesMock = createElectroDBEntityMock({queryIndexes: ['byUser']})
+const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
 jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({

@@ -1,8 +1,8 @@
 /**
- * use-electrodb-mock-helper
- * ERROR: Test files must use createElectroDBEntityMock() helper
+ * use-entity-mock-helper
+ * ERROR: Test files must use createEntityMock() helper
  *
- * Mirrors: src/mcp/validation/rules/electrodb-mocking.ts
+ * Mirrors: src/mcp/validation/rules/entity-mocking.ts
  */
 
 const ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
@@ -11,12 +11,12 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce using createElectroDBEntityMock() in tests for ElectroDB entity mocking',
+      description: 'Enforce using createEntityMock() in tests for entity mocking',
       category: 'Testing',
       recommended: true
     },
     messages: {
-      manualMock: "Manual entity mock detected for '{{path}}'. Use createElectroDBEntityMock() from test/helpers/electrodb-mock.ts instead."
+      manualMock: "Manual entity mock detected for '{{path}}'. Use createEntityMock() from test/helpers/entity-mock.ts instead."
     },
     schema: []
   },
@@ -29,21 +29,21 @@ module.exports = {
     }
 
     // Skip the helper file itself
-    if (filename.includes('electrodb-mock')) {
+    if (filename.includes('entity-mock') || filename.includes('electrodb-mock')) {
       return {}
     }
 
-    // Track variables created with createElectroDBEntityMock
+    // Track variables created with createEntityMock (or legacy createElectroDBEntityMock)
     const helperVariables = new Set()
 
     return {
       VariableDeclarator(node) {
-        // Track: const fooMock = createElectroDBEntityMock(...)
+        // Track: const fooMock = createEntityMock(...) or createElectroDBEntityMock(...)
         if (
           node.init &&
           node.init.type === 'CallExpression' &&
           node.init.callee.type === 'Identifier' &&
-          node.init.callee.name === 'createElectroDBEntityMock' &&
+          (node.init.callee.name === 'createEntityMock' || node.init.callee.name === 'createElectroDBEntityMock') &&
           node.id.type === 'Identifier'
         ) {
           helperVariables.add(node.id.name)
@@ -71,8 +71,8 @@ module.exports = {
                 const sourceCode = context.sourceCode || context.getSourceCode()
                 const mockImpl = sourceCode.getText(node.arguments[1])
 
-                // Check if mock uses createElectroDBEntityMock directly or via a tracked variable
-                const usesHelper = mockImpl.includes('createElectroDBEntityMock')
+                // Check if mock uses createEntityMock (or legacy) directly or via a tracked variable
+                const usesHelper = mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')
                 const usesHelperVariable = Array.from(helperVariables).some((varName) => mockImpl.includes(varName + '.entity'))
 
                 if (!usesHelper && !usesHelperVariable) {

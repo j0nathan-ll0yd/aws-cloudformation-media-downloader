@@ -1,12 +1,13 @@
 /**
  * Better Auth Configuration
  *
- * Configures Better Auth with ElectroDB adapter and OAuth providers.
+ * Configures Better Auth with entity layer adapter and OAuth providers.
+ * The entity layer uses Drizzle ORM with Aurora DSQL.
  * This module provides a singleton Better Auth instance for use across Lambda functions.
  */
 
 import {betterAuth} from 'better-auth'
-import {electroDBAdapter} from './electrodb-adapter'
+import {drizzleAdapter} from './drizzle-adapter'
 import {logDebug} from '#lib/system/logging'
 import {getRequiredEnv} from '#lib/system/env'
 
@@ -14,7 +15,7 @@ import {getRequiredEnv} from '#lib/system/env'
  * Better Auth instance configured for MediaDownloader service.
  *
  * Configuration:
- * - Database: ElectroDB adapter with DynamoDB single-table design
+ * - Database: Entity layer adapter with Drizzle ORM and Aurora DSQL
  * - Providers: Apple Sign In (OAuth) with iOS bundle ID support
  * - Sessions: 30-day expiration with refresh tokens
  * - Base URL: API Gateway endpoint
@@ -26,7 +27,7 @@ import {getRequiredEnv} from '#lib/system/env'
  * token verification - Better Auth verifies ID tokens using Apple's public keys).
  */
 export const auth = betterAuth({
-  database: electroDBAdapter,
+  database: drizzleAdapter,
 
   // Secret for signing tokens and sessions
   secret: getRequiredEnv('BETTER_AUTH_SECRET'),

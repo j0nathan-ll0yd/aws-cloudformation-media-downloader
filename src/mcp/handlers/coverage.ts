@@ -32,7 +32,7 @@ function categorizeDependency(dep: string, entityNames: string[]): {category: ke
   if (entityMatch) {
     const entityName = entityMatch[1]
     if (entityNames.includes(entityName)) {
-      return {category: 'entities', name: entityName, details: {path: dep, mockHelper: 'createElectroDBEntityMock()'}}
+      return {category: 'entities', name: entityName, details: {path: dep, mockHelper: 'createEntityMock()'}}
     }
   }
 
@@ -205,7 +205,7 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
         entities: mockAnalysis.entities.map((e) => e.name),
         vendors: mockAnalysis.vendors.map((v) => v.name),
         recommendation: mockAnalysis.entities.length > 0
-          ? 'Use createElectroDBEntityMock() from test/helpers/electrodb-mock.ts for entity mocking'
+          ? 'Use createEntityMock() from test/helpers/entity-mock.ts for entity mocking'
           : 'Standard jest.unstable_mockModule() for vendor mocks'
       }
     }

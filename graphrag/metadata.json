@@ -61,6 +61,10 @@
     "WebhookFeedly": {
       "trigger": "API Gateway",
       "purpose": "Process Feedly webhooks, publish DownloadRequested events to EventBridge"
+    },
+    "CleanupExpiredRecords": {
+      "trigger": "CloudWatch Events",
+      "purpose": "Scheduled cleanup of expired FileDownloads, Sessions, and VerificationTokens"
     }
   },
   "externalServices": [

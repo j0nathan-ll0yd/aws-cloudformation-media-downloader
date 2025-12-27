@@ -50,6 +50,9 @@ locals {
     OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
     NODE_OPTIONS                       = "--no-deprecation"
     LOG_LEVEL                          = "DEBUG"
+    # Aurora DSQL connection configuration
+    DSQL_CLUSTER_ENDPOINT = aws_dsql_cluster.media_downloader.endpoint
+    DSQL_REGION           = data.aws_region.current.id
   }
 }
 

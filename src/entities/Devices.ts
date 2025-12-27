@@ -1,55 +1,119 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
-
 /**
  * Devices Entity - iOS device registration for push notifications.
  *
- * Manages Apple Push Notification Service (APNS) endpoint associations.
- * Each device has a unique deviceToken from iOS and an SNS endpointArn for delivery.
+ * Stores APNS device tokens and SNS endpoint ARNs.
+ * Lifecycle managed by RegisterDevice and PruneDevices Lambdas.
  *
- * Lifecycle:
- * 1. Created when user registers device in iOS app (RegisterDevice Lambda)
- * 2. Updated when device token changes (app reinstall, iOS update)
- * 3. Deleted when user unregisters or device goes stale (PruneDevices Lambda)
- *
- * Device Token Flow:
- * - iOS app requests push notification permission
- * - iOS provides device token (hex string)
- * - App sends token to RegisterDevice Lambda
- * - Lambda creates SNS platform endpoint
- * - endpointArn stored for push notification delivery
- *
- * Staleness Detection:
- * - APNS returns "Unregistered" when token is invalid
- * - PruneDevices Lambda runs daily to clean stale endpoints
- * - Stale devices are unlinked from users and deleted
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
  *
  * Access Patterns:
  * - Primary: Get device by deviceId
- * - No secondary indexes (devices queried via UserDevices relationship)
+ * - Batch get: Get multiple devices by deviceId array
  *
- * @see UserDevices for user-device associations
  * @see RegisterDevice Lambda for device registration
- * @see SendPushNotification Lambda for notification delivery
  * @see PruneDevices Lambda for stale device cleanup
+ * @see SendPushNotification Lambda for notification delivery
  */
-export const Devices = new Entity(
-  {
-    model: {entity: 'Device', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      deviceId: {type: 'string', required: true, readOnly: true},
-      name: {type: 'string', required: true},
-      token: {type: 'string', required: true},
-      systemVersion: {type: 'string', required: true},
-      systemName: {type: 'string', required: true},
-      endpointArn: {type: 'string', required: true}
-    },
-    indexes: {primary: {pk: {field: 'pk', composite: ['deviceId']}, sk: {field: 'sk', composite: []}}}
-  } as const,
-  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
-)
+import {eq, inArray} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {devices} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
-// Type exports for use in application code
-export type DeviceItem = ReturnType<typeof Devices.parse>
-export type CreateDeviceInput = Parameters<typeof Devices.create>[0]
-export type UpdateDeviceInput = Parameters<typeof Devices.update>[0]
-export type UpsertDeviceInput = Parameters<typeof Devices.upsert>[0]
+export type DeviceItem = InferSelectModel<typeof devices>
+export type CreateDeviceInput = InferInsertModel<typeof devices>
+export type UpdateDeviceInput = Partial<Omit<InferInsertModel<typeof devices>, 'deviceId'>>
+export type UpsertDeviceInput = InferInsertModel<typeof devices>
+
+// Overloaded get function
+function devicesGet(
+  key: Array<{deviceId: string}>
+): {go: (options?: {concurrency?: number}) => Promise<{data: DeviceItem[]; unprocessed: Array<{deviceId: string}>}>}
+function devicesGet(key: {deviceId: string}): {go: () => Promise<{data: DeviceItem | null}>}
+function devicesGet(
+  key: {deviceId: string} | Array<{deviceId: string}>
+): {go: (options?: {concurrency?: number}) => Promise<{data: DeviceItem | DeviceItem[] | null; unprocessed?: Array<{deviceId: string}>}>} {
+  if (Array.isArray(key)) {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const deviceIds = key.map((k) => k.deviceId)
+        const result = await db.select().from(devices).where(inArray(devices.deviceId, deviceIds))
+        return {data: result, unprocessed: []}
+      }
+    }
+  }
+  return {
+    go: async () => {
+      const db = await getDrizzleClient()
+      const result = await db.select().from(devices).where(eq(devices.deviceId, key.deviceId)).limit(1)
+      return {data: result.length > 0 ? result[0] : null}
+    }
+  }
+}
+
+export const Devices = {
+  get: devicesGet,
+
+  create(input: CreateDeviceInput): {go: () => Promise<{data: DeviceItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const [device] = await db.insert(devices).values(input).returning()
+        return {data: device}
+      }
+    }
+  },
+
+  upsert(input: UpsertDeviceInput): {go: () => Promise<{data: DeviceItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+
+        const existing = await db.select().from(devices).where(eq(devices.deviceId, input.deviceId)).limit(1)
+
+        if (existing.length > 0) {
+          const [updated] = await db.update(devices).set(input).where(eq(devices.deviceId, input.deviceId)).returning()
+          return {data: updated}
+        }
+
+        const [created] = await db.insert(devices).values(input).returning()
+        return {data: created}
+      }
+    }
+  },
+
+  update(key: {deviceId: string}): {set: (data: UpdateDeviceInput) => {go: () => Promise<{data: DeviceItem}>}} {
+    return {
+      set: (data: UpdateDeviceInput) => ({
+        go: async () => {
+          const db = await getDrizzleClient()
+          const [updated] = await db.update(devices).set(data).where(eq(devices.deviceId, key.deviceId)).returning()
+
+          return {data: updated}
+        }
+      })
+    }
+  },
+
+  delete(key: {deviceId: string}): {go: () => Promise<Record<string, never>>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        await db.delete(devices).where(eq(devices.deviceId, key.deviceId))
+        return {}
+      }
+    }
+  },
+
+  scan: {
+    go: async (options?: {cursor?: string}): Promise<{data: DeviceItem[]; cursor?: string | null}> => {
+      // Aurora DSQL returns all results in one query - no pagination needed
+      // Options kept for ElectroDB API compatibility
+      void options
+      const db = await getDrizzleClient()
+      const result = await db.select().from(devices)
+      return {data: result, cursor: null}
+    }
+  }
+}

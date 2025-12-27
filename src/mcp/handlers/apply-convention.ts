@@ -6,7 +6,7 @@
  *
  * Supported conventions:
  * - aws-sdk-wrapper: Replace direct aws-sdk imports with vendor wrappers
- * - electrodb-mock: Fix ElectroDB mock patterns in tests
+ * - entity-mock: Fix entity mock patterns in tests
  * - response-helper: Replace raw response objects with buildApiResponse
  * - env-validation: Replace process.env with getRequiredEnv
  * - powertools: Wrap handlers with withPowertools
@@ -20,7 +20,7 @@ import {Project, SyntaxKind} from 'ts-morph'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../../..')
 
-export type ConventionType = 'aws-sdk-wrapper' | 'electrodb-mock' | 'response-helper' | 'env-validation' | 'powertools'
+export type ConventionType = 'aws-sdk-wrapper' | 'entity-mock' | 'response-helper' | 'env-validation' | 'powertools'
 
 export interface ApplyConventionArgs {
   file: string
@@ -83,45 +83,45 @@ async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<Ap
 }
 
 /**
- * Apply ElectroDB mock convention
- * Fixes mock patterns to use createElectroDBEntityMock correctly
+ * Apply entity mock convention
+ * Fixes mock patterns to use createEntityMock correctly
  */
-async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<ApplyResult> {
+async function applyEntityMock(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
 
   if (!filePath.includes('.test.')) {
-    return {file: filePath, convention: 'electrodb-mock', applied: false, changes: ['File is not a test file - skipping'], dryRun}
+    return {file: filePath, convention: 'entity-mock', applied: false, changes: ['File is not a test file - skipping'], dryRun}
   }
 
   const content = readFileSync(filePath, 'utf-8')
   const newContent = content
 
-  // Check for manual entity mocks (not using createElectroDBEntityMock)
+  // Check for manual entity mocks (not using createEntityMock or legacy createElectroDBEntityMock)
   const manualMockPattern = /jest\.unstable_mockModule\(['"]#entities\/(\w+)['"]/g
-  const helperImportExists = content.includes('createElectroDBEntityMock')
+  const helperImportExists = content.includes('createEntityMock') || content.includes('createElectroDBEntityMock')
 
   const matches = [...content.matchAll(manualMockPattern)]
 
   if (matches.length > 0 && !helperImportExists) {
-    changes.push('Detected manual entity mocks without createElectroDBEntityMock helper')
+    changes.push('Detected manual entity mocks without createEntityMock helper')
     changes.push('Manual fix required:')
-    changes.push("1. Import: import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'")
-    changes.push('2. Create mock: const entityMock = createElectroDBEntityMock()')
+    changes.push("1. Import: import {createEntityMock} from '#test/helpers/entity-mock'")
+    changes.push('2. Create mock: const entityMock = createEntityMock()')
     changes.push('3. Use in unstable_mockModule: ({Entity: entityMock.entity})')
 
-    return {file: filePath, convention: 'electrodb-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - complex refactoring required'}
+    return {file: filePath, convention: 'entity-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - complex refactoring required'}
   }
 
   // Check for mock defined inside jest.unstable_mockModule (wrong pattern)
-  const wrongPatternRegex = /jest\.unstable_mockModule\([^)]+,\s*\(\)\s*=>\s*createElectroDBEntityMock/g
+  const wrongPatternRegex = /jest\.unstable_mockModule\([^)]+,\s*\(\)\s*=>\s*create(Entity|ElectroDBEntity)Mock/g
   if (wrongPatternRegex.test(content)) {
-    changes.push('Detected createElectroDBEntityMock inside mock factory (wrong pattern)')
+    changes.push('Detected createEntityMock inside mock factory (wrong pattern)')
     changes.push('Mock must be created BEFORE jest.unstable_mockModule call')
     changes.push('Correct pattern:')
-    changes.push('  const entityMock = createElectroDBEntityMock()')
+    changes.push('  const entityMock = createEntityMock()')
     changes.push("  jest.unstable_mockModule('#entities/X', () => ({X: entityMock.entity}))")
 
-    return {file: filePath, convention: 'electrodb-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - manual reordering required'}
+    return {file: filePath, convention: 'entity-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - manual reordering required'}
   }
 
   const applied = newContent !== content
@@ -129,7 +129,7 @@ async function applyElectroDBMock(filePath: string, dryRun: boolean): Promise<Ap
     writeFileSync(filePath, newContent)
   }
 
-  return {file: filePath, convention: 'electrodb-mock', applied, changes: applied ? changes : ['No issues found - file follows convention'], dryRun}
+  return {file: filePath, convention: 'entity-mock', applied, changes: applied ? changes : ['No issues found - file follows convention'], dryRun}
 }
 
 /**
@@ -279,8 +279,8 @@ export async function handleApplyConvention(args: ApplyConventionArgs): Promise<
     case 'aws-sdk-wrapper':
       return applyAwsSdkWrapper(filePath, dryRun)
 
-    case 'electrodb-mock':
-      return applyElectroDBMock(filePath, dryRun)
+    case 'entity-mock':
+      return applyEntityMock(filePath, dryRun)
 
     case 'response-helper':
       return applyResponseHelper(filePath, dryRun)
@@ -298,7 +298,7 @@ export async function handleApplyConvention(args: ApplyConventionArgs): Promise<
         applied: false,
         changes: [],
         dryRun,
-        error: `Unknown convention: ${convention}. Available: aws-sdk-wrapper, electrodb-mock, response-helper, env-validation, powertools`
+        error: `Unknown convention: ${convention}. Available: aws-sdk-wrapper, entity-mock, response-helper, env-validation, powertools`
       }
   }
 }

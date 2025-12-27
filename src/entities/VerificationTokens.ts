@@ -1,40 +1,83 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
-
 /**
- * ElectroDB entity schema for Better Auth verification tokens.
- * Manages email verification tokens and magic link tokens with automatic expiration.
+ * VerificationTokens Entity - Better Auth verification tokens.
  *
- * Better Auth Verification Token Schema:
- * - identifier: email address or user identifier
- * - token: verification token (hashed)
- * - expiresAt: token expiration timestamp
- * - createdAt: token creation timestamp
+ * Stores email verification and password reset tokens.
+ * Expired tokens cleaned up by CleanupExpiredRecords Lambda.
  *
- * Note: Verification tokens are single-use and should be deleted after verification.
- * DynamoDB TTL is configured on the ttl attribute to automatically clean up expired tokens.
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
+ *
+ * Note: TTL is no longer handled by DynamoDB. Expired tokens are cleaned up
+ * by the CleanupExpiredRecords scheduled Lambda.
+ *
+ * Access Patterns:
+ * - Primary: Get token by token value
+ * - byIdentifier: Lookup tokens by email/identifier
  */
-export const VerificationTokens = new Entity(
-  {
-    model: {entity: 'VerificationToken', version: '1', service: 'MediaDownloader'},
-    attributes: {
-      identifier: {type: 'string', required: true},
-      token: {type: 'string', required: true, readOnly: true},
-      expiresAt: {type: 'number', required: true},
-      ttl: {
-        type: 'number',
-        required: true,
-        default: () => Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
-      },
-      createdAt: {type: 'number', required: true, default: () => Date.now(), readOnly: true}
-    },
-    indexes: {
-      primary: {pk: {field: 'pk', composite: ['token']}, sk: {field: 'sk', composite: []}},
-      byIdentifier: {index: 'gsi1', pk: {field: 'gsi1pk', composite: ['identifier']}, sk: {field: 'gsi1sk', composite: ['expiresAt']}}
-    }
-  } as const,
-  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
-)
+import {eq} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {verificationTokens} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
-// Type exports for use in application code
-export type VerificationTokenItem = ReturnType<typeof VerificationTokens.parse>
-export type CreateVerificationTokenInput = Parameters<typeof VerificationTokens.create>[0]
+export type VerificationTokenItem = InferSelectModel<typeof verificationTokens>
+export type CreateVerificationTokenInput = Omit<InferInsertModel<typeof verificationTokens>, 'createdAt'> & {createdAt?: number}
+
+export const VerificationTokens = {
+  get(key: {token: string}): {go: () => Promise<{data: VerificationTokenItem | null}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const result = await db.select().from(verificationTokens).where(eq(verificationTokens.token, key.token)).limit(1)
+
+        return {data: result.length > 0 ? result[0] : null}
+      }
+    }
+  },
+
+  create(input: CreateVerificationTokenInput): {go: () => Promise<{data: VerificationTokenItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const now = Math.floor(Date.now() / 1000)
+        const [token] = await db.insert(verificationTokens).values({...input, createdAt: input.createdAt ?? now}).returning()
+
+        return {data: token}
+      }
+    }
+  },
+
+  update(key: {token: string}): {set: (data: Partial<CreateVerificationTokenInput>) => {go: () => Promise<{data: VerificationTokenItem}>}} {
+    return {
+      set: (data: Partial<CreateVerificationTokenInput>) => ({
+        go: async () => {
+          const db = await getDrizzleClient()
+          const [updated] = await db.update(verificationTokens).set(data).where(eq(verificationTokens.token, key.token)).returning()
+
+          return {data: updated}
+        }
+      })
+    }
+  },
+
+  delete(key: {token: string}): {go: () => Promise<void>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        await db.delete(verificationTokens).where(eq(verificationTokens.token, key.token))
+      }
+    }
+  },
+
+  query: {
+    byIdentifier(key: {identifier: string}): {go: () => Promise<{data: VerificationTokenItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(verificationTokens).where(eq(verificationTokens.identifier, key.identifier))
+
+          return {data: result}
+        }
+      }
+    }
+  }
+}

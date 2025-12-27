@@ -38,7 +38,9 @@ export default [
       '.dependency-cruiser.cjs',
       'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
-      'eslint-local-rules/**/*'
+      'eslint-local-rules/**/*',
+      'test/integration/globalSetup.js',
+      'test/integration/globalTeardown.js'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
@@ -88,7 +90,7 @@ export default [
       // Phase 1: CRITICAL
       'local-rules/no-direct-aws-sdk-import': 'error',
       'local-rules/cascade-delete-order': 'warn',
-      'local-rules/use-electrodb-mock-helper': 'error',
+      'local-rules/use-entity-mock-helper': 'error',
       // Phase 2: HIGH
       'local-rules/response-helpers': 'warn',
       'local-rules/env-validation': 'error',

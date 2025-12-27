@@ -46,6 +46,11 @@ resource "aws_iam_role_policy_attachment" "RegisterUserXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "RegisterUserDSQL" {
+  role       = aws_iam_role.RegisterUser.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 resource "aws_lambda_permission" "RegisterUser" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.RegisterUser.function_name

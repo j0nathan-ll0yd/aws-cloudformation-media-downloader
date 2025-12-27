@@ -7,7 +7,7 @@
  * Phase 1 (CRITICAL):
  *   - no-direct-aws-sdk-import: Block direct AWS SDK imports
  *   - cascade-delete-order: Detect Promise.all with deletes
- *   - use-electrodb-mock-helper: Enforce mock helper usage
+ *   - use-entity-mock-helper: Enforce mock helper usage
  *
  * Phase 2 (HIGH):
  *   - response-helpers: Enforce response() helper usage
@@ -22,7 +22,7 @@
 
 const noDirectAwsSdkImport = require('./rules/no-direct-aws-sdk-import.cjs')
 const cascadeDeleteOrder = require('./rules/cascade-delete-order.cjs')
-const useElectrodbMockHelper = require('./rules/use-electrodb-mock-helper.cjs')
+const useEntityMockHelper = require('./rules/use-entity-mock-helper.cjs')
 const responseHelpers = require('./rules/response-helpers.cjs')
 const envValidation = require('./rules/env-validation.cjs')
 const authenticatedHandlerEnforcement = require('./rules/authenticated-handler-enforcement.cjs')
@@ -36,7 +36,7 @@ module.exports = {
     // Phase 1: CRITICAL
     'no-direct-aws-sdk-import': noDirectAwsSdkImport,
     'cascade-delete-order': cascadeDeleteOrder,
-    'use-electrodb-mock-helper': useElectrodbMockHelper,
+    'use-entity-mock-helper': useEntityMockHelper,
     // Phase 2: HIGH
     'response-helpers': responseHelpers,
     'env-validation': envValidation,

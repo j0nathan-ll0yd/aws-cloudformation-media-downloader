@@ -18,6 +18,11 @@ resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "SendPushNotificationDSQL" {
+  role       = aws_iam_role.SendPushNotification.name
+  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+}
+
 data "aws_iam_policy_document" "SendPushNotification" {
   statement {
     actions = [

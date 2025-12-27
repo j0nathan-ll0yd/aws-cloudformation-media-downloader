@@ -1,28 +1,117 @@
-import {documentClient, Entity} from '#lib/vendor/ElectroDB/entity'
-
 /**
- * ElectroDB entity schema for the UserDevices relationship.
- * This entity manages the many-to-many relationship between users and devices.
- * Each record represents a single user-device association (not a Set).
+ * UserDevices Entity - Many-to-many relationship between users and devices.
  *
- * Single-table design enables bidirectional queries via collections:
- * - UserCollection (gsi1): Query all devices for a user
- * - DeviceCollection (gsi3): Query all users for a device
+ * Each record represents a single user-device association.
+ * Enables bidirectional queries via indexes.
+ *
+ * This entity provides an ElectroDB-compatible interface over Drizzle ORM
+ * to minimize changes to Lambda handlers during the migration.
+ *
+ * Access Patterns:
+ * - byUser: Query all devices for a user
+ * - byDevice: Query all users for a device
+ *
+ * @see RegisterDevice Lambda for device registration
+ * @see SendPushNotification Lambda for notification delivery
+ * @see PruneDevices Lambda for stale device cleanup
+ * @see UserDelete Lambda for cascade deletion
  */
-export const UserDevices = new Entity(
-  {
-    model: {entity: 'UserDevice', version: '1', service: 'MediaDownloader'},
-    attributes: {userId: {type: 'string', required: true, readOnly: true}, deviceId: {type: 'string', required: true, readOnly: true}},
-    indexes: {
-      primary: {pk: {field: 'pk', composite: ['userId', 'deviceId']}, sk: {field: 'sk', composite: []}},
-      byUser: {index: 'UserCollection', pk: {field: 'gsi1pk', composite: ['userId']}, sk: {field: 'gsi1sk', composite: ['deviceId']}},
-      byDevice: {index: 'DeviceCollection', pk: {field: 'gsi3pk', composite: ['deviceId']}, sk: {field: 'gsi3sk', composite: ['userId']}}
-    }
-  } as const,
-  {table: process.env.DYNAMODB_TABLE_NAME, client: documentClient}
-)
+import {and, eq} from 'drizzle-orm'
+import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {userDevices} from '#lib/vendor/Drizzle/schema'
+import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
-// Type exports for use in application code
-export type UserDeviceItem = ReturnType<typeof UserDevices.parse>
-export type CreateUserDeviceInput = Parameters<typeof UserDevices.create>[0]
-export type UpdateUserDeviceInput = Parameters<typeof UserDevices.update>[0]
+export type UserDeviceItem = InferSelectModel<typeof userDevices>
+export type CreateUserDeviceInput = Omit<InferInsertModel<typeof userDevices>, 'createdAt'>
+export type UpdateUserDeviceInput = Partial<Omit<InferInsertModel<typeof userDevices>, 'userId' | 'deviceId'>>
+
+// Overloaded delete function
+function userDevicesDelete(
+  key: Array<{userId: string; deviceId: string}>
+): {go: (options?: {concurrency?: number}) => Promise<{unprocessed: Array<{userId: string; deviceId: string}>}>}
+function userDevicesDelete(key: {userId: string; deviceId: string}): {go: () => Promise<Record<string, never>>}
+function userDevicesDelete(key: {userId: string; deviceId: string} | Array<{userId: string; deviceId: string}>) {
+  if (Array.isArray(key)) {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        for (const k of key) {
+          await db.delete(userDevices).where(and(eq(userDevices.userId, k.userId), eq(userDevices.deviceId, k.deviceId)))
+        }
+        return {unprocessed: []}
+      }
+    }
+  }
+  return {
+    go: async () => {
+      const db = await getDrizzleClient()
+      await db.delete(userDevices).where(and(eq(userDevices.userId, key.userId), eq(userDevices.deviceId, key.deviceId)))
+      return {}
+    }
+  }
+}
+
+export const UserDevices = {
+  get(key: {userId: string; deviceId: string}): {go: () => Promise<{data: UserDeviceItem | null}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, key.userId), eq(userDevices.deviceId, key.deviceId))).limit(1)
+
+        return {data: result.length > 0 ? result[0] : null}
+      }
+    }
+  },
+
+  create(input: CreateUserDeviceInput): {go: () => Promise<{data: UserDeviceItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+        const [userDevice] = await db.insert(userDevices).values(input).returning()
+        return {data: userDevice}
+      }
+    }
+  },
+
+  upsert(input: CreateUserDeviceInput): {go: () => Promise<{data: UserDeviceItem}>} {
+    return {
+      go: async () => {
+        const db = await getDrizzleClient()
+
+        const existing = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId)))
+          .limit(1)
+
+        if (existing.length > 0) {
+          return {data: existing[0]}
+        }
+
+        const [created] = await db.insert(userDevices).values(input).returning()
+        return {data: created}
+      }
+    }
+  },
+
+  delete: userDevicesDelete,
+
+  query: {
+    byUser(key: {userId: string}): {go: () => Promise<{data: UserDeviceItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(userDevices).where(eq(userDevices.userId, key.userId))
+          return {data: result}
+        }
+      }
+    },
+
+    byDevice(key: {deviceId: string}): {go: () => Promise<{data: UserDeviceItem[]}>} {
+      return {
+        go: async () => {
+          const db = await getDrizzleClient()
+          const result = await db.select().from(userDevices).where(eq(userDevices.deviceId, key.deviceId))
+          return {data: result}
+        }
+      }
+    }
+  }
+}
