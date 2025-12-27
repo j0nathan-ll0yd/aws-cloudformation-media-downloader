@@ -107,14 +107,14 @@ export const fileDownloads = pgTable('file_downloads', {
   status: text('status').notNull().default('Pending'),
   retryCount: integer('retry_count').notNull().default(0),
   maxRetries: integer('max_retries').notNull().default(5),
-  retryAfter: integer('retry_after'),
+  retryAfter: timestamp('retry_after', {withTimezone: true}),
   errorCategory: text('error_category'),
   lastError: text('last_error'),
-  scheduledReleaseTime: integer('scheduled_release_time'),
+  scheduledReleaseTime: timestamp('scheduled_release_time', {withTimezone: true}),
   sourceUrl: text('source_url'),
   correlationId: text('correlation_id'),
-  createdAt: integer('created_at').notNull(),
-  updatedAt: integer('updated_at').notNull()
+  createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
   index('file_downloads_status_idx').on(table.status, table.retryAfter)
 ])

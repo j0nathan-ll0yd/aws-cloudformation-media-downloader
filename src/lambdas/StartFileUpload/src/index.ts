@@ -68,22 +68,18 @@ async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName
 /**
  * Update FileDownload entity with current download state.
  * This is the transient state that tracks retry attempts, errors, and scheduling.
- * TTL is automatically set for completed/failed statuses.
+ * Cleanup handled by CleanupExpiredRecords scheduled Lambda.
  */
 async function updateDownloadState(fileId: string, status: DownloadStatus, classification?: VideoErrorClassification, retryCount = 0): Promise<void> {
   const update: Record<string, unknown> = {status, retryCount}
-
-  // Set TTL for completed/failed downloads (auto-cleanup after 7 days)
-  if (status === DownloadStatus.Completed || status === DownloadStatus.Failed) {
-    update.ttl = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
-  }
 
   if (classification) {
     update.errorCategory = classification.category
     update.lastError = classification.reason
     update.maxRetries = classification.maxRetries ?? 5
     if (classification.retryAfter) {
-      update.retryAfter = classification.retryAfter
+      // Convert Unix epoch timestamp to Date
+      update.retryAfter = new Date(classification.retryAfter * 1000)
     }
   }
 
@@ -94,7 +90,6 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
     logDebug('FileDownloads.update =>', updateResponse)
   } catch {
     // If record doesn't exist, create it
-    // Note: retryAfter must be explicitly defaulted to 0 (not undefined) because GSI6 expects Number type
     const createData = {
       fileId,
       status,
@@ -102,9 +97,8 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       maxRetries: classification?.maxRetries ?? 5,
       errorCategory: classification?.category,
       lastError: classification?.reason,
-      retryAfter: classification?.retryAfter ?? 0,
-      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`,
-      ttl: update.ttl as number | undefined
+      retryAfter: classification?.retryAfter ? new Date(classification.retryAfter * 1000) : null,
+      sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
     }
     logDebug('FileDownloads.create <=', createData)
     const createResponse = await FileDownloads.create(createData).go()

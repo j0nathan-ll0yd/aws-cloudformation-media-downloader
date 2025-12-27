@@ -27,7 +27,7 @@ const TWENTY_FOUR_HOURS_SEC = 24 * 60 * 60
  */
 async function cleanupFileDownloads(): Promise<number> {
   const db = await getDrizzleClient()
-  const cutoffTime = Math.floor(Date.now() / 1000) - TWENTY_FOUR_HOURS_SEC
+  const cutoffTime = new Date(Date.now() - TWENTY_FOUR_HOURS_SEC * 1000)
 
   const result = await db.delete(fileDownloads).where(
     and(or(eq(fileDownloads.status, 'Completed'), eq(fileDownloads.status, 'Failed')), lt(fileDownloads.updatedAt, cutoffTime))
