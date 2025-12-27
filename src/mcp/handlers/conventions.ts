@@ -20,10 +20,10 @@ export interface ConventionQueryArgs {
   convention?: string
 }
 
+/** Handles MCP queries for project conventions and patterns. */
 export async function handleConventionsQuery(args: ConventionQueryArgs) {
   const {query, term, category, severity, convention} = args
-  // Load conventions dynamically
-  const conventions = await loadConventions()
+  const conventions = await loadConventions() // Load conventions dynamically
   switch (query) {
     case 'list': {
       // Return all conventions with summary info

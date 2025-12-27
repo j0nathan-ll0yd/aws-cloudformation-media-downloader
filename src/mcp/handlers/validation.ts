@@ -20,9 +20,9 @@ export interface ValidationQueryArgs {
   query: ValidationQueryType
 }
 
+/** Handles MCP queries for running convention validation rules. */
 export async function handleValidationQuery(args: ValidationQueryArgs) {
   const {file, query} = args
-
   switch (query) {
     case 'rules': {
       // List all available validation rules

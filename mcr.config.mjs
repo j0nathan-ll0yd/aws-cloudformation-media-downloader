@@ -10,11 +10,10 @@ export default {
 
   // Filter out non-TypeScript files from source mapping
   sourceFilter: (sourcePath) => {
-    // Exclude JSON fixtures from source content lookups
+    // Exclude JSON fixtures and test files from coverage source
     if (sourcePath.endsWith('.json')) {
       return false
     }
-    // Exclude test files from coverage source
     if (sourcePath.includes('/test/')) {
       return false
     }

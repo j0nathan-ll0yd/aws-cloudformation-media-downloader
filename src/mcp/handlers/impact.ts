@@ -50,13 +50,11 @@ function extractLambdaName(filePath: string): string | null {
  */
 function findDependents(filePath: string, graph: Record<string, {imports: string[]}>): string[] {
   const dependents: string[] = []
-
   for (const [file, data] of Object.entries(graph)) {
     if (data.imports?.includes(filePath)) {
       dependents.push(file)
     }
   }
-
   return dependents.sort()
 }
 
@@ -82,6 +80,7 @@ function findCascade(filePath: string, graph: Record<string, {imports: string[]}
   return Array.from(affected).sort()
 }
 
+/** Handles MCP queries for dependency impact and affected components. */
 export async function handleImpactQuery(args: ImpactQueryArgs) {
   const {file, query} = args
 

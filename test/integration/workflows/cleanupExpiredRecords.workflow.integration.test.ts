@@ -3,8 +3,8 @@
  *
  * Tests the scheduled cleanup workflow against real PostgreSQL:
  * - FileDownloads: Completed/Failed older than 24 hours
- * - Sessions: Expired sessions (expiresAt < now)
- * - Verification: Expired tokens (expiresAt < now)
+ * - Sessions: Expired sessions (expiresAt before now)
+ * - Verification: Expired tokens (expiresAt before now)
  *
  * Validates OUR business logic for:
  * - Correct expiration cutoff calculations

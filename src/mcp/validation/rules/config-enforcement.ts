@@ -129,11 +129,9 @@ function validateEslintConfig(text: string): Violation[] {
 
 function validateTsConfig(text: string): Violation[] {
   const violations: Violation[] = []
-
   try {
     const config = JSON.parse(text)
     const compilerOptions = config.compilerOptions || {}
-
     for (const setting of STRICT_TSCONFIG_SETTINGS) {
       if (setting in compilerOptions && compilerOptions[setting] === false) {
         violations.push(
@@ -147,16 +145,13 @@ function validateTsConfig(text: string): Violation[] {
   } catch {
     // If we can't parse JSON, skip validation (will be caught by other tools)
   }
-
   return violations
 }
 
 function validateDprintConfig(text: string): Violation[] {
   const violations: Violation[] = []
-
   try {
     const config = JSON.parse(text)
-
     // Check for excessively wide line width (relaxation from project standards)
     if (config.lineWidth && config.lineWidth > 200) {
       violations.push(
@@ -166,7 +161,6 @@ function validateDprintConfig(text: string): Violation[] {
         })
       )
     }
-
     // Check for tabs (project standardized on spaces)
     if (config.useTabs === true) {
       violations.push(
@@ -178,7 +172,6 @@ function validateDprintConfig(text: string): Violation[] {
   } catch {
     // If we can't parse JSON, skip validation
   }
-
   return violations
 }
 

@@ -182,7 +182,6 @@ function findLineNumber(text: string, pattern: RegExp): number {
  */
 export function generateAutoFixSuggestions(violations: Violation[]): string[] {
   const suggestions: string[] = []
-
   for (const violation of violations) {
     if (violation.rule !== RULE_NAME) {
       continue
@@ -218,6 +217,5 @@ export function generateAutoFixSuggestions(violations: Violation[]): string[] {
       suggestions.push('')
     }
   }
-
   return suggestions
 }

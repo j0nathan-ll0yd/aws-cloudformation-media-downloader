@@ -15,11 +15,10 @@ import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 // Re-export with old name for backwards compatibility
 export { handleEntityQuery as handleElectroDBQuery }
 
+/** Handles MCP queries for entity schema and relationship information. */
 export async function handleEntityQuery(args: {entity?: string; query: string}) {
   const {entity, query} = args
-
   const {entities, relationships} = await getEntityInfo()
-
   switch (query) {
     case 'list':
       return {entities, count: entities.length}
