@@ -1,6 +1,6 @@
-import {beforeEach, describe, expect, test} from '@jest/globals'
+import {beforeEach, describe, expect, test} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 

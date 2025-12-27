@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent, SQSRecord} from 'aws-lambda'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import {createEntityMock} from '#test/helpers/entity-mock'
@@ -7,7 +7,7 @@ import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import type {MediaDownloaderEventType} from '#types/events'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 
 /** Message body structure for DownloadQueue SQS messages */
 interface DownloadQueueMessage {
@@ -39,29 +39,29 @@ function createMultiRecordEvent(messages: Array<{messageId: string} & DownloadQu
 }
 
 // Mock YouTube functions
-const fetchVideoInfoMock = jest.fn<(url: string) => Promise<FetchVideoInfoResult>>()
-const downloadVideoToS3Mock = jest.fn<(url: string, bucket: string, key: string) => Promise<{fileSize: number; s3Url: string; duration: number}>>()
+const fetchVideoInfoMock = vi.fn<(url: string) => Promise<FetchVideoInfoResult>>()
+const downloadVideoToS3Mock = vi.fn<(url: string, bucket: string, key: string) => Promise<{fileSize: number; s3Url: string; duration: number}>>()
 
-jest.unstable_mockModule('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
+vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
 // Mock ElectroDB Files entity (for permanent metadata)
 const filesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
+vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
 
 // Mock ElectroDB FileDownloads entity (for transient download state)
 const fileDownloadsMock = createEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads', () => ({
+vi.mock('#entities/FileDownloads', () => ({
   FileDownloads: fileDownloadsMock.entity,
   DownloadStatus // Re-export the real enum
 }))
 
 // Mock ElectroDB UserFiles entity (for querying users waiting for a file)
 const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 // Mock SQS sendMessage for MetadataNotification dispatch
-const sendMessageMock = jest.fn<() => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+const sendMessageMock = vi.fn<() => Promise<{MessageId: string}>>()
+vi.mock('#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: sendMessageMock,
     stringAttribute: (value: string) => ({DataType: 'String', StringValue: value}),
@@ -69,12 +69,11 @@ jest.unstable_mockModule('#lib/vendor/AWS/SQS',
   }))
 
 // Mock EventBridge for publishing DownloadCompleted/DownloadFailed events
-const publishEventMock = jest.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
-jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
+const publishEventMock = vi.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
+vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 // Mock GitHub issue creation (for permanent failures)
-jest.unstable_mockModule('#lib/integrations/github/issue-service',
-  () => ({createCookieExpirationIssue: jest.fn(), createVideoDownloadFailureIssue: jest.fn()}))
+vi.mock('#lib/integrations/github/issue-service', () => ({createCookieExpirationIssue: vi.fn(), createVideoDownloadFailureIssue: vi.fn()}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
@@ -102,7 +101,7 @@ describe('#StartFileUpload', () => {
 
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     fileDownloadsMock.mocks.get.mockResolvedValue({data: null})
     fileDownloadsMock.mocks.update.go.mockResolvedValue({data: {}})

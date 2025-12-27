@@ -28,6 +28,7 @@ const ALLOWED_ESLINT_IGNORES = [
   '**/temp',
   '**/terraform',
   '**/coverage',
+  '**/coverage-reports',
   '**/build',
   '**/bin',
   '**/.github',
@@ -39,9 +40,7 @@ const ALLOWED_ESLINT_IGNORES = [
   '.dependency-cruiser.cjs',
   'src/mcp/test/fixtures/**/*',
   '**/*.fixture.ts',
-  'eslint-local-rules/**/*',
-  'test/integration/globalSetup.js',
-  'test/integration/globalTeardown.js'
+  'eslint-local-rules/**/*'
 ]
 
 /**

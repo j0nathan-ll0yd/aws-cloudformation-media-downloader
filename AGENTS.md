@@ -302,7 +302,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 1. **Use build/graph.json for dependency analysis**:
    - Auto-generated before every build
    - Shows file-level imports and transitive dependencies
-   - **CRITICAL for Jest tests**: Use `transitiveDependencies` to find all mocks needed
+   - **CRITICAL for Vitest tests**: Use `transitiveDependencies` to find all mocks needed
    - Example: `cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'`
 2. **pnpm lifecycle script protection** (security hardening):
    - All lifecycle scripts disabled by default in `.npmrc`
@@ -348,7 +348,7 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 
 ### TypeScript & Testing
 - **Lambda Patterns**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- **Jest Mocking**: [docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
+- **Vitest Mocking**: [docs/wiki/Testing/Vitest-Mocking-Strategy.md](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
 - **Mock Types**: [docs/wiki/Testing/Mock-Type-Annotations.md](docs/wiki/Testing/Mock-Type-Annotations.md)
 - **Coverage Philosophy**: [docs/wiki/Testing/Coverage-Philosophy.md](docs/wiki/Testing/Coverage-Philosophy.md)
 - **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)

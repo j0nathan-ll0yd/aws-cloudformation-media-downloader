@@ -1,15 +1,15 @@
-import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {afterEach, beforeEach, describe, expect, it, type MockInstance, vi} from 'vitest'
 import {logger} from '#lib/vendor/Powertools'
 
 describe('logging', () => {
-  let loggerDebugSpy: jest.SpiedFunction<typeof logger.debug>
-  let loggerInfoSpy: jest.SpiedFunction<typeof logger.info>
-  let loggerErrorSpy: jest.SpiedFunction<typeof logger.error>
+  let loggerDebugSpy: MockInstance<typeof logger.debug>
+  let loggerInfoSpy: MockInstance<typeof logger.info>
+  let loggerErrorSpy: MockInstance<typeof logger.error>
 
   beforeEach(() => {
-    loggerDebugSpy = jest.spyOn(logger, 'debug').mockImplementation(() => undefined)
-    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => undefined)
-    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+    loggerDebugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => undefined)
+    loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined)
+    loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
   })
 
   afterEach(() => {

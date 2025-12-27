@@ -1,4 +1,4 @@
-import {describe, expect, test} from '@jest/globals'
+import {describe, expect, test} from 'vitest'
 import {renderGithubIssueTemplate} from '../templates'
 
 describe('#template-helpers', () => {

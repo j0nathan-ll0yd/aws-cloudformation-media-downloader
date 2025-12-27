@@ -26,7 +26,7 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-better-auth-32-chars'
 process.env.BetterAuthUrl = 'https://api.example.com'
 
-import {afterAll, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {afterAll, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 
 // Test helpers
@@ -43,15 +43,15 @@ const __dirname = dirname(__filename)
 // Mock Better Auth config module
 const betterAuthConfigPath = resolve(__dirname, '../../../src/lib/vendor/BetterAuth/config')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const signInSocialMock = jest.fn<any>()
+const signInSocialMock = vi.fn<any>()
 
 // getAuth is now async - return a Promise resolving to the auth object
-jest.unstable_mockModule(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
+vi.mock(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
 
 // Mock Users entity for RegisterUser name update
 const usersModulePath = resolve(__dirname, '../../../src/entities/Users')
 const usersMock = createEntityMock()
-jest.unstable_mockModule(usersModulePath, () => ({Users: usersMock.entity}))
+vi.mock(usersModulePath, () => ({Users: usersMock.entity}))
 
 // Import handlers after mocking
 const {handler: loginHandler} = await import('../../../src/lambdas/LoginUser/src/index')
@@ -109,7 +109,7 @@ describe('Auth Flow Integration Tests', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     // Default mock for Users.update
     usersMock.mocks.update.go.mockResolvedValue({data: {}})
   })

@@ -3,7 +3,7 @@
  * MEDIUM: Imports should be grouped and ordered consistently
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 // Module loaded via dynamic import

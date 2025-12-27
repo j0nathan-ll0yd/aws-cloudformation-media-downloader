@@ -7,7 +7,7 @@
     "rootDir": ".",
     "strict": true,
     "verbatimModuleSyntax": true,
-    "types": ["node", "jest"],
+    "types": ["node"],
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {

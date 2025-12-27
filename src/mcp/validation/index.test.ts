@@ -3,7 +3,7 @@
  * Tests the unified validation interface
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {join} from 'path'
 
 // Module loaded via dynamic import

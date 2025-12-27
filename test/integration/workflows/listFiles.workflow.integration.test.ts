@@ -22,7 +22,7 @@ process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
 import type {File} from '../../../src/types/domain-models'

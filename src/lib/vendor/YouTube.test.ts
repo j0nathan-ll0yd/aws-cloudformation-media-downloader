@@ -1,41 +1,41 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 import {EventEmitter} from 'events'
 import {Readable} from 'stream'
 
 // Mock child_process for yt-dlp spawning
-const mockSpawn = jest.fn()
-jest.unstable_mockModule('child_process', () => ({spawn: mockSpawn}))
+const mockSpawn = vi.fn()
+vi.mock('child_process', () => ({spawn: mockSpawn}))
 
 // Helper to create mock yt-dlp process
 interface MockProcess extends EventEmitter {
   stdout: Readable
   stderr: EventEmitter
-  kill: jest.Mock
+  kill: Mock
 }
 
 function createMockProcess(): MockProcess {
   const process = new EventEmitter() as MockProcess
   process.stdout = new Readable({read() {}})
   process.stderr = new EventEmitter()
-  process.kill = jest.fn()
+  process.kill = vi.fn()
   return process
 }
 
 // Mock fs - for temp file operations
-const mockCopyFile = jest.fn<(src: string, dest: string) => Promise<void>>()
-const mockStat = jest.fn<(path: string) => Promise<{size: number}>>()
-const mockUnlink = jest.fn<(path: string) => Promise<void>>()
-const mockCreateReadStream = jest.fn()
-jest.unstable_mockModule('fs/promises', () => ({copyFile: mockCopyFile, stat: mockStat, unlink: mockUnlink}))
-jest.unstable_mockModule('fs', () => ({createReadStream: mockCreateReadStream}))
+const mockCopyFile = vi.fn<(src: string, dest: string) => Promise<void>>()
+const mockStat = vi.fn<(path: string) => Promise<{size: number}>>()
+const mockUnlink = vi.fn<(path: string) => Promise<void>>()
+const mockCreateReadStream = vi.fn()
+vi.mock('fs/promises', () => ({copyFile: mockCopyFile, stat: mockStat, unlink: mockUnlink}))
+vi.mock('fs', () => ({createReadStream: mockCreateReadStream}))
 
 // Mock S3 Upload - simplified (no EventEmitter progress tracking needed)
-const mockUploadDone = jest.fn<() => Promise<{Location: string}>>()
-const mockCreateS3Upload = jest.fn<(bucket: string, key: string, body: unknown, contentType: string, options?: object) => {done: typeof mockUploadDone}>(
+const mockUploadDone = vi.fn<() => Promise<{Location: string}>>()
+const mockCreateS3Upload = vi.fn<(bucket: string, key: string, body: unknown, contentType: string, options?: object) => {done: typeof mockUploadDone}>(
   () => ({done: mockUploadDone})
 )
 
-jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({createS3Upload: mockCreateS3Upload}))
+vi.mock('#lib/vendor/AWS/S3', () => ({createS3Upload: mockCreateS3Upload}))
 
 // Note: Metrics are now published via Powertools EMF logs (stdout), no mock needed
 
@@ -47,7 +47,7 @@ const {downloadVideoToS3, getVideoID, isCookieExpirationError} = await import('.
 
 describe('#Vendor:YouTube', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockCopyFile.mockResolvedValue(undefined)
     mockStat.mockResolvedValue({size: 52428800}) // 50MB default
     mockUnlink.mockResolvedValue(undefined)

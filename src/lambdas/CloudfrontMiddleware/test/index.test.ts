@@ -1,6 +1,6 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {CloudFrontRequestEvent} from 'aws-lambda'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import * as crypto from 'crypto'
 
 const {default: eventMock} = await import('./fixtures/CloudFrontRequestEvent.json', {assert: {type: 'json'}})
@@ -16,8 +16,8 @@ describe('#CloudfrontMiddleware', () => {
     event = JSON.parse(JSON.stringify(eventMock)) as CloudFrontRequestEvent
   })
   test('should handle a request with (header: present, querystring: blank)', async () => {
-    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
+    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
@@ -26,8 +26,8 @@ describe('#CloudfrontMiddleware', () => {
     expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
   test('should handle a request with (header: blank, querystring: blank)', async () => {
-    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
+    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
@@ -36,8 +36,8 @@ describe('#CloudfrontMiddleware', () => {
     expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
   test('should handle a request with (header: blank, querystring: present)', async () => {
-    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
+    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
@@ -46,8 +46,8 @@ describe('#CloudfrontMiddleware', () => {
     expect(spyURLParamsGet).toHaveBeenCalledTimes(1)
   })
   test('should handle a request with (header: present, querystring: present)', async () => {
-    const spyURLParamsHas = jest.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = jest.spyOn(URLSearchParams.prototype, 'get')
+    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
+    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)

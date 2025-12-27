@@ -3,7 +3,7 @@
  * CRITICAL: Enforce safe cascade deletion patterns
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 // Module loaded via dynamic import

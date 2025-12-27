@@ -1,6 +1,6 @@
-import {describe, expect, test} from '@jest/globals'
+import {describe, expect, test} from 'vitest'
 import {ValidationError} from '#lib/system/errors'
-import {createMockContext} from '#util/jest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {buildApiResponse, getErrorMessage} from './../responses'
 
 describe('Response Helpers', () => {

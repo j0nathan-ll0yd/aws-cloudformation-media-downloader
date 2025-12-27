@@ -3,7 +3,7 @@
  * MEDIUM: Enforce separate statements for mock return values
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 let mockFormattingRule: typeof import('./mock-formatting').mockFormattingRule

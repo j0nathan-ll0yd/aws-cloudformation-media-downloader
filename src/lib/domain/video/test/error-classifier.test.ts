@@ -1,7 +1,7 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 // Mock the errors module before importing the classifier
-jest.unstable_mockModule('#lib/system/errors', () => ({
+vi.mock('#lib/system/errors', () => ({
   CookieExpirationError: class CookieExpirationError extends Error {
     constructor(message: string) {
       super(message)
@@ -15,8 +15,8 @@ const {classifyVideoError, calculateExponentialBackoff, isRetryExhausted} = awai
 
 describe('video-error-classifier', () => {
   beforeEach(() => {
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date('2024-01-15T12:00:00Z'))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-01-15T12:00:00Z'))
   })
 
   describe('classifyVideoError', () => {

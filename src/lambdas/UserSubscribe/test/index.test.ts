@@ -1,14 +1,14 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 const fakeUserId = uuidv4()
 
-const subscribeMock = jest.fn()
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn(), // fmt: multiline
+const subscribeMock = vi.fn()
+vi.mock('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: vi.fn(), // fmt: multiline
   subscribe: subscribeMock,
-  unsubscribe: jest.fn()
+  unsubscribe: vi.fn()
 }))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})

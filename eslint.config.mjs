@@ -27,6 +27,7 @@ export default [
       '**/temp',
       '**/terraform',
       '**/coverage',
+      '**/coverage-reports',
       '**/build',
       '**/bin',
       '**/.github',
@@ -38,9 +39,7 @@ export default [
       '.dependency-cruiser.cjs',
       'src/mcp/test/fixtures/**/*',
       '**/*.fixture.ts',
-      'eslint-local-rules/**/*',
-      'test/integration/globalSetup.js',
-      'test/integration/globalTeardown.js'
+      'eslint-local-rules/**/*'
     ]
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),

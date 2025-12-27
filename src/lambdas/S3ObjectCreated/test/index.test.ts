@@ -1,7 +1,7 @@
-import {beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {S3Event, S3EventRecord} from 'aws-lambda'
 import type {SendMessageRequest} from '@aws-sdk/client-sqs'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import {createEntityMock} from '../../../../test/helpers/entity-mock'
 
 beforeAll(() => {
@@ -9,17 +9,17 @@ beforeAll(() => {
 })
 
 const filesMock = createEntityMock({queryIndexes: ['byKey']})
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
+vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
-const sendMessageMock = jest.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+const sendMessageMock = vi.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
+vi.mock('#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: sendMessageMock,
-    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+    stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: vi.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   }))
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
@@ -42,7 +42,7 @@ describe('#S3ObjectCreated', () => {
   const baseRecord = baseEvent.Records[0]
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     // Default mock: file found, one user
     filesMock.mocks.query.byKey!.go.mockResolvedValue({data: getFileByKeyResponse.Items})
     userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: getUsersByFileIdResponse.Items})

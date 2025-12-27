@@ -1,21 +1,21 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 // Mock the Powertools logger
-const mockLogInfo = jest.fn()
-const mockLogDebug = jest.fn()
-const mockLogError = jest.fn()
+const mockLogInfo = vi.fn()
+const mockLogDebug = vi.fn()
+const mockLogError = vi.fn()
 
-jest.unstable_mockModule('#lib/vendor/Powertools', () => ({logger: {info: mockLogInfo, debug: mockLogDebug, error: mockLogError}}))
+vi.mock('#lib/vendor/Powertools', () => ({logger: {info: mockLogInfo, debug: mockLogDebug, error: mockLogError}}))
 
 // Mock sanitizeData to verify it's called correctly
-const mockSanitizeData = jest.fn((data: unknown) => ({...data as object, sanitized: true}))
-jest.unstable_mockModule('#util/security', () => ({sanitizeData: mockSanitizeData}))
+const mockSanitizeData = vi.fn((data: unknown) => ({...data as object, sanitized: true}))
+vi.mock('#util/security', () => ({sanitizeData: mockSanitizeData}))
 
 const {logInfo, logDebug, logError, getRequestSummary} = await import('./../logging')
 
 describe('Logging', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('logInfo', () => {

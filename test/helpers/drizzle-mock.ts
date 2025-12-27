@@ -1,55 +1,55 @@
-import {jest} from '@jest/globals'
+import {type Mock, vi} from 'vitest'
 
 /**
  * Drizzle Entity Mock Structure
  * Provides type-safe mocks for all common entity operations with Drizzle ORM
  *
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Jest-ESM-Mocking-Strategy | Jest ESM Mocking Strategy}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy | Vitest Mocking Strategy}
  */
 interface DrizzleEntityMock<TData> {
-  /** The entity object to pass to jest.unstable_mockModule */
+  /** The entity object to pass to vi.mock */
   entity: {
-    get: jest.Mock
-    scan?: {go: jest.Mock}
+    get: Mock
+    scan?: {go: Mock}
     query: {
-      byUser?: jest.Mock
-      byFile?: jest.Mock
-      byDevice?: jest.Mock
-      byStatus?: jest.Mock
-      byStatusRetryAfter?: jest.Mock
-      byKey?: jest.Mock
-      byEmail?: jest.Mock
-      byProvider?: jest.Mock
-      byIdentifier?: jest.Mock
-      byToken?: jest.Mock
-      byAppleDeviceId?: jest.Mock
+      byUser?: Mock
+      byFile?: Mock
+      byDevice?: Mock
+      byStatus?: Mock
+      byStatusRetryAfter?: Mock
+      byKey?: Mock
+      byEmail?: Mock
+      byProvider?: Mock
+      byIdentifier?: Mock
+      byToken?: Mock
+      byAppleDeviceId?: Mock
     }
-    create: jest.Mock
-    upsert: jest.Mock
-    update: jest.Mock
-    delete: jest.Mock
+    create: Mock
+    upsert: Mock
+    update: Mock
+    delete: Mock
   }
   /** Individual mock functions for assertions and setup */
   mocks: {
-    get: jest.Mock<() => Promise<{data: TData | TData[] | null; unprocessed?: unknown[]}>>
-    scan?: {go: jest.Mock<() => Promise<{data: TData[]; cursor: string | null}>>}
+    get: Mock<() => Promise<{data: TData | TData[] | null; unprocessed?: unknown[]}>>
+    scan?: {go: Mock<() => Promise<{data: TData[]; cursor: string | null}>>}
     query: {
-      byUser?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byFile?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byDevice?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byStatus?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byStatusRetryAfter?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byKey?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byEmail?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byProvider?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byIdentifier?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byToken?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
-      byAppleDeviceId?: {go: jest.Mock<() => Promise<{data: TData[]}>>}
+      byUser?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byFile?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byDevice?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byStatus?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byStatusRetryAfter?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byKey?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byEmail?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byProvider?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byIdentifier?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byToken?: {go: Mock<() => Promise<{data: TData[]}>>}
+      byAppleDeviceId?: {go: Mock<() => Promise<{data: TData[]}>>}
     }
-    create: jest.Mock<() => Promise<{data: TData}>>
-    upsert: {go: jest.Mock<() => Promise<{data: TData}>>}
-    update: {go: jest.Mock<() => Promise<{data: TData}>>; set: jest.Mock}
-    delete: jest.Mock<() => Promise<Record<string, never> | {unprocessed: unknown[]}>>
+    create: Mock<() => Promise<{data: TData}>>
+    upsert: {go: Mock<() => Promise<{data: TData}>>}
+    update: {go: Mock<() => Promise<{data: TData}>>; set: Mock}
+    delete: Mock<() => Promise<Record<string, never> | {unprocessed: unknown[]}>>
   }
 }
 
@@ -80,7 +80,7 @@ type QueryIndexName =
  * @example
  * ```typescript
  * const usersMock = createDrizzleEntityMock<UserItem>({queryIndexes: ['byEmail', 'byAppleDeviceId']})
- * jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
+ * vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
  *
  * // Set up return values
  * usersMock.mocks.get.mockResolvedValue({data: mockUser})
@@ -91,25 +91,25 @@ export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
   // Single: returns {data: T | null}
   // Batch: returns {data: T[], unprocessed: []}
-  const getMock = jest.fn<() => Promise<{data: TData | TData[] | null; unprocessed?: unknown[]}>>()
-  const get = jest.fn(() => ({go: getMock}))
+  const getMock = vi.fn<() => Promise<{data: TData | TData[] | null; unprocessed?: unknown[]}>>()
+  const get = vi.fn(() => ({go: getMock}))
 
   // Scan operation: Entity.scan.go() - only for Devices
-  let scan: {go: jest.Mock} | undefined
-  let scanGoMock: jest.Mock<() => Promise<{data: TData[]; cursor: string | null}>> | undefined
+  let scan: {go: Mock} | undefined
+  let scanGoMock: Mock<() => Promise<{data: TData[]; cursor: string | null}>> | undefined
   if (options?.hasScan) {
-    scanGoMock = jest.fn<() => Promise<{data: TData[]; cursor: string | null}>>()
+    scanGoMock = vi.fn<() => Promise<{data: TData[]; cursor: string | null}>>()
     scan = {go: scanGoMock}
   }
 
   // Query operations: Entity.query.byIndex({key}).go()
-  const queryEntity: Partial<Record<QueryIndexName, jest.Mock>> = {}
-  const queryMocks: Partial<Record<QueryIndexName, {go: jest.Mock}>> = {}
+  const queryEntity: Partial<Record<QueryIndexName, Mock>> = {}
+  const queryMocks: Partial<Record<QueryIndexName, {go: Mock}>> = {}
 
   if (options?.queryIndexes) {
     for (const indexName of options.queryIndexes) {
-      const queryGoMock = jest.fn<() => Promise<{data: TData[]}>>()
-      const queryIndexMock = jest.fn(() => ({go: queryGoMock}))
+      const queryGoMock = vi.fn<() => Promise<{data: TData[]}>>()
+      const queryIndexMock = vi.fn(() => ({go: queryGoMock}))
 
       queryEntity[indexName] = queryIndexMock
       queryMocks[indexName] = {go: queryGoMock}
@@ -117,23 +117,23 @@ export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes
   }
 
   // Create operation: Entity.create(item).go()
-  const createGoMock = jest.fn<() => Promise<{data: TData}>>()
-  const create = jest.fn(() => ({go: createGoMock}))
+  const createGoMock = vi.fn<() => Promise<{data: TData}>>()
+  const create = vi.fn(() => ({go: createGoMock}))
 
   // Upsert operation: Entity.upsert(item).go()
-  const upsertGoMock = jest.fn<() => Promise<{data: TData}>>()
-  const upsert = jest.fn(() => ({go: upsertGoMock}))
+  const upsertGoMock = vi.fn<() => Promise<{data: TData}>>()
+  const upsert = vi.fn(() => ({go: upsertGoMock}))
 
   // Update operation: Entity.update({key}).set({...}).go()
-  const updateGoMock = jest.fn<() => Promise<{data: TData}>>()
-  const updateSetMock = jest.fn(() => ({go: updateGoMock}))
-  const update = jest.fn(() => ({set: updateSetMock}))
+  const updateGoMock = vi.fn<() => Promise<{data: TData}>>()
+  const updateSetMock = vi.fn(() => ({go: updateGoMock}))
+  const update = vi.fn(() => ({set: updateSetMock}))
 
   // Delete operation: Entity.delete({key}).go() or Entity.delete([...]).go()
   // Single: returns {}
   // Batch: returns {unprocessed: []}
-  const deleteGoMock = jest.fn<() => Promise<Record<string, never> | {unprocessed: unknown[]}>>()
-  const deleteOp = jest.fn(() => ({go: deleteGoMock}))
+  const deleteGoMock = vi.fn<() => Promise<Record<string, never> | {unprocessed: unknown[]}>>()
+  const deleteOp = vi.fn(() => ({go: deleteGoMock}))
 
   const entity: DrizzleEntityMock<TData>['entity'] = {get, query: queryEntity, create, upsert, update, delete: deleteOp}
 
@@ -166,8 +166,8 @@ export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes
  * @example
  * ```typescript
  * const drizzleMock = createDrizzleClientMock()
- * jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({
- *   getDrizzleClient: jest.fn().mockResolvedValue(drizzleMock.client)
+ * vi.mock('#lib/vendor/Drizzle/client', () => ({
+ *   getDrizzleClient: vi.fn().mockResolvedValue(drizzleMock.client)
  * }))
  *
  * // Set up return values
@@ -175,25 +175,25 @@ export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes
  * ```
  */
 export function createDrizzleClientMock() {
-  const limitMock = jest.fn()
-  const whereMock = jest.fn(() => ({limit: limitMock}))
-  const fromMock = jest.fn(() => ({where: whereMock, limit: limitMock}))
-  const selectMock = jest.fn(() => ({from: fromMock}))
+  const limitMock = vi.fn()
+  const whereMock = vi.fn(() => ({limit: limitMock}))
+  const fromMock = vi.fn(() => ({where: whereMock, limit: limitMock}))
+  const selectMock = vi.fn(() => ({from: fromMock}))
 
-  const returningMock = jest.fn()
-  const insertWhereMock = jest.fn(() => ({returning: returningMock}))
-  const valuesMock = jest.fn(() => ({returning: returningMock, where: insertWhereMock}))
-  const insertMock = jest.fn(() => ({values: valuesMock}))
+  const returningMock = vi.fn()
+  const insertWhereMock = vi.fn(() => ({returning: returningMock}))
+  const valuesMock = vi.fn(() => ({returning: returningMock, where: insertWhereMock}))
+  const insertMock = vi.fn(() => ({values: valuesMock}))
 
-  const updateReturningMock = jest.fn()
-  const updateWhereMock = jest.fn(() => ({returning: updateReturningMock}))
-  const setMock = jest.fn(() => ({where: updateWhereMock, returning: updateReturningMock}))
-  const updateMock = jest.fn(() => ({set: setMock}))
+  const updateReturningMock = vi.fn()
+  const updateWhereMock = vi.fn(() => ({returning: updateReturningMock}))
+  const setMock = vi.fn(() => ({where: updateWhereMock, returning: updateReturningMock}))
+  const updateMock = vi.fn(() => ({set: setMock}))
 
-  const deleteWhereMock = jest.fn()
-  const deleteMock = jest.fn(() => ({where: deleteWhereMock}))
+  const deleteWhereMock = vi.fn()
+  const deleteMock = vi.fn(() => ({where: deleteWhereMock}))
 
-  const transactionMock = jest.fn()
+  const transactionMock = vi.fn()
 
   return {
     client: {select: selectMock, insert: insertMock, update: updateMock, delete: deleteMock, transaction: transactionMock},

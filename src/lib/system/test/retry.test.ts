@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {retryUnprocessed, retryUnprocessedDelete} from '../retry'
 
 type RetryOpFn = () => Promise<{data: string[]; unprocessed: unknown[]}>
@@ -6,11 +6,11 @@ type DeleteOpFn = () => Promise<{unprocessed: unknown[]}>
 
 describe('retryUnprocessed', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return data without retrying when no unprocessed items', async () => {
-    const mockOperation = jest.fn<RetryOpFn>()
+    const mockOperation = vi.fn<RetryOpFn>()
     mockOperation.mockResolvedValue({data: ['item1', 'item2'], unprocessed: []})
 
     const result = await retryUnprocessed(mockOperation)
@@ -21,7 +21,7 @@ describe('retryUnprocessed', () => {
   })
 
   it('should retry when there are unprocessed items', async () => {
-    const mockOperation = jest.fn<RetryOpFn>()
+    const mockOperation = vi.fn<RetryOpFn>()
     mockOperation.mockResolvedValueOnce({data: ['item1'], unprocessed: [{key: 'failed1'}]})
     mockOperation.mockResolvedValueOnce({data: ['item2'], unprocessed: []})
 
@@ -33,7 +33,7 @@ describe('retryUnprocessed', () => {
   })
 
   it('should stop retrying after maxRetries', async () => {
-    const mockOperation = jest.fn<RetryOpFn>()
+    const mockOperation = vi.fn<RetryOpFn>()
     mockOperation.mockResolvedValue({data: ['item1'], unprocessed: [{key: 'always-fails'}]})
 
     const result = await retryUnprocessed(mockOperation, {maxRetries: 2, initialDelayMs: 1})
@@ -43,7 +43,7 @@ describe('retryUnprocessed', () => {
   })
 
   it('should accumulate data across retries', async () => {
-    const mockOperation = jest.fn<RetryOpFn>()
+    const mockOperation = vi.fn<RetryOpFn>()
     mockOperation.mockResolvedValueOnce({data: ['a'], unprocessed: [{key: '1'}]})
     mockOperation.mockResolvedValueOnce({data: ['b'], unprocessed: [{key: '2'}]})
     mockOperation.mockResolvedValueOnce({data: ['c'], unprocessed: []})
@@ -56,11 +56,11 @@ describe('retryUnprocessed', () => {
 
 describe('retryUnprocessedDelete', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return without retrying when no unprocessed items', async () => {
-    const mockOperation = jest.fn<DeleteOpFn>()
+    const mockOperation = vi.fn<DeleteOpFn>()
     mockOperation.mockResolvedValue({unprocessed: []})
 
     const result = await retryUnprocessedDelete(mockOperation)
@@ -70,7 +70,7 @@ describe('retryUnprocessedDelete', () => {
   })
 
   it('should retry delete operations with unprocessed items', async () => {
-    const mockOperation = jest.fn<DeleteOpFn>()
+    const mockOperation = vi.fn<DeleteOpFn>()
     mockOperation.mockResolvedValueOnce({unprocessed: [{key: 'failed'}]})
     mockOperation.mockResolvedValueOnce({unprocessed: []})
 

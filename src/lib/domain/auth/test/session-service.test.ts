@@ -4,7 +4,7 @@
  * Tests session management, validation, and token generation using entity-mock.
  */
 
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {UnauthorizedError} from '#lib/system/errors'
 import {createEntityMock} from '#test/helpers/entity-mock'
 
@@ -12,7 +12,7 @@ import {createEntityMock} from '#test/helpers/entity-mock'
 const sessionsMock = createEntityMock({queryIndexes: ['byUser', 'byToken']})
 
 // Mock Sessions entity
-jest.unstable_mockModule('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+vi.mock('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
 
 // Import after mocking
 const {validateSessionToken, refreshSession} = await import('../session-service')

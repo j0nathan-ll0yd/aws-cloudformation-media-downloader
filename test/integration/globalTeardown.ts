@@ -1,16 +1,16 @@
 /**
- * Jest Global Teardown for PostgreSQL Integration Tests
+ * Vitest Global Teardown for PostgreSQL Integration Tests
  *
  * Drops all worker schemas after all tests complete.
  * Cleans up the database for the next test run.
  *
  * Runs ONCE after all test files complete.
  */
-const postgres = require('postgres')
+import postgres from 'postgres'
 
 const MAX_WORKERS = 4
 
-module.exports = async function globalTeardown() {
+export default async function globalTeardown() {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
   const sql = postgres(databaseUrl)

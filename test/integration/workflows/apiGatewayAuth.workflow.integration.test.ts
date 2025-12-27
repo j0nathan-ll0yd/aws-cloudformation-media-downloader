@@ -14,19 +14,19 @@
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
 
-import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
-import {createMockContext} from '#util/jest-setup'
+import {createMockContext} from '#util/vitest-setup'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, getSessions, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 
 // Mock API Gateway vendor calls - we're testing OUR session validation logic
-const mockGetApiKeys = jest.fn<() => Promise<{items: Array<{id: string; value: string; enabled: boolean}>}>>()
-const mockGetUsagePlans = jest.fn<() => Promise<{items: Array<{id: string}>}>>()
-const mockGetUsage = jest.fn<() => Promise<{items: Record<string, unknown>}>>()
+const mockGetApiKeys = vi.fn<() => Promise<{items: Array<{id: string; value: string; enabled: boolean}>}>>()
+const mockGetUsagePlans = vi.fn<() => Promise<{items: Array<{id: string}>}>>()
+const mockGetUsage = vi.fn<() => Promise<{items: Record<string, unknown>}>>()
 
-jest.unstable_mockModule('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
+vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
 
 // Import handler after mocks are set up
 const {handler} = await import('../../../src/lambdas/ApiGatewayAuthorizer/src/index')
@@ -97,7 +97,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     setupApiGatewayMocks()
   })
 

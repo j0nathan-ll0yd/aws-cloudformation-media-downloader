@@ -1,15 +1,15 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {scanAllPages} from '../pagination'
 
 type ScanFn<T> = (cursor?: string) => Promise<{data: T[]; cursor: string | null}>
 
 describe('scanAllPages', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return all items from a single page', async () => {
-    const mockScan = jest.fn<ScanFn<string>>()
+    const mockScan = vi.fn<ScanFn<string>>()
     mockScan.mockResolvedValue({data: ['item1', 'item2', 'item3'], cursor: null})
 
     const result = await scanAllPages(mockScan)
@@ -20,7 +20,7 @@ describe('scanAllPages', () => {
   })
 
   it('should paginate through multiple pages', async () => {
-    const mockScan = jest.fn<ScanFn<string>>()
+    const mockScan = vi.fn<ScanFn<string>>()
     mockScan.mockResolvedValueOnce({data: ['page1-item1', 'page1-item2'], cursor: 'cursor1'})
     mockScan.mockResolvedValueOnce({data: ['page2-item1', 'page2-item2'], cursor: 'cursor2'})
     mockScan.mockResolvedValueOnce({data: ['page3-item1'], cursor: null})
@@ -35,7 +35,7 @@ describe('scanAllPages', () => {
   })
 
   it('should return empty array when no data', async () => {
-    const mockScan = jest.fn<ScanFn<string>>()
+    const mockScan = vi.fn<ScanFn<string>>()
     mockScan.mockResolvedValue({data: [], cursor: null})
 
     const result = await scanAllPages(mockScan)
@@ -50,7 +50,7 @@ describe('scanAllPages', () => {
       token: string
     }
 
-    const mockScan = jest.fn<ScanFn<Device>>()
+    const mockScan = vi.fn<ScanFn<Device>>()
     mockScan.mockResolvedValueOnce({data: [{deviceId: '1', token: 'token1'}, {deviceId: '2', token: 'token2'}], cursor: 'next'})
     mockScan.mockResolvedValueOnce({data: [{deviceId: '3', token: 'token3'}], cursor: null})
 

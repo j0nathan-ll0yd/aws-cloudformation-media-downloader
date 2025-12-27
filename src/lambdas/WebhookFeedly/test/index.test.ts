@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createEntityMock} from '#test/helpers/entity-mock'
@@ -11,53 +11,53 @@ import type {MediaDownloaderEventType} from '#types/events'
 const fakeUserId = uuidv4()
 
 const filesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
+vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
 
 const userFilesMock = createEntityMock()
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const fileDownloadsMock = createEntityMock()
-jest.unstable_mockModule('#entities/FileDownloads',
+vi.mock('#entities/FileDownloads',
   () => ({
     FileDownloads: fileDownloadsMock.entity,
     DownloadStatus: {Pending: 'pending', InProgress: 'in_progress', Completed: 'completed', Failed: 'failed', Scheduled: 'scheduled'}
   }))
 
 // Mock Powertools idempotency to bypass DynamoDB persistence
-jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
-  createPersistenceStore: jest.fn(),
+vi.mock('#lib/vendor/Powertools/idempotency', () => ({
+  createPersistenceStore: vi.fn(),
   defaultIdempotencyConfig: {},
   // makeIdempotent passes through the function unchanged (no idempotency wrapping in tests)
   makeIdempotent: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 
-const sendMessageMock = jest.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+const sendMessageMock = vi.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
+vi.mock('#lib/vendor/AWS/SQS',
   () => ({
     sendMessage: sendMessageMock,
-    subscribe: jest.fn(),
-    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+    subscribe: vi.fn(),
+    stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: vi.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
   }))
 
 // Mock child_process for YouTube spawn operations
-jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
+vi.mock('child_process', () => ({spawn: vi.fn()}))
 
 // Mock fs for YouTube operations (createReadStream for S3 upload, promises for cookie/cleanup)
-jest.unstable_mockModule('fs', () => ({createReadStream: jest.fn()}))
-jest.unstable_mockModule('fs/promises', () => ({copyFile: jest.fn(), stat: jest.fn(), unlink: jest.fn()}))
+vi.mock('fs', () => ({createReadStream: vi.fn()}))
+vi.mock('fs/promises', () => ({copyFile: vi.fn(), stat: vi.fn(), unlink: vi.fn()}))
 
 // Mock S3 vendor wrapper for YouTube
-jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
-  headObject: jest.fn(), // fmt: multiline
-  createS3Upload: jest.fn().mockReturnValue({
-    on: jest.fn(),
-    done: jest.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
+vi.mock('#lib/vendor/AWS/S3', () => ({
+  headObject: vi.fn(), // fmt: multiline
+  createS3Upload: vi.fn().mockReturnValue({
+    on: vi.fn(),
+    done: vi.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
   })
 }))
 
-const publishEventMock = jest.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
-jest.unstable_mockModule('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
+const publishEventMock = vi.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
+vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 
@@ -69,7 +69,7 @@ describe('#WebhookFeedly', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.EVENT_BUS_NAME = 'MediaDownloader'
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
     process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'

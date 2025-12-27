@@ -1,5 +1,4 @@
 import type {Context} from 'aws-lambda'
-import {afterAll, beforeAll, jest} from '@jest/globals'
 
 export const partSize = 1024 * 1024 * 5
 export const fakeJWT =
@@ -70,13 +69,3 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES1HCPTVyKI7fwl1Muq0ydgYqNpaF
 jHVKbDT+efytL6HYw+IWsMV/X7Osbx+t4v7TzjVyKsLbMIwZ2GuRXg1QpA==
 -----END PUBLIC KEY-----
 `
-
-const originalLog = console.log
-
-beforeAll(() => {
-  console.log = jest.fn()
-})
-
-afterAll(() => {
-  console.log = originalLog
-})

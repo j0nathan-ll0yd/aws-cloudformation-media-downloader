@@ -3,7 +3,7 @@
  * CRITICAL: Detects configuration drift that weakens enforcement
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 let configEnforcementRule: typeof import('./config-enforcement').configEnforcementRule

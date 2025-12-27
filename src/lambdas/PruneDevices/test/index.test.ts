@@ -1,6 +1,6 @@
-import {describe, expect, jest, test} from '@jest/globals'
+import {describe, expect, test, vi} from 'vitest'
 import type {ScheduledEvent} from 'aws-lambda'
-import {fakePrivateKey, testContext} from '#util/jest-setup'
+import {fakePrivateKey, testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#lib/system/errors'
 import {createEntityMock} from '#test/helpers/entity-mock'
@@ -47,29 +47,32 @@ const fakeGetDevicesResponse = {
 }
 
 const devicesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
+vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const userDevicesMock = createEntityMock({queryIndexes: ['byDevice']})
-jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: jest.fn(),
-  unsubscribe: jest.fn()
+vi.mock('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn()
 }))
 
-const sendMock = jest.fn()
-class MockApnsClient {
-  send() {
-    return sendMock()
+// Use vi.hoisted() to define mock classes before vi.mock hoists
+const {sendMock, MockApnsClient, MockNotification} = vi.hoisted(() => {
+  const sendMock = vi.fn()
+  class MockApnsClient {
+    send() {
+      return sendMock()
+    }
   }
-}
-jest.unstable_mockModule('apns2', () => ({
-  ApnsClient: MockApnsClient, // fmt: multiline
-  Notification: jest.fn().mockReturnValue({fake: 'notification'}),
-  Priority: jest.fn(),
-  PushType: jest.fn()
-}))
+  class MockNotification {
+    constructor(public token: string, public options: object) {}
+  }
+  return {sendMock, MockApnsClient, MockNotification}
+})
+
+vi.mock('apns2', () => ({ApnsClient: MockApnsClient, Notification: MockNotification, Priority: {throttled: 5}, PushType: {background: 'background'}}))
 
 const fakeApnsNotificationOptions = {contentAvailable: true, type: 'background', priority: 5, aps: {health: 'check'}}
 

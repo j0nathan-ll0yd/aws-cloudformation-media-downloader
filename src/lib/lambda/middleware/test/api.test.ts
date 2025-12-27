@@ -1,17 +1,17 @@
-import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {afterEach, beforeEach, describe, expect, it, type MockInstance, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {logger} from '#lib/vendor/Powertools'
 
 describe('Lambda:Middleware:API', () => {
-  let consoleLogSpy: jest.SpiedFunction<typeof console.log>
-  let loggerInfoSpy: jest.SpiedFunction<typeof logger.info>
-  let loggerErrorSpy: jest.SpiedFunction<typeof logger.error>
+  let consoleLogSpy: MockInstance<typeof console.log>
+  let loggerInfoSpy: MockInstance<typeof logger.info>
+  let loggerErrorSpy: MockInstance<typeof logger.error>
   let originalLogLevel: string | undefined
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
-    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation(() => undefined)
-    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined)
+    loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     originalLogLevel = process.env.LOG_LEVEL
     process.env.LOG_LEVEL = 'INFO'
   })

@@ -6,7 +6,7 @@
  * These tests run against the actual project files (integration-style).
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 
 // Module loaded via dynamic import
 let loadMetadata: typeof import('./data-loader').loadMetadata

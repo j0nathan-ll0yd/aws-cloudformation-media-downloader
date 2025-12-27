@@ -1,22 +1,21 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 type ResultRow = {id?: string; fileId?: string; deviceId?: string}
 
 // Mock db.select().from().where().limit() chain for single assertions
 // and db.select().from().where() for batch assertions (no limit)
-const mockWhere = jest.fn<() => Promise<ResultRow[]> | {limit: () => Promise<ResultRow[]>}>()
-const mockFrom = jest.fn(() => ({where: mockWhere}))
-const mockSelect = jest.fn(() => ({from: mockFrom}))
+const mockWhere = vi.fn<() => Promise<ResultRow[]> | {limit: () => Promise<ResultRow[]>}>()
+const mockFrom = vi.fn(() => ({where: mockWhere}))
+const mockSelect = vi.fn(() => ({from: mockFrom}))
 const mockDb = {select: mockSelect}
 
-jest.unstable_mockModule('./../client', () => ({getDrizzleClient: jest.fn(async () => mockDb)}))
+vi.mock('./../client', () => ({getDrizzleClient: vi.fn(async () => mockDb)}))
 
 // Mock schema tables
-jest.unstable_mockModule('./../schema', () => ({users: {id: 'id'}, files: {fileId: 'fileId'}, devices: {deviceId: 'deviceId'}}))
+vi.mock('./../schema', () => ({users: {id: 'id'}, files: {fileId: 'fileId'}, devices: {deviceId: 'deviceId'}}))
 
 // Mock drizzle-orm operators
-jest.unstable_mockModule('drizzle-orm',
-  () => ({eq: jest.fn((col: unknown, val: unknown) => ({col, val})), inArray: jest.fn((col: unknown, vals: unknown[]) => ({col, vals}))}))
+vi.mock('drizzle-orm', () => ({eq: vi.fn((col: unknown, val: unknown) => ({col, val})), inArray: vi.fn((col: unknown, vals: unknown[]) => ({col, vals}))}))
 
 const {assertUserExists, assertFileExists, assertDeviceExists, assertUsersExist, assertFilesExist, ForeignKeyViolationError} = await import(
   './../fk-enforcement'
@@ -24,7 +23,7 @@ const {assertUserExists, assertFileExists, assertDeviceExists, assertUsersExist,
 
 describe('FK Enforcement', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('ForeignKeyViolationError', () => {

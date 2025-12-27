@@ -1,31 +1,28 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import {createMockContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {createMockContext} from '#util/vitest-setup'
 
 // Mock fs module for reading migration files
-const mockReaddirSync = jest.fn<() => string[]>()
-const mockReadFileSync = jest.fn<(path: string) => string>()
-jest.unstable_mockModule('fs', () => ({readdirSync: mockReaddirSync, readFileSync: mockReadFileSync}))
+const mockReaddirSync = vi.fn<() => string[]>()
+const mockReadFileSync = vi.fn<(path: string) => string>()
+vi.mock('fs', () => ({readdirSync: mockReaddirSync, readFileSync: mockReadFileSync}))
 
 // Mock path and url modules
-jest.unstable_mockModule('path',
-  () => ({join: jest.fn((...args: string[]) => args.join('/')), dirname: jest.fn((path: string) => path.replace(/\/[^/]+$/, ''))}))
+vi.mock('path', () => ({join: vi.fn((...args: string[]) => args.join('/')), dirname: vi.fn((path: string) => path.replace(/\/[^/]+$/, ''))}))
 
-jest.unstable_mockModule('url', () => ({fileURLToPath: jest.fn(() => '/lambda/index.js')}))
+vi.mock('url', () => ({fileURLToPath: vi.fn(() => '/lambda/index.js')}))
 
 // Mock Drizzle client with proper chaining for execute
 // postgres-js returns RowList which is directly iterable as an array
-const mockExecute = jest.fn<() => Promise<Array<{version: string}>>>()
-jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: jest.fn(async () => ({execute: mockExecute}))}))
+const mockExecute = vi.fn<() => Promise<Array<{version: string}>>>()
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({execute: mockExecute}))}))
 
 // Mock drizzle-orm sql template
-jest.unstable_mockModule('drizzle-orm', () => ({sql: {raw: jest.fn((s: string) => s)}}))
+vi.mock('drizzle-orm', () => ({sql: {raw: vi.fn((s: string) => s)}}))
 
 // Mock middleware - pass through the handler function
-jest.unstable_mockModule('#lib/lambda/middleware/powertools',
-  () => ({withPowertools: jest.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
-jest.unstable_mockModule('#lib/lambda/middleware/internal',
-  () => ({wrapLambdaInvokeHandler: jest.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/internal', () => ({wrapLambdaInvokeHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
 // Import handler after all mocks are set up
 const {handler} = await import('./../src')
@@ -34,7 +31,7 @@ const context = createMockContext({functionName: 'MigrateDSQL'})
 
 describe('MigrateDSQL Lambda', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     // Default: migrations directory exists with two files
     mockReaddirSync.mockReturnValue(['0001_initial_schema.sql', '0002_create_indexes.sql'])
     mockReadFileSync.mockImplementation((path: string) => {

@@ -2,10 +2,10 @@
  * Integration Test Setup
  *
  * Configures the test environment for LocalStack integration tests.
- * This file runs before all integration tests via setupFilesAfterEnv in jest.integration.config.mjs
+ * This file runs before all integration tests via setupFiles in vitest.integration.config.mts
  */
 
-import {beforeAll, jest} from '@jest/globals'
+import {beforeAll} from 'vitest'
 
 /**
  * Ensure USE_LOCALSTACK is set
@@ -18,12 +18,6 @@ process.env.USE_LOCALSTACK = 'true'
  * Match production region (us-west-2) for consistency
  */
 process.env.AWS_REGION = 'us-west-2'
-
-/**
- * Configure test timeout
- * Integration tests may take longer due to LocalStack initialization
- */
-jest.setTimeout(30000)
 
 /**
  * Wait for LocalStack to be ready

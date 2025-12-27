@@ -1,4 +1,4 @@
-# Jest ESM Mocking Strategy
+# Vitest Mocking Strategy
 
 ## Quick Reference
 - **When to use**: Writing unit tests with ES modules
@@ -24,26 +24,27 @@ When testing `getVideoID`, all imports execute. Solution: Mock ALL transitive de
 
 ```typescript
 // test/index.test.ts
+import {describe, expect, vi, test} from 'vitest'
 
 // 1. Mock ALL transitive dependencies BEFORE imports
-jest.unstable_mockModule('yt-dlp-wrap', () => ({
-  default: jest.fn()
+vi.mock('yt-dlp-wrap', () => ({
+  default: vi.fn()
 }))
 
-jest.unstable_mockModule('child_process', () => ({
-  spawn: jest.fn()
+vi.mock('child_process', () => ({
+  spawn: vi.fn()
 }))
 
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  createS3Upload: jest.fn()
+vi.mock('../../../lib/vendor/AWS/S3', () => ({
+  createS3Upload: vi.fn()
 }))
 
 // 2. Import after mocking
 const {handler} = await import('../src/index')
 
-// 3. Use type assertions for mocks
-import type {jest as mockJest} from '@jest/globals'
-const mockYTDlp = (await import('yt-dlp-wrap')).default as mockJest.MockedFunction<any>
+// 3. Use type imports for mocks
+import type {Mock} from 'vitest'
+const mockYTDlp = (await import('yt-dlp-wrap')).default as Mock
 ```
 
 ## Dependency Mapping
@@ -57,34 +58,34 @@ const mockYTDlp = (await import('yt-dlp-wrap')).default as mockJest.MockedFuncti
 
 ### AWS SDK Mocks
 ```typescript
-jest.unstable_mockModule('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: jest.fn(() => ({
-    send: jest.fn()
+vi.mock('@aws-sdk/client-dynamodb', () => ({
+  DynamoDBClient: vi.fn(() => ({
+    send: vi.fn()
   }))
 }))
 ```
 
 ### Vendor Wrapper Mocks
 ```typescript
-jest.unstable_mockModule('../../../lib/vendor/AWS/DynamoDB', () => ({
-  getDynamoDbClient: jest.fn(),
-  queryItems: jest.fn()
+vi.mock('../../../lib/vendor/AWS/DynamoDB', () => ({
+  getDynamoDbClient: vi.fn(),
+  queryItems: vi.fn()
 }))
 ```
 
-### ElectroDB Mock Helper (CRITICAL)
+### Entity Mock Helper (CRITICAL)
 
-**Zero-tolerance rule**: ALWAYS use `createElectroDBEntityMock()` from `test/helpers/electrodb-mock.ts` for mocking ElectroDB entities.
+**Zero-tolerance rule**: ALWAYS use `createEntityMock()` from `test/helpers/entity-mock.ts` for mocking entities.
 
 ```typescript
-import {createElectroDBEntityMock} from '../../../test/helpers/electrodb-mock'
+import {createEntityMock} from '../../../test/helpers/entity-mock'
 import type {File} from '../../../types/domain-models'
 
 // Create mock before mocking module
-const filesMock = createElectroDBEntityMock<File>()
+const filesMock = createEntityMock<File>()
 
 // Mock the entity module
-jest.unstable_mockModule('../../../entities/Files', () => ({
+vi.mock('../../../entities/Files', () => ({
   Files: filesMock.entity
 }))
 
@@ -103,7 +104,7 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 - Type-safe mocks with full TypeScript inference
 - Consistent mock structure across all tests
 - Simplified setup with pre-configured query patterns
-- Supports all ElectroDB operations (get, create, update, query, etc.)
+- Supports all entity operations (get, create, update, query, etc.)
 
 ## Testing Checklist
 
@@ -118,7 +119,7 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| Cannot find module | Missing mock | Add jest.unstable_mockModule |
+| Cannot find module | Missing mock | Add vi.mock |
 | X is not a constructor | Wrong mock structure | Mock as class with constructor |
 | Property X doesn't exist | Incomplete mock | Add missing properties |
 | Works locally, fails CI | Environment differences | Mock all transitive deps |
@@ -128,7 +129,7 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 1. **Mock first, import second** - Always mock before importing
 2. **Mock everything external** - All npm packages and AWS SDK
 3. **Use type assertions** - Add proper types to mocks
-4. **Use mock helpers** - ElectroDB mock helper for entities
+4. **Use mock helpers** - Entity mock helper for entities
 5. **Map dependencies** - Trace all transitive imports
 
 ## Related Patterns
