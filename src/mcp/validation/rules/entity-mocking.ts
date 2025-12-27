@@ -70,8 +70,8 @@ export const entityMockingRule: ValidationRule = {
       const expression = call.getExpression()
       const expressionText = expression.getText()
 
-      // Check for jest.unstable_mockModule with entity paths
-      if (expressionText === 'jest.unstable_mockModule' || expressionText === 'jest.mock') {
+      // Check for vi.mock (Vitest) or legacy jest.mock/jest.unstable_mockModule with entity paths
+      if (expressionText === 'vi.mock' || expressionText === 'jest.unstable_mockModule' || expressionText === 'jest.mock') {
         const args = call.getArguments()
         if (args.length > 0) {
           const modulePath = args[0].getText().replace(/['"]/g, '')
@@ -87,7 +87,7 @@ export const entityMockingRule: ValidationRule = {
               violations.push(
                 createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
                   `Manual entity mock detected for '${modulePath}'. Use createEntityMock() instead.`, {
-                  suggestion: `const ${modulePath.split('/').pop()}Mock = createEntityMock({...})\njest.unstable_mockModule('${modulePath}', () => ({${
+                  suggestion: `const ${modulePath.split('/').pop()}Mock = createEntityMock({...})\nvi.mock('${modulePath}', () => ({${
                     modulePath.split('/').pop()
                   }: ${modulePath.split('/').pop()}Mock.entity}))`,
                   codeSnippet: call.getText().substring(0, 150)

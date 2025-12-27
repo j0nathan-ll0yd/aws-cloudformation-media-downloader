@@ -1,20 +1,20 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#lib/system/errors'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import type {SessionPayload} from '#types/util'
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
 
-const getApiKeysMock = jest.fn()
-const getUsagePlansMock = jest.fn()
-const getUsageMock = jest.fn()
+const getApiKeysMock = vi.fn()
+const getUsagePlansMock = vi.fn()
+const getUsageMock = vi.fn()
 const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
 const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
-jest.unstable_mockModule('#lib/vendor/AWS/ApiGateway', () => ({
+vi.mock('#lib/vendor/AWS/ApiGateway', () => ({
   getApiKeys: getApiKeysMock, // fmt: multiline
   getUsagePlans: getUsagePlansMock,
   getUsage: getUsageMock
@@ -27,8 +27,8 @@ getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 
-const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-jest.unstable_mockModule('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
+const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
+vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
 
 const {handler} = await import('./../src')
 

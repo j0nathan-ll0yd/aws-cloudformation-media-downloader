@@ -3,7 +3,7 @@
  * Tests the pure functions for parsing conventions-tracking.md
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {readFileSync} from 'fs'
 import {join} from 'path'
 import type {Convention} from './convention-parser'

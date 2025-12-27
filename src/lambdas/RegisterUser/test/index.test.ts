@@ -1,17 +1,17 @@
-import {beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import {createEntityMock} from '#test/helpers/entity-mock'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
-jest.unstable_mockModule('#lib/vendor/BetterAuth/config', () => ({getAuth: jest.fn(async () => authMock.auth)}))
+vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => authMock.auth)}))
 
 // Mock Users entity for name updates
 const usersMock = createEntityMock()
-jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
+vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

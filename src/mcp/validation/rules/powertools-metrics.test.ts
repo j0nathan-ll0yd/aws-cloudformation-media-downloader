@@ -3,7 +3,7 @@
  * MEDIUM: Validate PowerTools metrics usage patterns
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import type {ValidationRule} from '../types'
 import {loadFixture} from '../../test/fixtures'
 

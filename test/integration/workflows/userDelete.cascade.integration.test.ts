@@ -28,7 +28,7 @@ process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
-import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '../../../src/types/enums'
 
@@ -61,8 +61,8 @@ const __dirname = dirname(__filename)
 
 // Mock GitHub helpers to prevent actual API calls (can't use real GitHub in tests)
 const githubHelpersPath = resolve(__dirname, '../../../src/lib/integrations/github/issue-service')
-const createFailedUserDeletionIssueMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule(githubHelpersPath, () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
+const createFailedUserDeletionIssueMock = vi.fn<() => Promise<void>>()
+vi.mock(githubHelpersPath, () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
 // Import handler after mocking GitHub (but NOT entities - those use real PostgreSQL)
 const {handler} = await import('../../../src/lambdas/UserDelete/src/index')
@@ -120,7 +120,7 @@ describe('UserDelete Cascade Integration Tests', () => {
   afterEach(async () => {
     // Clean up data between tests
     await truncateAllTables()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   afterAll(async () => {

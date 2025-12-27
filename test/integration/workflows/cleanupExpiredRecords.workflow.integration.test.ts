@@ -15,7 +15,7 @@
 // Set environment variables before imports
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context, ScheduledEvent} from 'aws-lambda'
 
 // Test helpers

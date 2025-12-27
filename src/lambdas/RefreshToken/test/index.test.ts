@@ -1,14 +1,14 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayProxyEvent} from 'aws-lambda'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {SessionPayload} from '#types/util'
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-const validateSessionTokenMock = jest.fn<(token: string) => Promise<SessionPayload>>()
-const refreshSessionMock = jest.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
-jest.unstable_mockModule('#lib/domain/auth/session-service', () => ({
+const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
+const refreshSessionMock = vi.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
+vi.mock('#lib/domain/auth/session-service', () => ({
   validateSessionToken: validateSessionTokenMock, // fmt: multiline
   refreshSession: refreshSessionMock
 }))

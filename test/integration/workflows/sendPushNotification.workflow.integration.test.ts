@@ -18,7 +18,7 @@ process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers

@@ -3,7 +3,7 @@
  * CRITICAL: Test files must use createEntityMock() helper
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 // Module loaded via dynamic import
@@ -40,8 +40,8 @@ describe('entity-mocking rule', () => {
   describe('skips non-test files', () => {
     test('should skip files not in test directories', () => {
       const sourceFile = project.createSourceFile('test-non-test.ts', `import {Users} from '#entities/Users'
-jest.unstable_mockModule('#entities/Users', () => ({
-  Users: { get: jest.fn() }
+vi.mock('#entities/Users', () => ({
+  Users: { get: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
@@ -51,8 +51,8 @@ jest.unstable_mockModule('#entities/Users', () => ({
 
     test('should skip helper files', () => {
       const sourceFile = project.createSourceFile('test-helper.ts', `import {Users} from '#entities/Users'
-jest.unstable_mockModule('#entities/Users', () => ({
-  Users: { get: jest.fn() }
+vi.mock('#entities/Users', () => ({
+  Users: { get: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'test/helpers/entity-mock.ts')
@@ -62,14 +62,14 @@ jest.unstable_mockModule('#entities/Users', () => ({
   })
 
   describe('detects manual entity mocking', () => {
-    test('should detect jest.unstable_mockModule without helper', () => {
-      const sourceFile = project.createSourceFile('test-mock-users.ts', `import {beforeAll, describe, test} from '@jest/globals'
+    test('should detect vi.mock without helper', () => {
+      const sourceFile = project.createSourceFile('test-mock-users.ts', `import {beforeAll, describe, test} from 'vitest'
 import {Users} from '#entities/Users'
 
-jest.unstable_mockModule('#entities/Users', () => ({
+vi.mock('#entities/Users', () => ({
   Users: {
-    get: jest.fn(),
-    create: jest.fn()
+    get: vi.fn(),
+    create: vi.fn()
   }
 }))`, {overwrite: true})
 
@@ -82,13 +82,13 @@ jest.unstable_mockModule('#entities/Users', () => ({
     })
 
     test('should detect jest.mock without helper', () => {
-      const sourceFile = project.createSourceFile('test-mock-files.ts', `import {beforeAll, describe, test} from '@jest/globals'
+      const sourceFile = project.createSourceFile('test-mock-files.ts', `import {beforeAll, describe, test} from 'vitest'
 import {Files} from '#entities/Files'
 
 jest.mock('#entities/Files', () => ({
   Files: {
-    get: jest.fn(),
-    put: jest.fn()
+    get: vi.fn(),
+    put: vi.fn()
   }
 }))`, {overwrite: true})
 
@@ -99,8 +99,8 @@ jest.mock('#entities/Files', () => ({
     })
 
     test('should detect mocking of UserFiles entity', () => {
-      const sourceFile = project.createSourceFile('test-mock-userfiles.ts', `jest.unstable_mockModule('#entities/UserFiles', () => ({
-  UserFiles: { query: jest.fn() }
+      const sourceFile = project.createSourceFile('test-mock-userfiles.ts', `vi.mock('#entities/UserFiles', () => ({
+  UserFiles: { query: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'test/integration/user.test.ts')
@@ -109,8 +109,8 @@ jest.mock('#entities/Files', () => ({
     })
 
     test('should detect mocking of Devices entity', () => {
-      const sourceFile = project.createSourceFile('test-mock-devices.ts', `jest.unstable_mockModule('#entities/Devices', () => ({
-  Devices: { scan: jest.fn() }
+      const sourceFile = project.createSourceFile('test-mock-devices.ts', `vi.mock('#entities/Devices', () => ({
+  Devices: { scan: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'test/unit/devices.test.ts')
@@ -125,12 +125,12 @@ jest.mock('#entities/Files', () => ({
 import {Users} from '#entities/Users'
 
 const UsersMock = createEntityMock({
-  get: jest.fn(),
-  create: jest.fn()
+  get: vi.fn(),
+  create: vi.fn()
 })
 
-jest.unstable_mockModule('#entities/Users', () => ({
-  Users: createEntityMock({get: jest.fn()})
+vi.mock('#entities/Users', () => ({
+  Users: createEntityMock({get: vi.fn()})
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
@@ -139,7 +139,7 @@ jest.unstable_mockModule('#entities/Users', () => ({
     })
 
     test('should allow test files without entity imports', () => {
-      const sourceFile = project.createSourceFile('test-no-entities.ts', `import {describe, expect, test} from '@jest/globals'
+      const sourceFile = project.createSourceFile('test-no-entities.ts', `import {describe, expect, test} from 'vitest'
 
 describe('utility function', () => {
   test('should work', () => {
@@ -153,14 +153,14 @@ describe('utility function', () => {
     })
 
     test('should allow non-entity mocks', () => {
-      const sourceFile = project.createSourceFile('test-other-mocks.ts', `import {describe, test} from '@jest/globals'
+      const sourceFile = project.createSourceFile('test-other-mocks.ts', `import {describe, test} from 'vitest'
 
-jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
-  uploadToS3: jest.fn()
+vi.mock('#lib/vendor/AWS/S3', () => ({
+  uploadToS3: vi.fn()
 }))
 
-jest.unstable_mockModule('#util/lambda-helpers', () => ({
-  response: jest.fn()
+vi.mock('#util/lambda-helpers', () => ({
+  response: vi.fn()
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
@@ -171,14 +171,14 @@ jest.unstable_mockModule('#util/lambda-helpers', () => ({
 
   describe('detects entity usage without helper import', () => {
     test('should warn when mocking entities without helper', () => {
-      const sourceFile = project.createSourceFile('test-missing-import.ts', `import {describe, test} from '@jest/globals'
+      const sourceFile = project.createSourceFile('test-missing-import.ts', `import {describe, test} from 'vitest'
 
 // File references entities but doesn't use helper
 const mockUsers = {
-  get: jest.fn()
+  get: vi.fn()
 }
 
-jest.unstable_mockModule('#entities/Users', () => ({
+vi.mock('#entities/Users', () => ({
   Users: mockUsers
 }))`, {overwrite: true})
 
@@ -191,8 +191,8 @@ jest.unstable_mockModule('#entities/Users', () => ({
 
   describe('provides helpful suggestions', () => {
     test('should suggest proper import path', () => {
-      const sourceFile = project.createSourceFile('test-suggestion.ts', `jest.unstable_mockModule('#entities/Users', () => ({
-  Users: { get: jest.fn() }
+      const sourceFile = project.createSourceFile('test-suggestion.ts', `vi.mock('#entities/Users', () => ({
+  Users: { get: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
@@ -202,8 +202,8 @@ jest.unstable_mockModule('#entities/Users', () => ({
     })
 
     test('should include code snippet', () => {
-      const sourceFile = project.createSourceFile('test-snippet.ts', `jest.unstable_mockModule('#entities/Files', () => ({
-  Files: { query: jest.fn() }
+      const sourceFile = project.createSourceFile('test-snippet.ts', `vi.mock('#entities/Files', () => ({
+  Files: { query: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'test/lambdas/files.test.ts')
@@ -215,16 +215,16 @@ jest.unstable_mockModule('#entities/Users', () => ({
 
   describe('handles multiple entities', () => {
     test('should detect multiple manual entity mocks', () => {
-      const sourceFile = project.createSourceFile('test-multiple-entities.ts', `jest.unstable_mockModule('#entities/Users', () => ({
-  Users: { get: jest.fn() }
+      const sourceFile = project.createSourceFile('test-multiple-entities.ts', `vi.mock('#entities/Users', () => ({
+  Users: { get: vi.fn() }
 }))
 
-jest.unstable_mockModule('#entities/Files', () => ({
-  Files: { query: jest.fn() }
+vi.mock('#entities/Files', () => ({
+  Files: { query: vi.fn() }
 }))
 
-jest.unstable_mockModule('#entities/Devices', () => ({
-  Devices: { scan: jest.fn() }
+vi.mock('#entities/Devices', () => ({
+  Devices: { scan: vi.fn() }
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
@@ -238,8 +238,8 @@ jest.unstable_mockModule('#entities/Devices', () => ({
 
     entities.forEach((entity) => {
       test(`should detect manual mock of ${entity}`, () => {
-        const sourceFile = project.createSourceFile(`test-${entity.toLowerCase()}.ts`, `jest.unstable_mockModule('#entities/${entity}', () => ({
-  ${entity}: { get: jest.fn() }
+        const sourceFile = project.createSourceFile(`test-${entity.toLowerCase()}.ts`, `vi.mock('#entities/${entity}', () => ({
+  ${entity}: { get: vi.fn() }
 }))`, {overwrite: true})
 
         const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')

@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createEntityMock} from '#test/helpers/entity-mock'
@@ -33,34 +33,33 @@ const fakeGithubIssueResponse = {
   data: {id: 1679634750, number: 57, title: 'UserDelete Failed for UserId: 0f2e90e6-3c52-4d48-a6f2-5119446765f1'}
 }
 
-const getUserDevicesMock = jest.fn<() => unknown>()
-const deleteDeviceMock = jest.fn<() => Promise<void>>()
-jest.unstable_mockModule('#lib/domain/device/device-service', () => ({
+const getUserDevicesMock = vi.fn<() => unknown>()
+const deleteDeviceMock = vi.fn<() => Promise<void>>()
+vi.mock('#lib/domain/device/device-service', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   deleteDevice: deleteDeviceMock,
-  deleteUserDevice: jest.fn()
+  deleteUserDevice: vi.fn()
 }))
 
 const devicesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
+vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const usersMock = createEntityMock()
-jest.unstable_mockModule('#entities/Users', () => ({Users: usersMock.entity}))
+vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
 
 const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: jest.fn(),
-  unsubscribe: jest.fn()
+vi.mock('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn()
 }))
 
-jest.unstable_mockModule('#lib/integrations/github/issue-service',
-  () => ({createFailedUserDeletionIssue: jest.fn().mockReturnValue(fakeGithubIssueResponse)}))
+vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

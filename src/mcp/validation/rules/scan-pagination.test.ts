@@ -3,7 +3,7 @@
  * HIGH: Enforce pagination handling for scan operations
  */
 
-import {beforeAll, describe, expect, test} from '@jest/globals'
+import {beforeAll, describe, expect, test} from 'vitest'
 import {Project} from 'ts-morph'
 
 let scanPaginationRule: typeof import('./scan-pagination').scanPaginationRule

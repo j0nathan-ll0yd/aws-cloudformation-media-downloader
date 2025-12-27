@@ -1,4 +1,4 @@
-import {describe, expect, test} from '@jest/globals'
+import {describe, expect, test} from 'vitest'
 import * as fs from 'fs'
 import type {InfrastructureD} from '#types/infrastructure'
 import {logDebug} from '#lib/system/logging'

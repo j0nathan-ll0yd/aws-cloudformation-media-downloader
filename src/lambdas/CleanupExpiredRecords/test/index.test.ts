@@ -1,17 +1,17 @@
-import {beforeEach, describe, expect, it, jest} from '@jest/globals'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import type {ScheduledEvent} from 'aws-lambda'
-import {createMockContext} from '#util/jest-setup'
+import {createMockContext} from '#util/vitest-setup'
 
 // Mock Drizzle client with proper chaining
-const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
-const mockWhere = jest.fn(() => ({returning: mockReturning}))
-const mockDelete = jest.fn(() => ({where: mockWhere}))
+const mockReturning = vi.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
+const mockWhere = vi.fn(() => ({returning: mockReturning}))
+const mockDelete = vi.fn(() => ({where: mockWhere}))
 
-jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: jest.fn(async () => ({delete: mockDelete}))}))
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({delete: mockDelete}))}))
 
 // Mock Drizzle schema - provide table references for delete()
 // Updated to use Better Auth aligned schema (id instead of sessionId, verification instead of verificationTokens)
-jest.unstable_mockModule('#lib/vendor/Drizzle/schema',
+vi.mock('#lib/vendor/Drizzle/schema',
   () => ({
     fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
     sessions: {id: 'id', expiresAt: 'expiresAt'},
@@ -19,19 +19,17 @@ jest.unstable_mockModule('#lib/vendor/Drizzle/schema',
   }))
 
 // Mock middleware
-jest.unstable_mockModule('#lib/lambda/middleware/powertools',
-  () => ({withPowertools: jest.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
-jest.unstable_mockModule('#lib/lambda/middleware/internal',
-  () => ({wrapScheduledHandler: jest.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
+vi.mock('#lib/lambda/middleware/internal', () => ({wrapScheduledHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
 // Mock drizzle-orm operators
-jest.unstable_mockModule('drizzle-orm',
+vi.mock('drizzle-orm',
   () => ({
-    and: jest.fn((...args: unknown[]) => args),
-    or: jest.fn((...args: unknown[]) => args),
-    eq: jest.fn((col: unknown, val: unknown) => ({col, val})),
-    lt: jest.fn((col: unknown, val: unknown) => ({col, val}))
+    and: vi.fn((...args: unknown[]) => args),
+    or: vi.fn((...args: unknown[]) => args),
+    eq: vi.fn((col: unknown, val: unknown) => ({col, val})),
+    lt: vi.fn((col: unknown, val: unknown) => ({col, val}))
   }))
 
 // Import handler after all mocks are set up
@@ -53,7 +51,7 @@ const context = createMockContext({functionName: 'CleanupExpiredRecords'})
 
 describe('CleanupExpiredRecords Lambda', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockReturning.mockResolvedValue([])
   })
 

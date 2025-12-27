@@ -1,10 +1,10 @@
-import {describe, expect, jest, test} from '@jest/globals'
+import {describe, expect, test, vi} from 'vitest'
 import type {File} from '#types/domain-models'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus} from '#types/enums'
 
 // Mock SQS stringAttribute
-jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value}))}))
+vi.mock('#lib/vendor/AWS/SQS', () => ({stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value}))}))
 
 const {truncateDescription, createMetadataNotification, createDownloadReadyNotification, transformToAPNSNotification} = await import('./../transformers')
 

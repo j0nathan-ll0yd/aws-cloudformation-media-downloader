@@ -1,29 +1,31 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Device} from '#types/domain-models'
 
-// Mock Octokit
-const mockIssuesCreate = jest.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
+// Use vi.hoisted() to define mocks before vi.mock hoists
+const {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
+  const mockIssuesCreate = vi.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
 
-class MockOctokit {
-  public rest: {issues: {create: typeof mockIssuesCreate}}
-  constructor() {
-    this.rest = {issues: {create: mockIssuesCreate}}
+  class MockOctokit {
+    public rest: {issues: {create: typeof mockIssuesCreate}}
+    constructor() {
+      this.rest = {issues: {create: mockIssuesCreate}}
+    }
   }
-}
 
-jest.unstable_mockModule('@octokit/rest', () => ({Octokit: jest.fn().mockImplementation(() => new MockOctokit())}))
+  const mockRenderGithubIssueTemplate = vi.fn<(templateName: string, data: object) => string>()
+  mockRenderGithubIssueTemplate.mockImplementation((templateName: string) => `Rendered template: ${templateName}`)
 
-// Mock template helpers
-const mockRenderGithubIssueTemplate = jest.fn<(templateName: string, data: object) => string>()
-mockRenderGithubIssueTemplate.mockImplementation((templateName: string) => `Rendered template: ${templateName}`)
+  return {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate}
+})
 
-jest.unstable_mockModule('../templates', () => ({renderGithubIssueTemplate: mockRenderGithubIssueTemplate}))
+vi.mock('@octokit/rest', () => ({Octokit: MockOctokit}))
+vi.mock('../templates', () => ({renderGithubIssueTemplate: mockRenderGithubIssueTemplate}))
 
 const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('../issue-service')
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.GITHUB_PERSONAL_TOKEN = 'test-token'
   })
 

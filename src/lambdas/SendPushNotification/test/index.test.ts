@@ -1,6 +1,6 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
-import {testContext} from '#util/jest-setup'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
@@ -15,13 +15,13 @@ const getDeviceResponse = {
 }
 
 const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
-jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
 const devicesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
+vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
-const publishSnsEventMock = jest.fn<() => unknown>()
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
+const publishSnsEventMock = vi.fn<() => unknown>()
+vi.mock('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')

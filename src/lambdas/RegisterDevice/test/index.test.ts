@@ -1,21 +1,21 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createEntityMock} from '#test/helpers/entity-mock'
 const fakeUserId = uuidv4()
 
 const devicesMock = createEntityMock()
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: devicesMock.entity}))
+vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
 
 const userDevicesMock = createEntityMock()
-jest.unstable_mockModule('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
 
-const getUserDevicesMock = jest.fn()
-jest.unstable_mockModule('#lib/domain/device/device-service', () => ({
+const getUserDevicesMock = vi.fn()
+vi.mock('#lib/domain/device/device-service', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
-  subscribeEndpointToTopic: jest.fn(),
-  unsubscribeEndpointToTopic: jest.fn()
+  subscribeEndpointToTopic: vi.fn(),
+  unsubscribeEndpointToTopic: vi.fn()
 }))
 
 const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {assert: {type: 'json'}})
@@ -23,14 +23,14 @@ const {default: listSubscriptionsByTopicResponse} = await import('./fixtures/lis
 const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
 const {default: queryDefaultResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: querySuccessResponse} = await import('./fixtures/query-201-Created.json', {assert: {type: 'json'}})
-const createPlatformEndpointMock = jest.fn()
-const listSubscriptionsByTopicMock = jest.fn()
-jest.unstable_mockModule('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: jest.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: jest.fn().mockReturnValue(subscribeResponse),
+const createPlatformEndpointMock = vi.fn()
+const listSubscriptionsByTopicMock = vi.fn()
+vi.mock('#lib/vendor/AWS/SNS', () => ({
+  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
+  subscribe: vi.fn().mockReturnValue(subscribeResponse),
   listSubscriptionsByTopic: listSubscriptionsByTopicMock,
   createPlatformEndpoint: createPlatformEndpointMock,
-  unsubscribe: jest.fn()
+  unsubscribe: vi.fn()
 }))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})

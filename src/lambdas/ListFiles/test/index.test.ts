@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals'
-import {testContext} from '#util/jest-setup'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createEntityMock} from '#test/helpers/entity-mock'
@@ -17,8 +17,8 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 
 const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
 const filesMock = createEntityMock()
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
+vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
+vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
 
 const {handler} = await import('./../src')
 
