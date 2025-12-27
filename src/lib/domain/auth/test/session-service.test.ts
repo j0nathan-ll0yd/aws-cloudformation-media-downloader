@@ -35,6 +35,7 @@ interface MockSessionOverrides {
 /**
  * Helper to create mock session objects with sensible defaults
  * Now uses Date objects for timestamps to match Better Auth schema.
+ * @param overrides
  */
 function createMockSession(overrides?: MockSessionOverrides) {
   const now = new Date()

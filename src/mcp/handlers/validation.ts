@@ -20,6 +20,10 @@ export interface ValidationQueryArgs {
   query: ValidationQueryType
 }
 
+/**
+ *
+ * @param args
+ */
 export async function handleValidationQuery(args: ValidationQueryArgs) {
   const {file, query} = args
 

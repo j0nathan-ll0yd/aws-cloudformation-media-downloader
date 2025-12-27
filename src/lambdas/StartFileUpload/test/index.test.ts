@@ -18,7 +18,12 @@ interface DownloadQueueMessage {
   attempt?: number
 }
 
-/** Creates a single SQS record for testing */
+/**
+ * Creates a single SQS record for testing
+ * @param messageId
+ * @param message
+ * @param baseRecord
+ */
 function createSQSRecord(messageId: string, message: DownloadQueueMessage, baseRecord: SQSRecord): SQSRecord {
   return {
     ...baseRecord,
@@ -33,7 +38,11 @@ function createSQSRecord(messageId: string, message: DownloadQueueMessage, baseR
   }
 }
 
-/** Creates a multi-record SQS event for batch processing tests */
+/**
+ * Creates a multi-record SQS event for batch processing tests
+ * @param messages
+ * @param baseRecord
+ */
 function createMultiRecordEvent(messages: Array<{messageId: string} & DownloadQueueMessage>, baseRecord: SQSRecord): SQSEvent {
   return {Records: messages.map((msg) => createSQSRecord(msg.messageId, msg, baseRecord))}
 }

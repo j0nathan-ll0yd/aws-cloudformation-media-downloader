@@ -101,6 +101,7 @@ export const docsStructureRule: ValidationRule = {
 /**
  * Validate docs structure from filesystem (for shell scripts and CI)
  * Returns list of violations as strings
+ * @param projectRoot
  */
 export function validateDocsStructure(projectRoot: string): string[] {
   const violations: string[] = []

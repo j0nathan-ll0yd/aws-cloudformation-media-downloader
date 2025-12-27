@@ -74,6 +74,7 @@ async function getProject(): Promise<Project> {
 
 /**
  * Analyze extractable symbols in a source file
+ * @param filePath
  */
 async function analyzeExtractableSymbols(filePath: string): Promise<ExtractableSymbol[]> {
   const project = await getProject()
@@ -147,6 +148,8 @@ async function analyzeExtractableSymbols(filePath: string): Promise<ExtractableS
 
 /**
  * Generate content for the new module
+ * @param sourceFile
+ * @param symbolNames
  */
 function generateNewModuleContent(sourceFile: SourceFile, symbolNames: string[]): string {
   const lines: string[] = []
@@ -210,6 +213,9 @@ function generateNewModuleContent(sourceFile: SourceFile, symbolNames: string[])
 
 /**
  * Calculate import changes needed after extraction
+ * @param sourceFilePath
+ * @param targetModulePath
+ * @param symbolNames
  */
 async function calculateImportChanges(sourceFilePath: string, targetModulePath: string, symbolNames: string[]): Promise<ImportChange[]> {
   const depGraph = await loadDependencyGraph()
@@ -255,6 +261,9 @@ async function calculateImportChanges(sourceFilePath: string, targetModulePath: 
 
 /**
  * Preview extraction without making changes
+ * @param sourceFilePath
+ * @param symbolNames
+ * @param targetModulePath
  */
 async function previewExtraction(sourceFilePath: string, symbolNames: string[], targetModulePath: string): Promise<ExtractionPreview> {
   const project = await getProject()
@@ -283,6 +292,10 @@ async function previewExtraction(sourceFilePath: string, symbolNames: string[], 
 
 /**
  * Execute extraction
+ * @param sourceFilePath
+ * @param symbolNames
+ * @param targetModulePath
+ * @param createBarrel
  */
 async function executeExtraction(
   sourceFilePath: string,
@@ -341,6 +354,7 @@ async function executeExtraction(
 
 /**
  * Main handler for extract module queries
+ * @param args
  */
 export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
   const {query, sourceFile, symbols, targetModule, createBarrel = false} = args

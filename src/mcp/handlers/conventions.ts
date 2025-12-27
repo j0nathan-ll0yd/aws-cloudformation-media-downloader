@@ -20,6 +20,10 @@ export interface ConventionQueryArgs {
   convention?: string
 }
 
+/**
+ *
+ * @param args
+ */
 export async function handleConventionsQuery(args: ConventionQueryArgs) {
   const {query, term, category, severity, convention} = args
   // Load conventions dynamically

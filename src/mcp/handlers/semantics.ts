@@ -13,6 +13,7 @@ export interface SemanticSearchArgs {
 
 /**
  * Handle semantic search queries via LanceDB
+ * @param args
  */
 export async function handleSemanticSearch(args: SemanticSearchArgs) {
   try {

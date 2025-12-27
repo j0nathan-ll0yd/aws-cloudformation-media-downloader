@@ -15,6 +15,12 @@ import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 // Re-export with old name for backwards compatibility
 export { handleEntityQuery as handleElectroDBQuery }
 
+/**
+ *
+ * @param args
+ * @param args.entity
+ * @param args.query
+ */
 export async function handleEntityQuery(args: {entity?: string; query: string}) {
   const {entity, query} = args
 

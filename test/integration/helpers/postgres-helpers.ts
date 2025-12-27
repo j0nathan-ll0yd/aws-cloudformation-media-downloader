@@ -255,6 +255,7 @@ export async function truncateAllTables(): Promise<void> {
 
 /**
  * Insert a file record into PostgreSQL
+ * @param fileData
  */
 export async function insertFile(fileData: Partial<File>): Promise<void> {
   const db = getTestDb()
@@ -282,6 +283,7 @@ export async function insertFile(fileData: Partial<File>): Promise<void> {
 
 /**
  * Get a file record from PostgreSQL
+ * @param fileId
  */
 export async function getFile(fileId: string): Promise<Partial<File> | null> {
   const db = getTestDb()
@@ -302,6 +304,8 @@ export async function getFile(fileId: string): Promise<Partial<File> | null> {
 
 /**
  * Update a file record in PostgreSQL
+ * @param fileId
+ * @param updates
  */
 export async function updateFile(fileId: string, updates: Partial<File>): Promise<void> {
   const db = getTestDb()
@@ -313,6 +317,7 @@ export async function updateFile(fileId: string, updates: Partial<File>): Promis
 
 /**
  * Delete a file record from PostgreSQL
+ * @param fileId
  */
 export async function deleteFile(fileId: string): Promise<void> {
   const db = getTestDb()
@@ -329,6 +334,7 @@ export async function deleteFile(fileId: string): Promise<void> {
 /**
  * Insert a user record into PostgreSQL
  * Accepts either 'id' (domain type) or 'userId' (legacy tests) for backwards compatibility
+ * @param userData
  */
 export async function insertUser(userData: Partial<User> & {appleDeviceId?: string; userId?: string}): Promise<void> {
   const db = getTestDb()
@@ -351,6 +357,7 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
 
 /**
  * Get a user record from PostgreSQL
+ * @param id
  */
 export async function getUser(id: string): Promise<Partial<User> | null> {
   const db = getTestDb()
@@ -381,6 +388,7 @@ export async function getUser(id: string): Promise<Partial<User> | null> {
 
 /**
  * Insert a device record into PostgreSQL
+ * @param deviceData
  */
 export async function insertDevice(deviceData: Partial<Device>): Promise<void> {
   const db = getTestDb()
@@ -402,6 +410,7 @@ export async function insertDevice(deviceData: Partial<Device>): Promise<void> {
 
 /**
  * Get a device record from PostgreSQL
+ * @param deviceId
  */
 export async function getDevice(deviceId: string): Promise<Partial<Device> | null> {
   const db = getTestDb()
@@ -419,6 +428,8 @@ export async function getDevice(deviceId: string): Promise<Partial<Device> | nul
 
 /**
  * Link a user to a file
+ * @param userId
+ * @param fileId
  */
 export async function linkUserFile(userId: string, fileId: string): Promise<void> {
   const db = getTestDb()
@@ -430,6 +441,8 @@ export async function linkUserFile(userId: string, fileId: string): Promise<void
 
 /**
  * Link a user to a device
+ * @param userId
+ * @param deviceId
  */
 export async function linkUserDevice(userId: string, deviceId: string): Promise<void> {
   const db = getTestDb()
@@ -445,6 +458,15 @@ export async function linkUserDevice(userId: string, deviceId: string): Promise<
 
 /**
  * Insert a file download record into PostgreSQL
+ * @param data
+ * @param data.fileId
+ * @param data.status
+ * @param data.updatedAt
+ * @param data.createdAt
+ * @param data.retryCount
+ * @param data.maxRetries
+ * @param data.sourceUrl
+ * @param data.correlationId
  */
 export async function insertFileDownload(data: {
   fileId: string
@@ -489,6 +511,13 @@ export async function getFileDownloads(): Promise<Array<{fileId: string; status:
 
 /**
  * Insert a session record into PostgreSQL
+ * @param data
+ * @param data.id
+ * @param data.userId
+ * @param data.token
+ * @param data.expiresAt
+ * @param data.createdAt
+ * @param data.updatedAt
  */
 export async function insertSession(data: {
   id?: string
@@ -530,6 +559,13 @@ export async function getSessions(): Promise<Array<{id: string; userId: string}>
 
 /**
  * Insert a verification token record into PostgreSQL
+ * @param data
+ * @param data.id
+ * @param data.identifier
+ * @param data.value
+ * @param data.expiresAt
+ * @param data.createdAt
+ * @param data.updatedAt
  */
 export async function insertVerification(data: {
   id?: string

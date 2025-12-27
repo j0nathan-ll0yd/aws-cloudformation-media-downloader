@@ -28,6 +28,7 @@ const snsClient = new SNSClient({region: AWS_REGION, endpoint: 'http://localhost
 
 /**
  * Creates a test SNS topic in LocalStack
+ * @param topicName
  */
 export async function createTestTopic(topicName: string): Promise<string> {
   try {
@@ -43,6 +44,7 @@ export async function createTestTopic(topicName: string): Promise<string> {
 
 /**
  * Deletes a test SNS topic from LocalStack
+ * @param topicArn
  */
 export async function deleteTestTopic(topicArn: string): Promise<void> {
   try {
@@ -62,6 +64,7 @@ export async function deleteTestTopic(topicArn: string): Promise<void> {
 
 /**
  * Creates a test platform application for APNS in LocalStack
+ * @param appName
  */
 export async function createTestPlatformApplication(appName: string): Promise<string> {
   try {
@@ -83,6 +86,7 @@ export async function createTestPlatformApplication(appName: string): Promise<st
 
 /**
  * Deletes a test platform application and all its endpoints from LocalStack
+ * @param platformApplicationArn
  */
 export async function deleteTestPlatformApplication(platformApplicationArn: string): Promise<void> {
   try {
@@ -98,6 +102,9 @@ export async function deleteTestPlatformApplication(platformApplicationArn: stri
 
 /**
  * Creates a test platform endpoint for a device in LocalStack
+ * @param platformApplicationArn
+ * @param deviceToken
+ * @param userData
  */
 export async function createTestEndpoint(platformApplicationArn: string, deviceToken: string, userData?: string): Promise<string> {
   const result = await snsClient.send(
@@ -108,6 +115,7 @@ export async function createTestEndpoint(platformApplicationArn: string, deviceT
 
 /**
  * Deletes a test endpoint from LocalStack
+ * @param endpointArn
  */
 export async function deleteTestEndpoint(endpointArn: string): Promise<void> {
   try {
@@ -119,6 +127,7 @@ export async function deleteTestEndpoint(endpointArn: string): Promise<void> {
 
 /**
  * Checks if an endpoint exists and is enabled
+ * @param endpointArn
  */
 export async function isEndpointEnabled(endpointArn: string): Promise<boolean> {
   try {
@@ -131,6 +140,8 @@ export async function isEndpointEnabled(endpointArn: string): Promise<boolean> {
 
 /**
  * Publishes a test message to an SNS endpoint
+ * @param endpointArn
+ * @param message
  */
 export async function publishToEndpoint(endpointArn: string, message: string): Promise<string> {
   const result = await snsClient.send(new PublishCommand({TargetArn: endpointArn, Message: message}))
@@ -139,6 +150,8 @@ export async function publishToEndpoint(endpointArn: string, message: string): P
 
 /**
  * Publishes a test message to an SNS topic
+ * @param topicArn
+ * @param message
  */
 export async function publishToTopic(topicArn: string, message: string): Promise<string> {
   const result = await snsClient.send(new PublishCommand({TopicArn: topicArn, Message: message}))
@@ -147,6 +160,8 @@ export async function publishToTopic(topicArn: string, message: string): Promise
 
 /**
  * Subscribes an SQS queue to an SNS topic (for testing fanout)
+ * @param topicArn
+ * @param queueArn
  */
 export async function subscribeQueueToTopic(topicArn: string, queueArn: string): Promise<string> {
   const result = await snsClient.send(new SubscribeCommand({TopicArn: topicArn, Protocol: 'sqs', Endpoint: queueArn}))
@@ -155,6 +170,7 @@ export async function subscribeQueueToTopic(topicArn: string, queueArn: string):
 
 /**
  * Lists all endpoints for a platform application
+ * @param platformApplicationArn
  */
 export async function listTestEndpoints(platformApplicationArn: string): Promise<string[]> {
   const result = await snsClient.send(new ListEndpointsByPlatformApplicationCommand({PlatformApplicationArn: platformApplicationArn}))

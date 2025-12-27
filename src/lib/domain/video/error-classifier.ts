@@ -80,6 +80,8 @@ export function calculateExponentialBackoff(retryCount: number, baseDelaySeconds
 
 /**
  * Check if error message matches any pattern in a list (case-insensitive)
+ * @param message
+ * @param patterns
  */
 function matchesPattern(message: string, patterns: string[]): boolean {
   const lowerMessage = message.toLowerCase()
@@ -88,6 +90,7 @@ function matchesPattern(message: string, patterns: string[]): boolean {
 
 /**
  * Check if the video has a future release timestamp indicating scheduled content
+ * @param videoInfo
  */
 function isScheduledContent(videoInfo?: SchedulingVideoInfo): boolean {
   if (!videoInfo?.release_timestamp) {
@@ -99,6 +102,7 @@ function isScheduledContent(videoInfo?: SchedulingVideoInfo): boolean {
 
 /**
  * Check if the video is an upcoming livestream
+ * @param videoInfo
  */
 function isUpcomingLivestream(videoInfo?: SchedulingVideoInfo): boolean {
   if (!videoInfo) {

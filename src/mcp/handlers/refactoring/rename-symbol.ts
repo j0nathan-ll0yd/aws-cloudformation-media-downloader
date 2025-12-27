@@ -73,6 +73,7 @@ async function getProject(): Promise<Project> {
 
 /**
  * Determine the kind of a rename location
+ * @param node
  */
 function classifyLocation(node: Node): 'definition' | 'reference' | 'import' | 'export' | 'type' {
   const parent = node.getParent()
@@ -113,6 +114,8 @@ function classifyLocation(node: Node): 'definition' | 'reference' | 'import' | '
 
 /**
  * Get context around a location for preview
+ * @param sourceFile
+ * @param line
  */
 function getContext(sourceFile: SourceFile, line: number): string {
   const text = sourceFile.getFullText()
@@ -132,6 +135,12 @@ function getContext(sourceFile: SourceFile, line: number): string {
 
 /**
  * Find all occurrences of a symbol
+ * @param project
+ * @param symbol
+ * @param options
+ * @param options.scope
+ * @param options.file
+ * @param options.type
  */
 async function findOccurrences(project: Project, symbol: string, options: {scope?: string; file?: string; type?: string}): Promise<RenameLocationInfo[]> {
   const locations: RenameLocationInfo[] = []
@@ -205,6 +214,9 @@ async function findOccurrences(project: Project, symbol: string, options: {scope
 
 /**
  * Check if a new name would conflict with existing symbols
+ * @param project
+ * @param newName
+ * @param locations
  */
 async function validateNewName(project: Project, newName: string, locations: RenameLocationInfo[]): Promise<{valid: boolean; conflicts: string[]}> {
   const conflicts: string[] = []
@@ -231,6 +243,11 @@ async function validateNewName(project: Project, newName: string, locations: Ren
 
 /**
  * Apply rename to all locations
+ * @param project
+ * @param locations
+ * @param oldName
+ * @param newName
+ * @param dryRun
  */
 async function applyRename(project: Project, locations: RenameLocationInfo[], oldName: string, newName: string, dryRun: boolean): Promise<RenameResult> {
   const backups: FileBackup[] = []
@@ -313,6 +330,7 @@ async function applyRename(project: Project, locations: RenameLocationInfo[], ol
 
 /**
  * Main handler for rename symbol queries
+ * @param args
  */
 export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
   const {query, symbol, newName, scope = 'project', file, type = 'all', dryRun = true} = args

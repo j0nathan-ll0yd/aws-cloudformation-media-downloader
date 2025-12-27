@@ -11,14 +11,26 @@ const sqs = createSQSClient()
 export type { MessageAttributeValue, SendMessageRequest, SQSMessageAttribute, SQSMessageAttributes }
 
 // Helper functions for building SQS message attributes (for sending messages)
+/**
+ *
+ * @param value
+ */
 export function stringAttribute(value: string): MessageAttributeValue {
   return {DataType: 'String', StringValue: value}
 }
 
+/**
+ *
+ * @param value
+ */
 export function numberAttribute(value: number): MessageAttributeValue {
   return {DataType: 'Number', StringValue: value.toString()}
 }
 
+/**
+ *
+ * @param params
+ */
 export function sendMessage(params: SendMessageRequest): Promise<SendMessageResult> {
   const command = new SendMessageCommand(params)
   return sqs.send(command)

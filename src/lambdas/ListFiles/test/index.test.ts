@@ -22,7 +22,12 @@ jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))
 
 const {handler} = await import('./../src')
 
-/** Creates a mock file with specified status and publish date */
+/**
+ * Creates a mock file with specified status and publish date
+ * @param fileId
+ * @param status
+ * @param publishDate
+ */
 function createMockFile(fileId: string, status: FileStatus, publishDate: string) {
   return {
     fileId,

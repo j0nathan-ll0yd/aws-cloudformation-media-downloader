@@ -106,14 +106,11 @@ async function getAppliedMigrations(): Promise<Set<string>> {
  * @returns Array of individual SQL statements
  */
 function splitStatements(sqlContent: string): string[] {
-  // Split on semicolons, filter out empty statements and comment-only lines
   return sqlContent
     .split(';')
     .map((stmt) => stmt.trim())
     .filter((stmt) => {
-      // Filter out empty statements
       if (!stmt) return false
-      // Filter out comment-only statements
       const withoutComments = stmt.replace(/--[^\n]*/g, '').trim()
       return withoutComments.length > 0
     })

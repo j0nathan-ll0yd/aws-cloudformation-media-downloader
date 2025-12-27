@@ -27,6 +27,7 @@ const sqsClient = new SQSClient({
 
 /**
  * Creates a test SQS queue in LocalStack
+ * @param queueName
  */
 export async function createTestQueue(queueName: string): Promise<string> {
   const result = await sqsClient.send(new CreateQueueCommand({QueueName: queueName}))
@@ -35,6 +36,7 @@ export async function createTestQueue(queueName: string): Promise<string> {
 
 /**
  * Gets the URL of an existing queue
+ * @param queueName
  */
 export async function getQueueUrl(queueName: string): Promise<string> {
   const result = await sqsClient.send(new GetQueueUrlCommand({QueueName: queueName}))
@@ -43,6 +45,7 @@ export async function getQueueUrl(queueName: string): Promise<string> {
 
 /**
  * Deletes a test SQS queue from LocalStack
+ * @param queueUrl
  */
 export async function deleteTestQueue(queueUrl: string): Promise<void> {
   try {
@@ -54,6 +57,7 @@ export async function deleteTestQueue(queueUrl: string): Promise<void> {
 
 /**
  * Purges all messages from a queue
+ * @param queueUrl
  */
 export async function purgeQueue(queueUrl: string): Promise<void> {
   try {
@@ -65,6 +69,10 @@ export async function purgeQueue(queueUrl: string): Promise<void> {
 
 /**
  * Receives messages from a queue (non-blocking, returns immediately if empty)
+ * @param queueUrl
+ * @param options
+ * @param options.maxMessages
+ * @param options.waitTimeSeconds
  */
 export async function receiveMessages(queueUrl: string, options?: {maxMessages?: number; waitTimeSeconds?: number}): Promise<Message[]> {
   const result = await sqsClient.send(
@@ -81,6 +89,8 @@ export async function receiveMessages(queueUrl: string, options?: {maxMessages?:
 
 /**
  * Deletes a message from a queue after processing
+ * @param queueUrl
+ * @param receiptHandle
  */
 export async function deleteMessage(queueUrl: string, receiptHandle: string): Promise<void> {
   await sqsClient.send(new DeleteMessageCommand({QueueUrl: queueUrl, ReceiptHandle: receiptHandle}))
@@ -88,6 +98,7 @@ export async function deleteMessage(queueUrl: string, receiptHandle: string): Pr
 
 /**
  * Gets the approximate number of messages in a queue
+ * @param queueUrl
  */
 export async function getQueueMessageCount(queueUrl: string): Promise<number> {
   const result = await sqsClient.send(
@@ -102,6 +113,9 @@ export async function getQueueMessageCount(queueUrl: string): Promise<number> {
 /**
  * Waits for a specific number of messages to appear in the queue
  * Useful for asserting that messages were sent
+ * @param queueUrl
+ * @param expectedCount
+ * @param timeoutMs
  */
 export async function waitForMessages(queueUrl: string, expectedCount: number, timeoutMs: number = 5000): Promise<Message[]> {
   const startTime = Date.now()

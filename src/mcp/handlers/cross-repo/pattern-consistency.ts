@@ -204,6 +204,8 @@ const PATTERN_DEFINITIONS: Record<
 
 /**
  * Scan for pattern implementations across the codebase
+ * @param patternName
+ * @param paths
  */
 async function scanPatterns(patternName: string | undefined, paths?: string[]): Promise<Record<string, PatternMatch[]>> {
   const project = new Project({tsConfigFilePath: path.join(projectRoot, 'tsconfig.json')})
@@ -247,6 +249,8 @@ async function scanPatterns(patternName: string | undefined, paths?: string[]): 
 
 /**
  * Compare patterns across locations
+ * @param patternName
+ * @param referenceImpl
  */
 async function comparePatterns(
   patternName: string,
@@ -294,6 +298,8 @@ async function comparePatterns(
 
 /**
  * Detect pattern drift
+ * @param patternName
+ * @param paths
  */
 async function detectDrift(patternName?: string, paths?: string[]): Promise<PatternDrift[]> {
   const drifts: PatternDrift[] = []
@@ -359,6 +365,7 @@ async function detectDrift(patternName?: string, paths?: string[]): Promise<Patt
 
 /**
  * Main handler for pattern consistency queries
+ * @param args
  */
 export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs) {
   const {query, pattern, paths, referenceImpl} = args

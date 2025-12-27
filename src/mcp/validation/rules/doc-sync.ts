@@ -85,6 +85,8 @@ export const docSyncRule: ValidationRule = {
 
 /**
  * Validate TypeScript files for stale patterns
+ * @param sourceFile
+ * @param filePath
  */
 function validateTypeScriptPatterns(sourceFile: SourceFile, filePath: string): Violation[] {
   // filePath available for context if needed
@@ -137,6 +139,7 @@ function validateTypeScriptPatterns(sourceFile: SourceFile, filePath: string): V
 
 /**
  * Validate MCP rule count in index.ts
+ * @param sourceFile
  */
 function validateMcpRuleCount(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []
@@ -166,6 +169,8 @@ function validateMcpRuleCount(sourceFile: SourceFile): Violation[] {
 
 /**
  * Find line number for a regex pattern match
+ * @param text
+ * @param pattern
  */
 function findLineNumber(text: string, pattern: RegExp): number {
   const match = text.match(pattern)
@@ -178,6 +183,7 @@ function findLineNumber(text: string, pattern: RegExp): number {
 /**
  * Auto-fix suggestion generator
  * Returns shell commands to help diagnose and fix issues
+ * @param violations
  */
 export function generateAutoFixSuggestions(violations: Violation[]): string[] {
   const suggestions: string[] = []

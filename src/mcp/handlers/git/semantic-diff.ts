@@ -61,6 +61,7 @@ interface ExportedSymbol {
 
 /**
  * Extract exported symbols from a source file
+ * @param sourceFile
  */
 function extractExportedSymbols(sourceFile: SourceFile): Map<string, ExportedSymbol> {
   const symbols = new Map<string, ExportedSymbol>()
@@ -125,6 +126,9 @@ function extractExportedSymbols(sourceFile: SourceFile): Map<string, ExportedSym
 
 /**
  * Compare two sets of exported symbols and identify changes
+ * @param baseSymbols
+ * @param headSymbols
+ * @param filePath
  */
 function compareSymbols(baseSymbols: Map<string, ExportedSymbol>, headSymbols: Map<string, ExportedSymbol>, filePath: string): StructuralChange[] {
   const changes: StructuralChange[] = []
@@ -308,6 +312,8 @@ function compareSymbols(baseSymbols: Map<string, ExportedSymbol>, headSymbols: M
 
 /**
  * Parse source code at a specific git ref
+ * @param content
+ * @param filePath
  */
 function parseAtRef(content: string, filePath: string): SourceFile | null {
   if (!content) {
@@ -324,6 +330,8 @@ function parseAtRef(content: string, filePath: string): SourceFile | null {
 
 /**
  * Filter files by scope
+ * @param files
+ * @param scope
  */
 function filterByScope(files: string[], scope: string): string[] {
   switch (scope) {
@@ -340,6 +348,7 @@ function filterByScope(files: string[], scope: string): string[] {
 
 /**
  * Extract Lambda name from file path
+ * @param filePath
  */
 function extractLambdaName(filePath: string): string | null {
   const match = filePath.match(/src\/lambdas\/([^/]+)/)
@@ -348,6 +357,7 @@ function extractLambdaName(filePath: string): string | null {
 
 /**
  * Main handler for semantic diff queries
+ * @param args
  */
 export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
   const {query, baseRef = 'HEAD~1', headRef = 'HEAD', scope = 'all'} = args

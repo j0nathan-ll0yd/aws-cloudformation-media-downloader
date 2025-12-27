@@ -71,6 +71,7 @@ export function createMockUserDevice(userId: string, deviceId: string) {
  * Creates a mock Device record with endpoint ARN
  * @param deviceId - Device UUID
  * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
+ * @param partial
  */
 export function createMockDevice(partial?: Partial<Device>): Partial<Device> {
   const deviceId = partial?.deviceId || `device-${Math.random().toString(36).substring(7)}`
@@ -108,6 +109,9 @@ export function createMockUser(partial?: Partial<User> & {appleDeviceId?: string
  * @param userId - User ID to send notification to
  * @param fileId - File ID for the notification
  * @param partial - Partial file data to override defaults in message attributes
+ * @param partial.title
+ * @param partial.size
+ * @param partial.url
  * @param notificationType - Notification type (default: 'DownloadReadyNotification')
  */
 export function createMockSQSFileNotificationEvent(
@@ -158,6 +162,11 @@ export function createMockSQSFileNotificationEvent(
  * Creates an SQS event for the DownloadQueue (StartFileUpload consumer)
  * @param fileId - Video file ID
  * @param options - Optional overrides for message fields
+ * @param options.messageId
+ * @param options.sourceUrl
+ * @param options.correlationId
+ * @param options.userId
+ * @param options.attempt
  */
 export function createMockDownloadQueueEvent(
   fileId: string,

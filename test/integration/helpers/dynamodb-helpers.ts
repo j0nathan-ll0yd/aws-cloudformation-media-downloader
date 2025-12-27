@@ -160,6 +160,7 @@ export const deleteUserFilesTable = deleteMediaDownloaderTable
  * Insert a file record into DynamoDB using ElectroDB
  * Uses createMockFile for consistent defaults across all tests
  * This ensures proper entity metadata is added for ElectroDB compatibility
+ * @param file
  */
 export async function insertFile(file: Partial<File>): Promise<void> {
   const {Files} = await import('../../../src/entities/Files')
@@ -185,6 +186,7 @@ export async function insertFile(file: Partial<File>): Promise<void> {
 
 /**
  * Get a file record from DynamoDB using ElectroDB
+ * @param fileId
  */
 export async function getFile(fileId: string): Promise<Partial<File> | null> {
   const {Files} = await import('../../../src/entities/Files')

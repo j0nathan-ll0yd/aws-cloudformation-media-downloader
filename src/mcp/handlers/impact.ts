@@ -16,6 +16,7 @@ export interface ImpactQueryArgs {
 
 /**
  * Convert a file path to its corresponding test file path
+ * @param filePath
  */
 function getTestFilePath(filePath: string): string | null {
   // Lambda handler: src/lambdas/Name/src/index.ts -> src/lambdas/Name/test/index.test.ts
@@ -39,6 +40,7 @@ function getTestFilePath(filePath: string): string | null {
 
 /**
  * Extract Lambda name from a file path
+ * @param filePath
  */
 function extractLambdaName(filePath: string): string | null {
   const match = filePath.match(/src\/lambdas\/([^/]+)/)
@@ -47,6 +49,8 @@ function extractLambdaName(filePath: string): string | null {
 
 /**
  * Find all files that import a given file (reverse dependency lookup)
+ * @param filePath
+ * @param graph
  */
 function findDependents(filePath: string, graph: Record<string, {imports: string[]}>): string[] {
   const dependents: string[] = []
@@ -62,6 +66,8 @@ function findDependents(filePath: string, graph: Record<string, {imports: string
 
 /**
  * Recursively find all files affected by changing a file
+ * @param filePath
+ * @param graph
  */
 function findCascade(filePath: string, graph: Record<string, {imports: string[]}>): string[] {
   const affected = new Set<string>()
@@ -82,6 +88,10 @@ function findCascade(filePath: string, graph: Record<string, {imports: string[]}
   return Array.from(affected).sort()
 }
 
+/**
+ *
+ * @param args
+ */
 export async function handleImpactQuery(args: ImpactQueryArgs) {
   const {file, query} = args
 

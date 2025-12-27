@@ -27,6 +27,8 @@ interface ParsedConventions {
 
 /**
  * Infer category from convention type or wiki path
+ * @param type
+ * @param wikiPath
  */
 function inferCategory(type: string, wikiPath?: string): ConventionCategory {
   const typeLower = type.toLowerCase()
@@ -62,6 +64,7 @@ function inferCategory(type: string, wikiPath?: string): ConventionCategory {
 
 /**
  * Parse severity from priority string
+ * @param priority
  */
 function parseSeverity(priority?: string): ConventionSeverity {
   if (!priority) {
@@ -82,6 +85,8 @@ function parseSeverity(priority?: string): ConventionSeverity {
 
 /**
  * Parse a single convention block from markdown
+ * @param block
+ * @param defaultStatus
  */
 function parseConventionBlock(block: string, defaultStatus: ConventionStatus): Convention | null {
   // Match convention header: "1. **Name** (Type)" or "### Name"
@@ -136,6 +141,8 @@ function parseConventionBlock(block: string, defaultStatus: ConventionStatus): C
 
 /**
  * Parse a table row into convention data
+ * @param row
+ * @param severity
  */
 function parseTableRow(row: string, severity: ConventionSeverity): Convention | null {
   // Split by | and extract columns
@@ -171,6 +178,7 @@ function parseTableRow(row: string, severity: ConventionSeverity): Convention | 
 /**
  * Parse conventions-tracking.md content into structured data
  * Supports both old block format and new table format
+ * @param content
  */
 export function parseConventions(content: string): ParsedConventions {
   const conventions: Convention[] = []
@@ -248,6 +256,8 @@ export function parseConventions(content: string): ParsedConventions {
 
 /**
  * Search conventions by term (searches name, what, why fields)
+ * @param conventions
+ * @param term
  */
 export function searchConventions(conventions: Convention[], term: string): Convention[] {
   const termLower = term.toLowerCase()
@@ -258,6 +268,8 @@ export function searchConventions(conventions: Convention[], term: string): Conv
 
 /**
  * Filter conventions by category
+ * @param conventions
+ * @param category
  */
 export function filterByCategory(conventions: Convention[], category: ConventionCategory): Convention[] {
   return conventions.filter((c) => c.category === category)
@@ -265,6 +277,8 @@ export function filterByCategory(conventions: Convention[], category: Convention
 
 /**
  * Filter conventions by severity
+ * @param conventions
+ * @param severity
  */
 export function filterBySeverity(conventions: Convention[], severity: ConventionSeverity): Convention[] {
   return conventions.filter((c) => c.severity === severity)
@@ -272,6 +286,8 @@ export function filterBySeverity(conventions: Convention[], severity: Convention
 
 /**
  * Filter conventions by status
+ * @param conventions
+ * @param status
  */
 export function filterByStatus(conventions: Convention[], status: ConventionStatus): Convention[] {
   return conventions.filter((c) => c.status === status)

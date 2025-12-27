@@ -5,6 +5,12 @@ export class CustomLambdaError extends Error {
   statusCode: number | undefined
   override cause?: Error
 
+  /**
+   *
+   * @param message
+   * @param options
+   * @param options.cause
+   */
   constructor(message: string, options?: {cause?: Error}) {
     super(message)
     if (options?.cause) {
@@ -15,6 +21,13 @@ export class CustomLambdaError extends Error {
 
 // Called when the client request is invalid (usually via Joi validation)
 export class ValidationError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param errors
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string, errors?: object, statusCode = 400, cause?: Error) {
     super(message, {cause})
     if (errors) {
@@ -27,6 +40,12 @@ export class ValidationError extends CustomLambdaError {
 
 // Called when the platform hasn't been configured for push
 export class ServiceUnavailableError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string, statusCode = 503, cause?: Error) {
     super(message, {cause})
     this.name = 'ServiceUnavailableError'
@@ -36,6 +55,12 @@ export class ServiceUnavailableError extends CustomLambdaError {
 
 // Called when a lambda can't extract UserID from the header
 export class UnauthorizedError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string = 'Invalid Authentication token; login', statusCode = 401, cause?: Error) {
     super(message, {cause})
     this.name = 'UnauthorizedError'
@@ -45,6 +70,12 @@ export class UnauthorizedError extends CustomLambdaError {
 
 // The video, or related metadata needed, doesn't exist or can't be found
 export class NotFoundError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string, statusCode = 404, cause?: Error) {
     super(message, {cause})
     this.name = 'NotFoundError'
@@ -54,6 +85,12 @@ export class NotFoundError extends CustomLambdaError {
 
 // The "catchall" error message; for anything unexpected
 export class UnexpectedError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string, statusCode = 500, cause?: Error) {
     super(message, {cause})
     this.name = 'UnexpectedError'
@@ -63,6 +100,12 @@ export class UnexpectedError extends CustomLambdaError {
 
 // Cookie expiration or bot detection error from YouTube
 export class CookieExpirationError extends CustomLambdaError {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param cause
+   */
   constructor(message: string, statusCode = 403, cause?: Error) {
     super(message, {cause})
     this.name = 'CookieExpirationError'
@@ -75,6 +118,12 @@ export class Apns2Error extends Error {
   notification: Notification
   reason: string
   statusCode: number
+  /**
+   *
+   * @param reason
+   * @param statusCode
+   * @param notification
+   */
   constructor(reason: string, statusCode: number, notification: Notification) {
     super()
     this.reason = reason

@@ -17,6 +17,7 @@ const SEVERITY = 'HIGH' as const
 
 /**
  * Determine the suggested target file in src/types/ based on the source file
+ * @param filePath
  */
 function getSuggestedTypeFile(filePath: string): string {
   // Map common utility files to their type files

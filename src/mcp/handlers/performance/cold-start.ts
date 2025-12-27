@@ -63,6 +63,7 @@ const COLD_START_CONSTANTS = {
 
 /**
  * Analyze cold start factors for a Lambda
+ * @param lambdaName
  */
 async function analyzeColdStartFactors(lambdaName: string): Promise<ColdStartFactors> {
   const depGraph = await loadDependencyGraph()
@@ -114,6 +115,8 @@ async function analyzeColdStartFactors(lambdaName: string): Promise<ColdStartFac
 
 /**
  * Estimate cold start time for a Lambda
+ * @param lambdaName
+ * @param memory
  */
 async function estimateColdStart(lambdaName: string, memory: number = 1024): Promise<ColdStartEstimate> {
   const factors = await analyzeColdStartFactors(lambdaName)
@@ -158,6 +161,8 @@ async function estimateColdStart(lambdaName: string, memory: number = 1024): Pro
 
 /**
  * Generate optimization recommendations
+ * @param estimate
+ * @param memory
  */
 function getOptimizationRecommendations(estimate: ColdStartEstimate, memory: number): OptimizationRecommendation[] {
   const recommendations: OptimizationRecommendation[] = []
@@ -221,6 +226,7 @@ function getOptimizationRecommendations(estimate: ColdStartEstimate, memory: num
 
 /**
  * Format milliseconds to readable string
+ * @param ms
  */
 function formatMs(ms: number): string {
   if (ms < 1000) {
@@ -231,6 +237,7 @@ function formatMs(ms: number): string {
 
 /**
  * Main handler for cold start queries
+ * @param args
  */
 export async function handleColdStartQuery(args: ColdStartArgs) {
   const {query, lambda, memory = 1024} = args

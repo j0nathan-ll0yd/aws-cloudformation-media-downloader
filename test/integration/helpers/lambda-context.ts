@@ -8,6 +8,7 @@ import type {Context} from 'aws-lambda'
 
 /**
  * Create a mock Lambda context for testing
+ * @param overrides
  */
 export function createMockContext(overrides?: Partial<Context>): Context {
   return {

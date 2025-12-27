@@ -64,6 +64,8 @@ export const commentConventionsRule: ValidationRule = {
 
 /**
  * Validate Lambda handler files have proper file headers
+ * @param sourceFile
+ * @param filePath
  */
 function validateLambdaFileHeader(sourceFile: SourceFile, filePath: string): Violation[] {
   const violations: Violation[] = []
@@ -103,6 +105,7 @@ function validateLambdaFileHeader(sourceFile: SourceFile, filePath: string): Vio
 
 /**
  * Validate exported functions have JSDoc
+ * @param sourceFile
  */
 function validateExportedFunctionsJSDoc(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []
@@ -160,6 +163,7 @@ function validateExportedFunctionsJSDoc(sourceFile: SourceFile): Violation[] {
 
 /**
  * Validate @example tags are not too long
+ * @param sourceFile
  */
 function validateExampleLength(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []
@@ -191,6 +195,7 @@ function validateExampleLength(sourceFile: SourceFile): Violation[] {
 
 /**
  * Validate type definitions have JSDoc (for type files)
+ * @param sourceFile
  */
 function validateTypeDocumentation(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []
@@ -222,6 +227,7 @@ function validateTypeDocumentation(sourceFile: SourceFile): Violation[] {
 
 /**
  * Validate @param tags use hyphen format (TSDoc standard)
+ * @param sourceFile
  */
 function validateParamHyphenFormat(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []

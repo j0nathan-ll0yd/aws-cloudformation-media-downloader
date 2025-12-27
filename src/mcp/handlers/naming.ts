@@ -65,6 +65,7 @@ const NAMING_RULES = {
 
 /**
  * Parse TypeSpec models from a .tsp file
+ * @param tspPath
  */
 async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
   const models: TypeDefinition[] = []
@@ -123,6 +124,7 @@ async function parseTypeSpecModels(tspPath: string): Promise<TypeDefinition[]> {
 
 /**
  * Parse TypeScript types from a file
+ * @param filePath
  */
 async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]> {
   const types: TypeDefinition[] = []
@@ -163,6 +165,9 @@ async function parseTypeScriptTypes(filePath: string): Promise<TypeDefinition[]>
 
 /**
  * Check alignment between TypeScript types and TypeSpec models
+ * @param args
+ * @param args.typeName
+ * @param args.query
  */
 export async function handleTypeAlignmentQuery(
   args: {typeName?: string; query: 'check' | 'list' | 'all'}
@@ -276,6 +281,9 @@ export async function handleTypeAlignmentQuery(
 
 /**
  * Validate naming conventions across files
+ * @param args
+ * @param args.file
+ * @param args.query
  */
 export async function handleNamingValidationQuery(
   args: {file?: string; query: 'validate' | 'suggest' | 'all'}
