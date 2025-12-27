@@ -20,15 +20,10 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
+import type {MigrationResult} from '#types/lambda'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-
-export interface MigrationResult {
-  applied: string[]
-  skipped: string[]
-  errors: string[]
-}
 
 interface MigrationFile {
   version: string
