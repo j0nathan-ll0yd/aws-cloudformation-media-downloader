@@ -447,6 +447,11 @@ pnpm run test           # Run unit tests
 pnpm run ci:local       # Fast CI checks (~2-3 min, no integration)
 pnpm run ci:local:full  # Full CI checks (~5-10 min, with integration)
 
+# Comprehensive cleanup (build, format, lint, validate, test, generate docs)
+pnpm run cleanup        # Full cleanup with integration tests
+pnpm run cleanup:fast   # Skip integration tests (faster)
+pnpm run cleanup:check  # Dry-run: check only, no fixes/generation
+
 # Integration testing
 pnpm run localstack:start        # Start LocalStack
 pnpm run test:integration        # Run integration tests (assumes LocalStack running)

@@ -291,7 +291,7 @@ pnpm run check-types
 
 ## Related Documentation
 
-- [Jest ESM Mocking Strategy](../docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
+- [Jest ESM Mocking Strategy](../docs/wiki/Testing/Vitest-Mocking-Strategy.md)
 - [ElectroDB Mock Helper](../test/helpers/electrodb-mock.ts)
 - [Coverage Philosophy](../docs/wiki/Testing/Coverage-Philosophy.md)
 - [Dependency Graph Analysis](../build/graph.json)

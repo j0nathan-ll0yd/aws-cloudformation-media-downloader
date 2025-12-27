@@ -1,6 +1,7 @@
 import {z} from 'zod'
 
 // Helper function to validate data against a schema
+/** */
 export function validateSchema<T>(schema: z.ZodSchema<T>, data: unknown): {errors: Record<string, string[]>} | null {
   const result = schema.safeParse(data)
   if (!result.success) {

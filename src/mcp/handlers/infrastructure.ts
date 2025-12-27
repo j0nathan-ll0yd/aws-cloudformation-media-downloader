@@ -9,6 +9,7 @@
 
 import {getAwsServices, getExternalServices, getLambdaConfigs} from './data-loader.js'
 
+/** */
 export async function handleInfrastructureQuery(args: {resource?: string; query: string}) {
   const {resource, query} = args
 

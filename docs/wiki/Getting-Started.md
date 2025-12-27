@@ -76,7 +76,7 @@ From your AGENTS.md or documentation:
 ## Conventions to Follow
 - [Naming](Conventions/Naming-Conventions.md)
 - [AWS SDK](Conventions/Vendor-Encapsulation-Policy.md)
-- [Testing](Testing/Jest-ESM-Mocking-Strategy.md)
+- [Testing](Testing/Vitest-Mocking-Strategy.md)
 ```
 
 ### Step 4: Track Project Conventions
@@ -198,7 +198,7 @@ This is a zero-tolerance rule to maintain encapsulation and testability.
 4. Suggest wiki updates if needed
 
 ### Debugging Test Failures
-1. Check [Jest ESM Mocking](Testing/Jest-ESM-Mocking-Strategy.md)
+1. Check [Jest ESM Mocking](Testing/Vitest-Mocking-Strategy.md)
 2. Review transitive dependencies
 3. Follow 7-step checklist
 4. Mock all module-level imports

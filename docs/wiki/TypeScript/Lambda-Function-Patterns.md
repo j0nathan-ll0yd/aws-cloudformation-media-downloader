@@ -344,7 +344,7 @@ test('processes file', async () => {
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing via ADOT layer
 - [CloudWatch Logging](../AWS/CloudWatch-Logging.md) - Structured logging
 - [Error Handling](TypeScript-Error-Handling.md)
-- [Jest ESM Mocking](../Testing/Jest-ESM-Mocking-Strategy.md)
+- [Jest ESM Mocking](../Testing/Vitest-Mocking-Strategy.md)
 
 ---
 

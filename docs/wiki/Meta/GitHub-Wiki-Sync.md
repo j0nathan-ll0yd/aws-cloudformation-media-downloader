@@ -24,7 +24,7 @@ docs/
     │   ├── CloudWatch-Logging.md
     │   └── Lambda-Environment-Variables.md
     ├── Testing/
-    │   ├── Jest-ESM-Mocking-Strategy.md
+    │   ├── Vitest-Mocking-Strategy.md
     │   └── Coverage-Philosophy.md
     └── ...
 ```
@@ -58,11 +58,11 @@ GitHub Wiki requires **all pages at root level** (no subdirectories):
 ```bash
 # Source structure (organized by category)
 docs/wiki/AWS/CloudWatch-Logging.md
-docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md
+docs/wiki/Testing/Vitest-Mocking-Strategy.md
 
 # Wiki structure (flat)
 wiki/CloudWatch-Logging.md
-wiki/Jest-ESM-Mocking-Strategy.md
+wiki/Vitest-Mocking-Strategy.md
 ```
 
 #### Sidebar Generation
@@ -79,7 +79,7 @@ SOURCE_DIR=main/docs/wiki
 Internal links are automatically transformed (path removed, extension stripped):
 ```markdown
 # In source file
-[See Error Handling](../TypeScript/Error-Handling.md)
+[See Error Handling](../TypeScript/TypeScript-Error-Handling.md)
 
 # After transformation in wiki
 [See Error Handling](Error-Handling)
@@ -134,7 +134,7 @@ Due to flat namespace, all files must have unique names:
 
 ```bash
 # ❌ Will cause conflicts
-docs/wiki/TypeScript/Error-Handling.md
+docs/wi../TypeScript/TypeScript-Error-Handling.md
 docs/wiki/Bash/Error-Handling.md
 
 # ✅ Use unique names

@@ -10,6 +10,7 @@ import postgres from 'postgres'
 
 const MAX_WORKERS = 4
 
+/** */
 export default async function globalTeardown() {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 

@@ -70,7 +70,7 @@ if [ -z "$CI" ]; then
     open "$PROJECT_DIR/docs/api/index.html" || true
   elif command -v xdg-open &> /dev/null; then
     # Linux
-    xdg-open "$PROJECT_DIR/docs/api/index.html" 2>/dev/null || true
+    xdg-open "$PROJECT_DIR/docs/api/index.html" 2> /dev/null || true
   elif command -v start &> /dev/null; then
     # Windows
     start "$PROJECT_DIR/docs/api/index.html" || true

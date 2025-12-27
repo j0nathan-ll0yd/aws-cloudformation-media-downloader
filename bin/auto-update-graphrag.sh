@@ -16,7 +16,7 @@ TRIGGER_PATHS=(
 )
 
 # Check if any trigger files have changed
-CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2> /dev/null || echo "")
 
 if [ -z "$CHANGED_FILES" ]; then
   echo "ℹ️  No changes detected (possibly first commit)"
@@ -36,7 +36,7 @@ done
 if [ "$NEEDS_UPDATE" = true ]; then
   echo "🔄 Updating GraphRAG knowledge graph..."
   pnpm run graphrag:extract
-  
+
   echo "✅ GraphRAG knowledge graph updated"
   echo "ℹ️  Vector database is now synchronized with source code"
 else

@@ -14,6 +14,7 @@ const s3Client = createS3Client()
  * @returns Object metadata including ContentLength
  */
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
+/** */
 export async function headObject(bucket: string, key: string): Promise<HeadObjectCommandOutput> {
   const params: HeadObjectCommandInput = {Bucket: bucket, Key: key}
   const command = new HeadObjectCommand(params)
@@ -31,6 +32,7 @@ export async function headObject(bucket: string, key: string): Promise<HeadObjec
  * @returns Upload instance for streaming data to S3
  */
 /* c8 ignore start - Thin wrapper with default parameters, tested via integration tests */
+/** */
 export function createS3Upload(
   bucket: string,
   key: string,

@@ -66,7 +66,7 @@ externals: ['@aws-sdk/client-new-service']
 ## Related Patterns
 
 - [Library Migration](Library-Migration-Checklist.md)
-- [Testing Strategy](../Testing/Jest-ESM-Mocking-Strategy.md)
+- [Testing Strategy](../Testing/Vitest-Mocking-Strategy.md)
 
 ---
 

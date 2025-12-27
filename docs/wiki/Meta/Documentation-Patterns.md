@@ -49,7 +49,7 @@ Please see AGENTS.md in the repository root for comprehensive project documentat
 
 For comprehensive documentation on testing patterns, see the wiki:
 
-- [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md)
+- [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
 - [Lazy Initialization Pattern](../Testing/Lazy-Initialization-Pattern.md)
 
 This keeps documentation centralized and avoids duplication.
@@ -148,7 +148,7 @@ function validateCredentials(username: string, password: string) {
 
 ### Language-Specific
 - [Lambda](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- [Testing](docs/wiki/Testing/Jest-ESM-Mocking-Strategy.md)
+- [Testing](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
 - [AWS SDK](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
 ```
 

@@ -35,7 +35,7 @@ Central registry of all project conventions with their documentation and enforce
 | docs-structure | docs-location | HIGH | [Documentation Structure](Documentation-Structure.md) |
 | import-order | imports | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
-| mock-formatting | mock | MEDIUM | [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md) |
+| mock-formatting | mock | MEDIUM | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 
 ---
@@ -84,7 +84,7 @@ Central registry of all project conventions with their documentation and enforce
 |------------|---------------|-------------|
 | Import Ordering | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | ResponseStatus Enum | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
-| Mock Return Formatting | [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md) | MCP |
+| Mock Return Formatting | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | MCP |
 | PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |

@@ -40,9 +40,9 @@ cd "${TERRAFORM_DIR}"
 # Count resources in state
 echo -e "${YELLOW}[1/3] Analyzing state file...${NC}"
 
-AWS_RESOURCES=$(tofu state list 2>/dev/null | grep -E "^aws_" | wc -l | tr -d ' ')
-DATA_SOURCES=$(tofu state list 2>/dev/null | grep -E "^data\." | wc -l | tr -d ' ')
-LOCAL_RESOURCES=$(tofu state list 2>/dev/null | grep -E "^local_" | wc -l | tr -d ' ')
+AWS_RESOURCES=$(tofu state list 2> /dev/null | grep -E "^aws_" | wc -l | tr -d ' ')
+DATA_SOURCES=$(tofu state list 2> /dev/null | grep -E "^data\." | wc -l | tr -d ' ')
+LOCAL_RESOURCES=$(tofu state list 2> /dev/null | grep -E "^local_" | wc -l | tr -d ' ')
 
 echo "  AWS resources:   ${AWS_RESOURCES}"
 echo "  Data sources:    ${DATA_SOURCES}"
