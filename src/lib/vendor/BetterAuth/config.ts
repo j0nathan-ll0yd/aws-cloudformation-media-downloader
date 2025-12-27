@@ -88,7 +88,11 @@ export async function getAuth(): Promise<ReturnType<typeof betterAuth>> {
     // Advanced options
     advanced: {
       // Generate session tokens instead of cookies for mobile apps
-      useSecureCookies: false
+      useSecureCookies: false,
+      // Let the database generate UUIDs instead of Better Auth generating nanoid strings
+      database: {
+        generateId: false
+      }
     }
   })
 
