@@ -25,6 +25,13 @@ let cachedSql: ReturnType<typeof postgres> | null = null
 let tokenExpiry: number = 0
 
 /**
+ * Check if running in test mode with local PostgreSQL.
+ */
+function isTestMode(): boolean {
+  return !!process.env.TEST_DATABASE_URL
+}
+
+/**
  * Token refresh buffer in milliseconds.
  * Refresh 3 minutes before expiration (15 min validity).
  */
@@ -60,6 +67,15 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
     await cachedSql.end()
   }
 
+  // Test mode: use TEST_DATABASE_URL with local PostgreSQL
+  if (isTestMode()) {
+    cachedSql = postgres(process.env.TEST_DATABASE_URL!, {max: 1, idle_timeout: 20, connect_timeout: 10})
+    cachedClient = drizzle(cachedSql, {schema})
+    tokenExpiry = now + TOKEN_VALIDITY_MS
+    return cachedClient
+  }
+
+  // Production mode: use Aurora DSQL with IAM authentication
   const endpoint = getRequiredEnv('DSQL_CLUSTER_ENDPOINT')
   const region = getOptionalEnv('DSQL_REGION', getRequiredEnv('AWS_REGION'))
 
