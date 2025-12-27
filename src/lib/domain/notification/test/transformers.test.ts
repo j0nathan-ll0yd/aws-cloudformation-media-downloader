@@ -4,9 +4,7 @@ import type {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus} from '#types/enums'
 
 // Mock SQS stringAttribute
-jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
-  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value}))
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value}))}))
 
 const {truncateDescription, createMetadataNotification, createDownloadReadyNotification, transformToAPNSNotification} = await import('./../transformers')
 
@@ -70,13 +68,7 @@ describe('Notification Transformers', () => {
     })
 
     test('should handle missing optional fields gracefully', () => {
-      const minimalVideoInfo: YtDlpVideoInfo = {
-        id: 'test-id',
-        title: '',
-        formats: [],
-        duration: 0,
-        thumbnail: ''
-      }
+      const minimalVideoInfo: YtDlpVideoInfo = {id: 'test-id', title: '', formats: [], duration: 0, thumbnail: ''}
       const result = createMetadataNotification('test-id', minimalVideoInfo, 'user-1')
       const body = JSON.parse(result.messageBody)
 
@@ -128,10 +120,7 @@ describe('Notification Transformers', () => {
 
   describe('transformToAPNSNotification', () => {
     test('should transform SQS message to APNS format', () => {
-      const sqsMessageBody = JSON.stringify({
-        file: {fileId: 'file-1', key: 'file-1.mp4'},
-        notificationType: 'DownloadReadyNotification'
-      })
+      const sqsMessageBody = JSON.stringify({file: {fileId: 'file-1', key: 'file-1.mp4'}, notificationType: 'DownloadReadyNotification'})
       const targetArn = 'arn:aws:sns:us-west-2:123456789:endpoint/APNS_SANDBOX/app/device-token'
 
       const result = transformToAPNSNotification(sqsMessageBody, targetArn)

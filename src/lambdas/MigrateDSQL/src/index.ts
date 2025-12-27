@@ -13,7 +13,7 @@
  * @see docs/wiki/Conventions/Database-Migrations.md
  */
 import {readdirSync, readFileSync} from 'fs'
-import {join, dirname} from 'path'
+import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {sql} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
@@ -64,12 +64,7 @@ function loadMigrations(): MigrationFile[] {
       throw new Error(`Invalid migration filename format: ${filename}. Expected: NNNN_name.sql`)
     }
 
-    return {
-      version: match[1],
-      name: match[2],
-      filename,
-      sql: sqlContent
-    }
+    return {version: match[1], name: match[2], filename, sql: sqlContent}
   })
 }
 
@@ -107,16 +102,15 @@ async function getAppliedMigrations(): Promise<Set<string>> {
  */
 function splitStatements(sqlContent: string): string[] {
   // Split on semicolons, filter out empty statements and comment-only lines
-  return sqlContent
-    .split(';')
-    .map((stmt) => stmt.trim())
-    .filter((stmt) => {
-      // Filter out empty statements
-      if (!stmt) return false
-      // Filter out comment-only statements
-      const withoutComments = stmt.replace(/--[^\n]*/g, '').trim()
-      return withoutComments.length > 0
-    })
+  return sqlContent.split(';').map((stmt) => stmt.trim()).filter((stmt) => {
+    // Filter out empty statements
+    if (!stmt) {
+      return false
+    }
+    // Filter out comment-only statements
+    const withoutComments = stmt.replace(/--[^\n]*/g, '').trim()
+    return withoutComments.length > 0
+  })
 }
 
 /**
@@ -140,9 +134,7 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
   }
 
   // Record the migration as applied
-  await db.execute(
-    sql.raw(`INSERT INTO schema_migrations (version, name) VALUES ('${migration.version}', '${migration.name}')`)
-  )
+  await db.execute(sql.raw(`INSERT INTO schema_migrations (version, name) VALUES ('${migration.version}', '${migration.name}')`))
 
   logInfo('Migration applied successfully', {version: migration.version})
 }
@@ -155,44 +147,42 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
  *
  * @returns MigrationResult with lists of applied, skipped, and errored migrations
  */
-export const handler = withPowertools(
-  wrapLambdaInvokeHandler<{source?: string}, MigrationResult>(async (): Promise<MigrationResult> => {
-    const result: MigrationResult = {applied: [], skipped: [], errors: []}
+export const handler = withPowertools(wrapLambdaInvokeHandler<{source?: string}, MigrationResult>(async (): Promise<MigrationResult> => {
+  const result: MigrationResult = {applied: [], skipped: [], errors: []}
 
-    logInfo('MigrateDSQL starting')
+  logInfo('MigrateDSQL starting')
 
-    // Ensure migrations tracking table exists
-    await ensureMigrationsTable()
+  // Ensure migrations tracking table exists
+  await ensureMigrationsTable()
 
-    // Load migrations from SQL files
-    const migrations = loadMigrations()
-    logInfo('Loaded migrations', {count: migrations.length})
+  // Load migrations from SQL files
+  const migrations = loadMigrations()
+  logInfo('Loaded migrations', {count: migrations.length})
 
-    // Get already-applied migrations
-    const appliedVersions = await getAppliedMigrations()
-    logDebug('Already applied migrations', {versions: [...appliedVersions]})
+  // Get already-applied migrations
+  const appliedVersions = await getAppliedMigrations()
+  logDebug('Already applied migrations', {versions: [...appliedVersions]})
 
-    // Apply pending migrations in order
-    for (const migration of migrations) {
-      if (appliedVersions.has(migration.version)) {
-        result.skipped.push(migration.version)
-        logDebug('Migration already applied, skipping', {version: migration.version})
-        continue
-      }
-
-      try {
-        await applyMigration(migration)
-        result.applied.push(migration.version)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        logError('Migration failed', {version: migration.version, error: message})
-        result.errors.push(`${migration.version}: ${message}`)
-        // Stop on first error - don't continue with dependent migrations
-        break
-      }
+  // Apply pending migrations in order
+  for (const migration of migrations) {
+    if (appliedVersions.has(migration.version)) {
+      result.skipped.push(migration.version)
+      logDebug('Migration already applied, skipping', {version: migration.version})
+      continue
     }
 
-    logInfo('MigrateDSQL completed', result)
-    return result
-  })
-)
+    try {
+      await applyMigration(migration)
+      result.applied.push(migration.version)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logError('Migration failed', {version: migration.version, error: message})
+      result.errors.push(`${migration.version}: ${message}`)
+      // Stop on first error - don't continue with dependent migrations
+      break
+    }
+  }
+
+  logInfo('MigrateDSQL completed', result)
+  return result
+}))

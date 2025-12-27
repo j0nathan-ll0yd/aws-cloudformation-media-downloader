@@ -94,9 +94,7 @@ export const Accounts = {
       return {
         go: async () => {
           const db = await getDrizzleClient()
-          const result = await db.select().from(accounts).where(
-            and(eq(accounts.providerId, key.providerId), eq(accounts.accountId, key.accountId))
-          )
+          const result = await db.select().from(accounts).where(and(eq(accounts.providerId, key.providerId), eq(accounts.accountId, key.accountId)))
           return {data: result}
         }
       }

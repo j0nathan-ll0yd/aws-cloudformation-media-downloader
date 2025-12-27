@@ -1,4 +1,4 @@
-import {describe, expect, jest, test, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 
 type ResultRow = {id?: string; fileId?: string; deviceId?: string}
 
@@ -12,20 +12,15 @@ const mockDb = {select: mockSelect}
 jest.unstable_mockModule('./../client', () => ({getDrizzleClient: jest.fn(async () => mockDb)}))
 
 // Mock schema tables
-jest.unstable_mockModule('./../schema', () => ({
-  users: {id: 'id'},
-  files: {fileId: 'fileId'},
-  devices: {deviceId: 'deviceId'}
-}))
+jest.unstable_mockModule('./../schema', () => ({users: {id: 'id'}, files: {fileId: 'fileId'}, devices: {deviceId: 'deviceId'}}))
 
 // Mock drizzle-orm operators
-jest.unstable_mockModule('drizzle-orm', () => ({
-  eq: jest.fn((col: unknown, val: unknown) => ({col, val})),
-  inArray: jest.fn((col: unknown, vals: unknown[]) => ({col, vals}))
-}))
+jest.unstable_mockModule('drizzle-orm',
+  () => ({eq: jest.fn((col: unknown, val: unknown) => ({col, val})), inArray: jest.fn((col: unknown, vals: unknown[]) => ({col, vals}))}))
 
-const {assertUserExists, assertFileExists, assertDeviceExists, assertUsersExist, assertFilesExist, ForeignKeyViolationError} =
-  await import('./../fk-enforcement')
+const {assertUserExists, assertFileExists, assertDeviceExists, assertUsersExist, assertFilesExist, ForeignKeyViolationError} = await import(
+  './../fk-enforcement'
+)
 
 describe('FK Enforcement', () => {
   beforeEach(() => {

@@ -16,21 +16,21 @@
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from '@jest/globals'
-import type {ScheduledEvent, Context} from 'aws-lambda'
+import type {Context, ScheduledEvent} from 'aws-lambda'
 
 // Test helpers
 import {
   closeTestDb,
   createAllTables,
   dropAllTables,
-  truncateAllTables,
-  insertUser,
-  insertFileDownload,
-  insertSession,
-  insertVerification,
   getFileDownloads,
   getSessions,
-  getVerificationTokens
+  getVerificationTokens,
+  insertFileDownload,
+  insertSession,
+  insertUser,
+  insertVerification,
+  truncateAllTables
 } from '../helpers/postgres-helpers'
 
 // Import handler directly (no mocking - uses real PostgreSQL)

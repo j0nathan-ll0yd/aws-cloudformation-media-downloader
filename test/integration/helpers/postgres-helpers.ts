@@ -446,16 +446,18 @@ export async function linkUserDevice(userId: string, deviceId: string): Promise<
 /**
  * Insert a file download record into PostgreSQL
  */
-export async function insertFileDownload(data: {
-  fileId: string
-  status: string
-  updatedAt?: Date
-  createdAt?: Date
-  retryCount?: number
-  maxRetries?: number
-  sourceUrl?: string
-  correlationId?: string
-}): Promise<void> {
+export async function insertFileDownload(
+  data: {
+    fileId: string
+    status: string
+    updatedAt?: Date
+    createdAt?: Date
+    retryCount?: number
+    maxRetries?: number
+    sourceUrl?: string
+    correlationId?: string
+  }
+): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
@@ -490,14 +492,7 @@ export async function getFileDownloads(): Promise<Array<{fileId: string; status:
 /**
  * Insert a session record into PostgreSQL
  */
-export async function insertSession(data: {
-  id?: string
-  userId: string
-  token: string
-  expiresAt: Date
-  createdAt?: Date
-  updatedAt?: Date
-}): Promise<void> {
+export async function insertSession(data: {id?: string; userId: string; token: string; expiresAt: Date; createdAt?: Date; updatedAt?: Date}): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
@@ -531,14 +526,9 @@ export async function getSessions(): Promise<Array<{id: string; userId: string}>
 /**
  * Insert a verification token record into PostgreSQL
  */
-export async function insertVerification(data: {
-  id?: string
-  identifier: string
-  value: string
-  expiresAt: Date
-  createdAt?: Date
-  updatedAt?: Date
-}): Promise<void> {
+export async function insertVerification(
+  data: {id?: string; identifier: string; value: string; expiresAt: Date; createdAt?: Date; updatedAt?: Date}
+): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 

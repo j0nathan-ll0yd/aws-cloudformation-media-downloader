@@ -15,11 +15,12 @@ const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
 jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 const sendMessageMock = jest.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
-  sendMessage: sendMessageMock,
-  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+  () => ({
+    sendMessage: sendMessageMock,
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+  }))
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 const {default: getFileByKeyResponse} = await import('./fixtures/getFileByKey-200-OK.json', {assert: {type: 'json'}})
@@ -52,10 +53,12 @@ describe('#S3ObjectCreated', () => {
     const output = await handler(baseEvent, testContext)
     expect(output).toBeUndefined()
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
-    expect(sendMessageMock).toHaveBeenCalledWith(expect.objectContaining({
-      QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue',
-      MessageBody: expect.stringContaining('DownloadReadyNotification')
-    }))
+    expect(sendMessageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue',
+        MessageBody: expect.stringContaining('DownloadReadyNotification')
+      })
+    )
   })
 
   test('should handle missing file gracefully and continue processing', async () => {
@@ -119,9 +122,7 @@ describe('#S3ObjectCreated', () => {
       ]
       userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: multipleUsers})
       // First call fails, second succeeds
-      sendMessageMock
-        .mockRejectedValueOnce(new Error('SQS send failed'))
-        .mockResolvedValueOnce({MessageId: 'success-id'})
+      sendMessageMock.mockRejectedValueOnce(new Error('SQS send failed')).mockResolvedValueOnce({MessageId: 'success-id'})
 
       const output = await handler(baseEvent, testContext)
       // Handler uses Promise.allSettled, so it continues despite failure
@@ -132,9 +133,7 @@ describe('#S3ObjectCreated', () => {
     test('should continue batch processing when one file query fails', async () => {
       const multiRecordEvent = createMultiRecordEvent(['file1.mp4', 'file2.mp4'], baseRecord)
       // First file not found, second file found
-      filesMock.mocks.query.byKey!.go
-        .mockResolvedValueOnce({data: []})
-        .mockResolvedValueOnce({data: getFileByKeyResponse.Items})
+      filesMock.mocks.query.byKey!.go.mockResolvedValueOnce({data: []}).mockResolvedValueOnce({data: getFileByKeyResponse.Items})
 
       const output = await handler(multiRecordEvent, testContext)
       expect(output).toBeUndefined()

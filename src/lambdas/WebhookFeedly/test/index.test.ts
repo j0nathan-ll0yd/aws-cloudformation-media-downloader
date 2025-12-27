@@ -32,12 +32,13 @@ jest.unstable_mockModule('#lib/vendor/Powertools/idempotency', () => ({
 }))
 
 const sendMessageMock = jest.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-jest.unstable_mockModule('#lib/vendor/AWS/SQS', () => ({
-  sendMessage: sendMessageMock,
-  subscribe: jest.fn(),
-  stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
-  numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-}))
+jest.unstable_mockModule('#lib/vendor/AWS/SQS',
+  () => ({
+    sendMessage: sendMessageMock,
+    subscribe: jest.fn(),
+    stringAttribute: jest.fn((value: string) => ({DataType: 'String', StringValue: value})),
+    numberAttribute: jest.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
+  }))
 
 // Mock child_process for YouTube spawn operations
 jest.unstable_mockModule('child_process', () => ({spawn: jest.fn()}))
@@ -145,23 +146,19 @@ describe('#WebhookFeedly', () => {
       userFilesMock.mocks.create.mockResolvedValue({data: {}})
       // Return an already-downloaded file
       filesMock.mocks.get.mockResolvedValue({
-        data: {
-          fileId: 'wRG7lAGdRII',
-          key: 'wRG7lAGdRII.mp4',
-          status: FileStatus.Downloaded,
-          size: 50000000,
-          url: 'https://example.com/wRG7lAGdRII.mp4'
-        }
+        data: {fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: FileStatus.Downloaded, size: 50000000, url: 'https://example.com/wRG7lAGdRII.mp4'}
       })
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
       expect(body.body.status).toEqual('Dispatched')
       // Should send notification, NOT publish download event
-      expect(sendMessageMock).toHaveBeenCalledWith(expect.objectContaining({
-        QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
-        MessageBody: expect.stringContaining('DownloadReadyNotification')
-      }))
+      expect(sendMessageMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
+          MessageBody: expect.stringContaining('DownloadReadyNotification')
+        })
+      )
       expect(publishEventMock).not.toHaveBeenCalled()
     })
   })
@@ -172,14 +169,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(handleFeedlyEventResponse)
       userFilesMock.mocks.create.mockResolvedValue({data: {}})
       // Return an existing file that is still queued
-      filesMock.mocks.get.mockResolvedValue({
-        data: {
-          fileId: 'wRG7lAGdRII',
-          key: 'wRG7lAGdRII.mp4',
-          status: FileStatus.Queued,
-          size: 0
-        }
-      })
+      filesMock.mocks.get.mockResolvedValue({data: {fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: FileStatus.Queued, size: 0}})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       // Should NOT create a new file record
@@ -193,14 +183,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(handleFeedlyEventResponse)
       userFilesMock.mocks.create.mockResolvedValue({data: {}})
       // Return an existing file that is currently downloading
-      filesMock.mocks.get.mockResolvedValue({
-        data: {
-          fileId: 'wRG7lAGdRII',
-          key: 'wRG7lAGdRII.mp4',
-          status: FileStatus.Downloading,
-          size: 0
-        }
-      })
+      filesMock.mocks.get.mockResolvedValue({data: {fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: FileStatus.Downloading, size: 0}})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       expect(filesMock.mocks.create).not.toHaveBeenCalled()

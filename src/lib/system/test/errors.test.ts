@@ -1,13 +1,13 @@
 import {describe, expect, test} from '@jest/globals'
 import {
-  CustomLambdaError,
-  ValidationError,
-  UnauthorizedError,
-  NotFoundError,
-  UnexpectedError,
   CookieExpirationError,
+  CustomLambdaError,
+  NotFoundError,
+  providerFailureErrorMessage,
   ServiceUnavailableError,
-  providerFailureErrorMessage
+  UnauthorizedError,
+  UnexpectedError,
+  ValidationError
 } from './../errors'
 
 describe('Error Classes', () => {

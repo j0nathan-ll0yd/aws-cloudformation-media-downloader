@@ -43,12 +43,7 @@ export async function getAuth(): Promise<ReturnType<typeof betterAuth>> {
     database: drizzleAdapter(db, {
       provider: 'pg',
       // Map our plural table names to Better Auth's expected singular names
-      schema: {
-        user: schema.users,
-        session: schema.sessions,
-        account: schema.accounts,
-        verification: schema.verification
-      }
+      schema: {user: schema.users, session: schema.sessions, account: schema.accounts, verification: schema.verification}
     }),
 
     // Secret for signing tokens and sessions
@@ -90,9 +85,7 @@ export async function getAuth(): Promise<ReturnType<typeof betterAuth>> {
       // Generate session tokens instead of cookies for mobile apps
       useSecureCookies: false,
       // Let the database generate UUIDs instead of Better Auth generating nanoid strings
-      database: {
-        generateId: false
-      }
+      database: {generateId: false}
     }
   })
 

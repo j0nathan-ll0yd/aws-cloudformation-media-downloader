@@ -1,17 +1,11 @@
-import {describe, expect, jest, test, beforeEach} from '@jest/globals'
+import {beforeEach, describe, expect, jest, test} from '@jest/globals'
 
 // Mock the Powertools logger
 const mockLogInfo = jest.fn()
 const mockLogDebug = jest.fn()
 const mockLogError = jest.fn()
 
-jest.unstable_mockModule('#lib/vendor/Powertools', () => ({
-  logger: {
-    info: mockLogInfo,
-    debug: mockLogDebug,
-    error: mockLogError
-  }
-}))
+jest.unstable_mockModule('#lib/vendor/Powertools', () => ({logger: {info: mockLogInfo, debug: mockLogDebug, error: mockLogError}}))
 
 // Mock sanitizeData to verify it's called correctly
 const mockSanitizeData = jest.fn((data: unknown) => ({...data as object, sanitized: true}))
@@ -93,40 +87,19 @@ describe('Logging', () => {
 
   describe('getRequestSummary', () => {
     test('should extract path, method, requestId, and sourceIp from API Gateway event', () => {
-      const event = {
-        path: '/api/files',
-        httpMethod: 'GET',
-        requestContext: {
-          requestId: 'req-123',
-          identity: {sourceIp: '192.168.1.1'}
-        }
-      }
+      const event = {path: '/api/files', httpMethod: 'GET', requestContext: {requestId: 'req-123', identity: {sourceIp: '192.168.1.1'}}}
 
       const result = getRequestSummary(event)
 
-      expect(result).toEqual({
-        path: '/api/files',
-        method: 'GET',
-        requestId: 'req-123',
-        sourceIp: '192.168.1.1'
-      })
+      expect(result).toEqual({path: '/api/files', method: 'GET', requestId: 'req-123', sourceIp: '192.168.1.1'})
     })
 
     test('should fallback to resource when path is not available', () => {
-      const event = {
-        resource: '/api/users/{userId}',
-        httpMethod: 'DELETE',
-        requestContext: {requestId: 'req-456'}
-      }
+      const event = {resource: '/api/users/{userId}', httpMethod: 'DELETE', requestContext: {requestId: 'req-456'}}
 
       const result = getRequestSummary(event)
 
-      expect(result).toEqual({
-        path: '/api/users/{userId}',
-        method: 'DELETE',
-        requestId: 'req-456',
-        sourceIp: undefined
-      })
+      expect(result).toEqual({path: '/api/users/{userId}', method: 'DELETE', requestId: 'req-456', sourceIp: undefined})
     })
 
     test('should handle missing requestContext gracefully', () => {
@@ -134,23 +107,13 @@ describe('Logging', () => {
 
       const result = getRequestSummary(event)
 
-      expect(result).toEqual({
-        path: '/api/files',
-        method: 'POST',
-        requestId: undefined,
-        sourceIp: undefined
-      })
+      expect(result).toEqual({path: '/api/files', method: 'POST', requestId: undefined, sourceIp: undefined})
     })
 
     test('should handle empty event object', () => {
       const result = getRequestSummary({})
 
-      expect(result).toEqual({
-        path: undefined,
-        method: undefined,
-        requestId: undefined,
-        sourceIp: undefined
-      })
+      expect(result).toEqual({path: undefined, method: undefined, requestId: undefined, sourceIp: undefined})
     })
   })
 })

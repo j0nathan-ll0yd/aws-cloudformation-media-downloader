@@ -4,16 +4,11 @@ import {createMockContext} from '#util/jest-setup'
 // Mock fs module for reading migration files
 const mockReaddirSync = jest.fn<() => string[]>()
 const mockReadFileSync = jest.fn<(path: string) => string>()
-jest.unstable_mockModule('fs', () => ({
-  readdirSync: mockReaddirSync,
-  readFileSync: mockReadFileSync
-}))
+jest.unstable_mockModule('fs', () => ({readdirSync: mockReaddirSync, readFileSync: mockReadFileSync}))
 
 // Mock path and url modules
-jest.unstable_mockModule('path', () => ({
-  join: jest.fn((...args: string[]) => args.join('/')),
-  dirname: jest.fn((path: string) => path.replace(/\/[^/]+$/, ''))
-}))
+jest.unstable_mockModule('path',
+  () => ({join: jest.fn((...args: string[]) => args.join('/')), dirname: jest.fn((path: string) => path.replace(/\/[^/]+$/, ''))}))
 
 jest.unstable_mockModule('url', () => ({fileURLToPath: jest.fn(() => '/lambda/index.js')}))
 
