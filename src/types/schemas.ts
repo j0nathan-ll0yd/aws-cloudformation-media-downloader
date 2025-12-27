@@ -19,9 +19,13 @@ export const registerUserSchema = z.object({idToken: z.string().min(1), firstNam
 
 export const loginUserSchema = z.object({idToken: z.string().min(1)})
 
-// Type exports inferred from schemas
+/** Feedly webhook event payload with YouTube article URL */
 export type FeedlyEventInput = z.infer<typeof feedlyEventSchema>
+/** Device registration payload for push notification setup */
 export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>
+/** User subscription payload for SNS topic subscription */
 export type UserSubscribeInput = z.infer<typeof userSubscribeSchema>
+/** User registration payload with Apple Sign-In token */
 export type RegisterUserInput = z.infer<typeof registerUserSchema>
+/** User login payload with Apple Sign-In token */
 export type LoginUserInput = z.infer<typeof loginUserSchema>

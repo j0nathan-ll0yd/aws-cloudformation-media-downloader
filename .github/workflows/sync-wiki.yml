@@ -37,10 +37,10 @@ jobs:
         run: |
           # Try to clone wiki, if it fails, wiki is not enabled
           if git ls-remote --heads https://github.com/${{ github.repository }}.wiki.git 2>/dev/null; then
-            echo "wiki_enabled=true" >> $GITHUB_OUTPUT
+            echo "wiki_enabled=true" >> "$GITHUB_OUTPUT"
             echo "✅ Wiki is enabled for this repository"
           else
-            echo "wiki_enabled=false" >> $GITHUB_OUTPUT
+            echo "wiki_enabled=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Wiki is not enabled. Please enable it in repository settings."
             exit 0
           fi
@@ -113,19 +113,23 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "## Wiki Sync Summary" >> $GITHUB_STEP_SUMMARY
-
           if [ "${{ steps.wiki-check.outputs.wiki_enabled }}" == "true" ]; then
-            echo "✅ Wiki sync completed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-            echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-            echo "- Wiki URL: https://github.com/${{ github.repository }}/wiki" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## Wiki Sync Summary"
+              echo "✅ Wiki sync completed"
+              echo ""
+              echo "- Repository: ${{ github.repository }}"
+              echo "- Commit: ${{ github.sha }}"
+              echo "- Wiki URL: https://github.com/${{ github.repository }}/wiki"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "⚠️ Wiki is not enabled for this repository" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "To enable wiki sync:" >> $GITHUB_STEP_SUMMARY
-            echo "1. Go to [Repository Settings](https://github.com/${{ github.repository }}/settings)" >> $GITHUB_STEP_SUMMARY
-            echo "2. Under Features, check 'Wikis'" >> $GITHUB_STEP_SUMMARY
-            echo "3. Re-run this workflow" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## Wiki Sync Summary"
+              echo "⚠️ Wiki is not enabled for this repository"
+              echo ""
+              echo "To enable wiki sync:"
+              echo "1. Go to [Repository Settings](https://github.com/${{ github.repository }}/settings)"
+              echo "2. Under Features, check 'Wikis'"
+              echo "3. Re-run this workflow"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -29,7 +29,7 @@ TypeScript-specific patterns and best practices:
 ### 🧪 Testing
 Comprehensive testing strategies and patterns:
 
-- [Jest ESM Mocking Strategy](Testing/Jest-ESM-Mocking-Strategy.md) - Transitive dependencies solution
+- [Jest ESM Mocking Strategy](Testing/Vitest-Mocking-Strategy.md) - Transitive dependencies solution
 - [Mock Type Annotations](Testing/Mock-Type-Annotations.md) - Specific vs generic types
 - [Lazy Initialization Pattern](Testing/Lazy-Initialization-Pattern.md) - Defer SDK clients
 - [Coverage Philosophy](Testing/Coverage-Philosophy.md) - Test YOUR code principle

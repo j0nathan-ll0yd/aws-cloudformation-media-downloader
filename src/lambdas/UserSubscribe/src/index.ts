@@ -1,3 +1,13 @@
+/**
+ * UserSubscribe Lambda
+ *
+ * Subscribes user's device endpoint to an SNS topic for push notifications.
+ * Requires authenticated user with valid device registration.
+ *
+ * Trigger: API Gateway POST /subscriptions
+ * Input: UserSubscriptionRequest with endpointArn and topicArn
+ * Output: APIGatewayProxyResult with subscription confirmation
+ */
 import {userSubscriptionRequestSchema} from '#types/api-schema'
 import type {UserSubscriptionRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'

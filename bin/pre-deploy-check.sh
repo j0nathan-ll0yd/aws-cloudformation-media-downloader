@@ -58,10 +58,10 @@ if [[ -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then
     echo "Symlink points to: ${STATE_TARGET}"
     exit 1
   fi
-  RESOURCE_COUNT=$(grep -c '"type":' "${STATE_TARGET}" 2>/dev/null || echo "0")
+  RESOURCE_COUNT=$(grep -c '"type":' "${STATE_TARGET}" 2> /dev/null || echo "0")
   echo "State file: symlinked (${RESOURCE_COUNT} resources)"
 else
-  RESOURCE_COUNT=$(grep -c '"type":' "${TERRAFORM_DIR}/terraform.tfstate" 2>/dev/null || echo "0")
+  RESOURCE_COUNT=$(grep -c '"type":' "${TERRAFORM_DIR}/terraform.tfstate" 2> /dev/null || echo "0")
   echo "State file: local (${RESOURCE_COUNT} resources)"
 fi
 

@@ -12,10 +12,7 @@ import {logIncomingFixture} from '#lib/system/observability'
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapAuthorizer(async ({event}) => {
- *   if (!valid) throw new Error('Unauthorized')  // → 401
- *   return generateAllow(userId, event.methodArn)
- * }))
+ * export const handler = wrapAuthorizer(async ({event}) => generatePolicy(userId))
  * ```
  */
 export function wrapAuthorizer(
@@ -50,13 +47,7 @@ export function wrapAuthorizer(
  *
  * @example
  * ```typescript
- * export const handler = withXRay(wrapEventHandler(
- *   async ({record}) => {
- *     // Process single S3 record
- *     await processFile(record.s3.object.key)
- *   },
- *   {getRecords: s3Records}
- * ))
+ * export const handler = wrapEventHandler(async ({record}) => { ... }, {getRecords: s3Records})
  * ```
  */
 export function wrapEventHandler<TEvent, TRecord>(

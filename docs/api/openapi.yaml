@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: Offline Media Downloader API
+  title: aws-cloudformation-media-downloader
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 0.0.0
+  version: 1.0.0
 tags:
   - name: Files
   - name: Devices
@@ -646,14 +646,8 @@ components:
               type: string
               description: Error code
             message:
-              description: Error message - can be a string or validation errors object
-              oneOf:
-                - type: string
-                - type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: string
+              type: string
+              description: Error message
           required:
             - code
             - message

@@ -178,7 +178,7 @@ const config = {
 
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - Standard Lambda conventions
 - [Naming Conventions](../Conventions/Naming-Conventions.md) - Consistent naming patterns
-- [Testing Patterns](../Testing/Jest-ESM-Mocking-Strategy.md) - Test conventions
+- [Testing Patterns](../Testing/Vitest-Mocking-Strategy.md) - Test conventions
 
 ---
 

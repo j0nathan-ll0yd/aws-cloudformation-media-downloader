@@ -75,6 +75,9 @@
     "pack:context": "repomix",
     "pack:light": "repomix --include \"src/**/*.ts,docs/**/*.md,AGENTS.md\" --ignore \"**/*.test.ts,**/*.spec.ts\"",
     "generate:llms": "cat README.md docs/wiki/**/*.md > docs/llms-full.txt",
+    "cleanup": "./bin/cleanup.sh",
+    "cleanup:fast": "./bin/cleanup.sh --fast",
+    "cleanup:check": "./bin/cleanup.sh --check",
     "prepare": "husky"
   },
   "author": "Jonathan Lloyd",

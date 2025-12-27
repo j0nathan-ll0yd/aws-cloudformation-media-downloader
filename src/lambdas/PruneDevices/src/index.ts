@@ -1,3 +1,13 @@
+/**
+ * PruneDevices Lambda
+ *
+ * Scheduled job to clean up inactive or invalid device registrations.
+ * Removes devices with expired APNS tokens or inactive endpoints.
+ *
+ * Trigger: CloudWatch Schedule (daily)
+ * Input: ScheduledEvent
+ * Output: PruneDevicesResult with deletion counts
+ */
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import type {Device} from '#types/domain-models'

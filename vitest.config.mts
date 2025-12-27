@@ -10,16 +10,12 @@ export default defineConfig({
     clearMocks: true,
     testTimeout: 10000,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        maxThreads: 4,
-        minThreads: 1
-      }
-    },
+    maxWorkers: 4,
+    minWorkers: 1,
     coverage: {
       enabled: true,
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/test/**', 'src/mcp/**'],
+      exclude: ['src/**/*.test.ts', 'src/**/test/**', 'src/mcp/**', '**/*.json'],
       provider: 'custom',
       customProviderModule: 'vitest-monocart-coverage',
       reportsDirectory: './coverage/unit'

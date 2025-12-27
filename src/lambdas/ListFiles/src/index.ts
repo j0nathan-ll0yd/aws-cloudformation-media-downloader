@@ -1,3 +1,13 @@
+/**
+ * ListFiles Lambda
+ *
+ * Returns the list of available files for a user.
+ * Supports both authenticated users and anonymous demo mode.
+ *
+ * Trigger: API Gateway GET /files
+ * Input: Authenticated or anonymous request
+ * Output: APIGatewayProxyResult with file list
+ */
 import {Files} from '#entities/Files'
 import {UserFiles} from '#entities/UserFiles'
 import type {File} from '#types/domain-models'

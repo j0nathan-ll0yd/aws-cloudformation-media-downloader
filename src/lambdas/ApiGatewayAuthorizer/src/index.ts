@@ -1,3 +1,13 @@
+/**
+ * ApiGatewayAuthorizer Lambda
+ *
+ * Custom authorizer for API Gateway using Better Auth sessions.
+ * Validates session tokens and generates IAM policies.
+ *
+ * Trigger: API Gateway (custom authorizer)
+ * Input: APIGatewayRequestAuthorizerEvent with Authorization header
+ * Output: CustomAuthorizerResult with IAM policy
+ */
 import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'

@@ -355,7 +355,7 @@ const sanitized = sanitizeData({
 // Returns: { email: '[REDACTED]', token: '[REDACTED]', safeField: 'visible' }
 ```
 
-See [PII Protection](../Security/PII-Protection.md) for the full list of redacted fields.
+See [PII Protection](../TypeScript/PII-Protection.md) for the full list of redacted fields.
 
 ---
 
@@ -379,8 +379,8 @@ Is this a scheduled CloudWatch event?
 ## Related Patterns
 
 - [Lambda Function Patterns](Lambda-Function-Patterns.md) - Handler structure conventions
-- [Error Handling](Error-Handling.md) - CustomLambdaError hierarchy
-- [Jest ESM Mocking Strategy](../Testing/Jest-ESM-Mocking-Strategy.md) - Testing these wrappers
+- [Error Handling](TypeScript-Error-Handling.md) - CustomLambdaError hierarchy
+- [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Testing these wrappers
 
 ---
 

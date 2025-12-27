@@ -673,7 +673,7 @@ test('update non-existent - throws error', async () => {
 
 - [Fixture Extraction](Fixture-Extraction.md)
 - [LocalStack Testing](../Integration/LocalStack-Testing.md)
-- [Jest ESM Mocking Strategy](Jest-ESM-Mocking-Strategy.md)
+- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md)
 
 ---
 

@@ -23,6 +23,7 @@ export interface YtDlpVideoInfo {
   availability?: 'public' | 'unlisted' | 'private' | 'needs_auth' | 'subscriber_only'
 }
 
+/** yt-dlp format information for a specific video quality/codec combination */
 export interface YtDlpFormat {
   format_id: string
   url: string

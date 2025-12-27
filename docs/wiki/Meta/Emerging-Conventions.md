@@ -62,7 +62,7 @@ jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entity', () =>
 ```
 
 **Status**: Validated (in use across test suite)
-**Wiki Page**: Mentioned in Testing/Jest-ESM-Mocking-Strategy.md
+**Wiki Page**: Mentioned in Testing/Vitest-Mocking-Strategy.md
 
 ---
 

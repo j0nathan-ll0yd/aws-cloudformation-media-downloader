@@ -105,7 +105,7 @@ The graph is generated automatically:
 
 ## Related Patterns
 
-- [Jest ESM Mocking Strategy](Jest-ESM-Mocking-Strategy.md) - How to mock
+- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md) - How to mock
 - [Mock Type Annotations](Mock-Type-Annotations.md) - TypeScript patterns
 - [Integration Testing](Integration-Testing.md) - When to use real deps
 

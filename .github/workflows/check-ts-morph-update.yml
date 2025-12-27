@@ -22,10 +22,10 @@ jobs:
 
           # Get the diff of pnpm-lock.yaml against the base branch
           if git diff origin/${{ github.base_ref }} -- pnpm-lock.yaml | grep -q '"ts-morph"'; then
-            echo "ts_morph_updated=true" >> $GITHUB_OUTPUT
+            echo "ts_morph_updated=true" >> "$GITHUB_OUTPUT"
             echo "✅ ts-morph package was updated in this PR"
           else
-            echo "ts_morph_updated=false" >> $GITHUB_OUTPUT
+            echo "ts_morph_updated=false" >> "$GITHUB_OUTPUT"
             echo "ℹ️ ts-morph was not updated in this PR"
           fi
 

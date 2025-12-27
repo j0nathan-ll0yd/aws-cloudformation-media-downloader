@@ -1,3 +1,13 @@
+/**
+ * UserDelete Lambda
+ *
+ * Deletes a user and all associated data (files, devices, subscriptions).
+ * Implements cascade deletion with proper ordering to maintain referential integrity.
+ *
+ * Trigger: API Gateway DELETE /users
+ * Input: Authenticated user context (userId from token)
+ * Output: APIGatewayProxyResult confirming deletion
+ */
 import {Devices} from '#entities/Devices'
 import {UserDevices} from '#entities/UserDevices'
 import {UserFiles} from '#entities/UserFiles'

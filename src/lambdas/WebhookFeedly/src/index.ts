@@ -1,3 +1,13 @@
+/**
+ * WebhookFeedly Lambda
+ *
+ * Receives Feedly webhook notifications for new YouTube videos.
+ * Validates the article URL, creates a file record, and queues for download.
+ *
+ * Trigger: API Gateway POST /webhooks/feedly
+ * Input: FeedlyWebhookRequest with articleURL
+ * Output: APIGatewayProxyResult with file metadata
+ */
 import {randomUUID} from 'node:crypto'
 import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
 import {Files} from '#entities/Files'

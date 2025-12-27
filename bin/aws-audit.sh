@@ -94,7 +94,7 @@ fi
 
 # Verify AWS credentials
 echo -e "${YELLOW}[1/7] Verifying AWS credentials...${NC}"
-AWS_IDENTITY=$(aws sts get-caller-identity --output json 2>/dev/null) || {
+AWS_IDENTITY=$(aws sts get-caller-identity --output json 2> /dev/null) || {
   echo -e "${RED}ERROR: AWS credentials not configured or expired${NC}"
   exit 1
 }
@@ -108,14 +108,14 @@ echo ""
 echo -e "${YELLOW}[2/7] Collecting Terraform state...${NC}"
 cd "${TERRAFORM_DIR}"
 
-tofu state list 2>/dev/null | grep "aws_lambda_function\." | sed 's/aws_lambda_function\.//' > "$TMP_DIR/tf_lambdas.txt" || true
-tofu state list 2>/dev/null | grep "aws_iam_role\." | sed 's/aws_iam_role\.//' > "$TMP_DIR/tf_roles.txt" || true
-tofu state list 2>/dev/null | grep "aws_iam_policy\." | sed 's/aws_iam_policy\.//' > "$TMP_DIR/tf_policies.txt" || true
-tofu state list 2>/dev/null | grep "aws_cloudfront_distribution\." | sed 's/aws_cloudfront_distribution\.//' > "$TMP_DIR/tf_cloudfront.txt" || true
-tofu state list 2>/dev/null | grep "aws_api_gateway_rest_api\." | sed 's/aws_api_gateway_rest_api\.//' > "$TMP_DIR/tf_apigw.txt" || true
-tofu state list 2>/dev/null | grep "aws_dynamodb_table\." | sed 's/aws_dynamodb_table\.//' > "$TMP_DIR/tf_dynamodb.txt" || true
-tofu state list 2>/dev/null | grep "aws_s3_bucket\." | sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
-tofu state list 2>/dev/null | grep "aws_sqs_queue\." | sed 's/aws_sqs_queue\.//' > "$TMP_DIR/tf_sqs.txt" || true
+tofu state list 2> /dev/null | grep "aws_lambda_function\." | sed 's/aws_lambda_function\.//' > "$TMP_DIR/tf_lambdas.txt" || true
+tofu state list 2> /dev/null | grep "aws_iam_role\." | sed 's/aws_iam_role\.//' > "$TMP_DIR/tf_roles.txt" || true
+tofu state list 2> /dev/null | grep "aws_iam_policy\." | sed 's/aws_iam_policy\.//' > "$TMP_DIR/tf_policies.txt" || true
+tofu state list 2> /dev/null | grep "aws_cloudfront_distribution\." | sed 's/aws_cloudfront_distribution\.//' > "$TMP_DIR/tf_cloudfront.txt" || true
+tofu state list 2> /dev/null | grep "aws_api_gateway_rest_api\." | sed 's/aws_api_gateway_rest_api\.//' > "$TMP_DIR/tf_apigw.txt" || true
+tofu state list 2> /dev/null | grep "aws_dynamodb_table\." | sed 's/aws_dynamodb_table\.//' > "$TMP_DIR/tf_dynamodb.txt" || true
+tofu state list 2> /dev/null | grep "aws_s3_bucket\." | sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
+tofu state list 2> /dev/null | grep "aws_sqs_queue\." | sed 's/aws_sqs_queue\.//' > "$TMP_DIR/tf_sqs.txt" || true
 
 TF_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/tf_lambdas.txt" | tr -d ' ')
 TF_ROLE_COUNT=$(wc -l < "$TMP_DIR/tf_roles.txt" | tr -d ' ')
@@ -130,33 +130,33 @@ echo ""
 echo -e "${YELLOW}[3/7] Collecting AWS resources...${NC}"
 
 # Lambda functions
-aws lambda list-functions --query 'Functions[*].FunctionName' --output text 2>/dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_lambdas_all.txt"
-grep -E "$LAMBDA_PATTERN" "$TMP_DIR/aws_lambdas_all.txt" > "$TMP_DIR/aws_lambdas.txt" 2>/dev/null || true
+aws lambda list-functions --query 'Functions[*].FunctionName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_lambdas_all.txt"
+grep -E "$LAMBDA_PATTERN" "$TMP_DIR/aws_lambdas_all.txt" > "$TMP_DIR/aws_lambdas.txt" 2> /dev/null || true
 
 # IAM roles (filter to project-related)
-aws iam list-roles --query 'Roles[*].RoleName' --output text 2>/dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_roles_all.txt"
-grep -E "$IAM_PATTERN" "$TMP_DIR/aws_roles_all.txt" > "$TMP_DIR/aws_roles.txt" 2>/dev/null || true
+aws iam list-roles --query 'Roles[*].RoleName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_roles_all.txt"
+grep -E "$IAM_PATTERN" "$TMP_DIR/aws_roles_all.txt" > "$TMP_DIR/aws_roles.txt" 2> /dev/null || true
 
 # IAM policies (filter to project-related)
-aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text 2>/dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_policies_all.txt"
-grep -E "$IAM_PATTERN" "$TMP_DIR/aws_policies_all.txt" > "$TMP_DIR/aws_policies.txt" 2>/dev/null || true
+aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_policies_all.txt"
+grep -E "$IAM_PATTERN" "$TMP_DIR/aws_policies_all.txt" > "$TMP_DIR/aws_policies.txt" 2> /dev/null || true
 
 # CloudFront distributions
-aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2>/dev/null > "$TMP_DIR/aws_cloudfront.txt" || true
+aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2> /dev/null > "$TMP_DIR/aws_cloudfront.txt" || true
 
 # API Gateway
-aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2>/dev/null > "$TMP_DIR/aws_apigw.txt" || true
+aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw.txt" || true
 
 # DynamoDB
-aws dynamodb list-tables --query 'TableNames' --output text 2>/dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
-grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2>/dev/null || true
+aws dynamodb list-tables --query 'TableNames' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
+grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2> /dev/null || true
 
 # S3 buckets
-aws s3api list-buckets --query 'Buckets[*].Name' --output text 2>/dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
-grep -E "$S3_PATTERN" "$TMP_DIR/aws_s3_all.txt" > "$TMP_DIR/aws_s3.txt" 2>/dev/null || true
+aws s3api list-buckets --query 'Buckets[*].Name' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
+grep -E "$S3_PATTERN" "$TMP_DIR/aws_s3_all.txt" > "$TMP_DIR/aws_s3.txt" 2> /dev/null || true
 
 # SQS queues
-aws sqs list-queues --query 'QueueUrls' --output text 2>/dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs.txt" 2>/dev/null || true
+aws sqs list-queues --query 'QueueUrls' --output text 2> /dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs.txt" 2> /dev/null || true
 
 AWS_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/aws_lambdas.txt" | tr -d ' ')
 AWS_ROLE_COUNT=$(wc -l < "$TMP_DIR/aws_roles.txt" | tr -d ' ')
@@ -176,7 +176,7 @@ find_orphans() {
   local tf_file="$2"
 
   while IFS= read -r item; do
-    if ! grep -qxF "$item" "$tf_file" 2>/dev/null; then
+    if ! grep -qxF "$item" "$tf_file" 2> /dev/null; then
       echo "$item"
     fi
   done < "$aws_file"
@@ -224,9 +224,9 @@ echo ""
 echo -e "${YELLOW}[5/7] Checking for duplicates...${NC}"
 
 # Find duplicates (names with numeric suffixes that shouldn't have them)
-DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2>/dev/null || true)
-DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2>/dev/null || true)
-DUPLICATE_CLOUDFRONT=$(awk -F'\t' '{print $2}' "$TMP_DIR/aws_cloudfront.txt" 2>/dev/null | grep -E "(OfflineMedia|MediaDownloader)" | sort | uniq -d || true)
+DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
+DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
+DUPLICATE_CLOUDFRONT=$(awk -F'\t' '{print $2}' "$TMP_DIR/aws_cloudfront.txt" 2> /dev/null | grep -E "(OfflineMedia|MediaDownloader)" | sort | uniq -d || true)
 
 if [[ -n "$DUPLICATE_LAMBDAS" ]]; then
   echo -e "${RED}Potential duplicate Lambdas:${NC}"
@@ -271,7 +271,7 @@ echo -e "${YELLOW}[6/7] Checking for untagged resources...${NC}"
 UNTAGGED_COUNT=0
 while IFS= read -r func; do
   [[ -z "$func" ]] && continue
-  TAGS=$(aws lambda get-function --function-name "$func" --query 'Tags.ManagedBy' --output text 2>/dev/null || echo "None")
+  TAGS=$(aws lambda get-function --function-name "$func" --query 'Tags.ManagedBy' --output text 2> /dev/null || echo "None")
   if [[ "$TAGS" != "terraform" ]]; then
     if [[ $UNTAGGED_COUNT -eq 0 ]]; then
       echo -e "${YELLOW}Lambdas missing ManagedBy=terraform tag:${NC}"
@@ -362,7 +362,7 @@ if [[ $TOTAL_ORPHANS -gt 0 ]]; then
           echo "$ORPHAN_LAMBDAS" | while read -r item; do
             if [[ -n "$item" ]]; then
               echo -n "  Deleting $item... "
-              if aws lambda delete-function --function-name "$item" 2>/dev/null; then
+              if aws lambda delete-function --function-name "$item" 2> /dev/null; then
                 echo -e "${GREEN}OK${NC}"
               else
                 echo -e "${RED}FAILED${NC}"
@@ -381,12 +381,12 @@ if [[ $TOTAL_ORPHANS -gt 0 ]]; then
               echo -n "  Deleting $item... "
 
               # First, detach from all roles
-              ATTACHED_ROLES=$(aws iam list-entities-for-policy --policy-arn "$POLICY_ARN" --query 'PolicyRoles[*].RoleName' --output text 2>/dev/null || true)
+              ATTACHED_ROLES=$(aws iam list-entities-for-policy --policy-arn "$POLICY_ARN" --query 'PolicyRoles[*].RoleName' --output text 2> /dev/null || true)
               for role in $ATTACHED_ROLES; do
-                aws iam detach-role-policy --role-name "$role" --policy-arn "$POLICY_ARN" 2>/dev/null || true
+                aws iam detach-role-policy --role-name "$role" --policy-arn "$POLICY_ARN" 2> /dev/null || true
               done
 
-              if aws iam delete-policy --policy-arn "$POLICY_ARN" 2>/dev/null; then
+              if aws iam delete-policy --policy-arn "$POLICY_ARN" 2> /dev/null; then
                 echo -e "${GREEN}OK${NC}"
               else
                 echo -e "${RED}FAILED${NC}"
@@ -404,18 +404,18 @@ if [[ $TOTAL_ORPHANS -gt 0 ]]; then
               echo -n "  Deleting $item... "
 
               # Detach all policies first
-              ATTACHED=$(aws iam list-attached-role-policies --role-name "$item" --query 'AttachedPolicies[*].PolicyArn' --output text 2>/dev/null || true)
+              ATTACHED=$(aws iam list-attached-role-policies --role-name "$item" --query 'AttachedPolicies[*].PolicyArn' --output text 2> /dev/null || true)
               for policy in $ATTACHED; do
-                aws iam detach-role-policy --role-name "$item" --policy-arn "$policy" 2>/dev/null || true
+                aws iam detach-role-policy --role-name "$item" --policy-arn "$policy" 2> /dev/null || true
               done
 
               # Delete inline policies
-              INLINE=$(aws iam list-role-policies --role-name "$item" --query 'PolicyNames' --output text 2>/dev/null || true)
+              INLINE=$(aws iam list-role-policies --role-name "$item" --query 'PolicyNames' --output text 2> /dev/null || true)
               for policy in $INLINE; do
-                aws iam delete-role-policy --role-name "$item" --policy-name "$policy" 2>/dev/null || true
+                aws iam delete-role-policy --role-name "$item" --policy-name "$policy" 2> /dev/null || true
               done
 
-              if aws iam delete-role --role-name "$item" 2>/dev/null; then
+              if aws iam delete-role --role-name "$item" 2> /dev/null; then
                 echo -e "${GREEN}OK${NC}"
               else
                 echo -e "${RED}FAILED${NC}"

@@ -111,7 +111,7 @@ services:
 ## Related Patterns
 
 - [LocalStack Testing](../Integration/LocalStack-Testing.md)
-- [Jest ESM Mocking](Jest-ESM-Mocking-Strategy.md)
+- [Jest ESM Mocking](Vitest-Mocking-Strategy.md)
 
 ---
 

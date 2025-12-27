@@ -231,7 +231,7 @@ const getUserMock = jest.fn<() => Promise<User>>()
 ```
 
 ## Related Patterns
-- [Jest ESM Mocking Strategy](Jest-ESM-Mocking-Strategy.md) - When and what to mock
+- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md) - When and what to mock
 - [Coverage Philosophy](Coverage-Philosophy.md) - Testing principles
 - [AWS SDK Encapsulation](../Conventions/Vendor-Encapsulation-Policy.md) - Mock wrappers not SDK
 - [Type Definitions](../TypeScript/Type-Definitions.md) - Where to define types

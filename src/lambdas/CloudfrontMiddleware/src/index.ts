@@ -1,3 +1,13 @@
+/**
+ * CloudfrontMiddleware Lambda
+ *
+ * Lambda\@Edge function for CloudFront request processing.
+ * Extracts API key from query string and adds as header.
+ *
+ * Trigger: CloudFront (viewer-request)
+ * Input: CloudFrontRequestEvent
+ * Output: Modified CloudFrontRequest with headers
+ */
 import type {CloudFrontRequestEvent, Context} from 'aws-lambda'
 import type {CloudFrontHeaders, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
 import type {CloudFrontHandlerResult, CustomCloudFrontRequest} from '#types/lambda'
@@ -33,6 +43,12 @@ async function handleQueryString(request: CloudFrontRequest) {
   }
 }
 
+/**
+ * CloudFront request handler - extracts API key from query string
+ * @param event - CloudFront request event
+ * @param context - Lambda context
+ * @returns Modified request with API key header
+ */
 export const handler = async (event: CloudFrontRequestEvent, context: Context): Promise<CloudFrontHandlerResult> => {
   // Lambda@Edge can't use logIncomingFixture (no layers), log event for visibility
   logInfo('event <=', event)
