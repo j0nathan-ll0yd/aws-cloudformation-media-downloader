@@ -212,8 +212,8 @@ describe('Auth Flow Integration Tests', () => {
       expect(response.body.token).toBe(token)
       expect(response.body.userId).toBe(userId)
 
-      // Verify name update was called for new user
-      expect(usersMock.entity.update).toHaveBeenCalledWith({userId})
+      // Verify name update was called for new user (uses 'id' per Better Auth schema)
+      expect(usersMock.entity.update).toHaveBeenCalledWith({id: userId})
     })
 
     test('should not update name for existing user', async () => {

@@ -141,18 +141,19 @@ export async function createAllTables(): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.accounts (
-      account_id TEXT PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
+      account_id TEXT NOT NULL,
       provider_id TEXT NOT NULL,
-      provider_account_id TEXT NOT NULL,
       access_token TEXT,
       refresh_token TEXT,
-      expires_at INTEGER,
+      access_token_expires_at TIMESTAMP WITH TIME ZONE,
+      refresh_token_expires_at TIMESTAMP WITH TIME ZONE,
       scope TEXT,
-      token_type TEXT,
       id_token TEXT,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+      password TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS ${schema}.verification (
