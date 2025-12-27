@@ -24,32 +24,6 @@ const awsSdkExternals = [
   '@aws-sdk/util-dynamodb'
 ]
 
-// Node.js built-in modules - must be external to avoid "Dynamic require of X is not supported"
-// This happens when CJS dependencies use require() for built-ins in an ESM bundle
-const nodeBuiltins = [
-  'events',
-  'stream',
-  'net',
-  'tls',
-  'crypto',
-  'fs',
-  'path',
-  'os',
-  'util',
-  'buffer',
-  'string_decoder',
-  'querystring',
-  'url',
-  'http',
-  'https',
-  'zlib',
-  'child_process',
-  'dns',
-  'assert',
-  'timers',
-  'constants'
-]
-
 const isAnalyze = process.env['ANALYZE'] === 'true'
 
 async function build() {
@@ -81,7 +55,7 @@ async function build() {
       format: 'esm', // ESM for Node.js 24
       outfile: `${lambdaDir}/index.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
-      external: [...awsSdkExternals, ...nodeBuiltins],
+      external: awsSdkExternals,
       minify: true,
       sourcemap: false,
       metafile: isAnalyze, // Generate metafile for bundle analysis

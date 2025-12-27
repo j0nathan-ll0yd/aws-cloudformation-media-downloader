@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import type {Context, ScheduledEvent} from 'aws-lambda'
+import type {ScheduledEvent} from 'aws-lambda'
+import {createMockContext} from '#util/jest-setup'
 
 // Mock Drizzle client with proper chaining
 const mockReturning = jest.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
@@ -16,9 +17,6 @@ jest.unstable_mockModule('#lib/vendor/Drizzle/schema',
     sessions: {id: 'id', expiresAt: 'expiresAt'},
     verification: {id: 'id', expiresAt: 'expiresAt'}
   }))
-
-// Mock logging
-jest.unstable_mockModule('#lib/system/logging', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
 
 // Mock middleware
 jest.unstable_mockModule('#lib/lambda/middleware/powertools',
@@ -51,20 +49,7 @@ const createScheduledEvent = (): ScheduledEvent => ({
   detail: {}
 })
 
-const createContext = (): Context => ({
-  callbackWaitsForEmptyEventLoop: true,
-  functionName: 'CleanupExpiredRecords',
-  functionVersion: '$LATEST',
-  invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:CleanupExpiredRecords',
-  memoryLimitInMB: '256',
-  awsRequestId: 'test-request-id',
-  logGroupName: '/aws/lambda/CleanupExpiredRecords',
-  logStreamName: '2024/01/01/[$LATEST]test',
-  getRemainingTimeInMillis: () => 30000,
-  done: () => {},
-  fail: () => {},
-  succeed: () => {}
-})
+const context = createMockContext({functionName: 'CleanupExpiredRecords'})
 
 describe('CleanupExpiredRecords Lambda', () => {
   beforeEach(() => {
@@ -77,7 +62,7 @@ describe('CleanupExpiredRecords Lambda', () => {
       .mockResolvedValueOnce([{id: 'session1'}, {id: 'session2'}]) // sessions
       .mockResolvedValueOnce([]) // verification
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result).toEqual({fileDownloadsDeleted: 1, sessionsDeleted: 2, verificationTokensDeleted: 0, errors: []})
   })
@@ -87,7 +72,7 @@ describe('CleanupExpiredRecords Lambda', () => {
       .mockResolvedValueOnce([{id: 'session1'}]) // sessions succeeds
       .mockResolvedValueOnce([{id: 'verification1'}]) // verification succeeds
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.fileDownloadsDeleted).toBe(0)
     expect(result.sessionsDeleted).toBe(1)
@@ -99,7 +84,7 @@ describe('CleanupExpiredRecords Lambda', () => {
   it('should collect all errors when multiple cleanups fail', async () => {
     mockReturning.mockRejectedValueOnce(new Error('Error 1')).mockRejectedValueOnce(new Error('Error 2')).mockRejectedValueOnce(new Error('Error 3'))
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.errors).toHaveLength(3)
     expect(result.fileDownloadsDeleted).toBe(0)
@@ -113,7 +98,7 @@ describe('CleanupExpiredRecords Lambda', () => {
       .mockResolvedValueOnce([]) // sessions
       .mockResolvedValueOnce([]) // verification
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result).toEqual({fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []})
     // Should still call delete for each table
@@ -127,7 +112,7 @@ describe('CleanupExpiredRecords Lambda', () => {
 
     mockReturning.mockResolvedValueOnce(manyFileDownloads).mockResolvedValueOnce(manySessions).mockResolvedValueOnce([])
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.fileDownloadsDeleted).toBe(100)
     expect(result.sessionsDeleted).toBe(50)
@@ -138,7 +123,7 @@ describe('CleanupExpiredRecords Lambda', () => {
   it('should call delete operations in correct order', async () => {
     mockReturning.mockResolvedValue([])
 
-    await handler(createScheduledEvent(), createContext())
+    await handler(createScheduledEvent(), context)
 
     // Verify delete was called 3 times (once per table)
     expect(mockDelete).toHaveBeenCalledTimes(3)
@@ -152,7 +137,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     // Some libraries throw strings or other non-Error objects
     mockReturning.mockRejectedValueOnce('String error').mockResolvedValueOnce([]).mockResolvedValueOnce([])
 
-    const result = await handler(createScheduledEvent(), createContext())
+    const result = await handler(createScheduledEvent(), context)
 
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toContain('String error')

@@ -1,34 +1,10 @@
-import {describe, expect, jest, test, beforeEach} from '@jest/globals'
-import type {Context} from 'aws-lambda'
+import {describe, expect, test} from '@jest/globals'
 import {ValidationError} from '#lib/system/errors'
-
-// Mock logging to prevent output during tests
-jest.unstable_mockModule('#lib/system/logging', () => ({
-  logDebug: jest.fn(),
-  logError: jest.fn()
-}))
-
-const {buildApiResponse, getErrorMessage} = await import('./../responses')
+import {createMockContext} from '#util/jest-setup'
+import {buildApiResponse, getErrorMessage} from './../responses'
 
 describe('Response Helpers', () => {
-  const mockContext: Context = {
-    awsRequestId: 'test-request-id-123',
-    callbackWaitsForEmptyEventLoop: true,
-    functionName: 'TestFunction',
-    functionVersion: '$LATEST',
-    invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789:function:TestFunction',
-    memoryLimitInMB: '256',
-    logGroupName: '/aws/lambda/TestFunction',
-    logStreamName: '2024/01/01/[$LATEST]test',
-    getRemainingTimeInMillis: () => 30000,
-    done: () => {},
-    fail: () => {},
-    succeed: () => {}
-  }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
+  const mockContext = createMockContext({awsRequestId: 'test-request-id-123'})
 
   describe('getErrorMessage', () => {
     test('should extract message from Error instance', () => {

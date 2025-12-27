@@ -15,7 +15,8 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
 
 import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test} from '@jest/globals'
-import type {APIGatewayRequestAuthorizerEvent, Context} from 'aws-lambda'
+import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
+import {createMockContext} from '#util/jest-setup'
 
 // Test helpers
 import {
@@ -97,22 +98,7 @@ function createAuthorizerEvent(overrides: Partial<APIGatewayRequestAuthorizerEve
   }
 }
 
-function createMockContext(): Context {
-  return {
-    callbackWaitsForEmptyEventLoop: false,
-    functionName: 'ApiGatewayAuthorizer',
-    functionVersion: '$LATEST',
-    invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:ApiGatewayAuthorizer',
-    memoryLimitInMB: '256',
-    awsRequestId: `test-${Date.now()}`,
-    logGroupName: '/aws/lambda/ApiGatewayAuthorizer',
-    logStreamName: '2024/01/01/[$LATEST]test',
-    getRemainingTimeInMillis: () => 30000,
-    done: () => {},
-    fail: () => {},
-    succeed: () => {}
-  }
-}
+const context = createMockContext({functionName: 'ApiGatewayAuthorizer'})
 
 function setupApiGatewayMocks() {
   mockGetApiKeys.mockResolvedValue({
@@ -155,7 +141,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}
       })
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Allow policy with userId as principalId
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -172,7 +158,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: 'Bearer nonexistent-token', 'User-Agent': 'iOS/17.0'}
       })
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Deny policy (invalid token)
       expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
@@ -192,7 +178,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}
       })
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Deny policy (expired token)
       expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
@@ -216,7 +202,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}
       })
-      await handler(event, createMockContext())
+      await handler(event, context)
 
       // Assert: Session was validated - updatedAt should be refreshed
       // (We can't directly verify the timestamp change here without a getSessionByToken helper,
@@ -234,7 +220,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       })
 
       // Act
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Allow with unknown principal (multi-auth path doesn't require auth)
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -250,7 +236,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       })
 
       // Act
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Allow with unknown principal (multi-auth path allows anonymous)
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -266,7 +252,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       })
 
       // Act
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Deny (protected path requires auth)
       expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
@@ -282,7 +268,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       })
 
       // Act
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Deny (invalid header format)
       expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
@@ -301,7 +287,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}
       })
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Allow with userId
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -327,7 +313,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       const event = createAuthorizerEvent({
         headers: {Authorization: `Bearer ${token2}`, 'User-Agent': 'iOS/17.0'}
       })
-      const result = await handler(event, createMockContext())
+      const result = await handler(event, context)
 
       // Assert: Correct session validated
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')

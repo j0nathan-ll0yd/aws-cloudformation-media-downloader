@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, jest} from '@jest/globals'
-import type {Context} from 'aws-lambda'
+import {createMockContext} from '#util/jest-setup'
 
 // Mock fs module for reading migration files
 const mockReaddirSync = jest.fn<() => string[]>()
@@ -25,9 +25,6 @@ jest.unstable_mockModule('#lib/vendor/Drizzle/client', () => ({getDrizzleClient:
 // Mock drizzle-orm sql template
 jest.unstable_mockModule('drizzle-orm', () => ({sql: {raw: jest.fn((s: string) => s)}}))
 
-// Mock logging
-jest.unstable_mockModule('#lib/system/logging', () => ({logDebug: jest.fn(), logError: jest.fn(), logInfo: jest.fn()}))
-
 // Mock middleware - pass through the handler function
 jest.unstable_mockModule('#lib/lambda/middleware/powertools',
   () => ({withPowertools: jest.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
@@ -38,20 +35,7 @@ jest.unstable_mockModule('#lib/lambda/middleware/internal',
 // Import handler after all mocks are set up
 const {handler} = await import('./../src')
 
-const createContext = (): Context => ({
-  callbackWaitsForEmptyEventLoop: true,
-  functionName: 'MigrateDSQL',
-  functionVersion: '$LATEST',
-  invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:MigrateDSQL',
-  memoryLimitInMB: '256',
-  awsRequestId: 'test-request-id',
-  logGroupName: '/aws/lambda/MigrateDSQL',
-  logStreamName: '2024/01/01/[$LATEST]test',
-  getRemainingTimeInMillis: () => 300000,
-  done: () => {},
-  fail: () => {},
-  succeed: () => {}
-})
+const context = createMockContext({functionName: 'MigrateDSQL'})
 
 describe('MigrateDSQL Lambda', () => {
   beforeEach(() => {
@@ -72,7 +56,7 @@ describe('MigrateDSQL Lambda', () => {
   })
 
   it('should apply all migrations when none are applied', async () => {
-    const result = await handler({source: 'terraform-deploy'}, createContext())
+    const result = await handler({source: 'terraform-deploy'}, context)
 
     expect(result.applied).toEqual(['0001', '0002'])
     expect(result.skipped).toEqual([])
@@ -87,7 +71,7 @@ describe('MigrateDSQL Lambda', () => {
       .mockResolvedValueOnce([{version: '0001'}]) // SELECT applied
       .mockResolvedValue([]) // Remaining operations
 
-    const result = await handler({source: 'terraform-deploy'}, createContext())
+    const result = await handler({source: 'terraform-deploy'}, context)
 
     expect(result.applied).toEqual(['0002'])
     expect(result.skipped).toEqual(['0001'])
@@ -98,7 +82,7 @@ describe('MigrateDSQL Lambda', () => {
     mockExecute.mockResolvedValueOnce([]) // CREATE TABLE
       .mockResolvedValueOnce([{version: '0001'}, {version: '0002'}]) // SELECT applied
 
-    const result = await handler({source: 'terraform-deploy'}, createContext())
+    const result = await handler({source: 'terraform-deploy'}, context)
 
     expect(result.applied).toEqual([])
     expect(result.skipped).toEqual(['0001', '0002'])
@@ -110,7 +94,7 @@ describe('MigrateDSQL Lambda', () => {
       .mockResolvedValueOnce([]) // SELECT applied (none)
       .mockRejectedValueOnce(new Error('SQL syntax error')) // Apply 0001 fails
 
-    const result = await handler({source: 'terraform-deploy'}, createContext())
+    const result = await handler({source: 'terraform-deploy'}, context)
 
     expect(result.applied).toEqual([])
     expect(result.skipped).toEqual([])
@@ -122,7 +106,7 @@ describe('MigrateDSQL Lambda', () => {
   it('should handle empty migrations directory', async () => {
     mockReaddirSync.mockReturnValue([])
 
-    const result = await handler({source: 'terraform-deploy'}, createContext())
+    const result = await handler({source: 'terraform-deploy'}, context)
 
     expect(result.applied).toEqual([])
     expect(result.skipped).toEqual([])
@@ -133,7 +117,7 @@ describe('MigrateDSQL Lambda', () => {
     mockReaddirSync.mockReturnValue(['invalid-filename.sql'])
     mockReadFileSync.mockReturnValue('-- Invalid migration')
 
-    await expect(handler({source: 'terraform-deploy'}, createContext())).rejects.toThrow('Invalid migration filename format')
+    await expect(handler({source: 'terraform-deploy'}, context)).rejects.toThrow('Invalid migration filename format')
   })
 
   it('should handle migrations directory not found', async () => {
@@ -141,6 +125,6 @@ describe('MigrateDSQL Lambda', () => {
       throw new Error('ENOENT: no such file or directory')
     })
 
-    await expect(handler({source: 'terraform-deploy'}, createContext())).rejects.toThrow('Failed to read migrations directory')
+    await expect(handler({source: 'terraform-deploy'}, context)).rejects.toThrow('Failed to read migrations directory')
   })
 })
