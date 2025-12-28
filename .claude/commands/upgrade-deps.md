@@ -2,6 +2,15 @@
 
 Perform a full dependency upgrade workflow: update all packages, fix breaking changes, create PR, and clean up dependabot PRs.
 
+## Agentic Enhancements
+
+This workflow now includes automated analysis features:
+
+- **Breaking change detection** via changelog parsing
+- **Impact analysis** using MCP `query_dependencies`
+- **AWS SDK alignment verification**
+- **Automatic Dependabot PR closure**
+
 ## Pre-flight Checks
 
 1. First, list all open dependabot PRs:
@@ -148,9 +157,73 @@ git branch -D chore/upgrade-dependencies 2>/dev/null || true
 git worktree list
 ```
 
+## Automated Analysis
+
+### Breaking Change Detection
+
+Before upgrading, analyze changelogs for breaking changes:
+
+```bash
+# Check for major version bumps
+pnpm outdated --format json | jq '[.[] | select(.current != .wanted) | select(.current | split(".")[0] != (.wanted | split(".")[0]))]'
+```
+
+For each major version bump:
+1. Fetch the package changelog from npm/GitHub
+2. Identify breaking changes section
+3. Map to affected files in codebase using:
+
+```
+MCP Tool: query_dependencies
+Query: dependents
+File: node_modules/[package]/index.js
+```
+
+### AWS SDK Alignment Check
+
+Verify all AWS SDK packages are at the same version:
+
+```bash
+pnpm list | grep '@aws-sdk' | awk '{print $2}' | sort -u
+```
+
+If multiple versions exist, alignment is needed before proceeding.
+
+### Impact Analysis
+
+For each outdated package, determine blast radius:
+
+```
+MCP Tool: query_dependencies
+Query: transitive
+```
+
+Prioritize packages by:
+1. Security vulnerabilities (highest priority)
+2. Packages with most dependents
+3. Packages blocking other updates
+
+### Auto-Close Dependabot PRs
+
+After successful merge, automatically close superseded Dependabot PRs:
+
+```bash
+# Get list of Dependabot PRs for packages we upgraded
+UPGRADED_PACKAGES=$(git diff HEAD~1 package.json | grep '"@' | sed 's/.*"\(@[^"]*\)".*/\1/')
+
+for pkg in $UPGRADED_PACKAGES; do
+  # Find matching Dependabot PRs
+  unset GITHUB_TOKEN && gh pr list --author "app/dependabot" --search "$pkg" --json number,title | jq -r '.[].number' | while read pr; do
+    echo "Closing Dependabot PR #$pr (superseded by comprehensive upgrade)"
+    unset GITHUB_TOKEN && gh pr close $pr --comment "Superseded by comprehensive dependency upgrade"
+  done
+done
+```
+
 ## Notes
 
 - **GitHub auth**: If you see 401 errors, the `GITHUB_TOKEN` env var may be invalid. Use `unset GITHUB_TOKEN` to fall back to keyring auth.
 - **AWS SDK alignment**: Per `docs/wiki/Methodologies/Dependabot-Resolution.md`, all AWS SDK packages must be updated together.
 - **Major version upgrades**: Check changelogs for Jest, Joi, glob, and other major bumps before proceeding.
 - **Pre-push hook**: The project runs `ci:local:full` on push, which includes integration tests with LocalStack.
+- **Human checkpoint**: Always review breaking change analysis before applying upgrades.
