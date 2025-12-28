@@ -155,14 +155,11 @@ export async function uploadToS3(
 }
 ```
 
-## Why Vendor Wrappers?
+## Rationale
 
-1. **Environment Detection** - Auto-detect LocalStack vs production
-2. **Instrumentation** - Built-in X-Ray tracing for AWS services
-3. **Testability** - Single mock point per service
-4. **Type Safety** - Custom interfaces with domain semantics
-5. **Configuration** - Centralized client configuration
-6. **Consistency** - Same patterns across all integrations
+See [ADR-0002: Vendor Encapsulation](../Decisions/0002-vendor-encapsulation.md) for the full decision context.
+
+**Summary**: Environment detection, X-Ray instrumentation, testability, and consistency.
 
 ## Enforcement
 
@@ -191,8 +188,13 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
 5. Export domain-specific functions
 6. Update this documentation
 
-## Related Patterns
+## Related
 
+### ADRs
+- [ADR-0002: Vendor Encapsulation](../Decisions/0002-vendor-encapsulation.md) - Decision rationale
+- [ADR-0004: Lazy Initialization](../Decisions/0004-lazy-initialization.md) - Related pattern
+
+### Patterns
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - AWS service tracing
 - [LocalStack Testing](../Testing/LocalStack-Testing.md) - Local development
 - [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Entity mocking patterns

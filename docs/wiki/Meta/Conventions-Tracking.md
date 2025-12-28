@@ -2,6 +2,27 @@
 
 Central registry of all project conventions with their documentation and enforcement mechanisms.
 
+## Architecture Decision Records
+
+ADRs capture the "why" behind conventions. See [docs/wiki/Decisions/](../Decisions/README.md) for full list.
+
+| ADR | Title | Related Conventions | Enforcement |
+|-----|-------|---------------------|-------------|
+| [0001](../Decisions/0001-adr-adoption.md) | ADR Adoption | - | - |
+| [0002](../Decisions/0002-vendor-encapsulation.md) | Vendor Encapsulation | Vendor Encapsulation Policy | MCP, ESLint, Dep Cruiser |
+| [0003](../Decisions/0003-testing-philosophy.md) | Testing Philosophy | Coverage Philosophy | Code review |
+| [0004](../Decisions/0004-lazy-initialization.md) | Lazy Initialization | Lambda Function Patterns | MCP `env-validation` |
+| [0005](../Decisions/0005-drift-prevention.md) | Drift Prevention | Drift Prevention | Script enforcement |
+| [0006](../Decisions/0006-lambda-middleware.md) | Lambda Middleware | Lambda Function Patterns | ESLint `enforce-powertools` |
+| [0007](../Decisions/0007-error-handling-types.md) | Error Handling | TypeScript Error Handling | Code review |
+| [0008](../Decisions/0008-database-migration.md) | Database Migration | Database Migrations | MigrateDSQL Lambda |
+| [0009](../Decisions/0009-pii-sanitization.md) | PII Sanitization | PII Protection | Built into logging |
+| [0010](../Decisions/0010-no-ai-attribution.md) | No AI Attribution | Git Workflow | Git hook `commit-msg` |
+| [0011](../Decisions/0011-type-organization.md) | Type Organization | Type Definitions | MCP `types-location` |
+| [0012](../Decisions/0012-remocal-testing.md) | Remocal Testing | LocalStack Testing | Test scripts |
+
+---
+
 ## Enforcement Summary
 
 ### Automated Methods
