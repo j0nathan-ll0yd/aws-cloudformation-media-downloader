@@ -38,7 +38,8 @@ WARNINGS=""
 # Check 1: Entity count matches documentation
 # =============================================================================
 echo -n "  [1/8] Checking entity count... "
-ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
+# Count only top-level entity files, excluding queries/ subdirectory (those are utility modules)
+ENTITY_COUNT=$(find src/entities -maxdepth 1 -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count entity files listed in AGENTS.md between entities/ and lambdas/ sections
 # Each entity file is listed with │   │   ├── or │   │   └──
@@ -146,7 +147,8 @@ echo -n "  [6/8] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
 # Get entity names from filesystem (excluding Collections.ts which is a service, not entity)
-FS_ENTITIES=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "Collections.ts" -exec basename {} .ts \; 2> /dev/null | sort)
+# Use maxdepth 1 to exclude queries/ subdirectory (those are utility modules, not entity definitions)
+FS_ENTITIES=$(find src/entities -maxdepth 1 -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "Collections.ts" -exec basename {} .ts \; 2> /dev/null | sort)
 
 # Check each entity appears in metadata.json entityRelationships
 for entity in $FS_ENTITIES; do

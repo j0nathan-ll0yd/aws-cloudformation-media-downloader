@@ -41,12 +41,12 @@ module.exports = {
     {
       name: 'no-entity-cross-dependencies',
       severity: 'error',
-      comment: 'Entities should not import each other (except Collections)',
+      comment: 'Entities should not import each other (except Collections and queries/)',
       from: {
-        path: '^src/entities/(?!Collections)([^.]+)\\.ts$',
+        path: '^src/entities/(?!Collections|queries/)([^/]+)\\.ts$',
       },
       to: {
-        path: '^src/entities/(?!Collections)(?!$1)([^.]+)\\.ts$',
+        path: '^src/entities/(?!Collections|queries/)(?!$1)([^/]+)\\.ts$',
       },
     },
     {
@@ -133,6 +133,15 @@ module.exports = {
       from: {},
       to: {
         path: '^src/entities/',
+      },
+    },
+    {
+      comment: 'Allow imports within entity queries module',
+      from: {
+        path: '^src/entities/queries/',
+      },
+      to: {
+        path: '^src/entities/queries/',
       },
     },
     {
