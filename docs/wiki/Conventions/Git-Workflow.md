@@ -351,8 +351,12 @@ git commit -m "fix: resolve null pointer in user service"
 git commit -m "feat: add pagination to API responses"
 ```
 
-## Related Patterns
+## Related
 
+### ADRs
+- [ADR-0010: No AI Attribution](../Decisions/0010-no-ai-attribution.md) - Decision rationale
+
+### Patterns
 - [Code Comments](Code-Comments.md) - No AI attribution in code
 - [Naming Conventions](Naming-Conventions.md) - Branch naming standards
 
