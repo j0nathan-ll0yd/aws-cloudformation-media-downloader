@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "MigrateDSQLDSQL" {
 
 resource "aws_cloudwatch_log_group" "MigrateDSQL" {
   name              = "/aws/lambda/${aws_lambda_function.MigrateDSQL.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -47,6 +47,7 @@ resource "aws_lambda_function" "MigrateDSQL" {
   role             = aws_iam_role.MigrateDSQL.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   timeout          = 300 # 5 minutes for complex migrations
   memory_size      = 256
   depends_on       = [aws_iam_role_policy_attachment.MigrateDSQL]

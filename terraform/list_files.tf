@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "ListFiles" {
 
 resource "aws_cloudwatch_log_group" "ListFiles" {
   name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -48,6 +48,7 @@ resource "aws_lambda_function" "ListFiles" {
   role             = aws_iam_role.ListFiles.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.ListFilesLogging]
   filename         = data.archive_file.ListFiles.output_path

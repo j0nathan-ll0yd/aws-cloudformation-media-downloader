@@ -65,7 +65,7 @@ resource "aws_lambda_permission" "WebhookFeedly" {
 
 resource "aws_cloudwatch_log_group" "WebhookFeedly" {
   name              = "/aws/lambda/${aws_lambda_function.WebhookFeedly.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -81,6 +81,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   role             = aws_iam_role.WebhookFeedly.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   memory_size      = 512
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly]
   filename         = data.archive_file.WebhookFeedly.output_path
@@ -341,6 +342,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   role                           = aws_iam_role.StartFileUpload.arn
   handler                        = "index.handler"
   runtime                        = "nodejs24.x"
+  architectures                  = ["x86_64"] # Must use x86_64 - yt-dlp and ffmpeg layers are amd64 binaries
   depends_on                     = [aws_iam_role_policy_attachment.StartFileUpload]
   timeout                        = 900
   memory_size                    = 2048
@@ -382,6 +384,6 @@ resource "aws_lambda_function" "StartFileUpload" {
 
 resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
