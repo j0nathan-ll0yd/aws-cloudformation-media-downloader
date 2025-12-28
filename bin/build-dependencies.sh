@@ -11,10 +11,10 @@ if [ -f "${project_root}/.env" ]; then
   set +a
 fi
 
-infrastructure_files_list="${bin_dir}/../terraform/*.tf"
-types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
-infrastructure_hcl_file_path="${bin_dir}/../build/infrastructure.tf"
-infrastructure_json_file_path="${bin_dir}/../build/infrastructure.json"
+infrastructure_files_list="${project_root}/terraform/*.tf"
+types_file_path="${project_root}/src/types/infrastructure.d.ts"
+infrastructure_hcl_file_path="${project_root}/build/infrastructure.tf"
+infrastructure_json_file_path="${project_root}/build/infrastructure.json"
 
 echo "infrastructure_files_list = $infrastructure_files_list"
 
@@ -26,13 +26,13 @@ echo 'Converting HCL to JSON (via hcl2json)'
 hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"
 
 echo 'Converting JSON to TypeScript (via Quicktype)'
-quicktype_command="${bin_dir}/../node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
+quicktype_command="${project_root}/node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
 eval $quicktype_command
 
 echo 'Checking Secrets (secrets.yaml) via SOPS'
-secrets_file_path="${bin_dir}/../secrets.yaml"
-encrypted_secrets_file_path="${bin_dir}/../secrets.enc.yaml"
-sops_config_path="${bin_dir}/../.sops.yaml"
+secrets_file_path="${project_root}/secrets.yaml"
+encrypted_secrets_file_path="${project_root}/secrets.enc.yaml"
+sops_config_path="${project_root}/.sops.yaml"
 
 if [ ! -f "$secrets_file_path" ]; then
   echo "Warning: Secrets file does not exist at $secrets_file_path"
