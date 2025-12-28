@@ -2,6 +2,14 @@
 
 # Get the directory of this file (where the package.json file is located)
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
+project_root="${bin_dir}/.."
+
+# Load environment variables from .env if it exists
+if [ -f "${project_root}/.env" ]; then
+  set -a
+  source "${project_root}/.env"
+  set +a
+fi
 
 infrastructure_files_list="${bin_dir}/../terraform/*.tf"
 types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
