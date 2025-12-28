@@ -5,9 +5,9 @@
  * This rule enforces the conventions documented in docs/wiki/Conventions/Code-Comments.md:
  * - Lambda handler files must have file headers
  * - Exported functions must have JSDoc
- * - @example tags should be short (5 lines max) or use @see/@link instead
+ * - \@example tags should be short (5 lines max) or use \@see/\@link instead
  * - Interfaces and type aliases should have JSDoc
- * - @param tags must use hyphen format (TSDoc standard)
+ * - \@param tags must use hyphen format (TSDoc standard)
  *
  * @see docs/wiki/Conventions/Code-Comments.md
  */
@@ -20,7 +20,7 @@ import type {ValidationRule, Violation} from '../types'
 const RULE_NAME = 'comment-conventions'
 const SEVERITY = 'HIGH' as const
 
-/** Maximum lines for @example content before suggesting @see/@link */
+/** Maximum lines for \@example content before suggesting \@see/\@link */
 const MAX_EXAMPLE_LINES = 5
 
 export const commentConventionsRule: ValidationRule = {
@@ -221,7 +221,7 @@ function validateTypeDocumentation(sourceFile: SourceFile): Violation[] {
 }
 
 /**
- * Validate @param tags use hyphen format (TSDoc standard)
+ * Validate \@param tags use hyphen format (TSDoc standard).
  */
 function validateParamHyphenFormat(sourceFile: SourceFile): Violation[] {
   const violations: Violation[] = []

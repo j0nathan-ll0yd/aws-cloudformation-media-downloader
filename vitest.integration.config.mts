@@ -10,11 +10,7 @@ export default mergeConfig(
       testTimeout: 30000,
       globalSetup: './test/integration/globalSetup.ts',
       setupFiles: ['./test/integration/setup.ts'],
-      poolOptions: {
-        threads: {
-          maxThreads: 4
-        }
-      },
+      maxWorkers: 4,
       coverage: {
         reportsDirectory: './coverage/integration'
       }

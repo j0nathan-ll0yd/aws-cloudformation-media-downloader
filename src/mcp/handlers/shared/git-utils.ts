@@ -86,11 +86,9 @@ export function getChangedFiles(baseRef: string, headRef: string): string[] {
  */
 export function getFileAtRef(filePath: string, ref: string): string {
   const cacheKey = `${ref}:${filePath}`
-
   if (cache.fileAtRef.has(cacheKey)) {
     return cache.fileAtRef.get(cacheKey)!
   }
-
   try {
     const content = execGit(['show', `${ref}:${filePath}`])
     cache.fileAtRef.set(cacheKey, content)
@@ -156,9 +154,9 @@ export interface BlameInfo {
   content: string
 }
 
+/** Retrieves git blame information for a file or line range. */
 export function getBlame(filePath: string, startLine?: number, endLine?: number): BlameInfo[] {
   const lineArgs = startLine !== undefined && endLine !== undefined ? ['-L', `${startLine},${endLine}`] : []
-
   try {
     const output = execGit(['blame', '--porcelain', ...lineArgs, filePath])
     const lines = output.split('\n')
@@ -198,6 +196,7 @@ export interface CommitInfo {
   message: string
 }
 
+/** Retrieves commit history for a specific file. */
 export function getFileHistory(filePath: string, limit = 10): CommitInfo[] {
   try {
     const output = execGit(['log', '--format=%H|%an|%ai|%s', `-n${limit}`, '--', filePath])

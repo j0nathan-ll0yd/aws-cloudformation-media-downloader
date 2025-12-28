@@ -73,6 +73,8 @@ module.exports = {
           '^graphrag/(extract|query)\\.ts$',
           '^scripts/',
           '\\.d\\.ts$',
+          '^src/mcp/test/fixtures/',
+          '^src/types/schemas\\.ts$',
         ],
       },
       to: {},
@@ -158,6 +160,51 @@ module.exports = {
       },
       to: {
         path: '^src/mcp/handlers/',
+      },
+    },
+    {
+      comment: 'Allow MCP validation rules to import validation types and other rules',
+      from: {
+        path: '^src/mcp/validation/',
+      },
+      to: {
+        path: '^src/mcp/validation/',
+      },
+    },
+    {
+      comment: 'Allow MCP parsers to import other parsers (including tests)',
+      from: {
+        path: '^src/mcp/parsers/',
+      },
+      to: {
+        path: '^src/mcp/parsers/',
+      },
+    },
+    {
+      comment: 'Allow MCP handlers to import validation, parsers, and templates',
+      from: {
+        path: '^src/mcp/handlers/',
+      },
+      to: {
+        path: '^src/mcp/(validation|parsers|templates)/',
+      },
+    },
+    {
+      comment: 'Allow MCP test files to import fixtures',
+      from: {
+        path: '^src/mcp/.*\\.test\\.ts$',
+      },
+      to: {
+        path: '^src/mcp/test/fixtures/',
+      },
+    },
+    {
+      comment: 'Allow Lambda handlers to import config constants',
+      from: {
+        path: '^src/lambdas/',
+      },
+      to: {
+        path: '^src/config/',
       },
     },
   ],

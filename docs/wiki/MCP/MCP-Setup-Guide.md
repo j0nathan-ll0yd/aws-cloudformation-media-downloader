@@ -249,6 +249,3 @@ Potential improvements to the MCP server:
 ## Related Documentation
 
 - [MCP Specification](https://modelcontextprotocol.io/docs)
-- [Project Architecture](./ARCHITECTURE.md)
-- [Dependency Graph](../build/graph.json)
-- [MCP Server Implementation](../src/mcp/README.md)

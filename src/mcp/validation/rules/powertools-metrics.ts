@@ -3,7 +3,7 @@
  * MEDIUM: Validates correct usage of PowerTools metrics
  *
  * This rule validates that:
- * 1. Files using metrics.addMetric() have {enableCustomMetrics: true} in withPowertools()
+ * 1. Files using metrics.addMetric() have `\{enableCustomMetrics: true\}` in withPowertools()
  * 2. Warns when addDimension() is used without singleMetric()
  *
  * @see docs/wiki/TypeScript/Lambda-Function-Patterns.md

@@ -68,9 +68,8 @@ export function createMockUserDevice(userId: string, deviceId: string) {
 }
 
 /**
- * Creates a mock Device record with endpoint ARN
- * @param deviceId - Device UUID
- * @param endpointArn - SNS endpoint ARN (optional, auto-generated if not provided)
+ * Creates a mock Device record with endpoint ARN.
+ * @param partial - Partial device fields to override defaults
  */
 export function createMockDevice(partial?: Partial<Device>): Partial<Device> {
   const deviceId = partial?.deviceId || `device-${Math.random().toString(36).substring(7)}`

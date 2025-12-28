@@ -99,6 +99,7 @@ function getTestFilePath(filePath: string): string {
   return filePath.replace('/src/', '/test/').replace(/\.ts$/, '.test.ts')
 }
 
+/** Handles MCP queries for test coverage and mock requirements. */
 export async function handleCoverageQuery(args: CoverageQueryArgs) {
   const {file, query} = args
 

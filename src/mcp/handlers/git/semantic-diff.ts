@@ -313,7 +313,6 @@ function parseAtRef(content: string, filePath: string): SourceFile | null {
   if (!content) {
     return null
   }
-
   try {
     const project = new Project({useInMemoryFileSystem: true, compilerOptions: {strict: true}})
     return project.createSourceFile(filePath, content)

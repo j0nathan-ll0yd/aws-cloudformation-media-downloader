@@ -10,12 +10,10 @@
 
 import {getLambdaConfigs, getLambdaInvocations} from './data-loader.js'
 
+/** Handles MCP queries for Lambda function configuration and triggers. */
 export async function handleLambdaQuery(args: {lambda?: string; query: string}) {
   const {lambda, query} = args
-
-  // Load configs dynamically
-  const lambdaConfigs = await getLambdaConfigs()
-
+  const lambdaConfigs = await getLambdaConfigs() // Load configs dynamically
   switch (query) {
     case 'list':
       return {lambdas: Object.keys(lambdaConfigs).sort(), count: Object.keys(lambdaConfigs).length}

@@ -160,7 +160,6 @@ export async function getLambdaConfigs(): Promise<
  */
 export async function getEntityInfo(): Promise<{entities: string[]; relationships: EntityRelationship[]}> {
   const [entities, metadata] = await Promise.all([discoverEntities(), loadMetadata()])
-
   return {entities, relationships: metadata.entityRelationships}
 }
 
