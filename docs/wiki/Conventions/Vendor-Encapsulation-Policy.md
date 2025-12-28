@@ -21,6 +21,7 @@ This applies to:
 | Library | Wrapper Location | Purpose |
 |---------|------------------|---------|
 | AWS SDK | `lib/vendor/AWS/` | S3, DynamoDB, SNS, SQS, Lambda |
+| Drizzle ORM | `lib/vendor/Drizzle/` | Aurora DSQL database access |
 | ElectroDB | `lib/vendor/ElectroDB/` | DynamoDB ORM configuration |
 | Better Auth | `lib/vendor/BetterAuth/` | Authentication framework |
 | yt-dlp | `lib/vendor/YouTube.ts` | Video download wrapper |
@@ -76,6 +77,31 @@ const auth = betterAuth({...})
 // Use configured auth instance
 import {auth} from '#lib/vendor/BetterAuth'
 const session = await auth.api.getSession({...})
+```
+
+### Drizzle ORM
+
+#### ❌ FORBIDDEN
+```typescript
+// Direct Drizzle imports
+import {drizzle} from 'drizzle-orm/postgres-js'
+import {eq} from 'drizzle-orm'
+import postgres from 'postgres'
+```
+
+#### ✅ REQUIRED
+```typescript
+// Client: Use configured client with IAM auth
+import {getDrizzleClient} from '#lib/vendor/Drizzle'
+
+// Schema: Import table definitions
+import {users, files} from '#lib/vendor/Drizzle/schema'
+
+// Types: Import query operators
+import {eq, and} from '#lib/vendor/Drizzle/types'
+
+// FK checks: Import foreign key enforcement
+import {assertUserExists} from '#lib/vendor/Drizzle/fk-enforcement'
 ```
 
 ## Vendor Wrapper Pattern
