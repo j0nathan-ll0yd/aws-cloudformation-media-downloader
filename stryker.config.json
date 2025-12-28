@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "plugins": [
+    "@stryker-mutator/vitest-runner",
+    "@stryker-mutator/typescript-checker"
+  ],
+  "testRunner": "vitest",
+  "checkers": ["typescript"],
+  "tsconfigFile": "tsconfig.json",
+  "concurrency": 4,
+  "tempDirName": "stryker-tmp",
+  "ignoreStatic": true,
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 60
+  },
+  "mutate": [
+    "src/lambdas/**/src/**/*.ts",
+    "src/entities/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/util/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.fixture.ts",
+    "!src/**/*.d.ts",
+    "!src/mcp/**"
+  ],
+  "reporters": ["html", "clear-text", "progress", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "timeoutMS": 10000,
+  "timeoutFactor": 2
+}
