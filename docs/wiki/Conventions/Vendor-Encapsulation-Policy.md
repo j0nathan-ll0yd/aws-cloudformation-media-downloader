@@ -104,6 +104,24 @@ import {eq, and} from '#lib/vendor/Drizzle/types'
 import {assertUserExists} from '#lib/vendor/Drizzle/fk-enforcement'
 ```
 
+#### Type Utilities
+
+The `#lib/vendor/Drizzle/types` module provides type inference utilities:
+
+```typescript
+import type {SelectModel, InsertModel, UpdateModel} from '#lib/vendor/Drizzle/types'
+import {users} from '#lib/vendor/Drizzle/schema'
+
+// Infer the select (read) model type from a Drizzle table
+type UserItem = SelectModel<typeof users>
+
+// Infer the insert (create) model type from a Drizzle table
+type CreateUserInput = InsertModel<typeof users>
+
+// Create a partial update type, excluding the primary key
+type UpdateUserInput = Partial<Omit<InsertModel<typeof users>, 'userId'>>
+```
+
 ## Vendor Wrapper Pattern
 
 ```typescript

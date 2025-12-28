@@ -15,7 +15,7 @@ const SEVERITY = 'HIGH' as const
 
 export const responseHelpersRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Lambda handlers must use buildApiResponse() helper from lambda-helpers.ts or responses.ts instead of raw response objects.',
+  description: 'Lambda handlers must use buildApiResponse() helper from responses.ts instead of raw response objects.',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/**/src/*.ts'],
   excludes: ['**/*.test.ts', 'test/**/*.ts'],
@@ -32,7 +32,7 @@ export const responseHelpersRule: ValidationRule = {
     const imports = sourceFile.getImportDeclarations()
     const hasResponseImport = imports.some((imp) => {
       const moduleSpec = imp.getModuleSpecifierValue()
-      if (moduleSpec.includes('lambda-helpers') || moduleSpec.includes('lambda/responses')) { // Check both import locations
+      if (moduleSpec.includes('lambda/responses')) {
         const namedImports = imp.getNamedImports().map((n) => n.getName())
         return namedImports.includes('buildApiResponse')
       }
