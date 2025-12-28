@@ -49,5 +49,5 @@ export function logOutgoingFixture(response: unknown, fixtureType?: string): voi
     return
   }
   const detectedType = fixtureType || getOptionalEnv('AWS_LAMBDA_FUNCTION_NAME', 'UnknownLambda')
-  logger.info('fixture:outgoing', {__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, capturedAt: Date.now(), response: sanitizeData(response)}) // capturedAt used instead of 'timestamp' (reserved Powertools key)
+  logger.info('fixture:outgoing', {__FIXTURE_MARKER__: 'OUTGOING', fixtureType: detectedType, capturedAt: Date.now(), response: sanitizeData(response)})
 }
