@@ -6,7 +6,7 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     include: ['**/*.test.ts', '**/*.spec.ts'],
-    exclude: ['node_modules/**', 'dist/**', 'build/**', 'test/integration/**'],
+    exclude: ['node_modules/**', 'dist/**', 'build/**', 'test/integration/**', 'test/e2e/**'],
     clearMocks: true,
     testTimeout: 10000,
     pool: 'threads',

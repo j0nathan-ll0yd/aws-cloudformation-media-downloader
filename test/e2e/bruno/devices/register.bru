@@ -1,0 +1,45 @@
+meta {
+  name: Register Device
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/device/register?ApiKey={{apiKey}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "deviceId": "bruno-test-device-uuid",
+    "name": "Bruno Test iPhone",
+    "systemName": "iOS",
+    "systemVersion": "17.0",
+    "token": "mock-apns-token-for-bruno-testing-64chars-minimum-length-here"
+  }
+}
+
+vars:post-response {
+  endpointArn: res.body.body.endpointArn
+}
+
+assert {
+  res.status: in [200, 201]
+  res.body.body.endpointArn: isDefined
+}
+
+tests {
+  test("should return SNS endpoint ARN", function() {
+    expect(res.body.body.endpointArn).to.match(/^arn:aws:sns:/);
+  });
+}

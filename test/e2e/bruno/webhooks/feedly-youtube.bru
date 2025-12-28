@@ -1,0 +1,41 @@
+meta {
+  name: Feedly Webhook - YouTube Video
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/feedly?ApiKey={{apiKey}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "articleURL": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "articleTitle": "Never Gonna Give You Up",
+    "sourceTitle": "Rick Astley - Topic",
+    "articlePublishedAt": "2009-10-25T00:00:00Z",
+    "createdAt": "{{$isoTimestamp}}"
+  }
+}
+
+assert {
+  res.status: in [200, 202]
+  res.body.body.status: isDefined
+}
+
+tests {
+  test("should return valid status", function() {
+    expect(['Dispatched', 'Accepted', 'Initiated']).to.include(res.body.body.status);
+  });
+}

@@ -1,0 +1,40 @@
+meta {
+  name: Feedly Webhook - YouTube Shorts
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/feedly?ApiKey={{apiKey}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "articleURL": "https://www.youtube.com/shorts/abcd1234xyz",
+    "articleTitle": "Test Short Video",
+    "sourceTitle": "Test Channel",
+    "createdAt": "{{$isoTimestamp}}"
+  }
+}
+
+assert {
+  res.status: in [200, 202]
+  res.body.body.status: isDefined
+}
+
+tests {
+  test("should accept Shorts URL format", function() {
+    expect(['Dispatched', 'Accepted', 'Initiated']).to.include(res.body.body.status);
+  });
+}

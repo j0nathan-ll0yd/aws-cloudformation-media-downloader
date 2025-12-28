@@ -1,0 +1,35 @@
+meta {
+  name: Refresh Token
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/user/refresh?ApiKey={{apiKey}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+vars:post-response {
+  authToken: res.body.body.token
+}
+
+assert {
+  res.status: eq 200
+  res.body.body.token: isDefined
+  res.body.body.expiresAt: isNumber
+}
+
+tests {
+  test("should extend session expiration", function() {
+    expect(res.body.body.expiresAt).to.be.greaterThan(Date.now());
+  });
+}

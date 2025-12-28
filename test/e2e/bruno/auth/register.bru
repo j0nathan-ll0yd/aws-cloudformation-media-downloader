@@ -1,0 +1,50 @@
+meta {
+  name: Register User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/user/register?ApiKey={{apiKey}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  User-Agent: Bruno/1.0 (E2E Testing)
+}
+
+body:json {
+  {
+    "idToken": "mock-apple-id-token-bruno-test",
+    "firstName": "Bruno",
+    "lastName": "TestUser"
+  }
+}
+
+vars:post-response {
+  authToken: res.body.body.token
+  userId: res.body.body.userId
+  sessionId: res.body.body.sessionId
+}
+
+assert {
+  res.status: eq 200
+  res.body.body.token: isDefined
+  res.body.body.userId: isDefined
+  res.body.body.sessionId: isDefined
+  res.body.body.expiresAt: isNumber
+}
+
+tests {
+  test("should return auth token", function() {
+    expect(res.body.body.token).to.be.a('string');
+    expect(res.body.body.token.length).to.be.greaterThan(0);
+  });
+
+  test("should return valid expiration", function() {
+    expect(res.body.body.expiresAt).to.be.greaterThan(Date.now());
+  });
+}
