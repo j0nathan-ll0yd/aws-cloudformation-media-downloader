@@ -172,6 +172,15 @@ module.exports = {
       },
     },
     {
+      comment: 'Allow MCP parsers to import other parsers (including tests)',
+      from: {
+        path: '^src/mcp/parsers/',
+      },
+      to: {
+        path: '^src/mcp/parsers/',
+      },
+    },
+    {
       comment: 'Allow MCP handlers to import validation, parsers, and templates',
       from: {
         path: '^src/mcp/handlers/',
