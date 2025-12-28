@@ -49,3 +49,8 @@ local_cache/
 tsp-output/
 tsp/examples/
 coverage-reports/
+
+# Mutation testing (Stryker)
+stryker-tmp/
+reports/stryker-incremental.json
+reports/mutation/
