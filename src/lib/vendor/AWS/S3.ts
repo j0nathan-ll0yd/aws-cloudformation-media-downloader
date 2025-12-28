@@ -8,7 +8,6 @@ import {createS3Client} from './clients'
 const s3Client = createS3Client()
 
 /* c8 ignore start - Pure AWS SDK wrapper, tested via integration tests */
-/** Retrieves metadata for an S3 object without downloading it. */
 export async function headObject(bucket: string, key: string): Promise<HeadObjectCommandOutput> {
   const params: HeadObjectCommandInput = {Bucket: bucket, Key: key}
   const command = new HeadObjectCommand(params)
@@ -17,7 +16,6 @@ export async function headObject(bucket: string, key: string): Promise<HeadObjec
 /* c8 ignore stop */
 
 /* c8 ignore start - Thin wrapper with default parameters, tested via integration tests */
-/** Creates a multipart upload stream for large file transfers to S3. */
 export function createS3Upload(
   bucket: string,
   key: string,

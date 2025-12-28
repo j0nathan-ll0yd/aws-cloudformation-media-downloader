@@ -10,17 +10,14 @@ const sqs = createSQSClient()
 // MessageAttributeValue is for SENDING messages (AWS SDK types)
 export type { MessageAttributeValue, SendMessageRequest, SQSMessageAttribute, SQSMessageAttributes }
 
-/** Creates a string-typed SQS message attribute. */
 export function stringAttribute(value: string): MessageAttributeValue {
   return {DataType: 'String', StringValue: value}
 }
 
-/** Creates a number-typed SQS message attribute. */
 export function numberAttribute(value: number): MessageAttributeValue {
   return {DataType: 'Number', StringValue: value.toString()}
 }
 
-/** Sends a message to an SQS queue. */
 export function sendMessage(params: SendMessageRequest): Promise<SendMessageResult> {
   const command = new SendMessageCommand(params)
   return sqs.send(command)

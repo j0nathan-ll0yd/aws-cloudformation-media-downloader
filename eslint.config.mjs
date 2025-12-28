@@ -104,6 +104,14 @@ export default [
       'jsdoc/require-returns-description': 'off'
     }
   },
+  // Vendor wrappers are thin SDK facades - function names and types are self-documenting
+  {
+    files: ['src/lib/vendor/**/*.ts'],
+    ignores: ['src/lib/vendor/**/*.test.ts'],
+    rules: {
+      'jsdoc/require-jsdoc': 'off'
+    }
+  },
   // Lambda handlers require a JSDoc description block (purpose documentation)
   // No @param/@returns tags required - TypeScript types are sufficient
   {
