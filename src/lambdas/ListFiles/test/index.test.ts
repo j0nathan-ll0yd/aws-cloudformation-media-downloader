@@ -14,9 +14,7 @@ const fakeUserId = uuidv4()
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getFilesForUser: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getFilesForUser: vi.fn()}))
 
 const {handler} = await import('./../src')
 import {getFilesForUser} from '#entities/queries'

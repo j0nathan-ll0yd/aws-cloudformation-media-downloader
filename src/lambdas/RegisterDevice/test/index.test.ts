@@ -6,10 +6,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 const fakeUserId = uuidv4()
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  upsertDevice: vi.fn(),
-  upsertUserDevice: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
 const getUserDevicesMock = vi.fn()
 vi.mock('#lib/domain/device/device-service', () => ({

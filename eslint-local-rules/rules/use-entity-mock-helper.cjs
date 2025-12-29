@@ -1,22 +1,27 @@
 /**
  * use-entity-mock-helper
- * ERROR: Test files must use createEntityMock() helper
+ * WARN: Legacy entity mocking patterns are deprecated
+ *
+ * With native Drizzle query functions, tests should mock #entities/queries directly
+ * using vi.fn() for each function. Legacy ElectroDB-style entity mocks are deprecated.
  *
  * Mirrors: src/mcp/validation/rules/entity-mocking.ts
  */
 
-const ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
+const LEGACY_ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
 
 module.exports = {
   meta: {
-    type: 'problem',
+    type: 'suggestion',
     docs: {
-      description: 'Enforce using createEntityMock() in tests for entity mocking',
+      description: 'Detect deprecated legacy entity mocking patterns - use #entities/queries with vi.fn() instead',
       category: 'Testing',
       recommended: true
     },
     messages: {
-      manualMock: "Manual entity mock detected for '{{path}}'. Use createEntityMock() from test/helpers/entity-mock.ts instead."
+      legacyEntityMock:
+        "Legacy entity mock detected for '{{path}}'. Use vi.mock('#entities/queries', () => ({...})) with vi.fn() for each query function instead.",
+      deprecatedHelper: 'createEntityMock() helper is deprecated. Use direct vi.fn() mocks with #entities/queries.'
     },
     schema: []
   },
@@ -28,58 +33,46 @@ module.exports = {
       return {}
     }
 
-    // Skip the helper file itself
-    if (filename.includes('entity-mock') || filename.includes('electrodb-mock')) {
+    // Skip helper and mock files
+    if (filename.includes('entity-mock') || filename.includes('drizzle-mock')) {
       return {}
     }
 
-    // Track variables created with createEntityMock (or legacy createElectroDBEntityMock)
-    const helperVariables = new Set()
-
     return {
-      VariableDeclarator(node) {
-        // Track: const fooMock = createEntityMock(...) or createElectroDBEntityMock(...)
-        if (
-          node.init &&
-          node.init.type === 'CallExpression' &&
-          node.init.callee.type === 'Identifier' &&
-          (node.init.callee.name === 'createEntityMock' || node.init.callee.name === 'createElectroDBEntityMock') &&
-          node.id.type === 'Identifier'
-        ) {
-          helperVariables.add(node.id.name)
-        }
-      },
-
       CallExpression(node) {
         const callee = node.callee
 
-        // Check for jest.unstable_mockModule or jest.mock
+        // Check for vi.mock or jest.mock
         if (
           callee.type === 'MemberExpression' &&
-          callee.object.name === 'jest' &&
-          (callee.property.name === 'unstable_mockModule' || callee.property.name === 'mock')
+          (callee.object.name === 'vi' || callee.object.name === 'jest') &&
+          (callee.property.name === 'mock' || callee.property.name === 'unstable_mockModule')
         ) {
-          if (node.arguments.length >= 2) {
+          if (node.arguments.length >= 1) {
             const modulePath = node.arguments[0]
             if (modulePath.type === 'Literal' && typeof modulePath.value === 'string') {
               const pathValue = modulePath.value
 
-              // Check if mocking an entity
-              const isEntityMock = pathValue.includes('entities/') || ENTITY_NAMES.some((e) => pathValue.includes(e))
+              // Check if mocking a legacy entity directly (not #entities/queries)
+              const isLegacyEntityMock = LEGACY_ENTITY_NAMES.some((e) => pathValue === `#entities/${e}` || pathValue.endsWith(`/entities/${e}`))
 
-              if (isEntityMock) {
+              if (isLegacyEntityMock) {
+                context.report({
+                  node,
+                  messageId: 'legacyEntityMock',
+                  data: {path: pathValue}
+                })
+              }
+
+              // Check for deprecated createEntityMock usage
+              if (node.arguments.length >= 2) {
                 const sourceCode = context.sourceCode || context.getSourceCode()
                 const mockImpl = sourceCode.getText(node.arguments[1])
 
-                // Check if mock uses createEntityMock (or legacy) directly or via a tracked variable
-                const usesHelper = mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')
-                const usesHelperVariable = Array.from(helperVariables).some((varName) => mockImpl.includes(varName + '.entity'))
-
-                if (!usesHelper && !usesHelperVariable) {
+                if (mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')) {
                   context.report({
                     node,
-                    messageId: 'manualMock',
-                    data: {path: pathValue}
+                    messageId: 'deprecatedHelper'
                   })
                 }
               }

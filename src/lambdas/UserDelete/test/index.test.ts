@@ -42,12 +42,7 @@ vi.mock('#lib/domain/device/device-service', () => ({
 }))
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  deleteUser: vi.fn(),
-  deleteUserDevicesByUserId: vi.fn(),
-  deleteUserFilesByUserId: vi.fn(),
-  getDevicesBatch: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUserId: vi.fn(), deleteUserFilesByUserId: vi.fn(), getDevicesBatch: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/SNS', () => ({
   deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline

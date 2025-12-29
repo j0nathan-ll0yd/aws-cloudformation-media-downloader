@@ -9,12 +9,7 @@ import type {MediaDownloaderEventType} from '#types/events'
 const fakeUserId = uuidv4()
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getFile: vi.fn(),
-  createFile: vi.fn(),
-  createUserFile: vi.fn(),
-  createFileDownload: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
 
 // Mock Powertools idempotency to bypass DynamoDB persistence
 vi.mock('#lib/vendor/Powertools/idempotency', () => ({
@@ -56,15 +51,36 @@ const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeed
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
-import {getFile, createFile, createUserFile, createFileDownload} from '#entities/queries'
+import {createFile, createFileDownload, createUserFile, getFile} from '#entities/queries'
 
 // Mock return value factories matching Drizzle schema
 const mockFileRow = () => ({
-  fileId: 'test-file-id', key: 'test-key.mp4', authorName: 'Test Author', authorUser: 'test-user', publishDate: '2024-01-01', description: 'Test description', title: 'Test Title', status: 'Queued', size: 0, url: null, contentType: 'video/mp4'
+  fileId: 'test-file-id',
+  key: 'test-key.mp4',
+  authorName: 'Test Author',
+  authorUser: 'test-user',
+  publishDate: '2024-01-01',
+  description: 'Test description',
+  title: 'Test Title',
+  status: 'Queued',
+  size: 0,
+  url: null,
+  contentType: 'video/mp4'
 })
 const mockUserFileRow = () => ({userId: fakeUserId, fileId: 'test-file-id', createdAt: new Date()})
 const mockFileDownloadRow = () => ({
-  fileId: 'test-file-id', status: 'Pending', retryCount: 0, maxRetries: 5, retryAfter: null, errorCategory: null, lastError: null, scheduledReleaseTime: null, sourceUrl: null, correlationId: null, createdAt: new Date(), updatedAt: new Date()
+  fileId: 'test-file-id',
+  status: 'Pending',
+  retryCount: 0,
+  maxRetries: 5,
+  retryAfter: null,
+  errorCategory: null,
+  lastError: null,
+  scheduledReleaseTime: null,
+  sourceUrl: null,
+  correlationId: null,
+  createdAt: new Date(),
+  updatedAt: new Date()
 })
 
 describe('#WebhookFeedly', () => {
@@ -152,7 +168,17 @@ describe('#WebhookFeedly', () => {
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an already-downloaded file
       vi.mocked(getFile).mockResolvedValue({
-        fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: 'Downloaded', size: 50000000, url: 'https://example.com/wRG7lAGdRII.mp4', authorName: 'Author', authorUser: 'author-user', publishDate: '2024-01-01', description: 'Desc', title: 'Title', contentType: 'video/mp4'
+        fileId: 'wRG7lAGdRII',
+        key: 'wRG7lAGdRII.mp4',
+        status: 'Downloaded',
+        size: 50000000,
+        url: 'https://example.com/wRG7lAGdRII.mp4',
+        authorName: 'Author',
+        authorUser: 'author-user',
+        publishDate: '2024-01-01',
+        description: 'Desc',
+        title: 'Title',
+        contentType: 'video/mp4'
       })
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
@@ -175,7 +201,19 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(handleFeedlyEventResponse)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is still queued
-      vi.mocked(getFile).mockResolvedValue({fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: 'Queued', size: 0, url: null, authorName: 'Author', authorUser: 'author-user', publishDate: '2024-01-01', description: 'Desc', title: 'Title', contentType: 'video/mp4'})
+      vi.mocked(getFile).mockResolvedValue({
+        fileId: 'wRG7lAGdRII',
+        key: 'wRG7lAGdRII.mp4',
+        status: 'Queued',
+        size: 0,
+        url: null,
+        authorName: 'Author',
+        authorUser: 'author-user',
+        publishDate: '2024-01-01',
+        description: 'Desc',
+        title: 'Title',
+        contentType: 'video/mp4'
+      })
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       // Should NOT create a new file record
@@ -189,7 +227,19 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(handleFeedlyEventResponse)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is currently downloading
-      vi.mocked(getFile).mockResolvedValue({fileId: 'wRG7lAGdRII', key: 'wRG7lAGdRII.mp4', status: 'Downloading', size: 0, url: null, authorName: 'Author', authorUser: 'author-user', publishDate: '2024-01-01', description: 'Desc', title: 'Title', contentType: 'video/mp4'})
+      vi.mocked(getFile).mockResolvedValue({
+        fileId: 'wRG7lAGdRII',
+        key: 'wRG7lAGdRII.mp4',
+        status: 'Downloading',
+        size: 0,
+        url: null,
+        authorName: 'Author',
+        authorUser: 'author-user',
+        publishDate: '2024-01-01',
+        description: 'Desc',
+        title: 'Title',
+        contentType: 'video/mp4'
+      })
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       expect(vi.mocked(createFile)).not.toHaveBeenCalled()

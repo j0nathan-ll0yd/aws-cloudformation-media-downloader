@@ -8,10 +8,7 @@ beforeAll(() => {
 })
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getFilesByKey: vi.fn(),
-  getUserFilesByFileId: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileId: vi.fn()}))
 
 const sendMessageMock = vi.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
 vi.mock('#lib/vendor/AWS/SQS',
@@ -27,7 +24,17 @@ import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
 // Mock data matching Drizzle schema
 const mockFileRow = {
-  fileId: '4TfEp8oG5gM', key: '20210122-[Philip DeFranco].mp4', authorName: 'Philip DeFranco', authorUser: 'sxephil', publishDate: '2021-01-22T00:00:00.000Z', description: 'Test description', title: 'Test Video', status: 'Downloaded', size: 61548900, url: 'https://example.com/video.mp4', contentType: 'video/mp4'
+  fileId: '4TfEp8oG5gM',
+  key: '20210122-[Philip DeFranco].mp4',
+  authorName: 'Philip DeFranco',
+  authorUser: 'sxephil',
+  publishDate: '2021-01-22T00:00:00.000Z',
+  description: 'Test description',
+  title: 'Test Video',
+  status: 'Downloaded',
+  size: 61548900,
+  url: 'https://example.com/video.mp4',
+  contentType: 'video/mp4'
 }
 const mockUserFileRow = {fileId: '4TfEp8oG5gM', userId: 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456', createdAt: new Date()}
 

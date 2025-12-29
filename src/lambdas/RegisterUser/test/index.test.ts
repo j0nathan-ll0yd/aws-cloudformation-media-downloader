@@ -9,9 +9,7 @@ const authMock = createBetterAuthMock()
 vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => authMock.auth)}))
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  updateUser: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
@@ -30,7 +28,18 @@ describe('#RegisterUser', () => {
     authMock.mocks.signInSocial.mockReset()
     vi.mocked(updateUser).mockClear()
     // Default mock - will be overridden in specific tests
-    vi.mocked(updateUser).mockResolvedValue({id: 'test-user-id', email: 'test@example.com', emailVerified: false, name: null, image: null, firstName: null, lastName: null, appleDeviceId: null, createdAt: new Date(), updatedAt: new Date()})
+    vi.mocked(updateUser).mockResolvedValue({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      emailVerified: false,
+      name: null,
+      image: null,
+      firstName: null,
+      lastName: null,
+      appleDeviceId: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
   })
 
   test('should successfully register a new user via Better Auth and update name', async () => {
@@ -52,7 +61,9 @@ describe('#RegisterUser', () => {
     })
 
     // Mock the user name update
-    vi.mocked(updateUser).mockResolvedValue({id: userId, firstName: 'Jonathan', lastName: 'Lloyd'} as ReturnType<typeof updateUser> extends Promise<infer T> ? T : never)
+    vi.mocked(updateUser).mockResolvedValue(
+      {id: userId, firstName: 'Jonathan', lastName: 'Lloyd'} as ReturnType<typeof updateUser> extends Promise<infer T> ? T : never
+    )
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)

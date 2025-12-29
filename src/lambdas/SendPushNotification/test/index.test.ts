@@ -12,22 +12,19 @@ const getDeviceResponse = {
   token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
   systemName: 'iOS',
   systemVersion: '17.0',
-  name: "Test Device",
+  name: 'Test Device',
   endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
 }
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getUserDevicesByUserId: vi.fn(),
-  getDevice: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getUserDevicesByUserId: vi.fn(), getDevice: vi.fn()}))
 
 const publishSnsEventMock = vi.fn<() => unknown>()
 vi.mock('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
-import {getUserDevicesByUserId, getDevice} from '#entities/queries'
+import {getDevice, getUserDevicesByUserId} from '#entities/queries'
 
 describe('#SendPushNotification', () => {
   let event: SQSEvent

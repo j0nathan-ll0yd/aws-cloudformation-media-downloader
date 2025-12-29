@@ -1,9 +1,11 @@
 /**
  * Entity Mocking Rule
- * CRITICAL: Test files must use createEntityMock() helper
+ * MEDIUM: Test files should mock entity query functions consistently
  *
- * This ensures consistent mocking patterns and proper type safety.
- * Entities use Drizzle internally but expose ElectroDB-compatible API.
+ * With native Drizzle query functions, tests mock `#entities/queries` directly
+ * using standard vi.mock() patterns with vi.fn() for each function.
+ *
+ * This rule validates that entity query mocks are properly structured.
  */
 
 import type {SourceFile} from 'ts-morph'
@@ -12,16 +14,17 @@ import {createViolation} from '../types'
 import type {ValidationRule, Violation} from '../types'
 
 const RULE_NAME = 'entity-mocking'
-const SEVERITY = 'CRITICAL' as const
+const SEVERITY = 'MEDIUM' as const
 
 /**
- * Entity names that should be mocked with the helper
+ * Legacy entity names (no longer used directly, kept for backwards compatibility detection)
+ * @deprecated These entity wrappers have been replaced by native Drizzle query functions
  */
-const ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
+const LEGACY_ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
 
 export const entityMockingRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Test files must use createEntityMock() from test/helpers/entity-mock.ts for mocking entities.',
+  description: 'Test files should mock #entities/queries with vi.fn() for each query function. Legacy ElectroDB-style entity mocks are deprecated.',
   severity: SEVERITY,
   appliesTo: ['src/**/*.test.ts', 'test/**/*.ts'],
   excludes: ['test/helpers/**/*.ts'],
@@ -34,81 +37,51 @@ export const entityMockingRule: ValidationRule = {
       return violations
     }
 
-    // Skip the helper file itself
-    if (filePath.includes('entity-mock') || filePath.includes('electrodb-mock')) {
+    // Skip helper files
+    if (filePath.includes('entity-mock') || filePath.includes('drizzle-mock')) {
       return violations
     }
 
-    const content = sourceFile.getFullText()
-
-    // Check if file imports any entities
-    const imports = sourceFile.getImportDeclarations()
-    const importsEntities = imports.some((imp) => {
-      const moduleSpec = imp.getModuleSpecifierValue()
-      return moduleSpec.includes('entities/') || ENTITY_NAMES.some((e) => moduleSpec.includes(e))
-    })
-
-    // Check if file mocks entities
-    const mocksEntities = ENTITY_NAMES.some((entity) => content.includes(`#entities/${entity}`) || content.includes(`entities/${entity}`))
-
-    if (!importsEntities && !mocksEntities) {
-      return violations // No entity usage, rule doesn't apply
-    }
-
-    // Check if createEntityMock (or legacy createElectroDBEntityMock) is imported
-    const hasCorrectImport = imports.some((imp) => {
-      const moduleSpec = imp.getModuleSpecifierValue()
-      const namedImports = imp.getNamedImports().map((n) => n.getName())
-      return (moduleSpec.includes('entity-mock') || moduleSpec.includes('electrodb-mock') || moduleSpec.includes('test/helpers')) &&
-        (namedImports.includes('createEntityMock') || namedImports.includes('createElectroDBEntityMock'))
-    })
-
-    // Check for manual entity mocking patterns
+    // Check for legacy entity imports (deprecated pattern)
     const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
 
     for (const call of callExpressions) {
       const expression = call.getExpression()
       const expressionText = expression.getText()
 
-      // Check for vi.mock (Vitest) or legacy jest.mock/jest.unstable_mockModule with entity paths
-      if (expressionText === 'vi.mock' || expressionText === 'jest.unstable_mockModule' || expressionText === 'jest.mock') {
+      // Check for vi.mock with legacy entity paths
+      if (expressionText === 'vi.mock' || expressionText === 'jest.mock') {
         const args = call.getArguments()
         if (args.length > 0) {
           const modulePath = args[0].getText().replace(/['"]/g, '')
 
-          // Check if mocking an entity
-          const isEntityMock = modulePath.includes('entities/') || ENTITY_NAMES.some((e) => modulePath.includes(e))
+          // Check if mocking a legacy entity directly (not #entities/queries)
+          const isLegacyEntityMock = LEGACY_ENTITY_NAMES.some((e) => modulePath === `#entities/${e}` || modulePath.endsWith(`/entities/${e}`))
 
-          if (isEntityMock && args.length > 1) {
-            // Check if the mock implementation uses createEntityMock (or legacy name)
+          if (isLegacyEntityMock) {
+            violations.push(
+              createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
+                `Legacy entity mock detected for '${modulePath}'. Use #entities/queries instead.`, {
+                suggestion: `vi.mock('#entities/queries', () => ({\n  getUser: vi.fn(),\n  createUser: vi.fn(),\n  // ... other functions\n}))`,
+                codeSnippet: call.getText().substring(0, 150)
+              })
+            )
+          }
+
+          // Check if using deprecated createEntityMock helper
+          if (args.length > 1) {
             const mockImpl = args[1].getText()
-
-            if (!mockImpl.includes('createEntityMock') && !mockImpl.includes('createElectroDBEntityMock')) {
+            if (mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')) {
               violations.push(
                 createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
-                  `Manual entity mock detected for '${modulePath}'. Use createEntityMock() instead.`, {
-                  suggestion: `const ${modulePath.split('/').pop()}Mock = createEntityMock({...})\nvi.mock('${modulePath}', () => ({${
-                    modulePath.split('/').pop()
-                  }: ${modulePath.split('/').pop()}Mock.entity}))`,
+                  'createEntityMock() helper is deprecated. Use direct vi.fn() mocks with #entities/queries.', {
+                  suggestion: `vi.mock('#entities/queries', () => ({\n  getUser: vi.fn(),\n  createUser: vi.fn(),\n  // ... other functions as needed\n}))`,
                   codeSnippet: call.getText().substring(0, 150)
                 })
               )
             }
           }
         }
-      }
-    }
-
-    // If file mocks entities but doesn't import the helper
-    if (mocksEntities && !hasCorrectImport && violations.length === 0) {
-      // Check if they're using the mock helper correctly
-      const usesHelper = content.includes('createEntityMock') || content.includes('createElectroDBEntityMock')
-      if (!usesHelper) {
-        violations.push(
-          createViolation(RULE_NAME, SEVERITY, 1, 'File mocks entities but does not use createEntityMock() helper', {
-            suggestion: "import {createEntityMock} from '../../../../test/helpers/entity-mock'"
-          })
-        )
       }
     }
 

@@ -40,10 +40,7 @@ const fakeDevices = [{
 }]
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getAllDevices: vi.fn(),
-  deleteUserDevicesByDeviceId: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesByDeviceId: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/SNS', () => ({
   deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: 'test-request-id'}}), // fmt: multiline
@@ -51,9 +48,7 @@ vi.mock('#lib/vendor/AWS/SNS', () => ({
   unsubscribe: vi.fn()
 }))
 
-vi.mock('#lib/domain/device/device-service', () => ({
-  deleteDevice: vi.fn()
-}))
+vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: vi.fn()}))
 
 // Use vi.hoisted() to define mock classes before vi.mock hoists
 const {sendMock, MockApnsClient, MockNotification} = vi.hoisted(() => {
@@ -112,7 +107,7 @@ function getSuccessfulResponseForDevice(arrayIndex: number) {
 }
 
 const {handler} = await import('./../src')
-import {getAllDevices, deleteUserDevicesByDeviceId} from '#entities/queries'
+import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {deleteDevice} from '#lib/domain/device/device-service'
 
 describe('#PruneDevices', () => {

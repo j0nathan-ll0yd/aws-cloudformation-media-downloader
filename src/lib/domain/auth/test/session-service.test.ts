@@ -8,10 +8,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {UnauthorizedError} from '#lib/system/errors'
 
 // Mock native Drizzle query functions
-vi.mock('#entities/queries', () => ({
-  getSessionByToken: vi.fn(),
-  updateSession: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getSessionByToken: vi.fn(), updateSession: vi.fn()}))
 
 // Import after mocking
 const {validateSessionToken, refreshSession} = await import('../session-service')
@@ -105,7 +102,8 @@ describe('Better Auth Helpers', () => {
       expect(result.expiresAt).toBeGreaterThan(originalExpiration)
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
-      expect(vi.mocked(updateSession)).toHaveBeenCalledWith('session-123', expect.objectContaining({expiresAt: expect.any(Date), updatedAt: expect.any(Date)}))
+      expect(vi.mocked(updateSession)).toHaveBeenCalledWith('session-123',
+        expect.objectContaining({expiresAt: expect.any(Date), updatedAt: expect.any(Date)}))
     })
   })
 })

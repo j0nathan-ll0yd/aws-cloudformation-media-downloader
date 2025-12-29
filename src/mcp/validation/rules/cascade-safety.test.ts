@@ -163,4 +163,88 @@ await Users.delete({userId}).go()`, {overwrite: true})
       expect(violations[0].codeSnippet).toBeDefined()
     })
   })
+
+  describe('native Drizzle function patterns', () => {
+    test('should detect Promise.all with deleteUser() calls', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-promise-all.ts', `await Promise.all([
+  deleteUser(userId),
+  deleteUserFilesByUserId(userId)
+])`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/UserDelete/src/index.ts')
+
+      expect(violations.length).toBeGreaterThanOrEqual(1)
+      expect(violations[0].message).toContain('Promise.all')
+      expect(violations[0].message).toContain('Promise.allSettled')
+    })
+
+    test('should detect Promise.all with deleteFile() calls', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-file-delete.ts', `await Promise.all([
+  deleteFile(fileId),
+  deleteUserFile(userId, fileId)
+])`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/FileDelete/src/index.ts')
+
+      expect(violations.length).toBeGreaterThanOrEqual(1)
+    })
+
+    test('should detect deleteUser() called before deleteUserFilesByUserId()', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-wrong-order.ts', `await deleteUser(userId)
+await deleteUserFilesByUserId(userId)`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/UserDelete/src/index.ts')
+
+      const orderViolations = violations.filter((v) => v.message.includes('Incorrect cascade order'))
+      expect(orderViolations.length).toBeGreaterThanOrEqual(1)
+      expect(orderViolations[0].message).toContain('deleteUser')
+      expect(orderViolations[0].message).toContain('deleteUserFilesByUserId')
+    })
+
+    test('should detect deleteUser() called before deleteSessionsByUserId()', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-sessions-order.ts', `await deleteUser(userId)
+await deleteSessionsByUserId(userId)`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/UserDelete/src/index.ts')
+
+      const orderViolations = violations.filter((v) => v.message.includes('Incorrect cascade order'))
+      expect(orderViolations.length).toBeGreaterThanOrEqual(1)
+    })
+
+    test('should allow correct Drizzle function deletion order', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-correct-order.ts', `await deleteUserFilesByUserId(userId)
+await deleteUserDevicesByUserId(userId)
+await deleteSessionsByUserId(userId)
+await deleteAccountsByUserId(userId)
+await deleteUser(userId)`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/UserDelete/src/index.ts')
+
+      const orderViolations = violations.filter((v) => v.message.includes('Incorrect cascade order'))
+      expect(orderViolations).toHaveLength(0)
+    })
+
+    test('should allow Promise.allSettled with Drizzle delete functions', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-allsettled.ts', `await Promise.allSettled([
+  deleteUserFilesByUserId(userId),
+  deleteUserDevicesByUserId(userId)
+])`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/UserDelete/src/index.ts')
+
+      const promiseAllViolations = violations.filter((v) => v.message.includes('Promise.all with delete'))
+      expect(promiseAllViolations).toHaveLength(0)
+    })
+
+    test('should detect deleteDevice() called before deleteUserDevicesByDeviceId()', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-device-order.ts', `await deleteDevice(deviceId)
+await deleteUserDevicesByDeviceId(deviceId)`, {overwrite: true})
+
+      const violations = cascadeSafetyRule.validate(sourceFile, 'src/lambdas/DeviceDelete/src/index.ts')
+
+      const orderViolations = violations.filter((v) => v.message.includes('Incorrect cascade order'))
+      expect(orderViolations.length).toBeGreaterThanOrEqual(1)
+      expect(orderViolations[0].message).toContain('deleteDevice')
+    })
+  })
 })

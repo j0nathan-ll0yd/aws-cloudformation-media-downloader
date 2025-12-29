@@ -32,7 +32,6 @@ import type {Context} from 'aws-lambda'
 // Test helpers
 import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createEntityMock} from '../../helpers/entity-mock'
 
 import {fileURLToPath} from 'url'
 import {dirname, resolve} from 'path'
@@ -48,10 +47,10 @@ const signInSocialMock = vi.fn<any>()
 // getAuth is now async - return a Promise resolving to the auth object
 vi.mock(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
 
-// Mock Users entity for RegisterUser name update
-const usersModulePath = resolve(__dirname, '../../../src/entities/Users')
-const usersMock = createEntityMock()
-vi.mock(usersModulePath, () => ({Users: usersMock.entity}))
+// Mock native Drizzle query functions for RegisterUser name update
+const updateUserMock = vi.fn()
+const queriesModulePath = resolve(__dirname, '../../../src/entities/queries')
+vi.mock(queriesModulePath, () => ({updateUser: updateUserMock}))
 
 // Import handlers after mocking
 const {handler: loginHandler} = await import('../../../src/lambdas/LoginUser/src/index')
@@ -110,8 +109,8 @@ describe('Auth Flow Integration Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Default mock for Users.update
-    usersMock.mocks.update.go.mockResolvedValue({data: {}})
+    // Default mock for updateUser query function
+    updateUserMock.mockResolvedValue({id: 'mock-user', name: 'Updated User'})
   })
 
   describe('LoginUser', () => {
@@ -212,8 +211,8 @@ describe('Auth Flow Integration Tests', () => {
       expect(response.body.token).toBe(token)
       expect(response.body.userId).toBe(userId)
 
-      // Verify name update was called for new user (uses 'id' per Better Auth schema)
-      expect(usersMock.entity.update).toHaveBeenCalledWith({id: userId})
+      // Verify updateUser was called for new user name update
+      expect(updateUserMock).toHaveBeenCalledWith(userId, {firstName: 'John', lastName: 'Doe'})
     })
 
     test('should not update name for existing user', async () => {
@@ -242,7 +241,7 @@ describe('Auth Flow Integration Tests', () => {
       expect(result.statusCode).toBe(200)
 
       // Should NOT update name for existing user
-      expect(usersMock.entity.update).not.toHaveBeenCalled()
+      expect(updateUserMock).not.toHaveBeenCalled()
     })
 
     test('should allow registration without optional name fields', async () => {
