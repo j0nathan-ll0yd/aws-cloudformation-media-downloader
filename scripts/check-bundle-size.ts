@@ -72,18 +72,20 @@ function checkBundleSizes(): void {
   let hasFailure = false
   let hasWarning = false
 
-  // Find all Lambda build outputs (zip files)
-  const buildFiles = readdirSync(buildDir).filter((f) => f.endsWith('.zip'))
+  // Find all Lambda build outputs (directories with index.mjs)
+  const lambdaDirs = readdirSync(buildDir).filter((f) => {
+    const lambdaPath = join(buildDir, f)
+    return statSync(lambdaPath).isDirectory() && existsSync(join(lambdaPath, 'index.mjs'))
+  })
 
-  if (buildFiles.length === 0) {
+  if (lambdaDirs.length === 0) {
     console.error(`${RED}No Lambda bundles found in ${buildDir}${NC}`)
     console.error('Run "pnpm run build" first to generate Lambda bundles.')
     process.exit(1)
   }
 
-  for (const file of buildFiles) {
-    const lambdaName = file.replace('.zip', '')
-    const filePath = join(buildDir, file)
+  for (const lambdaName of lambdaDirs) {
+    const filePath = join(buildDir, lambdaName, 'index.mjs')
     const size = statSync(filePath).size
     const limit = limits.limits[lambdaName] ?? limits.globalLimit
     const percentage = size / limit
