@@ -10,9 +10,9 @@
 import type {UserRow} from '#entities/queries/user-queries'
 import type {FileRow} from '#entities/queries/file-queries'
 import type {DeviceRow} from '#entities/queries/device-queries'
-import type {UserFileRow, UserDeviceRow} from '#entities/queries/relationship-queries'
-import type {User, File, Device} from '#types/domain-models'
-import type {UserFile, UserDevice} from '#types/persistence-types'
+import type {UserDeviceRow, UserFileRow} from '#entities/queries/relationship-queries'
+import type {Device, File, User} from '#types/domain-models'
+import type {UserDevice, UserFile} from '#types/persistence-types'
 import {FileStatus} from '#types/enums'
 
 /**
@@ -82,11 +82,7 @@ export function toDevice(row: DeviceRow): Device {
  * @returns Domain UserFile object
  */
 export function toUserFile(row: UserFileRow): UserFile {
-  return {
-    userId: row.userId,
-    fileId: row.fileId,
-    createdAt: row.createdAt
-  }
+  return {userId: row.userId, fileId: row.fileId, createdAt: row.createdAt}
 }
 
 /**
@@ -96,9 +92,5 @@ export function toUserFile(row: UserFileRow): UserFile {
  * @returns Domain UserDevice object
  */
 export function toUserDevice(row: UserDeviceRow): UserDevice {
-  return {
-    userId: row.userId,
-    deviceId: row.deviceId,
-    createdAt: row.createdAt
-  }
+  return {userId: row.userId, deviceId: row.deviceId, createdAt: row.createdAt}
 }

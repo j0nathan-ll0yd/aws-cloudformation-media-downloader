@@ -190,6 +190,7 @@ export interface Local {
     adot_layer_arn?:                        string;
     common_lambda_env?:                     CommonLambdaEnv;
     common_tags?:                           CommonTags;
+    lambda_architecture?:                   string;
     migrate_dsql_function_name?:            string;
     prune_devices_function_name?:           string;
     refresh_token_function_name?:           string;
@@ -856,12 +857,13 @@ export interface AwsLambdaFunction {
     S3ObjectCreated:       CleanupExpiredRecordElement[];
     SendPushNotification:  CleanupExpiredRecordElement[];
     StartFileUpload:       CleanupExpiredRecordElement[];
-    UserDelete:            CloudfrontMiddleware[];
-    UserSubscribe:         CloudfrontMiddleware[];
-    WebhookFeedly:         CloudfrontMiddleware[];
+    UserDelete:            CleanupExpiredRecordElement[];
+    UserSubscribe:         CleanupExpiredRecordElement[];
+    WebhookFeedly:         CleanupExpiredRecordElement[];
 }
 
 export interface CleanupExpiredRecordElement {
+    architectures:                   Architecture[];
     depends_on:                      string[];
     description:                     string;
     environment:                     Environment[];
@@ -878,6 +880,11 @@ export interface CleanupExpiredRecordElement {
     memory_size?:                    number;
     ephemeral_storage?:              EphemeralStorage[];
     reserved_concurrent_executions?: number;
+}
+
+export enum Architecture {
+    LocalLambdaArchitecture = "${local.lambda_architecture}",
+    X8664 = "x86_64",
 }
 
 export interface Environment {
@@ -915,17 +922,13 @@ export interface CloudfrontMiddleware {
     filename:         string;
     function_name:    string;
     handler:          Handler;
-    provider?:        string;
-    publish?:         boolean;
+    provider:         string;
+    publish:          boolean;
     role:             string;
     runtime:          Runtime;
     source_code_hash: string;
     tags:             string;
     tracing_config:   TracingConfig[];
-    depends_on?:      string[];
-    environment?:     Environment[];
-    layers?:          Layer[];
-    memory_size?:     number;
 }
 
 export interface AwsLambdaLayerVersion {
@@ -1453,6 +1456,7 @@ const typeMap: any = {
         { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
         { json: "common_tags", js: "common_tags", typ: u(undefined, r("CommonTags")) },
+        { json: "lambda_architecture", js: "lambda_architecture", typ: u(undefined, "") },
         { json: "migrate_dsql_function_name", js: "migrate_dsql_function_name", typ: u(undefined, "") },
         { json: "prune_devices_function_name", js: "prune_devices_function_name", typ: u(undefined, "") },
         { json: "refresh_token_function_name", js: "refresh_token_function_name", typ: u(undefined, "") },
@@ -2012,11 +2016,12 @@ const typeMap: any = {
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("CleanupExpiredRecordElement")) },
         { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("CleanupExpiredRecordElement")) },
         { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("CloudfrontMiddleware")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CloudfrontMiddleware")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CloudfrontMiddleware")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("CleanupExpiredRecordElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CleanupExpiredRecordElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CleanupExpiredRecordElement")) },
     ], false),
     "CleanupExpiredRecordElement": o([
+        { json: "architectures", js: "architectures", typ: a(r("Architecture")) },
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("Environment")) },
@@ -2048,17 +2053,13 @@ const typeMap: any = {
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: r("Handler") },
-        { json: "provider", js: "provider", typ: u(undefined, "") },
-        { json: "publish", js: "publish", typ: u(undefined, true) },
+        { json: "provider", js: "provider", typ: "" },
+        { json: "publish", js: "publish", typ: true },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tags", js: "tags", typ: "" },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
-        { json: "depends_on", js: "depends_on", typ: u(undefined, a("")) },
-        { json: "environment", js: "environment", typ: u(undefined, a(r("Environment"))) },
-        { json: "layers", js: "layers", typ: u(undefined, a(r("Layer"))) },
-        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaLayerVersion": o([
         { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
@@ -2237,6 +2238,10 @@ const typeMap: any = {
         "${aws_api_gateway_rest_api.Main.root_resource_id}",
         "${aws_api_gateway_resource.Device.id}",
         "${aws_api_gateway_resource.User.id}",
+    ],
+    "Architecture": [
+        "${local.lambda_architecture}",
+        "x86_64",
     ],
     "Handler": [
         "index.handler",

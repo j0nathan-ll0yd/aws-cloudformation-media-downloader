@@ -36,8 +36,8 @@ export type LoginUserInput = z.infer<typeof loginUserSchema>
  * Maps auto-generated *Request types to project convention *Input types.
  * This provides a consistent naming convention across the codebase.
  */
-export type {DeviceRegistrationRequest as DeviceRegistrationInput} from './api-schema'
-export type {UserLoginRequest as LoginInput} from './api-schema'
-export type {UserRegistrationRequest as RegistrationInput} from './api-schema'
-export type {UserSubscriptionRequest as SubscriptionInput} from './api-schema'
-export type {FeedlyWebhookRequest as FeedlyWebhookInput} from './api-schema'
+export type { DeviceRegistrationRequest as DeviceRegistrationInput } from './api-schema'
+export type { UserLoginRequest as LoginInput } from './api-schema'
+export type { UserRegistrationRequest as RegistrationInput } from './api-schema'
+export type { UserSubscriptionRequest as SubscriptionInput } from './api-schema'
+export type { FeedlyWebhookRequest as FeedlyWebhookInput } from './api-schema'
