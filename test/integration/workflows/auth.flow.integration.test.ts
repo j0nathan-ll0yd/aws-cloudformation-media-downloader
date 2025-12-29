@@ -33,24 +33,15 @@ import type {Context} from 'aws-lambda'
 import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// Mock Better Auth config module
-const betterAuthConfigPath = resolve(__dirname, '../../../src/lib/vendor/BetterAuth/config')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const signInSocialMock = vi.fn<any>()
 
-// getAuth is now async - return a Promise resolving to the auth object
-vi.mock(betterAuthConfigPath, () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
+// Mock Better Auth config module - getAuth is async, returns auth object
+vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: async () => ({api: {signInSocial: signInSocialMock}})}))
 
 // Mock native Drizzle query functions for RegisterUser name update
 const updateUserMock = vi.fn()
-const queriesModulePath = resolve(__dirname, '../../../src/entities/queries')
-vi.mock(queriesModulePath, () => ({updateUser: updateUserMock}))
+vi.mock('#entities/queries', () => ({updateUser: updateUserMock}))
 
 // Import handlers after mocking
 const {handler: loginHandler} = await import('../../../src/lambdas/LoginUser/src/index')
