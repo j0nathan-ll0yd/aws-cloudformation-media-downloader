@@ -1,5 +1,5 @@
 resource "aws_api_gateway_rest_api" "Main" {
-  name           = "OfflineMediaDownloader"
+  name           = "${var.resource_prefix}-API"
   description    = "The API that supports the App"
   api_key_source = "HEADER"
 
@@ -43,7 +43,7 @@ resource "aws_api_gateway_deployment" "Main" {
 }
 
 resource "aws_api_gateway_stage" "Production" {
-  stage_name    = "prod"
+  stage_name    = var.environment
   rest_api_id   = aws_api_gateway_rest_api.Main.id
   deployment_id = aws_api_gateway_deployment.Main.id
 
@@ -63,7 +63,7 @@ resource "aws_api_gateway_method_settings" "Production" {
 }
 
 resource "aws_api_gateway_usage_plan" "iOSApp" {
-  name        = "iOSApp"
+  name        = "${var.resource_prefix}-iOSApp"
   description = "Internal consumption"
   api_stages {
     api_id = aws_api_gateway_rest_api.Main.id
@@ -72,7 +72,7 @@ resource "aws_api_gateway_usage_plan" "iOSApp" {
 }
 
 resource "aws_api_gateway_api_key" "iOSApp" {
-  name        = "iOSAppKey"
+  name        = "${var.resource_prefix}-iOSAppKey"
   description = "The key for the iOS App"
   enabled     = true
   tags        = local.common_tags
@@ -101,7 +101,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 }
 
 resource "aws_iam_role" "ApiGatewayCloudwatch" {
-  name               = "ApiGatewayCloudwatch"
+  name               = "${var.resource_prefix}-ApiGatewayCloudwatch"
   assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatch.json
   tags               = local.common_tags
 }
@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "ApiGatewayCloudwatch" {
 }
 
 resource "aws_iam_role_policy" "ApiGatewayCloudwatch" {
-  name   = "ApiGatewayCloudwatch"
+  name   = "${var.resource_prefix}-ApiGatewayCloudwatch"
   role   = aws_iam_role.ApiGatewayCloudwatch.id
   policy = data.aws_iam_policy_document.CommonLambdaLogging.json
 }

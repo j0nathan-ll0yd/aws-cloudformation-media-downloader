@@ -12,7 +12,7 @@
 # @see terraform/download_queue.tf for SQS configuration
 
 locals {
-  event_bus_name = "MediaDownloader"
+  event_bus_name = "${var.resource_prefix}-EventBus"
 }
 
 # Event Bus: Central routing for all domain events
@@ -26,7 +26,7 @@ resource "aws_cloudwatch_event_bus" "MediaDownloader" {
 
 # Rule: Route DownloadRequested events to DownloadQueue
 resource "aws_cloudwatch_event_rule" "DownloadRequested" {
-  name           = "DownloadRequested"
+  name           = "${var.resource_prefix}-DownloadRequested"
   event_bus_name = aws_cloudwatch_event_bus.MediaDownloader.name
   description    = "Route DownloadRequested events to download processing queue"
 

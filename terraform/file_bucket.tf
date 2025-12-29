@@ -1,9 +1,9 @@
 locals {
-  s3_object_created_function_name = "S3ObjectCreated"
+  s3_object_created_function_name = "${var.resource_prefix}-S3ObjectCreated"
 }
 
 resource "aws_s3_bucket" "Files" {
-  bucket = "lifegames-media-downloader-files"
+  bucket = var.s3_bucket_name
   tags   = local.common_tags
 }
 
@@ -24,7 +24,7 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {
 
 # Origin Access Control for CloudFront (replaces public-read ACL)
 resource "aws_cloudfront_origin_access_control" "MediaFilesOAC" {
-  name                              = "media-files-oac"
+  name                              = "${var.resource_prefix}-media-files-oac"
   description                       = "OAC for media files S3 bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -73,7 +73,7 @@ resource "aws_cloudfront_distribution" "MediaFiles" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "MediaFilesDistribution"
+    Name = "${var.resource_prefix}-MediaFilesDistribution"
   })
 }
 
@@ -119,7 +119,7 @@ resource "aws_lambda_permission" "S3ObjectCreated" {
 
 resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
   name              = "/aws/lambda/${aws_lambda_function.S3ObjectCreated.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

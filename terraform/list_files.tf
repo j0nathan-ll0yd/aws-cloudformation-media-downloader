@@ -1,5 +1,5 @@
 locals {
-  list_files_function_name = "ListFiles"
+  list_files_function_name = "${var.resource_prefix}-ListFiles"
 }
 
 resource "aws_iam_role" "ListFiles" {
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "ListFiles" {
 
 resource "aws_cloudwatch_log_group" "ListFiles" {
   name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

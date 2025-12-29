@@ -1,5 +1,9 @@
+locals {
+  cloudfront_middleware_function_name = "${var.resource_prefix}-CloudfrontMiddleware"
+}
+
 resource "aws_iam_role" "CloudfrontMiddleware" {
-  name               = "CloudfrontMiddleware"
+  name               = local.cloudfront_middleware_function_name
   assume_role_policy = data.aws_iam_policy_document.LamdbaEdgeAssumeRole.json
   tags               = local.common_tags
 }
@@ -27,7 +31,7 @@ data "archive_file" "CloudfrontMiddleware" {
 
 resource "aws_lambda_function" "CloudfrontMiddleware" {
   description      = "A lambda that acts as middleware before hitting the API."
-  function_name    = "CloudfrontMiddleware"
+  function_name    = local.cloudfront_middleware_function_name
   role             = aws_iam_role.CloudfrontMiddleware.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
@@ -41,7 +45,7 @@ resource "aws_lambda_function" "CloudfrontMiddleware" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "CloudfrontMiddleware"
+    Name = local.cloudfront_middleware_function_name
   })
 }
 
@@ -92,7 +96,7 @@ resource "aws_cloudfront_distribution" "Production" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "Production"
+    Name = "${var.resource_prefix}-CloudFront"
   })
 }
 

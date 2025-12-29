@@ -1,5 +1,5 @@
 locals {
-  register_device_function_name = "RegisterDevice"
+  register_device_function_name = "${var.resource_prefix}-RegisterDevice"
 }
 
 resource "aws_iam_role" "RegisterDevice" {
@@ -57,7 +57,7 @@ resource "aws_lambda_permission" "RegisterDevice" {
 
 resource "aws_cloudwatch_log_group" "RegisterDevice" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterDevice.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -122,12 +122,12 @@ resource "aws_api_gateway_integration" "RegisterDevicePost" {
 }
 
 resource "aws_sns_topic" "PushNotifications" {
-  name = "PushNotifications"
+  name = "${var.resource_prefix}-PushNotifications"
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
   count                     = 1 # APNS certificate valid until 2027-01-03
-  name                      = "OfflineMediaDownloader"
+  name                      = "${var.resource_prefix}-OfflineMediaDownloader"
   platform                  = "APNS_SANDBOX"
   platform_credential       = data.sops_file.secrets.data["apns.staging.privateKey"]  # APNS PRIVATE KEY
   platform_principal        = data.sops_file.secrets.data["apns.staging.certificate"] # APNS CERTIFICATE
@@ -136,7 +136,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
 }
 
 resource "aws_iam_role" "SNSLoggingRole" {
-  name               = "SNSLoggingRole"
+  name               = "${var.resource_prefix}-SNSLoggingRole"
   assume_role_policy = data.aws_iam_policy_document.SNSAssumeRole.json
   tags               = local.common_tags
 }

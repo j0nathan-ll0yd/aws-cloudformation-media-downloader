@@ -1,6 +1,6 @@
 locals {
-  webhook_feedly_function_name    = "WebhookFeedly"
-  start_file_upload_function_name = "StartFileUpload"
+  webhook_feedly_function_name    = "${var.resource_prefix}-WebhookFeedly"
+  start_file_upload_function_name = "${var.resource_prefix}-StartFileUpload"
 }
 
 resource "aws_iam_role" "WebhookFeedly" {
@@ -65,7 +65,7 @@ resource "aws_lambda_permission" "WebhookFeedly" {
 
 resource "aws_cloudwatch_log_group" "WebhookFeedly" {
   name              = "/aws/lambda/${aws_lambda_function.WebhookFeedly.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -384,6 +384,6 @@ resource "aws_lambda_function" "StartFileUpload" {
 
 resource "aws_cloudwatch_log_group" "StartFileUpload" {
   name              = "/aws/lambda/${aws_lambda_function.StartFileUpload.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }

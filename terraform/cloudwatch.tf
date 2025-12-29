@@ -4,48 +4,48 @@
 
 locals {
   lambda_functions = [
-    "ApiGatewayAuthorizer",
-    "CloudfrontMiddleware",
-    "ListFiles",
-    "LogClientEvent",
-    "LoginUser",
-    "PruneDevices",
-    "RefreshToken",
-    "RegisterDevice",
-    "RegisterUser",
-    "S3ObjectCreated",
-    "SendPushNotification",
-    "StartFileUpload",
-    "UserDelete",
-    "UserSubscribe",
-    "WebhookFeedly"
+    "${var.resource_prefix}-ApiGatewayAuthorizer",
+    "${var.resource_prefix}-CloudfrontMiddleware",
+    "${var.resource_prefix}-ListFiles",
+    "${var.resource_prefix}-DeviceEvent",
+    "${var.resource_prefix}-LoginUser",
+    "${var.resource_prefix}-PruneDevices",
+    "${var.resource_prefix}-RefreshToken",
+    "${var.resource_prefix}-RegisterDevice",
+    "${var.resource_prefix}-RegisterUser",
+    "${var.resource_prefix}-S3ObjectCreated",
+    "${var.resource_prefix}-SendPushNotification",
+    "${var.resource_prefix}-StartFileUpload",
+    "${var.resource_prefix}-UserDelete",
+    "${var.resource_prefix}-UserSubscribe",
+    "${var.resource_prefix}-WebhookFeedly"
   ]
 
   # Split lambdas into groups for CloudWatch alarms (max 10 metrics per alarm)
   lambda_functions_api = [
-    "ApiGatewayAuthorizer",
-    "ListFiles",
-    "LogClientEvent",
-    "LoginUser",
-    "RefreshToken",
-    "RegisterDevice",
-    "RegisterUser",
-    "UserDelete",
-    "UserSubscribe",
-    "WebhookFeedly"
+    "${var.resource_prefix}-ApiGatewayAuthorizer",
+    "${var.resource_prefix}-ListFiles",
+    "${var.resource_prefix}-DeviceEvent",
+    "${var.resource_prefix}-LoginUser",
+    "${var.resource_prefix}-RefreshToken",
+    "${var.resource_prefix}-RegisterDevice",
+    "${var.resource_prefix}-RegisterUser",
+    "${var.resource_prefix}-UserDelete",
+    "${var.resource_prefix}-UserSubscribe",
+    "${var.resource_prefix}-WebhookFeedly"
   ]
 
   lambda_functions_background = [
-    "CloudfrontMiddleware",
-    "PruneDevices",
-    "S3ObjectCreated",
-    "SendPushNotification",
-    "StartFileUpload"
+    "${var.resource_prefix}-CloudfrontMiddleware",
+    "${var.resource_prefix}-PruneDevices",
+    "${var.resource_prefix}-S3ObjectCreated",
+    "${var.resource_prefix}-SendPushNotification",
+    "${var.resource_prefix}-StartFileUpload"
   ]
 }
 
 resource "aws_cloudwatch_dashboard" "Main" {
-  dashboard_name = "MediaDownloader"
+  dashboard_name = "${var.resource_prefix}-Dashboard"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -290,7 +290,7 @@ output "cloudwatch_dashboard_url" {
 
 # Lambda Errors Alarm (API) - triggers when total errors across API Lambdas exceed threshold
 resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
-  alarm_name          = "MediaDownloader-Lambda-Errors-API"
+  alarm_name          = "${var.resource_prefix}-Lambda-Errors-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 5
@@ -325,7 +325,7 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
 
 # Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
 resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
-  alarm_name          = "MediaDownloader-Lambda-Errors-Background"
+  alarm_name          = "${var.resource_prefix}-Lambda-Errors-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 3
@@ -360,7 +360,7 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
 
 # Lambda Throttles Alarm (API) - any throttle is concerning
 resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
-  alarm_name          = "MediaDownloader-Lambda-Throttles-API"
+  alarm_name          = "${var.resource_prefix}-Lambda-Throttles-API"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 0
@@ -395,7 +395,7 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
 
 # Lambda Throttles Alarm (Background) - any throttle is concerning
 resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
-  alarm_name          = "MediaDownloader-Lambda-Throttles-Background"
+  alarm_name          = "${var.resource_prefix}-Lambda-Throttles-Background"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 0
@@ -430,7 +430,7 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
 
 # SQS DLQ Alarm - any message in DLQ requires investigation
 resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
-  alarm_name          = "MediaDownloader-SQS-DLQ-Messages"
+  alarm_name          = "${var.resource_prefix}-SQS-DLQ-Messages"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -450,7 +450,7 @@ resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
 
 # SQS Queue Age Alarm - messages shouldn't be stuck in queue
 resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
-  alarm_name          = "MediaDownloader-SQS-Queue-Age"
+  alarm_name          = "${var.resource_prefix}-SQS-Queue-Age"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "ApproximateAgeOfOldestMessage"
