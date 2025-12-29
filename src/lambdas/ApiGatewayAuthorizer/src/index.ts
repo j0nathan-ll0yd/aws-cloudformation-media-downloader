@@ -202,14 +202,17 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
       if (multiAuthenticationPaths.includes(pathPart)) {
         logInfo('Multi-authentication path; userId not required')
       } else {
-        logInfo('Token is invalid')
-        return generateDeny('unknown', event.methodArn)
+        // Return 401 to trigger re-login flow in iOS app
+        logInfo('Session token invalid or expired')
+        throw new Error('Unauthorized')
       }
     }
   } else {
     // If it's not a multi-authentication path, it needs the Authorization header
     if (!multiAuthenticationPaths.includes(pathPart)) {
-      return generateDeny('unknown', event.methodArn)
+      // Return 401 to trigger login flow in iOS app
+      logInfo('Authorization header missing')
+      throw new Error('Unauthorized')
     }
   }
   return generateAllow(principalId, event.methodArn, apiKeyValue)
