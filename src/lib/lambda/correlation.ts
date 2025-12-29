@@ -15,16 +15,9 @@
 
 import type {APIGatewayProxyEvent, Context, S3Event, SQSEvent} from 'aws-lambda'
 import {randomUUID} from 'crypto'
+import type {CorrelationContext} from '#types/infrastructure-types'
 
-/**
- * Context containing both traceId and correlationId for distributed tracing.
- */
-export interface CorrelationContext {
-  /** AWS Lambda request ID for this invocation */
-  traceId: string
-  /** Correlation ID for end-to-end request tracing */
-  correlationId: string
-}
+export type {CorrelationContext}
 
 /**
  * EventBridge event structure for correlation ID extraction.
