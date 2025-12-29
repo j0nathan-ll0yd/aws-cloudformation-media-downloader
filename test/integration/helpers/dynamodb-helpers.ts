@@ -1,13 +1,11 @@
 /**
  * DynamoDB Test Helpers
  *
- * Utilities for inserting and querying test data in LocalStack DynamoDB
+ * Utilities for creating/deleting tables in LocalStack DynamoDB.
+ * File operations now use postgres-helpers.ts with Drizzle ORM.
  */
 
 import {createTable, deleteTable} from '../lib/vendor/AWS/DynamoDB'
-import type {File} from '#types/domain-models'
-import {FileStatus} from '#types/enums'
-import {createMockFile} from './test-data'
 
 function getMediaDownloaderTable() {
   return process.env.DYNAMODB_TABLE_NAME || 'test-media-downloader'
@@ -157,43 +155,9 @@ export const deleteUsersTable = deleteMediaDownloaderTable
 export const deleteUserFilesTable = deleteMediaDownloaderTable
 
 /**
- * Insert a file record into DynamoDB using ElectroDB
- * Uses createMockFile for consistent defaults across all tests
- * This ensures proper entity metadata is added for ElectroDB compatibility
+ * @deprecated Use postgres-helpers.ts insertFile instead - DynamoDB/ElectroDB is no longer used
  */
-export async function insertFile(file: Partial<File>): Promise<void> {
-  const {Files} = await import('../../../src/entities/Files')
-
-  // Get consistent defaults from createMockFile, then apply user overrides
-  const defaults = createMockFile(file.fileId!, file.status || FileStatus.Queued, file)
-
-  // ElectroDB requires all fields - createMockFile provides them all
-  await Files.create({
-    fileId: defaults.fileId!,
-    status: defaults.status!,
-    size: defaults.size!,
-    key: defaults.key!,
-    title: defaults.title!,
-    description: defaults.description!,
-    authorName: defaults.authorName!,
-    authorUser: defaults.authorUser!,
-    publishDate: defaults.publishDate!,
-    contentType: defaults.contentType!,
-    ...(defaults.url && {url: defaults.url})
-  }).go()
-}
 
 /**
- * Get a file record from DynamoDB using ElectroDB
+ * @deprecated Use postgres-helpers.ts getFile instead - DynamoDB/ElectroDB is no longer used
  */
-export async function getFile(fileId: string): Promise<Partial<File> | null> {
-  const {Files} = await import('../../../src/entities/Files')
-
-  const response = await Files.get({fileId}).go()
-
-  if (!response || !response.data) {
-    return null
-  }
-
-  return response.data as Partial<File>
-}
