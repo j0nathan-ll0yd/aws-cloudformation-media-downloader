@@ -4,6 +4,11 @@
  * Sends APNS push notifications to user devices.
  * Processes notification messages from SQS queue.
  *
+ * Features:
+ * - Per-device error handling: one device failure doesn't affect others
+ * - Partial success: SQS message only fails if ALL devices fail
+ * - Disabled endpoint detection: identifies invalid APNS tokens for cleanup
+ *
  * Trigger: SQS Queue (from S3ObjectCreated)
  * Input: SQSEvent with FileNotificationType records
  * Output: SQSBatchResponse with item failures for retry
@@ -14,12 +19,24 @@ import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {FileNotificationType} from '#types/notification-types'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {transformToAPNSNotification} from '#lib/domain/notification/transformers'
+import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpoint-cleanup'
+import {appendCorrelationToLogger, extractCorrelationFromSQS} from '#lib/lambda/middleware/correlation'
 
 const SUPPORTED_NOTIFICATION_TYPES: FileNotificationType[] = ['MetadataNotification', 'DownloadReadyNotification']
+
+/**
+ * Result of sending a notification to a single device
+ */
+interface DeviceNotificationResult {
+  deviceId: string
+  success: boolean
+  error?: string
+  endpointDisabled?: boolean
+}
 
 // Get device IDs for a user
 async function getDeviceIdsForUser(userId: string): Promise<string[]> {
@@ -42,11 +59,51 @@ async function getDevice(deviceId: string): Promise<Device> {
 }
 
 /**
+ * Send notification to a single device with error handling
+ * Returns result object instead of throwing
+ */
+async function sendNotificationToDevice(device: Device, messageBody: string, notificationType: FileNotificationType): Promise<DeviceNotificationResult> {
+  const targetArn = device.endpointArn
+  if (!targetArn) {
+    return {
+      deviceId: device.deviceId,
+      success: false,
+      error: 'No endpoint ARN configured'
+    }
+  }
+  try {
+    logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId, targetArn})
+    const publishParams = transformToAPNSNotification(messageBody, targetArn) as PublishInput
+    logDebug('publishSnsEvent <=', publishParams)
+    const publishResponse = await publishSnsEvent(publishParams)
+    logDebug('publishSnsEvent =>', publishResponse)
+
+    return {deviceId: device.deviceId, success: true}
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    // Detect disabled endpoints - these occur when APNS token is invalid
+    const isEndpointDisabled = message.includes('EndpointDisabled') || message.includes('endpoint is disabled')
+
+    return {
+      deviceId: device.deviceId,
+      success: false,
+      error: message,
+      endpointDisabled: isEndpointDisabled
+    }
+  }
+}
+
+/**
  * Process a single SQS record - send push notifications to all user devices.
- * Throws on failure to enable batch item failure reporting.
+ * Uses per-device error handling to maximize successful deliveries.
+ * Only throws if ALL devices fail (partial success = message processed).
  * @notExported
  */
 async function processSQSRecord(record: SQSRecord): Promise<void> {
+  // Extract and set correlation ID for all subsequent logs
+  const correlationId = extractCorrelationFromSQS(record)
+  appendCorrelationToLogger(correlationId)
+
   const notificationType = record.messageAttributes.notificationType?.stringValue as FileNotificationType
   if (!SUPPORTED_NOTIFICATION_TYPES.includes(notificationType)) {
     logInfo('Skipping unsupported notification type', notificationType)
@@ -58,16 +115,75 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
     logInfo('No devices registered for user', userId)
     return
   }
-  logInfo('Sending messages to devices <=', deviceIds)
-  for (const deviceId of deviceIds) {
-    logInfo('Sending messages to deviceId <=', deviceId)
-    const device = await getDevice(deviceId)
-    const targetArn = device.endpointArn as string
-    logInfo(`Sending ${notificationType} to targetArn`, targetArn)
-    const publishParams = transformToAPNSNotification(record.body, targetArn) as PublishInput
-    logDebug('publishSnsEvent <=', publishParams)
-    const publishResponse = await publishSnsEvent(publishParams)
-    logDebug('publishSnsEvent =>', publishResponse)
+
+  logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
+
+  // Process all devices in parallel with individual error handling
+  const results = await Promise.allSettled(
+    deviceIds.map(async (deviceId) => {
+      const device = await getDevice(deviceId)
+      return sendNotificationToDevice(device, record.body, notificationType)
+    })
+  )
+
+  // Collect results
+  const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
+    if (result.status === 'fulfilled') {
+      return result.value
+    }
+    return {
+      deviceId: deviceIds[index],
+      success: false,
+      error: result.reason instanceof Error ? result.reason.message : String(result.reason)
+    }
+  })
+
+  const succeeded = deviceResults.filter((r) => r.success)
+  const failed = deviceResults.filter((r) => !r.success)
+  const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
+
+  // Emit metrics for observability
+  metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
+  if (failed.length > 0) {
+    metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
+  }
+  if (disabledEndpoints.length > 0) {
+    metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
+  }
+
+  // Log results
+  if (failed.length > 0) {
+    logInfo('Push notification results', {
+      userId,
+      total: deviceIds.length,
+      succeeded: succeeded.length,
+      failed: failed.length,
+      disabledEndpoints: disabledEndpoints.length
+    })
+
+    failed.forEach((r) => {
+      logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
+    })
+  }
+
+  // Clean up disabled endpoints (best-effort, don't fail the message)
+  if (disabledEndpoints.length > 0) {
+    logInfo('Cleaning up disabled endpoints', {
+      userId,
+      deviceIds: disabledEndpoints.map((r) => r.deviceId)
+    })
+
+    // Run cleanup asynchronously (fire-and-forget to not block message processing)
+    // Errors are logged within cleanupDisabledEndpoints, won't affect message success
+    cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err) => {
+      logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
+    })
+  }
+
+  // Only fail the SQS message if ALL devices failed
+  // Partial success = message processed successfully (don't retry for succeeded devices)
+  if (succeeded.length === 0 && failed.length > 0) {
+    throw new Error(`All ${failed.length} device notifications failed`)
   }
 }
 

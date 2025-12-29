@@ -11,7 +11,7 @@
 import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
-import {publishEvent} from '#lib/vendor/AWS/EventBridge'
+import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
@@ -119,10 +119,10 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
       // New file - create Files and FileDownloads records with correlationId
       await addFile(fileId, articleURL, correlationId)
     }
-    // Publish DownloadRequested event to EventBridge
+    // Publish DownloadRequested event to EventBridge with retry on transient failures
     // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
     const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
-    await publishEvent('DownloadRequested', eventDetail, {correlationId})
+    await publishEventWithRetry('DownloadRequested', eventDetail, {correlationId})
     logInfo('Published DownloadRequested event', {fileId, correlationId})
     return {statusCode: 202, status: ResponseStatus.Accepted}
   }

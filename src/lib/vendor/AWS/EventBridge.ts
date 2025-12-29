@@ -12,7 +12,8 @@ import {PutEventsCommand} from '@aws-sdk/client-eventbridge'
 import type {PutEventsRequestEntry, PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import {createEventBridgeClient} from './clients'
 import {getRequiredEnv} from '#lib/system/env'
-import {logDebug} from '#lib/system/logging'
+import {logDebug, logInfo} from '#lib/system/logging'
+import {calculateDelayWithJitter, sleep} from '#lib/system/retry'
 import type {MediaDownloaderEventType} from '#types/events'
 
 const eventBridge = createEventBridgeClient()
@@ -93,4 +94,104 @@ export async function publishEvent<TDetail>(
   }
 
   return response
+}
+
+/**
+ * Configuration for retry behavior when publishing events.
+ */
+export interface PublishRetryConfig {
+  /** Maximum number of retry attempts (default: 3) */
+  maxRetries?: number
+  /** Initial delay in milliseconds before first retry (default: 100) */
+  initialDelayMs?: number
+}
+
+const DEFAULT_RETRY_CONFIG: Required<PublishRetryConfig> = {
+  maxRetries: 3,
+  initialDelayMs: 100
+}
+
+/**
+ * Custom error class for EventBridge publish failures.
+ * Contains details about the failed entry for debugging.
+ */
+export class EventBridgePublishError extends Error {
+  public readonly errorCode?: string
+  public readonly errorMessage?: string
+
+  constructor(message: string, errorCode?: string, errorMessage?: string) {
+    super(message)
+    this.name = 'EventBridgePublishError'
+    this.errorCode = errorCode
+    this.errorMessage = errorMessage
+  }
+}
+
+/**
+ * Publish a domain event with automatic retry on transient failures.
+ *
+ * Uses exponential backoff with jitter between retries. Will retry up to
+ * maxRetries times (default: 3) before throwing an error.
+ *
+ * This is the recommended function for critical event publishing where
+ * delivery is important (e.g., WebhookFeedly publishing DownloadRequested).
+ *
+ * @param detailType - Event type for routing (e.g., 'DownloadRequested')
+ * @param detail - Event payload (will be JSON-stringified)
+ * @param options - Optional correlation context for distributed tracing
+ * @param retryConfig - Optional retry configuration
+ * @returns PutEvents response on success
+ * @throws EventBridgePublishError if all retry attempts fail
+ */
+export async function publishEventWithRetry<TDetail>(
+  detailType: MediaDownloaderEventType,
+  detail: TDetail,
+  options?: PublishEventOptions,
+  retryConfig?: PublishRetryConfig
+): Promise<PutEventsResponse> {
+  const config = {...DEFAULT_RETRY_CONFIG, ...retryConfig}
+  let lastError: EventBridgePublishError | undefined
+
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      const response = await publishEvent(detailType, detail, options)
+
+      // Check for partial failures - EventBridge may accept the request but fail individual entries
+      if (response.FailedEntryCount && response.FailedEntryCount > 0) {
+        const failedEntry = response.Entries?.[0]
+        throw new EventBridgePublishError(
+          `EventBridge publish failed: ${failedEntry?.ErrorCode} - ${failedEntry?.ErrorMessage}`,
+          failedEntry?.ErrorCode,
+          failedEntry?.ErrorMessage
+        )
+      }
+
+      // Success - log if we had to retry
+      if (attempt > 0) {
+        logInfo('publishEventWithRetry succeeded after retries', {detailType, attempts: attempt + 1})
+      }
+
+      return response
+    } catch (error) {
+      lastError = error instanceof EventBridgePublishError
+        ? error
+        : new EventBridgePublishError(error instanceof Error ? error.message : String(error))
+
+      logDebug('publishEventWithRetry attempt failed', {
+        detailType,
+        attempt: attempt + 1,
+        maxRetries: config.maxRetries,
+        error: lastError.message
+      })
+
+      // Don't sleep after the last attempt
+      if (attempt < config.maxRetries) {
+        const delay = calculateDelayWithJitter(config.initialDelayMs, attempt, 2, 5000)
+        await sleep(delay)
+      }
+    }
+  }
+
+  // All retries exhausted
+  throw lastError
 }

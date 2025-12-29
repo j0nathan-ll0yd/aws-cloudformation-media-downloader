@@ -8,7 +8,12 @@ type DeleteResult = {unprocessed: unknown[]}
 type RetryOperation<T> = () => Promise<RetryResult<T>>
 type DeleteOperation = () => Promise<DeleteResult>
 
-function sleep(ms: number): Promise<void> {
+/**
+ * Sleep for a specified duration
+ * @param ms - Duration in milliseconds
+ * @returns Promise that resolves after the delay
+ */
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
@@ -21,7 +26,7 @@ function sleep(ms: number): Promise<void> {
  * @param maxDelay - Maximum delay cap
  * @returns Delay with jitter applied
  */
-function calculateDelayWithJitter(baseDelay: number, retryCount: number, multiplier: number, maxDelay: number): number {
+export function calculateDelayWithJitter(baseDelay: number, retryCount: number, multiplier: number, maxDelay: number): number {
   const exponentialDelay = baseDelay * Math.pow(multiplier, retryCount)
   const cappedDelay = Math.min(exponentialDelay, maxDelay)
   // Add 0-1000ms jitter to prevent thundering herd

@@ -27,19 +27,25 @@ import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powert
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createMetadataNotification} from '#lib/domain/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/error-classifier'
+import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
 
 /**
- * Fetch video info with OpenTelemetry tracing.
- * Wraps fetchVideoInfo and handles span lifecycle.
+ * Fetch video info with OpenTelemetry tracing and circuit breaker protection.
+ * Wraps fetchVideoInfo with circuit breaker to prevent cascading failures
+ * when YouTube/yt-dlp is degraded.
  *
  * @param fileUrl - The video URL to fetch info for
  * @param fileId - The file ID for annotation
  * @returns The video info result
+ * @throws CircuitBreakerOpenError if circuit is open
  */
 async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<FetchVideoInfoResult> {
   const span = startSpan('yt-dlp-fetch-info')
 
-  const result = await fetchVideoInfo(fileUrl)
+  // Use circuit breaker to protect against cascading failures from YouTube/yt-dlp.
+  // Circuit breaker tracks actual exceptions (network errors, timeouts, rate limits).
+  // Business-level failures (success: false) are handled by the caller, not the circuit breaker.
+  const result = await youtubeCircuitBreaker.execute(() => fetchVideoInfo(fileUrl))
 
   addAnnotation(span, 'videoId', fileId)
   addMetadata(span, 'videoUrl', fileUrl)
@@ -50,18 +56,21 @@ async function fetchVideoInfoTraced(fileUrl: string, fileId: string): Promise<Fe
 }
 
 /**
- * Download video to S3 with OpenTelemetry tracing.
- * Wraps downloadVideoToS3 and handles span lifecycle including error capture.
+ * Download video to S3 with OpenTelemetry tracing and circuit breaker protection.
+ * Wraps downloadVideoToS3 with circuit breaker to prevent cascading failures
+ * when YouTube/yt-dlp is degraded.
  *
  * @param fileUrl - The video URL to download
  * @param bucket - The S3 bucket to upload to
  * @param fileName - The S3 object key
  * @returns Object with fileSize, s3Url, and duration
+ * @throws CircuitBreakerOpenError if circuit is open
  */
 async function downloadVideoToS3Traced(fileUrl: string, bucket: string, fileName: string): Promise<{fileSize: number; s3Url: string; duration: number}> {
   const span = startSpan('yt-dlp-download-to-s3')
   try {
-    const result = await downloadVideoToS3(fileUrl, bucket, fileName)
+    // Use circuit breaker to protect against cascading failures
+    const result = await youtubeCircuitBreaker.execute(() => downloadVideoToS3(fileUrl, bucket, fileName))
     addAnnotation(span, 's3Bucket', bucket)
     addAnnotation(span, 's3Key', fileName)
     addMetadata(span, 'fileSize', result.fileSize)
