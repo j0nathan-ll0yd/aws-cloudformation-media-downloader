@@ -3,9 +3,9 @@
 # See: https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/issues/196
 
 resource "aws_dsql_cluster" "media_downloader" {
-  deletion_protection_enabled = var.environment == "production" ? true : false
+  deletion_protection_enabled = true
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-DSQL"
+    Name = "MediaDownloader-DSQL"
   })
 }
 
@@ -19,8 +19,8 @@ data "aws_iam_policy_document" "dsql_access" {
 }
 
 resource "aws_iam_policy" "LambdaDSQLAccess" {
-  name        = "${local.name_prefix}-LambdaDSQLAccess"
-  description = "Allows Lambda functions to connect to Aurora DSQL (${var.environment})"
+  name        = "LambdaDSQLAccess"
+  description = "Allows Lambda functions to connect to Aurora DSQL"
   policy      = data.aws_iam_policy_document.dsql_access.json
   tags        = local.common_tags
 }

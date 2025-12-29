@@ -1,9 +1,9 @@
 locals {
-  s3_object_created_function_name = "${local.name_prefix}-S3ObjectCreated"
+  s3_object_created_function_name = "S3ObjectCreated"
 }
 
 resource "aws_s3_bucket" "Files" {
-  bucket = var.s3_bucket_name
+  bucket = "lifegames-media-downloader-files"
   tags   = local.common_tags
 }
 
@@ -24,8 +24,8 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "FilesTiering" {
 
 # Origin Access Control for CloudFront (replaces public-read ACL)
 resource "aws_cloudfront_origin_access_control" "MediaFilesOAC" {
-  name                              = "${local.name_prefix}-media-files-oac"
-  description                       = "OAC for media files S3 bucket (${var.environment})"
+  name                              = "media-files-oac"
+  description                       = "OAC for media files S3 bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -73,7 +73,7 @@ resource "aws_cloudfront_distribution" "MediaFiles" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-MediaFilesDistribution"
+    Name = "MediaFilesDistribution"
   })
 }
 
@@ -157,7 +157,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
 }
 
 resource "aws_iam_role" "S3ObjectCreated" {
-  name               = "${local.name_prefix}-S3ObjectCreatedRole"
+  name               = local.s3_object_created_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaAssumeRole.json
   tags               = local.common_tags
 }
@@ -170,7 +170,7 @@ data "aws_iam_policy_document" "S3ObjectCreated" {
 }
 
 resource "aws_iam_policy" "S3ObjectCreated" {
-  name   = "${local.name_prefix}-S3ObjectCreatedPolicy"
+  name   = local.s3_object_created_function_name
   policy = data.aws_iam_policy_document.S3ObjectCreated.json
   tags   = local.common_tags
 }

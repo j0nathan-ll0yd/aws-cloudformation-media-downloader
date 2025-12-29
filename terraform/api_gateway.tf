@@ -1,6 +1,6 @@
 resource "aws_api_gateway_rest_api" "Main" {
-  name           = "${local.name_prefix}-api"
-  description    = "The API that supports the Offline Media Downloader App (${var.environment})"
+  name           = "OfflineMediaDownloader"
+  description    = "The API that supports the App"
   api_key_source = "HEADER"
 
   endpoint_configuration {
@@ -43,7 +43,7 @@ resource "aws_api_gateway_deployment" "Main" {
 }
 
 resource "aws_api_gateway_stage" "Production" {
-  stage_name    = var.api_stage_name
+  stage_name    = "prod"
   rest_api_id   = aws_api_gateway_rest_api.Main.id
   deployment_id = aws_api_gateway_deployment.Main.id
 
@@ -63,8 +63,8 @@ resource "aws_api_gateway_method_settings" "Production" {
 }
 
 resource "aws_api_gateway_usage_plan" "iOSApp" {
-  name        = "${local.name_prefix}-iOSApp"
-  description = "Internal consumption (${var.environment})"
+  name        = "iOSApp"
+  description = "Internal consumption"
   api_stages {
     api_id = aws_api_gateway_rest_api.Main.id
     stage  = aws_api_gateway_stage.Production.stage_name
@@ -72,8 +72,8 @@ resource "aws_api_gateway_usage_plan" "iOSApp" {
 }
 
 resource "aws_api_gateway_api_key" "iOSApp" {
-  name        = "${local.name_prefix}-iOSAppKey"
-  description = "The key for the iOS App (${var.environment})"
+  name        = "iOSAppKey"
+  description = "The key for the iOS App"
   enabled     = true
   tags        = local.common_tags
 }
@@ -101,7 +101,7 @@ resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
 }
 
 resource "aws_iam_role" "ApiGatewayCloudwatch" {
-  name               = "${local.name_prefix}-ApiGatewayCloudwatch"
+  name               = "ApiGatewayCloudwatch"
   assume_role_policy = data.aws_iam_policy_document.ApiGatewayCloudwatch.json
   tags               = local.common_tags
 }
@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "ApiGatewayCloudwatch" {
 }
 
 resource "aws_iam_role_policy" "ApiGatewayCloudwatch" {
-  name   = "${local.name_prefix}-ApiGatewayCloudwatch"
+  name   = "ApiGatewayCloudwatch"
   role   = aws_iam_role.ApiGatewayCloudwatch.id
   policy = data.aws_iam_policy_document.CommonLambdaLogging.json
 }

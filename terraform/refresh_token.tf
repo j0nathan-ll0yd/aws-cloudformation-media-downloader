@@ -1,9 +1,9 @@
 locals {
-  refresh_token_function_name = "${local.name_prefix}-RefreshToken"
+  refresh_token_function_name = "RefreshToken"
 }
 
 resource "aws_iam_role" "RefreshToken" {
-  name               = "${local.name_prefix}-RefreshTokenRole"
+  name               = local.refresh_token_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "RefreshToken" {
 
 resource "aws_cloudwatch_log_group" "RefreshToken" {
   name              = "/aws/lambda/${aws_lambda_function.RefreshToken.function_name}"
-  retention_in_days = var.log_retention_days
+  retention_in_days = 14
   tags              = local.common_tags
 }
 

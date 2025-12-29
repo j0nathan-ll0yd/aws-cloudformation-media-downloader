@@ -1,9 +1,9 @@
 locals {
-  login_user_function_name = "${local.name_prefix}-LoginUser"
+  login_user_function_name = "LoginUser"
 }
 
 resource "aws_iam_role" "LoginUser" {
-  name               = "${local.name_prefix}-LoginUserRole"
+  name               = local.login_user_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "LoginUser" {
 
 resource "aws_cloudwatch_log_group" "LoginUser" {
   name              = "/aws/lambda/${aws_lambda_function.LoginUser.function_name}"
-  retention_in_days = var.log_retention_days
+  retention_in_days = 14
   tags              = local.common_tags
 }
 
@@ -59,7 +59,7 @@ resource "aws_lambda_function" "LoginUser" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${var.api_stage_name}"
+      APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.login_user_function_name
