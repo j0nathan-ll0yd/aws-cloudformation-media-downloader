@@ -44,6 +44,7 @@
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "validate:conventions": "node --import tsx scripts/validateConventions.ts",
     "validate:config": "node --import tsx scripts/validateConfig.ts",
+    "check:bundle-size": "node --import tsx scripts/check-bundle-size.ts",
     "validate:api-paths": "node --import tsx scripts/validateApiPaths.ts",
     "index:codebase": "node --import tsx scripts/indexCodebase.ts",
     "search:codebase": "node --import tsx scripts/searchCodebase.ts",
@@ -126,6 +127,7 @@
   "sideEffects": false,
   "imports": {
     "#entities/*": "./src/entities/*",
+    "#lambdas/*": "./src/lambdas/*",
     "#lib/*": "./src/lib/*",
     "#util/*": "./src/util/*",
     "#config/*": "./src/config/*",

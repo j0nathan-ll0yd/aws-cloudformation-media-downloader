@@ -8,42 +8,20 @@
  * Input: Authenticated or anonymous request
  * Output: APIGatewayProxyResult with file list
  */
-import {Files} from '#entities/Files'
-import {UserFiles} from '#entities/UserFiles'
+import {getFilesForUser} from '#entities/queries'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {getDefaultFile} from '#config/constants'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
-import {logDebug, logError} from '#lib/system/logging'
-import {retryUnprocessed} from '#lib/system/retry'
+import {logDebug} from '#lib/system/logging'
 
-/**
- * Returns an array of Files for a user using ElectroDB batch get.
- * Eliminates N+1 query pattern by using batch operations.
- *
- * @param userId - The User ID
- * @returns Array of files associated with the user
- * @notExported
- */
+// Get files for a user using a single JOIN query (replaces N+1 batch pattern)
 async function getFilesByUser(userId: string): Promise<File[]> {
   logDebug('getFilesByUser <=', userId)
-  const userFilesResponse = await UserFiles.query.byUser({userId}).go()
-  logDebug('getFilesByUser.userFiles =>', userFilesResponse)
-
-  if (!userFilesResponse || !userFilesResponse.data || userFilesResponse.data.length === 0) {
-    return []
-  }
-
-  const fileKeys = userFilesResponse.data.map((userFile) => ({fileId: userFile.fileId}))
-  const {data: files, unprocessed} = await retryUnprocessed(() => Files.get(fileKeys).go({concurrency: 5}))
-  logDebug('getFilesByUser.files =>', files)
-
-  if (unprocessed.length > 0) {
-    logError('getFilesByUser: failed to fetch all items after retries', unprocessed)
-  }
-
+  const files = await getFilesForUser(userId)
+  logDebug('getFilesByUser =>', files)
   return files as File[]
 }
 

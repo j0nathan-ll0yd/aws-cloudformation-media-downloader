@@ -4,8 +4,7 @@
  * Shared utilities for device management across multiple Lambda functions.
  * Handles device registration, unregistration, and SNS subscriptions.
  */
-import {Devices} from '#entities/Devices'
-import {UserDevices} from '#entities/UserDevices'
+import {deleteDevice as deleteDeviceQuery, deleteUserDevice as deleteUserDeviceQuery, getUserDevicesByUserId} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
 import type {UserDevice} from '#types/persistence-types'
 import type {Device} from '#types/domain-models'
@@ -19,14 +18,14 @@ import {deleteEndpoint, subscribe, unsubscribe} from '#lib/vendor/AWS/SNS'
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   logDebug('deleteUserDevice <=', {userId, deviceId})
-  const response = await UserDevices.delete({userId, deviceId}).go()
-  logDebug('deleteUserDevice =>', response)
+  await deleteUserDeviceQuery(userId, deviceId)
+  logDebug('deleteUserDevice => done')
 }
 
 /**
- * Removes a Device from DynamoDB.
+ * Removes a Device from the database.
  * This includes deleting the associated endpoint from SNS.
- * @param device - The Device object from DynamoDB
+ * @param device - The Device object from the database
  * @see {@link lambdas/PruneDevices/src!#handler | PruneDevices }
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
  */
@@ -36,12 +35,12 @@ export async function deleteDevice(device: Device): Promise<void> {
   const removeEndpointResponse = await deleteEndpoint(removeEndpointParams)
   logDebug('deleteDevice.deleteEndpoint =>', removeEndpointResponse)
   logDebug('deleteDevice.deleteItem <=', device.deviceId)
-  const removedDeviceResponse = await Devices.delete({deviceId: device.deviceId}).go()
-  logDebug('deleteDevice.deleteItem =>', removedDeviceResponse)
+  await deleteDeviceQuery(device.deviceId)
+  logDebug('deleteDevice.deleteItem => done')
 }
 
 /**
- * Queries a user's device parameters from DynamoDB
+ * Queries a user's device parameters from the database
  * Returns array of UserDevice records (one per device association)
  * @param userId - The userId
  * @see {@link lambdas/UserDelete/src!#handler | UserDelete }
@@ -49,12 +48,9 @@ export async function deleteDevice(device: Device): Promise<void> {
  */
 export async function getUserDevices(userId: string): Promise<UserDevice[]> {
   logDebug('getUserDevices <=', userId)
-  const response = await UserDevices.query.byUser({userId}).go()
+  const response = await getUserDevicesByUserId(userId)
   logDebug('getUserDevices =>', response)
-  if (!response || !response.data) {
-    return []
-  }
-  return response.data as UserDevice[]
+  return response as UserDevice[]
 }
 
 /**

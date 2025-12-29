@@ -3,17 +3,18 @@
  *
  * Internal utilities for file operations in StartFileUpload Lambda.
  */
-import {Files} from '#entities/Files'
+import {upsertFile as upsertFileRecord} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
 import type {File} from '#types/domain-models'
 
 /**
- * Upsert a File object in DynamoDB
- * @param item - The DynamoDB item to be added
+ * Upserts a File object in the database.
+ * @param item - The file data to upsert
+ * @returns The created or updated file row
  */
 export async function upsertFile(item: File) {
   logDebug('upsertFile <=', item)
-  const updateResponse = await Files.upsert(item).go()
-  logDebug('upsertFile =>', updateResponse)
-  return updateResponse
+  const result = await upsertFileRecord(item)
+  logDebug('upsertFile =>', result)
+  return result
 }

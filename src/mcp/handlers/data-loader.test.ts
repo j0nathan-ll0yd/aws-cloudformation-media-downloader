@@ -134,7 +134,7 @@ describe('discoverLambdas', () => {
 })
 
 describe('discoverEntities', () => {
-  test('should discover Entity files', async () => {
+  test('should discover entities from query files', async () => {
     const entities = await discoverEntities()
 
     expect(Array.isArray(entities)).toBe(true)
@@ -144,22 +144,20 @@ describe('discoverEntities', () => {
   test('should include known entities', async () => {
     const entities = await discoverEntities()
 
-    // Check for expected entities
+    // Check for expected entities mapped from query files
     expect(entities).toContain('Users')
     expect(entities).toContain('Files')
+    expect(entities).toContain('Devices')
+    expect(entities).toContain('UserFiles')
+    expect(entities).toContain('UserDevices')
   })
 
-  test('should exclude Collections.ts', async () => {
-    const entities = await discoverEntities()
-
-    expect(entities).not.toContain('Collections')
-  })
-
-  test('should return clean entity names without .ts', async () => {
+  test('should return clean entity names', async () => {
     const entities = await discoverEntities()
 
     for (const entity of entities) {
       expect(entity).not.toContain('.ts')
+      expect(entity).not.toContain('-')
     }
   })
 })

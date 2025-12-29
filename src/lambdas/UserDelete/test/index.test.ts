@@ -2,29 +2,15 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createEntityMock} from '#test/helpers/entity-mock'
-const fakeUserId = uuidv4()
-const fakeUserDevicesResponse = [
-  {deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1', userId: fakeUserId}, // fmt: multiline
-  {deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A', userId: fakeUserId}
-]
-const fakeDevice1 = {
-  deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1',
-  token: 'fake-token',
-  systemName: 'iOS',
-  endpointArn: 'fake-endpointArn',
-  systemVersion: '16.0.2',
-  name: 'iPhone'
-}
+import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 
-const fakeDevice2 = {
-  deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A',
-  token: 'fake-token',
-  systemName: 'iOS',
-  endpointArn: 'fake-endpointArn',
-  systemVersion: '16.0.2',
-  name: 'iPhone'
-}
+const fakeUserId = uuidv4()
+const fakeDevice1 = createMockDevice({deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1'})
+const fakeDevice2 = createMockDevice({deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A', name: 'iPhone 2'})
+const fakeUserDevicesResponse = [
+  createMockUserDevice({deviceId: fakeDevice1.deviceId, userId: fakeUserId}),
+  createMockUserDevice({deviceId: fakeDevice2.deviceId, userId: fakeUserId})
+]
 
 const fakeGithubIssueResponse = {
   status: '201',
@@ -41,17 +27,8 @@ vi.mock('#lib/domain/device/device-service', () => ({
   deleteUserDevice: vi.fn()
 }))
 
-const devicesMock = createEntityMock()
-vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
-
-const usersMock = createEntityMock()
-vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
-
-const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
-vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-
-const userDevicesMock = createEntityMock({queryIndexes: ['byUser']})
-vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUserId: vi.fn(), deleteUserFilesByUserId: vi.fn(), getDevicesBatch: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/SNS', () => ({
   deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
@@ -63,34 +40,33 @@ vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeleti
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
+import {deleteUser, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 
 describe('#UserDelete', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   const context = testContext
   beforeEach(() => {
+    vi.clearAllMocks()
     event = JSON.parse(JSON.stringify(eventMock))
     event.requestContext.authorizer!.principalId = fakeUserId
 
     // Set default mock return values
     deleteDeviceMock.mockResolvedValue(undefined)
-    devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
-    devicesMock.mocks.delete.mockResolvedValue(undefined)
-    usersMock.mocks.delete.mockResolvedValue(undefined)
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-    userFilesMock.mocks.delete.mockResolvedValue({unprocessed: []})
-    userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
-    userDevicesMock.mocks.delete.mockResolvedValue({unprocessed: []})
+    vi.mocked(getDevicesBatch).mockResolvedValue([])
+    vi.mocked(deleteUser).mockResolvedValue(undefined)
+    vi.mocked(deleteUserFilesByUserId).mockResolvedValue(undefined)
+    vi.mocked(deleteUserDevicesByUserId).mockResolvedValue(undefined)
   })
   test('should delete all user data', async () => {
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+    vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
   })
   test('should create an issue if deletion fails', async () => {
-    usersMock.mocks.delete.mockRejectedValueOnce(new Error('Delete failed'))
+    vi.mocked(deleteUser).mockRejectedValueOnce(new Error('Delete failed'))
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+    vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(500)
   })
@@ -103,27 +79,18 @@ describe('#UserDelete', () => {
 
   test('should delete user files during cascade deletion', async () => {
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-    devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
-    // User has 3 files to delete
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({
-      data: [
-        {userId: fakeUserId, fileId: 'file-1'},
-        {userId: fakeUserId, fileId: 'file-2'},
-        {userId: fakeUserId, fileId: 'file-3'}
-      ]
-    })
+    vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
-    expect(userFilesMock.mocks.delete).toHaveBeenCalled()
+    expect(vi.mocked(deleteUserFilesByUserId)).toHaveBeenCalled()
   })
 
   describe('#PartialFailures', () => {
     test('should return 207 when UserFiles deletion fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
-      // UserFiles query succeeds, but delete fails
-      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: [{userId: fakeUserId, fileId: 'file-1'}]})
-      userFilesMock.mocks.delete.mockRejectedValue(new Error('UserFiles deletion failed'))
+      vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
+      // UserFiles deletion fails
+      vi.mocked(deleteUserFilesByUserId).mockRejectedValue(new Error('UserFiles deletion failed'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(207)
       const body = JSON.parse(output.body)
@@ -133,7 +100,7 @@ describe('#UserDelete', () => {
 
     test('should return 207 when device deletion fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+      vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
       // Relations delete successfully, but device deletion fails
       deleteDeviceMock.mockRejectedValue(new Error('Device deletion failed'))
       const output = await handler(event, context)
@@ -144,14 +111,13 @@ describe('#UserDelete', () => {
 
     test('should not delete user when relation deletion fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesMock.mocks.get.mockResolvedValue({data: [fakeDevice1, fakeDevice2], unprocessed: []})
+      vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
       // UserDevices deletion fails
-      userDevicesMock.mocks.query.byUser!.go.mockResolvedValue({data: [{userId: fakeUserId, deviceId: 'device-1'}]})
-      userDevicesMock.mocks.delete.mockRejectedValue(new Error('UserDevices deletion failed'))
+      vi.mocked(deleteUserDevicesByUserId).mockRejectedValue(new Error('UserDevices deletion failed'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(207)
       // User should NOT be deleted when children fail
-      expect(usersMock.mocks.delete).not.toHaveBeenCalled()
+      expect(vi.mocked(deleteUser)).not.toHaveBeenCalled()
     })
   })
 
@@ -163,7 +129,7 @@ describe('#UserDelete', () => {
     })
     test('should return 500 error when batch device retrieval fails', async () => {
       getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
-      devicesMock.mocks.get.mockResolvedValue({data: [], unprocessed: []})
+      vi.mocked(getDevicesBatch).mockResolvedValue([])
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

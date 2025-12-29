@@ -34,7 +34,7 @@ import {
 } from '../helpers/postgres-helpers'
 
 // Import handler directly (no mocking - uses real PostgreSQL)
-const {handler} = await import('../../../src/lambdas/CleanupExpiredRecords/src/index')
+const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
 
 function createScheduledEvent(): ScheduledEvent {
   return {

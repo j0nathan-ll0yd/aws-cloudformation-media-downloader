@@ -9,15 +9,14 @@
  * Output: SQSBatchResponse with item failures for retry
  */
 import type {SQSBatchResponse, SQSEvent} from 'aws-lambda'
-import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {UserFiles} from '#entities/UserFiles'
+import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import type {DownloadCompletedDetail, DownloadFailedDetail, DownloadQueueMessage} from '#types/events'
-import {FileStatus} from '#types/enums'
+import {DownloadStatus, FileStatus} from '#types/enums'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {upsertFile} from './file-helpers'
@@ -91,13 +90,16 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       update.retryAfter = new Date(classification.retryAfter * 1000)
     }
   }
-  try {
-    // Try to update existing record first
-    logDebug('FileDownloads.update <=', {fileId, update})
-    const updateResponse = await FileDownloads.update({fileId}).set(update).go()
-    logDebug('FileDownloads.update =>', updateResponse)
-  } catch {
-    // If record doesn't exist, create it
+
+  // Check if record exists
+  const existing = await getFileDownload(fileId)
+
+  if (existing) {
+    logDebug('updateFileDownload <=', {fileId, update})
+    const result = await updateFileDownload(fileId, update)
+    logDebug('updateFileDownload =>', result)
+  } else {
+    // Create new record
     const createData = {
       fileId,
       status,
@@ -108,9 +110,9 @@ async function updateDownloadState(fileId: string, status: DownloadStatus, class
       retryAfter: classification?.retryAfter ? new Date(classification.retryAfter * 1000) : null,
       sourceUrl: `https://www.youtube.com/watch?v=${fileId}`
     }
-    logDebug('FileDownloads.create <=', createData)
-    const createResponse = await FileDownloads.create(createData).go()
-    logDebug('FileDownloads.create =>', createResponse)
+    logDebug('createFileDownload <=', createData)
+    const result = await createFileDownload(createData)
+    logDebug('createFileDownload =>', result)
   }
 }
 
@@ -124,8 +126,8 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
   const queueUrl = getRequiredEnv('SNS_QUEUE_URL')
 
   // Get all users waiting for this file
-  const userFilesResponse = await UserFiles.query.byFile({fileId}).go()
-  const userIds = userFilesResponse.data?.map((uf) => uf.userId) || []
+  const userFiles = await getUserFilesByFileId(fileId)
+  const userIds = userFiles.map((uf) => uf.userId)
 
   if (userIds.length === 0) {
     logDebug('No users waiting for file, skipping MetadataNotification')
@@ -204,7 +206,7 @@ async function handleDownloadFailure(
     retryCount: newRetryCount,
     failedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadFailed', failedDetail)
+  await publishEvent('DownloadFailed', failedDetail, {correlationId})
 
   // Handle retryable errors - let SQS handle retry via visibility timeout
   if (classification.retryable && !isRetryExhausted(newRetryCount, maxRetries)) {
@@ -280,16 +282,12 @@ async function processDownloadRequest(message: DownloadQueueMessage): Promise<vo
   // Get existing download state for retry counting
   let existingRetryCount = 0
   let existingMaxRetries = 5
-  try {
-    logDebug('FileDownloads.get <=', {fileId})
-    const {data: existingDownload} = await FileDownloads.get({fileId}).go()
-    logDebug('FileDownloads.get =>', existingDownload ?? 'null')
-    if (existingDownload) {
-      existingRetryCount = existingDownload.retryCount ?? 0
-      existingMaxRetries = existingDownload.maxRetries ?? 5
-    }
-  } catch {
-    logDebug('No existing download record, using defaults')
+  logDebug('getFileDownload <=', {fileId})
+  const existingDownload = await getFileDownload(fileId)
+  logDebug('getFileDownload =>', existingDownload ?? 'null')
+  if (existingDownload) {
+    existingRetryCount = existingDownload.retryCount ?? 0
+    existingMaxRetries = existingDownload.maxRetries ?? 5
   }
 
   // Mark download as in_progress
@@ -363,7 +361,7 @@ async function processDownloadRequest(message: DownloadQueueMessage): Promise<vo
     fileSize: uploadResult.fileSize,
     completedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadCompleted', completedDetail)
+  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})

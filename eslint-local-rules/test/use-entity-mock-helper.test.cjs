@@ -1,5 +1,8 @@
 /**
  * Tests for use-entity-mock-helper ESLint rule
+ *
+ * Rule detects deprecated legacy entity mocking patterns.
+ * With native Drizzle query functions, tests should mock #entities/queries directly.
  */
 
 const {RuleTester} = require('eslint')
@@ -14,92 +17,87 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('use-entity-mock-helper', rule, {
   valid: [
-    // Allowed: Using createEntityMock in test file
+    // Allowed: Native Drizzle query mocking
     {
-      code: `jest.unstable_mockModule('#entities/Users', () => createEntityMock({
-        queryIndexes: ['byEmail']
-      }))`,
-      filename: 'src/lambdas/LoginUser/test/index.test.ts'
-    },
-    // Allowed: Using legacy createElectroDBEntityMock in test file
-    {
-      code: `jest.unstable_mockModule('#entities/Users', () => createElectroDBEntityMock({
-        queryIndexes: ['byEmail']
+      code: `vi.mock('#entities/queries', () => ({
+        getUser: vi.fn(),
+        createUser: vi.fn(),
+        updateUser: vi.fn()
       }))`,
       filename: 'src/lambdas/LoginUser/test/index.test.ts'
     },
     // Allowed: Non-entity mock in test file
     {
-      code: `jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
-        uploadFile: jest.fn()
+      code: `vi.mock('#lib/vendor/AWS/S3', () => ({
+        uploadFile: vi.fn()
       }))`,
       filename: 'src/lambdas/StartFileUpload/test/index.test.ts'
     },
     // Allowed: Non-test file (rule doesn't apply)
     {
-      code: `jest.mock('#entities/Users', () => ({
-        Users: { get: jest.fn() }
+      code: `vi.mock('#entities/Users', () => ({
+        Users: { get: vi.fn() }
       }))`,
       filename: 'src/lambdas/ListFiles/src/index.ts'
     },
-    // Allowed: entity-mock helper file itself
+    // Allowed: Mock helper file itself
     {
-      code: `export function createEntityMock(config) {
-        return { entity: mockEntity, mockFunctions: {} }
+      code: `export function createMockHelpers(config) {
+        return { getUser: vi.fn() }
       }`,
-      filename: 'test/helpers/entity-mock.ts'
+      filename: 'test/helpers/drizzle-mock.ts'
     },
-    // Allowed: Mock uses createEntityMock (jest.mock)
+    // Allowed: jest.mock with non-entity module
     {
-      code: `jest.mock('#entities/Files', () => createEntityMock({
-        queryIndexes: ['byStatus']
+      code: `jest.mock('#lib/vendor/BetterAuth/config', () => ({
+        getAuth: jest.fn()
       }))`,
-      filename: 'src/lambdas/FileCoordinator/test/index.test.ts'
-    },
-    // Allowed: Variable assigned from createEntityMock, then .entity used
-    {
-      code: `const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
-const filesMock = createEntityMock()
-jest.unstable_mockModule('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-jest.unstable_mockModule('#entities/Files', () => ({Files: filesMock.entity}))`,
-      filename: 'src/lambdas/ListFiles/test/index.test.ts'
+      filename: 'src/lambdas/LoginUser/test/index.test.ts'
     }
   ],
   invalid: [
-    // Forbidden: Manual entity mock in test file
+    // Deprecated: Legacy entity mock path
     {
-      code: `jest.unstable_mockModule('#entities/Users', () => ({
+      code: `vi.mock('#entities/Users', () => ({
         Users: {
-          get: jest.fn(),
-          query: { byEmail: jest.fn() }
+          get: vi.fn(),
+          query: { byEmail: vi.fn() }
         }
       }))`,
       filename: 'src/lambdas/LoginUser/test/index.test.ts',
-      errors: [{messageId: 'manualMock'}]
+      errors: [{messageId: 'legacyEntityMock'}]
     },
-    // Forbidden: Manual mock for Files entity
+    // Deprecated: Legacy mock for Files entity
     {
-      code: `jest.unstable_mockModule('#entities/Files', () => ({
-        Files: { create: jest.fn(), get: jest.fn() }
+      code: `vi.mock('#entities/Files', () => ({
+        Files: { create: vi.fn(), get: vi.fn() }
       }))`,
       filename: 'src/lambdas/ListFiles/test/index.test.ts',
-      errors: [{messageId: 'manualMock'}]
+      errors: [{messageId: 'legacyEntityMock'}]
     },
-    // Forbidden: jest.mock with manual entity mock
+    // Deprecated: jest.mock with legacy entity path
     {
       code: `jest.mock('#entities/Devices', () => ({
         Devices: { get: jest.fn() }
       }))`,
       filename: 'src/lambdas/RegisterDevice/test/index.test.ts',
-      errors: [{messageId: 'manualMock'}]
+      errors: [{messageId: 'legacyEntityMock'}]
     },
-    // Forbidden: Mocking UserFiles without helper
+    // Deprecated: Mocking legacy UserFiles entity
     {
-      code: `jest.unstable_mockModule('#entities/UserFiles', () => ({
-        UserFiles: { query: { byUser: jest.fn() } }
+      code: `vi.mock('#entities/UserFiles', () => ({
+        UserFiles: { query: { byUser: vi.fn() } }
       }))`,
       filename: 'test/integration/user-files.test.ts',
-      errors: [{messageId: 'manualMock'}]
+      errors: [{messageId: 'legacyEntityMock'}]
+    },
+    // Deprecated: Using createEntityMock helper
+    {
+      code: `vi.mock('#entities/Users', () => ({
+        Users: createEntityMock({queryIndexes: ['byEmail']})
+      }))`,
+      filename: 'src/lambdas/LoginUser/test/index.test.ts',
+      errors: [{messageId: 'legacyEntityMock'}, {messageId: 'deprecatedHelper'}]
     }
   ]
 })

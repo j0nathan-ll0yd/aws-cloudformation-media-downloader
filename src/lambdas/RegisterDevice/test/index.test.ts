@@ -2,14 +2,11 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createEntityMock} from '#test/helpers/entity-mock'
+
 const fakeUserId = uuidv4()
 
-const devicesMock = createEntityMock()
-vi.mock('#entities/Devices', () => ({Devices: devicesMock.entity}))
-
-const userDevicesMock = createEntityMock()
-vi.mock('#entities/UserDevices', () => ({UserDevices: userDevicesMock.entity}))
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
 const getUserDevicesMock = vi.fn()
 vi.mock('#lib/domain/device/device-service', () => ({
@@ -35,6 +32,7 @@ vi.mock('#lib/vendor/AWS/SNS', () => ({
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
+import {upsertDevice, upsertUserDevice} from '#entities/queries'
 
 describe('#RegisterDevice', () => {
   const context = testContext
@@ -42,8 +40,8 @@ describe('#RegisterDevice', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
-    devicesMock.mocks.upsert.go.mockResolvedValue({data: {}})
-    userDevicesMock.mocks.create.mockResolvedValue({data: {}})
+    vi.mocked(upsertDevice).mockResolvedValue({} as ReturnType<typeof upsertDevice> extends Promise<infer T> ? T : never)
+    vi.mocked(upsertUserDevice).mockResolvedValue({} as ReturnType<typeof upsertUserDevice> extends Promise<infer T> ? T : never)
     createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
     listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'

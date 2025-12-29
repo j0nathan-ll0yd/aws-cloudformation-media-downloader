@@ -12,6 +12,7 @@
     "baseUrl": ".",
     "paths": {
       "#entities/*": ["src/entities/*"],
+      "#lambdas/*": ["src/lambdas/*"],
       "#lib/*": ["src/lib/*"],
       "#util/*": ["src/util/*"],
       "#config/*": ["src/config/*"],

@@ -1,7 +1,6 @@
 import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
-import {createEntityMock} from '#test/helpers/entity-mock'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {v4 as uuidv4} from 'uuid'
 
@@ -9,12 +8,12 @@ import {v4 as uuidv4} from 'uuid'
 const authMock = createBetterAuthMock()
 vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => authMock.auth)}))
 
-// Mock Users entity for name updates
-const usersMock = createEntityMock()
-vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
+import {updateUser} from '#entities/queries'
 
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
@@ -27,8 +26,20 @@ describe('#RegisterUser', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     authMock.mocks.signInSocial.mockReset()
-    usersMock.mocks.update.set.mockClear()
-    usersMock.mocks.update.go.mockClear()
+    vi.mocked(updateUser).mockClear()
+    // Default mock - will be overridden in specific tests
+    vi.mocked(updateUser).mockResolvedValue({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      emailVerified: false,
+      name: null,
+      image: null,
+      firstName: null,
+      lastName: null,
+      appleDeviceId: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
   })
 
   test('should successfully register a new user via Better Auth and update name', async () => {
@@ -50,8 +61,9 @@ describe('#RegisterUser', () => {
     })
 
     // Mock the user name update
-    usersMock.mocks.update.set.mockReturnThis()
-    usersMock.mocks.update.go.mockResolvedValue({data: {}})
+    vi.mocked(updateUser).mockResolvedValue(
+      {id: userId, firstName: 'Jonathan', lastName: 'Lloyd'} as ReturnType<typeof updateUser> extends Promise<infer T> ? T : never
+    )
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -68,7 +80,7 @@ describe('#RegisterUser', () => {
     )
 
     // Verify name was updated for new user
-    expect(usersMock.mocks.update.set).toHaveBeenCalledWith({firstName: 'Jonathan', lastName: 'Lloyd'})
+    expect(vi.mocked(updateUser)).toHaveBeenCalledWith(userId, {firstName: 'Jonathan', lastName: 'Lloyd'})
   })
 
   test('should successfully login an existing user via Better Auth without updating name', async () => {
@@ -99,7 +111,7 @@ describe('#RegisterUser', () => {
     expect(typeof body.body.userId).toEqual('string')
 
     // Verify name was NOT updated for existing user
-    expect(usersMock.mocks.update.set).not.toHaveBeenCalled()
+    expect(vi.mocked(updateUser)).not.toHaveBeenCalled()
   })
 
   test('should handle an invalid payload', async () => {

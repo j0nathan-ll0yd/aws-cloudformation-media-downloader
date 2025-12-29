@@ -35,20 +35,21 @@ ERRORS=""
 WARNINGS=""
 
 # =============================================================================
-# Check 1: Entity count matches documentation
+# Check 1: Entity query file count matches documentation
 # =============================================================================
-echo -n "  [1/8] Checking entity count... "
-ENTITY_COUNT=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
+echo -n "  [1/8] Checking entity query files... "
+# Count query files in src/entities/queries/ (excluding index.ts and test files)
+QUERY_FILE_COUNT=$(find src/entities/queries -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
-# Count entity files listed in AGENTS.md between entities/ and lambdas/ sections
-# Each entity file is listed with │   │   ├── or │   │   └──
-DOCUMENTED_ENTITY_COUNT=$(awk '/entities\/.*Entity definitions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.ts' | wc -l | tr -d ' ')
+# Count query files listed in AGENTS.md between entities/ and lambdas/ sections
+# Each query file is listed with │   │       ├── or │   │       └──
+DOCUMENTED_QUERY_COUNT=$(awk '/entities\/.*query functions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*-queries\.ts' | wc -l | tr -d ' ')
 
-if [ "$ENTITY_COUNT" -ne "$DOCUMENTED_ENTITY_COUNT" ]; then
+if [ "$QUERY_FILE_COUNT" -ne "$DOCUMENTED_QUERY_COUNT" ]; then
   echo -e "${RED}MISMATCH${NC}"
-  ERRORS="$ERRORS\n  - Entity count: found $ENTITY_COUNT files in src/entities/, documented $DOCUMENTED_ENTITY_COUNT in AGENTS.md"
+  ERRORS="$ERRORS\n  - Query file count: found $QUERY_FILE_COUNT files in src/entities/queries/, documented $DOCUMENTED_QUERY_COUNT in AGENTS.md"
 else
-  echo -e "${GREEN}OK${NC} ($ENTITY_COUNT entities)"
+  echo -e "${GREEN}OK${NC} ($QUERY_FILE_COUNT query files)"
 fi
 
 # =============================================================================
@@ -145,13 +146,24 @@ fi
 echo -n "  [6/8] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
-# Get entity names from filesystem (excluding Collections.ts which is a service, not entity)
-FS_ENTITIES=$(find src/entities -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "Collections.ts" -exec basename {} .ts \; 2> /dev/null | sort)
+# Get query file names from entities/queries/ directory
+FS_QUERY_FILES=$(find src/entities/queries -name "*-queries.ts" -exec basename {} .ts \; 2> /dev/null | sort)
 
-# Check each entity appears in metadata.json entityRelationships
-for entity in $FS_ENTITIES; do
-  if ! grep -q "\"$entity\"" graphrag/metadata.json 2> /dev/null; then
-    WARNINGS="$WARNINGS\n  - Entity '$entity' not found in graphrag/metadata.json entityRelationships"
+# Check each query module is represented in metadata.json entityRelationships
+# The metadata has entity names like "Users", "Files" - we check those exist
+for query_file in $FS_QUERY_FILES; do
+  # Map query files to expected entities (e.g., user-queries -> Users)
+  case "$query_file" in
+    user-queries) expected="Users" ;;
+    file-queries) expected="Files" ;;
+    device-queries) expected="Devices" ;;
+    session-queries) expected="Sessions" ;;
+    relationship-queries) expected="UserFiles" ;;
+    *) expected="" ;;
+  esac
+
+  if [ -n "$expected" ] && ! grep -q "\"$expected\"" graphrag/metadata.json 2> /dev/null; then
+    WARNINGS="$WARNINGS\n  - Entity '$expected' (from $query_file.ts) not found in graphrag/metadata.json"
     GRAPHRAG_OK=false
   fi
 done

@@ -8,8 +8,7 @@
  * Input: ScheduledEvent
  * Output: PruneDevicesResult with deletion counts
  */
-import {Devices} from '#entities/Devices'
-import {UserDevices} from '#entities/UserDevices'
+import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import type {Device} from '#types/domain-models'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
 import {deleteDevice} from '#lib/domain/device/device-service'
@@ -18,28 +17,15 @@ import {Apns2Error, UnexpectedError} from '#lib/system/errors'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import {scanAllPages} from '#lib/data/pagination'
-import {retryUnprocessedDelete} from '#lib/system/retry'
 
 // Re-export types for external consumers
 export type { PruneDevicesResult } from '#types/lambda'
 
-/**
- * Returns an array of all devices using paginated scan.
- *
- * @returns Array of all registered devices
- * @notExported
- */
+// Get all devices
 async function getDevices(): Promise<Device[]> {
-  const devices = await scanAllPages<Device>(async (cursor) => {
-    const scanResponse = await Devices.scan.go({cursor})
-    if (!scanResponse) {
-      throw new UnexpectedError('Device scan failed')
-    }
-    return {data: (scanResponse.data || []) as Device[], cursor: scanResponse.cursor ?? null}
-  })
+  const devices = await getAllDevices()
   logDebug('getDevices =>', {count: devices.length})
-  return devices
+  return devices as Device[]
 }
 
 async function isDeviceDisabled(token: string): Promise<boolean> {
@@ -80,16 +66,6 @@ async function dispatchHealthCheckNotificationToDeviceToken(token: string): Prom
   }
 }
 
-async function getUserIdsByDeviceId(deviceId: string): Promise<string[]> {
-  logDebug('getUserIdsByDeviceId <=', deviceId)
-  const response = await UserDevices.query.byDevice({deviceId}).go()
-  logDebug('getUserIdsByDeviceId =>', response)
-  if (!response || !response.data) {
-    return []
-  }
-  return response.data.map((userDevice) => userDevice.userId)
-}
-
 /**
  * Removes Devices and related data if the device is no longer active.
  * Activity is determined by directly querying the APNS.
@@ -112,17 +88,8 @@ export const handler = withPowertools(wrapScheduledHandler(async (): Promise<Pru
     logInfo('Verifying device', deviceId)
     if (await isDeviceDisabled(device.token)) {
       try {
-        // Unbelievably, all these methods are idempotent
-        const userIds = await getUserIdsByDeviceId(deviceId)
-
         // Delete UserDevices junction records first (children before parent)
-        if (userIds.length > 0) {
-          const deleteKeys = userIds.map((userId) => ({userId, deviceId}))
-          const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
-          if (unprocessed.length > 0) {
-            logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
-          }
-        }
+        await deleteUserDevicesByDeviceId(deviceId)
 
         // Then delete the Device itself
         await deleteDevice(device)

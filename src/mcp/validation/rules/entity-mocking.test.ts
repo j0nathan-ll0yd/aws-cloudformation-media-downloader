@@ -1,6 +1,9 @@
 /**
  * Unit tests for entity-mocking rule
- * CRITICAL: Test files must use createEntityMock() helper
+ * MEDIUM: Detect legacy entity mocking patterns (deprecated)
+ *
+ * With native Drizzle query functions, tests should mock #entities/queries directly
+ * using vi.fn() for each function. Legacy ElectroDB-style entity mocks are deprecated.
  */
 
 import {beforeAll, describe, expect, test} from 'vitest'
@@ -23,8 +26,8 @@ describe('entity-mocking rule', () => {
       expect(entityMockingRule.name).toBe('entity-mocking')
     })
 
-    test('should have CRITICAL severity', () => {
-      expect(entityMockingRule.severity).toBe('CRITICAL')
+    test('should have MEDIUM severity', () => {
+      expect(entityMockingRule.severity).toBe('MEDIUM')
     })
 
     test('should apply to test files', () => {
@@ -61,10 +64,9 @@ vi.mock('#entities/Users', () => ({
     })
   })
 
-  describe('detects manual entity mocking', () => {
-    test('should detect vi.mock without helper', () => {
+  describe('detects legacy entity mocking patterns', () => {
+    test('should detect vi.mock with legacy entity path', () => {
       const sourceFile = project.createSourceFile('test-mock-users.ts', `import {beforeAll, describe, test} from 'vitest'
-import {Users} from '#entities/Users'
 
 vi.mock('#entities/Users', () => ({
   Users: {
@@ -76,14 +78,13 @@ vi.mock('#entities/Users', () => ({
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(1)
-      expect(violations[0].severity).toBe('CRITICAL')
+      expect(violations[0].severity).toBe('MEDIUM')
       expect(violations[0].message).toContain('#entities/Users')
-      expect(violations[0].message).toContain('createEntityMock')
+      expect(violations[0].message).toContain('#entities/queries')
     })
 
-    test('should detect jest.mock without helper', () => {
+    test('should detect jest.mock with legacy entity path', () => {
       const sourceFile = project.createSourceFile('test-mock-files.ts', `import {beforeAll, describe, test} from 'vitest'
-import {Files} from '#entities/Files'
 
 jest.mock('#entities/Files', () => ({
   Files: {
@@ -98,7 +99,7 @@ jest.mock('#entities/Files', () => ({
       expect(violations[0].message).toContain('#entities/Files')
     })
 
-    test('should detect mocking of UserFiles entity', () => {
+    test('should detect mocking of legacy UserFiles entity', () => {
       const sourceFile = project.createSourceFile('test-mock-userfiles.ts', `vi.mock('#entities/UserFiles', () => ({
   UserFiles: { query: vi.fn() }
 }))`, {overwrite: true})
@@ -108,7 +109,7 @@ jest.mock('#entities/Files', () => ({
       expect(violations).toHaveLength(1)
     })
 
-    test('should detect mocking of Devices entity', () => {
+    test('should detect mocking of legacy Devices entity', () => {
       const sourceFile = project.createSourceFile('test-mock-devices.ts', `vi.mock('#entities/Devices', () => ({
   Devices: { scan: vi.fn() }
 }))`, {overwrite: true})
@@ -117,20 +118,33 @@ jest.mock('#entities/Files', () => ({
 
       expect(violations).toHaveLength(1)
     })
+
+    test('should detect deprecated createEntityMock usage', () => {
+      const sourceFile = project.createSourceFile('test-create-entity-mock.ts', `import {createEntityMock} from '../../../../test/helpers/entity-mock'
+
+vi.mock('#entities/Users', () => ({
+  Users: createEntityMock({queryIndexes: ['byEmail']})
+}))`, {overwrite: true})
+
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+
+      // Expect 2 violations: legacy path + createEntityMock usage
+      expect(violations).toHaveLength(2)
+      const createEntityMockViolation = violations.find((v) => v.message.includes('createEntityMock'))
+      expect(createEntityMockViolation).toBeDefined()
+      expect(createEntityMockViolation!.message).toContain('deprecated')
+    })
   })
 
   describe('allows correct mocking patterns', () => {
-    test('should allow createEntityMock usage', () => {
-      const sourceFile = project.createSourceFile('test-correct-mock.ts', `import {createEntityMock} from '../../../../test/helpers/entity-mock'
-import {Users} from '#entities/Users'
+    test('should allow native Drizzle query mocking', () => {
+      const sourceFile = project.createSourceFile('test-drizzle-mock.ts', `import {describe, test, vi} from 'vitest'
 
-const UsersMock = createEntityMock({
-  get: vi.fn(),
-  create: vi.fn()
-})
-
-vi.mock('#entities/Users', () => ({
-  Users: createEntityMock({get: vi.fn()})
+vi.mock('#entities/queries', () => ({
+  getUser: vi.fn(),
+  createUser: vi.fn(),
+  getUsersByEmail: vi.fn(),
+  deleteUser: vi.fn()
 }))`, {overwrite: true})
 
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
@@ -167,13 +181,28 @@ vi.mock('#util/lambda-helpers', () => ({
 
       expect(violations).toHaveLength(0)
     })
+
+    test('should allow vi.mock with #entities/queries path', () => {
+      const sourceFile = project.createSourceFile('test-queries-mock.ts', `import {describe, test, vi} from 'vitest'
+
+vi.mock('#entities/queries', () => ({
+  getFile: vi.fn(),
+  createFile: vi.fn(),
+  getDevice: vi.fn(),
+  getUserFilesByUserId: vi.fn()
+}))`, {overwrite: true})
+
+      const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
+
+      expect(violations).toHaveLength(0)
+    })
   })
 
-  describe('detects entity usage without helper import', () => {
-    test('should warn when mocking entities without helper', () => {
+  describe('detects legacy entity patterns', () => {
+    test('should warn when mocking legacy entity modules', () => {
       const sourceFile = project.createSourceFile('test-missing-import.ts', `import {describe, test} from 'vitest'
 
-// File references entities but doesn't use helper
+// File uses legacy entity mock pattern
 const mockUsers = {
   get: vi.fn()
 }
@@ -185,12 +214,12 @@ vi.mock('#entities/Users', () => ({
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations.length).toBeGreaterThan(0)
-      expect(violations[0].suggestion).toContain('createEntityMock')
+      expect(violations[0].suggestion).toContain('#entities/queries')
     })
   })
 
   describe('provides helpful suggestions', () => {
-    test('should suggest proper import path', () => {
+    test('should suggest using #entities/queries', () => {
       const sourceFile = project.createSourceFile('test-suggestion.ts', `vi.mock('#entities/Users', () => ({
   Users: { get: vi.fn() }
 }))`, {overwrite: true})
@@ -198,7 +227,7 @@ vi.mock('#entities/Users', () => ({
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations[0].suggestion).toBeDefined()
-      expect(violations[0].suggestion).toContain('createEntityMock')
+      expect(violations[0].suggestion).toContain('#entities/queries')
     })
 
     test('should include code snippet', () => {
@@ -213,8 +242,8 @@ vi.mock('#entities/Users', () => ({
     })
   })
 
-  describe('handles multiple entities', () => {
-    test('should detect multiple manual entity mocks', () => {
+  describe('handles multiple legacy entities', () => {
+    test('should detect multiple legacy entity mocks', () => {
       const sourceFile = project.createSourceFile('test-multiple-entities.ts', `vi.mock('#entities/Users', () => ({
   Users: { get: vi.fn() }
 }))
@@ -233,11 +262,11 @@ vi.mock('#entities/Devices', () => ({
     })
   })
 
-  describe('all known entities', () => {
+  describe('all known legacy entities', () => {
     const entities = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications']
 
     entities.forEach((entity) => {
-      test(`should detect manual mock of ${entity}`, () => {
+      test(`should detect legacy mock of ${entity}`, () => {
         const sourceFile = project.createSourceFile(`test-${entity.toLowerCase()}.ts`, `vi.mock('#entities/${entity}', () => ({
   ${entity}: { get: vi.fn() }
 }))`, {overwrite: true})

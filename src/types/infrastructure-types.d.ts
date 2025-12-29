@@ -55,3 +55,13 @@ export interface CustomAPIGatewayRequestAuthorizerEvent {
   stageVariables: APIGatewayProxyEventStageVariables | null
   resource: string
 }
+
+/**
+ * Context containing both traceId and correlationId for distributed tracing.
+ */
+export interface CorrelationContext {
+  /** AWS Lambda request ID for this invocation */
+  traceId: string
+  /** Correlation ID for end-to-end request tracing */
+  correlationId: string
+}

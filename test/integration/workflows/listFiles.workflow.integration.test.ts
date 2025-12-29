@@ -24,16 +24,16 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '../../../src/types/enums'
-import type {File} from '../../../src/types/domain-models'
+import {FileStatus, UserStatus} from '#types/enums'
+import type {File} from '#types/domain-models'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
 
 // Import handler directly (no mocking - uses real services)
-const {handler} = await import('../../../src/lambdas/ListFiles/src/index')
+const {handler} = await import('#lambdas/ListFiles/src/index')
 
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
   return {

@@ -9,8 +9,7 @@
  * Output: void (processes all records, logs errors)
  */
 import type {S3EventRecord} from 'aws-lambda'
-import {Files} from '#entities/Files'
-import {UserFiles} from '#entities/UserFiles'
+import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import type {File} from '#types/domain-models'
@@ -22,40 +21,24 @@ import {createDownloadReadyNotification} from '#lib/domain/notification/transfor
 import {UnexpectedError} from '#lib/system/errors'
 import {getRequiredEnv} from '#lib/system/env'
 
-/**
- * Returns the DynamoDBFile by S3 object key using KeyIndex GSI.
- *
- * @param fileName - The S3 object key to search for
- * @returns The file record matching the S3 object key
- * @notExported
- */
+// Get file by S3 object key
 async function getFileByFilename(fileName: string): Promise<File> {
   logDebug('query file by key <=', fileName)
-  const queryResponse = await Files.query.byKey({key: fileName}).go()
-  logDebug('query file by key =>', queryResponse)
-  if (queryResponse.data && queryResponse.data.length > 0) {
-    return queryResponse.data[0] as File
+  const files = await getFilesByKey(fileName)
+  logDebug('query file by key =>', files)
+  if (files.length > 0) {
+    return files[0] as File
   } else {
     throw new UnexpectedError('Unable to locate file')
   }
 }
 
-/**
- * Returns an array of user IDs who have requested a given file.
- * Uses FileCollection GSI for efficient reverse lookup (eliminates full table scan).
- *
- * @param file - The DynamoDBFile you want to search for
- * @returns Array of user IDs associated with the file
- * @notExported
- */
+// Get user IDs who have requested a given file
 async function getUsersOfFile(file: File): Promise<string[]> {
   logDebug('query users by fileId <=', file.fileId)
-  const queryResponse = await UserFiles.query.byFile({fileId: file.fileId}).go()
-  logDebug('query users by fileId =>', queryResponse)
-  if (!queryResponse.data || queryResponse.data.length === 0) {
-    return []
-  }
-  return queryResponse.data.map((userFile) => userFile.userId)
+  const userFiles = await getUserFilesByFileId(file.fileId)
+  logDebug('query users by fileId =>', userFiles)
+  return userFiles.map((userFile) => userFile.userId)
 }
 
 /**

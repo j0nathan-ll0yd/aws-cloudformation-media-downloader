@@ -16,7 +16,7 @@
  */
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
-import {Users} from '#entities/Users'
+import {updateUser} from '#entities/queries'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
 import {userRegistrationRequestSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
@@ -92,7 +92,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
   if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-    await Users.update({id: result.user.id}).set({firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''}).go()
+    await updateUser(result.user.id, {firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''})
 
     logInfo('RegisterUser: Updated new user with name from iOS app', {
       userId: result.user.id,

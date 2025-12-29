@@ -1,22 +1,18 @@
 /**
  * Unit tests for Better Auth Helper Functions
  *
- * Tests session management, validation, and token generation using entity-mock.
+ * Tests session management, validation, and token generation.
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {UnauthorizedError} from '#lib/system/errors'
-import {createEntityMock} from '#test/helpers/entity-mock'
 
-// Create entity mocks
-const sessionsMock = createEntityMock({queryIndexes: ['byUser', 'byToken']})
-
-// Mock Sessions entity
-vi.mock('#entities/Sessions', () => ({Sessions: sessionsMock.entity}))
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({getSessionByToken: vi.fn(), updateSession: vi.fn()}))
 
 // Import after mocking
 const {validateSessionToken, refreshSession} = await import('../session-service')
-const {Sessions} = await import('#entities/Sessions')
+import {getSessionByToken, updateSession} from '#entities/queries'
 
 /**
  * Mock session data overrides for testing
@@ -46,48 +42,35 @@ function createMockSession(overrides?: MockSessionOverrides) {
     expiresAt: thirtyDaysFromNow, // 30 days future
     createdAt: now,
     updatedAt: now,
+    ipAddress: null as string | null,
+    userAgent: null as string | null,
     ...overrides
   }
 }
 
 describe('Better Auth Helpers', () => {
   beforeEach(() => {
-    // Clear all mock call history
-    sessionsMock.mocks.scan.go.mockClear()
-    sessionsMock.mocks.scan.where.mockClear()
-    sessionsMock.mocks.create.mockClear()
-    sessionsMock.mocks.update.go.mockClear()
-    sessionsMock.mocks.update.set.mockClear()
-    sessionsMock.mocks.delete.mockClear()
-    if (sessionsMock.mocks.query.byUser) {
-      sessionsMock.mocks.query.byUser.go.mockClear()
-    }
-    if (sessionsMock.mocks.query.byToken) {
-      sessionsMock.mocks.query.byToken.go.mockClear()
-    }
+    vi.clearAllMocks()
+    vi.mocked(updateSession).mockResolvedValue(undefined as unknown as Awaited<ReturnType<typeof updateSession>>)
   })
 
   describe('validateSessionToken', () => {
     it('should validate a valid session token', async () => {
       const mockSession = createMockSession()
 
-      // Mock query.byToken operation (using GSI instead of scan)
-      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: [mockSession]})
-
-      // Mock update operation
-      sessionsMock.mocks.update.set.mockReturnThis()
-      sessionsMock.mocks.update.go.mockResolvedValue({data: mockSession})
+      // Mock getSessionByToken
+      vi.mocked(getSessionByToken).mockResolvedValue(mockSession)
 
       const result = await validateSessionToken('valid-token')
 
       expect(result).toEqual({userId: 'user-123', sessionId: 'session-123', expiresAt: mockSession.expiresAt.getTime()})
 
       // Should update lastActiveAt
-      expect(Sessions.update).toHaveBeenCalledWith({id: 'session-123'})
+      expect(vi.mocked(updateSession)).toHaveBeenCalledWith('session-123', expect.objectContaining({updatedAt: expect.any(Date)}))
     })
 
     it('should throw UnauthorizedError for non-existent session', async () => {
-      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: []})
+      vi.mocked(getSessionByToken).mockResolvedValue(null)
 
       await expect(validateSessionToken('invalid-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('invalid-token')).rejects.toThrow('Invalid session token')
@@ -102,7 +85,7 @@ describe('Better Auth Helpers', () => {
         updatedAt: new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000)
       })
 
-      sessionsMock.mocks.query.byToken!.go.mockResolvedValue({data: [mockSession]})
+      vi.mocked(getSessionByToken).mockResolvedValue(mockSession)
 
       await expect(validateSessionToken('expired-token')).rejects.toThrow(UnauthorizedError)
       await expect(validateSessionToken('expired-token')).rejects.toThrow('Session expired')
@@ -114,16 +97,13 @@ describe('Better Auth Helpers', () => {
       const originalExpiration = Date.now() + 10 * 24 * 60 * 60 * 1000 // 10 days
       const newExpiration = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
 
-      sessionsMock.mocks.update.set.mockReturnThis()
-      sessionsMock.mocks.update.go.mockResolvedValue({data: {}})
-
       const result = await refreshSession('session-123')
 
       expect(result.expiresAt).toBeGreaterThan(originalExpiration)
       expect(result.expiresAt).toBeCloseTo(newExpiration, -3)
 
-      expect(Sessions.update).toHaveBeenCalledWith({id: 'session-123'})
-      expect(sessionsMock.mocks.update.set).toHaveBeenCalledWith(expect.objectContaining({expiresAt: expect.any(Date), updatedAt: expect.any(Date)}))
+      expect(vi.mocked(updateSession)).toHaveBeenCalledWith('session-123',
+        expect.objectContaining({expiresAt: expect.any(Date), updatedAt: expect.any(Date)}))
     })
   })
 })

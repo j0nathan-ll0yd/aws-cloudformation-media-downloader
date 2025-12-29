@@ -1,12 +1,12 @@
 /**
  * @fixture invalid
- * @rule electrodb-mocking
- * @severity CRITICAL
- * @description Manual Files entity mock with jest.mock
+ * @rule entity-mocking
+ * @severity HIGH
+ * @description Legacy entity mock - should use #entities/queries instead
  * @expectedViolations 1
  * @simulatedPath src/lambdas/Test/test/index.test.ts
  */
-import {beforeAll, describe, test} from '@jest/globals'
-import {Files} from '#entities/Files'
+import {vi} from 'vitest'
 
-jest.mock('#entities/Files', () => ({Files: {get: jest.fn(), put: jest.fn()}}))
+// This pattern is deprecated - mocking old entity wrappers
+vi.mock('#entities/Files', () => ({Files: {get: vi.fn(), put: vi.fn()}}))

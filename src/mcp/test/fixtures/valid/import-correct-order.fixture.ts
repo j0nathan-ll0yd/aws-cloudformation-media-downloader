@@ -6,4 +6,4 @@
  */
 import type {APIGatewayProxyEvent} from 'aws-lambda'
 import {v4} from 'uuid'
-import {Users} from '#entities/Users'
+import {getUser} from '#entities/queries'

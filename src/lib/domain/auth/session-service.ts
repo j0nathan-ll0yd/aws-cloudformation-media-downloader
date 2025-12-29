@@ -5,7 +5,7 @@
  * These helpers bridge Better Auth's framework with our serverless architecture.
  */
 
-import {Sessions} from '#entities/Sessions'
+import {getSessionByToken, updateSession} from '#entities/queries'
 import {logDebug, logError} from '#lib/system/logging'
 import {UnauthorizedError} from '#lib/system/errors'
 import type {SessionPayload} from '#types/util'
@@ -20,15 +20,13 @@ import type {SessionPayload} from '#types/util'
 export async function validateSessionToken(token: string): Promise<SessionPayload> {
   logDebug('validateSessionToken: validating token')
   try {
-    // Use GSI for O(1) lookup instead of table scan
-    const result = await Sessions.query.byToken({token}).go()
+    // Use index for O(1) lookup
+    const session = await getSessionByToken(token)
 
-    if (!result.data || result.data.length === 0) {
+    if (!session) {
       logError('validateSessionToken: session not found')
       throw new UnauthorizedError('Invalid session token')
     }
-
-    const session = result.data[0]
 
     // Compare Date objects - expiresAt is now a TIMESTAMP WITH TIME ZONE
     if (session.expiresAt < new Date()) {
@@ -36,7 +34,7 @@ export async function validateSessionToken(token: string): Promise<SessionPayloa
       throw new UnauthorizedError('Session expired')
     }
 
-    await Sessions.update({id: session.id}).set({updatedAt: new Date()}).go()
+    await updateSession(session.id, {updatedAt: new Date()})
 
     logDebug('validateSessionToken: session valid', {userId: session.userId, sessionId: session.id})
 
@@ -61,7 +59,7 @@ export async function refreshSession(sessionId: string): Promise<{expiresAt: num
 
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
-  await Sessions.update({id: sessionId}).set({expiresAt, updatedAt: new Date()}).go()
+  await updateSession(sessionId, {expiresAt, updatedAt: new Date()})
 
   logDebug('refreshSession: session refreshed', {expiresAt: expiresAt.toISOString()})
 

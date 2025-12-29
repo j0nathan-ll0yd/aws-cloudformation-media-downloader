@@ -1,13 +1,10 @@
 /**
  * @fixture valid
- * @rule electrodb-mocking
- * @description Using createElectroDBEntityMock helper (allowed)
+ * @rule entity-mocking
+ * @description Using vi.fn() mocks for query functions (correct pattern)
  * @expectedViolations 0
  * @simulatedPath src/lambdas/Test/test/index.test.ts
  */
-import {createElectroDBEntityMock} from '../../../../test/helpers/electrodb-mock'
-import {Users} from '#entities/Users'
+import {vi} from 'vitest'
 
-const UsersMock = createElectroDBEntityMock({get: jest.fn(), create: jest.fn()})
-
-jest.unstable_mockModule('#entities/Users', () => ({Users: createElectroDBEntityMock({get: jest.fn()})}))
+vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn(), updateUser: vi.fn()}))

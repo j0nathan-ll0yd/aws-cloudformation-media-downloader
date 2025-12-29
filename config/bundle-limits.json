@@ -1,0 +1,25 @@
+{
+  "$schema": "./bundle-limits.schema.json",
+  "description": "Bundle size limits for Lambda functions. Sizes in bytes.",
+  "globalLimit": 5242880,
+  "warningThreshold": 0.9,
+  "limits": {
+    "ApiGatewayAuthorizer": 1048576,
+    "CleanupExpiredRecords": 1048576,
+    "CloudfrontMiddleware": 524288,
+    "DeviceEvent": 1048576,
+    "ListFiles": 1048576,
+    "LoginUser": 2097152,
+    "MigrateDSQL": 2097152,
+    "PruneDevices": 1048576,
+    "RefreshToken": 1048576,
+    "RegisterDevice": 1048576,
+    "RegisterUser": 2097152,
+    "S3ObjectCreated": 1048576,
+    "SendPushNotification": 1048576,
+    "StartFileUpload": 3145728,
+    "UserDelete": 1048576,
+    "UserSubscribe": 1048576,
+    "WebhookFeedly": 2097152
+  }
+}

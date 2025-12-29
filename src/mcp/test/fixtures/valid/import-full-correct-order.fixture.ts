@@ -7,7 +7,7 @@
 import {join} from 'node:path'
 import type {APIGatewayProxyEvent} from 'aws-lambda'
 import {v4} from 'uuid'
-import {Users} from '#entities/Users'
+import {getUser} from '#entities/queries'
 import {queryItems} from '#lib/vendor/AWS/DynamoDB'
 import type {UserRecord} from '#types/User'
 import {buildApiResponse} from '#util/lambda-helpers'

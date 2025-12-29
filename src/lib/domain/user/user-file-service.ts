@@ -4,7 +4,7 @@
  * Shared utilities for managing user-file relationships across multiple Lambda functions.
  * Handles file associations, ownership, and sharing operations.
  */
-import {UserFiles} from '#entities/UserFiles'
+import {createUserFile} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
 
 /**
@@ -18,11 +18,11 @@ import {logDebug} from '#lib/system/logging'
 export async function associateFileToUser(fileId: string, userId: string) {
   logDebug('associateFileToUser <=', {fileId, userId})
   try {
-    const response = await UserFiles.create({userId, fileId}).go()
+    const response = await createUserFile({userId, fileId})
     logDebug('associateFileToUser =>', response)
     return response
   } catch (error) {
-    if (error instanceof Error && error.message.includes('The conditional request failed')) {
+    if (error instanceof Error && error.message.includes('duplicate key value')) {
       logDebug('associateFileToUser => already exists (idempotent)')
       return
     }
