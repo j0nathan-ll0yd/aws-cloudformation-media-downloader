@@ -2,7 +2,6 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {createEntityMock} from '#test/helpers/entity-mock'
 import {FileStatus} from '#types/enums'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
@@ -12,27 +11,30 @@ process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 const fakeUserId = uuidv4()
-const {default: queryStubReturnObject} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
-const userFilesMock = createEntityMock({queryIndexes: ['byUser']})
-const filesMock = createEntityMock()
-vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
-vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({
+  getFilesForUser: vi.fn()
+}))
 
 const {handler} = await import('./../src')
+import {getFilesForUser} from '#entities/queries'
 
 /** Creates a mock file with specified status and publish date */
 function createMockFile(fileId: string, status: FileStatus, publishDate: string) {
   return {
     fileId,
     key: `${fileId}.mp4`,
-    status,
+    status: status as string,
     publishDate,
     title: `Test Video ${fileId}`,
     size: 1000000,
     contentType: 'video/mp4',
-    url: `https://example.com/${fileId}.mp4`
+    url: `https://example.com/${fileId}.mp4`,
+    authorName: 'Test Author',
+    authorUser: 'test-user',
+    description: 'Test description'
   }
 }
 
@@ -61,7 +63,7 @@ describe('#ListFiles', () => {
     expect(output.statusCode).toEqual(401)
   })
   test('(authenticated) should return empty list when user has no files', async () => {
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: []})
+    vi.mocked(getFilesForUser).mockResolvedValue([])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
     const body = JSON.parse(output.body)
@@ -69,19 +71,12 @@ describe('#ListFiles', () => {
   })
 
   test('(authenticated) should return multiple files when user has files', async () => {
-    const userFiles = [
-      {userId: fakeUserId, fileId: 'file-1'},
-      {userId: fakeUserId, fileId: 'file-2'},
-      {userId: fakeUserId, fileId: 'file-3'}
-    ]
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
-
     const files = [
       createMockFile('file-1', FileStatus.Downloaded, '2023-12-01'),
       createMockFile('file-2', FileStatus.Downloaded, '2023-12-02'),
       createMockFile('file-3', FileStatus.Downloaded, '2023-12-03')
     ]
-    filesMock.mocks.get.mockResolvedValue({data: files, unprocessed: []})
+    vi.mocked(getFilesForUser).mockResolvedValue(files)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -91,21 +86,13 @@ describe('#ListFiles', () => {
   })
 
   test('(authenticated) should only return Downloaded files, filtering out other statuses', async () => {
-    const userFiles = [
-      {userId: fakeUserId, fileId: 'downloaded-file'},
-      {userId: fakeUserId, fileId: 'queued-file'},
-      {userId: fakeUserId, fileId: 'failed-file'},
-      {userId: fakeUserId, fileId: 'downloading-file'}
-    ]
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
-
     const files = [
       createMockFile('downloaded-file', FileStatus.Downloaded, '2023-12-01'),
       createMockFile('queued-file', FileStatus.Queued, '2023-12-02'),
       createMockFile('failed-file', FileStatus.Failed, '2023-12-03'),
       createMockFile('downloading-file', FileStatus.Downloading, '2023-12-04')
     ]
-    filesMock.mocks.get.mockResolvedValue({data: files, unprocessed: []})
+    vi.mocked(getFilesForUser).mockResolvedValue(files)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -115,20 +102,13 @@ describe('#ListFiles', () => {
   })
 
   test('(authenticated) should sort files by publishDate in descending order (newest first)', async () => {
-    const userFiles = [
-      {userId: fakeUserId, fileId: 'old-file'},
-      {userId: fakeUserId, fileId: 'new-file'},
-      {userId: fakeUserId, fileId: 'mid-file'}
-    ]
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
-
     // Create files with different dates (not in order)
     const files = [
       createMockFile('old-file', FileStatus.Downloaded, '2023-01-01'),
       createMockFile('new-file', FileStatus.Downloaded, '2023-12-31'),
       createMockFile('mid-file', FileStatus.Downloaded, '2023-06-15')
     ]
-    filesMock.mocks.get.mockResolvedValue({data: files, unprocessed: []})
+    vi.mocked(getFilesForUser).mockResolvedValue(files)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -142,19 +122,12 @@ describe('#ListFiles', () => {
 
   test('(authenticated) should combine filtering and sorting correctly', async () => {
     // Test that both filtering (Downloaded only) and sorting (newest first) work together
-    const userFiles = [
-      {userId: fakeUserId, fileId: 'old-downloaded'},
-      {userId: fakeUserId, fileId: 'new-queued'},
-      {userId: fakeUserId, fileId: 'new-downloaded'}
-    ]
-    userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFiles})
-
     const files = [
       createMockFile('old-downloaded', FileStatus.Downloaded, '2023-01-01'),
       createMockFile('new-queued', FileStatus.Queued, '2023-12-31'),
       createMockFile('new-downloaded', FileStatus.Downloaded, '2023-12-15')
     ]
-    filesMock.mocks.get.mockResolvedValue({data: files, unprocessed: []})
+    vi.mocked(getFilesForUser).mockResolvedValue(files)
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(200)
@@ -166,10 +139,8 @@ describe('#ListFiles', () => {
   })
 
   describe('#AWSFailure', () => {
-    test('should return 500 error when batch file retrieval fails', async () => {
-      const userFileData = queryStubReturnObject.Items || []
-      userFilesMock.mocks.query.byUser!.go.mockResolvedValue({data: userFileData})
-      filesMock.mocks.get.mockResolvedValue(undefined)
+    test('should return 500 error when file retrieval fails', async () => {
+      vi.mocked(getFilesForUser).mockRejectedValue(new Error('Database connection failed'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)

@@ -35,7 +35,11 @@ export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'id' | 'creat
 
 export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'id' | 'createdAt'>>
 
-// Transform identity provider row to IdentityProviderData format
+/**
+ * Transforms an identity provider row to the IdentityProviderData format.
+ * @param idp - The identity provider row from the database
+ * @returns The transformed identity provider data or undefined if null
+ */
 function transformIdp(idp: IdentityProviderRow | null): IdentityProviderData | undefined {
   if (!idp) {
     return undefined
@@ -52,7 +56,11 @@ function transformIdp(idp: IdentityProviderRow | null): IdentityProviderData | u
   }
 }
 
-// Get a user by ID with their identity provider (single JOIN query)
+/**
+ * Gets a user by ID with their identity provider (single JOIN query).
+ * @param id - The user's UUID
+ * @returns The user with identity provider data, or null if not found
+ */
 export async function getUser(id: string): Promise<UserItem | null> {
   const db = await getDrizzleClient()
 
@@ -67,7 +75,11 @@ export async function getUser(id: string): Promise<UserItem | null> {
   return {...user, identityProviders: transformIdp(idp)}
 }
 
-// Find users by email with identity providers (single JOIN query)
+/**
+ * Finds users by email with identity providers (single JOIN query).
+ * @param email - The email address to search for
+ * @returns Array of users matching the email with their identity providers
+ */
 export async function getUsersByEmail(email: string): Promise<UserItem[]> {
   const db = await getDrizzleClient()
   const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
@@ -75,7 +87,11 @@ export async function getUsersByEmail(email: string): Promise<UserItem[]> {
   return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
 }
 
-// Find users by Apple device ID with identity providers (single JOIN query)
+/**
+ * Finds users by Apple device ID with identity providers (single JOIN query).
+ * @param appleDeviceId - The Apple device identifier
+ * @returns Array of users matching the device ID with their identity providers
+ */
 export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<UserItem[]> {
   const db = await getDrizzleClient()
   const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
@@ -83,7 +99,11 @@ export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<Us
   return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
 }
 
-// Create a new user with optional identity provider
+/**
+ * Creates a new user with optional identity provider.
+ * @param input - The user data including optional identity provider
+ * @returns The created user with identity provider data
+ */
 export async function createUser(input: CreateUserInput): Promise<UserItem> {
   const db = await getDrizzleClient()
   const {identityProviders: idpData, ...userData} = input
@@ -107,7 +127,12 @@ export async function createUser(input: CreateUserInput): Promise<UserItem> {
   return {...user, identityProviders: idpData}
 }
 
-// Update a user by ID
+/**
+ * Updates a user by ID.
+ * @param id - The user's UUID
+ * @param data - The fields to update
+ * @returns The updated user with identity provider data
+ */
 export async function updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.id, id)).returning()
@@ -118,7 +143,11 @@ export async function updateUser(id: string, data: UpdateUserInput): Promise<Use
   return {...updated, identityProviders: transformIdp(idpResult[0] ?? null)}
 }
 
-// Delete a user by ID (does NOT cascade - call deleteUserCascade for full cleanup)
+/**
+ * Deletes a user by ID.
+ * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
+ * @param id - The user's UUID
+ */
 export async function deleteUser(id: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(identityProviders).where(eq(identityProviders.userId, id))

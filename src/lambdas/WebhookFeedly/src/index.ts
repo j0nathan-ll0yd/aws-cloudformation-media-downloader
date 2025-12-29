@@ -9,14 +9,13 @@
  * Output: APIGatewayProxyResult with file metadata
  */
 import {randomUUID} from 'node:crypto'
-import {DownloadStatus, FileDownloads} from '#entities/FileDownloads'
-import {Files} from '#entities/Files'
+import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
-import {FileStatus, ResponseStatus} from '#types/enums'
+import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
 import {feedlyWebhookRequestSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
 import type {File} from '#types/domain-models'
@@ -30,23 +29,12 @@ import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/user-file-service'
 
-/**
- * Adds a base File record to DynamoDB with placeholder metadata.
- * Also creates a FileDownloads record to track the download orchestration.
- *
- * Files = permanent metadata (populated when download succeeds)
- * FileDownloads = transient orchestration state (retries, scheduling)
- *
- * @param fileId - The unique file identifier (YouTube video ID)
- * @param sourceUrl - The original YouTube URL for the video
- * @param correlationId - Correlation ID for end-to-end request tracing
- * @returns The created file response from ElectroDB
- */
+// Add file and download tracking records
 async function addFile(fileId: string, sourceUrl?: string, correlationId?: string) {
   logDebug('addFile <=', {fileId, sourceUrl, correlationId})
 
   // Create placeholder Files record (will be updated with real metadata on successful download)
-  const fileResponse = await Files.create({
+  const file = await createFile({
     fileId,
     size: 0,
     status: FileStatus.Queued,
@@ -54,30 +42,25 @@ async function addFile(fileId: string, sourceUrl?: string, correlationId?: strin
     authorUser: '',
     publishDate: new Date().toISOString(),
     description: '',
-    key: fileId, // Will be updated to include extension
+    key: fileId,
     contentType: '',
     title: ''
-  }).go()
-  logDebug('addFile Files.create =>', fileResponse)
+  })
+  logDebug('addFile createFile =>', file)
 
   // Create FileDownloads record to track download orchestration
-  const downloadResponse = await FileDownloads.create({fileId, status: DownloadStatus.Pending, sourceUrl, correlationId}).go()
-  logDebug('addFile FileDownloads.create =>', downloadResponse)
+  const download = await createFileDownload({fileId, status: DownloadStatus.Pending, sourceUrl, correlationId})
+  logDebug('addFile createFileDownload =>', download)
 
-  return fileResponse
+  return file
 }
 
-/**
- * Retrieves a File from DynamoDB (if it exists)
- * @param fileId - The unique file identifier
- * @returns The file record if found, undefined otherwise
- * @notExported
- */
+// Get file by ID
 async function getFile(fileId: string): Promise<File | undefined> {
   logDebug('getFile <=', fileId)
-  const fileResponse = await Files.get({fileId}).go()
-  logDebug('getFile =>', fileResponse)
-  return fileResponse.data as File | undefined
+  const file = await getFileRecord(fileId)
+  logDebug('getFile =>', file ?? 'null')
+  return file as File | undefined
 }
 
 /**

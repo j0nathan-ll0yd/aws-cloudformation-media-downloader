@@ -8,10 +8,7 @@
  * Input: Authenticated user context (userId from token)
  * Output: APIGatewayProxyResult confirming deletion
  */
-import {Devices} from '#entities/Devices'
-import {UserDevices} from '#entities/UserDevices'
-import {UserFiles} from '#entities/UserFiles'
-import {Users} from '#entities/Users'
+import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import type {Device} from '#types/domain-models'
 import {deleteDevice, getUserDevices} from '#lib/domain/device/device-service'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
@@ -20,38 +17,26 @@ import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError} from '#lib/system/logging'
-import {retryUnprocessed, retryUnprocessedDelete} from '#lib/system/retry'
 
+// Delete all user-file relationships
 async function deleteUserFiles(userId: string): Promise<void> {
   logDebug('deleteUserFiles <=', userId)
-  const userFiles = await UserFiles.query.byUser({userId}).go()
-  if (userFiles.data && userFiles.data.length > 0) {
-    const deleteKeys = userFiles.data.map((userFile) => ({userId: userFile.userId, fileId: userFile.fileId}))
-    const {unprocessed} = await retryUnprocessedDelete(() => UserFiles.delete(deleteKeys).go({concurrency: 5}))
-    if (unprocessed.length > 0) {
-      logError('deleteUserFiles: failed to delete all items after retries', unprocessed)
-    }
-  }
-  logDebug('deleteUserFiles => deleted', `${userFiles.data?.length || 0} records`)
+  await deleteUserFilesByUserId(userId)
+  logDebug('deleteUserFiles => completed')
 }
 
-async function deleteUserDevices(userId: string): Promise<void> {
+// Delete all user-device relationships
+async function deleteUserDevicesRelations(userId: string): Promise<void> {
   logDebug('deleteUserDevices <=', userId)
-  const userDevices = await UserDevices.query.byUser({userId}).go()
-  if (userDevices.data && userDevices.data.length > 0) {
-    const deleteKeys = userDevices.data.map((userDevice) => ({userId: userDevice.userId, deviceId: userDevice.deviceId}))
-    const {unprocessed} = await retryUnprocessedDelete(() => UserDevices.delete(deleteKeys).go({concurrency: 5}))
-    if (unprocessed.length > 0) {
-      logError('deleteUserDevices: failed to delete all items after retries', unprocessed)
-    }
-  }
-  logDebug('deleteUserDevices => deleted', `${userDevices.data?.length || 0} records`)
+  await deleteUserDevicesByUserId(userId)
+  logDebug('deleteUserDevices => completed')
 }
 
+// Delete user record
 async function deleteUser(userId: string): Promise<void> {
   logDebug('deleteUser <=', userId)
-  const response = await Users.delete({id: userId}).go()
-  logDebug('deleteUser =>', response)
+  await deleteUserRecord(userId)
+  logDebug('deleteUser => completed')
 }
 
 /**
@@ -64,16 +49,12 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   const deletableDevices: Device[] = []
 
   const userDevices = await getUserDevices(userId)
-  /* c8 ignore else */
   logDebug('Found userDevices', userDevices.length.toString())
   if (userDevices.length > 0) {
-    const deviceKeys = userDevices.map((userDevice) => ({deviceId: userDevice.deviceId}))
-    const {data: devices, unprocessed} = await retryUnprocessed(() => Devices.get(deviceKeys).go({concurrency: 5}))
+    const deviceIds = userDevices.map((userDevice) => userDevice.deviceId)
+    const devices = await getDevicesBatch(deviceIds)
     logDebug('Found devices', devices.length.toString())
-    if (unprocessed.length > 0) {
-      logError('getDevices: failed to fetch all items after retries', unprocessed)
-    }
-    if (!devices || devices.length === 0) {
+    if (devices.length === 0) {
       throw new UnexpectedError(providerFailureErrorMessage)
     }
     deletableDevices.push(...(devices as Device[]))
@@ -83,7 +64,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   // 1. Delete junction/child tables first
   const relationResults = await Promise.allSettled([
     deleteUserFiles(userId),
-    deleteUserDevices(userId)
+    deleteUserDevicesRelations(userId)
   ])
   logDebug('Promise.allSettled (relations)', relationResults)
 

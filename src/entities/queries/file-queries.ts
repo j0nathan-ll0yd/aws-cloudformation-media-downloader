@@ -22,14 +22,22 @@ export type UpdateFileDownloadInput = Partial<Omit<InferInsertModel<typeof fileD
 
 // File Operations
 
-// Get a file by ID
+/**
+ * Gets a file by ID.
+ * @param fileId - The file's unique identifier
+ * @returns The file row or null if not found
+ */
 export async function getFile(fileId: string): Promise<FileRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(files).where(eq(files.fileId, fileId)).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-// Get multiple files by IDs (batch operation)
+/**
+ * Gets multiple files by IDs (batch operation).
+ * @param fileIds - Array of file IDs to retrieve
+ * @returns Array of file rows
+ */
 export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
   if (fileIds.length === 0) {
     return []
@@ -38,20 +46,32 @@ export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
   return await db.select().from(files).where(inArray(files.fileId, fileIds))
 }
 
-// Find files by S3 object key
+/**
+ * Finds files by S3 object key.
+ * @param key - The S3 object key to search for
+ * @returns Array of files matching the key
+ */
 export async function getFilesByKey(key: string): Promise<FileRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(files).where(eq(files.key, key))
 }
 
-// Create a new file
+/**
+ * Creates a new file.
+ * @param input - The file data to create
+ * @returns The created file row
+ */
 export async function createFile(input: CreateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
   const [file] = await db.insert(files).values({...input, size: input.size ?? 0}).returning()
   return file
 }
 
-// Upsert a file (create if not exists, update if exists)
+/**
+ * Upserts a file (create if not exists, update if exists).
+ * @param input - The file data to upsert
+ * @returns The created or updated file row
+ */
 export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
 
@@ -66,14 +86,22 @@ export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
   return created
 }
 
-// Update a file by ID
+/**
+ * Updates a file by ID.
+ * @param fileId - The file's unique identifier
+ * @param data - The fields to update
+ * @returns The updated file row
+ */
 export async function updateFile(fileId: string, data: UpdateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(files).set(data).where(eq(files.fileId, fileId)).returning()
   return updated
 }
 
-// Delete a file by ID
+/**
+ * Deletes a file by ID.
+ * @param fileId - The file's unique identifier
+ */
 export async function deleteFile(fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(files).where(eq(files.fileId, fileId))
@@ -81,21 +109,33 @@ export async function deleteFile(fileId: string): Promise<void> {
 
 // FileDownload Operations
 
-// Get a file download record by ID
+/**
+ * Gets a file download record by file ID.
+ * @param fileId - The file's unique identifier
+ * @returns The file download row or null if not found
+ */
 export async function getFileDownload(fileId: string): Promise<FileDownloadRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, fileId)).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-// Create a new file download record
+/**
+ * Creates a new file download record.
+ * @param input - The file download data to create
+ * @returns The created file download row
+ */
 export async function createFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
   const [download] = await db.insert(fileDownloads).values(input).returning()
   return download
 }
 
-// Upsert a file download record
+/**
+ * Upserts a file download record (create if not exists, update if exists).
+ * @param input - The file download data to upsert
+ * @returns The created or updated file download row
+ */
 export async function upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
 
@@ -110,14 +150,22 @@ export async function upsertFileDownload(input: CreateFileDownloadInput): Promis
   return created
 }
 
-// Update a file download record by ID
+/**
+ * Updates a file download record by file ID.
+ * @param fileId - The file's unique identifier
+ * @param data - The fields to update
+ * @returns The updated file download row
+ */
 export async function updateFileDownload(fileId: string, data: UpdateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(fileDownloads).set({...data, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
   return updated
 }
 
-// Delete a file download record by ID
+/**
+ * Deletes a file download record by file ID.
+ * @param fileId - The file's unique identifier
+ */
 export async function deleteFileDownload(fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(fileDownloads).where(eq(fileDownloads.fileId, fileId))

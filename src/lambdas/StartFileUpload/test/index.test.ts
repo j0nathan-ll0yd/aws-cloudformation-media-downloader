@@ -1,8 +1,6 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent, SQSRecord} from 'aws-lambda'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
-import {createEntityMock} from '#test/helpers/entity-mock'
-import {DownloadStatus} from '#types/enums'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import type {MediaDownloaderEventType} from '#types/events'
@@ -44,20 +42,14 @@ const downloadVideoToS3Mock = vi.fn<(url: string, bucket: string, key: string) =
 
 vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
-// Mock ElectroDB Files entity (for permanent metadata)
-const filesMock = createEntityMock()
-vi.mock('#entities/Files', () => ({Files: filesMock.entity}))
-
-// Mock ElectroDB FileDownloads entity (for transient download state)
-const fileDownloadsMock = createEntityMock()
-vi.mock('#entities/FileDownloads', () => ({
-  FileDownloads: fileDownloadsMock.entity,
-  DownloadStatus // Re-export the real enum
+// Mock native Drizzle query functions
+vi.mock('#entities/queries', () => ({
+  getFileDownload: vi.fn(),
+  updateFileDownload: vi.fn(),
+  createFileDownload: vi.fn(),
+  getUserFilesByFileId: vi.fn(),
+  upsertFile: vi.fn()
 }))
-
-// Mock ElectroDB UserFiles entity (for querying users waiting for a file)
-const userFilesMock = createEntityMock({queryIndexes: ['byFile']})
-vi.mock('#entities/UserFiles', () => ({UserFiles: userFilesMock.entity}))
 
 // Mock SQS sendMessage for MetadataNotification dispatch
 const sendMessageMock = vi.fn<() => Promise<{MessageId: string}>>()
@@ -77,6 +69,7 @@ vi.mock('#lib/integrations/github/issue-service', () => ({createCookieExpiration
 
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
+import {getFileDownload, updateFileDownload, createFileDownload, getUserFilesByFileId, upsertFile} from '#entities/queries'
 
 describe('#StartFileUpload', () => {
   const context = testContext
@@ -99,15 +92,24 @@ describe('#StartFileUpload', () => {
 
   const createFailureResult = (error: Error, isCookieError = false): FetchVideoInfoResult => ({success: false, error, isCookieError})
 
+  // Mock return value factories matching Drizzle schema
+  const mockFileDownloadRow = () => ({
+    fileId: 'test', status: 'Pending', retryCount: 0, maxRetries: 5, retryAfter: null, errorCategory: null, lastError: null, scheduledReleaseTime: null, sourceUrl: null, correlationId: null, createdAt: new Date(), updatedAt: new Date()
+  })
+  const mockFileRow = () => ({
+    fileId: 'test', key: 'test.mp4', authorName: 'Author', authorUser: 'author-user', publishDate: '2024-01-01', description: 'Desc', title: 'Title', status: 'Downloaded', size: 0, url: null, contentType: 'video/mp4'
+  })
+  const mockUserFileRow = () => ({userId: 'user-123', fileId: 'test', createdAt: new Date()})
+
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
     vi.clearAllMocks()
 
-    fileDownloadsMock.mocks.get.mockResolvedValue({data: null})
-    fileDownloadsMock.mocks.update.go.mockResolvedValue({data: {}})
-    fileDownloadsMock.mocks.create.mockResolvedValue({data: {}})
-    filesMock.mocks.upsert.go.mockResolvedValue({data: {}})
-    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-123'}]})
+    vi.mocked(getFileDownload).mockResolvedValue(null)
+    vi.mocked(updateFileDownload).mockResolvedValue(mockFileDownloadRow())
+    vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
+    vi.mocked(upsertFile).mockResolvedValue(mockFileRow())
+    vi.mocked(getUserFilesByFileId).mockResolvedValue([mockUserFileRow()])
     sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
     publishEventMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
 
@@ -126,8 +128,9 @@ describe('#StartFileUpload', () => {
     const result = await handler(event, context)
 
     expect(result.batchItemFailures).toEqual([])
-    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
-    expect(fileDownloadsMock.mocks.update.go).toHaveBeenCalled()
+    expect(vi.mocked(upsertFile)).toHaveBeenCalled()
+    // When no existing download record, handler creates new ones
+    expect(vi.mocked(createFileDownload)).toHaveBeenCalled()
     expect(publishEventMock).toHaveBeenCalledWith('DownloadCompleted',
       expect.objectContaining({fileId: 'YcuKhcqzt7w', correlationId: 'corr-123', s3Key: expect.stringMatching(/\.mp4$/), fileSize: 82784319}))
   })
@@ -139,7 +142,7 @@ describe('#StartFileUpload', () => {
     const result = await handler(event, context)
 
     expect(result.batchItemFailures).toEqual([])
-    expect(filesMock.mocks.upsert.go).toHaveBeenCalled()
+    expect(vi.mocked(upsertFile)).toHaveBeenCalled()
   })
 
   test('should report batch failure for transient download errors', async () => {
@@ -192,7 +195,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should not retry when max retries exceeded', async () => {
-    fileDownloadsMock.mocks.get.mockResolvedValue({data: {fileId: 'test', retryCount: 5, maxRetries: 5}})
+    vi.mocked(getFileDownload).mockResolvedValue({fileId: 'test', retryCount: 5, maxRetries: 5, status: 'InProgress', retryAfter: null, errorCategory: null, lastError: null, scheduledReleaseTime: null, sourceUrl: null, correlationId: null, createdAt: new Date(), updatedAt: new Date()})
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Any error')))
 
     const result = await handler(event, context)
@@ -213,19 +216,19 @@ describe('#StartFileUpload', () => {
   })
 
   test('should dispatch MetadataNotifications to all waiting users', async () => {
-    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: [{userId: 'user-1'}, {userId: 'user-2'}, {userId: 'user-3'}]})
+    vi.mocked(getUserFilesByFileId).mockResolvedValue([{userId: 'user-1', fileId: 'test', createdAt: new Date()}, {userId: 'user-2', fileId: 'test', createdAt: new Date()}, {userId: 'user-3', fileId: 'test', createdAt: new Date()}])
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w', title: 'Test Video', uploader: 'Test Uploader'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 
     const result = await handler(event, context)
 
     expect(result.batchItemFailures).toEqual([])
-    expect(userFilesMock.mocks.query.byFile!.go).toHaveBeenCalled()
+    expect(vi.mocked(getUserFilesByFileId)).toHaveBeenCalled()
     expect(sendMessageMock).toHaveBeenCalledTimes(3)
   })
 
   test('should skip MetadataNotification when no users are waiting', async () => {
-    userFilesMock.mocks.query.byFile!.go.mockResolvedValue({data: []})
+    vi.mocked(getUserFilesByFileId).mockResolvedValue([])
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 

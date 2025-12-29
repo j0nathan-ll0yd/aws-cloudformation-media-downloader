@@ -8,8 +8,7 @@
  * Input: DeviceRegistrationRequest with device token
  * Output: APIGatewayProxyResult with device registration
  */
-import {Devices} from '#entities/Devices'
-import {UserDevices} from '#entities/UserDevices'
+import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
 import {UserStatus} from '#types/enums'
 import {deviceRegistrationRequestSchema} from '#types/api-schema'
@@ -55,7 +54,7 @@ async function createPlatformEndpointFromToken(token: string) {
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
   logDebug('upsertUserDevices <=', {userId, deviceId})
-  const response = await UserDevices.upsert({userId, deviceId}).go()
+  const response = await upsertUserDevice({userId, deviceId})
   logDebug('upsertUserDevices =>', response)
   return response
 }
@@ -69,14 +68,14 @@ async function upsertUserDevices(userId: string, deviceId: string) {
  */
 async function upsertDevice(device: Device) {
   logDebug('upsertDevice <=', device)
-  const response = await Devices.upsert({
+  const response = await upsertDeviceRecord({
     deviceId: device.deviceId,
     endpointArn: device.endpointArn,
     token: device.token,
     name: device.name,
     systemVersion: device.systemVersion,
     systemName: device.systemName
-  }).go()
+  })
   logDebug('upsertDevice =>', response)
   return response
 }

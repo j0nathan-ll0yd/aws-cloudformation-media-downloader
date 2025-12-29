@@ -59,7 +59,9 @@ export {
   type CreateDeviceInput,
   deleteDevice,
   type DeviceRow,
+  getAllDevices,
   getDevice,
+  getDevicesBatch,
   updateDevice,
   type UpdateDeviceInput,
   upsertDevice
