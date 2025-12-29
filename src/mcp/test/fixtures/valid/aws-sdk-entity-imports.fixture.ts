@@ -1,14 +1,13 @@
 /**
  * @fixture valid
  * @rule aws-sdk-encapsulation
- * @description Entity imports (allowed)
+ * @description Entity query imports (allowed)
  * @expectedViolations 0
  */
-import {Files} from '#entities/Files'
-import {Users} from '#entities/Users'
+import {getUser, getFilesForUser} from '#entities/queries'
 
 export async function handler() {
-  const user = await Users.get({userId: '123'}).go()
-  const files = await Files.query.byUser({userId: '123'}).go()
+  const user = await getUser('123')
+  const files = await getFilesForUser('123')
   return {user, files}
 }

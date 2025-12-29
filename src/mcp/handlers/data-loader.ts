@@ -102,12 +102,38 @@ export async function discoverLambdas(): Promise<string[]> {
 }
 
 /**
- * Discover Entity names from src/entities/ directory
+ * Mapping from query file names to entity names
+ * Entity names are derived from Drizzle schema tables
+ */
+const QUERY_FILE_TO_ENTITIES: Record<string, string[]> = {
+  'user-queries.ts': ['Users'],
+  'file-queries.ts': ['Files', 'FileDownloads'],
+  'device-queries.ts': ['Devices'],
+  'session-queries.ts': ['Sessions', 'Accounts', 'VerificationTokens'],
+  'relationship-queries.ts': ['UserFiles', 'UserDevices']
+}
+
+/**
+ * Discover Entity names from src/entities/queries/ directory
+ * Maps query files to their corresponding Drizzle schema entities
  */
 export async function discoverEntities(): Promise<string[]> {
-  const entitiesDir = path.join(projectRoot, 'src', 'entities')
-  const entries = await fs.readdir(entitiesDir)
-  return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts').map((e) => e.replace('.ts', '')).sort()
+  const queriesDir = path.join(projectRoot, 'src', 'entities', 'queries')
+  const entries = await fs.readdir(queriesDir)
+  const entities = new Set<string>()
+
+  for (const entry of entries) {
+    if (entry.endsWith('.ts') && !entry.includes('.test.') && entry !== 'index.ts') {
+      const mappedEntities = QUERY_FILE_TO_ENTITIES[entry]
+      if (mappedEntities) {
+        for (const entity of mappedEntities) {
+          entities.add(entity)
+        }
+      }
+    }
+  }
+
+  return Array.from(entities).sort()
 }
 
 /**

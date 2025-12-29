@@ -1,13 +1,16 @@
 /**
  * @fixture invalid
- * @rule electrodb-mocking
- * @severity CRITICAL
- * @description Multiple manual entity mocks (forbidden)
+ * @rule entity-mocking
+ * @severity HIGH
+ * @description Multiple legacy entity mocks - should use #entities/queries instead
  * @expectedViolations 3
  * @simulatedPath src/lambdas/Test/test/index.test.ts
  */
-jest.unstable_mockModule('#entities/Users', () => ({Users: {get: jest.fn()}}))
+import {vi} from 'vitest'
 
-jest.unstable_mockModule('#entities/Files', () => ({Files: {query: jest.fn()}}))
+// These patterns are deprecated - mocking old entity wrappers
+vi.mock('#entities/Users', () => ({Users: {get: vi.fn()}}))
 
-jest.unstable_mockModule('#entities/Devices', () => ({Devices: {scan: jest.fn()}}))
+vi.mock('#entities/Files', () => ({Files: {query: vi.fn()}}))
+
+vi.mock('#entities/Devices', () => ({Devices: {scan: vi.fn()}}))

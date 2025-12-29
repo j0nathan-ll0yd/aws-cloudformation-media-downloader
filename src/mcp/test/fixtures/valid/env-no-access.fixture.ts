@@ -4,7 +4,7 @@
  * @description Code without process.env access (allowed)
  * @expectedViolations 0
  */
-import {Users} from '#entities/Users'
+import {getUser} from '#entities/queries'
 export const handler = async () => {
-  return await Users.get({userId: '123'}).go()
+  return await getUser('123')
 }

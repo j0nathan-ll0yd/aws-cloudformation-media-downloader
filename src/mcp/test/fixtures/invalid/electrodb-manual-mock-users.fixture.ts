@@ -1,12 +1,12 @@
 /**
  * @fixture invalid
- * @rule electrodb-mocking
- * @severity CRITICAL
- * @description Manual entity mock without createElectroDBEntityMock helper
+ * @rule entity-mocking
+ * @severity HIGH
+ * @description Legacy entity mock - should use #entities/queries instead
  * @expectedViolations 1
  * @simulatedPath src/lambdas/Test/test/index.test.ts
  */
-import {beforeAll, describe, test} from '@jest/globals'
-import {Users} from '#entities/Users'
+import {vi} from 'vitest'
 
-jest.unstable_mockModule('#entities/Users', () => ({Users: {get: jest.fn(), create: jest.fn()}}))
+// This pattern is deprecated - mocking old entity wrappers
+vi.mock('#entities/Users', () => ({Users: {get: vi.fn(), create: vi.fn()}}))
