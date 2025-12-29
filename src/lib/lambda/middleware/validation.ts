@@ -1,5 +1,5 @@
 import type {z} from 'zod'
-import type {ValidatedApiParams, AuthenticatedValidatedParams, WrapperMetadata} from '#types/lambda'
+import type {AuthenticatedValidatedParams, ValidatedApiParams, WrapperMetadata} from '#types/lambda'
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
@@ -113,13 +113,7 @@ export function wrapAuthenticatedValidatedHandler<TBody, TEvent = CustomAPIGatew
       }
       const body = rawBody as TBody
 
-      const result = await handler({
-        event,
-        context,
-        metadata: {traceId, correlationId},
-        userId: userId as string,
-        body
-      })
+      const result = await handler({event, context, metadata: {traceId, correlationId}, userId: userId as string, body})
       logOutgoingFixture(result)
       return result
     } catch (error) {

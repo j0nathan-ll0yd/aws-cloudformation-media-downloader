@@ -4,11 +4,7 @@ import type {APIGatewayProxyEvent} from 'aws-lambda'
 describe('Lambda:Middleware:Sanitization', () => {
   // Helper to create a mock Middy request
   function createMockRequest(body: unknown): {event: Partial<APIGatewayProxyEvent>} {
-    return {
-      event: {
-        body: typeof body === 'string' ? body : JSON.stringify(body)
-      }
-    }
+    return {event: {body: typeof body === 'string' ? body : JSON.stringify(body)}}
   }
 
   describe('sanitizeInput', () => {
@@ -17,10 +13,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          name: '<script>alert("xss")</script>John',
-          bio: 'Hello <script src="evil.js"></script>World'
-        })
+        const request = createMockRequest({name: '<script>alert("xss")</script>John', bio: 'Hello <script src="evil.js"></script>World'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -33,10 +26,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          content: '<img src="x" onerror="alert(1)">',
-          link: '<a href="#" onclick="steal()">Click</a>'
-        })
+        const request = createMockRequest({content: '<img src="x" onerror="alert(1)">', link: '<a href="#" onclick="steal()">Click</a>'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -49,10 +39,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          url: 'javascript:alert(1)',
-          link: '<a href="javascript:void(0)">Link</a>'
-        })
+        const request = createMockRequest({url: 'javascript:alert(1)', link: '<a href="javascript:void(0)">Link</a>'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -65,9 +52,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          content: '<iframe src="evil.com"></iframe>Safe content'
-        })
+        const request = createMockRequest({content: '<iframe src="evil.com"></iframe>Safe content'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -79,9 +64,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          content: 'vbscript:msgbox("xss")'
-        })
+        const request = createMockRequest({content: 'vbscript:msgbox("xss")'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -93,10 +76,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          name: '<b>Bold</b> and <i>italic</i>',
-          html: '<div class="test">Content</div>'
-        })
+        const request = createMockRequest({name: '<b>Bold</b> and <i>italic</i>', html: '<div class="test">Content</div>'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -111,9 +91,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          text: 'Hello\x00World\x1FTest'
-        })
+        const request = createMockRequest({text: 'Hello\x00World\x1FTest'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -125,9 +103,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          text: 'Hello\nWorld\tTest\rEnd'
-        })
+        const request = createMockRequest({text: 'Hello\nWorld\tTest\rEnd'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -139,9 +115,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput({stripControlChars: false})
 
-        const request = createMockRequest({
-          text: 'Hello\x00World'
-        })
+        const request = createMockRequest({text: 'Hello\x00World'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -155,14 +129,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          user: {
-            name: '<script>xss</script>John',
-            profile: {
-              bio: '<b>Developer</b>'
-            }
-          }
-        })
+        const request = createMockRequest({user: {name: '<script>xss</script>John', profile: {bio: '<b>Developer</b>'}}})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -175,9 +142,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          tags: ['<script>xss</script>tag1', '<b>tag2</b>', 'tag3']
-        })
+        const request = createMockRequest({tags: ['<script>xss</script>tag1', '<b>tag2</b>', 'tag3']})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -209,11 +174,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput({skipFields: ['password', 'token']})
 
-        const request = createMockRequest({
-          username: '<script>xss</script>user',
-          password: '<script>password123</script>',
-          token: '<b>secret-token</b>'
-        })
+        const request = createMockRequest({username: '<script>xss</script>user', password: '<script>password123</script>', token: '<b>secret-token</b>'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -229,9 +190,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput({maxLength: 10})
 
-        const request = createMockRequest({
-          name: 'This is a very long string that exceeds the limit'
-        })
+        const request = createMockRequest({name: 'This is a very long string that exceeds the limit'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -246,9 +205,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput({stripHtml: false})
 
-        const request = createMockRequest({
-          content: '<b>Bold</b> text'
-        })
+        const request = createMockRequest({content: '<b>Bold</b> text'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -262,10 +219,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          name: null,
-          value: 'test'
-        })
+        const request = createMockRequest({name: null, value: 'test'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -279,9 +233,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const middleware = sanitizeInput()
 
         // JSON.stringify converts undefined to null in objects
-        const request = createMockRequest({
-          name: 'test'
-        })
+        const request = createMockRequest({name: 'test'})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -293,10 +245,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          count: 42,
-          price: 19.99
-        })
+        const request = createMockRequest({count: 42, price: 19.99})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 
@@ -309,10 +258,7 @@ describe('Lambda:Middleware:Sanitization', () => {
         const {sanitizeInput} = await import('../../middleware/sanitization')
         const middleware = sanitizeInput()
 
-        const request = createMockRequest({
-          active: true,
-          verified: false
-        })
+        const request = createMockRequest({active: true, verified: false})
 
         await middleware.before?.(request as Parameters<NonNullable<ReturnType<typeof sanitizeInput>['before']>>[0])
 

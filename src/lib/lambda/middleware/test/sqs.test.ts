@@ -36,15 +36,8 @@ describe('Lambda:Middleware:SQS', () => {
       messageId,
       receiptHandle: `receipt-${messageId}`,
       body: typeof body === 'string' ? body : JSON.stringify(body),
-      attributes: {
-        ApproximateReceiveCount: '1',
-        SentTimestamp: '1234567890',
-        SenderId: 'test-sender',
-        ApproximateFirstReceiveTimestamp: '1234567890'
-      },
-      messageAttributes: {
-        type: {stringValue: 'test', dataType: 'String'}
-      },
+      attributes: {ApproximateReceiveCount: '1', SentTimestamp: '1234567890', SenderId: 'test-sender', ApproximateFirstReceiveTimestamp: '1234567890'},
+      messageAttributes: {type: {stringValue: 'test', dataType: 'String'}},
       md5OfBody: 'abc123',
       eventSource: 'aws:sqs',
       eventSourceARN: 'arn:aws:sqs:us-east-1:123456789:test-queue',
@@ -147,15 +140,12 @@ describe('Lambda:Middleware:SQS', () => {
       const {wrapSqsBatchHandler} = await import('../../middleware/sqs')
 
       const processedIds: string[] = []
-      const handler = wrapSqsBatchHandler<TestBody>(
-        async ({body}) => {
-          if (body.id === '2') {
-            throw new Error('Second message fails')
-          }
-          processedIds.push(body.id)
-        },
-        {stopOnError: true}
-      )
+      const handler = wrapSqsBatchHandler<TestBody>(async ({body}) => {
+        if (body.id === '2') {
+          throw new Error('Second message fails')
+        }
+        processedIds.push(body.id)
+      }, {stopOnError: true})
 
       const event = createSQSEvent([
         createSQSRecord('msg-1', {id: '1', value: 100}),
@@ -190,12 +180,9 @@ describe('Lambda:Middleware:SQS', () => {
       const {wrapSqsBatchHandler} = await import('../../middleware/sqs')
 
       let receivedBody: unknown
-      const handler = wrapSqsBatchHandler<string>(
-        async ({body}) => {
-          receivedBody = body
-        },
-        {parseBody: false}
-      )
+      const handler = wrapSqsBatchHandler<string>(async ({body}) => {
+        receivedBody = body
+      }, {parseBody: false})
 
       const rawBody = 'raw string body'
       const event = createSQSEvent([{...createSQSRecord('msg-1', ''), body: rawBody}])

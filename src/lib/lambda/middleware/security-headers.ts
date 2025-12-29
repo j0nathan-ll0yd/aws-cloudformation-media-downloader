@@ -98,19 +98,13 @@ export function securityHeaders(options: SecurityHeadersOptions = {}): Middlewar
     after: async (request) => {
       if (request.response) {
         // Merge headers, with handler headers taking precedence
-        request.response.headers = {
-          ...headers,
-          ...request.response.headers
-        }
+        request.response.headers = {...headers, ...request.response.headers}
       }
     },
     onError: async (request) => {
       // Also add headers to error responses
       if (request.response) {
-        request.response.headers = {
-          ...headers,
-          ...request.response.headers
-        }
+        request.response.headers = {...headers, ...request.response.headers}
       }
     }
   }

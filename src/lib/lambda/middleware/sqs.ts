@@ -1,4 +1,4 @@
-import type {SqsRecordParams, SqsBatchOptions, WrapperMetadata} from '#types/lambda'
+import type {SqsBatchOptions, SqsRecordParams, WrapperMetadata} from '#types/lambda'
 import type {Context, SQSBatchResponse, SQSEvent} from 'aws-lambda'
 import {logError, logInfo} from '#lib/system/logging'
 import {logIncomingFixture} from '#lib/system/observability'
@@ -59,41 +59,32 @@ export function wrapSqsBatchHandler<TBody = unknown>(
             const message = parseError instanceof Error ? parseError.message : String(parseError)
             logError('SQS record JSON parse failed', {messageId: record.messageId, error: message})
             batchItemFailures.push({itemIdentifier: record.messageId})
-            if (stopOnError) break
+            if (stopOnError) {
+              break
+            }
             continue
           }
         } else {
           body = record.body as unknown as TBody
         }
 
-        await handler({
-          record,
-          body,
-          context,
-          metadata: {traceId, correlationId},
-          messageAttributes: record.messageAttributes
-        })
+        await handler({record, body, context, metadata: {traceId, correlationId}, messageAttributes: record.messageAttributes})
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         logError('SQS record processing failed', {messageId: record.messageId, error: message})
         batchItemFailures.push({itemIdentifier: record.messageId})
 
-        if (stopOnError) break
+        if (stopOnError) {
+          break
+        }
       }
     }
 
     const succeeded = event.Records.length - batchItemFailures.length
     if (batchItemFailures.length > 0) {
-      logInfo('SQS batch processing completed with failures', {
-        total: event.Records.length,
-        failed: batchItemFailures.length,
-        succeeded
-      })
+      logInfo('SQS batch processing completed with failures', {total: event.Records.length, failed: batchItemFailures.length, succeeded})
     } else {
-      logInfo('SQS batch processing completed', {
-        total: event.Records.length,
-        succeeded
-      })
+      logInfo('SQS batch processing completed', {total: event.Records.length, succeeded})
     }
 
     return {batchItemFailures}

@@ -29,11 +29,7 @@ describe('Lambda:Middleware:Validation', () => {
   })
 
   // Test schema for validation
-  const testSchema = z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    age: z.number().int().positive().optional()
-  })
+  const testSchema = z.object({name: z.string().min(1), email: z.string().email(), age: z.number().int().positive().optional()})
 
   type TestBody = z.infer<typeof testSchema>
 
@@ -53,9 +49,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {success: true})
       })
 
-      const event = {
-        body: JSON.stringify({name: 'John', email: 'john@example.com', age: 30})
-      }
+      const event = {body: JSON.stringify({name: 'John', email: 'john@example.com', age: 30})}
       const result = await handler(event, mockContext)
 
       expect(result.statusCode).toBe(200)
@@ -70,9 +64,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {success: true})
       })
 
-      const event = {
-        body: JSON.stringify({name: '', email: 'invalid-email'})
-      }
+      const event = {body: JSON.stringify({name: '', email: 'invalid-email'})}
       const result = await handler(event, mockContext)
 
       expect(result.statusCode).toBe(400)
@@ -102,9 +94,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {success: true})
       })
 
-      const event = {
-        body: 'not valid json {'
-      }
+      const event = {body: 'not valid json {'}
       const result = await handler(event, mockContext)
 
       expect(result.statusCode).toBe(400)
@@ -120,9 +110,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {})
       })
 
-      const event = {
-        body: JSON.stringify({name: 'John', email: 'john@example.com'})
-      }
+      const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
       await handler(event, mockContext)
 
       expect(receivedMetadata?.traceId).toBe('test-request-id')
@@ -138,9 +126,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {})
       })
 
-      const event = {
-        body: JSON.stringify({name: 'John', email: 'john@example.com'})
-      }
+      const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
       await handler(event, mockContext, {traceId: 'custom-trace', correlationId: 'custom-correlation'})
 
       expect(receivedMetadata?.traceId).toBe('custom-trace')
@@ -154,9 +140,7 @@ describe('Lambda:Middleware:Validation', () => {
         throw new Error('Handler error')
       })
 
-      const event = {
-        body: JSON.stringify({name: 'John', email: 'john@example.com'})
-      }
+      const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
       const result = await handler(event, mockContext)
 
       expect(result.statusCode).toBe(500)
@@ -171,9 +155,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {data: 'test'})
       })
 
-      const event = {
-        body: JSON.stringify({name: 'John', email: 'john@example.com'})
-      }
+      const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
       await handler(event, mockContext)
 
       const fixtureLogs = loggerInfoSpy.mock.calls.filter((call) => {
@@ -267,10 +249,7 @@ describe('Lambda:Middleware:Validation', () => {
         return buildApiResponse(context, 200, {})
       })
 
-      const invalidBodyEvent = {
-        ...authenticatedEvent,
-        body: JSON.stringify({name: '', email: 'invalid'})
-      }
+      const invalidBodyEvent = {...authenticatedEvent, body: JSON.stringify({name: '', email: 'invalid'})}
       const result = await handler(invalidBodyEvent, mockContext)
 
       expect(result.statusCode).toBe(400)
