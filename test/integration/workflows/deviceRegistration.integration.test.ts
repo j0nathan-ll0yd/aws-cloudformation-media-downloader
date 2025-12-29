@@ -24,7 +24,8 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
-import {UserStatus} from '../../../src/types/enums'
+import {UserStatus} from '#types/enums'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, getDevice, getTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
@@ -33,10 +34,8 @@ import {createTestPlatformApplication, createTestTopic, deleteTestPlatformApplic
 import {userDevices} from '#lib/vendor/Drizzle/schema'
 import {eq} from 'drizzle-orm'
 
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
-
 // Import handler directly (no mocking - uses real services)
-const {handler} = await import('../../../src/lambdas/RegisterDevice/src/index')
+const {handler} = await import('#lambdas/RegisterDevice/src/index')
 
 interface DeviceRegistrationBody {
   deviceId: string

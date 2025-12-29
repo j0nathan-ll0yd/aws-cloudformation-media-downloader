@@ -44,8 +44,8 @@ const updateUserMock = vi.fn()
 vi.mock('#entities/queries', () => ({updateUser: updateUserMock}))
 
 // Import handlers after mocking
-const {handler: loginHandler} = await import('../../../src/lambdas/LoginUser/src/index')
-const {handler: registerHandler} = await import('../../../src/lambdas/RegisterUser/src/index')
+const {handler: loginHandler} = await import('#lambdas/LoginUser/src/index')
+const {handler: registerHandler} = await import('#lambdas/RegisterUser/src/index')
 
 interface AuthRequestBody {
   idToken: string

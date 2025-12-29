@@ -29,7 +29,7 @@ const mockGetUsage = vi.fn<() => Promise<{items: Record<string, unknown>}>>()
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
 
 // Import handler after mocks are set up
-const {handler} = await import('../../../src/lambdas/ApiGatewayAuthorizer/src/index')
+const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
 
 const TEST_API_KEY = 'test-api-key-12345'
 const TEST_API_KEY_ID = 'test-key-id'

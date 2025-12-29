@@ -30,7 +30,8 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '../../../src/types/enums'
+import {FileStatus, UserStatus} from '#types/enums'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
 import {
@@ -52,20 +53,12 @@ import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApp
 import {userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {eq} from 'drizzle-orm'
 
-import {fileURLToPath} from 'url'
-import {dirname, resolve} from 'path'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '../../../src/types/infrastructure-types'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
 // Mock GitHub helpers to prevent actual API calls (can't use real GitHub in tests)
-const githubHelpersPath = resolve(__dirname, '../../../src/lib/integrations/github/issue-service')
 const createFailedUserDeletionIssueMock = vi.fn<() => Promise<void>>()
-vi.mock(githubHelpersPath, () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
+vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
 // Import handler after mocking GitHub (but NOT entities - those use real PostgreSQL)
-const {handler} = await import('../../../src/lambdas/UserDelete/src/index')
+const {handler} = await import('#lambdas/UserDelete/src/index')
 
 function createUserDeleteEvent(userId: string): CustomAPIGatewayRequestAuthorizerEvent {
   return {

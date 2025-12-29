@@ -27,7 +27,7 @@ import {createMockContext} from '../helpers/lambda-context'
 import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
 
 // Import handler directly (no mocking - uses real services)
-const {handler} = await import('../../../src/lambdas/SendPushNotification/src/index')
+const {handler} = await import('#lambdas/SendPushNotification/src/index')
 
 /**
  * Creates an SQS event for file notification testing
