@@ -13,6 +13,7 @@ import {and, eq, lt, or} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import type {CleanupResult} from '#types/lambda'
+import {DownloadStatus} from '#types/enums'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -30,7 +31,7 @@ async function cleanupFileDownloads(): Promise<number> {
   const cutoffTime = new Date(Date.now() - TWENTY_FOUR_HOURS_SEC * 1000)
 
   const result = await db.delete(fileDownloads).where(
-    and(or(eq(fileDownloads.status, 'Completed'), eq(fileDownloads.status, 'Failed')), lt(fileDownloads.updatedAt, cutoffTime))
+    and(or(eq(fileDownloads.status, DownloadStatus.Completed), eq(fileDownloads.status, DownloadStatus.Failed)), lt(fileDownloads.updatedAt, cutoffTime))
   ).returning({fileId: fileDownloads.fileId})
 
   return result.length
