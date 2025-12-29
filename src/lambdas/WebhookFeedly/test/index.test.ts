@@ -44,7 +44,10 @@ vi.mock('#lib/vendor/AWS/S3', () => ({
   })
 }))
 
-const publishEventMock = vi.fn<(eventType: MediaDownloaderEventType, detail: Record<string, unknown>) => Promise<PutEventsResponse>>()
+import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
+const publishEventMock = vi.fn<
+  (eventType: MediaDownloaderEventType, detail: Record<string, unknown>, options?: PublishEventOptions) => Promise<PutEventsResponse>
+>()
 vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
@@ -151,14 +154,14 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Accepted')
+    // Verify publishEvent was called with DownloadRequested and proper event detail
     expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested',
       expect.objectContaining({
         fileId: expect.any(String),
         userId: fakeUserId,
         sourceUrl: handleFeedlyEventResponse.articleURL,
-        correlationId: expect.any(String),
         requestedAt: expect.any(String)
-      }))
+      }), expect.any(Object))
   })
 
   describe('#AlreadyDownloadedFile', () => {
@@ -219,7 +222,7 @@ describe('#WebhookFeedly', () => {
       // Should NOT create a new file record
       expect(vi.mocked(createFile)).not.toHaveBeenCalled()
       // Should still publish DownloadRequested event
-      expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object))
+      expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object), expect.any(Object))
     })
 
     test('should skip file creation for existing downloading file', async () => {

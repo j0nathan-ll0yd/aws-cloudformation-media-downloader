@@ -27,8 +27,10 @@ import type {UserStatus} from './enums'
  * Used for distributed tracing and request correlation.
  */
 export type WrapperMetadata = {
-  /** Request trace ID for correlation across Lambda invocations */
+  /** AWS request ID for this Lambda invocation */
   traceId: string
+  /** Correlation ID for end-to-end request tracing across services */
+  correlationId: string
 }
 
 /**

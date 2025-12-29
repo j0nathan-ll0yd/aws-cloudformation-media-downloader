@@ -18,6 +18,7 @@ import postgres from 'postgres'
 import type {PostgresJsDatabase} from 'drizzle-orm/postgres-js'
 
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
+import {recordConnectionMetric} from './instrumentation'
 import * as schema from './schema'
 
 let cachedClient: PostgresJsDatabase<typeof schema> | null = null
@@ -72,6 +73,9 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
     return cachedClient
   }
 
+  // Token needs refresh - record metric (only in production, not test)
+  const isRefresh = cachedClient !== null
+
   if (cachedSql) {
     await cachedSql.end()
   }
@@ -111,6 +115,11 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
   cachedClient = drizzle(cachedSql, {schema})
   tokenExpiry = now + TOKEN_VALIDITY_MS
 
+  // Record connection metric (skip in test mode to avoid test pollution)
+  if (!isTestMode()) {
+    recordConnectionMetric(isRefresh ? 'token_refreshed' : 'established')
+  }
+
   return cachedClient
 }
 
@@ -124,6 +133,11 @@ export async function closeDrizzleClient(): Promise<void> {
     cachedSql = null
     cachedClient = null
     tokenExpiry = 0
+
+    // Record connection close metric (skip in test mode)
+    if (!isTestMode()) {
+      recordConnectionMetric('closed')
+    }
   }
 }
 

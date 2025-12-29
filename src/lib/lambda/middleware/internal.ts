@@ -2,6 +2,8 @@ import type {LambdaInvokeHandlerParams, ScheduledHandlerParams, WrapperMetadata}
 import type {Context, ScheduledEvent} from 'aws-lambda'
 import {logError, logInfo} from '#lib/system/logging'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
+import {extractCorrelationId} from '../correlation'
+import {logger} from '#lib/vendor/Powertools'
 
 /**
  * Wraps a CloudWatch scheduled event handler with logging.
@@ -15,10 +17,11 @@ export function wrapScheduledHandler<TResult = void>(
   handler: (params: ScheduledHandlerParams) => Promise<TResult>
 ): (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
   return async (event: ScheduledEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
-      const result = await handler({event, context, metadata: {traceId}})
+      const result = await handler({event, context, metadata: {traceId, correlationId}})
       logInfo('scheduled result =>', result as object)
       return result
     } catch (error) {
@@ -41,10 +44,11 @@ export function wrapLambdaInvokeHandler<TEvent, TResult>(
   handler: (params: LambdaInvokeHandlerParams<TEvent>) => Promise<TResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<TResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
-      const result = await handler({event, context, metadata: {traceId}})
+      const result = await handler({event, context, metadata: {traceId, correlationId}})
       logOutgoingFixture(result)
       return result
     } catch (error) {

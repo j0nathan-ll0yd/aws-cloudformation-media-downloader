@@ -8,7 +8,6 @@
  * Input: FeedlyWebhookRequest with articleURL
  * Output: APIGatewayProxyResult with file metadata
  */
-import {randomUUID} from 'node:crypto'
 import {createFile, createFileDownload, getFile as getFileRecord} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
@@ -123,7 +122,7 @@ async function processWebhookRequest(input: WebhookProcessingInput): Promise<Web
     // Publish DownloadRequested event to EventBridge
     // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
     const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
-    await publishEvent('DownloadRequested', eventDetail)
+    await publishEvent('DownloadRequested', eventDetail, {correlationId})
     logInfo('Published DownloadRequested event', {fileId, correlationId})
     return {statusCode: 202, status: ResponseStatus.Accepted}
   }
@@ -154,10 +153,10 @@ function getIdempotentProcessor() {
  *
  * @notExported
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId}) => {
-  // Generate correlation ID for end-to-end request tracing
-  const correlationId = randomUUID()
-  logInfo('Processing request', {correlationId, requestId: context.awsRequestId})
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, userId, metadata}) => {
+  // Use correlation ID from middleware for end-to-end request tracing
+  const {correlationId, traceId} = metadata
+  logInfo('Processing request', {correlationId, traceId})
 
   const requestBody = getPayloadFromEvent(event) as FeedlyWebhookRequest
   validateRequest(requestBody, feedlyWebhookRequestSchema)

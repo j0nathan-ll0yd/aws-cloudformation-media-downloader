@@ -4,8 +4,10 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {buildApiResponse} from '../responses'
 import {getUserDetailsFromEvent} from '../context'
+import {extractCorrelationId} from '../correlation'
 import {UserStatus} from '#types/enums'
 import {UnauthorizedError} from '#lib/system/errors'
+import {logger} from '#lib/vendor/Powertools'
 
 /**
  * Wraps an API Gateway handler with automatic error handling and fixture logging.
@@ -19,10 +21,11 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: ApiHandlerParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
-      const result = await handler({event, context, metadata: {traceId}})
+      const result = await handler({event, context, metadata: {traceId, correlationId}})
       logOutgoingFixture(result)
       return result
     } catch (error) {
@@ -46,7 +49,8 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
   handler: (params: AuthenticatedApiParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
       const {userId, userStatus} = getUserDetailsFromEvent(event as CustomAPIGatewayRequestAuthorizerEvent)
@@ -61,7 +65,7 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
       }
 
       // At this point, userStatus is Authenticated, so userId is guaranteed
-      const result = await handler({event, context, metadata: {traceId}, userId: userId as string})
+      const result = await handler({event, context, metadata: {traceId, correlationId}, userId: userId as string})
       logOutgoingFixture(result)
       return result
     } catch (error) {
@@ -85,7 +89,8 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
   handler: (params: OptionalAuthApiParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
       const {userId, userStatus} = getUserDetailsFromEvent(event as CustomAPIGatewayRequestAuthorizerEvent)
@@ -96,7 +101,7 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
       }
 
       // Allow Anonymous and Authenticated through
-      const result = await handler({event, context, metadata: {traceId}, userId, userStatus})
+      const result = await handler({event, context, metadata: {traceId, correlationId}, userId, userStatus})
       logOutgoingFixture(result)
       return result
     } catch (error) {

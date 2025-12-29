@@ -1,9 +1,9 @@
 locals {
-  list_files_function_name = "ListFiles"
+  list_files_function_name = "${local.name_prefix}-ListFiles"
 }
 
 resource "aws_iam_role" "ListFiles" {
-  name               = local.list_files_function_name
+  name               = "${local.name_prefix}-ListFilesRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "ListFiles" {
 
 resource "aws_cloudwatch_log_group" "ListFiles" {
   name              = "/aws/lambda/${aws_lambda_function.ListFiles.function_name}"
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

@@ -1,9 +1,9 @@
 locals {
-  register_device_function_name = "RegisterDevice"
+  register_device_function_name = "${local.name_prefix}-RegisterDevice"
 }
 
 resource "aws_iam_role" "RegisterDevice" {
-  name               = local.register_device_function_name
+  name               = "${local.name_prefix}-RegisterDeviceRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -24,7 +24,7 @@ data "aws_iam_policy_document" "RegisterDevice" {
 }
 
 resource "aws_iam_policy" "RegisterDevice" {
-  name   = local.register_device_function_name
+  name   = "${local.name_prefix}-RegisterDevicePolicy"
   policy = data.aws_iam_policy_document.RegisterDevice.json
   tags   = local.common_tags
 }
@@ -57,7 +57,7 @@ resource "aws_lambda_permission" "RegisterDevice" {
 
 resource "aws_cloudwatch_log_group" "RegisterDevice" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterDevice.function_name}"
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -121,13 +121,13 @@ resource "aws_api_gateway_integration" "RegisterDevicePost" {
 }
 
 resource "aws_sns_topic" "PushNotifications" {
-  name = "PushNotifications"
+  name = "${local.name_prefix}-PushNotifications"
 }
 
 resource "aws_sns_platform_application" "OfflineMediaDownloader" {
   count                     = 1 # APNS certificate valid until 2027-01-03
-  name                      = "OfflineMediaDownloader"
-  platform                  = "APNS_SANDBOX"
+  name                      = "${local.name_prefix}-OfflineMediaDownloader"
+  platform                  = var.environment == "production" ? "APNS" : "APNS_SANDBOX"
   platform_credential       = data.sops_file.secrets.data["apns.staging.privateKey"]  # APNS PRIVATE KEY
   platform_principal        = data.sops_file.secrets.data["apns.staging.certificate"] # APNS CERTIFICATE
   success_feedback_role_arn = aws_iam_role.SNSLoggingRole.arn
@@ -135,7 +135,7 @@ resource "aws_sns_platform_application" "OfflineMediaDownloader" {
 }
 
 resource "aws_iam_role" "SNSLoggingRole" {
-  name               = "SNSLoggingRole"
+  name               = "${local.name_prefix}-SNSLoggingRole"
   assume_role_policy = data.aws_iam_policy_document.SNSAssumeRole.json
   tags               = local.common_tags
 }

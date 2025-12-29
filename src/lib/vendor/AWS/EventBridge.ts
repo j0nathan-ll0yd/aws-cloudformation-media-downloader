@@ -37,29 +37,54 @@ export async function putEvents(entries: PutEventsRequestEntry[]): Promise<PutEv
 }
 
 /**
+ * Options for publishing events with correlation context.
+ */
+export interface PublishEventOptions {
+  /** Correlation ID for end-to-end request tracing */
+  correlationId?: string
+  /** AWS request ID for this Lambda invocation */
+  traceId?: string
+}
+
+/**
  * Publish a single domain event to the MediaDownloader event bus.
  *
  * Constructs the EventBridge envelope with standard source and bus name,
  * then publishes the event. Returns the response for error handling.
  *
+ * When correlationId is provided, it is embedded in the event detail as _correlationId
+ * for downstream Lambda functions to extract and continue the correlation chain.
+ *
  * @param detailType - Event type for routing (e.g., 'DownloadRequested')
  * @param detail - Event payload (will be JSON-stringified)
+ * @param options - Optional correlation context for distributed tracing
  * @returns PutEvents response
  * @throws Error if EVENT_BUS_NAME environment variable is not set
  * @see src/types/events.ts for event type definitions and usage examples
  */
-export async function publishEvent<TDetail>(detailType: MediaDownloaderEventType, detail: TDetail): Promise<PutEventsResponse> {
+export async function publishEvent<TDetail>(
+  detailType: MediaDownloaderEventType,
+  detail: TDetail,
+  options?: PublishEventOptions
+): Promise<PutEventsResponse> {
   const eventBusName = getRequiredEnv('EVENT_BUS_NAME')
+
+  // Embed correlation context in the event detail for downstream extraction
+  const enrichedDetail = {
+    ...detail,
+    ...(options?.correlationId && {_correlationId: options.correlationId}),
+    ...(options?.traceId && {_traceId: options.traceId})
+  }
 
   const entry: PutEventsRequestEntry = {
     EventBusName: eventBusName,
     Source: 'media-downloader',
     DetailType: detailType,
-    Detail: JSON.stringify(detail),
+    Detail: JSON.stringify(enrichedDetail),
     Time: new Date()
   }
 
-  logDebug('publishEvent <=', {detailType, eventBusName})
+  logDebug('publishEvent <=', {detailType, eventBusName, correlationId: options?.correlationId})
   const response = await putEvents([entry])
 
   if (response.FailedEntryCount && response.FailedEntryCount > 0) {

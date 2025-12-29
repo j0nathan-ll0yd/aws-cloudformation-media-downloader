@@ -2,6 +2,8 @@ import type {AuthorizerParams, EventHandlerParams, WrapperMetadata} from '#types
 import type {APIGatewayRequestAuthorizerEvent, Context, CustomAuthorizerResult, S3Event, S3EventRecord, SQSEvent, SQSRecord} from 'aws-lambda'
 import {logDebug, logError} from '#lib/system/logging'
 import {logIncomingFixture} from '#lib/system/observability'
+import {extractCorrelationId} from '../correlation'
+import {logger} from '#lib/vendor/Powertools'
 
 /**
  * Wraps an API Gateway custom authorizer with proper error propagation.
@@ -19,10 +21,11 @@ export function wrapAuthorizer(
   handler: (params: AuthorizerParams) => Promise<CustomAuthorizerResult>
 ): (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata) => Promise<CustomAuthorizerResult> {
   return async (event: APIGatewayRequestAuthorizerEvent, context: Context, metadata?: WrapperMetadata): Promise<CustomAuthorizerResult> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
-      const result = await handler({event, context, metadata: {traceId}})
+      const result = await handler({event, context, metadata: {traceId, correlationId}})
       logDebug('response ==', result)
       return result
     } catch (error) {
@@ -55,14 +58,15 @@ export function wrapEventHandler<TEvent, TRecord>(
   options: {getRecords: (event: TEvent) => TRecord[]}
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<void> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<void> => {
-    const traceId = metadata?.traceId || context.awsRequestId
+    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     const records = options.getRecords(event)
     const errors: Error[] = []
 
     for (const record of records) {
       try {
-        await handler({record, context, metadata: {traceId}})
+        await handler({record, context, metadata: {traceId, correlationId}})
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         logError('record processing error', {record, error: err.message})

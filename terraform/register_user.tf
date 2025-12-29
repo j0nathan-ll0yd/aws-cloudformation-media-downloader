@@ -1,9 +1,9 @@
 locals {
-  register_user_function_name = "RegisterUser"
+  register_user_function_name = "${local.name_prefix}-RegisterUser"
 }
 
 resource "aws_iam_role" "RegisterUser" {
-  name               = local.register_user_function_name
+  name               = "${local.name_prefix}-RegisterUserRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "RegisterUser" {
 
 resource "aws_cloudwatch_log_group" "RegisterUser" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterUser.function_name}"
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -59,7 +59,7 @@ resource "aws_lambda_function" "RegisterUser" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/prod"
+      APPLICATION_URL           = "https://${aws_api_gateway_rest_api.Main.id}.execute-api.${data.aws_region.current.id}.amazonaws.com/${var.api_stage_name}"
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.register_user_function_name

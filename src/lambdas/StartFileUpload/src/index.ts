@@ -206,7 +206,7 @@ async function handleDownloadFailure(
     retryCount: newRetryCount,
     failedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadFailed', failedDetail)
+  await publishEvent('DownloadFailed', failedDetail, {correlationId})
 
   // Handle retryable errors - let SQS handle retry via visibility timeout
   if (classification.retryable && !isRetryExhausted(newRetryCount, maxRetries)) {
@@ -361,7 +361,7 @@ async function processDownloadRequest(message: DownloadQueueMessage): Promise<vo
     fileSize: uploadResult.fileSize,
     completedAt: new Date().toISOString()
   }
-  await publishEvent('DownloadCompleted', completedDetail)
+  await publishEvent('DownloadCompleted', completedDetail, {correlationId})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})

@@ -30,11 +30,14 @@ data "aws_caller_identity" "current" {}
 locals {
   adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
+  # Environment-aware naming prefix
+  name_prefix = var.resource_prefix
+
   # Common tags for all resources (drift detection & identification)
   common_tags = {
     ManagedBy   = "terraform"
     Project     = "media-downloader"
-    Environment = "production"
+    Environment = var.environment
   }
 
   # Common environment variables for all lambdas with ADOT layer
@@ -49,7 +52,7 @@ locals {
     OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
     OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
     NODE_OPTIONS                       = "--no-deprecation"
-    LOG_LEVEL                          = "DEBUG"
+    LOG_LEVEL                          = var.log_level
     # Aurora DSQL connection configuration
     # Aurora DSQL endpoints follow the pattern: <identifier>.dsql.<region>.on.aws
     DSQL_CLUSTER_ENDPOINT = "${aws_dsql_cluster.media_downloader.identifier}.dsql.${data.aws_region.current.id}.on.aws"
@@ -74,7 +77,7 @@ data "aws_iam_policy_document" "CommonLambdaLogging" {
 }
 
 resource "aws_iam_policy" "CommonLambdaLogging" {
-  name        = "CommonLambdaLogging"
+  name        = "${local.name_prefix}-CommonLambdaLogging"
   description = "Allows Lambda functions to write to ALL CloudWatch logs"
   policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
   tags        = local.common_tags
@@ -91,7 +94,7 @@ data "aws_iam_policy_document" "CommonLambdaXRay" {
 }
 
 resource "aws_iam_policy" "CommonLambdaXRay" {
-  name        = "CommonLambdaXRay"
+  name        = "${local.name_prefix}-CommonLambdaXRay"
   description = "Allows Lambda functions to write X-Ray traces"
   policy      = data.aws_iam_policy_document.CommonLambdaXRay.json
   tags        = local.common_tags

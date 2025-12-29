@@ -69,18 +69,19 @@ describe('Lambda:Middleware:API', () => {
       expect(receivedMetadata?.traceId).toBe('test-request-id')
     })
 
-    it('should use provided metadata traceId when available', async () => {
+    it('should use provided metadata traceId and correlationId when available', async () => {
       const {wrapApiHandler} = await import('../../middleware/api')
       const {buildApiResponse} = await import('../../responses')
-      let receivedMetadata: {traceId: string} | undefined
+      let receivedMetadata: {traceId: string; correlationId: string} | undefined
       const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
         return buildApiResponse(context, 200, {})
       })
 
-      await handler({}, mockContext, {traceId: 'custom-trace-id'})
+      await handler({}, mockContext, {traceId: 'custom-trace-id', correlationId: 'custom-correlation-id'})
 
       expect(receivedMetadata?.traceId).toBe('custom-trace-id')
+      expect(receivedMetadata?.correlationId).toBe('custom-correlation-id')
     })
 
     it('should log fixtures for incoming event and outgoing result', async () => {

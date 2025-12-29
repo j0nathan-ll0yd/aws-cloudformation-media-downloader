@@ -1,9 +1,9 @@
 locals {
-  api_gateway_authorizer_function_name = "ApiGatewayAuthorizer"
+  api_gateway_authorizer_function_name = "${local.name_prefix}-ApiGatewayAuthorizer"
 }
 
 resource "aws_iam_role" "ApiGatewayAuthorizer" {
-  name               = local.api_gateway_authorizer_function_name
+  name               = "${local.name_prefix}-ApiGatewayAuthorizerRole"
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
   tags               = local.common_tags
 }
@@ -16,14 +16,14 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizerInvocation" {
 }
 
 resource "aws_iam_role_policy" "ApiGatewayAuthorizerInvocation" {
-  name   = "ApiGatewayAuthorizerInvocation"
+  name   = "${local.name_prefix}-ApiGatewayAuthorizerInvocation"
   role   = aws_iam_role.ApiGatewayAuthorizer.id
   policy = data.aws_iam_policy_document.ApiGatewayAuthorizerInvocation.json
 }
 
 resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
   name              = "/aws/lambda/${aws_lambda_function.ApiGatewayAuthorizer.function_name}"
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 
@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
 }
 
 resource "aws_iam_policy" "ApiGatewayAuthorizer" {
-  name   = local.api_gateway_authorizer_function_name
+  name   = "${local.name_prefix}-ApiGatewayAuthorizerPolicy"
   policy = data.aws_iam_policy_document.ApiGatewayAuthorizer.json
   tags   = local.common_tags
 }
@@ -112,7 +112,7 @@ resource "aws_lambda_permission" "ApiGatewayAuthorizer" {
 }
 
 resource "aws_api_gateway_authorizer" "ApiGatewayAuthorizer" {
-  name                             = "ApiGatewayAuthorizer"
+  name                             = "${local.name_prefix}-ApiGatewayAuthorizer"
   rest_api_id                      = aws_api_gateway_rest_api.Main.id
   authorizer_uri                   = aws_lambda_function.ApiGatewayAuthorizer.invoke_arn
   authorizer_result_ttl_in_seconds = 0
