@@ -15,7 +15,7 @@ import {logDebug, logInfo} from '#lib/system/logging'
 import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
 import type {CircuitBreakerConfig, CircuitState} from '#types/resilience'
 
-export type {CircuitBreakerConfig, CircuitState}
+export type { CircuitBreakerConfig, CircuitState }
 
 /**
  * Internal state tracking for circuit breaker
@@ -43,13 +43,7 @@ const circuitStates = new Map<string, CircuitBreakerState>()
  */
 function getState(name: string): CircuitBreakerState {
   if (!circuitStates.has(name)) {
-    circuitStates.set(name, {
-      state: 'CLOSED',
-      failures: 0,
-      successes: 0,
-      lastFailureTime: 0,
-      lastStateChange: Date.now()
-    })
+    circuitStates.set(name, {state: 'CLOSED', failures: 0, successes: 0, lastFailureTime: 0, lastStateChange: Date.now()})
   }
   return circuitStates.get(name)!
 }
@@ -105,10 +99,7 @@ export class CircuitBreaker {
         this.transitionTo(state, 'HALF_OPEN')
       } else {
         metrics.addMetric(`CircuitBreaker_${this.config.name}_Rejected`, MetricUnit.Count, 1)
-        throw new CircuitBreakerOpenError(
-          this.config.name,
-          this.config.resetTimeout - timeSinceFailure
-        )
+        throw new CircuitBreakerOpenError(this.config.name, this.config.resetTimeout - timeSinceFailure)
       }
     }
 
@@ -128,10 +119,7 @@ export class CircuitBreaker {
   private onSuccess(state: CircuitBreakerState): void {
     if (state.state === 'HALF_OPEN') {
       state.successes++
-      logDebug(`Circuit breaker ${this.config.name} success in HALF_OPEN`, {
-        successes: state.successes,
-        threshold: this.config.successThreshold
-      })
+      logDebug(`Circuit breaker ${this.config.name} success in HALF_OPEN`, {successes: state.successes, threshold: this.config.successThreshold})
 
       if (state.successes >= this.config.successThreshold) {
         this.transitionTo(state, 'CLOSED')
@@ -152,11 +140,7 @@ export class CircuitBreaker {
     state.failures++
     state.lastFailureTime = Date.now()
 
-    logDebug(`Circuit breaker ${this.config.name} failure`, {
-      failures: state.failures,
-      threshold: this.config.failureThreshold,
-      state: state.state
-    })
+    logDebug(`Circuit breaker ${this.config.name} failure`, {failures: state.failures, threshold: this.config.failureThreshold, state: state.state})
 
     if (state.state === 'HALF_OPEN') {
       // Any failure in HALF_OPEN reopens the circuit
@@ -173,11 +157,7 @@ export class CircuitBreaker {
    */
   private transitionTo(state: CircuitBreakerState, newState: CircuitState): void {
     const previousState = state.state
-    logInfo(`Circuit breaker ${this.config.name} state change`, {
-      from: previousState,
-      to: newState,
-      failures: state.failures
-    })
+    logInfo(`Circuit breaker ${this.config.name} state change`, {from: previousState, to: newState, failures: state.failures})
 
     state.state = newState
     state.lastStateChange = Date.now()

@@ -65,11 +65,7 @@ async function getDevice(deviceId: string): Promise<Device> {
 async function sendNotificationToDevice(device: Device, messageBody: string, notificationType: FileNotificationType): Promise<DeviceNotificationResult> {
   const targetArn = device.endpointArn
   if (!targetArn) {
-    return {
-      deviceId: device.deviceId,
-      success: false,
-      error: 'No endpoint ARN configured'
-    }
+    return {deviceId: device.deviceId, success: false, error: 'No endpoint ARN configured'}
   }
   try {
     logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId, targetArn})
@@ -84,12 +80,7 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
     // Detect disabled endpoints - these occur when APNS token is invalid
     const isEndpointDisabled = message.includes('EndpointDisabled') || message.includes('endpoint is disabled')
 
-    return {
-      deviceId: device.deviceId,
-      success: false,
-      error: message,
-      endpointDisabled: isEndpointDisabled
-    }
+    return {deviceId: device.deviceId, success: false, error: message, endpointDisabled: isEndpointDisabled}
   }
 }
 
@@ -119,23 +110,17 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
   logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
 
   // Process all devices in parallel with individual error handling
-  const results = await Promise.allSettled(
-    deviceIds.map(async (deviceId) => {
-      const device = await getDevice(deviceId)
-      return sendNotificationToDevice(device, record.body, notificationType)
-    })
-  )
+  const results = await Promise.allSettled(deviceIds.map(async (deviceId) => {
+    const device = await getDevice(deviceId)
+    return sendNotificationToDevice(device, record.body, notificationType)
+  }))
 
   // Collect results
   const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
     if (result.status === 'fulfilled') {
       return result.value
     }
-    return {
-      deviceId: deviceIds[index],
-      success: false,
-      error: result.reason instanceof Error ? result.reason.message : String(result.reason)
-    }
+    return {deviceId: deviceIds[index], success: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
   })
 
   const succeeded = deviceResults.filter((r) => r.success)
@@ -168,10 +153,7 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
 
   // Clean up disabled endpoints (best-effort, don't fail the message)
   if (disabledEndpoints.length > 0) {
-    logInfo('Cleaning up disabled endpoints', {
-      userId,
-      deviceIds: disabledEndpoints.map((r) => r.deviceId)
-    })
+    logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
 
     // Run cleanup asynchronously (fire-and-forget to not block message processing)
     // Errors are logged within cleanupDisabledEndpoints, won't affect message success

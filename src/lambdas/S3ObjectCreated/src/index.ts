@@ -105,10 +105,7 @@ async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Pro
       failed: failed.length
     })
   } else {
-    logInfo('All notifications dispatched successfully', {
-      fileId: file.fileId,
-      userCount: userIds.length
-    })
+    logInfo('All notifications dispatched successfully', {fileId: file.fileId, userCount: userIds.length})
   }
 }
 

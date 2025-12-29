@@ -50,9 +50,7 @@ export async function getQueueUrl(queueName: string): Promise<string> {
  * @param queueUrl - URL of the queue
  */
 export async function getQueueArn(queueUrl: string): Promise<string> {
-  const result = await sqsClient.send(
-    new GetQueueAttributesCommand({QueueUrl: queueUrl, AttributeNames: ['QueueArn']})
-  )
+  const result = await sqsClient.send(new GetQueueAttributesCommand({QueueUrl: queueUrl, AttributeNames: ['QueueArn']}))
   return result.Attributes!.QueueArn!
 }
 
@@ -67,13 +65,7 @@ export async function sendMessage(
   messageBody: string,
   messageAttributes?: Record<string, {DataType: string; StringValue: string}>
 ): Promise<string> {
-  const result = await sqsClient.send(
-    new SendMessageCommand({
-      QueueUrl: queueUrl,
-      MessageBody: messageBody,
-      MessageAttributes: messageAttributes
-    })
-  )
+  const result = await sqsClient.send(new SendMessageCommand({QueueUrl: queueUrl, MessageBody: messageBody, MessageAttributes: messageAttributes}))
   return result.MessageId!
 }
 
@@ -83,18 +75,9 @@ export async function sendMessage(
  * @param maxMessages - Maximum number of messages to receive (1-10)
  * @param waitTimeSeconds - Long polling wait time in seconds
  */
-export async function receiveMessages(
-  queueUrl: string,
-  maxMessages = 10,
-  waitTimeSeconds = 5
-): Promise<Message[]> {
+export async function receiveMessages(queueUrl: string, maxMessages = 10, waitTimeSeconds = 5): Promise<Message[]> {
   const result: ReceiveMessageCommandOutput = await sqsClient.send(
-    new ReceiveMessageCommand({
-      QueueUrl: queueUrl,
-      MaxNumberOfMessages: maxMessages,
-      WaitTimeSeconds: waitTimeSeconds,
-      MessageAttributeNames: ['All']
-    })
+    new ReceiveMessageCommand({QueueUrl: queueUrl, MaxNumberOfMessages: maxMessages, WaitTimeSeconds: waitTimeSeconds, MessageAttributeNames: ['All']})
   )
   return result.Messages || []
 }

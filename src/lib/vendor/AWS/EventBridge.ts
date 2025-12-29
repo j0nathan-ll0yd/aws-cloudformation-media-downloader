@@ -106,10 +106,7 @@ export interface PublishRetryConfig {
   initialDelayMs?: number
 }
 
-const DEFAULT_RETRY_CONFIG: Required<PublishRetryConfig> = {
-  maxRetries: 3,
-  initialDelayMs: 100
-}
+const DEFAULT_RETRY_CONFIG: Required<PublishRetryConfig> = {maxRetries: 3, initialDelayMs: 100}
 
 /**
  * Custom error class for EventBridge publish failures.
@@ -159,11 +156,8 @@ export async function publishEventWithRetry<TDetail>(
       // Check for partial failures - EventBridge may accept the request but fail individual entries
       if (response.FailedEntryCount && response.FailedEntryCount > 0) {
         const failedEntry = response.Entries?.[0]
-        throw new EventBridgePublishError(
-          `EventBridge publish failed: ${failedEntry?.ErrorCode} - ${failedEntry?.ErrorMessage}`,
-          failedEntry?.ErrorCode,
-          failedEntry?.ErrorMessage
-        )
+        throw new EventBridgePublishError(`EventBridge publish failed: ${failedEntry?.ErrorCode} - ${failedEntry?.ErrorMessage}`, failedEntry?.ErrorCode,
+          failedEntry?.ErrorMessage)
       }
 
       // Success - log if we had to retry
@@ -177,12 +171,7 @@ export async function publishEventWithRetry<TDetail>(
         ? error
         : new EventBridgePublishError(error instanceof Error ? error.message : String(error))
 
-      logDebug('publishEventWithRetry attempt failed', {
-        detailType,
-        attempt: attempt + 1,
-        maxRetries: config.maxRetries,
-        error: lastError.message
-      })
+      logDebug('publishEventWithRetry attempt failed', {detailType, attempt: attempt + 1, maxRetries: config.maxRetries, error: lastError.message})
 
       // Don't sleep after the last attempt
       if (attempt < config.maxRetries) {

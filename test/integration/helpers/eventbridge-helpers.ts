@@ -45,16 +45,8 @@ export async function deleteTestEventBus(busName: string): Promise<void> {
  * @param queueArn - Target SQS queue ARN
  * @returns The rule ARN
  */
-export async function createTestRuleWithSqsTarget(
-  busName: string,
-  ruleName: string,
-  detailType: string,
-  queueArn: string
-): Promise<string> {
-  const eventPattern = {
-    source: ['media-downloader'],
-    'detail-type': [detailType]
-  }
+export async function createTestRuleWithSqsTarget(busName: string, ruleName: string, detailType: string, queueArn: string): Promise<string> {
+  const eventPattern = {source: ['media-downloader'], 'detail-type': [detailType]}
   const ruleArn = await createRule(busName, ruleName, eventPattern)
   await addSqsTarget(busName, ruleName, `${ruleName}-target`, queueArn)
   return ruleArn
@@ -67,19 +59,9 @@ export async function createTestRuleWithSqsTarget(
  * @param detail - Event detail payload
  * @returns Number of failed entries (0 means success)
  */
-export async function publishTestEvent(
-  busName: string,
-  detailType: string,
-  detail: Record<string, unknown>
-): Promise<number> {
+export async function publishTestEvent(busName: string, detailType: string, detail: Record<string, unknown>): Promise<number> {
   const result = await putEvents([
-    {
-      EventBusName: busName,
-      Source: 'media-downloader',
-      DetailType: detailType,
-      Detail: JSON.stringify(detail),
-      Time: new Date()
-    }
+    {EventBusName: busName, Source: 'media-downloader', DetailType: detailType, Detail: JSON.stringify(detail), Time: new Date()}
   ])
   return result.FailedEntryCount || 0
 }
@@ -91,16 +73,6 @@ export async function publishTestEvent(
  * @param fileUrl - The video URL
  * @param correlationId - Correlation ID for tracing
  */
-export async function publishDownloadRequestedEvent(
-  busName: string,
-  fileId: string,
-  fileUrl: string,
-  correlationId: string
-): Promise<number> {
-  return publishTestEvent(busName, 'DownloadRequested', {
-    fileId,
-    fileUrl,
-    correlationId,
-    timestamp: new Date().toISOString()
-  })
+export async function publishDownloadRequestedEvent(busName: string, fileId: string, fileUrl: string, correlationId: string): Promise<number> {
+  return publishTestEvent(busName, 'DownloadRequested', {fileId, fileUrl, correlationId, timestamp: new Date().toISOString()})
 }

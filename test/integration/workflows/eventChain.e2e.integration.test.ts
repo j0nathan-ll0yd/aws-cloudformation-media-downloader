@@ -79,9 +79,7 @@ describe('Event Chain E2E Integration Tests', () => {
       ]
 
       // Publish all events concurrently
-      const results = await Promise.all(
-        events.map((e) => publishDownloadRequestedEvent(TEST_EVENT_BUS, e.fileId, e.fileUrl, e.correlationId))
-      )
+      const results = await Promise.all(events.map((e) => publishDownloadRequestedEvent(TEST_EVENT_BUS, e.fileId, e.fileUrl, e.correlationId)))
 
       // All should succeed
       expect(results.every((r) => r === 0)).toBe(true)
@@ -101,12 +99,7 @@ describe('Event Chain E2E Integration Tests', () => {
     test('should preserve correlation ID through event chain', async () => {
       const correlationId = `trace-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-      await publishDownloadRequestedEvent(
-        TEST_EVENT_BUS,
-        'correlation-test',
-        'https://youtube.com/watch?v=test',
-        correlationId
-      )
+      await publishDownloadRequestedEvent(TEST_EVENT_BUS, 'correlation-test', 'https://youtube.com/watch?v=test', correlationId)
 
       const messages = await waitForMessages(queueUrl, 1, 10000)
       expect(messages.length).toBe(1)
@@ -121,13 +114,7 @@ describe('Event Chain E2E Integration Tests', () => {
       // Publish a non-matching event directly using putEvents
       const {putEvents} = await import('../lib/vendor/AWS/EventBridge')
       await putEvents([
-        {
-          EventBusName: TEST_EVENT_BUS,
-          Source: 'media-downloader',
-          DetailType: 'SomeOtherEvent',
-          Detail: JSON.stringify({test: 'data'}),
-          Time: new Date()
-        }
+        {EventBusName: TEST_EVENT_BUS, Source: 'media-downloader', DetailType: 'SomeOtherEvent', Detail: JSON.stringify({test: 'data'}), Time: new Date()}
       ])
 
       // Should not receive any messages (short timeout)

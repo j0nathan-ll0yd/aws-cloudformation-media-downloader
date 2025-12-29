@@ -14,12 +14,12 @@
  * @see src/lambdas/PruneDevices for proactive cleanup
  * @see src/types/resilience.ts for type definitions
  */
-import {deleteUserDevicesByDeviceId, deleteDevice as deleteDeviceRecord, getDevice} from '#entities/queries'
+import {deleteDevice as deleteDeviceRecord, deleteUserDevicesByDeviceId, getDevice} from '#entities/queries'
 import {deleteEndpoint} from '#lib/vendor/AWS/SNS'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import type {EndpointCleanupResult} from '#types/resilience'
 
-export type {EndpointCleanupResult}
+export type { EndpointCleanupResult }
 
 /**
  * Clean up a disabled APNS endpoint and associated device records
@@ -99,9 +99,7 @@ export async function cleanupDisabledEndpoints(deviceIds: string[]): Promise<End
 
   logInfo('Starting batch endpoint cleanup', {deviceCount: deviceIds.length})
 
-  const results = await Promise.allSettled(
-    deviceIds.map((deviceId) => cleanupDisabledEndpointByDeviceId(deviceId))
-  )
+  const results = await Promise.allSettled(deviceIds.map((deviceId) => cleanupDisabledEndpointByDeviceId(deviceId)))
 
   const cleanupResults: EndpointCleanupResult[] = []
 
@@ -112,23 +110,14 @@ export async function cleanupDisabledEndpoints(deviceIds: string[]): Promise<End
     if (result.status === 'fulfilled' && result.value) {
       cleanupResults.push(result.value)
     } else if (result.status === 'rejected') {
-      cleanupResults.push({
-        deviceId,
-        endpointArn: '',
-        cleaned: false,
-        error: result.reason instanceof Error ? result.reason.message : String(result.reason)
-      })
+      cleanupResults.push({deviceId, endpointArn: '', cleaned: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)})
     }
   }
 
   const succeeded = cleanupResults.filter((r) => r.cleaned)
   const failed = cleanupResults.filter((r) => !r.cleaned)
 
-  logInfo('Batch endpoint cleanup complete', {
-    total: deviceIds.length,
-    cleaned: succeeded.length,
-    failed: failed.length
-  })
+  logInfo('Batch endpoint cleanup complete', {total: deviceIds.length, cleaned: succeeded.length, failed: failed.length})
 
   return cleanupResults
 }

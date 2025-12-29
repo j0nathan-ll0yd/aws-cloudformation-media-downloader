@@ -39,17 +39,9 @@ export async function deleteEventBus(busName: string): Promise<void> {
   if (rulesResponse.Rules) {
     for (const rule of rulesResponse.Rules) {
       // Remove all targets first
-      const targetsResponse = await eventBridgeClient.send(
-        new ListTargetsByRuleCommand({Rule: rule.Name!, EventBusName: busName})
-      )
+      const targetsResponse = await eventBridgeClient.send(new ListTargetsByRuleCommand({Rule: rule.Name!, EventBusName: busName}))
       if (targetsResponse.Targets && targetsResponse.Targets.length > 0) {
-        await eventBridgeClient.send(
-          new RemoveTargetsCommand({
-            Rule: rule.Name!,
-            EventBusName: busName,
-            Ids: targetsResponse.Targets.map((t) => t.Id!)
-          })
-        )
+        await eventBridgeClient.send(new RemoveTargetsCommand({Rule: rule.Name!, EventBusName: busName, Ids: targetsResponse.Targets.map((t) => t.Id!)}))
       }
       await eventBridgeClient.send(new DeleteRuleCommand({Name: rule.Name!, EventBusName: busName}))
     }
@@ -65,12 +57,7 @@ export async function deleteEventBus(busName: string): Promise<void> {
  */
 export async function createRule(busName: string, ruleName: string, eventPattern: object): Promise<string> {
   const result = await eventBridgeClient.send(
-    new PutRuleCommand({
-      Name: ruleName,
-      EventBusName: busName,
-      EventPattern: JSON.stringify(eventPattern),
-      State: 'ENABLED'
-    })
+    new PutRuleCommand({Name: ruleName, EventBusName: busName, EventPattern: JSON.stringify(eventPattern), State: 'ENABLED'})
   )
   return result.RuleArn!
 }
@@ -83,13 +70,7 @@ export async function createRule(busName: string, ruleName: string, eventPattern
  * @param queueArn - SQS queue ARN
  */
 export async function addSqsTarget(busName: string, ruleName: string, targetId: string, queueArn: string): Promise<void> {
-  await eventBridgeClient.send(
-    new PutTargetsCommand({
-      Rule: ruleName,
-      EventBusName: busName,
-      Targets: [{Id: targetId, Arn: queueArn}]
-    })
-  )
+  await eventBridgeClient.send(new PutTargetsCommand({Rule: ruleName, EventBusName: busName, Targets: [{Id: targetId, Arn: queueArn}]}))
 }
 
 /**

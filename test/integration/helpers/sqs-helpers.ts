@@ -83,11 +83,7 @@ export async function receiveAndDeleteMessages(
  * @param timeoutMs - Maximum wait time in milliseconds
  * @returns Array of raw SQS messages
  */
-export async function waitForMessages(
-  queueUrl: string,
-  expectedCount: number,
-  timeoutMs = 30000
-): Promise<Message[]> {
+export async function waitForMessages(queueUrl: string, expectedCount: number, timeoutMs = 30000): Promise<Message[]> {
   const startTime = Date.now()
   const allMessages: Message[] = []
   while (allMessages.length < expectedCount && Date.now() - startTime < timeoutMs) {
@@ -118,16 +114,10 @@ export async function clearTestQueue(queueUrl: string): Promise<void> {
  * @param body - Message body (will be JSON stringified if object)
  * @param attributes - Message attributes
  */
-export async function sendTestMessage(
-  queueUrl: string,
-  body: unknown,
-  attributes?: Record<string, string>
-): Promise<string> {
+export async function sendTestMessage(queueUrl: string, body: unknown, attributes?: Record<string, string>): Promise<string> {
   const messageBody = typeof body === 'string' ? body : JSON.stringify(body)
   const messageAttributes = attributes
-    ? Object.fromEntries(
-        Object.entries(attributes).map(([key, value]) => [key, {DataType: 'String', StringValue: value}])
-      )
+    ? Object.fromEntries(Object.entries(attributes).map(([key, value]) => [key, {DataType: 'String', StringValue: value}]))
     : undefined
   return sendMessage(queueUrl, messageBody, messageAttributes)
 }
