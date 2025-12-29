@@ -154,69 +154,6 @@
       }
     },
     {
-      "id": "entity:Accounts",
-      "type": "Entity",
-      "properties": {
-        "name": "Accounts"
-      }
-    },
-    {
-      "id": "entity:Devices",
-      "type": "Entity",
-      "properties": {
-        "name": "Devices"
-      }
-    },
-    {
-      "id": "entity:FileDownloads",
-      "type": "Entity",
-      "properties": {
-        "name": "FileDownloads"
-      }
-    },
-    {
-      "id": "entity:Files",
-      "type": "Entity",
-      "properties": {
-        "name": "Files"
-      }
-    },
-    {
-      "id": "entity:Sessions",
-      "type": "Entity",
-      "properties": {
-        "name": "Sessions"
-      }
-    },
-    {
-      "id": "entity:UserDevices",
-      "type": "Entity",
-      "properties": {
-        "name": "UserDevices"
-      }
-    },
-    {
-      "id": "entity:UserFiles",
-      "type": "Entity",
-      "properties": {
-        "name": "UserFiles"
-      }
-    },
-    {
-      "id": "entity:Users",
-      "type": "Entity",
-      "properties": {
-        "name": "Users"
-      }
-    },
-    {
-      "id": "entity:VerificationTokens",
-      "type": "Entity",
-      "properties": {
-        "name": "VerificationTokens"
-      }
-    },
-    {
       "id": "service:DynamoDB",
       "type": "Service",
       "properties": {
