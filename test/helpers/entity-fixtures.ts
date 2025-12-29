@@ -203,12 +203,7 @@ export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
  * const customLink = createMockUserFile({userId: 'user-123', fileId: 'file-456'})
  */
 export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFileRow {
-  return {
-    userId: DEFAULT_USER_ID,
-    fileId: DEFAULT_FILE_ID,
-    createdAt: new Date(),
-    ...overrides
-  }
+  return {userId: DEFAULT_USER_ID, fileId: DEFAULT_FILE_ID, createdAt: new Date(), ...overrides}
 }
 
 /**
@@ -221,12 +216,7 @@ export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFi
  * const customLink = createMockUserDevice({userId: 'user-123', deviceId: 'device-456'})
  */
 export function createMockUserDevice(overrides: Partial<UserDeviceRow> = {}): UserDeviceRow {
-  return {
-    userId: DEFAULT_USER_ID,
-    deviceId: DEFAULT_DEVICE_ID,
-    createdAt: new Date(),
-    ...overrides
-  }
+  return {userId: DEFAULT_USER_ID, deviceId: DEFAULT_DEVICE_ID, createdAt: new Date(), ...overrides}
 }
 
 /**
@@ -318,11 +308,7 @@ export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {})
  * const customFiles = createMockFiles(2, {status: 'Queued'})  // All files queued
  */
 export function createMockFiles(count: number, overrides: Partial<FileRow> = {}): FileRow[] {
-  return Array.from({length: count}, (_, i) => createMockFile({
-    fileId: `file-${i + 1}`,
-    title: `Test Video ${i + 1}`,
-    ...overrides
-  }))
+  return Array.from({length: count}, (_, i) => createMockFile({fileId: `file-${i + 1}`, title: `Test Video ${i + 1}`, ...overrides}))
 }
 
 /**
@@ -334,9 +320,5 @@ export function createMockFiles(count: number, overrides: Partial<FileRow> = {})
  * const devices = createMockDevices(2)
  */
 export function createMockDevices(count: number, overrides: Partial<DeviceRow> = {}): DeviceRow[] {
-  return Array.from({length: count}, (_, i) => createMockDevice({
-    deviceId: `device-${i + 1}`,
-    name: `Test Device ${i + 1}`,
-    ...overrides
-  }))
+  return Array.from({length: count}, (_, i) => createMockDevice({deviceId: `device-${i + 1}`, name: `Test Device ${i + 1}`, ...overrides}))
 }

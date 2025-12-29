@@ -24,10 +24,7 @@ const {handler} = await import('./../src')
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
 // Mock data using fixture factories
-const mockFileRow = createMockFile({
-  fileId: '4TfEp8oG5gM',
-  key: '20210122-[Philip DeFranco].mp4'
-})
+const mockFileRow = createMockFile({fileId: '4TfEp8oG5gM', key: '20210122-[Philip DeFranco].mp4'})
 const mockUserFileRow = createMockUserFile({fileId: '4TfEp8oG5gM', userId: DEFAULT_USER_ID})
 
 /** Creates an S3 event record with a custom object key */

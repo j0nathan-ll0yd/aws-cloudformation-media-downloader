@@ -7,8 +7,4 @@
  */
 import {vi} from 'vitest'
 
-vi.mock('#entities/queries', () => ({
-  getUser: vi.fn(),
-  createUser: vi.fn(),
-  updateUser: vi.fn()
-}))
+vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn(), updateUser: vi.fn()}))
