@@ -3,6 +3,7 @@ import type {Notification} from 'apns2'
 export class CustomLambdaError extends Error {
   errors: object | undefined
   statusCode: number | undefined
+  code: string | undefined
   override cause?: Error
 
   constructor(message: string, options?: {cause?: Error}) {
@@ -21,6 +22,7 @@ export class ValidationError extends CustomLambdaError {
       this.errors = errors
     }
     this.name = 'ValidationError'
+    this.code = 'VALIDATION_ERROR'
     this.statusCode = statusCode
   }
 }
@@ -30,6 +32,7 @@ export class ServiceUnavailableError extends CustomLambdaError {
   constructor(message: string, statusCode = 503, cause?: Error) {
     super(message, {cause})
     this.name = 'ServiceUnavailableError'
+    this.code = 'SERVICE_UNAVAILABLE'
     this.statusCode = statusCode
   }
 }
@@ -39,6 +42,17 @@ export class UnauthorizedError extends CustomLambdaError {
   constructor(message: string = 'Invalid Authentication token; login', statusCode = 401, cause?: Error) {
     super(message, {cause})
     this.name = 'UnauthorizedError'
+    this.code = 'UNAUTHORIZED'
+    this.statusCode = statusCode
+  }
+}
+
+// Called when the user is authenticated but not allowed to access the resource
+export class ForbiddenError extends CustomLambdaError {
+  constructor(message: string = 'Access denied', statusCode = 403, cause?: Error) {
+    super(message, {cause})
+    this.name = 'ForbiddenError'
+    this.code = 'FORBIDDEN'
     this.statusCode = statusCode
   }
 }
@@ -48,6 +62,7 @@ export class NotFoundError extends CustomLambdaError {
   constructor(message: string, statusCode = 404, cause?: Error) {
     super(message, {cause})
     this.name = 'NotFoundError'
+    this.code = 'NOT_FOUND'
     this.statusCode = statusCode
   }
 }
@@ -57,6 +72,7 @@ export class UnexpectedError extends CustomLambdaError {
   constructor(message: string, statusCode = 500, cause?: Error) {
     super(message, {cause})
     this.name = 'UnexpectedError'
+    this.code = 'INTERNAL_ERROR'
     this.statusCode = statusCode
   }
 }
@@ -66,6 +82,7 @@ export class CookieExpirationError extends CustomLambdaError {
   constructor(message: string, statusCode = 403, cause?: Error) {
     super(message, {cause})
     this.name = 'CookieExpirationError'
+    this.code = 'COOKIE_EXPIRED'
     this.statusCode = statusCode
   }
 }

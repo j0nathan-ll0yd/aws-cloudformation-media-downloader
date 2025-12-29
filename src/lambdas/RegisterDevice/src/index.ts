@@ -17,7 +17,7 @@ import type {Device} from '#types/domain-models'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/domain/device/device-service'
 import {getRequiredEnv} from '#lib/system/env'
-import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
+import {providerFailureErrorMessage, ServiceUnavailableError, UnexpectedError} from '#lib/system/errors'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
@@ -37,7 +37,7 @@ async function createPlatformEndpointFromToken(token: string) {
   logDebug('createPlatformEndpoint <=', params)
   const createPlatformEndpointResponse = await createPlatformEndpoint(params)
   if (!createPlatformEndpointResponse) {
-    throw new UnexpectedError('AWS failed to respond')
+    throw new ServiceUnavailableError('AWS failed to respond')
   }
   logDebug('createPlatformEndpoint =>', createPlatformEndpointResponse)
   return createPlatformEndpointResponse
@@ -94,7 +94,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
   const listSubscriptionsByTopicResponse = await listSubscriptionsByTopic(listSubscriptionsByTopicParams)
   logDebug('getSubscriptionArnFromEndpointAndTopic =>', listSubscriptionsByTopicResponse)
   if (!listSubscriptionsByTopicResponse || !listSubscriptionsByTopicResponse.Subscriptions) {
-    throw new UnexpectedError(providerFailureErrorMessage)
+    throw new ServiceUnavailableError(providerFailureErrorMessage)
   }
   const result = listSubscriptionsByTopicResponse.Subscriptions.filter((subscription) => {
     return subscription.Endpoint === endpointArn

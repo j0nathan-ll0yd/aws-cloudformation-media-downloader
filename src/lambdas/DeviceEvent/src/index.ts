@@ -9,18 +9,20 @@
  * Output: 204 No Content on success
  */
 
-import type {APIGatewayEvent, APIGatewayProxyResult, Context} from 'aws-lambda'
+import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
+import type {ApiHandlerParams} from '#types/lambda'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
 
 /**
  * Logs client-side events for debugging and analytics.
  * @notExported
  */
-export const handler = withPowertools(async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
   const deviceId = event.headers['x-device-uuid']
   const message = event.body
   logInfo('Event received', {deviceId, message})
   return buildApiResponse(context, 204)
-})
+}))

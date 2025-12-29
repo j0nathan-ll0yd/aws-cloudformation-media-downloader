@@ -18,7 +18,7 @@ import {s3Records, wrapEventHandler} from '#lib/lambda/middleware/legacy'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {logDebug} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
-import {UnexpectedError} from '#lib/system/errors'
+import {NotFoundError} from '#lib/system/errors'
 import {getRequiredEnv} from '#lib/system/env'
 
 // Get file by S3 object key
@@ -29,7 +29,7 @@ async function getFileByFilename(fileName: string): Promise<File> {
   if (files.length > 0) {
     return files[0] as File
   } else {
-    throw new UnexpectedError('Unable to locate file')
+    throw new NotFoundError('Unable to locate file')
   }
 }
 

@@ -13,8 +13,9 @@ import type {ApiHandlerParams} from '#types/lambda'
 import {buildApiResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
+import {UnauthorizedError} from '#lib/system/errors'
 
 /**
  * Lambda handler for refreshing session tokens.
@@ -30,15 +31,13 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   // Extract and validate Authorization header
   const authHeader = event.headers?.Authorization || event.headers?.authorization
   if (!authHeader) {
-    logError('RefreshToken: missing Authorization header')
-    return buildApiResponse(context, 401, {error: 'Missing Authorization header'})
+    throw new UnauthorizedError('Missing Authorization header')
   }
 
   // Extract token from Bearer format
   const tokenMatch = authHeader.match(/^Bearer (.+)$/)
   if (!tokenMatch) {
-    logError('RefreshToken: invalid Authorization header format')
-    return buildApiResponse(context, 401, {error: 'Invalid Authorization header format'})
+    throw new UnauthorizedError('Invalid Authorization header format')
   }
 
   const token = tokenMatch[1]

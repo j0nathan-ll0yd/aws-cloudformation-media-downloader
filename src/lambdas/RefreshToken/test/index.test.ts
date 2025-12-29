@@ -53,7 +53,8 @@ describe('#RefreshToken', () => {
     expect(output.statusCode).toEqual(401)
 
     const body = JSON.parse(output.body)
-    expect(body.error.message.error).toEqual('Missing Authorization header')
+    expect(body.error.code).toEqual('UNAUTHORIZED')
+    expect(body.error.message).toEqual('Missing Authorization header')
 
     expect(validateSessionTokenMock).not.toHaveBeenCalled()
     expect(refreshSessionMock).not.toHaveBeenCalled()
@@ -66,7 +67,8 @@ describe('#RefreshToken', () => {
     expect(output.statusCode).toEqual(401)
 
     const body = JSON.parse(output.body)
-    expect(body.error.message.error).toEqual('Invalid Authorization header format')
+    expect(body.error.code).toEqual('UNAUTHORIZED')
+    expect(body.error.message).toEqual('Invalid Authorization header format')
 
     expect(validateSessionTokenMock).not.toHaveBeenCalled()
   })
