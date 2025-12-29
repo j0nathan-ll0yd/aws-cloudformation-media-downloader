@@ -2,6 +2,7 @@ import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {S3Event, S3EventRecord} from 'aws-lambda'
 import type {SendMessageRequest} from '@aws-sdk/client-sqs'
 import {testContext} from '#util/vitest-setup'
+import {createMockFile, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 
 beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
@@ -22,21 +23,12 @@ const {default: eventMock} = await import('./fixtures/Event.json', {assert: {typ
 const {handler} = await import('./../src')
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
-// Mock data matching Drizzle schema
-const mockFileRow = {
+// Mock data using fixture factories
+const mockFileRow = createMockFile({
   fileId: '4TfEp8oG5gM',
-  key: '20210122-[Philip DeFranco].mp4',
-  authorName: 'Philip DeFranco',
-  authorUser: 'sxephil',
-  publishDate: '2021-01-22T00:00:00.000Z',
-  description: 'Test description',
-  title: 'Test Video',
-  status: 'Downloaded',
-  size: 61548900,
-  url: 'https://example.com/video.mp4',
-  contentType: 'video/mp4'
-}
-const mockUserFileRow = {fileId: '4TfEp8oG5gM', userId: 'abcdefgh-ijkl-mnop-qrst-uvwxyz123456', createdAt: new Date()}
+  key: '20210122-[Philip DeFranco].mp4'
+})
+const mockUserFileRow = createMockUserFile({fileId: '4TfEp8oG5gM', userId: DEFAULT_USER_ID})
 
 /** Creates an S3 event record with a custom object key */
 function createS3Record(objectKey: string, baseRecord: S3EventRecord): S3EventRecord {

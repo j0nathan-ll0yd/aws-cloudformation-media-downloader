@@ -5,6 +5,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import type {SendMessageRequest} from '@aws-sdk/client-sqs'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import type {MediaDownloaderEventType} from '#types/events'
+import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
 
 const fakeUserId = uuidv4()
 
@@ -56,35 +57,10 @@ const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {as
 const {handler} = await import('./../src')
 import {createFile, createFileDownload, createUserFile, getFile} from '#entities/queries'
 
-// Mock return value factories matching Drizzle schema
-const mockFileRow = () => ({
-  fileId: 'test-file-id',
-  key: 'test-key.mp4',
-  authorName: 'Test Author',
-  authorUser: 'test-user',
-  publishDate: '2024-01-01',
-  description: 'Test description',
-  title: 'Test Title',
-  status: 'Queued',
-  size: 0,
-  url: null,
-  contentType: 'video/mp4'
-})
-const mockUserFileRow = () => ({userId: fakeUserId, fileId: 'test-file-id', createdAt: new Date()})
-const mockFileDownloadRow = () => ({
-  fileId: 'test-file-id',
-  status: 'Pending',
-  retryCount: 0,
-  maxRetries: 5,
-  retryAfter: null,
-  errorCategory: null,
-  lastError: null,
-  scheduledReleaseTime: null,
-  sourceUrl: null,
-  correlationId: null,
-  createdAt: new Date(),
-  updatedAt: new Date()
-})
+// Mock return value factories using shared fixtures
+const mockFileRow = () => createMockFile({fileId: 'test-file-id', status: 'Queued', size: 0, url: null})
+const mockUserFileRow = () => createMockUserFile({userId: fakeUserId, fileId: 'test-file-id'})
+const mockFileDownloadRow = () => createMockFileDownload({fileId: 'test-file-id'})
 
 describe('#WebhookFeedly', () => {
   const context = testContext

@@ -2,19 +2,12 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
+import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 
 const fakeUserId = uuidv4()
 const fakeDeviceId = uuidv4()
-const getUserDevicesByUserIdResponse = [{deviceId: fakeDeviceId, userId: fakeUserId, createdAt: new Date()}]
-
-const getDeviceResponse = {
-  deviceId: fakeDeviceId,
-  token: '6a077fd0efd36259b475f9d39997047eebbe45e1d197eed7d64f39d6643c7c23',
-  systemName: 'iOS',
-  systemVersion: '17.0',
-  name: 'Test Device',
-  endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/OfflineMediaDownloader/device-id'
-}
+const getDeviceResponse = createMockDevice({deviceId: fakeDeviceId})
+const getUserDevicesByUserIdResponse = [createMockUserDevice({deviceId: fakeDeviceId, userId: fakeUserId})]
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getUserDevicesByUserId: vi.fn(), getDevice: vi.fn()}))

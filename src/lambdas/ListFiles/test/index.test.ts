@@ -3,6 +3,7 @@ import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {FileStatus} from '#types/enums'
+import {createMockFile as createMockFileBase} from '#test/helpers/entity-fixtures'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -19,21 +20,9 @@ vi.mock('#entities/queries', () => ({getFilesForUser: vi.fn()}))
 const {handler} = await import('./../src')
 import {getFilesForUser} from '#entities/queries'
 
-/** Creates a mock file with specified status and publish date */
+/** Creates a mock file with specified status and publish date - wraps shared factory */
 function createMockFile(fileId: string, status: FileStatus, publishDate: string) {
-  return {
-    fileId,
-    key: `${fileId}.mp4`,
-    status: status as string,
-    publishDate,
-    title: `Test Video ${fileId}`,
-    size: 1000000,
-    contentType: 'video/mp4',
-    url: `https://example.com/${fileId}.mp4`,
-    authorName: 'Test Author',
-    authorUser: 'test-user',
-    description: 'Test description'
-  }
+  return createMockFileBase({fileId, status: status as string, publishDate})
 }
 
 describe('#ListFiles', () => {

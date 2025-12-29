@@ -6,6 +6,7 @@ import type {YtDlpVideoInfo} from '#types/youtube'
 import type {MediaDownloaderEventType} from '#types/events'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/vitest-setup'
+import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
 
 /** Message body structure for DownloadQueue SQS messages */
 interface DownloadQueueMessage {
@@ -90,35 +91,10 @@ describe('#StartFileUpload', () => {
 
   const createFailureResult = (error: Error, isCookieError = false): FetchVideoInfoResult => ({success: false, error, isCookieError})
 
-  // Mock return value factories matching Drizzle schema
-  const mockFileDownloadRow = () => ({
-    fileId: 'test',
-    status: 'Pending',
-    retryCount: 0,
-    maxRetries: 5,
-    retryAfter: null,
-    errorCategory: null,
-    lastError: null,
-    scheduledReleaseTime: null,
-    sourceUrl: null,
-    correlationId: null,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  })
-  const mockFileRow = () => ({
-    fileId: 'test',
-    key: 'test.mp4',
-    authorName: 'Author',
-    authorUser: 'author-user',
-    publishDate: '2024-01-01',
-    description: 'Desc',
-    title: 'Title',
-    status: 'Downloaded',
-    size: 0,
-    url: null,
-    contentType: 'video/mp4'
-  })
-  const mockUserFileRow = () => ({userId: 'user-123', fileId: 'test', createdAt: new Date()})
+  // Mock return value factories using shared fixtures
+  const mockFileDownloadRow = () => createMockFileDownload({fileId: 'test'})
+  const mockFileRow = () => createMockFile({fileId: 'test', status: 'Downloaded', size: 0, url: null})
+  const mockUserFileRow = () => createMockUserFile({userId: 'user-123', fileId: 'test'})
 
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
