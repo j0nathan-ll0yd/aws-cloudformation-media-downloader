@@ -41,16 +41,14 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 .
 ├── terraform/             # AWS Infrastructure definitions (OpenTofu)
 ├── src/
-│   ├── entities/          # Entity definitions (Drizzle ORM with Aurora DSQL)
-│   │   ├── Files.ts       # File entity
-│   │   ├── FileDownloads.ts # Download tracking entity
-│   │   ├── Users.ts       # User entity
-│   │   ├── Devices.ts     # Device entity
-│   │   ├── UserFiles.ts   # User-File relationships
-│   │   ├── UserDevices.ts # User-Device relationships
-│   │   ├── Sessions.ts    # Better Auth session entity
-│   │   ├── Accounts.ts    # Better Auth OAuth account entity
-│   │   └── VerificationTokens.ts # Better Auth verification tokens
+│   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
+│   │   └── queries/       # Native Drizzle query modules
+│   │       ├── user-queries.ts       # User operations (create, get, update, delete)
+│   │       ├── file-queries.ts       # File and FileDownload operations
+│   │       ├── device-queries.ts     # Device operations
+│   │       ├── session-queries.ts    # Session, Account, VerificationToken operations
+│   │       ├── relationship-queries.ts # UserFiles, UserDevices operations
+│   │       └── index.ts              # Barrel export for all queries
 │   ├── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │   │   └── [lambda-name]/
 │   │       ├── src/index.ts         # Lambda handler
