@@ -28,7 +28,9 @@ data "aws_caller_identity" "current" {}
 # Layer version list: https://aws-otel.github.io/docs/getting-started/lambda/lambda-js#lambda-layer
 # AWS-managed layer published in account 901920570463
 locals {
-  adot_layer_arn = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
+  # Lambda architecture: arm64 (Graviton2) for 20% cost savings and 13-24% faster cold starts
+  lambda_architecture = "arm64"
+  adot_layer_arn      = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-arm64-ver-1-30-2:1"
 
   # Common tags for all resources (drift detection & identification)
   common_tags = {

@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "RefreshToken" {
 
 resource "aws_cloudwatch_log_group" "RefreshToken" {
   name              = "/aws/lambda/${aws_lambda_function.RefreshToken.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -47,6 +47,7 @@ resource "aws_lambda_function" "RefreshToken" {
   role             = aws_iam_role.RefreshToken.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   timeout          = 30
   depends_on       = [aws_iam_role_policy_attachment.RefreshTokenLogging]
   filename         = data.archive_file.RefreshToken.output_path

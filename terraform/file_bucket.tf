@@ -119,7 +119,7 @@ resource "aws_lambda_permission" "S3ObjectCreated" {
 
 resource "aws_cloudwatch_log_group" "S3ObjectCreated" {
   name              = "/aws/lambda/${aws_lambda_function.S3ObjectCreated.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -135,6 +135,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   role             = aws_iam_role.S3ObjectCreated.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreated]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256

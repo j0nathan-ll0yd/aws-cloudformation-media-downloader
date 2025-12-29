@@ -63,7 +63,7 @@ resource "aws_lambda_permission" "SendPushNotification" {
 
 resource "aws_cloudwatch_log_group" "SendPushNotification" {
   name              = "/aws/lambda/${aws_lambda_function.SendPushNotification.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -79,6 +79,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   role             = aws_iam_role.SendPushNotification.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256

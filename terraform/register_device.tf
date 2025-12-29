@@ -57,7 +57,7 @@ resource "aws_lambda_permission" "RegisterDevice" {
 
 resource "aws_cloudwatch_log_group" "RegisterDevice" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterDevice.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -73,6 +73,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   role             = aws_iam_role.RegisterDevice.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   timeout          = 10
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevice]
   filename         = data.archive_file.RegisterDevice.output_path

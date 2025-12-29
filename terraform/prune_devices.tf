@@ -66,7 +66,7 @@ resource "aws_lambda_permission" "PruneDevices" {
 
 resource "aws_cloudwatch_log_group" "PruneDevices" {
   name              = "/aws/lambda/${aws_lambda_function.PruneDevices.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7
   tags              = local.common_tags
 }
 
@@ -82,6 +82,7 @@ resource "aws_lambda_function" "PruneDevices" {
   role             = aws_iam_role.PruneDevices.arn
   handler          = "index.handler"
   runtime          = "nodejs24.x"
+  architectures    = [local.lambda_architecture]
   depends_on       = [aws_iam_role_policy_attachment.PruneDevices]
   filename         = data.archive_file.PruneDevices.output_path
   source_code_hash = data.archive_file.PruneDevices.output_base64sha256
