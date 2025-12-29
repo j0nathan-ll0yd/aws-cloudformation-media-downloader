@@ -15,7 +15,7 @@
 import {readdirSync, readFileSync} from 'fs'
 import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
-import {sql} from 'drizzle-orm'
+import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import type {MigrationResult} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'

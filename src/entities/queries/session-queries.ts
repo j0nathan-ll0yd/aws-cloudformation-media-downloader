@@ -6,10 +6,10 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/entities/Sessions.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {eq, lt} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'
-import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+import {eq, lt} from '#lib/vendor/Drizzle/types'
+import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
 
 export type SessionRow = InferSelectModel<typeof sessions>
 export type AccountRow = InferSelectModel<typeof accounts>

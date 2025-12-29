@@ -13,6 +13,7 @@ import type {SourceFile} from 'ts-morph'
 import * as path from 'node:path'
 import type {ValidationResult, ValidationRule, Violation} from './types'
 import {awsSdkEncapsulationRule} from './rules/aws-sdk-encapsulation'
+import {drizzleOrmEncapsulationRule} from './rules/drizzle-orm-encapsulation'
 import {entityMockingRule} from './rules/entity-mocking'
 import {importOrderRule} from './rules/import-order'
 import {responseHelpersRule} from './rules/response-helpers'
@@ -31,10 +32,11 @@ import {commentConventionsRule} from './rules/comment-conventions'
 import {docsStructureRule} from './rules/docs-structure'
 import {powertoolsMetricsRule} from './rules/powertools-metrics'
 
-// Export all rules (18 total: 5 CRITICAL + 9 HIGH + 4 MEDIUM)
+// Export all rules (19 total: 6 CRITICAL + 9 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
+  drizzleOrmEncapsulationRule,
   entityMockingRule,
   configEnforcementRule,
   envValidationRule,
@@ -66,6 +68,9 @@ export const rulesByName: Record<string, ValidationRule> = {
   // CRITICAL rules
   'aws-sdk-encapsulation': awsSdkEncapsulationRule,
   'aws-sdk': awsSdkEncapsulationRule, // alias
+  'drizzle-orm-encapsulation': drizzleOrmEncapsulationRule,
+  drizzle: drizzleOrmEncapsulationRule, // alias
+  'drizzle-orm': drizzleOrmEncapsulationRule, // alias
   'entity-mocking': entityMockingRule,
   entity: entityMockingRule, // alias
   electrodb: entityMockingRule, // legacy alias
@@ -120,6 +125,7 @@ export {
   configEnforcementRule,
   docsStructureRule,
   docSyncRule,
+  drizzleOrmEncapsulationRule,
   entityMockingRule,
   envValidationRule,
   importOrderRule,

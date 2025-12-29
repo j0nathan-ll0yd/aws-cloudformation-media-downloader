@@ -6,10 +6,10 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/entities/Devices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {eq, inArray} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices} from '#lib/vendor/Drizzle/schema'
-import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+import {eq, inArray} from '#lib/vendor/Drizzle/types'
+import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 
