@@ -53,21 +53,17 @@ export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow>
 
 /**
  * Upserts a device (create if not exists, update if exists).
+ * Uses atomic ON CONFLICT DO UPDATE to avoid race conditions.
  * @param input - The device data to upsert
  * @returns The created or updated device row
  */
 export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
   const db = await getDrizzleClient()
-
-  const existing = await db.select().from(devices).where(eq(devices.deviceId, input.deviceId)).limit(1)
-
-  if (existing.length > 0) {
-    const [updated] = await db.update(devices).set(input).where(eq(devices.deviceId, input.deviceId)).returning()
-    return updated
-  }
-
-  const [created] = await db.insert(devices).values(input).returning()
-  return created
+  const [result] = await db.insert(devices).values(input).onConflictDoUpdate({
+    target: devices.deviceId,
+    set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
+  }).returning()
+  return result
 }
 
 /**

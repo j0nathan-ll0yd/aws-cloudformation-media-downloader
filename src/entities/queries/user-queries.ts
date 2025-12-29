@@ -8,7 +8,7 @@
  * @see src/entities/Users.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {eq} from 'drizzle-orm'
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
 import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
 
@@ -101,30 +101,30 @@ export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<Us
 
 /**
  * Creates a new user with optional identity provider.
+ * Uses a transaction to ensure atomicity - if identity provider insert fails,
+ * the user insert is rolled back.
  * @param input - The user data including optional identity provider
  * @returns The created user with identity provider data
  */
 export async function createUser(input: CreateUserInput): Promise<UserItem> {
-  const db = await getDrizzleClient()
   const {identityProviders: idpData, ...userData} = input
-
-  const [user] = await db.insert(users).values({...userData, updatedAt: new Date()}).returning()
-
-  if (idpData) {
-    await db.insert(identityProviders).values({
-      userId: user.id,
-      providerUserId: idpData.userId,
-      email: idpData.email,
-      emailVerified: idpData.emailVerified,
-      isPrivateEmail: idpData.isPrivateEmail,
-      accessToken: idpData.accessToken,
-      refreshToken: idpData.refreshToken,
-      tokenType: idpData.tokenType,
-      expiresAt: idpData.expiresAt
-    })
-  }
-
-  return {...user, identityProviders: idpData}
+  return await withTransaction(async (tx) => {
+    const [user] = await tx.insert(users).values({...userData, updatedAt: new Date()}).returning()
+    if (idpData) {
+      await tx.insert(identityProviders).values({
+        userId: user.id,
+        providerUserId: idpData.userId,
+        email: idpData.email,
+        emailVerified: idpData.emailVerified,
+        isPrivateEmail: idpData.isPrivateEmail,
+        accessToken: idpData.accessToken,
+        refreshToken: idpData.refreshToken,
+        tokenType: idpData.tokenType,
+        expiresAt: idpData.expiresAt
+      })
+    }
+    return {...user, identityProviders: idpData}
+  })
 }
 
 /**
@@ -145,11 +145,14 @@ export async function updateUser(id: string, data: UpdateUserInput): Promise<Use
 
 /**
  * Deletes a user by ID.
+ * Uses a transaction to ensure atomicity - identity provider and user are
+ * deleted together or not at all.
  * Note: Does NOT cascade - call deleteUserCascade for full cleanup.
  * @param id - The user's UUID
  */
 export async function deleteUser(id: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(identityProviders).where(eq(identityProviders.userId, id))
-  await db.delete(users).where(eq(users.id, id))
+  await withTransaction(async (tx) => {
+    await tx.delete(identityProviders).where(eq(identityProviders.userId, id))
+    await tx.delete(users).where(eq(users.id, id))
+  })
 }

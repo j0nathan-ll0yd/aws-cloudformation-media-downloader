@@ -7,8 +7,8 @@
  * @see {@link file://../../../docs/wiki/Conventions/Vendor-Encapsulation-Policy.md | Vendor Encapsulation Policy} for usage examples
  */
 
-export { closeDrizzleClient, getDrizzleClient } from './client'
-export type { PostgresJsDatabase } from './client'
+export { closeDrizzleClient, getDrizzleClient, withTransaction } from './client'
+export type { PostgresJsDatabase, TransactionClient } from './client'
 
 export * from './schema'
 export * from './types'
