@@ -22,52 +22,40 @@ export type CreateUserDeviceInput = Omit<InferInsertModel<typeof userDevices>, '
 
 // UserFile Operations
 
-/**
- * Get a user-file relationship
- */
+// Get a user-file relationship
 export async function getUserFile(userId: string, fileId: string): Promise<UserFileRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-/**
- * Get all file relationships for a user
- */
+// Get all file relationships for a user
 export async function getUserFilesByUserId(userId: string): Promise<UserFileRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(userFiles).where(eq(userFiles.userId, userId))
 }
 
-/**
- * Get all user relationships for a file
- */
+// Get all user relationships for a file
 export async function getUserFilesByFileId(fileId: string): Promise<UserFileRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(userFiles).where(eq(userFiles.fileId, fileId))
 }
 
-/**
- * Get all files for a user with full file data (JOIN query)
- */
+// Get all files for a user with full file data (JOIN query)
 export async function getFilesForUser(userId: string): Promise<FileRow[]> {
   const db = await getDrizzleClient()
   const result = await db.select({file: files}).from(userFiles).innerJoin(files, eq(userFiles.fileId, files.fileId)).where(eq(userFiles.userId, userId))
   return result.map((r) => r.file)
 }
 
-/**
- * Create a user-file relationship
- */
+// Create a user-file relationship
 export async function createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
   const db = await getDrizzleClient()
   const [userFile] = await db.insert(userFiles).values(input).returning()
   return userFile
 }
 
-/**
- * Upsert a user-file relationship (create if not exists)
- */
+// Upsert a user-file relationship (create if not exists)
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
   const db = await getDrizzleClient()
 
@@ -81,25 +69,19 @@ export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFi
   return created
 }
 
-/**
- * Delete a user-file relationship
- */
+// Delete a user-file relationship
 export async function deleteUserFile(userId: string, fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
 }
 
-/**
- * Delete all file relationships for a user
- */
+// Delete all file relationships for a user
 export async function deleteUserFilesByUserId(userId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(userFiles).where(eq(userFiles.userId, userId))
 }
 
-/**
- * Delete multiple user-file relationships (batch operation)
- */
+// Delete multiple user-file relationships (batch operation)
 export async function deleteUserFilesBatch(keys: Array<{userId: string; fileId: string}>): Promise<void> {
   const db = await getDrizzleClient()
   for (const k of keys) {
@@ -109,34 +91,26 @@ export async function deleteUserFilesBatch(keys: Array<{userId: string; fileId: 
 
 // UserDevice Operations
 
-/**
- * Get a user-device relationship
- */
+// Get a user-device relationship
 export async function getUserDevice(userId: string, deviceId: string): Promise<UserDeviceRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId))).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-/**
- * Get all device relationships for a user
- */
+// Get all device relationships for a user
 export async function getUserDevicesByUserId(userId: string): Promise<UserDeviceRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(userDevices).where(eq(userDevices.userId, userId))
 }
 
-/**
- * Get all user relationships for a device
- */
+// Get all user relationships for a device
 export async function getUserDevicesByDeviceId(deviceId: string): Promise<UserDeviceRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
 }
 
-/**
- * Get all devices for a user with full device data (JOIN query)
- */
+// Get all devices for a user with full device data (JOIN query)
 export async function getDevicesForUser(userId: string): Promise<DeviceRow[]> {
   const db = await getDrizzleClient()
   const result = await db.select({device: devices}).from(userDevices).innerJoin(devices, eq(userDevices.deviceId, devices.deviceId)).where(
@@ -145,9 +119,7 @@ export async function getDevicesForUser(userId: string): Promise<DeviceRow[]> {
   return result.map((r) => r.device)
 }
 
-/**
- * Get device IDs for multiple users (batch operation for push notifications)
- */
+// Get device IDs for multiple users (batch operation for push notifications)
 export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]> {
   if (userIds.length === 0) {
     return []
@@ -157,18 +129,14 @@ export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]>
   return result.map((r) => r.deviceId)
 }
 
-/**
- * Create a user-device relationship
- */
+// Create a user-device relationship
 export async function createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
   const db = await getDrizzleClient()
   const [userDevice] = await db.insert(userDevices).values(input).returning()
   return userDevice
 }
 
-/**
- * Upsert a user-device relationship (create if not exists)
- */
+// Upsert a user-device relationship (create if not exists)
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
   const db = await getDrizzleClient()
 
@@ -182,25 +150,19 @@ export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<Us
   return created
 }
 
-/**
- * Delete a user-device relationship
- */
+// Delete a user-device relationship
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId)))
 }
 
-/**
- * Delete all device relationships for a user
- */
+// Delete all device relationships for a user
 export async function deleteUserDevicesByUserId(userId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(userDevices).where(eq(userDevices.userId, userId))
 }
 
-/**
- * Delete all user relationships for a device
- */
+// Delete all user relationships for a device
 export async function deleteUserDevicesByDeviceId(deviceId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(userDevices).where(eq(userDevices.deviceId, deviceId))

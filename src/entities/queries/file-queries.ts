@@ -22,18 +22,14 @@ export type UpdateFileDownloadInput = Partial<Omit<InferInsertModel<typeof fileD
 
 // File Operations
 
-/**
- * Get a file by ID
- */
+// Get a file by ID
 export async function getFile(fileId: string): Promise<FileRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(files).where(eq(files.fileId, fileId)).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-/**
- * Get multiple files by IDs (batch operation)
- */
+// Get multiple files by IDs (batch operation)
 export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
   if (fileIds.length === 0) {
     return []
@@ -42,26 +38,20 @@ export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
   return await db.select().from(files).where(inArray(files.fileId, fileIds))
 }
 
-/**
- * Find files by S3 object key
- */
+// Find files by S3 object key
 export async function getFilesByKey(key: string): Promise<FileRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(files).where(eq(files.key, key))
 }
 
-/**
- * Create a new file
- */
+// Create a new file
 export async function createFile(input: CreateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
   const [file] = await db.insert(files).values({...input, size: input.size ?? 0}).returning()
   return file
 }
 
-/**
- * Upsert a file (create if not exists, update if exists)
- */
+// Upsert a file (create if not exists, update if exists)
 export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
 
@@ -76,18 +66,14 @@ export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
   return created
 }
 
-/**
- * Update a file by ID
- */
+// Update a file by ID
 export async function updateFile(fileId: string, data: UpdateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(files).set(data).where(eq(files.fileId, fileId)).returning()
   return updated
 }
 
-/**
- * Delete a file by ID
- */
+// Delete a file by ID
 export async function deleteFile(fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(files).where(eq(files.fileId, fileId))
@@ -95,27 +81,21 @@ export async function deleteFile(fileId: string): Promise<void> {
 
 // FileDownload Operations
 
-/**
- * Get a file download record by ID
- */
+// Get a file download record by ID
 export async function getFileDownload(fileId: string): Promise<FileDownloadRow | null> {
   const db = await getDrizzleClient()
   const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, fileId)).limit(1)
   return result.length > 0 ? result[0] : null
 }
 
-/**
- * Create a new file download record
- */
+// Create a new file download record
 export async function createFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
   const [download] = await db.insert(fileDownloads).values(input).returning()
   return download
 }
 
-/**
- * Upsert a file download record
- */
+// Upsert a file download record
 export async function upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
 
@@ -130,18 +110,14 @@ export async function upsertFileDownload(input: CreateFileDownloadInput): Promis
   return created
 }
 
-/**
- * Update a file download record by ID
- */
+// Update a file download record by ID
 export async function updateFileDownload(fileId: string, data: UpdateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(fileDownloads).set({...data, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
   return updated
 }
 
-/**
- * Delete a file download record by ID
- */
+// Delete a file download record by ID
 export async function deleteFileDownload(fileId: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(fileDownloads).where(eq(fileDownloads.fileId, fileId))

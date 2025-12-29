@@ -35,9 +35,7 @@ export type CreateUserInput = Omit<InferInsertModel<typeof users>, 'id' | 'creat
 
 export type UpdateUserInput = Partial<Omit<InferInsertModel<typeof users>, 'id' | 'createdAt'>>
 
-/**
- * Transform identity provider row to IdentityProviderData format
- */
+// Transform identity provider row to IdentityProviderData format
 function transformIdp(idp: IdentityProviderRow | null): IdentityProviderData | undefined {
   if (!idp) {
     return undefined
@@ -54,9 +52,7 @@ function transformIdp(idp: IdentityProviderRow | null): IdentityProviderData | u
   }
 }
 
-/**
- * Get a user by ID with their identity provider (single JOIN query)
- */
+// Get a user by ID with their identity provider (single JOIN query)
 export async function getUser(id: string): Promise<UserItem | null> {
   const db = await getDrizzleClient()
 
@@ -71,9 +67,7 @@ export async function getUser(id: string): Promise<UserItem | null> {
   return {...user, identityProviders: transformIdp(idp)}
 }
 
-/**
- * Find users by email with identity providers (single JOIN query)
- */
+// Find users by email with identity providers (single JOIN query)
 export async function getUsersByEmail(email: string): Promise<UserItem[]> {
   const db = await getDrizzleClient()
   const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
@@ -81,9 +75,7 @@ export async function getUsersByEmail(email: string): Promise<UserItem[]> {
   return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
 }
 
-/**
- * Find users by Apple device ID with identity providers (single JOIN query)
- */
+// Find users by Apple device ID with identity providers (single JOIN query)
 export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<UserItem[]> {
   const db = await getDrizzleClient()
   const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
@@ -91,9 +83,7 @@ export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<Us
   return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
 }
 
-/**
- * Create a new user with optional identity provider
- */
+// Create a new user with optional identity provider
 export async function createUser(input: CreateUserInput): Promise<UserItem> {
   const db = await getDrizzleClient()
   const {identityProviders: idpData, ...userData} = input
@@ -117,9 +107,7 @@ export async function createUser(input: CreateUserInput): Promise<UserItem> {
   return {...user, identityProviders: idpData}
 }
 
-/**
- * Update a user by ID
- */
+// Update a user by ID
 export async function updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
   const db = await getDrizzleClient()
   const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.id, id)).returning()
@@ -130,9 +118,7 @@ export async function updateUser(id: string, data: UpdateUserInput): Promise<Use
   return {...updated, identityProviders: transformIdp(idpResult[0] ?? null)}
 }
 
-/**
- * Delete a user by ID (does NOT cascade - call deleteUserCascade for full cleanup)
- */
+// Delete a user by ID (does NOT cascade - call deleteUserCascade for full cleanup)
 export async function deleteUser(id: string): Promise<void> {
   const db = await getDrizzleClient()
   await db.delete(identityProviders).where(eq(identityProviders.userId, id))
