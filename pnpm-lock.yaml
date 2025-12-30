@@ -217,8 +217,8 @@ importers:
         specifier: ^2.5.2
         version: 2.5.2(core-js@3.47.0)(mobx@6.15.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))
       repomix:
-        specifier: ^1.10.2
-        version: 1.10.2(hono@4.11.1)
+        specifier: ^1.11.0
+        version: 1.11.0(hono@4.11.1)
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
@@ -1695,6 +1695,7 @@ packages:
   '@lancedb/lancedb@0.23.0':
     resolution: {integrity: sha512-aYrIoEG24AC+wILCL57Ius/Y4yU+xFHDPKLvmjzzN4byAjzeIGF0TC86S5RBt4Ji+dxS7yIWV5Q/gE5/fybIFQ==}
     engines: {node: '>= 18'}
+    cpu: [x64, arm64]
     os: [darwin, linux, win32]
     peerDependencies:
       apache-arrow: '>=15.0.0 <=18.1.0'
@@ -4225,8 +4226,8 @@ packages:
   fastembed@2.1.0:
     resolution: {integrity: sha512-oQkpcRHBppJ3+a3w9dU0uytSY0N1cnEa/iVMc8AXEd+tvT529GekOEFhNviJy89R3lvQXF6cdIMTXHj1Gi00xQ==}
 
-  fastq@1.19.1:
-    resolution: {integrity: sha512-GwLTyxkCXjXbxqIhTsMI2Nui8huMPtnxg7krajPJAjnEG/iiOS7i+zCtWGZR9G0NBKbXKh6X9m9UIsYX/N6vvQ==}
+  fastq@1.20.1:
+    resolution: {integrity: sha512-GGToxJ/w1x32s/D2EKND7kTil4n8OVk/9mycTc4VDza13lOvpUZTGX3mFSCtV9ksdGBVzvsyAVLM6mHFThxXxw==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -4408,6 +4409,10 @@ packages:
 
   globby@16.0.0:
     resolution: {integrity: sha512-ejy4TJFga99yW6Q0uhM3pFawKWZmtZzZD/v/GwI5+9bCV5Ew+D2pSND6W7fUes5UykqSsJkUfxFVdRh7Q1+P3Q==}
+    engines: {node: '>=20'}
+
+  globby@16.1.0:
+    resolution: {integrity: sha512-+A4Hq7m7Ze592k9gZRy4gJ27DrXRNnC1vPjxTt1qQxEY8RxagBkBxivkCwg7FxSTG0iLLEMaUx13oOr0R2/qcQ==}
     engines: {node: '>=20'}
 
   gopd@1.2.0:
@@ -5478,8 +5483,8 @@ packages:
     resolution: {integrity: sha512-iETxpjK6YoRWJG5o6hXLwvjYAoW+FEZn9os0PD/b6AP6xQwsa/Y7lCVgIixBbUPMfhu+i2LtdeAqVTgGlQarfA==}
     hasBin: true
 
-  repomix@1.10.2:
-    resolution: {integrity: sha512-9jvK45JQ4cKLEaQw7O/CFQqHchOap2ssb1TOYZsp5kQIZk2lukHT0Q3KgIxj2DS+JwUt6g6g0i4evkLSNdF1DA==}
+  repomix@1.11.0:
+    resolution: {integrity: sha512-aUP/4uLa51fJnWjdz0j+HgCI8hP4gd+K9bsNGy8p2PZj4LA/ieeu2v9T1xc5SIcPP/CFi5tMG3raElfHg0F3Lg==}
     engines: {node: '>=20.0.0', yarn: '>=1.22.22'}
     hasBin: true
 
@@ -8672,7 +8677,7 @@ snapshots:
   '@nodelib/fs.walk@1.2.8':
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
-      fastq: 1.19.1
+      fastq: 1.20.1
 
   '@octokit/auth-token@6.0.0': {}
 
@@ -11444,7 +11449,7 @@ snapshots:
       progress: 2.0.3
       tar: 6.2.1
 
-  fastq@1.19.1:
+  fastq@1.20.1:
     dependencies:
       reusify: 1.1.0
 
@@ -11644,6 +11649,15 @@ snapshots:
       gopd: 1.2.0
 
   globby@16.0.0:
+    dependencies:
+      '@sindresorhus/merge-streams': 4.0.0
+      fast-glob: 3.3.3
+      ignore: 7.0.5
+      is-path-inside: 4.0.0
+      slash: 5.1.0
+      unicorn-magic: 0.4.0
+
+  globby@16.1.0:
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
       fast-glob: 3.3.3
@@ -12686,7 +12700,7 @@ snapshots:
 
   regexp-tree@0.1.27: {}
 
-  repomix@1.10.2(hono@4.11.1):
+  repomix@1.11.0(hono@4.11.1):
     dependencies:
       '@clack/prompts': 0.11.0
       '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.1)(zod@4.2.1)
@@ -12699,7 +12713,7 @@ snapshots:
       fast-xml-parser: 5.3.3
       fflate: 0.8.2
       git-url-parse: 16.1.0
-      globby: 16.0.0
+      globby: 16.1.0
       handlebars: 4.7.8
       iconv-lite: 0.7.1
       is-binary-path: 3.0.0
