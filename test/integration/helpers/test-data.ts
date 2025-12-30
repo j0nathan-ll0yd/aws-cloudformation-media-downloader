@@ -409,14 +409,16 @@ export function createMockCustomAPIGatewayEvent(
  * Supports principalId for authenticated requests via authorizer context
  * @param options - Event configuration
  */
-export function createMockAPIGatewayEvent(options: {
-  httpMethod: string
-  path: string
-  body?: string | null
-  headers?: Record<string, string>
-  principalId?: string
-  queryStringParameters?: Record<string, string> | null
-}) {
+export function createMockAPIGatewayEvent(
+  options: {
+    httpMethod: string
+    path: string
+    body?: string | null
+    headers?: Record<string, string>
+    principalId?: string
+    queryStringParameters?: Record<string, string> | null
+  }
+) {
   return {
     httpMethod: options.httpMethod,
     path: options.path,
