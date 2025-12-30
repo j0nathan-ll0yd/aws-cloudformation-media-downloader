@@ -2,100 +2,117 @@ name: Unit Tests
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ['**']
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 jobs:
-  unit-tests:
+  # Parallel job 1: Validation checks (TypeSpec, API docs, config)
+  validate:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node-pnpm
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'pnpm'
+      - name: Compile TypeSpec
+        run: pnpm run typespec:check
 
-    - name: Set up Homebrew
-      id: set-up-homebrew
-      uses: Homebrew/actions/setup-homebrew@master
+      - name: Generate API documentation
+        run: pnpm run document-api
 
-    - name: Install hcl2json
-      id: brew-install-hcl2json
-      run: brew install hcl2json
+      - name: Validate API path alignment
+        run: pnpm run validate:api-paths
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Validate documented scripts exist
+        run: ./bin/validate-docs.sh
 
-    - name: Security audit
-      run: pnpm audit --audit-level=high
+      - name: Validate documentation sync
+        run: pnpm run validate:doc-sync
 
-    - name: Compile TypeSpec
-      run: pnpm run typespec:check
+      - name: Security audit
+        run: pnpm audit --audit-level=high
 
-    - name: Generate API documentation
-      run: pnpm run document-api
+      - name: Validate configuration enforcement
+        run: pnpm run validate:config
 
-    - name: Validate API path alignment
-      run: pnpm run validate:api-paths
+      - name: Run convention validation
+        run: pnpm run validate:conventions
 
-    - name: Setup directories
-      id: setup
-      run: mkdir build
+  # Parallel job 2: Type checking and linting
+  lint-and-types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Build dependencies
-      id: build-dependencies
-      run: pnpm run build-dependencies
+      - uses: ./.github/actions/setup-node-pnpm
 
-    - name: Webpack Build
-      id: build
-      run: pnpm run build
+      - name: Check types
+        run: pnpm run check-types
 
-    - name: Check bundle sizes
-      run: pnpm run check:bundle-size
+      - name: Check test types
+        run: pnpm run check-test-types
 
-    - name: Validate GraphRAG synchronization
-      run: pnpm run validate:graphrag
+      - name: Lint code
+        run: pnpm run lint
 
-    - name: Check types
-      run: pnpm run check-types
+      - name: Check formatting
+        run: pnpm run format:check
 
-    - name: Check test types
-      run: pnpm run check-test-types
+      - name: Test ESLint local rules
+        run: pnpm run test:eslint-rules
 
-    - name: Lint code
-      run: pnpm run lint
+  # Parallel job 3: Build and validate artifacts
+  build-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Check formatting
-      run: pnpm run format:check
+      - uses: ./.github/actions/setup-node-pnpm
+      - uses: ./.github/actions/setup-homebrew-tools
+      - uses: ./.github/actions/build-project
+        with:
+          cache-build: 'true'
 
-    - name: Test ESLint local rules
-      run: pnpm run test:eslint-rules
+      - name: Check bundle sizes
+        run: pnpm run check:bundle-size
 
-    - name: Validate documented scripts exist
-      run: ./bin/validate-docs.sh
+      - name: Validate GraphRAG synchronization
+        run: pnpm run validate:graphrag
 
-    - name: Validate documentation sync
-      run: pnpm run validate:doc-sync
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-output
+          path: build/
+          retention-days: 1
 
-    - name: Validate configuration enforcement
-      run: pnpm run validate:config
+  # Final job: Run tests after all checks pass
+  test:
+    needs: [validate, lint-and-types, build-and-validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Run unit tests
-      run: pnpm test --coverage
-      env:
-        CI: true
+      - uses: ./.github/actions/setup-node-pnpm
 
-    - name: Post coverage to job summary
-      if: always() && hashFiles('coverage/unit/coverage-summary.md') != ''
-      run: |
-        echo "## Unit Test Coverage" >> "$GITHUB_STEP_SUMMARY"
-        cat coverage/unit/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Download build artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: build-output
+          path: build/
+
+      - name: Run unit tests
+        run: pnpm test --coverage
+        env:
+          CI: true
+
+      - name: Post coverage to job summary
+        if: always() && hashFiles('coverage/unit/coverage-summary.md') != ''
+        run: |
+          echo "## Unit Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          cat coverage/unit/coverage-summary.md >> "$GITHUB_STEP_SUMMARY"

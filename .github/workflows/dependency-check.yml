@@ -15,17 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-node-pnpm
 
       - name: Generate dependency graph
         run: pnpm run generate-graph
@@ -33,8 +23,7 @@ jobs:
       - name: Check dependency rules
         run: pnpm run deps:check
 
-      - name: Validate GraphRAG is current
-        run: ./bin/validate-graphrag.sh
+      # Note: GraphRAG validation removed - unit-tests workflow handles this
 
       - name: Generate dependency report
         if: failure()

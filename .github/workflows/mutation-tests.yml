@@ -10,86 +10,65 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node-pnpm
+      - uses: ./.github/actions/setup-homebrew-tools
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'pnpm'
+      - name: Setup reports directory
+        run: mkdir -p reports/mutation
 
-    - name: Set up Homebrew
-      id: set-up-homebrew
-      uses: Homebrew/actions/setup-homebrew@master
+      - uses: ./.github/actions/build-project
 
-    - name: Install hcl2json
-      id: brew-install-hcl2json
-      run: brew install hcl2json
+      - name: Download previous incremental file
+        uses: dawidd6/action-download-artifact@v12
+        with:
+          workflow: mutation-tests.yml
+          name: stryker-incremental
+          path: reports/
+          if_no_artifact_found: warn
+        continue-on-error: true
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Run mutation tests
+        run: pnpm run test:mutation:incremental
+        env:
+          CI: true
+          LOG_LEVEL: SILENT
 
-    - name: Setup directories
-      run: mkdir -p build reports/mutation
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 30
 
-    - name: Build dependencies
-      run: pnpm run build-dependencies
+      - name: Upload incremental file
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: stryker-incremental
+          path: reports/stryker-incremental.json
+          retention-days: 90
 
-    - name: Build project
-      run: pnpm run build
-
-    - name: Download previous incremental file
-      uses: dawidd6/action-download-artifact@v12
-      with:
-        workflow: mutation-tests.yml
-        name: stryker-incremental
-        path: reports/
-        if_no_artifact_found: warn
-      continue-on-error: true
-
-    - name: Run mutation tests
-      run: pnpm run test:mutation:incremental
-      env:
-        CI: true
-        LOG_LEVEL: SILENT
-
-    - name: Upload mutation report
-      uses: actions/upload-artifact@v6
-      if: always()
-      with:
-        name: mutation-report
-        path: reports/mutation/
-        retention-days: 30
-
-    - name: Upload incremental file
-      uses: actions/upload-artifact@v6
-      if: always()
-      with:
-        name: stryker-incremental
-        path: reports/stryker-incremental.json
-        retention-days: 90
-
-    - name: Post mutation score to job summary
-      if: always() && hashFiles('reports/mutation/mutation.json') != ''
-      run: |
-        echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
-        echo "" >> "$GITHUB_STEP_SUMMARY"
-        SCORE=$(jq '.mutationScore' reports/mutation/mutation.json)
-        echo "**Mutation Score:** ${SCORE}%" >> "$GITHUB_STEP_SUMMARY"
-        echo "" >> "$GITHUB_STEP_SUMMARY"
-        echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
-        echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
-        KILLED=$(jq '.killed' reports/mutation/mutation.json)
-        SURVIVED=$(jq '.survived' reports/mutation/mutation.json)
-        TIMEOUT=$(jq '.timeout' reports/mutation/mutation.json)
-        NO_COVERAGE=$(jq '.noCoverage' reports/mutation/mutation.json)
-        echo "| Killed | ${KILLED} |" >> "$GITHUB_STEP_SUMMARY"
-        echo "| Survived | ${SURVIVED} |" >> "$GITHUB_STEP_SUMMARY"
-        echo "| Timeout | ${TIMEOUT} |" >> "$GITHUB_STEP_SUMMARY"
-        echo "| No Coverage | ${NO_COVERAGE} |" >> "$GITHUB_STEP_SUMMARY"
+      - name: Post mutation score to job summary
+        if: always() && hashFiles('reports/mutation/mutation.json') != ''
+        run: |
+          echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          SCORE=$(jq '.mutationScore' reports/mutation/mutation.json)
+          echo "**Mutation Score:** ${SCORE}%" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          KILLED=$(jq '.killed' reports/mutation/mutation.json)
+          SURVIVED=$(jq '.survived' reports/mutation/mutation.json)
+          TIMEOUT=$(jq '.timeout' reports/mutation/mutation.json)
+          NO_COVERAGE=$(jq '.noCoverage' reports/mutation/mutation.json)
+          echo "| Killed | ${KILLED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Survived | ${SURVIVED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Timeout | ${TIMEOUT} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| No Coverage | ${NO_COVERAGE} |" >> "$GITHUB_STEP_SUMMARY"
