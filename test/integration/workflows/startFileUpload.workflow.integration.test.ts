@@ -17,8 +17,6 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {FileStatus} from '#types/enums'
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
   getFile,
   getTestDb,
   getUser,
@@ -34,8 +32,7 @@ import {eq} from 'drizzle-orm'
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // Create all PostgreSQL tables
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -44,8 +41,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

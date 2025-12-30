@@ -19,7 +19,7 @@ import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getSessions, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, getSessions, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 
 // Mock API Gateway vendor calls - we're testing OUR session validation logic
 const mockGetApiKeys = vi.fn<() => Promise<{items: Array<{id: string; value: string; enabled: boolean}>}>>()
@@ -103,7 +103,7 @@ function setupApiGatewayMocks() {
  */
 describe.skipIf(Boolean(process.env.CI))('ApiGatewayAuthorizer Workflow Integration Tests', () => {
   beforeAll(async () => {
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   beforeEach(() => {
@@ -116,7 +116,6 @@ describe.skipIf(Boolean(process.env.CI))('ApiGatewayAuthorizer Workflow Integrat
   })
 
   afterAll(async () => {
-    await dropAllTables()
     await closeTestDb()
   })
 

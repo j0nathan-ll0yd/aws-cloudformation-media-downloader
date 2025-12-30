@@ -36,8 +36,6 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 // Test helpers
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
   getDevice,
   getTestDb,
   getUser,
@@ -98,9 +96,6 @@ describe.skipIf(Boolean(process.env.CI))('UserDelete Cascade Integration Tests',
   const testAppName = `test-delete-app-${Date.now()}`
 
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
     // Create LocalStack SNS platform application
     platformAppArn = await createTestPlatformApplication(testAppName)
 
@@ -121,8 +116,7 @@ describe.skipIf(Boolean(process.env.CI))('UserDelete Cascade Integration Tests',
     // Clean up LocalStack SNS
     await deleteTestPlatformApplication(platformAppArn)
 
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

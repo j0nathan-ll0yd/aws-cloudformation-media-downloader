@@ -11,7 +11,7 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 60000,
     pool: 'threads',
-    maxWorkers: 1,
+    maxWorkers: 4,
     minWorkers: 1,
     globalSetup: './test/integration/globalSetup.ts',
     setupFiles: ['./test/integration/setup.ts'],

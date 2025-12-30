@@ -18,7 +18,7 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createTestEndpoint, createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic} from '../helpers/sns-helpers'
 import {createMockAPIGatewayEvent} from '../helpers/test-data'
@@ -34,7 +34,6 @@ const {handler} = await import('#lambdas/UserSubscribe/src/index')
 
 describe('UserSubscribe Workflow Integration Tests', () => {
   beforeAll(async () => {
-    await createAllTables()
     platformAppArn = await createTestPlatformApplication(testAppName)
     topicArn = await createTestTopic(testTopicName)
     process.env.PLATFORM_APPLICATION_ARN = platformAppArn
@@ -47,7 +46,6 @@ describe('UserSubscribe Workflow Integration Tests', () => {
   afterAll(async () => {
     await deleteTestTopic(topicArn)
     await deleteTestPlatformApplication(platformAppArn)
-    await dropAllTables()
     await closeTestDb()
   })
 

@@ -28,7 +28,7 @@ import {UserStatus} from '#types/enums'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getDevice, getTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, getDevice, getTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic, listTestEndpoints} from '../helpers/sns-helpers'
 import {userDevices} from '#lib/vendor/Drizzle/schema'
@@ -93,9 +93,6 @@ describe.skipIf(Boolean(process.env.CI))('Device Registration Integration Tests'
   const testTopicName = `test-register-topic-${Date.now()}`
 
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
     // Create LocalStack SNS resources
     platformAppArn = await createTestPlatformApplication(testAppName)
     topicArn = await createTestTopic(testTopicName)
@@ -117,8 +114,7 @@ describe.skipIf(Boolean(process.env.CI))('Device Registration Integration Tests'
     await deleteTestPlatformApplication(platformAppArn)
     await deleteTestTopic(topicArn)
 
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

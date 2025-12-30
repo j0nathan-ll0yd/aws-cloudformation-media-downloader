@@ -20,8 +20,6 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 // Test helpers
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
   getDevice,
   getUser,
   insertDevice,
@@ -42,9 +40,6 @@ describe.skipIf(Boolean(process.env.CI))('Database Failure Scenario Tests', () =
   const testAppName = `test-db-failure-app-${Date.now()}`
 
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
     // Create LocalStack SNS platform application
     platformAppArn = await createTestPlatformApplication(testAppName)
     process.env.PLATFORM_APPLICATION_ARN = platformAppArn
@@ -59,8 +54,7 @@ describe.skipIf(Boolean(process.env.CI))('Database Failure Scenario Tests', () =
     // Clean up LocalStack SNS
     await deleteTestPlatformApplication(platformAppArn)
 
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

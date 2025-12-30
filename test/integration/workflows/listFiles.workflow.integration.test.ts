@@ -29,7 +29,7 @@ import type {File} from '#types/domain-models'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
 // Import handler directly (no mocking - uses real services)
@@ -75,8 +75,6 @@ describe.skipIf(Boolean(process.env.CI))('ListFiles Workflow Integration Tests',
   let mockContext: Context
 
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
     mockContext = createMockContext()
   })
 
@@ -86,8 +84,7 @@ describe.skipIf(Boolean(process.env.CI))('ListFiles Workflow Integration Tests',
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

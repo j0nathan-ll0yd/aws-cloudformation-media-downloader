@@ -22,7 +22,7 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
 
@@ -66,9 +66,6 @@ describe.skipIf(Boolean(process.env.CI))('SendPushNotification Workflow Integrat
   const testAppName = `test-push-app-${Date.now()}`
 
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
     // Create LocalStack SNS platform application
     platformAppArn = await createTestPlatformApplication(testAppName)
 
@@ -85,8 +82,7 @@ describe.skipIf(Boolean(process.env.CI))('SendPushNotification Workflow Integrat
     // Clean up LocalStack SNS
     await deleteTestPlatformApplication(platformAppArn)
 
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

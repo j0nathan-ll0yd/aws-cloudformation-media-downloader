@@ -21,8 +21,6 @@ import type {Context, ScheduledEvent} from 'aws-lambda'
 // Test helpers
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
   getFileDownloads,
   getSessions,
   getVerificationTokens,
@@ -70,7 +68,7 @@ function createMockContext(): Context {
 // Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
 describe.skipIf(Boolean(process.env.CI))('CleanupExpiredRecords Workflow Integration Tests', () => {
   beforeAll(async () => {
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -78,7 +76,6 @@ describe.skipIf(Boolean(process.env.CI))('CleanupExpiredRecords Workflow Integra
   })
 
   afterAll(async () => {
-    await dropAllTables()
     await closeTestDb()
   })
 

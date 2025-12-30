@@ -20,7 +20,7 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getSessionById, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, getSessionById, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayEvent} from '../helpers/test-data'
 
@@ -30,8 +30,7 @@ const {handler} = await import('#lambdas/RefreshToken/src/index')
 // Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
 describe.skipIf(Boolean(process.env.CI))('RefreshToken Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -40,8 +39,7 @@ describe.skipIf(Boolean(process.env.CI))('RefreshToken Workflow Integration Test
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 

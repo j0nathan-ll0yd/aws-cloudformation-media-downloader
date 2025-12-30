@@ -20,7 +20,7 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockS3BatchEvent, createMockS3Event} from '../helpers/test-data'
 import {clearTestQueue, createTestQueue, deleteTestQueue, waitForMessages} from '../helpers/sqs-helpers'
@@ -36,9 +36,6 @@ const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
 // Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
 describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
     // Create LocalStack SQS queue
     const queueInfo = await createTestQueue(TEST_QUEUE)
     queueUrl = queueInfo.queueUrl
@@ -57,8 +54,7 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
     // Clean up LocalStack SQS
     await deleteTestQueue(queueUrl)
 
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 
