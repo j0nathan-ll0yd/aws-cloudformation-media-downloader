@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
 # update-youtube-cookies.sh
-# Extracts YouTube cookies from Chrome and prepares them for Lambda layer
+# Extracts YouTube cookies from Firefox and prepares them for Lambda layer
 # Usage: pnpm run update-cookies
+#
+# Why Firefox instead of Chrome?
+# - Chrome aggressively rotates session cookies when you browse YouTube
+# - By the time you export, Chrome cookies are often already invalidated
+# - Firefox is more stable for cookie extraction
+# - See: https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies
 
 set -e # Exit on error
 
@@ -38,15 +44,21 @@ echo -e "${YELLOW}Step 1: Creating directories${NC}"
 mkdir -p "${SECURE_DIR}"
 mkdir -p "${LAYER_DIR}"
 
-echo -e "${YELLOW}Step 2: Extracting cookies from Chrome${NC}"
-echo "Note: You must be logged into YouTube in Chrome for this to work"
+echo -e "${YELLOW}Step 2: Extracting cookies from Firefox${NC}"
+echo "Note: You must be logged into YouTube in Firefox for this to work"
+echo "      Firefox should be closed for best results"
 
 # Extract all cookies to secure directory
-"${YTDLP_CMD}" --cookies-from-browser chrome \
+"${YTDLP_CMD}" --cookies-from-browser firefox \
   --cookies "${SECURE_DIR}/youtube-cookies.txt" \
   "https://www.youtube.com/watch?v=dQw4w9WgXcQ" \
   --quiet --no-warnings || {
-  echo -e "${RED}Failed to extract cookies. Are you logged into YouTube in Chrome?${NC}"
+  echo -e "${RED}Failed to extract cookies. Are you logged into YouTube in Firefox?${NC}"
+  echo ""
+  echo "Troubleshooting:"
+  echo "  1. Open Firefox and log into YouTube"
+  echo "  2. Close Firefox completely"
+  echo "  3. Run this script again"
   exit 1
 }
 
