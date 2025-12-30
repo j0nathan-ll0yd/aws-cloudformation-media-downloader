@@ -134,4 +134,47 @@ describe('#ListFiles', () => {
       expect(Object.keys(body)).toEqual(expect.arrayContaining(['error', 'requestId']))
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle files with missing publishDate', async () => {
+      const files = [createMockFileBase({fileId: 'no-date-file', status: 'Downloaded'})]
+      vi.mocked(getFilesForUser).mockResolvedValue(files)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.keyCount).toEqual(1)
+    })
+
+    test('should handle files with minimal required fields', async () => {
+      const files = [createMockFileBase({fileId: 'minimal-file', status: 'Downloaded'})]
+      vi.mocked(getFilesForUser).mockResolvedValue(files)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.keyCount).toEqual(1)
+    })
+
+    test('should handle very large file lists efficiently', async () => {
+      // Create 100 files to test performance
+      const files = Array.from({length: 100},
+        (_, i) => createMockFile(`file-${i}`, FileStatus.Downloaded, `2023-${String(Math.floor(i / 30) + 1).padStart(2, '0')}-01`))
+      vi.mocked(getFilesForUser).mockResolvedValue(files)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      const body = JSON.parse(output.body)
+      expect(body.body.keyCount).toEqual(100)
+    })
+
+    test('should handle database timeout error', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      vi.mocked(getFilesForUser).mockRejectedValue(timeoutError)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+  })
 })

@@ -1,0 +1,66 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Los_Angeles"
+
+    # Security updates only - not version bumps
+    open-pull-requests-limit: 10
+
+    # Group AWS SDK updates together (per project convention)
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      opentelemetry:
+        patterns:
+          - "@opentelemetry/*"
+        update-types:
+          - "patch"
+
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "patch"
+
+    # Ignore major version updates (require manual review)
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+    labels:
+      - "dependencies"
+      - "security"
+
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+    reviewers:
+      - "jlloyd"
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"

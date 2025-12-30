@@ -5,56 +5,48 @@ A video download operation failed and requires investigation.
 **File Details**:
 - **File ID**: ${fileId}
 - **Video URL**: ${fileUrl}
-- **Error Type**: ${error.constructor.name}
-- **Error Message**: ${error.message}
-- **Timestamp**: ${new Date().toISOString()}
+- **Error Type**: ${errorName}
+- **Error Message**: ${errorMessage}
+- **Timestamp**: ${timestamp}
 
 ---
 
-${errorDetails ? `## Additional Details
+## Stack Trace
 
-\`\`\`
-${errorDetails}
-\`\`\`
-
----
-
-` : ''}## Stack Trace
-
-\`\`\`
-${error.stack || 'No stack trace available'}
-\`\`\`
+```
+${errorStack}
+```
 
 ---
 
 ## Debugging Steps
 
 ### 1. Check File Status in DynamoDB
-\`\`\`bash
-aws dynamodb get-item \\
-  --table-name \${DYNAMODB_TABLE_FILES} \\
-  --key '{"fileId":{"S":"${fileId}"}}' \\
+```bash
+aws dynamodb get-item \
+  --table-name \${DYNAMODB_TABLE_FILES} \
+  --key '{"fileId":{"S":"${fileId}"}}' \
   --region us-west-2
-\`\`\`
+```
 
 ### 2. Verify Video Accessibility
-\`\`\`bash
+```bash
 # Test if yt-dlp can access the video
 yt-dlp --simulate "${fileUrl}"
-\`\`\`
+```
 
 ### 3. Check Lambda Logs
-\`\`\`bash
-aws logs tail /aws/lambda/StartFileUpload \\
-  --region us-west-2 \\
-  --since 1h \\
+```bash
+aws logs tail /aws/lambda/StartFileUpload \
+  --region us-west-2 \
+  --since 1h \
   --filter-pattern "${fileId}"
-\`\`\`
+```
 
 ### 4. Inspect S3 Bucket
-\`\`\`bash
+```bash
 aws s3 ls s3://\${BUCKET_NAME}/ --recursive | grep "${fileId}"
-\`\`\`
+```
 
 ---
 
@@ -74,13 +66,13 @@ aws s3 ls s3://\${BUCKET_NAME}/ --recursive | grep "${fileId}"
 
 If the video is still accessible, trigger a manual retry:
 
-\`\`\`bash
-aws lambda invoke \\
-  --function-name FileCoordinator \\
-  --region us-west-2 \\
-  --payload '{"fileId":"${fileId}"}' \\
+```bash
+aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{"fileId":"${fileId}"}' \
   /dev/null
-\`\`\`
+```
 
 ---
 
@@ -91,7 +83,7 @@ aws lambda invoke \\
 - **DynamoDB Table**: Files table (status: Failed)
 - **CloudWatch Metrics**: VideoDownloadFailure
 
-**Documentation**: See \`docs/YT-DLP-MIGRATION-STRATEGY.md\` for architecture details.
+**Documentation**: See `docs/YT-DLP-MIGRATION-STRATEGY.md` for architecture details.
 
 ---
 

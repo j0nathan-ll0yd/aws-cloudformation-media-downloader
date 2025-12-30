@@ -1,6 +1,7 @@
 import {resolve} from 'path'
 import {defineConfig} from 'vitest/config'
 
+// Standalone config for integration tests (does not merge with base to avoid exclude conflicts)
 export default defineConfig({
   test: {
     globals: false,
@@ -9,7 +10,6 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**', 'build/**'],
     clearMocks: true,
     testTimeout: 30000,
-    hookTimeout: 60000,
     pool: 'threads',
     maxWorkers: 4,
     minWorkers: 1,
@@ -28,7 +28,6 @@ export default defineConfig({
       '#lib': resolve(__dirname, 'src/lib'),
       '#util': resolve(__dirname, 'src/util'),
       '#types': resolve(__dirname, 'src/types'),
-      '#lambdas': resolve(__dirname, 'src/lambdas'),
       '#test': resolve(__dirname, 'test')
     },
     silent: process.env.LOG_LEVEL === 'SILENT'

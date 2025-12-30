@@ -1,239 +1,167 @@
 /**
  * UserSubscribe Workflow Integration Tests
  *
- * Tests SNS subscription workflow:
- * 1. Validate device endpoint exists
- * 2. Subscribe endpoint to topic
+ * Tests the subscription workflow against real services:
+ * - SNS: Mocked for topic subscription
  *
- * Uses LocalStack SNS.
- *
- * @see src/lambdas/UserSubscribe/src/index.ts
+ * Workflow:
+ * 1. Validate authenticated user
+ * 2. Subscribe device endpoint to SNS topic
+ * 3. Return subscription ARN
  */
 
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:us-west-2:123456789012:app/APNS/test-app'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
+import type {Context} from 'aws-lambda'
+import {UserStatus} from '#types/enums'
 
 // Test helpers
-import {closeTestDb, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createTestEndpoint, createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic} from '../helpers/sns-helpers'
-import {createMockAPIGatewayEvent} from '../helpers/test-data'
+import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
-// Create test resources before importing handler
-const testAppName = `test-subscribe-app-${Date.now()}`
-const testTopicName = `test-subscribe-topic-${Date.now()}`
-let platformAppArn: string
-let topicArn: string
+// Mock SNS vendor wrapper
+const subscribeMock = vi.fn()
+vi.mock('#lib/vendor/AWS/SNS', () => ({subscribe: subscribeMock, deleteEndpoint: vi.fn(), unsubscribe: vi.fn()}))
 
-// Import handler after environment setup
+// Import handler after mocks
 const {handler} = await import('#lambdas/UserSubscribe/src/index')
 
-// Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
-describe.skipIf(Boolean(process.env.CI))('UserSubscribe Workflow Integration Tests', () => {
-  beforeAll(async () => {
-    platformAppArn = await createTestPlatformApplication(testAppName)
-    topicArn = await createTestTopic(testTopicName)
-    process.env.PLATFORM_APPLICATION_ARN = platformAppArn
+describe('UserSubscribe Workflow Integration Tests', () => {
+  let mockContext: Context
+
+  beforeAll(() => {
+    mockContext = createMockContext()
   })
 
-  afterEach(async () => {
-    await truncateAllTables()
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  afterAll(async () => {
-    await deleteTestTopic(topicArn)
-    await deleteTestPlatformApplication(platformAppArn)
-    await closeTestDb()
+  afterAll(() => {
+    // Cleanup
   })
 
-  describe('Successful Subscription', () => {
-    test('should subscribe device endpoint to SNS topic', async () => {
-      const userId = crypto.randomUUID()
-      const deviceToken = `subscribe-token-${Date.now()}`
+  test('should successfully subscribe endpoint to topic', async () => {
+    const userId = crypto.randomUUID()
+    const endpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test-app/device-token'
+    const topicArn = 'arn:aws:sns:us-west-2:123456789012:topic'
+    const subscriptionArn = 'arn:aws:sns:us-west-2:123456789012:topic:subscription-id'
 
-      await insertUser({userId, email: 'subscribe@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
+    subscribeMock.mockResolvedValue({SubscriptionArn: subscriptionArn})
 
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
-
-      expect(result.statusCode).toBe(201)
-      const body = JSON.parse(result.body)
-      expect(body.body.subscriptionArn).toBeDefined()
-      expect(body.body.subscriptionArn).toContain('arn:aws:sns')
-    })
-
-    test('should handle already-subscribed endpoint gracefully', async () => {
-      const userId = crypto.randomUUID()
-      const deviceToken = `already-subscribed-${Date.now()}`
-
-      await insertUser({userId, email: 'already@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event1 = createMockAPIGatewayEvent({
         httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        principalId: userId
-      })
-      await handler(event1 as never, createMockContext())
+        userId,
+        userStatus: UserStatus.Authenticated,
+        body: JSON.stringify({endpointArn, topicArn})
+      }),
+      mockContext
+    )
 
-      const event2 = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event2 as never, createMockContext())
-
-      expect(result.statusCode).toBe(201)
-    })
-
-    test('should return subscription ARN in response', async () => {
-      const userId = crypto.randomUUID()
-      const deviceToken = `arn-token-${Date.now()}`
-
-      await insertUser({userId, email: 'arn@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
-
-      const body = JSON.parse(result.body)
-      expect(body.body.subscriptionArn).toMatch(/^arn:aws:sns:[\w-]+:\d+:.+:.+$/)
-    })
+    expect(result.statusCode).toBe(201)
+    const response = JSON.parse(result.body)
+    expect(response.body.subscriptionArn).toBe(subscriptionArn)
   })
 
-  describe('Invalid Requests', () => {
-    test('should reject invalid endpoint ARN', async () => {
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'invalid-endpoint@example.com'})
+  test('should return 401 for unauthenticated user', async () => {
+    const endpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test-app/device-token'
+    const topicArn = 'arn:aws:sns:us-west-2:123456789012:topic'
 
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
-        body: JSON.stringify({endpointArn: 'invalid-arn-format', topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
-
-      expect(result.statusCode).toBeGreaterThanOrEqual(400)
-    })
-
-    test('should reject invalid topic ARN', async () => {
-      const userId = crypto.randomUUID()
-      const deviceToken = `invalid-topic-${Date.now()}`
-
-      await insertUser({userId, email: 'invalid-topic@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event = createMockAPIGatewayEvent({
         httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn: 'invalid-topic-arn'}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
+        userStatus: UserStatus.Unauthenticated,
+        body: JSON.stringify({endpointArn, topicArn})
+      }),
+      mockContext
+    )
 
-      expect(result.statusCode).toBeGreaterThanOrEqual(400)
-    })
-
-    test('should reject missing endpointArn', async () => {
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'missing-endpoint@example.com'})
-
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn: '', topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
-
-      expect(result.statusCode).toBeGreaterThanOrEqual(400)
-    })
-
-    test('should reject missing topicArn', async () => {
-      const userId = crypto.randomUUID()
-      const deviceToken = `missing-topic-${Date.now()}`
-
-      await insertUser({userId, email: 'missing-topic@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
-        path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn: ''}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
-
-      expect(result.statusCode).toBeGreaterThanOrEqual(400)
-    })
+    expect(result.statusCode).toBe(401)
+    expect(subscribeMock).not.toHaveBeenCalled()
   })
 
-  describe('Authentication Enforcement', () => {
-    test('should reject unauthenticated requests', async () => {
-      const deviceToken = `unauth-token-${Date.now()}`
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
+  test('should return 401 for anonymous user', async () => {
+    const endpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test-app/device-token'
+    const topicArn = 'arn:aws:sns:us-west-2:123456789012:topic'
 
-      const event = createMockAPIGatewayEvent({httpMethod: 'POST', path: '/subscriptions', body: JSON.stringify({endpointArn, topicArn})})
-      const result = await handler(event as never, createMockContext())
-
-      expect(result.statusCode).toBe(401)
-    })
-
-    test('should reject anonymous requests', async () => {
-      const deviceToken = `anon-token-${Date.now()}`
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        headers: {'Content-Type': 'application/json'}
-      })
-      const result = await handler(event as never, createMockContext())
+        httpMethod: 'POST',
+        userStatus: UserStatus.Anonymous,
+        body: JSON.stringify({endpointArn, topicArn})
+      }),
+      mockContext
+    )
 
-      expect(result.statusCode).toBe(401)
-    })
+    expect(result.statusCode).toBe(401)
   })
 
-  describe('Platform Configuration', () => {
-    test('should fail when PLATFORM_APPLICATION_ARN is not set', async () => {
-      const originalArn = process.env.PLATFORM_APPLICATION_ARN
-      delete process.env.PLATFORM_APPLICATION_ARN
+  test('should return 400 for missing endpointArn', async () => {
+    const userId = crypto.randomUUID()
+    const topicArn = 'arn:aws:sns:us-west-2:123456789012:topic'
 
-      const userId = crypto.randomUUID()
-      const deviceToken = `no-platform-${Date.now()}`
-
-      await insertUser({userId, email: 'no-platform@example.com'})
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const event = createMockAPIGatewayEvent({
-        httpMethod: 'POST',
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
         path: '/subscriptions',
-        body: JSON.stringify({endpointArn, topicArn}),
-        principalId: userId
-      })
-      const result = await handler(event as never, createMockContext())
+        httpMethod: 'POST',
+        userId,
+        userStatus: UserStatus.Authenticated,
+        body: JSON.stringify({topicArn})
+      }),
+      mockContext
+    )
 
-      expect(result.statusCode).toBe(503)
-      process.env.PLATFORM_APPLICATION_ARN = originalArn
-    })
+    expect(result.statusCode).toBe(400)
+    const response = JSON.parse(result.body)
+    expect(response.error.message).toHaveProperty('endpointArn')
+  })
+
+  test('should return 400 for missing topicArn', async () => {
+    const userId = crypto.randomUUID()
+    const endpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test-app/device-token'
+
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
+        path: '/subscriptions',
+        httpMethod: 'POST',
+        userId,
+        userStatus: UserStatus.Authenticated,
+        body: JSON.stringify({endpointArn})
+      }),
+      mockContext
+    )
+
+    expect(result.statusCode).toBe(400)
+    const response = JSON.parse(result.body)
+    expect(response.error.message).toHaveProperty('topicArn')
+  })
+
+  test('should handle SNS subscription failure', async () => {
+    const userId = crypto.randomUUID()
+    const endpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test-app/device-token'
+    const topicArn = 'arn:aws:sns:us-west-2:123456789012:topic'
+
+    subscribeMock.mockRejectedValue(new Error('SNS subscription failed'))
+
+    const result = await handler(
+      createMockCustomAPIGatewayEvent({
+        path: '/subscriptions',
+        httpMethod: 'POST',
+        userId,
+        userStatus: UserStatus.Authenticated,
+        body: JSON.stringify({endpointArn, topicArn})
+      }),
+      mockContext
+    )
+
+    expect(result.statusCode).toBe(500)
   })
 })

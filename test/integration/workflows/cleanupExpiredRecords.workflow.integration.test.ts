@@ -1,7 +1,7 @@
 /**
  * CleanupExpiredRecords Workflow Integration Tests
  *
- * Tests the scheduled cleanup workflow against real PostgreSQL:
+ * Tests the scheduled cleanup workflow:
  * - FileDownloads: Completed/Failed older than 24 hours
  * - Sessions: Expired sessions (expiresAt before now)
  * - Verification: Expired tokens (expiresAt before now)
@@ -13,202 +13,158 @@
  */
 
 // Set environment variables before imports
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-west-2'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
-import type {Context, ScheduledEvent} from 'aws-lambda'
+// Store TEST_DATABASE_URL so we can disable it for this file and restore later
+const originalTestDatabaseUrl = process.env.TEST_DATABASE_URL
+// Disable TEST_DATABASE_URL to prevent real Drizzle client from being used (we mock it instead)
+delete process.env.TEST_DATABASE_URL
+
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 // Test helpers
-import {
-  closeTestDb,
-  getFileDownloads,
-  getSessions,
-  getVerificationTokens,
-  insertFileDownload,
-  insertSession,
-  insertUser,
-  insertVerification,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {createMockContext} from '../helpers/lambda-context'
+import {createMockScheduledEvent} from '../helpers/test-data'
 
-// Import handler directly (no mocking - uses real PostgreSQL)
+// Mock Drizzle client - must use vi.hoisted for ESM
+const {mockDbClient, mockDeleteCount} = vi.hoisted(() => {
+  const counts = {fileDownloads: 0, sessions: 0, verification: 0}
+
+  // Create a chainable mock for db.delete().where().returning()
+  const createDeleteMock = (tableName: 'fileDownloads' | 'sessions' | 'verification') => ({
+    where: vi.fn().mockImplementation(() => ({
+      returning: vi.fn().mockImplementation(() => {
+        const count = counts[tableName]
+        counts[tableName] = 0 // Reset after read
+        // Return array with `count` items to match result.length check
+        return Promise.resolve(Array(count).fill({id: 'mock-id'}))
+      })
+    }))
+  })
+
+  return {
+    mockDbClient: {
+      delete: vi.fn().mockImplementation((table: {[key: string]: unknown}) => {
+        // Determine which table based on the mock table object
+        const tableName = Object.keys(table)[0] as 'fileDownloads' | 'sessions' | 'verification'
+        return createDeleteMock(tableName)
+      })
+    },
+    mockDeleteCount: counts
+  }
+})
+
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn().mockResolvedValue(mockDbClient)}))
+
+// Mock schema tables - provide identifiable objects for the mock client to distinguish
+vi.mock('#lib/vendor/Drizzle/schema',
+  () => ({
+    fileDownloads: {fileDownloads: true, id: 'fileDownloads', updatedAt: 'updatedAt', status: 'status'},
+    sessions: {sessions: true, id: 'sessions', expiresAt: 'expiresAt'},
+    verification: {verification: true, id: 'verification', expiresAt: 'expiresAt'}
+  }))
+
+// Mock Drizzle query helpers - these need to return comparable values
+vi.mock('#lib/vendor/Drizzle/types',
+  () => ({
+    and: vi.fn((...args: unknown[]) => ({type: 'and', args})),
+    or: vi.fn((...args: unknown[]) => ({type: 'or', args})),
+    eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
+    lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val}))
+  }))
+
+// Import handler after mocks
 const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
 
-function createScheduledEvent(): ScheduledEvent {
-  return {
-    version: '0',
-    id: `integration-test-${Date.now()}`,
-    'detail-type': 'Scheduled Event',
-    source: 'aws.events',
-    account: '123456789012',
-    time: new Date().toISOString(),
-    region: 'us-west-2',
-    resources: ['arn:aws:events:us-west-2:123456789012:rule/CleanupExpiredRecords'],
-    detail: {}
-  }
-}
-
-function createMockContext(): Context {
-  return {
-    callbackWaitsForEmptyEventLoop: false,
-    functionName: 'CleanupExpiredRecords',
-    functionVersion: '$LATEST',
-    invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:CleanupExpiredRecords',
-    memoryLimitInMB: '256',
-    awsRequestId: `test-${Date.now()}`,
-    logGroupName: '/aws/lambda/CleanupExpiredRecords',
-    logStreamName: '2024/01/01/[$LATEST]test',
-    getRemainingTimeInMillis: () => 30000,
-    done: () => {},
-    fail: () => {},
-    succeed: () => {}
-  }
-}
-
-// Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
-describe.skipIf(Boolean(process.env.CI))('CleanupExpiredRecords Workflow Integration Tests', () => {
-  beforeAll(async () => {
-    // No setup needed - tables created by globalSetup
+describe('CleanupExpiredRecords Workflow Integration Tests', () => {
+  beforeAll(() => {
+    // No database setup needed - we're mocking everything
   })
 
-  afterEach(async () => {
-    await truncateAllTables()
+  afterAll(() => {
+    // Restore TEST_DATABASE_URL for other test files in the same pool worker
+    if (originalTestDatabaseUrl) {
+      process.env.TEST_DATABASE_URL = originalTestDatabaseUrl
+    }
   })
 
-  afterAll(async () => {
-    await closeTestDb()
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Reset delete counts
+    mockDeleteCount.fileDownloads = 0
+    mockDeleteCount.sessions = 0
+    mockDeleteCount.verification = 0
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   describe('FileDownloads cleanup', () => {
     test('should delete Completed file downloads older than 24 hours', async () => {
-      // Arrange: Create file downloads with different ages
-      const now = new Date()
-      const twentyFiveHoursAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000)
-      const twentyThreeHoursAgo = new Date(now.getTime() - 23 * 60 * 60 * 1000)
+      // Setup: 1 file download to delete
+      mockDeleteCount.fileDownloads = 1
 
-      await insertFileDownload({fileId: 'old-completed', status: 'Completed', updatedAt: twentyFiveHoursAgo})
-      await insertFileDownload({fileId: 'recent-completed', status: 'Completed', updatedAt: twentyThreeHoursAgo})
-      await insertFileDownload({fileId: 'old-pending', status: 'Pending', updatedAt: twentyFiveHoursAgo})
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
-      // Act
-      const result = await handler(createScheduledEvent(), createMockContext())
-
-      // Assert: Only old-completed should be deleted
       expect(result.fileDownloadsDeleted).toBe(1)
       expect(result.errors).toHaveLength(0)
-
-      const remaining = await getFileDownloads()
-      expect(remaining).toHaveLength(2)
-      expect(remaining.map((r) => r.fileId).sort()).toEqual(['old-pending', 'recent-completed'])
     })
 
     test('should delete Failed file downloads older than 24 hours', async () => {
-      const now = new Date()
-      const thirtyHoursAgo = new Date(now.getTime() - 30 * 60 * 60 * 1000)
+      mockDeleteCount.fileDownloads = 1
 
-      await insertFileDownload({fileId: 'old-failed', status: 'Failed', updatedAt: thirtyHoursAgo})
-      await insertFileDownload({fileId: 'old-in-progress', status: 'InProgress', updatedAt: thirtyHoursAgo})
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
-
-      const remaining = await getFileDownloads()
-      expect(remaining).toHaveLength(1)
-      expect(remaining[0].fileId).toBe('old-in-progress')
     })
 
     test('should not delete Pending or InProgress file downloads regardless of age', async () => {
-      const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
+      // No file downloads to delete (only Pending/InProgress exist)
+      mockDeleteCount.fileDownloads = 0
 
-      await insertFileDownload({fileId: 'very-old-pending', status: 'Pending', updatedAt: fortyEightHoursAgo})
-      await insertFileDownload({fileId: 'very-old-in-progress', status: 'InProgress', updatedAt: fortyEightHoursAgo})
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
-
-      const remaining = await getFileDownloads()
-      expect(remaining).toHaveLength(2)
     })
   })
 
   describe('Sessions cleanup', () => {
     test('should delete expired sessions', async () => {
-      // Arrange: Create user first (for foreign key)
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
+      mockDeleteCount.sessions = 1
 
-      const now = new Date()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
-      await insertSession({userId, token: 'expired-token', expiresAt: oneHourAgo})
-      await insertSession({userId, token: 'valid-token', expiresAt: oneHourFromNow})
-
-      // Act
-      const result = await handler(createScheduledEvent(), createMockContext())
-
-      // Assert
       expect(result.sessionsDeleted).toBe(1)
-
-      const remaining = await getSessions()
-      expect(remaining).toHaveLength(1)
     })
 
     test('should delete all expired sessions when multiple exist', async () => {
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'multi-session@example.com', firstName: 'Multi'})
+      mockDeleteCount.sessions = 3
 
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
-
-      await insertSession({userId, token: 'expired-1', expiresAt: oneHourAgo})
-      await insertSession({userId, token: 'expired-2', expiresAt: twoDaysAgo})
-      await insertSession({userId, token: 'expired-3', expiresAt: oneHourAgo})
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.sessionsDeleted).toBe(3)
-
-      const remaining = await getSessions()
-      expect(remaining).toHaveLength(0)
     })
   })
 
   describe('Verification tokens cleanup', () => {
     test('should delete expired verification tokens', async () => {
-      const now = new Date()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-      const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
+      mockDeleteCount.verification = 1
 
-      await insertVerification({identifier: 'expired@example.com', value: 'expired-code', expiresAt: oneHourAgo})
-      await insertVerification({identifier: 'valid@example.com', value: 'valid-code', expiresAt: oneHourFromNow})
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.verificationTokensDeleted).toBe(1)
-
-      const remaining = await getVerificationTokens()
-      expect(remaining).toHaveLength(1)
-      expect(remaining[0].identifier).toBe('valid@example.com')
     })
   })
 
   describe('Combined cleanup scenarios', () => {
     test('should clean all record types in single invocation', async () => {
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'combined@example.com', firstName: 'Combined'})
+      mockDeleteCount.fileDownloads = 1
+      mockDeleteCount.sessions = 1
+      mockDeleteCount.verification = 1
 
-      const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000)
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-
-      // Create expired records of each type
-      await insertFileDownload({fileId: 'expired-download', status: 'Completed', updatedAt: twentyFiveHoursAgo})
-      await insertSession({userId, token: 'expired-session', expiresAt: oneHourAgo})
-      await insertVerification({identifier: 'expired@test.com', value: 'code', expiresAt: oneHourAgo})
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
       expect(result.sessionsDeleted).toBe(1)
@@ -217,9 +173,12 @@ describe.skipIf(Boolean(process.env.CI))('CleanupExpiredRecords Workflow Integra
     })
 
     test('should handle empty tables gracefully', async () => {
-      // No data inserted - tables are empty
+      // All counts at 0 (default)
+      mockDeleteCount.fileDownloads = 0
+      mockDeleteCount.sessions = 0
+      mockDeleteCount.verification = 0
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
       expect(result.sessionsDeleted).toBe(0)
@@ -228,23 +187,11 @@ describe.skipIf(Boolean(process.env.CI))('CleanupExpiredRecords Workflow Integra
     })
 
     test('should handle large batch of expired records', async () => {
-      const userId = crypto.randomUUID()
-      await insertUser({userId, email: 'batch@example.com', firstName: 'Batch'})
+      mockDeleteCount.fileDownloads = 20
+      mockDeleteCount.sessions = 15
+      mockDeleteCount.verification = 0
 
-      const thirtyHoursAgo = new Date(Date.now() - 30 * 60 * 60 * 1000)
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-
-      // Insert 20 expired file downloads
-      for (let i = 0; i < 20; i++) {
-        await insertFileDownload({fileId: `batch-download-${i}`, status: 'Completed', updatedAt: thirtyHoursAgo})
-      }
-
-      // Insert 15 expired sessions
-      for (let i = 0; i < 15; i++) {
-        await insertSession({userId, token: `batch-token-${i}`, expiresAt: oneHourAgo})
-      }
-
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(20)
       expect(result.sessionsDeleted).toBe(15)

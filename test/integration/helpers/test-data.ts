@@ -6,10 +6,9 @@
  */
 
 import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {UserStatus} from '#types/enums'
-import {FileStatus} from '#types/enums'
+import {FileStatus, UserStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domain-models'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -210,89 +209,67 @@ export function createMockScheduledEvent(eventId: string, ruleName = 'ScheduledE
 }
 
 /**
- * Creates an S3 object creation event for testing S3ObjectCreated Lambda
- * @param key - S3 object key (file path in bucket)
- * @param options - Optional overrides for event fields
+ * Creates an S3 object created event
+ * @param objectKey - The S3 object key (will be URL-encoded in the event)
+ * @param options - Optional bucket name and region
  */
-export function createMockS3Event(key: string, options?: {bucket?: string; size?: number; eventName?: string; correlationId?: string}): S3Event {
-  const bucket = options?.bucket ?? 'test-media-bucket'
-  const size = options?.size ?? 5242880
-  const eventName = options?.eventName ?? 'ObjectCreated:Put'
-  const eventTime = new Date().toISOString()
-
-  // S3 keys are URL-encoded in events
-  const encodedKey = encodeURIComponent(key).replace(/%20/g, '+')
-
-  // Build user metadata with optional correlation ID
-  const userMetadata: Record<string, string> = {}
-  if (options?.correlationId) {
-    userMetadata['x-amz-meta-correlation-id'] = options.correlationId
-  }
+export function createMockS3Event(objectKey: string, options?: {bucket?: string; region?: string}): S3Event {
+  const bucket = options?.bucket ?? 'test-bucket'
+  const region = options?.region ?? 'us-west-2'
 
   return {
     Records: [{
       eventVersion: '2.1',
       eventSource: 'aws:s3',
-      awsRegion: 'us-west-2',
-      eventTime,
-      eventName,
+      awsRegion: region,
+      eventTime: new Date().toISOString(),
+      eventName: 'ObjectCreated:Put',
       userIdentity: {principalId: 'EXAMPLE'},
       requestParameters: {sourceIPAddress: '127.0.0.1'},
-      responseElements: {'x-amz-request-id': 'EXAMPLE123456789', 'x-amz-id-2': 'EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH'},
+      responseElements: {'x-amz-request-id': 'test-request-id', 'x-amz-id-2': 'test-id-2'},
       s3: {
         s3SchemaVersion: '1.0',
-        configurationId: 'testConfigRule',
+        configurationId: 'test-config',
         bucket: {name: bucket, ownerIdentity: {principalId: 'EXAMPLE'}, arn: `arn:aws:s3:::${bucket}`},
-        object: {key: encodedKey, size, eTag: '0123456789abcdef0123456789abcdef', sequencer: '0A1B2C3D4E5F678901', ...userMetadata}
+        object: {key: encodeURIComponent(objectKey), size: 1024, eTag: 'test-etag', sequencer: '123456789'}
       }
     }]
   }
 }
 
 /**
- * Creates an S3 event with multiple records for batch testing
- * @param keys - Array of S3 object keys
- * @param bucket - S3 bucket name (default: 'test-media-bucket')
+ * Creates a basic API Gateway proxy event (for endpoints without custom authorizer context)
+ * @param options - Event configuration
  */
-export function createMockS3BatchEvent(keys: string[], bucket = 'test-media-bucket'): S3Event {
-  const baseEvent = createMockS3Event(keys[0], {bucket})
-  const additionalRecords = keys.slice(1).map((key) => createMockS3Event(key, {bucket}).Records[0])
-
-  return {Records: [...baseEvent.Records, ...additionalRecords]}
-}
-
-/**
- * Creates a basic API Gateway proxy event for Lambda handler testing
- * @param options - Event configuration options
- */
-export function createMockAPIGatewayEvent(
-  options: {
-    httpMethod: string
-    path: string
-    body?: string | null
-    headers?: Record<string, string>
-    pathParameters?: Record<string, string> | null
-    queryStringParameters?: Record<string, string> | null
-    principalId?: string
-  }
+export function createMockAPIGatewayProxyEvent(
+  options: {path: string; httpMethod: string; headers?: Record<string, string>; body?: string | null}
 ): APIGatewayProxyEvent {
   return {
-    httpMethod: options.httpMethod,
-    path: options.path,
-    headers: options.headers ?? {'Content-Type': 'application/json'},
     body: options.body ?? null,
-    isBase64Encoded: false,
-    pathParameters: options.pathParameters ?? null,
-    queryStringParameters: options.queryStringParameters ?? null,
-    multiValueQueryStringParameters: null,
+    headers: options.headers ?? {},
     multiValueHeaders: {},
+    httpMethod: options.httpMethod,
+    isBase64Encoded: false,
+    path: options.path,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {
       accountId: '123456789012',
       apiId: 'test-api',
-      authorizer: options.principalId ? {principalId: options.principalId} : {},
+      protocol: 'HTTP/1.1',
       httpMethod: options.httpMethod,
+      path: options.path,
+      stage: 'test',
+      requestId: 'test-request',
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
       identity: {
+        sourceIp: '127.0.0.1',
+        userAgent: 'test-agent',
         accessKey: null,
         accountId: null,
         apiKey: null,
@@ -304,57 +281,58 @@ export function createMockAPIGatewayEvent(
         cognitoIdentityId: null,
         cognitoIdentityPoolId: null,
         principalOrgId: null,
-        sourceIp: '127.0.0.1',
         user: null,
-        userAgent: 'test-agent',
         userArn: null
       },
-      path: options.path,
-      protocol: 'HTTP/1.1',
-      requestId: `test-request-${Date.now()}`,
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: options.path,
-      stage: 'test'
+      authorizer: null
     },
     resource: options.path
-  }
+  } as APIGatewayProxyEvent
 }
 
 /**
- * Creates an API Gateway authorizer request event
- * @param overrides - Partial event overrides
+ * Creates an API Gateway request authorizer event (for custom authorizer Lambda)
+ * @param options - Event configuration
  */
-export function createMockAuthorizerEvent(overrides: Partial<APIGatewayRequestAuthorizerEvent> = {}): APIGatewayRequestAuthorizerEvent {
+export function createMockAPIGatewayRequestAuthorizerEvent(
+  options?: {token?: string; path?: string; httpMethod?: string; apiKey?: string}
+): APIGatewayRequestAuthorizerEvent {
+  const path = options?.path ?? '/resource'
+  const httpMethod = options?.httpMethod ?? 'GET'
+  const headers: Record<string, string> = options?.token
+    ? {Authorization: `Bearer ${options.token}`, 'User-Agent': 'iOS/17.0'}
+    : {'User-Agent': 'iOS/17.0'}
+  // Default ApiKey for authorizer tests - Lambda requires this in query params
+  const queryStringParameters = {ApiKey: options?.apiKey ?? 'test-api-key'}
+
   return {
     type: 'REQUEST',
-    methodArn: 'arn:aws:execute-api:us-west-2:123456789012:api-id/stage/GET/resource',
-    resource: '/resource',
-    path: '/resource',
-    httpMethod: 'GET',
-    headers: {Authorization: 'Bearer valid-session-token', 'User-Agent': 'iOS/17.0 TestApp/1.0'},
+    methodArn: `arn:aws:execute-api:us-west-2:123456789012:api-id/stage/${httpMethod}${path}`,
+    resource: path,
+    path,
+    httpMethod,
+    headers,
     multiValueHeaders: {},
     pathParameters: null,
-    queryStringParameters: null,
+    queryStringParameters,
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {
       accountId: '123456789012',
       apiId: 'test-api',
-      authorizer: undefined,
       protocol: 'HTTP/1.1',
-      httpMethod: 'GET',
-      path: '/resource',
+      httpMethod,
+      path,
       stage: 'test',
       requestId: `test-${Date.now()}`,
       requestTime: '01/Jan/2024:00:00:00 +0000',
       requestTimeEpoch: Date.now(),
       resourceId: 'resource-id',
-      resourcePath: '/resource',
+      resourcePath: path,
       identity: {
         accessKey: null,
         accountId: null,
-        apiKey: null,
+        apiKey: options?.apiKey ?? 'test-api-key',
         apiKeyId: null,
         caller: null,
         clientCert: null,
@@ -368,21 +346,32 @@ export function createMockAuthorizerEvent(overrides: Partial<APIGatewayRequestAu
         userAgent: 'iOS/17.0 TestApp/1.0',
         userArn: null
       }
-    },
-    ...overrides
-  }
+    }
+  } as unknown as APIGatewayRequestAuthorizerEvent
 }
 
 /**
- * Creates a custom API Gateway event with authorizer context (for authenticated routes)
- * @param options - Event configuration options
+ * Creates a custom API Gateway event with authorizer context (for authenticated endpoints)
+ * @param options - Event configuration including user status from authorizer
  */
-export function createMockAuthenticatedEvent(
-  options: {httpMethod: string; path: string; userId: string; userStatus?: UserStatus; body?: string | null; headers?: Record<string, string>}
+export function createMockCustomAPIGatewayEvent(
+  options: {path: string; httpMethod: string; userId?: string; userStatus: UserStatus; body?: string | null; headers?: Record<string, string>}
 ): CustomAPIGatewayRequestAuthorizerEvent {
+  const principalId = options.userStatus === UserStatus.Unauthenticated
+    ? 'unknown'
+    : options.userStatus === UserStatus.Anonymous
+    ? 'anonymous'
+    : options.userId || 'unknown'
+
+  const defaultHeaders: Record<string, string> = options.userId && options.userStatus === UserStatus.Authenticated
+    ? {Authorization: 'Bearer test-token'}
+    : options.userStatus === UserStatus.Unauthenticated
+    ? {Authorization: 'Bearer invalid-token'}
+    : {}
+
   return {
     body: options.body ?? null,
-    headers: options.headers ?? {Authorization: `Bearer test-token-${options.userId}`, 'Content-Type': 'application/json'},
+    headers: {...defaultHeaders, ...options.headers},
     multiValueHeaders: {},
     httpMethod: options.httpMethod,
     isBase64Encoded: false,
@@ -398,29 +387,19 @@ export function createMockAuthenticatedEvent(
       httpMethod: options.httpMethod,
       path: options.path,
       stage: 'test',
-      requestId: `test-request-${Date.now()}`,
+      requestId: 'test-request',
       requestTime: '01/Jan/2024:00:00:00 +0000',
       requestTimeEpoch: Date.now(),
       resourceId: 'test-resource',
       resourcePath: options.path,
-      authorizer: {principalId: options.userId, userId: options.userId, userStatus: options.userStatus ?? UserStatus.Authenticated, integrationLatency: 100},
-      identity: {
-        accessKey: null,
-        accountId: null,
-        apiKey: null,
-        apiKeyId: null,
-        caller: null,
-        cognitoAuthenticationProvider: null,
-        cognitoAuthenticationType: null,
-        cognitoIdentityId: null,
-        cognitoIdentityPoolId: null,
-        principalOrgId: null,
-        sourceIp: '127.0.0.1',
-        user: null,
-        userAgent: 'test-agent',
-        userArn: null
-      }
+      authorizer: {
+        principalId,
+        userId: options.userStatus === UserStatus.Authenticated ? options.userId : undefined,
+        userStatus: options.userStatus,
+        integrationLatency: 100
+      },
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
     },
     resource: options.path
-  } as CustomAPIGatewayRequestAuthorizerEvent
+  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
 }

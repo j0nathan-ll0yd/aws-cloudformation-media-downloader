@@ -179,4 +179,79 @@ describe('#PruneDevices', () => {
       await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle empty device list gracefully', async () => {
+      vi.mocked(getAllDevices).mockResolvedValue([])
+      const result = await handler(event, context)
+      expect(result.devicesChecked).toBe(0)
+      expect(result.devicesPruned).toBe(0)
+      expect(result.errors).toHaveLength(0)
+      // APNS should not be called if no devices
+      expect(sendMock).not.toHaveBeenCalled()
+    })
+
+    test('should prune all devices when all are disabled', async () => {
+      vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
+      vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
+      vi.mocked(deleteDevice).mockResolvedValue(undefined)
+      // All devices return 410 (expired)
+      sendMock.mockImplementation(() => {
+        throw getExpiredResponseForDevice(0)
+      })
+      const result = await handler(event, context)
+      expect(result.devicesChecked).toBe(4)
+      expect(result.devicesPruned).toBe(4)
+      expect(result.errors).toHaveLength(0)
+    })
+
+    test('should handle device deletion failure and continue with remaining devices', async () => {
+      vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 2))
+      vi.mocked(deleteDevice).mockRejectedValue(new Error('Delete failed'))
+      vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
+      // Both devices are expired
+      sendMock.mockImplementation(() => {
+        throw getExpiredResponseForDevice(0)
+      })
+      const result = await handler(event, context)
+      expect(result.devicesChecked).toBe(2)
+      // Both failed, so 0 pruned
+      expect(result.devicesPruned).toBe(0)
+      expect(result.errors).toHaveLength(2)
+    })
+
+    test('should handle mixed success and failure in batch', async () => {
+      vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 3))
+      // First device: expired, delete succeeds
+      // Second device: expired, delete fails
+      // Third device: not expired
+      vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
+      vi.mocked(deleteDevice).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Failed'))
+
+      sendMock.mockImplementationOnce(() => {
+        throw getExpiredResponseForDevice(0)
+      })
+      sendMock.mockImplementationOnce(() => {
+        throw getExpiredResponseForDevice(1)
+      })
+      sendMock.mockImplementationOnce(() => {
+        return getSuccessfulResponseForDevice(2)
+      })
+
+      const result = await handler(event, context)
+      expect(result.devicesChecked).toBe(3)
+      expect(result.devicesPruned).toBe(1)
+      expect(result.errors).toHaveLength(1)
+    })
+
+    test('should handle APNS network timeout', async () => {
+      vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 1))
+      sendMock.mockImplementation(() => {
+        const error = new Error('Network timeout')
+        // Not an Apns2Error (no reason property), should throw UnexpectedError
+        throw error
+      })
+      await expect(handler(event, context)).rejects.toThrow(UnexpectedError)
+    })
+  })
 })

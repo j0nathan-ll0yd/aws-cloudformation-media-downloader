@@ -63,4 +63,41 @@ describe('#UserSubscribe', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(401)
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle SNS subscribe failure gracefully', async () => {
+      subscribeMock.mockRejectedValue(new Error('SNS subscription failed: InvalidParameter'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(body.error).toBeDefined()
+    })
+
+    test('should reject malformed endpointArn', async () => {
+      event.body = JSON.stringify({endpointArn: 'not-a-valid-arn', topicArn: 'arn:aws:sns:us-west-2:123456789:topic'})
+      const output = await handler(event, context)
+      // Validation may pass but SNS will fail - depends on validation schema
+      expect([400, 500]).toContain(output.statusCode)
+    })
+
+    test('should reject malformed topicArn', async () => {
+      event.body = JSON.stringify({endpointArn: 'arn:aws:sns:us-west-2:123456789:endpoint/APNS/app/token', topicArn: 'invalid-topic'})
+      const output = await handler(event, context)
+      expect([400, 500]).toContain(output.statusCode)
+    })
+
+    test('should handle empty request body', async () => {
+      event.body = null
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(400)
+    })
+
+    test('should handle SNS rate limiting error', async () => {
+      const rateLimitError = new Error('Rate exceeded')
+      Object.assign(rateLimitError, {code: 'Throttling', statusCode: 429})
+      subscribeMock.mockRejectedValue(rateLimitError)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+  })
 })

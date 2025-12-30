@@ -39,7 +39,7 @@ function isTestMode(): boolean {
  * Matches the schema used by test helpers for isolation.
  */
 function getWorkerSchema(): string {
-  const workerId = process.env.JEST_WORKER_ID || '1'
+  const workerId = process.env.VITEST_POOL_ID || '1'
   return `worker_${workerId}`
 }
 

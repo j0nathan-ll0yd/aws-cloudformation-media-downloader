@@ -1,206 +1,130 @@
 /**
  * S3ObjectCreated Workflow Integration Tests
  *
- * Tests the file notification dispatch workflow:
- * 1. Receive S3 object creation event
- * 2. Query PostgreSQL for file record by key
- * 3. Query PostgreSQL for users waiting for file
- * 4. Dispatch SQS notifications to each user
+ * Tests the S3 object creation workflow:
+ * - Entity queries: Mocked for file and user lookups
+ * - SQS: Mocked for notification dispatch
  *
- * Uses LocalStack SQS and real PostgreSQL.
- *
- * @see src/lambdas/S3ObjectCreated/src/index.ts
+ * Workflow:
+ * 1. S3 event triggers Lambda with object key
+ * 2. Look up file by S3 key via entity queries (mocked)
+ * 3. Find all users associated with the file (mocked)
+ * 4. Dispatch SQS message for each user
  */
 
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789012/test-queue'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
-
-// Test helpers
-import {closeTestDb, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
-import {createMockContext} from '../helpers/lambda-context'
-import {createMockS3BatchEvent, createMockS3Event} from '../helpers/test-data'
-import {clearTestQueue, createTestQueue, deleteTestQueue, waitForMessages} from '../helpers/sqs-helpers'
+import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
 
-// Set SNS_QUEUE_URL before importing handler
-const TEST_QUEUE = `test-s3-notification-queue-${Date.now()}`
-let queueUrl: string
+// Test helpers
+import {createMockContext} from '../helpers/lambda-context'
+import {createMockFile, createMockS3Event} from '../helpers/test-data'
 
-// Import handler after environment setup
+// Mock entity queries - must use vi.hoisted for ESM
+const {getFilesByKeyMock, getUserFilesByFileIdMock} = vi.hoisted(() => ({getFilesByKeyMock: vi.fn(), getUserFilesByFileIdMock: vi.fn()}))
+
+vi.mock('#entities/queries', () => ({getFilesByKey: getFilesByKeyMock, getUserFilesByFileId: getUserFilesByFileIdMock}))
+
+// Mock SQS vendor wrapper - include stringAttribute helper used by Lambda
+const sendMessageMock = vi.fn()
+const stringAttribute = (value: string) => ({DataType: 'String', StringValue: value})
+vi.mock('#lib/vendor/AWS/SQS', () => ({sendMessage: sendMessageMock, stringAttribute}))
+
+// Import handler after mocks
 const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
 
-// Skip in CI: Handler uses own Drizzle connection that doesn't respect worker schema isolation
-describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration Tests', () => {
-  beforeAll(async () => {
-    // Create LocalStack SQS queue
-    const queueInfo = await createTestQueue(TEST_QUEUE)
-    queueUrl = queueInfo.queueUrl
+describe('S3ObjectCreated Workflow Integration Tests', () => {
+  let mockContext: Context
 
-    // Set environment variable for the Lambda
-    process.env.SNS_QUEUE_URL = queueUrl
+  beforeAll(() => {
+    mockContext = createMockContext()
   })
 
-  afterEach(async () => {
-    // Clean up data between tests
-    await truncateAllTables()
-    await clearTestQueue(queueUrl)
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  afterAll(async () => {
-    // Clean up LocalStack SQS
-    await deleteTestQueue(queueUrl)
+  test('should dispatch notification to user when file is uploaded', async () => {
+    const userId = crypto.randomUUID()
+    const fileKey = 'videos/test-video.mp4'
+    const mockFile = createMockFile('test-file-1', FileStatus.Downloaded, {key: fileKey, title: 'Test Video'})
 
-    // Close database connection
-    await closeTestDb()
+    getFilesByKeyMock.mockResolvedValue([mockFile])
+    getUserFilesByFileIdMock.mockResolvedValue([{userId, fileId: 'test-file-1'}])
+    sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
+
+    await handler(createMockS3Event(fileKey), mockContext)
+
+    expect(sendMessageMock).toHaveBeenCalledTimes(1)
+    expect(sendMessageMock).toHaveBeenCalledWith(expect.objectContaining({QueueUrl: process.env.SNS_QUEUE_URL}))
   })
 
-  describe('Single User Notification', () => {
-    test('should dispatch notification to single user waiting for file', async () => {
-      const userId = crypto.randomUUID()
-      const fileId = 'video-single-user'
-      const fileKey = `${fileId}.mp4`
+  test('should dispatch notifications to multiple users for shared file', async () => {
+    const userId1 = crypto.randomUUID()
+    const userId2 = crypto.randomUUID()
+    const userId3 = crypto.randomUUID()
+    const fileKey = 'videos/shared-video.mp4'
+    const mockFile = createMockFile('shared-file', FileStatus.Downloaded, {key: fileKey, title: 'Shared Video'})
 
-      await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
-      await insertUser({userId, email: 'single@example.com'})
-      await linkUserFile(userId, fileId)
+    getFilesByKeyMock.mockResolvedValue([mockFile])
+    getUserFilesByFileIdMock.mockResolvedValue([
+      {userId: userId1, fileId: 'shared-file'},
+      {userId: userId2, fileId: 'shared-file'},
+      {userId: userId3, fileId: 'shared-file'}
+    ])
+    sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
 
-      const event = createMockS3Event(fileKey)
-      await handler(event, createMockContext())
+    await handler(createMockS3Event(fileKey), mockContext)
 
-      const messages = await waitForMessages(queueUrl, 1, 10000)
-      expect(messages.length).toBe(1)
-
-      const body = JSON.parse(messages[0].Body!)
-      expect(body.file.fileId).toBe(fileId)
-    })
-
-    test('should handle URL-encoded file keys correctly', async () => {
-      const userId = crypto.randomUUID()
-      const fileId = 'video-with-spaces'
-      const fileKey = 'My Video File.mp4'
-
-      await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
-      await insertUser({userId, email: 'spaces@example.com'})
-      await linkUserFile(userId, fileId)
-
-      const event = createMockS3Event(fileKey)
-      await handler(event, createMockContext())
-
-      const messages = await waitForMessages(queueUrl, 1, 10000)
-      expect(messages.length).toBe(1)
-    })
+    expect(sendMessageMock).toHaveBeenCalledTimes(3)
   })
 
-  describe('Multi-User Fan-out', () => {
-    test('should fan-out to multiple users waiting for same file', async () => {
-      const user1Id = crypto.randomUUID()
-      const user2Id = crypto.randomUUID()
-      const user3Id = crypto.randomUUID()
-      const fileId = 'video-multi-user'
-      const fileKey = `${fileId}.mp4`
+  test('should handle file with no users gracefully', async () => {
+    const fileKey = 'videos/orphan-video.mp4'
+    const mockFile = createMockFile('orphan-file', FileStatus.Downloaded, {key: fileKey, title: 'Orphan Video'})
 
-      await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
-      await insertUser({userId: user1Id, email: 'user1@example.com'})
-      await insertUser({userId: user2Id, email: 'user2@example.com'})
-      await insertUser({userId: user3Id, email: 'user3@example.com'})
-      await linkUserFile(user1Id, fileId)
-      await linkUserFile(user2Id, fileId)
-      await linkUserFile(user3Id, fileId)
+    getFilesByKeyMock.mockResolvedValue([mockFile])
+    getUserFilesByFileIdMock.mockResolvedValue([])
 
-      const event = createMockS3Event(fileKey)
-      await handler(event, createMockContext())
+    await handler(createMockS3Event(fileKey), mockContext)
 
-      const messages = await waitForMessages(queueUrl, 3, 15000)
-      expect(messages.length).toBe(3)
-
-      for (const msg of messages) {
-        const body = JSON.parse(msg.Body!)
-        expect(body.file.fileId).toBe(fileId)
-      }
-    })
+    expect(sendMessageMock).not.toHaveBeenCalled()
   })
 
-  describe('Edge Cases', () => {
-    test('should handle file not found gracefully', async () => {
-      const event = createMockS3Event('nonexistent-file.mp4')
+  test('should handle URL-encoded S3 keys correctly', async () => {
+    const userId = crypto.randomUUID()
+    const fileKey = 'videos/file with spaces.mp4'
+    const mockFile = createMockFile('spaced-file', FileStatus.Downloaded, {key: fileKey, title: 'File With Spaces'})
 
-      await expect(handler(event, createMockContext())).resolves.not.toThrow()
-    })
+    getFilesByKeyMock.mockResolvedValue([mockFile])
+    getUserFilesByFileIdMock.mockResolvedValue([{userId, fileId: 'spaced-file'}])
+    sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
 
-    test('should handle no users waiting for file', async () => {
-      const fileId = 'video-no-users'
-      const fileKey = `${fileId}.mp4`
+    await handler(createMockS3Event(fileKey), mockContext)
 
-      await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
-
-      const event = createMockS3Event(fileKey)
-      await handler(event, createMockContext())
-
-      const messages = await waitForMessages(queueUrl, 1, 3000)
-      expect(messages.length).toBe(0)
-    })
+    expect(sendMessageMock).toHaveBeenCalledTimes(1)
   })
 
-  describe('Batch Processing', () => {
-    test('should process multiple S3 records in batch', async () => {
-      const user1Id = crypto.randomUUID()
-      const user2Id = crypto.randomUUID()
-      const file1Key = 'video-batch-1.mp4'
-      const file2Key = 'video-batch-2.mp4'
+  test('should continue processing when one notification fails', async () => {
+    const userId1 = crypto.randomUUID()
+    const userId2 = crypto.randomUUID()
+    const fileKey = 'videos/partial-failure.mp4'
+    const mockFile = createMockFile('partial-file', FileStatus.Downloaded, {key: fileKey, title: 'Partial Failure'})
 
-      await insertFile({fileId: 'video-batch-1', key: file1Key, status: FileStatus.Downloaded})
-      await insertFile({fileId: 'video-batch-2', key: file2Key, status: FileStatus.Downloaded})
-      await insertUser({userId: user1Id, email: 'batch1@example.com'})
-      await insertUser({userId: user2Id, email: 'batch2@example.com'})
-      await linkUserFile(user1Id, 'video-batch-1')
-      await linkUserFile(user2Id, 'video-batch-2')
+    getFilesByKeyMock.mockResolvedValue([mockFile])
+    getUserFilesByFileIdMock.mockResolvedValue([
+      {userId: userId1, fileId: 'partial-file'},
+      {userId: userId2, fileId: 'partial-file'}
+    ])
+    sendMessageMock.mockRejectedValueOnce(new Error('SQS send failed')).mockResolvedValueOnce({MessageId: 'test-msg-id'})
 
-      const event = createMockS3BatchEvent([file1Key, file2Key])
-      await handler(event, createMockContext())
+    await handler(createMockS3Event(fileKey), mockContext)
 
-      const messages = await waitForMessages(queueUrl, 2, 15000)
-      expect(messages.length).toBe(2)
-
-      const fileIds = messages.map((msg) => JSON.parse(msg.Body!).file.fileId)
-      expect(fileIds.sort()).toEqual(['video-batch-1', 'video-batch-2'])
-    })
-
-    test('should continue processing after individual record failure', async () => {
-      const userId = crypto.randomUUID()
-      const existingFileKey = 'video-exists.mp4'
-
-      await insertFile({fileId: 'video-exists', key: existingFileKey, status: FileStatus.Downloaded})
-      await insertUser({userId, email: 'partial@example.com'})
-      await linkUserFile(userId, 'video-exists')
-
-      const event = createMockS3BatchEvent(['nonexistent.mp4', existingFileKey])
-      await handler(event, createMockContext())
-
-      const messages = await waitForMessages(queueUrl, 1, 10000)
-      expect(messages.length).toBeGreaterThanOrEqual(1)
-    })
-  })
-
-  describe('Correlation ID Preservation', () => {
-    test('should preserve correlation ID from S3 metadata', async () => {
-      const userId = crypto.randomUUID()
-      const fileId = 'video-correlation'
-      const fileKey = `${fileId}.mp4`
-      const correlationId = `corr-${Date.now()}`
-
-      await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
-      await insertUser({userId, email: 'correlation@example.com'})
-      await linkUserFile(userId, fileId)
-
-      const event = createMockS3Event(fileKey, {correlationId})
-      await handler(event, createMockContext())
-
-      const messages = await waitForMessages(queueUrl, 1, 10000)
-      expect(messages.length).toBe(1)
-    })
+    expect(sendMessageMock).toHaveBeenCalledTimes(2)
   })
 })

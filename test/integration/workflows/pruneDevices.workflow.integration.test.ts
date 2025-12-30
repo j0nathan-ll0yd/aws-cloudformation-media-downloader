@@ -1,169 +1,148 @@
 /**
  * PruneDevices Workflow Integration Tests
  *
- * Tests scheduled device cleanup workflow:
- * 1. Query all devices from PostgreSQL
- * 2. Check each device via APNS health check (requires real APNS - skipped)
- * 3. Delete disabled devices (UserDevices first, then Device)
- * 4. Delete SNS endpoints for pruned devices
+ * Tests the device pruning workflow:
+ * - Entity queries: Mocked for device operations
+ * - APNS: Mocked for device health checks
  *
- * Note: APNS health check tests are skipped because they require real Apple
- * connectivity or complex ESM mocking. The APNS behavior is tested in unit tests.
- * These integration tests focus on database and SNS operations.
- *
- * Uses LocalStack SNS and real PostgreSQL.
- *
- * @see src/lambdas/PruneDevices/src/index.ts
+ * Workflow:
+ * 1. Get all devices via entity queries (mocked)
+ * 2. Check each device against APNS (mocked)
+ * 3. Delete disabled devices and their user associations
  */
 
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+process.env.APNS_SIGNING_KEY = `-----BEGIN EC PRIVATE KEY-----
+MHQCAQEEICNJcmZZUq+lK8qQxjy3IzGaH9D8j3qHJ/x+VFkgJk3woAcGBSuBBAAK
+oUQDQgAEFBw7y/ZZhN/j8K/zqt5MIbNkqxHYtqIlhE0x3kKjXJ9g9a3S5q3C2bEL
+nJ3y4eL2qC5pF4jF8G/XLqF9kNc8qg==
+-----END EC PRIVATE KEY-----`
+process.env.APNS_TEAM = 'XXXXXX'
+process.env.APNS_KEY_ID = 'XXXXXX'
+process.env.APNS_DEFAULT_TOPIC = 'test.app'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
+import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
+import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {closeTestDb, getDevice, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
-import {
-  createTestEndpoint,
-  createTestPlatformApplication,
-  deleteTestEndpoint,
-  deleteTestPlatformApplication,
-  isEndpointEnabled
-} from '../helpers/sns-helpers'
+import {createMockContext} from '../helpers/lambda-context'
+import {createMockDevice, createMockScheduledEvent} from '../helpers/test-data'
 
-// Skip in CI: Uses LocalStack SNS which may not be reliably available
-describe.skipIf(Boolean(process.env.CI))('PruneDevices Workflow Integration Tests', () => {
-  let platformAppArn: string
-  const testAppName = `test-prune-app-${Date.now()}`
+// Mock entity queries - must use vi.hoisted for ESM
+const {getAllDevicesMock, deleteUserDevicesByDeviceIdMock} = vi.hoisted(() => ({getAllDevicesMock: vi.fn(), deleteUserDevicesByDeviceIdMock: vi.fn()}))
 
-  beforeAll(async () => {
-    // Create LocalStack SNS platform application
-    platformAppArn = await createTestPlatformApplication(testAppName)
-    process.env.PLATFORM_APPLICATION_ARN = platformAppArn
+vi.mock('#entities/queries', () => ({getAllDevices: getAllDevicesMock, deleteUserDevicesByDeviceId: deleteUserDevicesByDeviceIdMock}))
+
+// Mock APNS library - use vi.hoisted() for ESM module hoisting compatibility
+// Must use regular functions (not arrows) for constructor mocks
+const {sendMock} = vi.hoisted(() => ({sendMock: vi.fn()}))
+vi.mock('apns2', () => ({
+  ApnsClient: vi.fn().mockImplementation(function ApnsClient() {
+    return {send: sendMock}
+  }),
+  Notification: vi.fn().mockImplementation(function Notification(token: string, options: unknown) {
+    return {token, options}
+  }),
+  Priority: {throttled: 5},
+  PushType: {background: 'background'}
+}))
+
+// Mock device service for deletion - use vi.hoisted() for ESM compatibility
+const {deleteDeviceMock} = vi.hoisted(() => ({deleteDeviceMock: vi.fn()}))
+vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: deleteDeviceMock}))
+
+// Import handler after mocks
+const {handler} = await import('#lambdas/PruneDevices/src/index')
+
+describe('PruneDevices Workflow Integration Tests', () => {
+  let mockContext: Context
+
+  beforeAll(() => {
+    mockContext = createMockContext()
   })
 
-  afterEach(async () => {
-    // Clean up data between tests
-    await truncateAllTables()
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  afterAll(async () => {
-    // Clean up LocalStack SNS
-    await deleteTestPlatformApplication(platformAppArn)
+  test('should prune disabled device and remove user association', async () => {
+    const deviceId = crypto.randomUUID()
+    const mockDevice = createMockDevice({deviceId, token: 'disabled-device-token'})
 
-    // Close database connection
-    await closeTestDb()
+    getAllDevicesMock.mockResolvedValue([mockDevice])
+    sendMock.mockRejectedValue({statusCode: 410, reason: 'BadDeviceToken'})
+    deleteUserDevicesByDeviceIdMock.mockResolvedValue(undefined)
+    deleteDeviceMock.mockResolvedValue(undefined)
+
+    const result = await handler(createMockScheduledEvent('prune-test'), mockContext)
+
+    expect(result.devicesChecked).toBe(1)
+    expect(result.devicesPruned).toBe(1)
+    expect(result.errors).toHaveLength(0)
+    expect(deleteUserDevicesByDeviceIdMock).toHaveBeenCalledWith(deviceId)
+    expect(deleteDeviceMock).toHaveBeenCalledWith(mockDevice)
   })
 
-  describe('Database Device Operations', () => {
-    test('should query devices from database correctly', async () => {
-      const devices = [
-        {deviceId: 'device-query-1', token: `query-1-${Date.now()}`},
-        {deviceId: 'device-query-2', token: `query-2-${Date.now()}`}
-      ]
+  test('should not prune active device', async () => {
+    const deviceId = crypto.randomUUID()
+    const mockDevice = createMockDevice({deviceId, token: 'active-device-token'})
 
-      for (const device of devices) {
-        const endpointArn = await createTestEndpoint(platformAppArn, device.token)
-        await insertDevice({deviceId: device.deviceId, token: device.token, endpointArn})
-      }
+    getAllDevicesMock.mockResolvedValue([mockDevice])
+    sendMock.mockResolvedValue({})
 
-      const device1 = await getDevice('device-query-1')
-      const device2 = await getDevice('device-query-2')
-      expect(device1).not.toBeNull()
-      expect(device2).not.toBeNull()
-    })
+    const result = await handler(createMockScheduledEvent('active-test'), mockContext)
 
-    test('should create device with SNS endpoint correctly', async () => {
-      const deviceToken = `endpoint-test-${Date.now()}`
-      const deviceId = 'device-endpoint-test'
-
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-      await insertDevice({deviceId, token: deviceToken, endpointArn})
-
-      const device = await getDevice(deviceId)
-      expect(device).not.toBeNull()
-      expect(device?.endpointArn).toBe(endpointArn)
-
-      const enabled = await isEndpointEnabled(endpointArn)
-      expect(enabled).toBe(true)
-    })
+    expect(result.devicesChecked).toBe(1)
+    expect(result.devicesPruned).toBe(0)
+    expect(result.errors).toHaveLength(0)
+    expect(deleteDeviceMock).not.toHaveBeenCalled()
   })
 
-  describe('User-Device Association', () => {
-    test('should maintain user-device relationship', async () => {
-      const userId = crypto.randomUUID()
-      const deviceId = 'device-user-assoc'
-      const deviceToken = `user-assoc-${Date.now()}`
+  test('should handle mix of active and disabled devices', async () => {
+    const activeDeviceId = crypto.randomUUID()
+    const disabledDeviceId = crypto.randomUUID()
+    const activeDevice = createMockDevice({deviceId: activeDeviceId, token: 'active-token'})
+    const disabledDevice = createMockDevice({deviceId: disabledDeviceId, token: 'disabled-token'})
 
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-      await insertUser({userId, email: 'user-assoc@example.com'})
-      await insertDevice({deviceId, token: deviceToken, endpointArn})
-      await linkUserDevice(userId, deviceId)
+    getAllDevicesMock.mockResolvedValue([activeDevice, disabledDevice])
+    sendMock.mockResolvedValueOnce({}).mockRejectedValueOnce({statusCode: 410, reason: 'BadDeviceToken'})
+    deleteUserDevicesByDeviceIdMock.mockResolvedValue(undefined)
+    deleteDeviceMock.mockResolvedValue(undefined)
 
-      const device = await getDevice(deviceId)
-      expect(device).not.toBeNull()
-    })
+    const result = await handler(createMockScheduledEvent('mixed-test'), mockContext)
 
-    test('should handle device with multiple user associations', async () => {
-      const user1Id = crypto.randomUUID()
-      const user2Id = crypto.randomUUID()
-      const deviceId = 'device-multi-user-test'
-      const deviceToken = `multi-user-${Date.now()}`
-
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-      await insertUser({userId: user1Id, email: 'multi1@example.com'})
-      await insertUser({userId: user2Id, email: 'multi2@example.com'})
-      await insertDevice({deviceId, token: deviceToken, endpointArn})
-      await linkUserDevice(user1Id, deviceId)
-      await linkUserDevice(user2Id, deviceId)
-
-      const device = await getDevice(deviceId)
-      expect(device).not.toBeNull()
-    })
+    expect(result.devicesChecked).toBe(2)
+    expect(result.devicesPruned).toBe(1)
+    expect(result.errors).toHaveLength(0)
   })
 
-  describe('SNS Endpoint Management', () => {
-    test('should create and query SNS endpoint', async () => {
-      const deviceToken = `sns-create-${Date.now()}`
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
+  test('should handle empty device list', async () => {
+    getAllDevicesMock.mockResolvedValue([])
 
-      const enabled = await isEndpointEnabled(endpointArn)
-      expect(enabled).toBe(true)
-    })
+    const result = await handler(createMockScheduledEvent('empty-test'), mockContext)
 
-    test('should delete SNS endpoint', async () => {
-      const deviceToken = `sns-delete-${Date.now()}`
-      const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
-
-      const enabledBefore = await isEndpointEnabled(endpointArn)
-      expect(enabledBefore).toBe(true)
-
-      await deleteTestEndpoint(endpointArn)
-
-      const enabledAfter = await isEndpointEnabled(endpointArn)
-      expect(enabledAfter).toBe(false)
-    })
+    expect(result.devicesChecked).toBe(0)
+    expect(result.devicesPruned).toBe(0)
+    expect(result.errors).toHaveLength(0)
+    expect(sendMock).not.toHaveBeenCalled()
   })
 
-  describe('Empty Database Handling', () => {
-    test('should handle empty devices table', async () => {
-      // No devices in database - just verify table queries work
-      const device = await getDevice('nonexistent-device')
-      expect(device).toBeNull()
-    })
-  })
+  test('should capture error when device deletion fails', async () => {
+    const deviceId = crypto.randomUUID()
+    const mockDevice = createMockDevice({deviceId, token: 'fail-delete-token'})
 
-  /**
-   * Note: The following tests are skipped because they require APNS mocking
-   * which is complex with ESM modules. The APNS health check behavior is
-   * tested in unit tests at src/lambdas/PruneDevices/test/index.test.ts
-   *
-   * Skipped tests:
-   * - should skip active devices (requires APNS success mock)
-   * - should prune disabled devices (requires APNS 410 mock)
-   * - should handle mix of active and disabled devices
-   * - should return accurate pruning counts
-   */
+    getAllDevicesMock.mockResolvedValue([mockDevice])
+    sendMock.mockRejectedValue({statusCode: 410, reason: 'BadDeviceToken'})
+    deleteUserDevicesByDeviceIdMock.mockResolvedValue(undefined)
+    deleteDeviceMock.mockRejectedValue(new Error('Database delete failed'))
+
+    const result = await handler(createMockScheduledEvent('fail-test'), mockContext)
+
+    expect(result.devicesChecked).toBe(1)
+    expect(result.devicesPruned).toBe(0)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('Database delete failed')
+  })
 })

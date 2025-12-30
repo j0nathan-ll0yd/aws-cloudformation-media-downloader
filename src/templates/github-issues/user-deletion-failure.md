@@ -5,44 +5,42 @@ A user deletion operation failed and requires manual investigation.
 **Triggered By**:
 - **User ID**: ${userId}
 - **Request ID**: ${requestId}
-- **Error Type**: ${error.constructor.name}
-- **Error Message**: ${error.message}
-- **Timestamp**: ${new Date().toISOString()}
+- **Error Type**: ${errorName}
+- **Error Message**: ${errorMessage}
+- **Timestamp**: ${timestamp}
 
 ---
 
 ## Affected Devices
 
-${devices.length > 0 ? `This user had **${devices.length}** registered device(s):
+**Device Count**: ${deviceCount}
 
-${devices.map((device, index) => `### Device ${index + 1}
-- **Device Token**: \`${device.deviceToken}\`
-- **Platform**: ${device.platform || 'Unknown'}
-- **Last Updated**: ${device.updatedAt || 'Unknown'}
-`).join('\n')}` : 'No devices were registered for this user.'}
+```json
+${devicesJson}
+```
 
 ---
 
 ## Required Action
 
 1. **Investigate DynamoDB State**:
-   \`\`\`bash
-   aws dynamodb scan \\
-     --table-name Users \\
-     --filter-expression "userId = :userId" \\
-     --expression-attribute-values '{":userId":{"S":"${userId}"}}' \\
+   ```bash
+   aws dynamodb scan \
+     --table-name Users \
+     --filter-expression "userId = :userId" \
+     --expression-attribute-values '{":userId":{"S":"${userId}"}}' \
      --region us-west-2
-   \`\`\`
+   ```
 
 2. **Check S3 Bucket for User Files**:
-   \`\`\`bash
+   ```bash
    aws s3 ls s3://\${BUCKET_NAME}/${userId}/ --recursive
-   \`\`\`
+   ```
 
 3. **Verify SNS Subscriptions**:
-   \`\`\`bash
+   ```bash
    aws sns list-subscriptions --region us-west-2 | grep ${userId}
-   \`\`\`
+   ```
 
 4. **Manual Cleanup** (if needed):
    - Remove DynamoDB entries
@@ -54,9 +52,9 @@ ${devices.map((device, index) => `### Device ${index + 1}
 
 ## Stack Trace
 
-\`\`\`
-${error.stack || 'No stack trace available'}
-\`\`\`
+```
+${errorStack}
+```
 
 ---
 

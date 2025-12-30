@@ -2,11 +2,9 @@ name: Integration Tests
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ['**']
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 jobs:
   integration-tests:
@@ -14,28 +12,11 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup-node-pnpm
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check types
-        run: pnpm run check-types
-
-      - name: Check test types
-        run: pnpm run check-test-types
-
-      - name: Lint code
-        run: pnpm run lint
+      # Note: Type checking and linting removed - unit-tests workflow handles these
 
       - name: Start LocalStack and PostgreSQL
         run: |
@@ -101,7 +82,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: integration-test-results
           path: |
