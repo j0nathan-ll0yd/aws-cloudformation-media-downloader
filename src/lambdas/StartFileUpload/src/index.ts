@@ -15,7 +15,9 @@ import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
-import type {DownloadCompletedDetail, DownloadFailedDetail, DownloadQueueMessage} from '#types/events'
+import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
+import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
+import {validateSchema} from '#lib/validation/constraints'
 import {DownloadStatus, FileStatus} from '#types/enums'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
@@ -282,7 +284,7 @@ async function handleDownloadFailure(
  * @param message - The download request from SQS
  * @throws Error if the download should be retried via SQS
  */
-async function processDownloadRequest(message: DownloadQueueMessage, receiveCount: number = 1): Promise<void> {
+async function processDownloadRequest(message: ValidatedDownloadQueueMessage, receiveCount: number = 1): Promise<void> {
   const {fileId, correlationId, sourceUrl} = message
   const fileUrl = sourceUrl || `https://www.youtube.com/watch?v=${fileId}`
   const isRetry = receiveCount > 1
@@ -415,7 +417,15 @@ export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchR
     const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
 
     try {
-      const message: DownloadQueueMessage = JSON.parse(record.body)
+      // Parse and validate SQS message body
+      const rawMessage = JSON.parse(record.body)
+      const validationErrors = validateSchema(downloadQueueMessageSchema, rawMessage)
+      if (validationErrors) {
+        // Log invalid message format and skip (don't retry - malformed messages will never succeed)
+        logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
+        continue
+      }
+      const message = downloadQueueMessageSchema.parse(rawMessage)
       await processDownloadRequest(message, receiveCount)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
