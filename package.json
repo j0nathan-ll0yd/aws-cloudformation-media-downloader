@@ -156,7 +156,7 @@
     "@typespec/openapi": "^1.7.0",
     "@typespec/openapi3": "^1.7.0",
     "@vitest/coverage-v8": "^4.0.16",
-    "dependency-cruiser": "^17.3.4",
+    "dependency-cruiser": "^17.3.5",
     "dprint": "^0.50.2",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.27.2",
