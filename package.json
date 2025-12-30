@@ -13,6 +13,7 @@
     "check-types": "tsc --project ./tsconfig.json",
     "check-test-types": "tsc --project ./tsconfig.test.json --noEmit",
     "generate-graph": "node --experimental-strip-types scripts/generateDependencyGraph.ts",
+    "adr:new": "./bin/adr-new.sh",
     "document-source": "./bin/document-source.sh",
     "document-terraform": "terraform-docs markdown terraform/ > docs/terraform.md",
     "document-api": "./bin/document-api.sh",
