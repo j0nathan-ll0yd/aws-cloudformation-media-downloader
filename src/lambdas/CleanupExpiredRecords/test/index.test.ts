@@ -140,4 +140,56 @@ describe('CleanupExpiredRecords Lambda', () => {
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toContain('String error')
   })
+
+  describe('#EdgeCases', () => {
+    it('should handle database timeout during cleanup', async () => {
+      const timeoutError = new Error('Query timeout after 30000ms')
+      Object.assign(timeoutError, {code: 'ETIMEDOUT'})
+      mockReturning.mockRejectedValueOnce(timeoutError).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+
+      const result = await handler(createScheduledEvent(), context)
+
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0]).toContain('FileDownloads cleanup failed')
+    })
+
+    it('should handle transaction rollback error', async () => {
+      const rollbackError = new Error('Transaction aborted: constraint violation')
+      mockReturning.mockRejectedValueOnce(rollbackError).mockResolvedValueOnce([{id: 's1'}]).mockResolvedValueOnce([])
+
+      const result = await handler(createScheduledEvent(), context)
+
+      expect(result.fileDownloadsDeleted).toBe(0)
+      expect(result.sessionsDeleted).toBe(1)
+      expect(result.errors).toHaveLength(1)
+    })
+
+    it('should correctly count deleted records from each table type', async () => {
+      // Specific counts for each table type
+      const fileDownloads = [{fileId: 'f1'}, {fileId: 'f2'}, {fileId: 'f3'}]
+      const sessions = [{id: 's1'}, {id: 's2'}]
+      const verifications = [{id: 'v1'}]
+
+      mockReturning.mockResolvedValueOnce(fileDownloads).mockResolvedValueOnce(sessions).mockResolvedValueOnce(verifications)
+
+      const result = await handler(createScheduledEvent(), context)
+
+      expect(result.fileDownloadsDeleted).toBe(3)
+      expect(result.sessionsDeleted).toBe(2)
+      expect(result.verificationTokensDeleted).toBe(1)
+      expect(result.errors).toHaveLength(0)
+    })
+
+    it('should handle null/undefined return from delete operations', async () => {
+      // Edge case where returning() might return undefined or null
+      mockReturning.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+
+      const result = await handler(createScheduledEvent(), context)
+
+      expect(result.fileDownloadsDeleted).toBe(0)
+      expect(result.sessionsDeleted).toBe(0)
+      expect(result.verificationTokensDeleted).toBe(0)
+      expect(result.errors).toHaveLength(0)
+    })
+  })
 })

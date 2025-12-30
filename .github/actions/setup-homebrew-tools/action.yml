@@ -17,4 +17,6 @@ runs:
 
     - name: Install hcl2json
       shell: bash
-      run: brew install hcl2json
+      run: |
+        brew install hcl2json
+        brew link hcl2json --overwrite || true

@@ -55,4 +55,53 @@ describe('#CloudfrontMiddleware', () => {
     expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
     expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle URL-encoded API key in query string', async () => {
+      // URL-encoded special characters
+      const encodedKey = 'abc%2B123%3D%2Fkey'
+      event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${encodedKey}`
+      delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
+
+      const output = await handler(event, context)
+      expect(output.headers).toHaveProperty('x-api-key')
+    })
+
+    test('should handle multiple query parameters', async () => {
+      event.Records[0].cf.request.querystring = `foo=bar&${apiKeyQueryStringName}=${apiKeyValue}&baz=qux`
+      delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
+
+      const output = await handler(event, context)
+      expect(output.headers).toHaveProperty('x-api-key')
+    })
+
+    test('should handle case-insensitive header lookup', async () => {
+      event.Records[0].cf.request.querystring = ''
+      // Use mixed case for header name
+      event.Records[0].cf.request.headers['x-api-key'] = [{key: 'X-Api-Key', value: apiKeyValue}]
+
+      const output = await handler(event, context)
+      expect(output.headers).toHaveProperty('x-api-key')
+    })
+
+    test('should handle empty API key value in query string', async () => {
+      event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=`
+      delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
+
+      const output = await handler(event, context)
+      // Should handle empty value gracefully
+      expect(output).toBeDefined()
+    })
+
+    test('should preserve original request properties', async () => {
+      event.Records[0].cf.request.querystring = ''
+      event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
+      event.Records[0].cf.request.uri = '/api/v1/files'
+
+      const output = await handler(event, context)
+      // Verify the request properties are preserved in the output
+      expect(output).toBeDefined()
+      expect(output.headers).toHaveProperty('x-api-key')
+    })
+  })
 })

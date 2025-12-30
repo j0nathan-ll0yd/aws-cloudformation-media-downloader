@@ -1,0 +1,138 @@
+/**
+ * ApiGatewayAuthorizer Dedicated Integration Tests
+ *
+ * Tests the API Gateway custom authorizer against real services:
+ * - PostgreSQL: Session validation
+ *
+ * Workflow:
+ * 1. Extract token from Authorization header
+ * 2. Validate session in PostgreSQL via Better Auth
+ * 3. Return IAM policy (Allow/Deny)
+ */
+
+// Set environment variables before imports
+process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'auth/login,auth/register,webhooks/feedly'
+
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
+import type {Context} from 'aws-lambda'
+
+// Test helpers
+import {closeTestDb, createAllTables, dropAllTables, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {createMockContext} from '../helpers/lambda-context'
+import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
+
+// Mock API Gateway SDK functions - must use vi.hoisted for ESM
+const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({getApiKeysMock: vi.fn(), getUsagePlansMock: vi.fn(), getUsageMock: vi.fn()}))
+
+vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
+
+// Mock session validation service
+const {validateSessionTokenMock} = vi.hoisted(() => ({validateSessionTokenMock: vi.fn()}))
+vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
+
+// Import handler after mocks
+const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
+
+// Helper to set up standard API Gateway mocks
+function setupApiGatewayMocks() {
+  getApiKeysMock.mockResolvedValue({items: [{id: 'api-key-id-1', value: 'test-api-key', enabled: true}]})
+  getUsagePlansMock.mockResolvedValue({items: [{id: 'usage-plan-id-1', name: 'Test Plan'}]})
+  getUsageMock.mockResolvedValue({items: {'api-key-id-1': [[100, 50]]}})
+}
+
+describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
+  let mockContext: Context
+
+  beforeAll(async () => {
+    await createAllTables()
+    mockContext = createMockContext()
+  })
+
+  afterEach(async () => {
+    vi.clearAllMocks()
+    await truncateAllTables()
+  })
+
+  afterAll(async () => {
+    await dropAllTables()
+    await closeTestDb()
+  })
+
+  test('should allow access for valid session', async () => {
+    setupApiGatewayMocks()
+    const userId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID()
+    const token = crypto.randomUUID()
+
+    await insertUser({userId, email: 'authorized@example.com', firstName: 'Authorized'})
+    await insertSession({id: sessionId, userId, token, expiresAt: new Date(Date.now() + 3600000)})
+
+    validateSessionTokenMock.mockResolvedValue({sessionId, userId, expiresAt: Date.now() + 3600000})
+
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
+
+    expect(result.principalId).toBe(userId)
+    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+  })
+
+  test('should return unknown principal for expired session', async () => {
+    setupApiGatewayMocks()
+    const token = crypto.randomUUID()
+    validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
+
+    // Use a multi-auth path to avoid 401 on missing userId
+    const event = createMockAPIGatewayRequestAuthorizerEvent({token, path: '/auth/login'})
+
+    const result = await handler(event, mockContext)
+
+    expect(result.principalId).toBe('unknown')
+    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+  })
+
+  test('should return unknown principal for missing Authorization header on multi-auth path', async () => {
+    setupApiGatewayMocks()
+
+    // Use a multi-auth path that doesn't require Authorization header
+    const event = createMockAPIGatewayRequestAuthorizerEvent({path: '/auth/login'})
+    delete event.headers?.Authorization
+
+    const result = await handler(event, mockContext)
+
+    expect(result.principalId).toBe('unknown')
+    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+  })
+
+  test('should throw Unauthorized for malformed token on protected path', async () => {
+    setupApiGatewayMocks()
+    const event = createMockAPIGatewayRequestAuthorizerEvent({token: 'invalid-token', path: '/resource'})
+    event.headers = {...event.headers, Authorization: 'invalid-token'}
+
+    await expect(handler(event, mockContext)).rejects.toThrow('Unauthorized')
+  })
+
+  test('should throw Unauthorized when session validation fails on protected path', async () => {
+    setupApiGatewayMocks()
+    const token = crypto.randomUUID()
+    validateSessionTokenMock.mockRejectedValue(new Error('Session not found'))
+
+    const event = createMockAPIGatewayRequestAuthorizerEvent({token, path: '/resource'})
+
+    await expect(handler(event, mockContext)).rejects.toThrow('Unauthorized')
+  })
+
+  test('should allow access with valid session and include principalId', async () => {
+    setupApiGatewayMocks()
+    const userId = crypto.randomUUID()
+    const token = crypto.randomUUID()
+
+    validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: Date.now() + 3600000})
+
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
+
+    expect(result.principalId).toBe(userId)
+    expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
+  })
+})

@@ -124,4 +124,51 @@ describe('#RegisterDevice', () => {
       expect(body.error.code).toEqual('INTERNAL_ERROR')
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle device with very long token', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
+      // Device token is typically 64 hex characters
+      const longToken = 'a'.repeat(256)
+      event.body = JSON.stringify({...JSON.parse(event.body!), token: longToken})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(201)
+    })
+
+    test('should handle SNS createPlatformEndpoint throwing error', async () => {
+      delete event.headers['Authorization']
+      event.requestContext.authorizer!.principalId = 'unknown'
+      createPlatformEndpointMock.mockImplementation(() => {
+        throw new Error('SNS service unavailable')
+      })
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle upsertDevice database failure', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
+      vi.mocked(upsertDevice).mockRejectedValue(new Error('Database write failed'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle upsertUserDevice database failure', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
+      vi.mocked(upsertUserDevice).mockRejectedValue(new Error('Database write failed'))
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle missing PUSH_NOTIFICATION_TOPIC_ARN', async () => {
+      event.requestContext.authorizer!.principalId = fakeUserId
+      getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
+      delete process.env.PUSH_NOTIFICATION_TOPIC_ARN
+      const output = await handler(event, context)
+      // Should still work for device registration, topic subscription may fail
+      expect([201, 500]).toContain(output.statusCode)
+    })
+  })
 })

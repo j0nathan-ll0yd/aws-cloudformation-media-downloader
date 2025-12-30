@@ -119,4 +119,69 @@ describe('MigrateDSQL Lambda', () => {
 
     await expect(handler({source: 'terraform-deploy'}, context)).rejects.toThrow('Failed to read migrations directory')
   })
+
+  describe('#EdgeCases', () => {
+    it('should handle database connection timeout', async () => {
+      mockExecute.mockRejectedValueOnce(new Error('Connection timeout after 30000ms'))
+
+      await expect(handler({source: 'terraform-deploy'}, context)).rejects.toThrow('Connection timeout')
+    })
+
+    it('should filter out non-SQL files from migrations directory', async () => {
+      mockReaddirSync.mockReturnValue(['0001_initial.sql', 'README.md', '.gitkeep', '0002_indexes.sql'])
+      mockReadFileSync.mockImplementation((path: string) => {
+        if (path.includes('0001')) {
+          return 'CREATE TABLE test (id TEXT);'
+        }
+        if (path.includes('0002')) {
+          return 'CREATE INDEX test_idx ON test(id);'
+        }
+        return ''
+      })
+      mockExecute.mockResolvedValue([])
+
+      const result = await handler({source: 'terraform-deploy'}, context)
+
+      // Should only process .sql files
+      expect(result.applied).toEqual(['0001', '0002'])
+      expect(result.skipped).toEqual([])
+    })
+
+    it('should handle concurrent migration attempts (schema_migrations table exists)', async () => {
+      // First call succeeds (table already exists, no error)
+      // Second call returns existing migrations
+      mockExecute.mockResolvedValueOnce([]) // CREATE TABLE IF NOT EXISTS succeeds
+        .mockResolvedValueOnce([{version: '0001'}, {version: '0002'}]) // All already applied
+
+      const result = await handler({source: 'terraform-deploy'}, context)
+
+      expect(result.applied).toEqual([])
+      expect(result.skipped).toEqual(['0001', '0002'])
+    })
+
+    it('should handle recording migration version failure', async () => {
+      mockExecute.mockResolvedValueOnce([]) // CREATE TABLE
+        .mockResolvedValueOnce([]) // SELECT applied
+        .mockResolvedValueOnce([]) // Apply migration 0001 succeeds
+        .mockRejectedValueOnce(new Error('Failed to insert migration record')) // Recording fails
+
+      const result = await handler({source: 'terraform-deploy'}, context)
+
+      // Should report error for recording failure
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0]).toContain('Failed to insert')
+    })
+
+    it('should process migrations in version order', async () => {
+      // Files returned out of order
+      mockReaddirSync.mockReturnValue(['0003_third.sql', '0001_first.sql', '0002_second.sql'])
+      mockReadFileSync.mockReturnValue('-- Migration')
+      mockExecute.mockResolvedValue([])
+
+      const result = await handler({source: 'terraform-deploy'}, context)
+
+      // Should be applied in sorted order
+      expect(result.applied).toEqual(['0001', '0002', '0003'])
+    })
+  })
 })

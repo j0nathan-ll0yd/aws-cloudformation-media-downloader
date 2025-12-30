@@ -96,4 +96,48 @@ describe('#LoginUser', () => {
       expect(body.error.code).toEqual('custom-5XX-generic')
     })
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle missing idToken in request', async () => {
+      event.body = JSON.stringify({})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(400)
+      expect(authMock.mocks.signInSocial).not.toHaveBeenCalled()
+    })
+
+    test('should handle empty idToken string', async () => {
+      // Empty string passes Zod validation but Better Auth rejects it
+      authMock.mocks.signInSocial.mockRejectedValue({status: 401, message: 'Invalid ID token'})
+      event.body = JSON.stringify({idToken: ''})
+      const output = await handler(event, context)
+      // Better Auth rejects empty token with 401
+      expect(output.statusCode).toEqual(401)
+    })
+
+    test('should handle expired ID token from Apple', async () => {
+      authMock.mocks.signInSocial.mockRejectedValue({status: 401, message: 'Token has expired'})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(401)
+      const body = JSON.parse(output.body)
+      expect(body.error).toBeDefined()
+    })
+
+    test('should handle session creation failure after successful auth', async () => {
+      // Simulate auth succeeding but session creation failing
+      authMock.mocks.signInSocial.mockRejectedValue({status: 500, message: 'Session creation failed'})
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+    })
+
+    test('should handle Better Auth returning redirect response unexpectedly', async () => {
+      // This tests the redirect guard in the handler - cast to unknown to simulate unexpected response shape
+      authMock.mocks.signInSocial.mockResolvedValue({url: 'https://example.com/redirect', redirect: true} as unknown as Awaited<
+        ReturnType<typeof authMock.mocks.signInSocial>
+      >)
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(body.error).toBeDefined()
+    })
+  })
 })

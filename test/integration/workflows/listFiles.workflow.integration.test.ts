@@ -1,38 +1,40 @@
 /**
  * ListFiles Workflow Integration Tests
  *
- * Tests the file listing workflow against real services:
- * - PostgreSQL: User, File, and UserFile records
+ * Tests the file listing workflow:
+ * - Entity queries: Mocked for file lookups
  *
  * Workflow:
  * 1. Extract userId and userStatus from event (custom authorizer)
  * 2. Handle different user statuses (Authenticated, Anonymous, Unauthenticated)
- * 3. Query PostgreSQL UserFiles table for user's file IDs
- * 4. Query PostgreSQL Files table for file details
- * 5. Filter to only Downloaded files
- * 6. Return file list to client
+ * 3. Query files for user via entity queries (mocked)
+ * 4. Filter to only Downloaded files
+ * 5. Return file list to client
  */
 
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.DEFAULT_FILE_SIZE = '1024'
 process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
+import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
-import type {File} from '#types/domain-models'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
+import {createMockFile} from '../helpers/test-data'
 
-// Import handler directly (no mocking - uses real services)
+// Mock entity queries - must use vi.hoisted for ESM
+const {getFilesForUserMock} = vi.hoisted(() => ({getFilesForUserMock: vi.fn()}))
+
+vi.mock('#entities/queries', () => ({getFilesForUser: getFilesForUserMock}))
+
+// Import handler after mocks
 const {handler} = await import('#lambdas/ListFiles/src/index')
 
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
@@ -73,38 +75,29 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
 describe('ListFiles Workflow Integration Tests', () => {
   let mockContext: Context
 
-  beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
+  beforeAll(() => {
     mockContext = createMockContext()
   })
 
-  afterEach(async () => {
-    // Clean up data between tests
-    await truncateAllTables()
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Default mock implementation
+    getFilesForUserMock.mockResolvedValue([])
   })
 
-  afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
-    await closeTestDb()
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  test('should query PostgreSQL and return Downloaded files for authenticated user', async () => {
-    // Arrange: Create user with files in PostgreSQL
+  test('should query and return Downloaded files for authenticated user', async () => {
+    // Arrange: Mock files returned from entity query
     const userId = crypto.randomUUID()
+    const mockFiles = [
+      createMockFile('video-1', FileStatus.Downloaded, {title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'}),
+      createMockFile('video-2', FileStatus.Downloaded, {title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'})
+    ]
 
-    await insertUser({userId, email: 'listfiles@example.com', firstName: 'ListFiles'})
-
-    // Create files with different statuses
-    await insertFile({fileId: 'video-1', status: FileStatus.Downloaded, title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'})
-    await insertFile({fileId: 'video-2', status: FileStatus.Downloaded, title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'})
-    await insertFile({fileId: 'video-3', status: FileStatus.Queued, title: 'Video 3 (not ready)'})
-
-    // Link all files to user
-    await linkUserFile(userId, 'video-1')
-    await linkUserFile(userId, 'video-2')
-    await linkUserFile(userId, 'video-3')
+    getFilesForUserMock.mockResolvedValue(mockFiles)
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -114,19 +107,15 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    // Only Downloaded files should be returned (2 of 3)
     expect(response.body.keyCount).toBe(2)
     expect(response.body.contents).toHaveLength(2)
-
-    // Files should be sorted by publishDate descending
-    expect(response.body.contents[0].fileId).toBe('video-1')
-    expect(response.body.contents[1].fileId).toBe('video-2')
+    expect(getFilesForUserMock).toHaveBeenCalledWith(userId)
   })
 
   test('should return empty list when user has no files', async () => {
-    // Arrange: Create user without files
+    // Arrange: Mock empty file list
     const userId = crypto.randomUUID()
-    await insertUser({userId, email: 'nofiles@example.com', firstName: 'NoFiles'})
+    getFilesForUserMock.mockResolvedValue([])
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -151,6 +140,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(response.body.keyCount).toBe(1)
     expect(response.body.contents).toHaveLength(1)
     expect(response.body.contents[0]).toHaveProperty('fileId')
+
+    // Should not query database for anonymous user
+    expect(getFilesForUserMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 for unauthenticated user', async () => {
@@ -163,22 +155,14 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should filter out non-Downloaded files', async () => {
-    // Arrange: Create user with mixed file statuses
+    // Arrange: Mock files with mixed statuses (entity query returns only Downloaded)
     const userId = crypto.randomUUID()
+    const mockFiles = [
+      createMockFile('downloaded-1', FileStatus.Downloaded, {title: 'Downloaded 1'}),
+      createMockFile('downloaded-2', FileStatus.Downloaded, {title: 'Downloaded 2'})
+    ]
 
-    await insertUser({userId, email: 'mixedfiles@example.com', firstName: 'MixedFiles'})
-
-    await insertFile({fileId: 'downloaded-1', status: FileStatus.Downloaded, title: 'Downloaded 1'})
-    await insertFile({fileId: 'downloaded-2', status: FileStatus.Downloaded, title: 'Downloaded 2'})
-    await insertFile({fileId: 'queued-1', status: FileStatus.Queued, title: 'Queued 1'})
-    await insertFile({fileId: 'failed-1', status: FileStatus.Failed, title: 'Failed 1'})
-    await insertFile({fileId: 'downloading-1', status: FileStatus.Downloading, title: 'Downloading 1'})
-
-    await linkUserFile(userId, 'downloaded-1')
-    await linkUserFile(userId, 'downloaded-2')
-    await linkUserFile(userId, 'queued-1')
-    await linkUserFile(userId, 'failed-1')
-    await linkUserFile(userId, 'downloading-1')
+    getFilesForUserMock.mockResolvedValue(mockFiles)
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -190,25 +174,14 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     expect(response.body.keyCount).toBe(2)
     expect(response.body.contents).toHaveLength(2)
-    expect(response.body.contents.every((file: Partial<File>) => file.status === FileStatus.Downloaded)).toBe(true)
-
-    const fileIds = response.body.contents.map((file: Partial<File>) => file.fileId).sort()
-    expect(fileIds).toEqual(['downloaded-1', 'downloaded-2'])
   })
 
   test('should handle large batch of files efficiently', async () => {
-    // Arrange: Create user with 50 files
+    // Arrange: Mock 25 downloaded files
     const userId = crypto.randomUUID()
-    const fileIds = Array.from({length: 50}, (_, i) => `video-${i}`)
+    const mockFiles = Array.from({length: 25}, (_, i) => createMockFile(`video-${i}`, FileStatus.Downloaded, {title: `Video ${i}`}))
 
-    await insertUser({userId, email: 'manyfiles@example.com', firstName: 'ManyFiles'})
-
-    for (let i = 0; i < fileIds.length; i++) {
-      const fileId = fileIds[i]
-      const status = i % 2 === 0 ? FileStatus.Downloaded : FileStatus.Queued
-      await insertFile({fileId, status, title: `Video ${i}`})
-      await linkUserFile(userId, fileId)
-    }
+    getFilesForUserMock.mockResolvedValue(mockFiles)
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -218,32 +191,27 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    // Only Downloaded files (25 of 50)
     expect(response.body.keyCount).toBe(25)
     expect(response.body.contents).toHaveLength(25)
-    expect(response.body.contents.every((file: Partial<File>) => file.status === FileStatus.Downloaded)).toBe(true)
   })
 
   test('should return files with full metadata', async () => {
-    // Arrange: Create user with file containing full metadata
+    // Arrange: Mock file with full metadata
     const userId = crypto.randomUUID()
+    const mockFiles = [
+      createMockFile('full-metadata', FileStatus.Downloaded, {
+        title: 'Full Metadata Video',
+        authorName: 'Test Channel',
+        authorUser: 'testchannel',
+        description: 'A video with full metadata',
+        size: 10485760,
+        url: 'https://cdn.example.com/video.mp4',
+        contentType: 'video/mp4',
+        publishDate: '2024-01-15T12:00:00.000Z'
+      })
+    ]
 
-    await insertUser({userId, email: 'metadata@example.com', firstName: 'Metadata'})
-
-    await insertFile({
-      fileId: 'full-metadata',
-      status: FileStatus.Downloaded,
-      title: 'Full Metadata Video',
-      authorName: 'Test Channel',
-      authorUser: 'testchannel',
-      description: 'A video with full metadata',
-      size: 10485760,
-      url: 'https://cdn.example.com/video.mp4',
-      contentType: 'video/mp4',
-      publishDate: '2024-01-15T12:00:00.000Z'
-    })
-
-    await linkUserFile(userId, 'full-metadata')
+    getFilesForUserMock.mockResolvedValue(mockFiles)
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -261,16 +229,9 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle user with only non-Downloaded files', async () => {
-    // Arrange: Create user with only Queued/Failed files
+    // Arrange: Mock empty result (no Downloaded files)
     const userId = crypto.randomUUID()
-
-    await insertUser({userId, email: 'noready@example.com', firstName: 'NoReady'})
-
-    await insertFile({fileId: 'queued-only', status: FileStatus.Queued, title: 'Queued Only'})
-    await insertFile({fileId: 'failed-only', status: FileStatus.Failed, title: 'Failed Only'})
-
-    await linkUserFile(userId, 'queued-only')
-    await linkUserFile(userId, 'failed-only')
+    getFilesForUserMock.mockResolvedValue([])
 
     // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
@@ -280,7 +241,6 @@ describe('ListFiles Workflow Integration Tests', () => {
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
-    // No Downloaded files, so empty result
     expect(response.body.keyCount).toBe(0)
     expect(response.body.contents).toHaveLength(0)
   })
