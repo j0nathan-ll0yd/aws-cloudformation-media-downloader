@@ -1,0 +1,38 @@
+meta {
+  name: Send Device Event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/device/event?ApiKey={{apiKey}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  x-device-uuid: bruno-test-device-uuid
+}
+
+body:json {
+  {
+    "event": "app_launch",
+    "timestamp": "{{$timestamp}}",
+    "metadata": {
+      "app_version": "1.0.0",
+      "os_version": "17.0",
+      "device_name": "Bruno Test iPhone"
+    }
+  }
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return no content", function() {
+    expect(res.status).to.equal(204);
+  });
+}

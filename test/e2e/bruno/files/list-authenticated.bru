@@ -1,0 +1,35 @@
+meta {
+  name: List Files (Authenticated)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/files?ApiKey={{apiKey}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.body.contents: isArray
+  res.body.body.keyCount: isNumber
+}
+
+tests {
+  test("should return files array", function() {
+    expect(res.body.body.contents).to.be.an('array');
+  });
+
+  test("should have matching keyCount", function() {
+    expect(res.body.body.keyCount).to.equal(res.body.body.contents.length);
+  });
+}

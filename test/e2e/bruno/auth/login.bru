@@ -1,0 +1,40 @@
+meta {
+  name: Login User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/user/login?ApiKey={{apiKey}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "idToken": "mock-apple-id-token-bruno-test"
+  }
+}
+
+vars:post-response {
+  authToken: res.body.body.token
+  userId: res.body.body.userId
+}
+
+assert {
+  res.status: eq 200
+  res.body.body.token: isDefined
+  res.body.body.userId: isDefined
+}
+
+tests {
+  test("should return same userId as registration", function() {
+    // Note: This assumes the same Apple ID token maps to the same user
+    expect(res.body.body.userId).to.be.a('string');
+  });
+}

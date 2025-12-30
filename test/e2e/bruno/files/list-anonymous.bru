@@ -1,0 +1,27 @@
+meta {
+  name: List Files (Anonymous/Demo)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/files?ApiKey={{apiKey}}
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.body.contents: isArray
+}
+
+tests {
+  test("should return demo content for anonymous users", function() {
+    expect(res.body.body).to.have.property('contents');
+    expect(res.body.body).to.have.property('keyCount');
+  });
+}

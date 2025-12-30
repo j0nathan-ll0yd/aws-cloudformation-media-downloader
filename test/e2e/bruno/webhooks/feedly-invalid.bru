@@ -1,0 +1,38 @@
+meta {
+  name: Feedly Webhook - Invalid URL
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/feedly?ApiKey={{apiKey}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "articleURL": "https://example.com/not-a-youtube-video",
+    "articleTitle": "Invalid URL Test"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: isDefined
+}
+
+tests {
+  test("should reject non-YouTube URL", function() {
+    expect(res.body.error).to.have.property('message');
+  });
+}

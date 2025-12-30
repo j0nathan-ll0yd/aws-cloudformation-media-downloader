@@ -1,0 +1,38 @@
+meta {
+  name: Subscribe to Notifications
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/user/subscribe?ApiKey={{apiKey}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "endpointArn": "{{endpointArn}}",
+    "topicArn": "arn:aws:sns:us-west-2:000000000000:push-notifications"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.body.subscriptionArn: isDefined
+}
+
+tests {
+  test("should return subscription ARN", function() {
+    expect(res.body.body.subscriptionArn).to.match(/^arn:aws:sns:/);
+  });
+}
