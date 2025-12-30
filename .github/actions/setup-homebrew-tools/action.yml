@@ -1,0 +1,20 @@
+name: 'Setup Homebrew Tools'
+description: 'Install Homebrew and hcl2json with caching'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Cache Homebrew packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew
+          /home/linuxbrew/.linuxbrew/Cellar
+        key: homebrew-hcl2json-${{ runner.os }}
+
+    - name: Install hcl2json
+      shell: bash
+      run: brew install hcl2json

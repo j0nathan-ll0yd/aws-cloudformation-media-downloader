@@ -1,0 +1,30 @@
+name: 'Build Project'
+description: 'Run full project build with optional caching'
+
+inputs:
+  cache-build:
+    description: 'Whether to cache build output'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup directories
+      shell: bash
+      run: mkdir -p build
+
+    - name: Cache build output
+      if: inputs.cache-build == 'true'
+      uses: actions/cache@v4
+      with:
+        path: build
+        key: build-${{ runner.os }}-${{ hashFiles('src/**', 'webpack.config.js') }}
+
+    - name: Build dependencies
+      shell: bash
+      run: pnpm run build-dependencies
+
+    - name: Webpack Build
+      shell: bash
+      run: pnpm run build

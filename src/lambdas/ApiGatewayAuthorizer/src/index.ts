@@ -132,12 +132,19 @@ async function getUserIdFromAuthenticationHeader(authorizationHeader: string): P
 
 /**
  * Checks if the request is coming from a reserved IP for remote testing.
+ * SECURITY: This bypass is disabled in production environments.
  *
  * @param event - The API Gateway request authorizer event
  * @returns True if the request is from the reserved test IP and user agent
  * @notExported
  */
 function isRemoteTestRequest(event: APIGatewayRequestAuthorizerEvent): boolean {
+  // Security: Never allow test bypass in production
+  const nodeEnv = getOptionalEnv('NODE_ENV', '')
+  if (nodeEnv === 'production') {
+    return false
+  }
+
   if (!event.headers) {
     return false
   }

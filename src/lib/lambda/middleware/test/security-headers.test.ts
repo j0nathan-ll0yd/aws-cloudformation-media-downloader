@@ -28,7 +28,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
         expect(request.response?.headers?.['Cache-Control']).toBe('no-store')
       })
 
-      it('should add default CORS headers', async () => {
+      it('should NOT add CORS headers (mobile-only API)', async () => {
         const {securityHeaders} = await import('../../middleware/security-headers')
         const middleware = securityHeaders()
 
@@ -36,55 +36,10 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
         await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
 
-        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBe('*')
-        expect(request.response?.headers?.['Access-Control-Allow-Methods']).toBe('GET,POST,PUT,DELETE,OPTIONS')
-        expect(request.response?.headers?.['Access-Control-Allow-Headers']).toBe('Content-Type,Authorization,X-Correlation-Id')
-      })
-    })
-
-    describe('CORS configuration', () => {
-      it('should use configured corsOrigins (single origin)', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
-        const middleware = securityHeaders({corsOrigins: 'https://app.example.com'})
-
-        const request = createMockRequest({statusCode: 200, body: '{}'})
-
-        await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
-
-        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBe('https://app.example.com')
-      })
-
-      it('should use configured corsOrigins (multiple origins)', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
-        const middleware = securityHeaders({corsOrigins: ['https://app.example.com', 'https://admin.example.com']})
-
-        const request = createMockRequest({statusCode: 200, body: '{}'})
-
-        await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
-
-        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBe('https://app.example.com, https://admin.example.com')
-      })
-
-      it('should use configured corsMethods', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
-        const middleware = securityHeaders({corsMethods: 'GET,POST'})
-
-        const request = createMockRequest({statusCode: 200, body: '{}'})
-
-        await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
-
-        expect(request.response?.headers?.['Access-Control-Allow-Methods']).toBe('GET,POST')
-      })
-
-      it('should use configured corsHeaders', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
-        const middleware = securityHeaders({corsHeaders: 'Content-Type,X-Custom-Header'})
-
-        const request = createMockRequest({statusCode: 200, body: '{}'})
-
-        await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
-
-        expect(request.response?.headers?.['Access-Control-Allow-Headers']).toBe('Content-Type,X-Custom-Header')
+        // CORS headers are intentionally omitted for this mobile-only API
+        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBeUndefined()
+        expect(request.response?.headers?.['Access-Control-Allow-Methods']).toBeUndefined()
+        expect(request.response?.headers?.['Access-Control-Allow-Headers']).toBeUndefined()
       })
     })
 
@@ -169,7 +124,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
         expect(request.response?.headers?.['X-Content-Type-Options']).toBe('nosniff')
         expect(request.response?.headers?.['X-Frame-Options']).toBe('DENY')
-        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBe('*')
+        expect(request.response?.headers?.['Strict-Transport-Security']).toBe('max-age=31536000; includeSubDomains')
       })
 
       it('should add headers to 4xx error responses', async () => {
@@ -217,9 +172,9 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
         await middleware.after?.(request as Parameters<NonNullable<ReturnType<typeof securityHeaders>['after']>>[0])
 
-        // Should use all defaults
-        expect(request.response?.headers?.['Access-Control-Allow-Origin']).toBe('*')
+        // Should use all security defaults
         expect(request.response?.headers?.['X-Frame-Options']).toBe('DENY')
+        expect(request.response?.headers?.['X-Content-Type-Options']).toBe('nosniff')
       })
     })
   })

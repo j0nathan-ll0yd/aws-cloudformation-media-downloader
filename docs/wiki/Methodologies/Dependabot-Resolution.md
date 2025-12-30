@@ -23,16 +23,16 @@
 
 ```bash
 # 1. Check what changed
-npm outdated
-npm audit
+pnpm outdated
+pnpm audit
 
 # 2. Update and test
-npm update <package>
-npm test
-npm run build
+pnpm update <package>
+pnpm test
+pnpm run build
 
 # 3. Verify
-npm audit fix
+pnpm audit
 git commit -m "chore(deps): update <package>"
 ```
 
@@ -49,8 +49,8 @@ git commit -m "chore(deps): update <package>"
 ## AWS SDK Special Handling
 
 ```bash
-# Update all AWS packages
-npm update @aws-sdk/client-*
+# Update all AWS packages together
+pnpm update @aws-sdk/client-*
 
 # Add new services to webpack externals
 externals: ['@aws-sdk/client-new-service']

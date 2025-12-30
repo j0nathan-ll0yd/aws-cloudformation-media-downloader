@@ -12,7 +12,8 @@ Central registry of all project conventions with their documentation and enforce
 | **ESLint** | 18 | Linting rules including 8 JSDoc rules |
 | **Git Hooks** | 5 | Pre-commit, commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 6 | Architectural boundary enforcement |
-| **CI Workflows** | 3 | Script validation, type checking, GraphRAG sync |
+| **CI Workflows** | 4 | Script validation, type checking, GraphRAG sync, security audit |
+| **Dependabot** | 2 | npm + GitHub Actions ecosystem updates |
 | **Build-Time** | 1 | pnpm lifecycle script protection |
 
 ### MCP Validation Rules
@@ -54,6 +55,7 @@ Central registry of all project conventions with their documentation and enforce
 | pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
 | Use pnpm deploy, never tofu apply | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Script enforcement (pre-deploy-check.sh) |
+| Security Audit in CI | [Dependabot Resolution](../Methodologies/Dependabot-Resolution.md) | GitHub Actions + Dependabot |
 
 ### HIGH Severity
 
