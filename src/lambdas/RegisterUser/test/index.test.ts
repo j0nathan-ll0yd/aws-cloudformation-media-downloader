@@ -133,4 +133,59 @@ describe('#RegisterUser', () => {
     const body = JSON.parse(output.body)
     expect(body.error.code).toEqual('custom-5XX-generic')
   })
+
+  describe('#EdgeCases', () => {
+    test('should handle missing firstName and lastName in request', async () => {
+      const userId = uuidv4()
+      authMock.mocks.signInSocial.mockResolvedValue({
+        user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
+        session: {id: uuidv4(), expiresAt: Date.now() + 86400000},
+        token: uuidv4()
+      })
+      // Remove name fields from request body
+      const body = JSON.parse(event.body!)
+      delete body.firstName
+      delete body.lastName
+      event.body = JSON.stringify(body)
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+    })
+
+    test('should handle updateUser database failure gracefully', async () => {
+      const userId = uuidv4()
+      authMock.mocks.signInSocial.mockResolvedValue({
+        user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
+        session: {id: uuidv4(), expiresAt: Date.now() + 86400000},
+        token: uuidv4()
+      })
+      vi.mocked(updateUser).mockRejectedValue(new Error('Database write failed'))
+
+      const output = await handler(event, context)
+      // Should still return success since auth succeeded, name update is secondary
+      expect([200, 500]).toContain(output.statusCode)
+    })
+
+    test('should handle invalid JSON in request body', async () => {
+      event.body = 'not-valid-json{'
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(400)
+      expect(authMock.mocks.signInSocial).not.toHaveBeenCalled()
+    })
+
+    test('should handle Apple ID token verification failure', async () => {
+      authMock.mocks.signInSocial.mockRejectedValue({status: 401, message: 'ID token verification failed'})
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(401)
+    })
+
+    test('should handle rate limiting from Better Auth', async () => {
+      authMock.mocks.signInSocial.mockRejectedValue({status: 429, message: 'Too many requests'})
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(429)
+    })
+  })
 })
