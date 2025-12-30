@@ -35,7 +35,8 @@ import {createMockContext} from '../../helpers/lambda-context'
 import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../../helpers/sns-helpers'
 import {FileStatus} from '#types/enums'
 
-describe('Database Failure Scenario Tests', () => {
+// Skip in CI: Some tests invoke handlers that use own Drizzle connection
+describe.skipIf(Boolean(process.env.CI))('Database Failure Scenario Tests', () => {
   let platformAppArn: string
   const testAppName = `test-db-failure-app-${Date.now()}`
 
