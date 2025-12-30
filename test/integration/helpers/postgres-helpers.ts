@@ -25,12 +25,23 @@ const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test
 const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>}>()
 
 /**
+ * Get schema prefix for CI isolation.
+ * Uses GITHUB_RUN_ID to ensure parallel CI runs don't interfere.
+ */
+function getSchemaPrefix(): string {
+  const runId = process.env.GITHUB_RUN_ID
+  return runId ? `run_${runId}_` : ''
+}
+
+/**
  * Get the current worker's schema name.
- * Uses JEST_WORKER_ID environment variable set by Jest.
+ * Uses JEST_WORKER_ID environment variable set by Jest/Vitest.
+ * Includes CI run prefix for isolation when parallel CI runs occur.
  */
 function getWorkerSchema(): string {
+  const prefix = getSchemaPrefix()
   const workerId = process.env.JEST_WORKER_ID || '1'
-  return `worker_${workerId}`
+  return `${prefix}worker_${workerId}`
 }
 
 /**
