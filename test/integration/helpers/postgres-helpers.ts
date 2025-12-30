@@ -522,6 +522,36 @@ export async function getSessions(): Promise<Array<{id: string; userId: string}>
   return rows.map((row) => ({id: row.id, userId: row.user_id}))
 }
 
+/**
+ * Get a session by token from PostgreSQL
+ */
+export async function getSessionByToken(token: string): Promise<{id: string; userId: string; expiresAt: Date; updatedAt: Date} | null> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, user_id, expires_at, updated_at FROM sessions WHERE token = ${token}`)
+  const rows = [...result] as Array<{id: string; user_id: string; expires_at: string; updated_at: string}>
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return {id: row.id, userId: row.user_id, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
+}
+
+/**
+ * Get a session by ID from PostgreSQL
+ */
+export async function getSessionById(sessionId: string): Promise<{id: string; userId: string; token: string; expiresAt: Date; updatedAt: Date} | null> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, user_id, token, expires_at, updated_at FROM sessions WHERE id = ${sessionId}`)
+  const rows = [...result] as Array<{id: string; user_id: string; token: string; expires_at: string; updated_at: string}>
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return {id: row.id, userId: row.user_id, token: row.token, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
+}
+
 // ============================================================================
 // Verification Operations
 // ============================================================================

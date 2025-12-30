@@ -5,7 +5,7 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import type {ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domain-models'
 
@@ -204,5 +204,62 @@ export function createMockScheduledEvent(eventId: string, ruleName = 'ScheduledE
     region: 'us-west-2',
     resources: [`arn:aws:events:us-west-2:123456789012:rule/${ruleName}`],
     detail: {}
+  }
+}
+
+/**
+ * Creates an S3 object creation event for testing S3ObjectCreated Lambda
+ * @param key - S3 object key (file path in bucket)
+ * @param options - Optional overrides for event fields
+ */
+export function createMockS3Event(
+  key: string,
+  options?: {bucket?: string; size?: number; eventName?: string; correlationId?: string}
+): S3Event {
+  const bucket = options?.bucket ?? 'test-media-bucket'
+  const size = options?.size ?? 5242880
+  const eventName = options?.eventName ?? 'ObjectCreated:Put'
+  const eventTime = new Date().toISOString()
+
+  // S3 keys are URL-encoded in events
+  const encodedKey = encodeURIComponent(key).replace(/%20/g, '+')
+
+  // Build user metadata with optional correlation ID
+  const userMetadata: Record<string, string> = {}
+  if (options?.correlationId) {
+    userMetadata['x-amz-meta-correlation-id'] = options.correlationId
+  }
+
+  return {
+    Records: [{
+      eventVersion: '2.1',
+      eventSource: 'aws:s3',
+      awsRegion: 'us-west-2',
+      eventTime,
+      eventName,
+      userIdentity: {principalId: 'EXAMPLE'},
+      requestParameters: {sourceIPAddress: '127.0.0.1'},
+      responseElements: {'x-amz-request-id': 'EXAMPLE123456789', 'x-amz-id-2': 'EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH'},
+      s3: {
+        s3SchemaVersion: '1.0',
+        configurationId: 'testConfigRule',
+        bucket: {name: bucket, ownerIdentity: {principalId: 'EXAMPLE'}, arn: `arn:aws:s3:::${bucket}`},
+        object: {key: encodedKey, size, eTag: '0123456789abcdef0123456789abcdef', sequencer: '0A1B2C3D4E5F678901', ...userMetadata}
+      }
+    }]
+  }
+}
+
+/**
+ * Creates an S3 event with multiple records for batch testing
+ * @param keys - Array of S3 object keys
+ * @param bucket - S3 bucket name (default: 'test-media-bucket')
+ */
+export function createMockS3BatchEvent(keys: string[], bucket = 'test-media-bucket'): S3Event {
+  const baseEvent = createMockS3Event(keys[0], {bucket})
+  const additionalRecords = keys.slice(1).map((key) => createMockS3Event(key, {bucket}).Records[0])
+
+  return {
+    Records: [...baseEvent.Records, ...additionalRecords]
   }
 }
