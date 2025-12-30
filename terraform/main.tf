@@ -29,8 +29,13 @@ data "aws_caller_identity" "current" {}
 # AWS-managed layer published in account 901920570463
 locals {
   # Lambda architecture: arm64 (Graviton2) for 20% cost savings and 13-24% faster cold starts
+  # Exception: StartFileUpload uses x86_64 for yt-dlp/ffmpeg binary compatibility
   lambda_architecture = "arm64"
-  adot_layer_arn      = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-arm64-ver-1-30-2:1"
+
+  # AWS Distro for OpenTelemetry (ADOT) collector layers
+  # Must match Lambda architecture - using wrong arch causes "cannot execute binary file" errors
+  adot_layer_arn        = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-arm64-ver-1-30-2:1"
+  adot_layer_arn_x86_64 = "arn:aws:lambda:${data.aws_region.current.id}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-2:1"
 
   # Common tags for all resources (drift detection & identification)
   common_tags = {

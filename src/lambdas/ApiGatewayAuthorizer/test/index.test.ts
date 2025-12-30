@@ -34,7 +34,6 @@ const {handler} = await import('./../src')
 
 describe('#APIGatewayAuthorizer', () => {
   const successResponseKeys = ['context', 'policyDocument', 'principalId', 'usageIdentifierKey']
-  const failureResponseKeys = ['context', 'policyDocument', 'principalId']
   describe('#HeaderApiKey', () => {
     let event: APIGatewayRequestAuthorizerEvent
     beforeEach(() => {
@@ -77,26 +76,19 @@ describe('#APIGatewayAuthorizer', () => {
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(output.usageIdentifierKey).toEqual(fakeUsageIdentifierKey)
     })
-    test('should handle an empty Authorization header', async () => {
+    test('should return 401 for missing Authorization header on protected path', async () => {
       delete event.headers!['Authorization']
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
-      const output = await handler(event, testContext)
-      expect(output.principalId).toEqual('unknown')
-      expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
-      expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
-    test('should handle an invalid Authorization header', async () => {
+    test('should return 401 for invalid Authorization header format', async () => {
       event.headers!['Authorization'] = 'invalid-header'
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      const output = await handler(event, testContext)
-      expect(output.principalId).toEqual('unknown')
-      expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
-      expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should handle an expired Authorization header (as multi-auth path)', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
@@ -109,29 +101,21 @@ describe('#APIGatewayAuthorizer', () => {
       expect(output.policyDocument.Statement[0].Effect).toEqual('Allow')
       expect(Object.keys(output)).toEqual(expect.arrayContaining(successResponseKeys))
     })
-    test('should handle an expired Authorization header (as non-multi-auth path)', async () => {
+    test('should return 401 for expired session on protected path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
       event.resource = event.path = '/any-path-not-multi-auth'
-      const output = await handler(event, testContext)
-      expect(output.principalId).toEqual('unknown')
-      expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
-      expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
-    test('should enforce the Authentication header for multiauthentication paths', async () => {
-      // if the path supports requires authentication, enforce it
+    test('should return 401 for missing Authorization header on protected path (userSubscribe)', async () => {
       event.resource = event.path = '/userSubscribe'
       delete event.headers!['Authorization']
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
-      validateSessionTokenMock.mockResolvedValue({userId: fakeUserId, sessionId: 'session-123', expiresAt: Date.now() + 3600000})
-      const output = await handler(event, testContext)
-      expect(output.principalId).toEqual('unknown')
-      expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
-      expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should handle a test request if structured correctly', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
@@ -150,15 +134,12 @@ describe('#APIGatewayAuthorizer', () => {
       event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
       process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
     })
-    test('should deny access when headers are missing on non-multi-auth path', async () => {
+    test('should return 401 when headers are missing on non-multi-auth path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
       getUsagePlansMock.mockReturnValue(getUsagePlansResponse)
       getUsageMock.mockReturnValue(getUsageResponse)
       event.headers = null
-      const output = await handler(event, testContext)
-      expect(output.principalId).toEqual('unknown')
-      expect(output.policyDocument.Statement[0].Effect).toEqual('Deny')
-      expect(Object.keys(output)).toEqual(expect.arrayContaining(failureResponseKeys))
+      await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should allow access when headers are missing on multi-auth path', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)

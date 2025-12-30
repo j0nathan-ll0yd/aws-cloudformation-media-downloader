@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: aws-cloudformation-media-downloader
+  title: Offline Media Downloader API
   description: |-
     Offline Media Downloader API
 
     A serverless AWS media downloader service that downloads media content
     (primarily YouTube videos) and integrates with a companion iOS app for
     offline playback.
-  version: 1.0.0
+  version: 0.0.0
 tags:
   - name: Files
   - name: Devices
@@ -669,18 +669,27 @@ components:
               type: string
               enum:
                 - Forbidden
-              description: Error code
+              description: Error code - always "Forbidden" for 403 responses
             message:
               type: string
-              description: Error message
+              description: Human-readable error message describing the authorization failure
           required:
             - code
             - message
           description: Error details
         requestId:
           type: string
-          description: Request ID for tracking
-      description: Forbidden error response (403)
+          description: Request ID for tracking and debugging
+      description: |-
+        Forbidden error response (403)
+
+        Returned when the API key is invalid or the request is not authorized.
+        This is NOT related to session tokens - see UnauthorizedError (401) for session issues.
+
+        Common causes:
+        - API key is missing from query parameters
+        - API key is invalid or disabled
+        - Request is not allowed for this API key
     InternalServerError:
       type: object
       required:
@@ -994,18 +1003,34 @@ components:
               type: string
               enum:
                 - Unauthorized
-              description: Error code
+              description: Error code - always "Unauthorized" for 401 responses
             message:
               type: string
-              description: Error message
+              description: |-
+                Human-readable error message describing the authentication failure.
+                Examples: "Invalid session token", "Session expired", "Authorization header missing"
           required:
             - code
             - message
           description: Error details
         requestId:
           type: string
-          description: Request ID for tracking
-      description: Unauthorized error response (401)
+          description: Request ID for tracking and debugging
+      description: |-
+        Unauthorized error response (401)
+
+        Returned when authentication fails. The iOS app MUST handle this by:
+        1. Clearing stored session tokens
+        2. Prompting user to re-authenticate via Sign in with Apple
+
+        Common causes:
+        - Session token is invalid or malformed
+        - Session token has expired (sessions expire after 30 days of inactivity)
+        - Authorization header is missing on a protected endpoint
+        - Bearer token format is invalid
+
+        Note: This is distinct from 403 Forbidden, which indicates the API key
+        is invalid (not the session token).
 servers:
   - url: https://api.example.com
     description: Production server

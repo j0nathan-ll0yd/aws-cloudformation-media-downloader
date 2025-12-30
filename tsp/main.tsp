@@ -46,6 +46,19 @@ model ErrorResponse {
 
 /**
  * Unauthorized error response (401)
+ *
+ * Returned when authentication fails. The iOS app MUST handle this by:
+ * 1. Clearing stored session tokens
+ * 2. Prompting user to re-authenticate via Sign in with Apple
+ *
+ * Common causes:
+ * - Session token is invalid or malformed
+ * - Session token has expired (sessions expire after 30 days of inactivity)
+ * - Authorization header is missing on a protected endpoint
+ * - Bearer token format is invalid
+ *
+ * Note: This is distinct from 403 Forbidden, which indicates the API key
+ * is invalid (not the session token).
  */
 @error
 model UnauthorizedError {
@@ -54,24 +67,33 @@ model UnauthorizedError {
    */
   error: {
     /**
-     * Error code
+     * Error code - always "Unauthorized" for 401 responses
      */
     code: "Unauthorized";
 
     /**
-     * Error message
+     * Human-readable error message describing the authentication failure.
+     * Examples: "Invalid session token", "Session expired", "Authorization header missing"
      */
     message: string;
   };
 
   /**
-   * Request ID for tracking
+   * Request ID for tracking and debugging
    */
   requestId: string;
 }
 
 /**
  * Forbidden error response (403)
+ *
+ * Returned when the API key is invalid or the request is not authorized.
+ * This is NOT related to session tokens - see UnauthorizedError (401) for session issues.
+ *
+ * Common causes:
+ * - API key is missing from query parameters
+ * - API key is invalid or disabled
+ * - Request is not allowed for this API key
  */
 @error
 model ForbiddenError {
@@ -80,18 +102,18 @@ model ForbiddenError {
    */
   error: {
     /**
-     * Error code
+     * Error code - always "Forbidden" for 403 responses
      */
     code: "Forbidden";
 
     /**
-     * Error message
+     * Human-readable error message describing the authorization failure
      */
     message: string;
   };
 
   /**
-   * Request ID for tracking
+   * Request ID for tracking and debugging
    */
   requestId: string;
 }

@@ -282,11 +282,18 @@ async function handleDownloadFailure(
  * @param message - The download request from SQS
  * @throws Error if the download should be retried via SQS
  */
-async function processDownloadRequest(message: DownloadQueueMessage): Promise<void> {
+async function processDownloadRequest(message: DownloadQueueMessage, receiveCount: number = 1): Promise<void> {
   const {fileId, correlationId, sourceUrl} = message
   const fileUrl = sourceUrl || `https://www.youtube.com/watch?v=${fileId}`
+  const isRetry = receiveCount > 1
 
-  logInfo('Processing download request', {fileId, correlationId, attempt: message.attempt})
+  // Log prominently if this is a retry attempt
+  if (isRetry) {
+    logInfo('RETRY: Processing download request', {fileId, correlationId, receiveCount, isRetry: true})
+    metrics.addMetric('DownloadRetryAttempt', MetricUnit.Count, 1)
+  } else {
+    logInfo('Processing download request', {fileId, correlationId, receiveCount})
+  }
 
   // Get existing download state for retry counting
   let existingRetryCount = 0
@@ -297,6 +304,17 @@ async function processDownloadRequest(message: DownloadQueueMessage): Promise<vo
   if (existingDownload) {
     existingRetryCount = existingDownload.retryCount ?? 0
     existingMaxRetries = existingDownload.maxRetries ?? 5
+    // Log the previous failure state for visibility
+    if (existingDownload.lastError) {
+      logInfo('Previous failure state', {
+        fileId,
+        previousStatus: existingDownload.status,
+        previousError: existingDownload.lastError,
+        errorCategory: existingDownload.errorCategory,
+        retryCount: existingRetryCount,
+        maxRetries: existingMaxRetries
+      })
+    }
   }
 
   // Mark download as in_progress
@@ -393,12 +411,15 @@ export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchR
   const batchItemFailures: {itemIdentifier: string}[] = []
 
   for (const record of event.Records) {
+    // SQS provides ApproximateReceiveCount - how many times this message has been received
+    const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
+
     try {
       const message: DownloadQueueMessage = JSON.parse(record.body)
-      await processDownloadRequest(message)
+      await processDownloadRequest(message, receiveCount)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      logError('Download request failed', {messageId: record.messageId, error: errorMessage})
+      logError('Download request failed', {messageId: record.messageId, error: errorMessage, receiveCount})
       batchItemFailures.push({itemIdentifier: record.messageId})
     }
   }
