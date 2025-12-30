@@ -23,7 +23,8 @@ import {createTestEndpoint, createTestPlatformApplication, deleteTestEndpoint, d
 import {createMockAPIGatewayEvent} from '../../helpers/test-data'
 import {FileStatus} from '#types/enums'
 
-describe('External Services Failure Scenario Tests', () => {
+// Skip in CI: Uses LocalStack SNS/SQS which may not be reliably available
+describe.skipIf(Boolean(process.env.CI))('External Services Failure Scenario Tests', () => {
   let platformAppArn: string
   const testAppName = `test-ext-failure-app-${Date.now()}`
 
