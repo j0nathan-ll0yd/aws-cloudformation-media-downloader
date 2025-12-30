@@ -123,8 +123,8 @@ export const DEFAULT_SESSION_ID = 'session-1234-5678-9abc-def012345678'
  *
  * @example
  * const file = createMockFile()
- * const failedFile = createMockFile({status: 'Failed', size: 0})
- * const customFile = createMockFile({fileId: 'custom123', title: 'My Video'})
+ * const failedFile = createMockFile(\{status: 'Failed', size: 0\})
+ * const customFile = createMockFile(\{fileId: 'custom123', title: 'My Video'\})
  */
 export function createMockFile(overrides: Partial<FileRow> = {}): FileRow {
   const fileId = overrides.fileId ?? DEFAULT_FILE_ID
@@ -151,7 +151,7 @@ export function createMockFile(overrides: Partial<FileRow> = {}): FileRow {
  *
  * @example
  * const device = createMockDevice()
- * const customDevice = createMockDevice({name: "User's iPad", systemName: 'iPadOS'})
+ * const customDevice = createMockDevice(\{name: "User's iPad", systemName: 'iPadOS'\})
  */
 export function createMockDevice(overrides: Partial<DeviceRow> = {}): DeviceRow {
   const deviceId = overrides.deviceId ?? DEFAULT_DEVICE_ID
@@ -173,8 +173,8 @@ export function createMockDevice(overrides: Partial<DeviceRow> = {}): DeviceRow 
  *
  * @example
  * const user = createMockUser()
- * const unverifiedUser = createMockUser({emailVerified: false})
- * const customUser = createMockUser({id: 'custom-uuid', email: 'custom@example.com'})
+ * const unverifiedUser = createMockUser(\{emailVerified: false\})
+ * const customUser = createMockUser(\{id: 'custom-uuid', email: 'custom\@example.com'\})
  */
 export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
   const now = new Date()
@@ -200,7 +200,7 @@ export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
  *
  * @example
  * const userFile = createMockUserFile()
- * const customLink = createMockUserFile({userId: 'user-123', fileId: 'file-456'})
+ * const customLink = createMockUserFile(\{userId: 'user-123', fileId: 'file-456'\})
  */
 export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFileRow {
   return {userId: DEFAULT_USER_ID, fileId: DEFAULT_FILE_ID, createdAt: new Date(), ...overrides}
@@ -213,7 +213,7 @@ export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFi
  *
  * @example
  * const userDevice = createMockUserDevice()
- * const customLink = createMockUserDevice({userId: 'user-123', deviceId: 'device-456'})
+ * const customLink = createMockUserDevice(\{userId: 'user-123', deviceId: 'device-456'\})
  */
 export function createMockUserDevice(overrides: Partial<UserDeviceRow> = {}): UserDeviceRow {
   return {userId: DEFAULT_USER_ID, deviceId: DEFAULT_DEVICE_ID, createdAt: new Date(), ...overrides}
@@ -226,7 +226,7 @@ export function createMockUserDevice(overrides: Partial<UserDeviceRow> = {}): Us
  *
  * @example
  * const session = createMockSession()
- * const expiredSession = createMockSession({expiresAt: new Date(Date.now() - 3600000)})
+ * const expiredSession = createMockSession(\{expiresAt: new Date(Date.now() - 3600000)\})
  */
 export function createMockSession(overrides: Partial<SessionRow> = {}): SessionRow {
   const now = new Date()
@@ -251,7 +251,7 @@ export function createMockSession(overrides: Partial<SessionRow> = {}): SessionR
  *
  * @example
  * const idp = createMockIdentityProvider()
- * const expiredIdp = createMockIdentityProvider({expiresAt: Math.floor(Date.now() / 1000) - 3600})
+ * const expiredIdp = createMockIdentityProvider(\{expiresAt: Math.floor(Date.now() / 1000) - 3600\})
  */
 export function createMockIdentityProvider(overrides: Partial<IdentityProviderRow> = {}): IdentityProviderRow {
   return {
@@ -276,8 +276,8 @@ export function createMockIdentityProvider(overrides: Partial<IdentityProviderRo
  *
  * @example
  * const download = createMockFileDownload()
- * const failedDownload = createMockFileDownload({status: 'Failed', lastError: 'Network timeout'})
- * const retrying = createMockFileDownload({retryCount: 2, retryAfter: new Date()})
+ * const failedDownload = createMockFileDownload(\{status: 'Failed', lastError: 'Network timeout'\})
+ * const retrying = createMockFileDownload(\{retryCount: 2, retryAfter: new Date()\})
  */
 export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {}): FileDownloadRow {
   const now = new Date()
@@ -305,7 +305,7 @@ export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {})
  *
  * @example
  * const files = createMockFiles(3)  // Creates 3 files with IDs file-1, file-2, file-3
- * const customFiles = createMockFiles(2, {status: 'Queued'})  // All files queued
+ * const customFiles = createMockFiles(2, \{status: 'Queued'\})  // All files queued
  */
 export function createMockFiles(count: number, overrides: Partial<FileRow> = {}): FileRow[] {
   return Array.from({length: count}, (_, i) => createMockFile({fileId: `file-${i + 1}`, title: `Test Video ${i + 1}`, ...overrides}))

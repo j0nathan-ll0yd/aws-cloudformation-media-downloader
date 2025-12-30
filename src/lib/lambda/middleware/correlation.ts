@@ -58,7 +58,6 @@ export function extractCorrelationFromS3(event: S3Event): string {
   if (record?.responseElements?.['x-amz-request-id']) {
     return record.responseElements['x-amz-request-id']
   }
-  // Fallback to event source ARN or timestamp-based ID
   return record?.s3?.object?.key || `s3-${Date.now()}`
 }
 
@@ -73,7 +72,6 @@ export function extractCorrelationFromS3Record(record: S3EventRecord): string {
   if (record?.responseElements?.['x-amz-request-id']) {
     return record.responseElements['x-amz-request-id']
   }
-  // Fallback to object key or timestamp-based ID
   return record?.s3?.object?.key || `s3-${Date.now()}`
 }
 

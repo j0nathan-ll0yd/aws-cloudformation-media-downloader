@@ -91,8 +91,6 @@ export class CircuitBreaker {
    */
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     const state = getState(this.config.name)
-
-    // Check if circuit should transition from OPEN to HALF_OPEN
     if (state.state === 'OPEN') {
       const timeSinceFailure = Date.now() - state.lastFailureTime
       if (timeSinceFailure >= this.config.resetTimeout) {
@@ -102,7 +100,6 @@ export class CircuitBreaker {
         throw new CircuitBreakerOpenError(this.config.name, this.config.resetTimeout - timeSinceFailure)
       }
     }
-
     try {
       const result = await operation()
       this.onSuccess(state)
