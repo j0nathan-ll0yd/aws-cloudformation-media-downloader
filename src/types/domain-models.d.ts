@@ -34,6 +34,12 @@ export interface User {
   firstName?: string
   /** User's last name (optional, from Apple ID) */
   lastName?: string
+  /** Apple device ID for Sign In With Apple lookup */
+  appleDeviceId?: string
+  /** Timestamp when user was created */
+  createdAt?: Date
+  /** Timestamp when user was last updated */
+  updatedAt?: Date
 }
 
 /**
@@ -106,6 +112,14 @@ export interface Device {
  * @see LoginUser Lambda for authentication flow
  */
 export interface IdentityProvider {
+  /** Provider's user ID (e.g., Apple's sub claim) */
+  userId: string
+  /** User's email from the provider */
+  email: string
+  /** Whether email has been verified by the provider */
+  emailVerified: boolean
+  /** Whether the email is a private relay (Apple) */
+  isPrivateEmail: boolean
   /** OAuth access token for API requests */
   accessToken: string
   /** OAuth refresh token for obtaining new access tokens */

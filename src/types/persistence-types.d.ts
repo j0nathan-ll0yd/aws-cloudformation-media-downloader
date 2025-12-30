@@ -31,6 +31,8 @@ export interface UserDevice {
   userId: string
   /** Device ID (foreign key to Devices entity) */
   deviceId: string
+  /** Timestamp when relationship was created */
+  createdAt?: Date
 }
 
 /**
@@ -54,4 +56,6 @@ export interface UserFile {
   fileId: string
   /** User ID (foreign key to Users entity) */
   userId: string
+  /** Timestamp when relationship was created */
+  createdAt?: Date
 }

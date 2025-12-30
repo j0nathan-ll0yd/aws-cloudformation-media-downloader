@@ -12,4 +12,5 @@ export type { PostgresJsDatabase } from './client'
 
 export * from './schema'
 export * from './types'
+export * from './type-utils'
 export * from './fk-enforcement'

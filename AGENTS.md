@@ -406,7 +406,8 @@ The following patterns have caused issues in this project and should be avoided:
 | Pattern | Usage | Examples |
 |---------|-------|----------|
 | Simple nouns | Domain entities | `User`, `File`, `Device`, `Session` |
-| `*Item` | Entity row types | `UserItem`, `FileItem`, `DeviceItem` |
+| `*Row` | Drizzle database rows | `UserRow`, `FileRow`, `DeviceRow` |
+| `*Item` | Entity row types with joins | `UserItem`, `FileItem`, `DeviceItem` |
 | `*Input` | Request payloads & mutations | `UserLoginInput`, `CreateFileInput` |
 | `*Response` | API response wrappers | `FileResponse`, `LoginResponse` |
 | `*Error` | Error classes | `AuthorizationError`, `ValidationError` |

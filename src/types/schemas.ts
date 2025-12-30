@@ -29,3 +29,15 @@ export type UserSubscribeInput = z.infer<typeof userSubscribeSchema>
 export type RegisterUserInput = z.infer<typeof registerUserSchema>
 /** User login payload with Apple Sign-In token */
 export type LoginUserInput = z.infer<typeof loginUserSchema>
+
+/**
+ * Type Aliases for API Schema Consistency
+ *
+ * Maps auto-generated *Request types to project convention *Input types.
+ * This provides a consistent naming convention across the codebase.
+ */
+export type { DeviceRegistrationRequest as DeviceRegistrationInput } from './api-schema'
+export type { UserLoginRequest as LoginInput } from './api-schema'
+export type { UserRegistrationRequest as RegistrationInput } from './api-schema'
+export type { UserSubscriptionRequest as SubscriptionInput } from './api-schema'
+export type { FeedlyWebhookRequest as FeedlyWebhookInput } from './api-schema'
