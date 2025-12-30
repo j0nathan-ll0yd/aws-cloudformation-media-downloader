@@ -38,7 +38,6 @@ export type { EndpointCleanupResult }
  */
 export async function cleanupDisabledEndpoint(deviceId: string, endpointArn: string): Promise<EndpointCleanupResult> {
   logInfo('Cleaning up disabled endpoint', {deviceId, endpointArn})
-
   try {
     // Step 1: Delete UserDevices junction records first (children)
     await deleteUserDevicesByDeviceId(deviceId)
