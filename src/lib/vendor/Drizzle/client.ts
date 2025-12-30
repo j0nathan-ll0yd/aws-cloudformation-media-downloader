@@ -15,7 +15,9 @@
 import {DsqlSigner} from '@aws-sdk/dsql-signer'
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import type {PostgresJsDatabase} from 'drizzle-orm/postgres-js'
+import type {ExtractTablesWithRelations} from 'drizzle-orm'
+import type {PgTransaction} from 'drizzle-orm/pg-core'
+import type {PostgresJsDatabase, PostgresJsQueryResultHKT} from 'drizzle-orm/postgres-js'
 
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {recordConnectionMetric} from './instrumentation'
@@ -139,6 +141,35 @@ export async function closeDrizzleClient(): Promise<void> {
       recordConnectionMetric('closed')
     }
   }
+}
+
+/**
+ * Transaction client type for use in transaction callbacks.
+ */
+export type TransactionClient = PgTransaction<
+  PostgresJsQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>
+
+/**
+ * Executes a function within a database transaction.
+ * Automatically rolls back on error.
+ *
+ * @param fn - The function to execute within the transaction
+ * @returns The result of the function
+ *
+ * @example
+ * ```typescript
+ * await withTransaction(async (tx) => {
+ *   await tx.insert(users).values(userData)
+ *   await tx.insert(identityProviders).values(idpData)
+ * })
+ * ```
+ */
+export async function withTransaction<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
+  const db = await getDrizzleClient()
+  return await db.transaction(fn)
 }
 
 /**

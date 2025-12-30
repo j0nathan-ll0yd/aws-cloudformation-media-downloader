@@ -7,7 +7,7 @@
  * @see src/entities/UserFiles.ts for legacy ElectroDB wrapper (to be deprecated)
  * @see src/entities/UserDevices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {and, eq, inArray} from 'drizzle-orm'
+import {and, eq, inArray, or} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
@@ -45,6 +45,18 @@ export async function getUserFilesByUserId(userId: string): Promise<UserFileRow[
 }
 
 /**
+ * Gets file IDs for a user (optimized - fetches only IDs).
+ * Use when caller only needs file IDs, not full relationship data.
+ * @param userId - The user's unique identifier
+ * @returns Array of file IDs
+ */
+export async function getUserFileIdsByUserId(userId: string): Promise<string[]> {
+  const db = await getDrizzleClient()
+  const result = await db.select({fileId: userFiles.fileId}).from(userFiles).where(eq(userFiles.userId, userId))
+  return result.map((r) => r.fileId)
+}
+
+/**
  * Gets all user relationships for a file.
  * @param fileId - The file's unique identifier
  * @returns Array of user-file rows
@@ -78,20 +90,23 @@ export async function createUserFile(input: CreateUserFileInput): Promise<UserFi
 
 /**
  * Upserts a user-file relationship (create if not exists).
+ * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
  * @param input - The user-file data to upsert
  * @returns The existing or created user-file row
  */
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
   const db = await getDrizzleClient()
 
-  const existing = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
+  // Try to insert, do nothing on conflict (junction table has no updatable fields)
+  const result = await db.insert(userFiles).values(input).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
 
-  if (existing.length > 0) {
-    return existing[0]
+  // If conflict occurred (no rows returned), fetch existing record
+  if (result.length === 0) {
+    const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
+    return existing
   }
 
-  const [created] = await db.insert(userFiles).values(input).returning()
-  return created
+  return result[0]
 }
 
 /**
@@ -115,13 +130,20 @@ export async function deleteUserFilesByUserId(userId: string): Promise<void> {
 
 /**
  * Deletes multiple user-file relationships (batch operation).
+ * Uses single query with OR conditions instead of N separate queries.
  * @param keys - Array of userId/fileId pairs to delete
  */
 export async function deleteUserFilesBatch(keys: Array<{userId: string; fileId: string}>): Promise<void> {
-  const db = await getDrizzleClient()
-  for (const k of keys) {
-    await db.delete(userFiles).where(and(eq(userFiles.userId, k.userId), eq(userFiles.fileId, k.fileId)))
+  if (keys.length === 0) {
+    return
   }
+
+  const db = await getDrizzleClient()
+
+  // Build OR conditions for composite key matching
+  const conditions = keys.map((k) => and(eq(userFiles.userId, k.userId), eq(userFiles.fileId, k.fileId)))
+
+  await db.delete(userFiles).where(or(...conditions))
 }
 
 // UserDevice Operations
@@ -146,6 +168,18 @@ export async function getUserDevice(userId: string, deviceId: string): Promise<U
 export async function getUserDevicesByUserId(userId: string): Promise<UserDeviceRow[]> {
   const db = await getDrizzleClient()
   return await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+}
+
+/**
+ * Gets device IDs for a user (optimized - fetches only IDs).
+ * Use when caller only needs device IDs, not full relationship data.
+ * @param userId - The user's unique identifier
+ * @returns Array of device IDs
+ */
+export async function getUserDeviceIdsByUserId(userId: string): Promise<string[]> {
+  const db = await getDrizzleClient()
+  const result = await db.select({deviceId: userDevices.deviceId}).from(userDevices).where(eq(userDevices.userId, userId))
+  return result.map((r) => r.deviceId)
 }
 
 /**
@@ -198,20 +232,25 @@ export async function createUserDevice(input: CreateUserDeviceInput): Promise<Us
 
 /**
  * Upserts a user-device relationship (create if not exists).
+ * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
  * @param input - The user-device data to upsert
  * @returns The existing or created user-device row
  */
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
   const db = await getDrizzleClient()
 
-  const existing = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId))).limit(1)
+  // Try to insert, do nothing on conflict (junction table has no updatable fields)
+  const result = await db.insert(userDevices).values(input).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
 
-  if (existing.length > 0) {
-    return existing[0]
+  // If conflict occurred (no rows returned), fetch existing record
+  if (result.length === 0) {
+    const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId))).limit(
+      1
+    )
+    return existing
   }
 
-  const [created] = await db.insert(userDevices).values(input).returning()
-  return created
+  return result[0]
 }
 
 /**

@@ -34,6 +34,18 @@ export async function getFile(fileId: string): Promise<FileRow | null> {
 }
 
 /**
+ * Gets only the status of a file (optimized - fetches single column).
+ * Use when caller only needs to check file status.
+ * @param fileId - The file's unique identifier
+ * @returns The file status or null if not found
+ */
+export async function getFileStatus(fileId: string): Promise<string | null> {
+  const db = await getDrizzleClient()
+  const result = await db.select({status: files.status}).from(files).where(eq(files.fileId, fileId)).limit(1)
+  return result.length > 0 ? result[0].status : null
+}
+
+/**
  * Gets multiple files by IDs (batch operation).
  * @param fileIds - Array of file IDs to retrieve
  * @returns Array of file rows
@@ -69,21 +81,28 @@ export async function createFile(input: CreateFileInput): Promise<FileRow> {
 
 /**
  * Upserts a file (create if not exists, update if exists).
+ * Uses atomic ON CONFLICT DO UPDATE to avoid race conditions.
  * @param input - The file data to upsert
  * @returns The created or updated file row
  */
 export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
   const db = await getDrizzleClient()
-
-  const existing = await db.select().from(files).where(eq(files.fileId, input.fileId)).limit(1)
-
-  if (existing.length > 0) {
-    const [updated] = await db.update(files).set(input).where(eq(files.fileId, input.fileId)).returning()
-    return updated
-  }
-
-  const [created] = await db.insert(files).values({...input, size: input.size ?? 0}).returning()
-  return created
+  const [result] = await db.insert(files).values({...input, size: input.size ?? 0}).onConflictDoUpdate({
+    target: files.fileId,
+    set: {
+      size: input.size ?? 0,
+      authorName: input.authorName,
+      authorUser: input.authorUser,
+      publishDate: input.publishDate,
+      description: input.description,
+      key: input.key,
+      url: input.url,
+      contentType: input.contentType,
+      title: input.title,
+      status: input.status
+    }
+  }).returning()
+  return result
 }
 
 /**
@@ -133,21 +152,28 @@ export async function createFileDownload(input: CreateFileDownloadInput): Promis
 
 /**
  * Upserts a file download record (create if not exists, update if exists).
+ * Uses atomic ON CONFLICT DO UPDATE to avoid race conditions.
  * @param input - The file download data to upsert
  * @returns The created or updated file download row
  */
 export async function upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
   const db = await getDrizzleClient()
-
-  const existing = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, input.fileId)).limit(1)
-
-  if (existing.length > 0) {
-    const [updated] = await db.update(fileDownloads).set({...input, updatedAt: new Date()}).where(eq(fileDownloads.fileId, input.fileId)).returning()
-    return updated
-  }
-
-  const [created] = await db.insert(fileDownloads).values(input).returning()
-  return created
+  const [result] = await db.insert(fileDownloads).values(input).onConflictDoUpdate({
+    target: fileDownloads.fileId,
+    set: {
+      status: input.status,
+      retryCount: input.retryCount,
+      maxRetries: input.maxRetries,
+      retryAfter: input.retryAfter,
+      errorCategory: input.errorCategory,
+      lastError: input.lastError,
+      scheduledReleaseTime: input.scheduledReleaseTime,
+      sourceUrl: input.sourceUrl,
+      correlationId: input.correlationId,
+      updatedAt: new Date()
+    }
+  }).returning()
+  return result
 }
 
 /**
