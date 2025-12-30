@@ -41,3 +41,31 @@ export type { UserLoginRequest as LoginInput } from './api-schema'
 export type { UserRegistrationRequest as RegistrationInput } from './api-schema'
 export type { UserSubscriptionRequest as SubscriptionInput } from './api-schema'
 export type { FeedlyWebhookRequest as FeedlyWebhookInput } from './api-schema'
+
+/**
+ * SQS Message Schemas
+ *
+ * Validates messages received from SQS queues before processing.
+ * Malformed messages are logged and discarded (not retried).
+ */
+
+/** Schema for DownloadQueue SQS messages consumed by StartFileUpload */
+export const downloadQueueMessageSchema = z.object({
+  fileId: z.string().min(1, 'fileId is required'),
+  sourceUrl: z.string().url('sourceUrl must be a valid URL'),
+  correlationId: z.string().min(1, 'correlationId is required'),
+  userId: z.string().min(1, 'userId is required'),
+  attempt: z.number().int().min(1).optional().default(1)
+})
+
+/** Schema for SQS message attributes used by SendPushNotification */
+export const pushNotificationAttributesSchema = z.object({
+  notificationType: z.enum(['MetadataNotification', 'DownloadReadyNotification']),
+  userId: z.string().min(1, 'userId is required')
+})
+
+/** Validated DownloadQueueMessage type */
+export type ValidatedDownloadQueueMessage = z.infer<typeof downloadQueueMessageSchema>
+
+/** Validated push notification attributes type */
+export type ValidatedPushNotificationAttributes = z.infer<typeof pushNotificationAttributesSchema>

@@ -5,19 +5,19 @@ YouTube has detected the cookies as expired or is blocking requests with bot det
 **Triggered By**:
 - **File ID**: ${fileId}
 - **Video URL**: ${fileUrl}
-- **Error Message**: ${error.message}
-- **Timestamp**: ${new Date().toISOString()}
+- **Error Message**: ${errorMessage}
+- **Timestamp**: ${timestamp}
 
 ---
 
 ## Required Action: Refresh YouTube Cookies
 
 ### Step 1: Extract New Cookies
-\`\`\`bash
+```bash
 # Ensure you're logged into YouTube in Chrome
 # Then run the cookie update script
 pnpm run update-cookies
-\`\`\`
+```
 
 This will:
 1. Extract cookies from Chrome browser
@@ -25,26 +25,26 @@ This will:
 3. Copy filtered cookies to Lambda layer directory
 
 ### Step 2: Build and Deploy
-\`\`\`bash
+```bash
 pnpm run build
 pnpm run deploy
-\`\`\`
+```
 
 ### Step 3: Verify Fix
-\`\`\`bash
+```bash
 # Trigger a test download
-/opt/homebrew/bin/aws lambda invoke \\
-  --function-name FileCoordinator \\
-  --region us-west-2 \\
-  --payload '{}' \\
+/opt/homebrew/bin/aws lambda invoke \
+  --function-name FileCoordinator \
+  --region us-west-2 \
+  --payload '{}' \
   /dev/null
 
 # Monitor logs for authentication success
-/opt/homebrew/bin/aws logs tail /aws/lambda/StartFileUpload \\
-  --region us-west-2 \\
-  --follow \\
+/opt/homebrew/bin/aws logs tail /aws/lambda/StartFileUpload \
+  --region us-west-2 \
+  --follow \
   --format short
-\`\`\`
+```
 
 ---
 
@@ -55,17 +55,17 @@ YouTube cookies typically last 30-60 days. This error indicates:
 - YouTube has invalidated the session
 - Bot detection triggered (datacenter IP + stale cookies)
 
-**Cookie Location**: \`layers/yt-dlp/cookies/youtube-cookies.txt\` (18KB, filtered)
+**Cookie Location**: `layers/yt-dlp/cookies/youtube-cookies.txt` (18KB, filtered)
 
-**Documentation**: See \`docs/YT-DLP-MIGRATION-STRATEGY.md\` Phase 2 for details.
+**Documentation**: See `docs/YT-DLP-MIGRATION-STRATEGY.md` Phase 2 for details.
 
 ---
 
 ## Stack Trace
 
-\`\`\`
-${error.stack || 'No stack trace available'}
-\`\`\`
+```
+${errorStack}
+```
 
 ---
 
