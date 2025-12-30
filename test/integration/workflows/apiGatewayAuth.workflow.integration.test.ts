@@ -130,21 +130,19 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       expect(result.usageIdentifierKey).toBe(TEST_API_KEY)
     })
 
-    test('should Deny when session token does not exist in database', async () => {
+    test('should throw Unauthorized when session token does not exist in database', async () => {
       // Arrange: No session in database
       const userId = crypto.randomUUID()
       await insertUser({userId, email: 'notoken@example.com', firstName: 'NoToken'})
 
       // Act
       const event = createAuthorizerEvent({headers: {Authorization: 'Bearer nonexistent-token', 'User-Agent': 'iOS/17.0'}})
-      const result = await handler(event, context)
 
-      // Assert: Deny policy (invalid token)
-      expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
-      expect(result.principalId).toBe('unknown')
+      // Assert: Throws Unauthorized (triggers 401 in API Gateway)
+      await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
 
-    test('should Deny when session token is expired', async () => {
+    test('should throw Unauthorized when session token is expired', async () => {
       // Arrange: Create expired session
       const userId = crypto.randomUUID()
       const sessionToken = 'expired-session-token'
@@ -155,11 +153,9 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
 
       // Act
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
-      const result = await handler(event, context)
 
-      // Assert: Deny policy (expired token)
-      expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
-      expect(result.principalId).toBe('unknown')
+      // Assert: Throws Unauthorized (triggers 401 in API Gateway)
+      await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
 
     test('should update session updatedAt on successful validation', async () => {
@@ -214,7 +210,7 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       expect(result.principalId).toBe('unknown')
     })
 
-    test('should Deny non-multi-auth path without Authorization header', async () => {
+    test('should throw Unauthorized for non-multi-auth path without Authorization header', async () => {
       // Arrange: No auth header on protected path
       const event = createAuthorizerEvent({
         path: '/protected',
@@ -222,25 +218,18 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
         headers: {'User-Agent': 'iOS/17.0'} // No Authorization header
       })
 
-      // Act
-      const result = await handler(event, context)
-
-      // Assert: Deny (protected path requires auth)
-      expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
-      expect(result.principalId).toBe('unknown')
+      // Assert: Throws Unauthorized (protected path requires auth)
+      await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
   })
 
   describe('Token format validation', () => {
-    test('should Deny malformed Authorization header (not Bearer format)', async () => {
+    test('should throw Unauthorized for malformed Authorization header (not Bearer format)', async () => {
       // Arrange: Auth header without Bearer prefix
       const event = createAuthorizerEvent({headers: {Authorization: 'Basic invalid-format', 'User-Agent': 'iOS/17.0'}})
 
-      // Act
-      const result = await handler(event, context)
-
-      // Assert: Deny (invalid header format)
-      expect(result.policyDocument.Statement[0].Effect).toBe('Deny')
+      // Assert: Throws Unauthorized (invalid header format triggers 401)
+      await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
 
     test('should handle valid session with complex token format', async () => {
