@@ -54,3 +54,4 @@ coverage-reports/
 stryker-tmp/
 reports/stryker-incremental.json
 reports/mutation/
+*.webm
