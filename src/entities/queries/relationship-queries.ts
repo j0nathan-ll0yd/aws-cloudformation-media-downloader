@@ -7,10 +7,10 @@
  * @see src/entities/UserFiles.ts for legacy ElectroDB wrapper (to be deprecated)
  * @see src/entities/UserDevices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {and, eq, inArray, or} from 'drizzle-orm'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
-import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
+import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
 import type {FileRow} from './file-queries'
 import type {DeviceRow} from './device-queries'
 

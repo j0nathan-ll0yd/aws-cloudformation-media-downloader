@@ -9,7 +9,7 @@
  * - Sessions: Expired sessions (expiresAt less than now)
  * - Verification: Expired tokens (expiresAt less than now)
  */
-import {and, eq, lt, or} from 'drizzle-orm'
+import {and, eq, lt, or} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import type {CleanupResult} from '#types/lambda'

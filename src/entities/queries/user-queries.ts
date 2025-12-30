@@ -7,10 +7,10 @@
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  * @see src/entities/Users.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {eq} from 'drizzle-orm'
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
-import type {InferInsertModel, InferSelectModel} from 'drizzle-orm'
+import {eq} from '#lib/vendor/Drizzle/types'
+import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
 
 export type UserRow = InferSelectModel<typeof users>
 export type IdentityProviderRow = InferSelectModel<typeof identityProviders>

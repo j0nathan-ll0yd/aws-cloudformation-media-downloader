@@ -30,13 +30,14 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(18)
+      expect(allRules.length).toBe(19)
     })
 
     test('should contain all expected rules', () => {
       const ruleNames = allRules.map((r) => r.name)
       // CRITICAL rules
       expect(ruleNames).toContain('aws-sdk-encapsulation')
+      expect(ruleNames).toContain('drizzle-orm-encapsulation')
       expect(ruleNames).toContain('entity-mocking')
       expect(ruleNames).toContain('config-enforcement')
       expect(ruleNames).toContain('env-validation')
@@ -67,6 +68,7 @@ describe('validation exports', () => {
     test('should have all rules by name', () => {
       // CRITICAL rules
       expect(rulesByName['aws-sdk-encapsulation']).toBeDefined()
+      expect(rulesByName['drizzle-orm-encapsulation']).toBeDefined()
       expect(rulesByName['entity-mocking']).toBeDefined()
       expect(rulesByName['config-enforcement']).toBeDefined()
       expect(rulesByName['env-validation']).toBeDefined()
@@ -93,6 +95,8 @@ describe('validation exports', () => {
     test('should have aliases', () => {
       // CRITICAL aliases
       expect(rulesByName['aws-sdk']).toBe(rulesByName['aws-sdk-encapsulation'])
+      expect(rulesByName['drizzle']).toBe(rulesByName['drizzle-orm-encapsulation'])
+      expect(rulesByName['drizzle-orm']).toBe(rulesByName['drizzle-orm-encapsulation'])
       expect(rulesByName['electrodb']).toBe(rulesByName['entity-mocking'])
       expect(rulesByName['config']).toBe(rulesByName['config-enforcement'])
       expect(rulesByName['env']).toBe(rulesByName['env-validation'])
