@@ -16,11 +16,12 @@ process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
-import type {APIGatewayRequestAuthorizerEvent, Context} from 'aws-lambda'
+import type {Context} from 'aws-lambda'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
+import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
 // Mock Better Auth session validation
 const getSessionMock = vi.fn()
@@ -28,36 +29,6 @@ vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => ({ap
 
 // Import handler after mocks
 const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
-
-function createAuthorizerEvent(token?: string): APIGatewayRequestAuthorizerEvent {
-  return {
-    type: 'REQUEST',
-    methodArn: 'arn:aws:execute-api:us-west-2:123456789012:api-id/stage/GET/resource',
-    resource: '/resource',
-    path: '/resource',
-    httpMethod: 'GET',
-    headers: token ? {Authorization: `Bearer ${token}`} : {},
-    multiValueHeaders: {},
-    pathParameters: null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      protocol: 'HTTP/1.1',
-      httpMethod: 'GET',
-      path: '/resource',
-      stage: 'test',
-      requestId: 'test-request',
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: '/resource',
-      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-    }
-  } as unknown as APIGatewayRequestAuthorizerEvent
-}
 
 describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   let mockContext: Context
@@ -90,7 +61,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
       user: {id: userId, email: 'authorized@example.com'}
     })
 
-    const result = await handler(createAuthorizerEvent(token), mockContext)
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
     expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -102,7 +73,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const token = crypto.randomUUID()
     getSessionMock.mockResolvedValue(null)
 
-    const result = await handler(createAuthorizerEvent(token), mockContext)
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe('unknown')
     expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -110,7 +81,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   })
 
   test('should handle missing Authorization header as Anonymous', async () => {
-    const result = await handler(createAuthorizerEvent(), mockContext)
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent(), mockContext)
 
     expect(result.principalId).toBe('anonymous')
     expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
@@ -118,7 +89,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   })
 
   test('should handle malformed token', async () => {
-    const event = createAuthorizerEvent('invalid-token')
+    const event = createMockAPIGatewayRequestAuthorizerEvent({token: 'invalid-token'})
     event.headers = {...event.headers, Authorization: 'invalid-token'}
 
     const result = await handler(event, mockContext)
@@ -131,7 +102,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const token = crypto.randomUUID()
     getSessionMock.mockRejectedValue(new Error('Database connection failed'))
 
-    const result = await handler(createAuthorizerEvent(token), mockContext)
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBeDefined()
     expect(result.policyDocument).toBeDefined()
@@ -146,7 +117,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
       user: {id: userId, email: 'latency@example.com'}
     })
 
-    const result = await handler(createAuthorizerEvent(token), mockContext)
+    const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.context?.integrationLatency).toBeDefined()
     expect(typeof result.context?.integrationLatency).toBe('number')

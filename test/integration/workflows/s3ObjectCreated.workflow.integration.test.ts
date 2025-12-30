@@ -19,12 +19,13 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789012/test-queue'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
-import type {Context, S3Event} from 'aws-lambda'
+import type {Context} from 'aws-lambda'
 import {FileStatus} from '#types/enums'
 
 // Test helpers
 import {closeTestDb, createAllTables, dropAllTables, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
+import {createMockS3Event} from '../helpers/test-data'
 
 // Mock SQS vendor wrapper
 const sendMessageMock = vi.fn()
@@ -32,29 +33,6 @@ vi.mock('#lib/vendor/AWS/SQS', () => ({sendMessage: sendMessageMock}))
 
 // Import handler after mocks
 const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
-
-function createS3Event(objectKey: string): S3Event {
-  return {
-    Records: [
-      {
-        eventVersion: '2.1',
-        eventSource: 'aws:s3',
-        awsRegion: 'us-west-2',
-        eventTime: new Date().toISOString(),
-        eventName: 'ObjectCreated:Put',
-        userIdentity: {principalId: 'EXAMPLE'},
-        requestParameters: {sourceIPAddress: '127.0.0.1'},
-        responseElements: {'x-amz-request-id': 'test-request-id', 'x-amz-id-2': 'test-id-2'},
-        s3: {
-          s3SchemaVersion: '1.0',
-          configurationId: 'test-config',
-          bucket: {name: 'test-bucket', ownerIdentity: {principalId: 'EXAMPLE'}, arn: 'arn:aws:s3:::test-bucket'},
-          object: {key: encodeURIComponent(objectKey), size: 1024, eTag: 'test-etag', sequencer: '123456789'}
-        }
-      }
-    ]
-  }
-}
 
 describe('S3ObjectCreated Workflow Integration Tests', () => {
   let mockContext: Context
@@ -84,7 +62,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
 
-    await handler(createS3Event(fileKey), mockContext)
+    await handler(createMockS3Event(fileKey), mockContext)
 
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     expect(sendMessageMock).toHaveBeenCalledWith(expect.objectContaining({QueueUrl: process.env.SNS_QUEUE_URL}))
@@ -108,7 +86,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
 
-    await handler(createS3Event(fileKey), mockContext)
+    await handler(createMockS3Event(fileKey), mockContext)
 
     expect(sendMessageMock).toHaveBeenCalledTimes(3)
   })
@@ -118,7 +96,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     await insertFile({fileId: 'orphan-file', status: FileStatus.Downloaded, key: fileKey, title: 'Orphan Video'})
 
-    await handler(createS3Event(fileKey), mockContext)
+    await handler(createMockS3Event(fileKey), mockContext)
 
     expect(sendMessageMock).not.toHaveBeenCalled()
   })
@@ -133,7 +111,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     sendMessageMock.mockResolvedValue({MessageId: 'test-msg-id'})
 
-    await handler(createS3Event(fileKey), mockContext)
+    await handler(createMockS3Event(fileKey), mockContext)
 
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
   })
@@ -153,7 +131,7 @@ describe('S3ObjectCreated Workflow Integration Tests', () => {
 
     sendMessageMock.mockRejectedValueOnce(new Error('SQS send failed')).mockResolvedValueOnce({MessageId: 'test-msg-id'})
 
-    await handler(createS3Event(fileKey), mockContext)
+    await handler(createMockS3Event(fileKey), mockContext)
 
     expect(sendMessageMock).toHaveBeenCalledTimes(2)
   })

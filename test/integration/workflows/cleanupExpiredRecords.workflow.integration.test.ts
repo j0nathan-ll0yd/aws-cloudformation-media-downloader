@@ -16,7 +16,6 @@
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
-import type {Context, ScheduledEvent} from 'aws-lambda'
 
 // Test helpers
 import {
@@ -32,40 +31,11 @@ import {
   insertVerification,
   truncateAllTables
 } from '../helpers/postgres-helpers'
+import {createMockContext} from '../helpers/lambda-context'
+import {createMockScheduledEvent} from '../helpers/test-data'
 
 // Import handler directly (no mocking - uses real PostgreSQL)
 const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
-
-function createScheduledEvent(): ScheduledEvent {
-  return {
-    version: '0',
-    id: `integration-test-${Date.now()}`,
-    'detail-type': 'Scheduled Event',
-    source: 'aws.events',
-    account: '123456789012',
-    time: new Date().toISOString(),
-    region: 'us-west-2',
-    resources: ['arn:aws:events:us-west-2:123456789012:rule/CleanupExpiredRecords'],
-    detail: {}
-  }
-}
-
-function createMockContext(): Context {
-  return {
-    callbackWaitsForEmptyEventLoop: false,
-    functionName: 'CleanupExpiredRecords',
-    functionVersion: '$LATEST',
-    invokedFunctionArn: 'arn:aws:lambda:us-west-2:123456789012:function:CleanupExpiredRecords',
-    memoryLimitInMB: '256',
-    awsRequestId: `test-${Date.now()}`,
-    logGroupName: '/aws/lambda/CleanupExpiredRecords',
-    logStreamName: '2024/01/01/[$LATEST]test',
-    getRemainingTimeInMillis: () => 30000,
-    done: () => {},
-    fail: () => {},
-    succeed: () => {}
-  }
-}
 
 describe('CleanupExpiredRecords Workflow Integration Tests', () => {
   beforeAll(async () => {
@@ -83,7 +53,6 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
 
   describe('FileDownloads cleanup', () => {
     test('should delete Completed file downloads older than 24 hours', async () => {
-      // Arrange: Create file downloads with different ages
       const now = new Date()
       const twentyFiveHoursAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000)
       const twentyThreeHoursAgo = new Date(now.getTime() - 23 * 60 * 60 * 1000)
@@ -92,10 +61,8 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertFileDownload({fileId: 'recent-completed', status: 'Completed', updatedAt: twentyThreeHoursAgo})
       await insertFileDownload({fileId: 'old-pending', status: 'Pending', updatedAt: twentyFiveHoursAgo})
 
-      // Act
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
-      // Assert: Only old-completed should be deleted
       expect(result.fileDownloadsDeleted).toBe(1)
       expect(result.errors).toHaveLength(0)
 
@@ -111,7 +78,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertFileDownload({fileId: 'old-failed', status: 'Failed', updatedAt: thirtyHoursAgo})
       await insertFileDownload({fileId: 'old-in-progress', status: 'InProgress', updatedAt: thirtyHoursAgo})
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
 
@@ -126,7 +93,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertFileDownload({fileId: 'very-old-pending', status: 'Pending', updatedAt: fortyEightHoursAgo})
       await insertFileDownload({fileId: 'very-old-in-progress', status: 'InProgress', updatedAt: fortyEightHoursAgo})
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
 
@@ -137,7 +104,6 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
 
   describe('Sessions cleanup', () => {
     test('should delete expired sessions', async () => {
-      // Arrange: Create user first (for foreign key)
       const userId = crypto.randomUUID()
       await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
 
@@ -148,10 +114,8 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertSession({userId, token: 'expired-token', expiresAt: oneHourAgo})
       await insertSession({userId, token: 'valid-token', expiresAt: oneHourFromNow})
 
-      // Act
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
-      // Assert
       expect(result.sessionsDeleted).toBe(1)
 
       const remaining = await getSessions()
@@ -169,7 +133,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertSession({userId, token: 'expired-2', expiresAt: twoDaysAgo})
       await insertSession({userId, token: 'expired-3', expiresAt: oneHourAgo})
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.sessionsDeleted).toBe(3)
 
@@ -187,7 +151,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertVerification({identifier: 'expired@example.com', value: 'expired-code', expiresAt: oneHourAgo})
       await insertVerification({identifier: 'valid@example.com', value: 'valid-code', expiresAt: oneHourFromNow})
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.verificationTokensDeleted).toBe(1)
 
@@ -210,7 +174,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       await insertSession({userId, token: 'expired-session', expiresAt: oneHourAgo})
       await insertVerification({identifier: 'expired@test.com', value: 'code', expiresAt: oneHourAgo})
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
       expect(result.sessionsDeleted).toBe(1)
@@ -221,7 +185,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     test('should handle empty tables gracefully', async () => {
       // No data inserted - tables are empty
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
       expect(result.sessionsDeleted).toBe(0)
@@ -246,7 +210,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
         await insertSession({userId, token: `batch-token-${i}`, expiresAt: oneHourAgo})
       }
 
-      const result = await handler(createScheduledEvent(), createMockContext())
+      const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(20)
       expect(result.sessionsDeleted).toBe(15)

@@ -5,9 +5,10 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import type {ScheduledEvent, SQSEvent} from 'aws-lambda'
-import {FileStatus} from '#types/enums'
+import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import {FileStatus, UserStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domain-models'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 /**
  * Creates a mock file object with sensible defaults
@@ -205,4 +206,180 @@ export function createMockScheduledEvent(eventId: string, ruleName = 'ScheduledE
     resources: [`arn:aws:events:us-west-2:123456789012:rule/${ruleName}`],
     detail: {}
   }
+}
+
+/**
+ * Creates an S3 object created event
+ * @param objectKey - The S3 object key (will be URL-encoded in the event)
+ * @param options - Optional bucket name and region
+ */
+export function createMockS3Event(objectKey: string, options?: {bucket?: string; region?: string}): S3Event {
+  const bucket = options?.bucket ?? 'test-bucket'
+  const region = options?.region ?? 'us-west-2'
+
+  return {
+    Records: [{
+      eventVersion: '2.1',
+      eventSource: 'aws:s3',
+      awsRegion: region,
+      eventTime: new Date().toISOString(),
+      eventName: 'ObjectCreated:Put',
+      userIdentity: {principalId: 'EXAMPLE'},
+      requestParameters: {sourceIPAddress: '127.0.0.1'},
+      responseElements: {'x-amz-request-id': 'test-request-id', 'x-amz-id-2': 'test-id-2'},
+      s3: {
+        s3SchemaVersion: '1.0',
+        configurationId: 'test-config',
+        bucket: {name: bucket, ownerIdentity: {principalId: 'EXAMPLE'}, arn: `arn:aws:s3:::${bucket}`},
+        object: {key: encodeURIComponent(objectKey), size: 1024, eTag: 'test-etag', sequencer: '123456789'}
+      }
+    }]
+  }
+}
+
+/**
+ * Creates a basic API Gateway proxy event (for endpoints without custom authorizer context)
+ * @param options - Event configuration
+ */
+export function createMockAPIGatewayProxyEvent(
+  options: {path: string; httpMethod: string; headers?: Record<string, string>; body?: string | null}
+): APIGatewayProxyEvent {
+  return {
+    body: options.body ?? null,
+    headers: options.headers ?? {},
+    multiValueHeaders: {},
+    httpMethod: options.httpMethod,
+    isBase64Encoded: false,
+    path: options.path,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      protocol: 'HTTP/1.1',
+      httpMethod: options.httpMethod,
+      path: options.path,
+      stage: 'test',
+      requestId: 'test-request',
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
+      identity: {
+        sourceIp: '127.0.0.1',
+        userAgent: 'test-agent',
+        accessKey: null,
+        accountId: null,
+        apiKey: null,
+        apiKeyId: null,
+        caller: null,
+        clientCert: null,
+        cognitoAuthenticationProvider: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityId: null,
+        cognitoIdentityPoolId: null,
+        principalOrgId: null,
+        user: null,
+        userArn: null
+      },
+      authorizer: null
+    },
+    resource: options.path
+  } as APIGatewayProxyEvent
+}
+
+/**
+ * Creates an API Gateway request authorizer event (for custom authorizer Lambda)
+ * @param options - Event configuration
+ */
+export function createMockAPIGatewayRequestAuthorizerEvent(
+  options?: {token?: string; path?: string; httpMethod?: string}
+): APIGatewayRequestAuthorizerEvent {
+  const path = options?.path ?? '/resource'
+  const httpMethod = options?.httpMethod ?? 'GET'
+  const headers: Record<string, string> = options?.token ? {Authorization: `Bearer ${options.token}`} : {}
+
+  return {
+    type: 'REQUEST',
+    methodArn: `arn:aws:execute-api:us-west-2:123456789012:api-id/stage/${httpMethod}${path}`,
+    resource: path,
+    path,
+    httpMethod,
+    headers,
+    multiValueHeaders: {},
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      protocol: 'HTTP/1.1',
+      httpMethod,
+      path,
+      stage: 'test',
+      requestId: 'test-request',
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: path,
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
+    }
+  } as unknown as APIGatewayRequestAuthorizerEvent
+}
+
+/**
+ * Creates a custom API Gateway event with authorizer context (for authenticated endpoints)
+ * @param options - Event configuration including user status from authorizer
+ */
+export function createMockCustomAPIGatewayEvent(
+  options: {path: string; httpMethod: string; userId?: string; userStatus: UserStatus; body?: string | null; headers?: Record<string, string>}
+): CustomAPIGatewayRequestAuthorizerEvent {
+  const principalId = options.userStatus === UserStatus.Unauthenticated
+    ? 'unknown'
+    : options.userStatus === UserStatus.Anonymous
+    ? 'anonymous'
+    : options.userId || 'unknown'
+
+  const defaultHeaders: Record<string, string> = options.userId && options.userStatus === UserStatus.Authenticated
+    ? {Authorization: 'Bearer test-token'}
+    : options.userStatus === UserStatus.Unauthenticated
+    ? {Authorization: 'Bearer invalid-token'}
+    : {}
+
+  return {
+    body: options.body ?? null,
+    headers: {...defaultHeaders, ...options.headers},
+    multiValueHeaders: {},
+    httpMethod: options.httpMethod,
+    isBase64Encoded: false,
+    path: options.path,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      protocol: 'HTTP/1.1',
+      httpMethod: options.httpMethod,
+      path: options.path,
+      stage: 'test',
+      requestId: 'test-request',
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
+      authorizer: {
+        principalId,
+        userId: options.userStatus === UserStatus.Authenticated ? options.userId : undefined,
+        userStatus: options.userStatus,
+        integrationLatency: 100
+      },
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
+    },
+    resource: options.path
+  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
 }
