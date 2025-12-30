@@ -295,11 +295,15 @@ export function createMockAPIGatewayProxyEvent(
  * @param options - Event configuration
  */
 export function createMockAPIGatewayRequestAuthorizerEvent(
-  options?: {token?: string; path?: string; httpMethod?: string}
+  options?: {token?: string; path?: string; httpMethod?: string; apiKey?: string}
 ): APIGatewayRequestAuthorizerEvent {
   const path = options?.path ?? '/resource'
   const httpMethod = options?.httpMethod ?? 'GET'
-  const headers: Record<string, string> = options?.token ? {Authorization: `Bearer ${options.token}`} : {}
+  const headers: Record<string, string> = options?.token
+    ? {Authorization: `Bearer ${options.token}`, 'User-Agent': 'iOS/17.0'}
+    : {'User-Agent': 'iOS/17.0'}
+  // Default ApiKey for authorizer tests - Lambda requires this in query params
+  const queryStringParameters = {ApiKey: options?.apiKey ?? 'test-api-key'}
 
   return {
     type: 'REQUEST',
@@ -310,7 +314,7 @@ export function createMockAPIGatewayRequestAuthorizerEvent(
     headers,
     multiValueHeaders: {},
     pathParameters: null,
-    queryStringParameters: null,
+    queryStringParameters,
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {
@@ -320,12 +324,17 @@ export function createMockAPIGatewayRequestAuthorizerEvent(
       httpMethod,
       path,
       stage: 'test',
-      requestId: 'test-request',
+      requestId: `test-${Date.now()}`,
       requestTime: '01/Jan/2024:00:00:00 +0000',
       requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
+      resourceId: 'resource-id',
       resourcePath: path,
-      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
+      identity: {
+        accessKey: null, accountId: null, apiKey: options?.apiKey ?? 'test-api-key', apiKeyId: null,
+        caller: null, clientCert: null, cognitoAuthenticationProvider: null, cognitoAuthenticationType: null,
+        cognitoIdentityId: null, cognitoIdentityPoolId: null, principalOrgId: null,
+        sourceIp: '127.0.0.1', user: null, userAgent: 'iOS/17.0 TestApp/1.0', userArn: null
+      }
     }
   } as unknown as APIGatewayRequestAuthorizerEvent
 }

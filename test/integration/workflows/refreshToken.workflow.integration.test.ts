@@ -30,6 +30,7 @@ vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: vi.fn(
 // Import after mocks
 const {handler} = await import('#lambdas/RefreshToken/src/index')
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
+import {UnauthorizedError} from '#lib/system/errors'
 
 describe('RefreshToken Workflow Integration Tests', () => {
   let mockContext: Context
@@ -91,7 +92,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
 
   test('should return 401 when session is expired', async () => {
     const token = crypto.randomUUID()
-    vi.mocked(validateSessionToken).mockRejectedValue(new Error('Session expired'))
+    vi.mocked(validateSessionToken).mockRejectedValue(new UnauthorizedError('Session expired'))
 
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
@@ -101,7 +102,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
 
   test('should return 401 when session does not exist', async () => {
     const token = crypto.randomUUID()
-    vi.mocked(validateSessionToken).mockRejectedValue(new Error('Session not found'))
+    vi.mocked(validateSessionToken).mockRejectedValue(new UnauthorizedError('Session not found'))
 
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
