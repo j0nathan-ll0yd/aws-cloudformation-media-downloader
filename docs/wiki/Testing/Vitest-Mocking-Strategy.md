@@ -56,7 +56,43 @@ const mockYTDlp = (await import('yt-dlp-wrap')).default as Mock
 
 ## Common Patterns
 
-### AWS SDK Mocks
+### AWS SDK Mocks (aws-sdk-client-mock)
+
+The preferred approach for AWS SDK mocking uses `aws-sdk-client-mock` with `aws-sdk-client-mock-vitest` for type-safe assertions:
+
+```typescript
+import {mockClient} from 'aws-sdk-client-mock'
+import {SNSClient, PublishCommand} from '@aws-sdk/client-sns'
+import {createSNSMock} from '#test/helpers/aws-sdk-mock'
+
+// Option 1: Use the helper (recommended - integrates with vendor wrappers)
+const snsMock = createSNSMock()
+
+// Option 2: Direct mockClient (for simple cases)
+const snsMock = mockClient(SNSClient)
+
+beforeEach(() => {
+  snsMock.reset()
+  snsMock.on(PublishCommand).resolves({MessageId: 'msg-123'})
+})
+
+// Type-safe assertions
+expect(snsMock).toHaveReceivedCommand(PublishCommand)
+expect(snsMock).toHaveReceivedCommandWith(PublishCommand, {
+  TopicArn: expect.stringContaining('notifications'),
+  Message: expect.any(String)
+})
+```
+
+**Benefits**:
+- Type-safe command matching
+- Assertion matchers for Vitest (toHaveReceivedCommand, toHaveReceivedCommandWith)
+- Works with the vendor wrapper architecture via test client injection
+
+### Legacy AWS SDK Mocks (vi.mock)
+
+For simpler cases or backward compatibility:
+
 ```typescript
 vi.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: vi.fn(() => ({
@@ -129,8 +165,25 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 1. **Mock first, import second** - Always mock before importing
 2. **Mock everything external** - All npm packages and AWS SDK
 3. **Use type assertions** - Add proper types to mocks
-4. **Use mock helpers** - Entity mock helper for entities
+4. **Use mock helpers** - Entity mock helper for entities, AWS SDK mock helpers for AWS services
 5. **Map dependencies** - Trace all transitive imports
+6. **Prefer aws-sdk-client-mock** - For AWS SDK v3 clients, use `aws-sdk-client-mock` for type-safe assertions
+
+## AWS SDK Mock Utilities
+
+Located at `test/helpers/aws-sdk-mock.ts`:
+
+| Function | Description |
+|----------|-------------|
+| `createS3Mock()` | Mock S3 client with vendor injection |
+| `createSQSMock()` | Mock SQS client with vendor injection |
+| `createSNSMock()` | Mock SNS client with vendor injection |
+| `createEventBridgeMock()` | Mock EventBridge client with vendor injection |
+| `createDynamoDBMock()` | Mock DynamoDB client with vendor injection |
+| `createLambdaMock()` | Mock Lambda client with vendor injection |
+| `resetAllAwsMocks()` | Reset and clear all mock injections |
+
+These helpers integrate with the vendor wrapper architecture by injecting mock clients into `src/lib/vendor/AWS/clients.ts`.
 
 ## Related Patterns
 

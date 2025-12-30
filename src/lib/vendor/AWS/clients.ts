@@ -29,6 +29,42 @@ import type {EventBridgeClientConfig} from '@aws-sdk/client-eventbridge'
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
+// Test client injection for aws-sdk-client-mock integration
+// These allow unit tests to inject mock clients while maintaining vendor encapsulation
+let testS3Client: S3Client | null = null
+let testSQSClient: SQSClient | null = null
+let testSNSClient: SNSClient | null = null
+let testEventBridgeClient: EventBridgeClient | null = null
+let testDynamoDBClient: DynamoDBClient | null = null
+let testLambdaClient: LambdaClient | null = null
+
+/* c8 ignore start - Test-only code */
+/** @internal Set test S3 client for unit tests */
+export function setTestS3Client(client: S3Client | null): void {
+  testS3Client = client
+}
+/** @internal Set test SQS client for unit tests */
+export function setTestSQSClient(client: SQSClient | null): void {
+  testSQSClient = client
+}
+/** @internal Set test SNS client for unit tests */
+export function setTestSNSClient(client: SNSClient | null): void {
+  testSNSClient = client
+}
+/** @internal Set test EventBridge client for unit tests */
+export function setTestEventBridgeClient(client: EventBridgeClient | null): void {
+  testEventBridgeClient = client
+}
+/** @internal Set test DynamoDB client for unit tests */
+export function setTestDynamoDBClient(client: DynamoDBClient | null): void {
+  testDynamoDBClient = client
+}
+/** @internal Set test Lambda client for unit tests */
+export function setTestLambdaClient(client: LambdaClient | null): void {
+  testLambdaClient = client
+}
+/* c8 ignore stop */
+
 /**
  * Check if running in LocalStack mode
  * @returns true if USE_LOCALSTACK environment variable is set to 'true'
@@ -54,6 +90,7 @@ function getBaseConfig() {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createS3Client(): S3Client {
+  if (testS3Client) return testS3Client
   const config: S3ClientConfig = {
     ...getBaseConfig(),
     // forcePathStyle required for LocalStack S3
@@ -68,6 +105,7 @@ export function createS3Client(): S3Client {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createDynamoDBClient(): DynamoDBClient {
+  if (testDynamoDBClient) return testDynamoDBClient
   const config: DynamoDBClientConfig = getBaseConfig()
   return new DynamoDBClient(config)
 }
@@ -78,6 +116,7 @@ export function createDynamoDBClient(): DynamoDBClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSNSClient(): SNSClient {
+  if (testSNSClient) return testSNSClient
   const config: SNSClientConfig = getBaseConfig()
   return new SNSClient(config)
 }
@@ -88,6 +127,7 @@ export function createSNSClient(): SNSClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSQSClient(): SQSClient {
+  if (testSQSClient) return testSQSClient
   const config: SQSClientConfig = getBaseConfig()
   return new SQSClient(config)
 }
@@ -98,6 +138,7 @@ export function createSQSClient(): SQSClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createLambdaClient(): LambdaClient {
+  if (testLambdaClient) return testLambdaClient
   const config: LambdaClientConfig = getBaseConfig()
   return new LambdaClient(config)
 }
@@ -118,6 +159,7 @@ export function createAPIGatewayClient(): APIGateway {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createEventBridgeClient(): EventBridgeClient {
+  if (testEventBridgeClient) return testEventBridgeClient
   const config: EventBridgeClientConfig = getBaseConfig()
   return new EventBridgeClient(config)
 }

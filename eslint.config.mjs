@@ -106,6 +106,14 @@ export default [
   },
   // Vendor wrappers are thin SDK facades - function names and types are self-documenting
   {files: ['src/lib/vendor/**/*.ts'], ignores: ['src/lib/vendor/**/*.test.ts'], rules: {'jsdoc/require-jsdoc': 'off'}},
+  // Test helpers, setup files, and Lambda tests can import AWS SDK directly for mocking purposes
+  // aws-sdk-client-mock requires direct SDK access for type-safe mocking
+  {
+    files: ['test/helpers/aws-sdk-mock.ts', 'test/setup.ts', 'src/lambdas/*/test/*.test.ts'],
+    rules: {
+      'local-rules/no-direct-aws-sdk-import': 'off'
+    }
+  },
   // Lambda handlers require a JSDoc description block (purpose documentation)
   // No @param/@returns tags required - TypeScript types are sufficient
   {
