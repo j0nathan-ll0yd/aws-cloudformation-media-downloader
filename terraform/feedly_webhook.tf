@@ -352,7 +352,7 @@ resource "aws_lambda_function" "StartFileUpload" {
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
     aws_lambda_layer_version.Ffmpeg.arn,
-    local.adot_layer_arn
+    local.adot_layer_arn_x86_64 # Must use x86_64 ADOT layer to match Lambda architecture
   ]
 
   # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)
