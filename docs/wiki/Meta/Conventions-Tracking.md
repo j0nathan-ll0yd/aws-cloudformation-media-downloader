@@ -38,6 +38,7 @@ Central registry of all project conventions with their documentation and enforce
 | response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | mock-formatting | mock | MEDIUM | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| aws-sdk-mock | sdk-mock | MEDIUM | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 
 ---
 
@@ -88,6 +89,7 @@ Central registry of all project conventions with their documentation and enforce
 | ResponseStatus Enum | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | Mock Return Formatting | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | MCP |
 | PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | Code review |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
 

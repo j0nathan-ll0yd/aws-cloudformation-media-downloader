@@ -63,7 +63,8 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
 │       └── validation/    # AST-based convention enforcement (13 rules)
 ├── test/helpers/          # Test utilities
-│   └── entity-mock.ts     # Entity mock helper for unit tests
+│   ├── entity-mock.ts     # Entity mock helper for unit tests
+│   └── aws-sdk-mock.ts    # AWS SDK v3 mock helpers (aws-sdk-client-mock)
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
@@ -334,6 +335,11 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **ALWAYS** use `test/helpers/entity-mock.ts` for mocking entities
 - **NEVER** create manual mocks for entities
 - See test style guide for detailed mocking patterns
+
+### Testing with AWS SDK
+- **PREFER** `test/helpers/aws-sdk-mock.ts` for AWS SDK v3 mocking (uses aws-sdk-client-mock)
+- Mock helpers integrate with vendor wrappers via test client injection
+- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
 
 ## Wiki Conventions to Follow
 
