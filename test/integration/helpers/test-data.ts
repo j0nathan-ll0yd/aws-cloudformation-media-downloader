@@ -377,14 +377,9 @@ export function createMockAuthorizerEvent(overrides: Partial<APIGatewayRequestAu
  * Creates a custom API Gateway event with authorizer context (for authenticated routes)
  * @param options - Event configuration options
  */
-export function createMockAuthenticatedEvent(options: {
-  httpMethod: string
-  path: string
-  userId: string
-  userStatus?: UserStatus
-  body?: string | null
-  headers?: Record<string, string>
-}): CustomAPIGatewayRequestAuthorizerEvent {
+export function createMockAuthenticatedEvent(
+  options: {httpMethod: string; path: string; userId: string; userStatus?: UserStatus; body?: string | null; headers?: Record<string, string>}
+): CustomAPIGatewayRequestAuthorizerEvent {
   return {
     body: options.body ?? null,
     headers: options.headers ?? {Authorization: `Bearer test-token-${options.userId}`, 'Content-Type': 'application/json'},

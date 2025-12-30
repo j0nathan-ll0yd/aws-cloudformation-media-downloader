@@ -24,14 +24,7 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {
-  closeTestDb,
-  getDevice,
-  insertDevice,
-  insertUser,
-  linkUserDevice,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, getDevice, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
 import {
   createTestEndpoint,
   createTestPlatformApplication,
