@@ -117,7 +117,7 @@ describe('#WebhookFeedly', () => {
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(400)
     const body = JSON.parse(output.body)
-    expect(body.error.code).toEqual('custom-4XX-generic')
+    expect(body.error.code).toEqual('VALIDATION_ERROR')
     expect(body.error.message).toEqual('Request body must be valid JSON')
   })
   test('should publish DownloadRequested event for new files', async () => {

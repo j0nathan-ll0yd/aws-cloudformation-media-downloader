@@ -101,14 +101,18 @@ describe('#RegisterDevice', () => {
       event.requestContext.authorizer!.principalId = 'unknown'
       createPlatformEndpointMock.mockReturnValue(undefined)
       const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
+      expect(output.statusCode).toEqual(503)
+      const body = JSON.parse(output.body)
+      expect(body.error.code).toEqual('SERVICE_UNAVAILABLE')
     })
     test('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
       listSubscriptionsByTopicMock.mockReturnValue(undefined)
       const output = await handler(event, context)
-      expect(output.statusCode).toEqual(500)
+      expect(output.statusCode).toEqual(503)
+      const body = JSON.parse(output.body)
+      expect(body.error.code).toEqual('SERVICE_UNAVAILABLE')
     })
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
@@ -116,6 +120,8 @@ describe('#RegisterDevice', () => {
       listSubscriptionsByTopicMock.mockReturnValue({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
+      const body = JSON.parse(output.body)
+      expect(body.error.code).toEqual('INTERNAL_ERROR')
     })
   })
 })

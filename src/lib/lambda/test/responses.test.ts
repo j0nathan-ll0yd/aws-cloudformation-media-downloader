@@ -1,5 +1,5 @@
 import {describe, expect, test} from 'vitest'
-import {ValidationError} from '#lib/system/errors'
+import {ForbiddenError, NotFoundError, ServiceUnavailableError, UnauthorizedError, UnexpectedError, ValidationError} from '#lib/system/errors'
 import {createMockContext} from '#util/vitest-setup'
 import {buildApiResponse, getErrorMessage} from './../responses'
 
@@ -132,6 +132,59 @@ describe('Response Helpers', () => {
         const body = JSON.parse(result.body)
         expect(body.error.message.email).toEqual('Invalid format')
         expect(body.error.message.password).toEqual('Too short')
+      })
+
+      test('should include specific error code from ValidationError', () => {
+        const error = new ValidationError('Invalid email format')
+        const result = buildApiResponse(mockContext, error)
+
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('VALIDATION_ERROR')
+      })
+
+      test('should include specific error code from UnauthorizedError', () => {
+        const error = new UnauthorizedError('Session expired')
+        const result = buildApiResponse(mockContext, error)
+
+        expect(result.statusCode).toEqual(401)
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('UNAUTHORIZED')
+      })
+
+      test('should include specific error code from ForbiddenError', () => {
+        const error = new ForbiddenError('Access denied')
+        const result = buildApiResponse(mockContext, error)
+
+        expect(result.statusCode).toEqual(403)
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('FORBIDDEN')
+      })
+
+      test('should include specific error code from NotFoundError', () => {
+        const error = new NotFoundError('Resource not found')
+        const result = buildApiResponse(mockContext, error)
+
+        expect(result.statusCode).toEqual(404)
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('NOT_FOUND')
+      })
+
+      test('should include specific error code from UnexpectedError', () => {
+        const error = new UnexpectedError('Something went wrong')
+        const result = buildApiResponse(mockContext, error)
+
+        expect(result.statusCode).toEqual(500)
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('INTERNAL_ERROR')
+      })
+
+      test('should include specific error code from ServiceUnavailableError', () => {
+        const error = new ServiceUnavailableError('AWS service unavailable')
+        const result = buildApiResponse(mockContext, error)
+
+        expect(result.statusCode).toEqual(503)
+        const body = JSON.parse(result.body)
+        expect(body.error.code).toEqual('SERVICE_UNAVAILABLE')
       })
     })
 
