@@ -188,6 +188,7 @@ export interface Local {
     list_files_function_name?:              string;
     login_user_function_name?:              string;
     adot_layer_arn?:                        string;
+    adot_layer_arn_x86_64?:                 string;
     common_lambda_env?:                     CommonLambdaEnv;
     common_tags?:                           CommonTags;
     lambda_architecture?:                   string;
@@ -923,6 +924,7 @@ export enum Layer {
     AwsLambdaLayerVersionFfmpegArn = "${aws_lambda_layer_version.Ffmpeg.arn}",
     AwsLambdaLayerVersionYtDLPArn = "${aws_lambda_layer_version.YtDlp.arn}",
     LocalAdotLayerArn = "${local.adot_layer_arn}",
+    LocalAdotLayerArnX8664 = "${local.adot_layer_arn_x86_64}",
 }
 
 export enum Runtime {
@@ -1474,6 +1476,7 @@ const typeMap: any = {
         { json: "list_files_function_name", js: "list_files_function_name", typ: u(undefined, "") },
         { json: "login_user_function_name", js: "login_user_function_name", typ: u(undefined, "") },
         { json: "adot_layer_arn", js: "adot_layer_arn", typ: u(undefined, "") },
+        { json: "adot_layer_arn_x86_64", js: "adot_layer_arn_x86_64", typ: u(undefined, "") },
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
         { json: "common_tags", js: "common_tags", typ: u(undefined, r("CommonTags")) },
         { json: "lambda_architecture", js: "lambda_architecture", typ: u(undefined, "") },
@@ -2288,6 +2291,7 @@ const typeMap: any = {
         "${aws_lambda_layer_version.Ffmpeg.arn}",
         "${aws_lambda_layer_version.YtDlp.arn}",
         "${local.adot_layer_arn}",
+        "${local.adot_layer_arn_x86_64}",
     ],
     "Runtime": [
         "nodejs24.x",
