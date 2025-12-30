@@ -98,10 +98,7 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
   appendCorrelationToLogger(correlationId)
 
   // Validate message attributes using Zod schema
-  const rawAttributes = {
-    notificationType: record.messageAttributes.notificationType?.stringValue,
-    userId: record.messageAttributes.userId?.stringValue
-  }
+  const rawAttributes = {notificationType: record.messageAttributes.notificationType?.stringValue, userId: record.messageAttributes.userId?.stringValue}
   const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
   if (validationErrors) {
     logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
