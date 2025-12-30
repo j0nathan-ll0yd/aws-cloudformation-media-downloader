@@ -17,8 +17,7 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
+  ensureSearchPath,
   getDevice,
   getTestDb,
   getUser,
@@ -32,8 +31,7 @@ import {eq} from 'drizzle-orm'
 
 describe('Better Auth Entities Integration Tests', () => {
   beforeAll(async () => {
-    // Create all PostgreSQL tables
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -42,8 +40,7 @@ describe('Better Auth Entities Integration Tests', () => {
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 
@@ -65,6 +62,7 @@ describe('Better Auth Entities Integration Tests', () => {
     test('should update user fields', async () => {
       const userId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'update@example.com', firstName: 'Before'})
 
@@ -80,6 +78,7 @@ describe('Better Auth Entities Integration Tests', () => {
     test('should delete user', async () => {
       const userId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'delete@example.com', firstName: 'Delete'})
 
@@ -95,6 +94,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const email = 'query-by-email@example.com'
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email, firstName: 'Query'})
 
@@ -129,6 +129,7 @@ describe('Better Auth Entities Integration Tests', () => {
     test('should update device token', async () => {
       const deviceId = 'device-update-token'
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertDevice({deviceId, name: 'Update Device', token: 'old-token'})
 
@@ -146,6 +147,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const deviceId = 'device-link-test'
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'device-owner@example.com', firstName: 'Owner'})
       await insertDevice({deviceId})
@@ -162,6 +164,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const deviceIds = ['device-1', 'device-2', 'device-3']
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'multi-device@example.com', firstName: 'Multi'})
 
@@ -181,6 +184,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const sessionId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'session-test@example.com', firstName: 'Session'})
 
@@ -207,6 +211,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const sessionId = crypto.randomUUID()
       const token = 'unique-session-token'
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'token-query@example.com', firstName: 'Token'})
 
@@ -223,6 +228,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const sessionId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
 
@@ -245,6 +251,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const accountId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'oauth@example.com', firstName: 'OAuth'})
 
@@ -270,6 +277,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const userId = crypto.randomUUID()
       const accountId = crypto.randomUUID()
       const db = getTestDb()
+      await ensureSearchPath()
 
       await insertUser({userId, email: 'provider@example.com', firstName: 'Provider'})
 
@@ -288,6 +296,7 @@ describe('Better Auth Entities Integration Tests', () => {
       const sessionId = crypto.randomUUID()
       const deviceId = 'cascade-device'
       const db = getTestDb()
+      await ensureSearchPath()
 
       // Create user with device and session
       await insertUser({userId, email: 'cascade@example.com', firstName: 'Cascade'})

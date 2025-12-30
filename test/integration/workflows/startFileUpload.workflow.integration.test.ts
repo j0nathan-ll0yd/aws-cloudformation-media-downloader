@@ -17,8 +17,7 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {FileStatus} from '#types/enums'
 import {
   closeTestDb,
-  createAllTables,
-  dropAllTables,
+  ensureSearchPath,
   getFile,
   getTestDb,
   getUser,
@@ -34,8 +33,7 @@ import {eq} from 'drizzle-orm'
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // Create all PostgreSQL tables
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -44,8 +42,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 
@@ -127,6 +124,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     test('should link a user to a file', async () => {
       const userId = crypto.randomUUID()
       const fileId = 'test-video-link'
+      await ensureSearchPath()
 
       // Create user and file
       await insertUser({userId, email: 'test@example.com', firstName: 'Test'})
@@ -146,6 +144,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     test('should allow multiple files per user', async () => {
       const userId = crypto.randomUUID()
       const fileIds = ['video-1', 'video-2', 'video-3']
+      await ensureSearchPath()
 
       // Create user
       await insertUser({userId, email: 'multifile@example.com', firstName: 'Multi'})
@@ -167,6 +166,7 @@ describe('StartFileUpload Workflow Integration Tests', () => {
     test('should allow multiple users per file', async () => {
       const fileId = 'shared-video'
       const userIds = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
+      await ensureSearchPath()
 
       // Create file
       await insertFile({fileId, status: FileStatus.Downloaded})

@@ -16,24 +16,13 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {FileStatus} from '#types/enums'
-import {
-  closeTestDb,
-  createAllTables,
-  dropAllTables,
-  getFile,
-  getTestDb,
-  insertFile,
-  insertUser,
-  linkUserFile,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, ensureSearchPath, getFile, getTestDb, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {files, userFiles} from '#lib/vendor/Drizzle/schema'
 import {and, eq} from 'drizzle-orm'
 
 describe('WebhookFeedly Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // Create all PostgreSQL tables
-    await createAllTables()
+    // No setup needed - tables created by globalSetup
   })
 
   afterEach(async () => {
@@ -42,8 +31,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
   })
 
   afterAll(async () => {
-    // Drop tables and close connection
-    await dropAllTables()
+    // Close database connection
     await closeTestDb()
   })
 
@@ -92,6 +80,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     test('should associate file with user when webhook processed', async () => {
       const userId = crypto.randomUUID()
       const fileId = 'user-video-123'
+      await ensureSearchPath()
 
       // Create user
       await insertUser({userId, email: 'subscriber@example.com', firstName: 'Subscriber'})
@@ -112,6 +101,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     test('should handle multiple users subscribing to same video', async () => {
       const fileId = 'popular-video'
       const userIds = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
+      await ensureSearchPath()
 
       // Create file
       await insertFile({fileId, status: FileStatus.Downloaded})
@@ -132,6 +122,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     test('should handle user with multiple subscribed videos', async () => {
       const userId = crypto.randomUUID()
       const videoIds = ['video-a', 'video-b', 'video-c']
+      await ensureSearchPath()
 
       // Create user
       await insertUser({userId, email: 'multi-sub@example.com', firstName: 'MultiSub'})
@@ -166,6 +157,8 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     })
 
     test('should identify queued files that need downloading', async () => {
+      await ensureSearchPath()
+
       // Create mix of files in different states
       await insertFile({fileId: 'queued-1', status: FileStatus.Queued})
       await insertFile({fileId: 'queued-2', status: FileStatus.Queued})
@@ -201,6 +194,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     test('should detect duplicate user-file association', async () => {
       const userId = crypto.randomUUID()
       const fileId = 'duplicate-assoc'
+      await ensureSearchPath()
 
       // Setup
       await insertUser({userId, email: 'dup@example.com', firstName: 'Dup'})
@@ -222,6 +216,7 @@ describe('WebhookFeedly Workflow Integration Tests', () => {
     test('should handle batch of files from single webhook', async () => {
       const userId = crypto.randomUUID()
       const videoIds = Array.from({length: 5}, (_, i) => `batch-video-${i}`)
+      await ensureSearchPath()
 
       // Create user
       await insertUser({userId, email: 'batch@example.com', firstName: 'Batch'})

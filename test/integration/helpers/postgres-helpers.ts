@@ -4,8 +4,8 @@
  * Utilities for setting up and querying test data in PostgreSQL
  * for Drizzle/Aurora DSQL integration tests.
  *
- * Each Vitest worker gets its own PostgreSQL schema for complete isolation
- * during parallel test execution. Schema is determined by VITEST_POOL_ID.
+ * Each Jest worker gets its own PostgreSQL schema for complete isolation
+ * during parallel test execution. Schema is determined by JEST_WORKER_ID.
  *
  * Requires: docker-compose -f docker-compose.test.yml up -d
  */
@@ -17,69 +17,97 @@ import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle
 import type {Device, File, User} from '#types/domain-models'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
-import * as fs from 'fs'
-import * as path from 'path'
 
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 // Worker-aware connection cache (not singleton - each worker gets its own)
-const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>}>()
-
-// Path to migrations directory (relative to project root)
-const MIGRATIONS_DIR = path.resolve(__dirname, '../../../migrations')
+const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>; initialized: boolean}>()
 
 /**
- * Read migration SQL files and prepare for test environment.
- * Migrations are the source of truth - only minimal changes for test compatibility:
- * - Adds schema qualification for worker isolation
- * - Removes ASYNC keyword (Aurora DSQL specific, not supported in regular PostgreSQL)
+ * Get schema prefix for CI isolation.
+ * Uses GITHUB_RUN_ID to ensure parallel CI runs don't interfere.
  */
-function getMigrationSQL(schema: string): string {
-  const schemaSQL = fs.readFileSync(path.join(MIGRATIONS_DIR, '0001_initial_schema.sql'), 'utf-8')
-  const indexSQL = fs.readFileSync(path.join(MIGRATIONS_DIR, '0002_create_indexes.sql'), 'utf-8')
-
-  let sql = schemaSQL + '\n' + indexSQL
-
-  // Remove ASYNC keyword (Aurora DSQL specific, regular PostgreSQL doesn't support it)
-  sql = sql.replace(/CREATE INDEX ASYNC/g, 'CREATE INDEX')
-
-  // Add schema qualification for worker isolation
-  sql = sql.replace(/CREATE TABLE IF NOT EXISTS /g, `CREATE TABLE IF NOT EXISTS ${schema}.`)
-  sql = sql.replace(/CREATE INDEX IF NOT EXISTS /g, `CREATE INDEX IF NOT EXISTS ${schema}_`)
-  sql = sql.replace(/ ON ([a-z_]+)\(/g, ` ON ${schema}.$1(`)
-
-  return sql
+function getSchemaPrefix(): string {
+  const runId = process.env.GITHUB_RUN_ID
+  return runId ? `run_${runId}_` : ''
 }
 
 /**
  * Get the current worker's schema name.
- * Vitest uses VITEST_POOL_ID for thread pools.
+ * Uses VITEST_POOL_ID environment variable set by Vitest for parallel workers.
+ * Falls back to JEST_WORKER_ID for Jest compatibility.
+ * Includes CI run prefix for isolation when parallel CI runs occur.
+ *
+ * Note: VITEST_POOL_ID in threads mode is 0-indexed, so we add 1 to match
+ * our schema naming (worker_1, worker_2, etc.)
  */
 function getWorkerSchema(): string {
-  const workerId = process.env.VITEST_POOL_ID || '1'
-  return `worker_${workerId}`
+  const prefix = getSchemaPrefix()
+  // Vitest uses VITEST_POOL_ID for parallel workers
+  // In threads mode, it's 0-indexed, so we add 1 to get 1-indexed worker IDs
+  const vitestPoolId = process.env.VITEST_POOL_ID
+  if (vitestPoolId !== undefined) {
+    const workerId = parseInt(vitestPoolId, 10) + 1
+    return `${prefix}worker_${workerId}`
+  }
+  // Falls back to JEST_WORKER_ID for Jest, or '1' for single-threaded
+  const workerId = process.env.JEST_WORKER_ID || '1'
+  return `${prefix}worker_${workerId}`
 }
 
 /**
  * Get or create the test database connection for current worker.
  * Each worker has its own connection and operates in its own schema.
- * Uses max: 1 to ensure search_path persists on the same connection.
+ * Uses onconnect callback to set search_path on every new connection.
  */
-export function getTestDb() {
+export async function getTestDbAsync(): Promise<ReturnType<typeof drizzle>> {
   const schema = getWorkerSchema()
 
   if (!workerConnections.has(schema)) {
-    // Force single connection per worker so search_path persists across queries
+    // Create connection with search_path set on every new connection
+    // postgres.js uses a connection pool, so we need to set search_path on each connection
     const sqlClient = postgres(TEST_DATABASE_URL, {
-      max: 1,
-      onnotice: () => {} // Suppress NOTICE messages
+      onnotice: () => {}, // Suppress NOTICE messages
+      max: 1, // Use single connection to avoid search_path issues with pool
+      // Set search_path via connection string options
+      transform: {undefined: null}
     })
+
     const db = drizzle(sqlClient)
-    workerConnections.set(schema, {db, sqlClient})
+
+    // Set search_path immediately on this connection
+    await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+    workerConnections.set(schema, {db, sqlClient, initialized: true})
   }
 
   return workerConnections.get(schema)!.db
+}
+
+/**
+ * Get test database synchronously.
+ * WARNING: Only use after getTestDbAsync has been called at least once.
+ * For new code, prefer getTestDbAsync.
+ */
+export function getTestDb(): ReturnType<typeof drizzle> {
+  const schema = getWorkerSchema()
+  const conn = workerConnections.get(schema)
+  if (!conn) {
+    throw new Error('getTestDb called before getTestDbAsync. Call getTestDbAsync in beforeAll first.')
+  }
+  return conn.db
+}
+
+/**
+ * Ensure search_path is set for the current worker schema.
+ * Call this before making direct Drizzle queries in tests.
+ * Helper functions already call this internally.
+ */
+export async function ensureSearchPath(): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 }
 
 /**
@@ -99,9 +127,9 @@ export async function closeTestDb(): Promise<void> {
  * Create all tables in the worker's schema.
  * Run this in beforeAll() of integration tests.
  *
- * Uses migration files as the source of truth with minimal transformations:
- * - Removes ASYNC keyword (Aurora DSQL specific, not supported in PostgreSQL)
- * - Adds schema qualification for worker isolation
+ * NOTE: Uses TEXT for UUID columns instead of UUID type to avoid race conditions
+ * when parallel tests try to create UUID types simultaneously.
+ * The Drizzle schema uses UUID, but TEXT works for integration tests.
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
@@ -110,8 +138,139 @@ export async function createAllTables(): Promise<void> {
   // Set search_path for this connection to use worker's schema
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 
-  // Create tables using migration files as source of truth
-  await db.execute(sql.raw(getMigrationSQL(schema)))
+  // Create tables in worker schema (parents first)
+  // Using TEXT for UUID columns to avoid parallel test race conditions
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS ${schema}.users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+      name TEXT,
+      image TEXT,
+      first_name TEXT,
+      last_name TEXT,
+      apple_device_id TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.identity_providers (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      provider_user_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      email_verified BOOLEAN NOT NULL,
+      is_private_email BOOLEAN NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      token_type TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.files (
+      file_id TEXT PRIMARY KEY,
+      size INTEGER NOT NULL DEFAULT 0,
+      author_name TEXT NOT NULL,
+      author_user TEXT NOT NULL,
+      publish_date TEXT NOT NULL,
+      description TEXT NOT NULL,
+      key TEXT NOT NULL,
+      url TEXT,
+      content_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Queued'
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.devices (
+      device_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      token TEXT NOT NULL,
+      system_version TEXT NOT NULL,
+      system_name TEXT NOT NULL,
+      endpoint_arn TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token TEXT NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      account_id TEXT NOT NULL,
+      provider_id TEXT NOT NULL,
+      access_token TEXT,
+      refresh_token TEXT,
+      access_token_expires_at TIMESTAMP WITH TIME ZONE,
+      refresh_token_expires_at TIMESTAMP WITH TIME ZONE,
+      scope TEXT,
+      id_token TEXT,
+      password TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.verification (
+      id TEXT PRIMARY KEY,
+      identifier TEXT NOT NULL,
+      value TEXT NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.file_downloads (
+      file_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'Pending',
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      max_retries INTEGER NOT NULL DEFAULT 5,
+      retry_after TIMESTAMP WITH TIME ZONE,
+      error_category TEXT,
+      last_error TEXT,
+      scheduled_release_time TIMESTAMP WITH TIME ZONE,
+      source_url TEXT,
+      correlation_id TEXT,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.user_files (
+      user_id TEXT NOT NULL,
+      file_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id, file_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS ${schema}.user_devices (
+      user_id TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id, device_id)
+    );
+
+    -- Indexes
+    CREATE INDEX IF NOT EXISTS ${schema}_users_email_idx ON ${schema}.users(email);
+    CREATE INDEX IF NOT EXISTS ${schema}_users_apple_device_idx ON ${schema}.users(apple_device_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_identity_providers_user_idx ON ${schema}.identity_providers(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_files_key_idx ON ${schema}.files(key);
+    CREATE INDEX IF NOT EXISTS ${schema}_file_downloads_status_idx ON ${schema}.file_downloads(status, retry_after);
+    CREATE INDEX IF NOT EXISTS ${schema}_sessions_user_idx ON ${schema}.sessions(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
+    CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, account_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_verification_identifier_idx ON ${schema}.verification(identifier);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
+    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_device_idx ON ${schema}.user_devices(device_id);
+  `))
 }
 
 /**
@@ -422,6 +581,40 @@ export async function getSessions(): Promise<Array<{id: string; userId: string}>
   const result = await db.execute(sql`SELECT id, user_id FROM sessions`)
   const rows = [...result] as Array<{id: string; user_id: string}>
   return rows.map((row) => ({id: row.id, userId: row.user_id}))
+}
+
+/**
+ * Get a session by token from PostgreSQL
+ */
+export async function getSessionByToken(token: string): Promise<{id: string; userId: string; expiresAt: Date; updatedAt: Date} | null> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, user_id, expires_at, updated_at FROM sessions WHERE token = ${token}`)
+  const rows = [...result] as Array<{id: string; user_id: string; expires_at: string; updated_at: string}>
+  if (rows.length === 0) {
+    return null
+  }
+  const row = rows[0]
+  return {id: row.id, userId: row.user_id, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
+}
+
+/**
+ * Get a session by ID from PostgreSQL
+ */
+export async function getSessionById(sessionId: string): Promise<{id: string; userId: string; token: string; expiresAt: Date; updatedAt: Date} | null> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  const result = await db.execute(sql`SELECT id, user_id, token, expires_at, updated_at FROM sessions WHERE id = ${sessionId}`)
+  const rows = [...result] as Array<{id: string; user_id: string; token: string; expires_at: string; updated_at: string}>
+  if (rows.length === 0) {
+    return null
+  }
+  const row = rows[0]
+  return {id: row.id, userId: row.user_id, token: row.token, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
 
 // ============================================================================
