@@ -403,3 +403,45 @@ export function createMockCustomAPIGatewayEvent(
     resource: options.path
   } as unknown as CustomAPIGatewayRequestAuthorizerEvent
 }
+
+/**
+ * Creates a mock API Gateway event for integration tests
+ * Supports principalId for authenticated requests via authorizer context
+ * @param options - Event configuration
+ */
+export function createMockAPIGatewayEvent(options: {
+  httpMethod: string
+  path: string
+  body?: string | null
+  headers?: Record<string, string>
+  principalId?: string
+  queryStringParameters?: Record<string, string> | null
+}) {
+  return {
+    httpMethod: options.httpMethod,
+    path: options.path,
+    body: options.body ?? null,
+    headers: options.headers ?? {'Content-Type': 'application/json'},
+    multiValueHeaders: {},
+    isBase64Encoded: false,
+    pathParameters: null,
+    queryStringParameters: options.queryStringParameters ?? null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      authorizer: options.principalId ? {principalId: options.principalId} : undefined,
+      httpMethod: options.httpMethod,
+      identity: {sourceIp: '127.0.0.1', userAgent: 'test'} as never,
+      path: options.path,
+      protocol: 'HTTP/1.1',
+      requestId: 'test-request-id',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
+      stage: 'test'
+    },
+    resource: options.path
+  }
+}
