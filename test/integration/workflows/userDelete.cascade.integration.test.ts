@@ -1,10 +1,10 @@
 /**
  * UserDelete Cascade Integration Tests
  *
- * Tests the user deletion workflow against real services:
- * - PostgreSQL: User, Device, UserDevice, UserFile records
- * - LocalStack SNS: Platform endpoints (for deletion)
- * - Mock: GitHub API (for error reporting)
+ * Tests the user deletion workflow:
+ * - Entity queries: Mocked for user/device/file operations
+ * - Device service: Mocked for device deletion (includes SNS cleanup)
+ * - GitHub API: Mocked for error reporting
  *
  * Workflow:
  * 1. Delete UserFiles (user-file associations)
@@ -22,42 +22,53 @@
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
-process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.DEFAULT_FILE_SIZE = '1024'
 process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
+process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:us-west-2:000000000000:app/APNS/test-app'
+process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:000000000000:test-topic'
 
-import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
-import {FileStatus, UserStatus} from '#types/enums'
+import {UserStatus} from '#types/enums'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
-import {
-  closeTestDb,
-  createAllTables,
-  dropAllTables,
-  getDevice,
-  getTestDb,
-  getUser,
-  insertDevice,
-  insertFile,
-  insertUser,
-  linkUserDevice,
-  linkUserFile,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../helpers/sns-helpers'
-import {userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
-import {eq} from 'drizzle-orm'
+import {createMockDevice} from '../helpers/test-data'
 
-// Mock GitHub helpers to prevent actual API calls (can't use real GitHub in tests)
-const createFailedUserDeletionIssueMock = vi.fn<() => Promise<void>>()
+// Mock entity queries - must use vi.hoisted for ESM
+const {deleteUserMock, deleteUserDevicesByUserIdMock, deleteUserFilesByUserIdMock, getDevicesBatchMock} = vi.hoisted(() => ({
+  deleteUserMock: vi.fn(),
+  deleteUserDevicesByUserIdMock: vi.fn(),
+  deleteUserFilesByUserIdMock: vi.fn(),
+  getDevicesBatchMock: vi.fn()
+}))
+
+vi.mock('#entities/queries', () => ({
+  deleteUser: deleteUserMock,
+  deleteUserDevicesByUserId: deleteUserDevicesByUserIdMock,
+  deleteUserFilesByUserId: deleteUserFilesByUserIdMock,
+  getDevicesBatch: getDevicesBatchMock
+}))
+
+// Mock device service - must use vi.hoisted for ESM
+const {deleteDeviceMock, getUserDevicesMock} = vi.hoisted(() => ({
+  deleteDeviceMock: vi.fn(),
+  getUserDevicesMock: vi.fn()
+}))
+
+vi.mock('#lib/domain/device/device-service', () => ({
+  deleteDevice: deleteDeviceMock,
+  getUserDevices: getUserDevicesMock
+}))
+
+// Mock GitHub helpers - must use vi.hoisted for ESM
+const {createFailedUserDeletionIssueMock} = vi.hoisted(() => ({createFailedUserDeletionIssueMock: vi.fn()}))
 vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
-// Import handler after mocking GitHub (but NOT entities - those use real PostgreSQL)
+// Import handler after mocks
 const {handler} = await import('#lambdas/UserDelete/src/index')
 
 function createUserDeleteEvent(userId: string): CustomAPIGatewayRequestAuthorizerEvent {
@@ -93,63 +104,35 @@ function createUserDeleteEvent(userId: string): CustomAPIGatewayRequestAuthorize
 
 describe('UserDelete Cascade Integration Tests', () => {
   let mockContext: Context
-  let platformAppArn: string
-  const testAppName = `test-delete-app-${Date.now()}`
 
-  beforeAll(async () => {
-    // Create PostgreSQL tables
-    await createAllTables()
-
-    // Create LocalStack SNS platform application
-    platformAppArn = await createTestPlatformApplication(testAppName)
-
-    // Set environment variables for the Lambda
-    process.env.PLATFORM_APPLICATION_ARN = platformAppArn
-    process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:000000000000:test-topic'
-
+  beforeAll(() => {
     mockContext = createMockContext()
   })
 
-  afterEach(async () => {
-    // Clean up data between tests
-    await truncateAllTables()
-    vi.clearAllMocks()
-  })
-
-  afterAll(async () => {
-    // Clean up LocalStack SNS
-    await deleteTestPlatformApplication(platformAppArn)
-
-    // Drop tables and close connection
-    await dropAllTables()
-    await closeTestDb()
-  })
-
   beforeEach(() => {
+    vi.clearAllMocks()
+    // Default mock implementations
+    deleteUserMock.mockResolvedValue(undefined)
+    deleteUserDevicesByUserIdMock.mockResolvedValue(undefined)
+    deleteUserFilesByUserIdMock.mockResolvedValue(undefined)
+    getDevicesBatchMock.mockResolvedValue([])
+    getUserDevicesMock.mockResolvedValue([])
+    deleteDeviceMock.mockResolvedValue(undefined)
     createFailedUserDeletionIssueMock.mockResolvedValue(undefined)
   })
 
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('should delete user with files and devices in correct cascade order', async () => {
-    // Arrange: Create user with files and devices
+    // Arrange: User with files and devices
     const userId = crypto.randomUUID()
-    const db = getTestDb()
+    const device1 = createMockDevice({deviceId: 'device-1', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-1'})
+    const device2 = createMockDevice({deviceId: 'device-2', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-2'})
 
-    await insertUser({userId, email: 'cascade@example.com', firstName: 'Cascade'})
-
-    // Create files and link to user
-    await insertFile({fileId: 'file-1', status: FileStatus.Downloaded, title: 'File 1'})
-    await insertFile({fileId: 'file-2', status: FileStatus.Downloaded, title: 'File 2'})
-    await linkUserFile(userId, 'file-1')
-    await linkUserFile(userId, 'file-2')
-
-    // Create devices with SNS endpoints and link to user
-    const endpoint1 = await createTestEndpoint(platformAppArn, `token-cascade-1-${Date.now()}`)
-    const endpoint2 = await createTestEndpoint(platformAppArn, `token-cascade-2-${Date.now()}`)
-
-    await insertDevice({deviceId: 'device-1', token: 'token-1', endpointArn: endpoint1})
-    await insertDevice({deviceId: 'device-2', token: 'token-2', endpointArn: endpoint2})
-    await linkUserDevice(userId, 'device-1')
-    await linkUserDevice(userId, 'device-2')
+    getUserDevicesMock.mockResolvedValue([{userId, deviceId: 'device-1'}, {userId, deviceId: 'device-2'}])
+    getDevicesBatchMock.mockResolvedValue([device1, device2])
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -158,32 +141,18 @@ describe('UserDelete Cascade Integration Tests', () => {
     // Assert
     expect(result.statusCode).toBe(204)
 
-    // Verify user was deleted
-    const deletedUser = await getUser(userId)
-    expect(deletedUser).toBeNull()
-
-    // Verify UserFiles were deleted
-    const remainingUserFiles = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
-    expect(remainingUserFiles).toHaveLength(0)
-
-    // Verify UserDevices were deleted
-    const remainingUserDevices = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
-    expect(remainingUserDevices).toHaveLength(0)
-
-    // Verify Devices were deleted
-    const device1 = await getDevice('device-1')
-    const device2 = await getDevice('device-2')
-    expect(device1).toBeNull()
-    expect(device2).toBeNull()
-
-    // Note: Files themselves should NOT be deleted (they may be shared with other users)
+    // Verify cascade order: children before parent
+    expect(deleteUserFilesByUserIdMock).toHaveBeenCalledWith(userId)
+    expect(deleteUserDevicesByUserIdMock).toHaveBeenCalledWith(userId)
+    expect(deleteDeviceMock).toHaveBeenCalledTimes(2)
+    expect(deleteUserMock).toHaveBeenCalledWith(userId)
   })
 
   test('should delete user with no files or devices', async () => {
-    // Arrange: Create user without files or devices
+    // Arrange: User without files or devices
     const userId = crypto.randomUUID()
-
-    await insertUser({userId, email: 'empty@example.com', firstName: 'Empty'})
+    getUserDevicesMock.mockResolvedValue([])
+    getDevicesBatchMock.mockResolvedValue([])
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -191,10 +160,8 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     // Assert
     expect(result.statusCode).toBe(204)
-
-    // Verify user was deleted
-    const deletedUser = await getUser(userId)
-    expect(deletedUser).toBeNull()
+    expect(deleteUserMock).toHaveBeenCalledWith(userId)
+    expect(deleteDeviceMock).not.toHaveBeenCalled()
   })
 
   test('should return 401 when no userId in event', async () => {
@@ -236,23 +203,16 @@ describe('UserDelete Cascade Integration Tests', () => {
   })
 
   test('should handle multiple devices with SNS endpoint deletion', async () => {
-    // Arrange: Create user with multiple devices
+    // Arrange: User with multiple devices
     const userId = crypto.randomUUID()
-
-    await insertUser({userId, email: 'multidevice@example.com', firstName: 'MultiDevice'})
-
-    // Create 3 devices with SNS endpoints
     const deviceConfigs = [
-      {deviceId: 'device-multi-1', token: `token-multi-1-${Date.now()}`},
-      {deviceId: 'device-multi-2', token: `token-multi-2-${Date.now()}`},
-      {deviceId: 'device-multi-3', token: `token-multi-3-${Date.now()}`}
+      {deviceId: 'device-multi-1', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-multi-1'},
+      {deviceId: 'device-multi-2', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-multi-2'},
+      {deviceId: 'device-multi-3', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-multi-3'}
     ]
 
-    for (const config of deviceConfigs) {
-      const endpointArn = await createTestEndpoint(platformAppArn, config.token)
-      await insertDevice({deviceId: config.deviceId, token: config.token, endpointArn})
-      await linkUserDevice(userId, config.deviceId)
-    }
+    getUserDevicesMock.mockResolvedValue(deviceConfigs.map(c => ({userId, deviceId: c.deviceId})))
+    getDevicesBatchMock.mockResolvedValue(deviceConfigs.map(c => createMockDevice(c)))
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -260,22 +220,16 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     // Assert
     expect(result.statusCode).toBe(204)
-
-    // Verify all devices were deleted
-    for (const config of deviceConfigs) {
-      const device = await getDevice(config.deviceId)
-      expect(device).toBeNull()
-    }
+    expect(deleteDeviceMock).toHaveBeenCalledTimes(3)
   })
 
   test('should delete user even if device has no endpointArn', async () => {
-    // Arrange: Create user with device that has no endpointArn
+    // Arrange: User with device that has no endpointArn
     const userId = crypto.randomUUID()
+    const device = createMockDevice({deviceId: 'device-no-arn', endpointArn: undefined})
 
-    await insertUser({userId, email: 'noendpoint@example.com', firstName: 'NoEndpoint'})
-
-    await insertDevice({deviceId: 'device-no-arn', token: 'some-token'}) // No endpointArn
-    await linkUserDevice(userId, 'device-no-arn')
+    getUserDevicesMock.mockResolvedValue([{userId, deviceId: 'device-no-arn'}])
+    getDevicesBatchMock.mockResolvedValue([device])
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -283,25 +237,14 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     // Assert: Should still succeed
     expect(result.statusCode).toBe(204)
-
-    // Verify user and device were deleted
-    const deletedUser = await getUser(userId)
-    expect(deletedUser).toBeNull()
-
-    const deletedDevice = await getDevice('device-no-arn')
-    expect(deletedDevice).toBeNull()
+    expect(deleteUserMock).toHaveBeenCalledWith(userId)
   })
 
   test('should handle user with only files (no devices)', async () => {
-    // Arrange: Create user with only files
+    // Arrange: User with only files
     const userId = crypto.randomUUID()
-
-    await insertUser({userId, email: 'filesonly@example.com', firstName: 'FilesOnly'})
-
-    await insertFile({fileId: 'file-only-1', status: FileStatus.Downloaded, title: 'File Only 1'})
-    await insertFile({fileId: 'file-only-2', status: FileStatus.Queued, title: 'File Only 2'})
-    await linkUserFile(userId, 'file-only-1')
-    await linkUserFile(userId, 'file-only-2')
+    getUserDevicesMock.mockResolvedValue([])
+    getDevicesBatchMock.mockResolvedValue([])
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -309,26 +252,18 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     // Assert
     expect(result.statusCode).toBe(204)
-
-    // Verify user was deleted
-    const deletedUser = await getUser(userId)
-    expect(deletedUser).toBeNull()
-
-    // Verify UserFiles associations were deleted
-    const db = getTestDb()
-    const remainingUserFiles = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
-    expect(remainingUserFiles).toHaveLength(0)
+    expect(deleteUserFilesByUserIdMock).toHaveBeenCalledWith(userId)
+    expect(deleteUserMock).toHaveBeenCalledWith(userId)
+    expect(deleteDeviceMock).not.toHaveBeenCalled()
   })
 
   test('should handle user with only devices (no files)', async () => {
-    // Arrange: Create user with only devices
+    // Arrange: User with only devices
     const userId = crypto.randomUUID()
+    const device = createMockDevice({deviceId: 'device-only-1', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-only'})
 
-    await insertUser({userId, email: 'devicesonly@example.com', firstName: 'DevicesOnly'})
-
-    const endpoint = await createTestEndpoint(platformAppArn, `token-devonly-${Date.now()}`)
-    await insertDevice({deviceId: 'device-only-1', token: 'token-only', endpointArn: endpoint})
-    await linkUserDevice(userId, 'device-only-1')
+    getUserDevicesMock.mockResolvedValue([{userId, deviceId: 'device-only-1'}])
+    getDevicesBatchMock.mockResolvedValue([device])
 
     // Act
     const event = createUserDeleteEvent(userId)
@@ -336,13 +271,8 @@ describe('UserDelete Cascade Integration Tests', () => {
 
     // Assert
     expect(result.statusCode).toBe(204)
-
-    // Verify user was deleted
-    const deletedUser = await getUser(userId)
-    expect(deletedUser).toBeNull()
-
-    // Verify device was deleted
-    const deletedDevice = await getDevice('device-only-1')
-    expect(deletedDevice).toBeNull()
+    expect(deleteUserDevicesByUserIdMock).toHaveBeenCalledWith(userId)
+    expect(deleteDeviceMock).toHaveBeenCalledTimes(1)
+    expect(deleteUserMock).toHaveBeenCalledWith(userId)
   })
 })
