@@ -45,7 +45,7 @@ jobs:
       run: pnpm run build
 
     - name: Download previous incremental file
-      uses: dawidd6/action-download-artifact@v9
+      uses: dawidd6/action-download-artifact@v12
       with:
         workflow: mutation-tests.yml
         name: stryker-incremental
