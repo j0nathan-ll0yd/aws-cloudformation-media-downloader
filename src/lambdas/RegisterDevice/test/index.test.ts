@@ -1,9 +1,31 @@
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import {mockClient} from 'aws-sdk-client-mock'
+import {
+  CreatePlatformEndpointCommand,
+  DeleteEndpointCommand,
+  ListSubscriptionsByTopicCommand,
+  SNSClient,
+  SubscribeCommand,
+  UnsubscribeCommand
+} from '@aws-sdk/client-sns'
 
 const fakeUserId = uuidv4()
+
+// Create SNS mock - intercepts all SNSClient.send() calls
+const snsMock = mockClient(SNSClient)
+
+// Type helper for aws-sdk-client-mock-vitest matchers
+type AwsMockExpect = (
+  mock: any // eslint-disable-line @typescript-eslint/no-explicit-any
+) => {
+  toHaveReceivedCommand: (cmd: unknown) => void
+  toHaveReceivedCommandWith: (cmd: unknown, input: unknown) => void
+  not: {toHaveReceivedCommand: (cmd: unknown) => void}
+}
+const expectMock = expect as unknown as AwsMockExpect
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
@@ -17,18 +39,8 @@ vi.mock('#lib/domain/device/device-service', () => ({
 
 const {default: createPlatformEndpointResponse} = await import('./fixtures/createPlatformEndpoint-200-OK.json', {assert: {type: 'json'}})
 const {default: listSubscriptionsByTopicResponse} = await import('./fixtures/listSubscriptionsByTopic-200-OK.json', {assert: {type: 'json'}})
-const {default: subscribeResponse} = await import('./fixtures/subscribe-200-OK.json', {assert: {type: 'json'}})
 const {default: queryDefaultResponse} = await import('./fixtures/query-200-OK.json', {assert: {type: 'json'}})
 const {default: querySuccessResponse} = await import('./fixtures/query-201-Created.json', {assert: {type: 'json'}})
-const createPlatformEndpointMock = vi.fn()
-const listSubscriptionsByTopicMock = vi.fn()
-vi.mock('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: vi.fn().mockReturnValue(subscribeResponse),
-  listSubscriptionsByTopic: listSubscriptionsByTopicMock,
-  createPlatformEndpoint: createPlatformEndpointMock,
-  unsubscribe: vi.fn()
-}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
@@ -39,14 +51,26 @@ describe('#RegisterDevice', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
+    snsMock.reset()
     getUserDevicesMock.mockReturnValue(queryDefaultResponse.Items || [])
     vi.mocked(upsertDevice).mockResolvedValue({} as ReturnType<typeof upsertDevice> extends Promise<infer T> ? T : never)
     vi.mocked(upsertUserDevice).mockResolvedValue({} as ReturnType<typeof upsertUserDevice> extends Promise<infer T> ? T : never)
-    createPlatformEndpointMock.mockReturnValue(createPlatformEndpointResponse)
-    listSubscriptionsByTopicMock.mockReturnValue(listSubscriptionsByTopicResponse)
+
+    // Configure SNS mock responses
+    snsMock.on(CreatePlatformEndpointCommand).resolves(createPlatformEndpointResponse)
+    snsMock.on(ListSubscriptionsByTopicCommand).resolves(listSubscriptionsByTopicResponse)
+    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:topic:uuid'})
+    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
+    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
+
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
     process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
   })
+
+  afterEach(() => {
+    snsMock.reset()
+  })
+
   test('(anonymous) should create an endpoint and subscribe to the unregistered topic', async () => {
     event.requestContext.authorizer!.principalId = 'unknown'
     delete event.headers['Authorization']
@@ -54,6 +78,7 @@ describe('#RegisterDevice', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(200)
     expect(body.body).toHaveProperty('endpointArn')
+    expectMock(snsMock).toHaveReceivedCommand(CreatePlatformEndpointCommand)
   })
   test('(unauthenticated) throw an error; need to be either anonymous or authenticated', async () => {
     event.requestContext.authorizer!.principalId = 'unknown'
@@ -67,6 +92,8 @@ describe('#RegisterDevice', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
     expect(body.body).toHaveProperty('endpointArn')
+    expectMock(snsMock).toHaveReceivedCommand(CreatePlatformEndpointCommand)
+    expectMock(snsMock).toHaveReceivedCommand(ListSubscriptionsByTopicCommand)
   })
   test('(authenticated-subsequent) should create an endpoint, check the device details, and return', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
@@ -74,6 +101,7 @@ describe('#RegisterDevice', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(200)
     expect(body.body).toHaveProperty('endpointArn')
+    expectMock(snsMock).toHaveReceivedCommand(CreatePlatformEndpointCommand)
   })
   test('should return a valid response if APNS is not configured', async () => {
     // Set up as anonymous user (not unauthenticated) to test APNS config check
@@ -99,7 +127,7 @@ describe('#RegisterDevice', () => {
       // Set up as anonymous user to test AWS failure
       delete event.headers['Authorization']
       event.requestContext.authorizer!.principalId = 'unknown'
-      createPlatformEndpointMock.mockReturnValue(undefined)
+      snsMock.on(CreatePlatformEndpointCommand).resolves(undefined as never)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(503)
       const body = JSON.parse(output.body)
@@ -108,7 +136,7 @@ describe('#RegisterDevice', () => {
     test('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
-      listSubscriptionsByTopicMock.mockReturnValue(undefined)
+      snsMock.on(ListSubscriptionsByTopicCommand).resolves(undefined as never)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(503)
       const body = JSON.parse(output.body)
@@ -117,7 +145,7 @@ describe('#RegisterDevice', () => {
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       getUserDevicesMock.mockReturnValue(querySuccessResponse.Items || [])
-      listSubscriptionsByTopicMock.mockReturnValue({Subscriptions: []})
+      snsMock.on(ListSubscriptionsByTopicCommand).resolves({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)
@@ -139,9 +167,7 @@ describe('#RegisterDevice', () => {
     test('should handle SNS createPlatformEndpoint throwing error', async () => {
       delete event.headers['Authorization']
       event.requestContext.authorizer!.principalId = 'unknown'
-      createPlatformEndpointMock.mockImplementation(() => {
-        throw new Error('SNS service unavailable')
-      })
+      snsMock.on(CreatePlatformEndpointCommand).rejects(new Error('SNS service unavailable'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
     })

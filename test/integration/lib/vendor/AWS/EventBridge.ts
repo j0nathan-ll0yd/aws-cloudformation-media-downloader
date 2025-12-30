@@ -8,6 +8,7 @@ import {
   CreateEventBusCommand,
   DeleteEventBusCommand,
   DeleteRuleCommand,
+  ListEventBusesCommand,
   ListRulesCommand,
   ListTargetsByRuleCommand,
   PutEventsCommand,
@@ -88,4 +89,13 @@ export async function putEvents(entries: PutEventsRequestEntry[]): Promise<PutEv
 export async function listRules(busName: string): Promise<string[]> {
   const result = await eventBridgeClient.send(new ListRulesCommand({EventBusName: busName}))
   return (result.Rules || []).map((rule) => rule.Name!).filter(Boolean)
+}
+
+/**
+ * Lists all event buses (used for health checks)
+ * @returns Array of event bus names
+ */
+export async function listEventBuses(): Promise<string[]> {
+  const result = await eventBridgeClient.send(new ListEventBusesCommand({}))
+  return (result.EventBuses || []).map((bus) => bus.Name!).filter(Boolean)
 }

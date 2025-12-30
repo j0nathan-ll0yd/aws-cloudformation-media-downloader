@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 import {mockClient} from 'aws-sdk-client-mock'
-import {SNSClient, PublishCommand} from '@aws-sdk/client-sns'
+import {PublishCommand, SNSClient} from '@aws-sdk/client-sns'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'

@@ -1,8 +1,14 @@
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/vitest-setup'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
+import {mockClient} from 'aws-sdk-client-mock'
+import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {v4 as uuidv4} from 'uuid'
+
+// Create SNS mock - intercepts all SNSClient.send() calls
+const snsMock = mockClient(SNSClient)
 
 // Set APNS env vars for ApnsClient
 process.env.APNS_SIGNING_KEY = fakePrivateKey
@@ -40,12 +46,6 @@ const fakeDevices = [
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesByDeviceId: vi.fn()}))
-
-vi.mock('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: 'test-request-id'}}), // fmt: multiline
-  subscribe: vi.fn(),
-  unsubscribe: vi.fn()
-}))
 
 vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: vi.fn()}))
 
@@ -122,7 +122,21 @@ describe('#PruneDevices', () => {
     version: ''
   }
   const context = testContext
+
+  afterEach(() => {
+    snsMock.reset()
+    vi.clearAllMocks()
+  })
+
+  // Configure SNS mock responses for each test
+  function setupSnsMock() {
+    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
+    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789:topic:uuid'})
+    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
+  }
+
   test('should search for and remove disabled devices (single)', async () => {
+    setupSnsMock()
     vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
     vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
     vi.mocked(deleteDevice).mockResolvedValue(undefined)
@@ -145,10 +159,12 @@ describe('#PruneDevices', () => {
   })
   describe('#AWSFailure', () => {
     test('should throw error when device query fails', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockRejectedValue(new Error('Database error'))
       await expect(handler(event, context)).rejects.toThrow()
     })
     test('should continue successfully when user device deletion fails for disabled device', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
       vi.mocked(deleteUserDevicesByDeviceId).mockRejectedValue(new Error('Delete failed'))
       vi.mocked(deleteDevice).mockResolvedValue(undefined)
@@ -172,6 +188,7 @@ describe('#PruneDevices', () => {
   })
   describe('#APNSFailure', () => {
     test('should throw error when APNS health check returns unexpected error', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
       sendMock.mockImplementation(() => {
         throw undefined
@@ -182,6 +199,7 @@ describe('#PruneDevices', () => {
 
   describe('#EdgeCases', () => {
     test('should handle empty device list gracefully', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue([])
       const result = await handler(event, context)
       expect(result.devicesChecked).toBe(0)
@@ -192,6 +210,7 @@ describe('#PruneDevices', () => {
     })
 
     test('should prune all devices when all are disabled', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
       vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
       vi.mocked(deleteDevice).mockResolvedValue(undefined)
@@ -206,6 +225,7 @@ describe('#PruneDevices', () => {
     })
 
     test('should handle device deletion failure and continue with remaining devices', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 2))
       vi.mocked(deleteDevice).mockRejectedValue(new Error('Delete failed'))
       vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)
@@ -221,6 +241,7 @@ describe('#PruneDevices', () => {
     })
 
     test('should handle mixed success and failure in batch', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 3))
       // First device: expired, delete succeeds
       // Second device: expired, delete fails
@@ -245,6 +266,7 @@ describe('#PruneDevices', () => {
     })
 
     test('should handle APNS network timeout', async () => {
+      setupSnsMock()
       vi.mocked(getAllDevices).mockResolvedValue(fakeDevices.slice(0, 1))
       sendMock.mockImplementation(() => {
         const error = new Error('Network timeout')

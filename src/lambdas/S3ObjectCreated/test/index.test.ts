@@ -1,8 +1,23 @@
-import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {S3Event, S3EventRecord} from 'aws-lambda'
-import type {SendMessageRequest} from '@aws-sdk/client-sqs'
 import {testContext} from '#util/vitest-setup'
 import {createMockFile, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
+import {mockClient} from 'aws-sdk-client-mock'
+import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+
+// Create SQS mock - intercepts all SQSClient.send() calls
+const sqsMock = mockClient(SQSClient)
+
+// Type helper for aws-sdk-client-mock-vitest matchers
+type AwsMockExpect = (
+  mock: any // eslint-disable-line @typescript-eslint/no-explicit-any
+) => {
+  toHaveReceivedCommand: (cmd: unknown) => void
+  toHaveReceivedCommandTimes: (cmd: unknown, times: number) => void
+  toHaveReceivedCommandWith: (cmd: unknown, input: unknown) => void
+  not: {toHaveReceivedCommand: (cmd: unknown) => void}
+}
+const expectMock = expect as unknown as AwsMockExpect
 
 beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
@@ -10,14 +25,6 @@ beforeAll(() => {
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileId: vi.fn()}))
-
-const sendMessageMock = vi.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-vi.mock('#lib/vendor/AWS/SQS',
-  () => ({
-    sendMessage: sendMessageMock,
-    stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: vi.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-  }))
 
 const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
@@ -43,22 +50,25 @@ describe('#S3ObjectCreated', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    sqsMock.reset()
     // Default mock: file found, one user
     vi.mocked(getFilesByKey).mockResolvedValue([mockFileRow])
     vi.mocked(getUserFilesByFileId).mockResolvedValue([mockUserFileRow])
-    sendMessageMock.mockResolvedValue({MessageId: 'test-message-id'})
+    sqsMock.on(SendMessageCommand).resolves({MessageId: 'test-message-id'})
+  })
+
+  afterEach(() => {
+    sqsMock.reset()
   })
 
   test('should dispatch push notifications for each user with the file', async () => {
     const output = await handler(baseEvent, testContext)
     expect(output).toBeUndefined()
-    expect(sendMessageMock).toHaveBeenCalledTimes(1)
-    expect(sendMessageMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue',
-        MessageBody: expect.stringContaining('DownloadReadyNotification')
-      })
-    )
+    expectMock(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 1)
+    expectMock(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
+      QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue',
+      MessageBody: expect.stringContaining('DownloadReadyNotification')
+    })
   })
 
   test('should handle missing file gracefully and continue processing', async () => {
@@ -67,14 +77,14 @@ describe('#S3ObjectCreated', () => {
     vi.mocked(getFilesByKey).mockResolvedValue([])
     const output = await handler(baseEvent, testContext)
     expect(output).toBeUndefined()
-    expect(sendMessageMock).not.toHaveBeenCalled()
+    expectMock(sqsMock).not.toHaveReceivedCommand(SendMessageCommand)
   })
 
   test('should not send notifications when file has no users', async () => {
     vi.mocked(getUserFilesByFileId).mockResolvedValue([])
     const output = await handler(baseEvent, testContext)
     expect(output).toBeUndefined()
-    expect(sendMessageMock).not.toHaveBeenCalled()
+    expectMock(sqsMock).not.toHaveReceivedCommand(SendMessageCommand)
   })
 
   test('should send notifications to multiple users for the same file', async () => {
@@ -86,7 +96,7 @@ describe('#S3ObjectCreated', () => {
     vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
     const output = await handler(baseEvent, testContext)
     expect(output).toBeUndefined()
-    expect(sendMessageMock).toHaveBeenCalledTimes(3)
+    expectMock(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 3)
   })
 
   test('should decode URL-encoded S3 object keys correctly', async () => {
@@ -122,12 +132,12 @@ describe('#S3ObjectCreated', () => {
       ]
       vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
       // First call fails, second succeeds
-      sendMessageMock.mockRejectedValueOnce(new Error('SQS send failed')).mockResolvedValueOnce({MessageId: 'success-id'})
+      sqsMock.on(SendMessageCommand).rejectsOnce(new Error('SQS send failed')).resolves({MessageId: 'success-id'})
 
       const output = await handler(baseEvent, testContext)
       // Handler uses Promise.allSettled, so it continues despite failure
       expect(output).toBeUndefined()
-      expect(sendMessageMock).toHaveBeenCalledTimes(2)
+      expectMock(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 2)
     })
 
     test('should continue batch processing when one file query fails', async () => {
@@ -138,7 +148,7 @@ describe('#S3ObjectCreated', () => {
       const output = await handler(multiRecordEvent, testContext)
       expect(output).toBeUndefined()
       // Second file should still send notification
-      expect(sendMessageMock).toHaveBeenCalledTimes(1)
+      expectMock(sqsMock).toHaveReceivedCommandTimes(SendMessageCommand, 1)
     })
   })
 })

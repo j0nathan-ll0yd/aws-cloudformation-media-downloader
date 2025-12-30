@@ -1,8 +1,10 @@
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {mockClient} from 'aws-sdk-client-mock'
+import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 
 const fakeUserId = uuidv4()
 const fakeDevice1 = createMockDevice({deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1'})
@@ -11,6 +13,9 @@ const fakeUserDevicesResponse = [
   createMockUserDevice({deviceId: fakeDevice1.deviceId, userId: fakeUserId}),
   createMockUserDevice({deviceId: fakeDevice2.deviceId, userId: fakeUserId})
 ]
+
+// Create SNS mock - intercepts all SNSClient.send() calls
+const snsMock = mockClient(SNSClient)
 
 const fakeGithubIssueResponse = {
   status: '201',
@@ -30,12 +35,6 @@ vi.mock('#lib/domain/device/device-service', () => ({
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUserId: vi.fn(), deleteUserFilesByUserId: vi.fn(), getDevicesBatch: vi.fn()}))
 
-vi.mock('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: uuidv4()}}), // fmt: multiline
-  subscribe: vi.fn(),
-  unsubscribe: vi.fn()
-}))
-
 vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
@@ -47,8 +46,14 @@ describe('#UserDelete', () => {
   const context = testContext
   beforeEach(() => {
     vi.clearAllMocks()
+    snsMock.reset()
     event = JSON.parse(JSON.stringify(eventMock))
     event.requestContext.authorizer!.principalId = fakeUserId
+
+    // Configure SNS mock responses
+    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
+    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789:topic:uuid'})
+    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
 
     // Set default mock return values
     deleteDeviceMock.mockResolvedValue(undefined)
@@ -57,6 +62,11 @@ describe('#UserDelete', () => {
     vi.mocked(deleteUserFilesByUserId).mockResolvedValue(undefined)
     vi.mocked(deleteUserDevicesByUserId).mockResolvedValue(undefined)
   })
+
+  afterEach(() => {
+    snsMock.reset()
+  })
+
   test('should delete all user data', async () => {
     getUserDevicesMock.mockReturnValue(fakeUserDevicesResponse)
     vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])

@@ -1,16 +1,38 @@
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import type {SendMessageRequest} from '@aws-sdk/client-sqs'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import type {MediaDownloaderEventType} from '#types/events'
 import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
+import {mockClient} from 'aws-sdk-client-mock'
+import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
 
 const fakeUserId = uuidv4()
 
+// Create SQS mock - intercepts all SQSClient.send() calls
+const sqsMock = mockClient(SQSClient)
+
+// Type helper for aws-sdk-client-mock-vitest matchers
+type AwsMockExpect = (
+  mock: any // eslint-disable-line @typescript-eslint/no-explicit-any
+) => {
+  toHaveReceivedCommand: (cmd: unknown) => void
+  toHaveReceivedCommandTimes: (cmd: unknown, times: number) => void
+  toHaveReceivedCommandWith: (cmd: unknown, input: unknown) => void
+  not: {toHaveReceivedCommand: (cmd: unknown) => void}
+}
+const expectMock = expect as unknown as AwsMockExpect
+
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
+
+// Mock EventBridge vendor wrapper (has retry logic that can cause test timeouts)
+import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
+const publishEventWithRetryMock = vi.fn<
+  (eventType: MediaDownloaderEventType, detail: Record<string, unknown>, options?: PublishEventOptions) => Promise<PutEventsResponse>
+>()
+vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventWithRetry: publishEventWithRetryMock}))
 
 // Mock Powertools idempotency to bypass DynamoDB persistence
 vi.mock('#lib/vendor/Powertools/idempotency', () => ({
@@ -19,15 +41,6 @@ vi.mock('#lib/vendor/Powertools/idempotency', () => ({
   // makeIdempotent passes through the function unchanged (no idempotency wrapping in tests)
   makeIdempotent: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
-
-const sendMessageMock = vi.fn<(params: SendMessageRequest) => Promise<{MessageId: string}>>()
-vi.mock('#lib/vendor/AWS/SQS',
-  () => ({
-    sendMessage: sendMessageMock,
-    subscribe: vi.fn(),
-    stringAttribute: vi.fn((value: string) => ({DataType: 'String', StringValue: value})),
-    numberAttribute: vi.fn((value: number) => ({DataType: 'Number', StringValue: value.toString()}))
-  }))
 
 // Mock child_process for YouTube spawn operations
 vi.mock('child_process', () => ({spawn: vi.fn()}))
@@ -44,12 +57,6 @@ vi.mock('#lib/vendor/AWS/S3', () => ({
     done: vi.fn<() => Promise<{Location: string}>>().mockResolvedValue({Location: 's3://test-bucket/test-key.mp4'})
   })
 }))
-
-import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
-const publishEventWithRetryMock = vi.fn<
-  (eventType: MediaDownloaderEventType, detail: Record<string, unknown>, options?: PublishEventOptions) => Promise<PutEventsResponse>
->()
-vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventWithRetry: publishEventWithRetryMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 
@@ -68,16 +75,26 @@ describe('#WebhookFeedly', () => {
   beforeEach(() => {
     event = JSON.parse(JSON.stringify(eventMock))
     vi.clearAllMocks()
+    sqsMock.reset()
+
     process.env.EVENT_BUS_NAME = 'MediaDownloader'
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
     process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
+
+    // Configure AWS mock responses
+    sqsMock.on(SendMessageCommand).resolves({MessageId: 'msg-123'})
     publishEventWithRetryMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
+
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
     vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
     vi.mocked(getFile).mockResolvedValue(null)
-    sendMessageMock.mockResolvedValue({MessageId: 'msg-123'})
   })
+
+  afterEach(() => {
+    sqsMock.reset()
+  })
+
   test('should continue processing even if user-file association fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
     event.body = JSON.stringify(handleFeedlyEventResponse)
@@ -130,7 +147,7 @@ describe('#WebhookFeedly', () => {
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Accepted')
-    // Verify publishEvent was called with DownloadRequested and proper event detail
+    // Verify EventBridge was called with DownloadRequested
     expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested',
       expect.objectContaining({
         fileId: expect.any(String),
@@ -164,12 +181,10 @@ describe('#WebhookFeedly', () => {
       const body = JSON.parse(output.body)
       expect(body.body.status).toEqual('Dispatched')
       // Should send notification, NOT publish download event
-      expect(sendMessageMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
-          MessageBody: expect.stringContaining('DownloadReadyNotification')
-        })
-      )
+      expectMock(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
+        QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
+        MessageBody: expect.stringContaining('DownloadReadyNotification')
+      })
       expect(publishEventWithRetryMock).not.toHaveBeenCalled()
     })
   })

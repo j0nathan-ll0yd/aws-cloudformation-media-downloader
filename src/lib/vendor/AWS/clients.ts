@@ -90,7 +90,9 @@ function getBaseConfig() {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createS3Client(): S3Client {
-  if (testS3Client) return testS3Client
+  if (testS3Client) {
+    return testS3Client
+  }
   const config: S3ClientConfig = {
     ...getBaseConfig(),
     // forcePathStyle required for LocalStack S3
@@ -105,7 +107,9 @@ export function createS3Client(): S3Client {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createDynamoDBClient(): DynamoDBClient {
-  if (testDynamoDBClient) return testDynamoDBClient
+  if (testDynamoDBClient) {
+    return testDynamoDBClient
+  }
   const config: DynamoDBClientConfig = getBaseConfig()
   return new DynamoDBClient(config)
 }
@@ -116,7 +120,9 @@ export function createDynamoDBClient(): DynamoDBClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSNSClient(): SNSClient {
-  if (testSNSClient) return testSNSClient
+  if (testSNSClient) {
+    return testSNSClient
+  }
   const config: SNSClientConfig = getBaseConfig()
   return new SNSClient(config)
 }
@@ -127,7 +133,9 @@ export function createSNSClient(): SNSClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createSQSClient(): SQSClient {
-  if (testSQSClient) return testSQSClient
+  if (testSQSClient) {
+    return testSQSClient
+  }
   const config: SQSClientConfig = getBaseConfig()
   return new SQSClient(config)
 }
@@ -138,7 +146,9 @@ export function createSQSClient(): SQSClient {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createLambdaClient(): LambdaClient {
-  if (testLambdaClient) return testLambdaClient
+  if (testLambdaClient) {
+    return testLambdaClient
+  }
   const config: LambdaClientConfig = getBaseConfig()
   return new LambdaClient(config)
 }
@@ -159,7 +169,9 @@ export function createAPIGatewayClient(): APIGateway {
  * Automatically traced via OpenTelemetry AwsInstrumentation
  */
 export function createEventBridgeClient(): EventBridgeClient {
-  if (testEventBridgeClient) return testEventBridgeClient
+  if (testEventBridgeClient) {
+    return testEventBridgeClient
+  }
   const config: EventBridgeClientConfig = getBaseConfig()
   return new EventBridgeClient(config)
 }

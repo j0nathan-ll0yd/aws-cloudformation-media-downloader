@@ -31,7 +31,7 @@
  * ```
  */
 
-import {mockClient, type AwsClientStub} from 'aws-sdk-client-mock'
+import {type AwsClientStub, mockClient} from 'aws-sdk-client-mock'
 import {S3Client} from '@aws-sdk/client-s3'
 import {SQSClient} from '@aws-sdk/client-sqs'
 import {SNSClient} from '@aws-sdk/client-sns'
@@ -39,12 +39,12 @@ import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
 import {LambdaClient} from '@aws-sdk/client-lambda'
 import {
-  setTestS3Client,
-  setTestSQSClient,
-  setTestSNSClient,
-  setTestEventBridgeClient,
   setTestDynamoDBClient,
-  setTestLambdaClient
+  setTestEventBridgeClient,
+  setTestLambdaClient,
+  setTestS3Client,
+  setTestSNSClient,
+  setTestSQSClient
 } from '#lib/vendor/AWS/clients'
 
 // Base interface for mock instances with reset/restore methods
@@ -143,4 +143,4 @@ export function resetAllAwsMocks(): void {
 }
 
 // Re-export types for convenience
-export type {AwsClientStub}
+export type { AwsClientStub }
