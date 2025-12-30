@@ -116,7 +116,7 @@
     "@opentelemetry/resources": "^1.30.0",
     "@opentelemetry/sdk-trace-base": "^1.30.0",
     "@opentelemetry/sdk-trace-node": "^1.30.0",
-    "@opentelemetry/semantic-conventions": "^1.30.0",
+    "@opentelemetry/semantic-conventions": "^1.38.0",
     "apns2": "12.2.0",
     "axios": "^1.13.2",
     "better-auth": "1.4.7",
