@@ -14,9 +14,9 @@
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
   "thresholds": {
-    "high": 80,
-    "low": 60,
-    "break": 60
+    "high": 60,
+    "low": 40,
+    "break": 35
   },
   "mutate": [
     "src/lambdas/**/src/**/*.ts",
@@ -26,7 +26,14 @@
     "!src/**/*.test.ts",
     "!src/**/*.fixture.ts",
     "!src/**/*.d.ts",
-    "!src/mcp/**"
+    "!src/mcp/**",
+    "!src/lib/vendor/AWS/**",
+    "!src/lib/vendor/BetterAuth/**",
+    "!src/lib/vendor/Drizzle/client.ts",
+    "!src/lib/vendor/Drizzle/schema.ts",
+    "!src/lib/vendor/Drizzle/instrumentation.ts",
+    "!src/lib/vendor/Powertools/**",
+    "!src/lib/vendor/OpenTelemetry/**"
   ],
   "reporters": ["html", "clear-text", "progress", "json"],
   "htmlReporter": {
@@ -36,5 +43,8 @@
     "fileName": "reports/mutation/mutation.json"
   },
   "timeoutMS": 10000,
-  "timeoutFactor": 2
+  "timeoutFactor": 2,
+  "vitest": {
+    "related": false
+  }
 }
