@@ -28,29 +28,26 @@ import type {Context} from 'aws-lambda'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockScheduledEvent, createMockDevice} from '../helpers/test-data'
+import {createMockDevice, createMockScheduledEvent} from '../helpers/test-data'
 
 // Mock entity queries - must use vi.hoisted for ESM
-const {getAllDevicesMock, deleteUserDevicesByDeviceIdMock} = vi.hoisted(() => ({
-  getAllDevicesMock: vi.fn(),
-  deleteUserDevicesByDeviceIdMock: vi.fn()
-}))
+const {getAllDevicesMock, deleteUserDevicesByDeviceIdMock} = vi.hoisted(() => ({getAllDevicesMock: vi.fn(), deleteUserDevicesByDeviceIdMock: vi.fn()}))
 
-vi.mock('#entities/queries', () => ({
-  getAllDevices: getAllDevicesMock,
-  deleteUserDevicesByDeviceId: deleteUserDevicesByDeviceIdMock
-}))
+vi.mock('#entities/queries', () => ({getAllDevices: getAllDevicesMock, deleteUserDevicesByDeviceId: deleteUserDevicesByDeviceIdMock}))
 
 // Mock APNS library - use vi.hoisted() for ESM module hoisting compatibility
 // Must use regular functions (not arrows) for constructor mocks
 const {sendMock} = vi.hoisted(() => ({sendMock: vi.fn()}))
-vi.mock('apns2',
-  () => ({
-    ApnsClient: vi.fn().mockImplementation(function ApnsClient() { return {send: sendMock} }),
-    Notification: vi.fn().mockImplementation(function Notification(token: string, options: unknown) { return {token, options} }),
-    Priority: {throttled: 5},
-    PushType: {background: 'background'}
-  }))
+vi.mock('apns2', () => ({
+  ApnsClient: vi.fn().mockImplementation(function ApnsClient() {
+    return {send: sendMock}
+  }),
+  Notification: vi.fn().mockImplementation(function Notification(token: string, options: unknown) {
+    return {token, options}
+  }),
+  Priority: {throttled: 5},
+  PushType: {background: 'background'}
+}))
 
 // Mock device service for deletion - use vi.hoisted() for ESM compatibility
 const {deleteDeviceMock} = vi.hoisted(() => ({deleteDeviceMock: vi.fn()}))

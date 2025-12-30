@@ -33,15 +33,9 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import {createMockContext} from '../helpers/lambda-context'
 
 // Mock entity queries - must use vi.hoisted for ESM
-const {upsertDeviceMock, upsertUserDeviceMock} = vi.hoisted(() => ({
-  upsertDeviceMock: vi.fn(),
-  upsertUserDeviceMock: vi.fn()
-}))
+const {upsertDeviceMock, upsertUserDeviceMock} = vi.hoisted(() => ({upsertDeviceMock: vi.fn(), upsertUserDeviceMock: vi.fn()}))
 
-vi.mock('#entities/queries', () => ({
-  upsertDevice: upsertDeviceMock,
-  upsertUserDevice: upsertUserDeviceMock
-}))
+vi.mock('#entities/queries', () => ({upsertDevice: upsertDeviceMock, upsertUserDevice: upsertUserDeviceMock}))
 
 // Mock SNS vendor - must use vi.hoisted for ESM
 const {createPlatformEndpointMock, listSubscriptionsByTopicMock} = vi.hoisted(() => ({
@@ -49,10 +43,7 @@ const {createPlatformEndpointMock, listSubscriptionsByTopicMock} = vi.hoisted(()
   listSubscriptionsByTopicMock: vi.fn()
 }))
 
-vi.mock('#lib/vendor/AWS/SNS', () => ({
-  createPlatformEndpoint: createPlatformEndpointMock,
-  listSubscriptionsByTopic: listSubscriptionsByTopicMock
-}))
+vi.mock('#lib/vendor/AWS/SNS', () => ({createPlatformEndpoint: createPlatformEndpointMock, listSubscriptionsByTopic: listSubscriptionsByTopicMock}))
 
 // Mock device service - must use vi.hoisted for ESM
 const {getUserDevicesMock, subscribeEndpointToTopicMock, unsubscribeEndpointToTopicMock} = vi.hoisted(() => ({
@@ -61,11 +52,12 @@ const {getUserDevicesMock, subscribeEndpointToTopicMock, unsubscribeEndpointToTo
   unsubscribeEndpointToTopicMock: vi.fn()
 }))
 
-vi.mock('#lib/domain/device/device-service', () => ({
-  getUserDevices: getUserDevicesMock,
-  subscribeEndpointToTopic: subscribeEndpointToTopicMock,
-  unsubscribeEndpointToTopic: unsubscribeEndpointToTopicMock
-}))
+vi.mock('#lib/domain/device/device-service',
+  () => ({
+    getUserDevices: getUserDevicesMock,
+    subscribeEndpointToTopic: subscribeEndpointToTopicMock,
+    unsubscribeEndpointToTopic: unsubscribeEndpointToTopicMock
+  }))
 
 // Import handler after mocks
 const {handler} = await import('#lambdas/RegisterDevice/src/index')
@@ -270,13 +262,9 @@ describe('Device Registration Integration Tests', () => {
     expect(result.statusCode).toBe(200)
 
     // Verify full device info was passed to upsert
-    expect(upsertDeviceMock).toHaveBeenCalledWith(expect.objectContaining({
-      deviceId,
-      token,
-      name: 'iPhone 15 Pro Max',
-      systemName: 'iOS',
-      systemVersion: '17.2'
-    }))
+    expect(upsertDeviceMock).toHaveBeenCalledWith(
+      expect.objectContaining({deviceId, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'})
+    )
   })
 
   test('should allow multiple users to register same device', async () => {

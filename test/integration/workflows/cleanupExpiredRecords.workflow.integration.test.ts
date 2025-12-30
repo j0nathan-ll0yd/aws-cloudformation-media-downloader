@@ -55,24 +55,24 @@ const {mockDbClient, mockDeleteCount} = vi.hoisted(() => {
   }
 })
 
-vi.mock('#lib/vendor/Drizzle/client', () => ({
-  getDrizzleClient: vi.fn().mockResolvedValue(mockDbClient)
-}))
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn().mockResolvedValue(mockDbClient)}))
 
 // Mock schema tables - provide identifiable objects for the mock client to distinguish
-vi.mock('#lib/vendor/Drizzle/schema', () => ({
-  fileDownloads: {fileDownloads: true, id: 'fileDownloads', updatedAt: 'updatedAt', status: 'status'},
-  sessions: {sessions: true, id: 'sessions', expiresAt: 'expiresAt'},
-  verification: {verification: true, id: 'verification', expiresAt: 'expiresAt'}
-}))
+vi.mock('#lib/vendor/Drizzle/schema',
+  () => ({
+    fileDownloads: {fileDownloads: true, id: 'fileDownloads', updatedAt: 'updatedAt', status: 'status'},
+    sessions: {sessions: true, id: 'sessions', expiresAt: 'expiresAt'},
+    verification: {verification: true, id: 'verification', expiresAt: 'expiresAt'}
+  }))
 
 // Mock Drizzle query helpers - these need to return comparable values
-vi.mock('#lib/vendor/Drizzle/types', () => ({
-  and: vi.fn((...args: unknown[]) => ({type: 'and', args})),
-  or: vi.fn((...args: unknown[]) => ({type: 'or', args})),
-  eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
-  lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val}))
-}))
+vi.mock('#lib/vendor/Drizzle/types',
+  () => ({
+    and: vi.fn((...args: unknown[]) => ({type: 'and', args})),
+    or: vi.fn((...args: unknown[]) => ({type: 'or', args})),
+    eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
+    lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val}))
+  }))
 
 // Import handler after mocks
 const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')

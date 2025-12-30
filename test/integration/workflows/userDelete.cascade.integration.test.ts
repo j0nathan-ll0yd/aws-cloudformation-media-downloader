@@ -46,23 +46,18 @@ const {deleteUserMock, deleteUserDevicesByUserIdMock, deleteUserFilesByUserIdMoc
   getDevicesBatchMock: vi.fn()
 }))
 
-vi.mock('#entities/queries', () => ({
-  deleteUser: deleteUserMock,
-  deleteUserDevicesByUserId: deleteUserDevicesByUserIdMock,
-  deleteUserFilesByUserId: deleteUserFilesByUserIdMock,
-  getDevicesBatch: getDevicesBatchMock
-}))
+vi.mock('#entities/queries',
+  () => ({
+    deleteUser: deleteUserMock,
+    deleteUserDevicesByUserId: deleteUserDevicesByUserIdMock,
+    deleteUserFilesByUserId: deleteUserFilesByUserIdMock,
+    getDevicesBatch: getDevicesBatchMock
+  }))
 
 // Mock device service - must use vi.hoisted for ESM
-const {deleteDeviceMock, getUserDevicesMock} = vi.hoisted(() => ({
-  deleteDeviceMock: vi.fn(),
-  getUserDevicesMock: vi.fn()
-}))
+const {deleteDeviceMock, getUserDevicesMock} = vi.hoisted(() => ({deleteDeviceMock: vi.fn(), getUserDevicesMock: vi.fn()}))
 
-vi.mock('#lib/domain/device/device-service', () => ({
-  deleteDevice: deleteDeviceMock,
-  getUserDevices: getUserDevicesMock
-}))
+vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: deleteDeviceMock, getUserDevices: getUserDevicesMock}))
 
 // Mock GitHub helpers - must use vi.hoisted for ESM
 const {createFailedUserDeletionIssueMock} = vi.hoisted(() => ({createFailedUserDeletionIssueMock: vi.fn()}))
@@ -211,8 +206,8 @@ describe('UserDelete Cascade Integration Tests', () => {
       {deviceId: 'device-multi-3', endpointArn: 'arn:aws:sns:us-west-2:000000000000:endpoint/APNS/test-app/endpoint-multi-3'}
     ]
 
-    getUserDevicesMock.mockResolvedValue(deviceConfigs.map(c => ({userId, deviceId: c.deviceId})))
-    getDevicesBatchMock.mockResolvedValue(deviceConfigs.map(c => createMockDevice(c)))
+    getUserDevicesMock.mockResolvedValue(deviceConfigs.map((c) => ({userId, deviceId: c.deviceId})))
+    getDevicesBatchMock.mockResolvedValue(deviceConfigs.map((c) => createMockDevice(c)))
 
     // Act
     const event = createUserDeleteEvent(userId)

@@ -23,18 +23,12 @@ import type {SQSEvent} from 'aws-lambda'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockSQSFileNotificationEvent, createMockDevice} from '../helpers/test-data'
+import {createMockDevice, createMockSQSFileNotificationEvent} from '../helpers/test-data'
 
 // Mock entity queries - must use vi.hoisted for ESM
-const {getDeviceMock, getUserDevicesByUserIdMock} = vi.hoisted(() => ({
-  getDeviceMock: vi.fn(),
-  getUserDevicesByUserIdMock: vi.fn()
-}))
+const {getDeviceMock, getUserDevicesByUserIdMock} = vi.hoisted(() => ({getDeviceMock: vi.fn(), getUserDevicesByUserIdMock: vi.fn()}))
 
-vi.mock('#entities/queries', () => ({
-  getDevice: getDeviceMock,
-  getUserDevicesByUserId: getUserDevicesByUserIdMock
-}))
+vi.mock('#entities/queries', () => ({getDevice: getDeviceMock, getUserDevicesByUserId: getUserDevicesByUserIdMock}))
 
 // Mock SNS vendor - must use vi.hoisted for ESM
 const {publishSnsEventMock} = vi.hoisted(() => ({publishSnsEventMock: vi.fn()}))
@@ -88,9 +82,9 @@ describe('SendPushNotification Workflow Integration Tests', () => {
     ]
 
     // Mock user has multiple devices
-    getUserDevicesByUserIdMock.mockResolvedValue(deviceConfigs.map(c => ({userId, deviceId: c.deviceId})))
+    getUserDevicesByUserIdMock.mockResolvedValue(deviceConfigs.map((c) => ({userId, deviceId: c.deviceId})))
     getDeviceMock.mockImplementation((deviceId: string) => {
-      const config = deviceConfigs.find(c => c.deviceId === deviceId)
+      const config = deviceConfigs.find((c) => c.deviceId === deviceId)
       return Promise.resolve(config ? createMockDevice(config) : null)
     })
 
@@ -136,8 +130,12 @@ describe('SendPushNotification Workflow Integration Tests', () => {
 
     // Mock both users have devices
     getUserDevicesByUserIdMock.mockImplementation((userId: string) => {
-      if (userId === user1Id) return Promise.resolve([{userId: user1Id, deviceId: 'device-batch-1'}])
-      if (userId === user2Id) return Promise.resolve([{userId: user2Id, deviceId: 'device-batch-2'}])
+      if (userId === user1Id) {
+        return Promise.resolve([{userId: user1Id, deviceId: 'device-batch-1'}])
+      }
+      if (userId === user2Id) {
+        return Promise.resolve([{userId: user2Id, deviceId: 'device-batch-2'}])
+      }
       return Promise.resolve([])
     })
 

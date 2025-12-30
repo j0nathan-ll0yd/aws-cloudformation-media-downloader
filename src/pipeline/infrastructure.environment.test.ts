@@ -63,7 +63,8 @@ const excludedSourceVariables: Record<string, number> = {
   HOMEPATH: 1,
   NODE_ENV: 1,
   NODE_DEBUG: 1,
-  JEST_WORKER_ID: 1,
+  VITEST_POOL_ID: 1,
+  JEST_WORKER_ID: 1, // Used by undici dependency (bundled)
   LOG_LEVEL: 1,
   ENVIRONMENT: 1,
   USE_LOCALSTACK: 1,

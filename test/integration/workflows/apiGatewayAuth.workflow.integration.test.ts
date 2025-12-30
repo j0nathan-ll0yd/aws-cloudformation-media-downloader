@@ -21,11 +21,7 @@ import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 
 // Mock API Gateway vendor calls - must use vi.hoisted for ESM
-const {mockGetApiKeys, mockGetUsagePlans, mockGetUsage} = vi.hoisted(() => ({
-  mockGetApiKeys: vi.fn(),
-  mockGetUsagePlans: vi.fn(),
-  mockGetUsage: vi.fn()
-}))
+const {mockGetApiKeys, mockGetUsagePlans, mockGetUsage} = vi.hoisted(() => ({mockGetApiKeys: vi.fn(), mockGetUsagePlans: vi.fn(), mockGetUsage: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
 

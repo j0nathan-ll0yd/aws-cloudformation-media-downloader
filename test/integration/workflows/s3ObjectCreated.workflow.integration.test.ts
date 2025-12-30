@@ -23,18 +23,12 @@ import {FileStatus} from '#types/enums'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
-import {createMockS3Event, createMockFile} from '../helpers/test-data'
+import {createMockFile, createMockS3Event} from '../helpers/test-data'
 
 // Mock entity queries - must use vi.hoisted for ESM
-const {getFilesByKeyMock, getUserFilesByFileIdMock} = vi.hoisted(() => ({
-  getFilesByKeyMock: vi.fn(),
-  getUserFilesByFileIdMock: vi.fn()
-}))
+const {getFilesByKeyMock, getUserFilesByFileIdMock} = vi.hoisted(() => ({getFilesByKeyMock: vi.fn(), getUserFilesByFileIdMock: vi.fn()}))
 
-vi.mock('#entities/queries', () => ({
-  getFilesByKey: getFilesByKeyMock,
-  getUserFilesByFileId: getUserFilesByFileIdMock
-}))
+vi.mock('#entities/queries', () => ({getFilesByKey: getFilesByKeyMock, getUserFilesByFileId: getUserFilesByFileIdMock}))
 
 // Mock SQS vendor wrapper - include stringAttribute helper used by Lambda
 const sendMessageMock = vi.fn()

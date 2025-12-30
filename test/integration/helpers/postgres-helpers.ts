@@ -4,8 +4,8 @@
  * Utilities for setting up and querying test data in PostgreSQL
  * for Drizzle/Aurora DSQL integration tests.
  *
- * Each Jest worker gets its own PostgreSQL schema for complete isolation
- * during parallel test execution. Schema is determined by JEST_WORKER_ID.
+ * Each Vitest worker gets its own PostgreSQL schema for complete isolation
+ * during parallel test execution. Schema is determined by VITEST_POOL_ID.
  *
  * Requires: docker-compose -f docker-compose.test.yml up -d
  */
@@ -54,11 +54,10 @@ function getMigrationSQL(schema: string): string {
 
 /**
  * Get the current worker's schema name.
- * Vitest uses VITEST_POOL_ID for thread pools, Jest uses JEST_WORKER_ID.
+ * Vitest uses VITEST_POOL_ID for thread pools.
  */
 function getWorkerSchema(): string {
-  // Vitest thread pool uses VITEST_POOL_ID, Jest uses JEST_WORKER_ID
-  const workerId = process.env.VITEST_POOL_ID || process.env.JEST_WORKER_ID || '1'
+  const workerId = process.env.VITEST_POOL_ID || '1'
   return `worker_${workerId}`
 }
 
@@ -74,7 +73,7 @@ export function getTestDb() {
     // Force single connection per worker so search_path persists across queries
     const sqlClient = postgres(TEST_DATABASE_URL, {
       max: 1,
-      onnotice: () => {}  // Suppress NOTICE messages
+      onnotice: () => {} // Suppress NOTICE messages
     })
     const db = drizzle(sqlClient)
     workerConnections.set(schema, {db, sqlClient})

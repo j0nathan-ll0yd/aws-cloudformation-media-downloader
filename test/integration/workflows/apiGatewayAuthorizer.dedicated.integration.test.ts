@@ -25,17 +25,9 @@ import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
 // Mock API Gateway SDK functions - must use vi.hoisted for ESM
-const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({
-  getApiKeysMock: vi.fn(),
-  getUsagePlansMock: vi.fn(),
-  getUsageMock: vi.fn()
-}))
+const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({getApiKeysMock: vi.fn(), getUsagePlansMock: vi.fn(), getUsageMock: vi.fn()}))
 
-vi.mock('#lib/vendor/AWS/ApiGateway', () => ({
-  getApiKeys: getApiKeysMock,
-  getUsagePlans: getUsagePlansMock,
-  getUsage: getUsageMock
-}))
+vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
 
 // Mock session validation service
 const {validateSessionTokenMock} = vi.hoisted(() => ({validateSessionTokenMock: vi.fn()}))
@@ -46,15 +38,9 @@ const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
 
 // Helper to set up standard API Gateway mocks
 function setupApiGatewayMocks() {
-  getApiKeysMock.mockResolvedValue({
-    items: [{id: 'api-key-id-1', value: 'test-api-key', enabled: true}]
-  })
-  getUsagePlansMock.mockResolvedValue({
-    items: [{id: 'usage-plan-id-1', name: 'Test Plan'}]
-  })
-  getUsageMock.mockResolvedValue({
-    items: {'api-key-id-1': [[100, 50]]}
-  })
+  getApiKeysMock.mockResolvedValue({items: [{id: 'api-key-id-1', value: 'test-api-key', enabled: true}]})
+  getUsagePlansMock.mockResolvedValue({items: [{id: 'usage-plan-id-1', name: 'Test Plan'}]})
+  getUsageMock.mockResolvedValue({items: {'api-key-id-1': [[100, 50]]}})
 }
 
 describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {

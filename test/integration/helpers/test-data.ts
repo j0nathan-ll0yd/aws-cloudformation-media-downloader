@@ -330,10 +330,21 @@ export function createMockAPIGatewayRequestAuthorizerEvent(
       resourceId: 'resource-id',
       resourcePath: path,
       identity: {
-        accessKey: null, accountId: null, apiKey: options?.apiKey ?? 'test-api-key', apiKeyId: null,
-        caller: null, clientCert: null, cognitoAuthenticationProvider: null, cognitoAuthenticationType: null,
-        cognitoIdentityId: null, cognitoIdentityPoolId: null, principalOrgId: null,
-        sourceIp: '127.0.0.1', user: null, userAgent: 'iOS/17.0 TestApp/1.0', userArn: null
+        accessKey: null,
+        accountId: null,
+        apiKey: options?.apiKey ?? 'test-api-key',
+        apiKeyId: null,
+        caller: null,
+        clientCert: null,
+        cognitoAuthenticationProvider: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityId: null,
+        cognitoIdentityPoolId: null,
+        principalOrgId: null,
+        sourceIp: '127.0.0.1',
+        user: null,
+        userAgent: 'iOS/17.0 TestApp/1.0',
+        userArn: null
       }
     }
   } as unknown as APIGatewayRequestAuthorizerEvent
