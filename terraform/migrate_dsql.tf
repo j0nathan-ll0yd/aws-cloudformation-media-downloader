@@ -86,9 +86,3 @@ data "aws_lambda_invocation" "run_migration" {
     time_sleep.wait_for_dsql
   ]
 }
-
-# Output migration results for visibility in Terraform apply output
-output "migration_result" {
-  description = "Result of database migration"
-  value       = jsondecode(data.aws_lambda_invocation.run_migration.result)
-}

@@ -321,11 +321,6 @@ resource "aws_cloudwatch_dashboard" "Main" {
   })
 }
 
-output "cloudwatch_dashboard_url" {
-  description = "URL to the CloudWatch dashboard"
-  value       = "https://${data.aws_region.current.id}.console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.id}#dashboards:name=${aws_cloudwatch_dashboard.Main.dashboard_name}"
-}
-
 # =============================================================================
 # CloudWatch Alarms
 # Note: SNS notification actions deferred - add alarm_actions when SNS configured

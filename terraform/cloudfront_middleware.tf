@@ -95,8 +95,3 @@ resource "aws_cloudfront_distribution" "Production" {
     Name = "Production"
   })
 }
-
-output "cloudfront_distribution_domain" {
-  description = "The CloudFront distribution domain. The URL to make requests (e.g. d3q75k9ayjjukw.cloudfront.net)"
-  value       = aws_cloudfront_distribution.Production.domain_name
-}

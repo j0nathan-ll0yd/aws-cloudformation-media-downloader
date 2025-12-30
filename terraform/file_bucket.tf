@@ -97,11 +97,6 @@ resource "aws_s3_bucket_policy" "CloudfrontAccess" {
   })
 }
 
-output "cloudfront_media_files_domain" {
-  description = "CloudFront domain for media files (use this in iOS app)"
-  value       = aws_cloudfront_distribution.MediaFiles.domain_name
-}
-
 resource "aws_s3_bucket_notification" "Files" {
   bucket = aws_s3_bucket.Files.bucket
   lambda_function {

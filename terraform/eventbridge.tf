@@ -84,13 +84,3 @@ resource "aws_sqs_queue_policy" "DownloadQueueEventBridge" {
     }]
   })
 }
-
-output "event_bus_name" {
-  description = "EventBridge event bus name for media-downloader"
-  value       = aws_cloudwatch_event_bus.MediaDownloader.name
-}
-
-output "event_bus_arn" {
-  description = "EventBridge event bus ARN"
-  value       = aws_cloudwatch_event_bus.MediaDownloader.arn
-}
