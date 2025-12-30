@@ -5,13 +5,12 @@ import type {SecurityHeadersOptions} from '#types/lambda'
 /**
  * Default security headers applied to all responses.
  * These provide baseline protection against common web vulnerabilities.
+ *
+ * NOTE: CORS headers are intentionally omitted. This is a mobile-only API
+ * (iOS app uses native HTTP) which doesn't require CORS. Omitting CORS
+ * headers reduces attack surface by preventing browser-based cross-origin requests.
  */
 const DEFAULT_HEADERS: Record<string, string> = {
-  // CORS headers
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Correlation-Id',
-  // Security headers
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
@@ -27,18 +26,6 @@ const DEFAULT_HEADERS: Record<string, string> = {
  */
 function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
   const headers = {...DEFAULT_HEADERS}
-
-  // CORS configuration
-  if (options.corsOrigins) {
-    const origins = Array.isArray(options.corsOrigins) ? options.corsOrigins.join(', ') : options.corsOrigins
-    headers['Access-Control-Allow-Origin'] = origins
-  }
-  if (options.corsMethods) {
-    headers['Access-Control-Allow-Methods'] = options.corsMethods
-  }
-  if (options.corsHeaders) {
-    headers['Access-Control-Allow-Headers'] = options.corsHeaders
-  }
 
   // Security configuration
   if (options.frameOptions) {
@@ -63,7 +50,6 @@ function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
  * and in the `onError` phase to ensure error responses also get headers.
  *
  * Features:
- * - Default CORS headers (configurable origins, methods, headers)
  * - X-Content-Type-Options: nosniff (prevents MIME sniffing)
  * - X-Frame-Options: DENY (prevents clickjacking)
  * - X-XSS-Protection: 1; mode=block (XSS filter)
@@ -71,6 +57,9 @@ function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
  * - Cache-Control: no-store (prevents caching of sensitive data)
  * - Optional Content-Security-Policy
  * - Custom headers support
+ *
+ * NOTE: CORS headers are intentionally omitted. This is a mobile-only API
+ * (iOS app uses native HTTP) which doesn't require CORS.
  *
  * Headers set by the handler take precedence over defaults.
  *
@@ -86,7 +75,6 @@ function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
  * export const handler = middy(wrapApiHandler(async ({event, context}) => {
  *   return buildApiResponse(context, 200, {data: 'result'})
  * })).use(securityHeaders({
- *   corsOrigins: ['https://app.example.com'],
  *   frameOptions: 'SAMEORIGIN'
  * }))
  * ```

@@ -265,15 +265,12 @@ export interface SanitizationOptions {
 
 /**
  * Options for security headers middleware.
- * Configures CORS and other security headers.
+ * Configures security-related HTTP headers.
+ *
+ * NOTE: CORS options are intentionally omitted. This is a mobile-only API
+ * (iOS app uses native HTTP) which doesn't require CORS.
  */
 export interface SecurityHeadersOptions {
-  /** CORS allowed origins (default: '*') */
-  corsOrigins?: string | string[]
-  /** CORS allowed methods (default: 'GET,POST,PUT,DELETE,OPTIONS') */
-  corsMethods?: string
-  /** CORS allowed headers */
-  corsHeaders?: string
   /** Content-Security-Policy value */
   csp?: string
   /** X-Frame-Options value (default: 'DENY') */

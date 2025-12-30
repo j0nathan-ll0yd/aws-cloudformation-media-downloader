@@ -19,6 +19,8 @@ import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {FileNotificationType} from '#types/notification-types'
+import {pushNotificationAttributesSchema} from '#types/schemas'
+import {validateSchema} from '#lib/validation/constraints'
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
@@ -26,7 +28,7 @@ import {transformToAPNSNotification} from '#lib/domain/notification/transformers
 import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpoint-cleanup'
 import {appendCorrelationToLogger, extractCorrelationFromSQS} from '#lib/lambda/middleware/correlation'
 
-const SUPPORTED_NOTIFICATION_TYPES: FileNotificationType[] = ['MetadataNotification', 'DownloadReadyNotification']
+// Validation now handled by pushNotificationAttributesSchema in processSQSRecord
 
 /**
  * Result of sending a notification to a single device
@@ -95,12 +97,20 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
   const correlationId = extractCorrelationFromSQS(record)
   appendCorrelationToLogger(correlationId)
 
-  const notificationType = record.messageAttributes.notificationType?.stringValue as FileNotificationType
-  if (!SUPPORTED_NOTIFICATION_TYPES.includes(notificationType)) {
-    logInfo('Skipping unsupported notification type', notificationType)
+  // Validate message attributes using Zod schema
+  const rawAttributes = {
+    notificationType: record.messageAttributes.notificationType?.stringValue,
+    userId: record.messageAttributes.userId?.stringValue
+  }
+  const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
+  if (validationErrors) {
+    logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
     return
   }
-  const userId = record.messageAttributes.userId.stringValue as string
+
+  const validatedAttrs = pushNotificationAttributesSchema.parse(rawAttributes)
+  const notificationType = validatedAttrs.notificationType as FileNotificationType
+  const userId = validatedAttrs.userId
   const deviceIds = await getDeviceIdsForUser(userId)
   if (deviceIds.length == 0) {
     logInfo('No devices registered for user', userId)

@@ -35,7 +35,21 @@ async function getOctokitInstance() {
 /** Creates GitHub issue when user deletion fails, for manual investigation. */
 export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
   const title = `User Deletion Failed: ${userId}`
-  const body = renderGithubIssueTemplate('user-deletion-failure', {userId, devices, error, requestId})
+  // Pre-compute all values for safe template interpolation
+  const deviceCount = devices.length
+  const hasDevices = deviceCount > 0
+  const devicesJson = devices.length > 0 ? JSON.stringify(devices, null, 2) : ''
+  const body = renderGithubIssueTemplate('user-deletion-failure', {
+    userId,
+    requestId,
+    deviceCount,
+    hasDevices,
+    devicesJson,
+    errorMessage: error.message,
+    errorName: error.constructor.name,
+    errorStack: error.stack ?? 'No stack trace available',
+    timestamp: new Date().toISOString()
+  })
 
   const params = {owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix']}
 
@@ -55,7 +69,17 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
 /** Creates GitHub issue when video download fails permanently. */
 export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string) {
   const title = `Video Download Failed: ${fileId}`
-  const body = renderGithubIssueTemplate('video-download-failure', {fileId, fileUrl, error, errorDetails})
+  // Pre-compute all values for safe template interpolation
+  const body = renderGithubIssueTemplate('video-download-failure', {
+    fileId,
+    fileUrl,
+    errorMessage: error.message,
+    errorName: error.constructor.name,
+    errorStack: error.stack ?? 'No stack trace available',
+    errorDetails: errorDetails ?? '',
+    hasErrorDetails: !!errorDetails,
+    timestamp: new Date().toISOString()
+  })
 
   const params = {owner, repo, title, body, labels: ['bug', 'video-download', 'automated']}
 
@@ -75,7 +99,15 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
 /** Creates priority GitHub issue when YouTube cookies expire and need refresh. */
 export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
   const title = '🍪 YouTube Cookie Expiration Detected'
-  const body = renderGithubIssueTemplate('cookie-expiration', {fileId, fileUrl, error})
+  // Pre-compute all values for safe template interpolation
+  const body = renderGithubIssueTemplate('cookie-expiration', {
+    fileId,
+    fileUrl,
+    errorMessage: error.message,
+    errorName: error.constructor.name,
+    errorStack: error.stack ?? 'No stack trace available',
+    timestamp: new Date().toISOString()
+  })
 
   const params = {owner, repo, title, body, labels: ['cookie-expiration', 'requires-manual-fix', 'automated', 'priority']}
 
