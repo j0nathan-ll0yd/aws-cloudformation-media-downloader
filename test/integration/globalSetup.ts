@@ -5,14 +5,18 @@
  * Each Vitest worker gets its own schema (worker_1, worker_2, etc.)
  * for complete isolation during parallel test execution.
  *
- * Tables are created here (not in beforeAll) to avoid race conditions
- * when multiple workers start simultaneously.
+ * Tables are created by reading from the canonical migration files
+ * and adapting them for test schemas.
  *
  * Runs ONCE before all test files, not per-worker.
  */
+import * as fs from 'fs'
+import * as path from 'path'
 import postgres from 'postgres'
 
-const MAX_WORKERS = 4
+// Create more schemas than maxWorkers to handle edge cases where Vitest
+// assigns higher pool IDs (e.g., for the main thread or test shuffling)
+const MAX_WORKERS = 8
 
 /**
  * Get schema prefix for CI isolation.
@@ -24,141 +28,66 @@ function getSchemaPrefix(): string {
 }
 
 /**
- * SQL to create all tables in a schema.
- * Uses TEXT for UUID columns to avoid race conditions with UUID type creation.
+ * Read and adapt migration SQL for a specific schema.
+ * - Adds schema prefix to all table names
+ * - Converts Aurora DSQL specific syntax for regular PostgreSQL
+ * - Converts UUID to TEXT for test simplicity
  */
-function getCreateTablesSql(schema: string): string {
-  return `
-    CREATE TABLE IF NOT EXISTS ${schema}.users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-      name TEXT,
-      image TEXT,
-      first_name TEXT,
-      last_name TEXT,
-      apple_device_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
+function adaptMigrationForSchema(migrationSql: string, schema: string): string {
+  let adapted = migrationSql
 
-    CREATE TABLE IF NOT EXISTS ${schema}.identity_providers (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      provider_user_id TEXT NOT NULL,
-      email TEXT NOT NULL,
-      email_verified BOOLEAN NOT NULL,
-      is_private_email BOOLEAN NOT NULL,
-      access_token TEXT NOT NULL,
-      refresh_token TEXT NOT NULL,
-      token_type TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
+  // List of tables to prefix with schema
+  const tables = [
+    'schema_migrations',
+    'users',
+    'sessions',
+    'accounts',
+    'verification',
+    'identity_providers',
+    'files',
+    'file_downloads',
+    'devices',
+    'user_files',
+    'user_devices'
+  ]
 
-    CREATE TABLE IF NOT EXISTS ${schema}.files (
-      file_id TEXT PRIMARY KEY,
-      size INTEGER NOT NULL DEFAULT 0,
-      author_name TEXT NOT NULL,
-      author_user TEXT NOT NULL,
-      publish_date TEXT NOT NULL,
-      description TEXT NOT NULL,
-      key TEXT NOT NULL,
-      url TEXT,
-      content_type TEXT NOT NULL,
-      title TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'Queued'
-    );
+  // Add schema prefix to table references
+  for (const table of tables) {
+    // Match table name in CREATE TABLE, CREATE INDEX, ON clauses
+    // Use word boundaries to avoid partial matches
+    const patterns = [
+      new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`, 'g'),
+      new RegExp(`ON ${table}\\(`, 'g'),
+      new RegExp(`ON ${table} `, 'g')
+    ]
 
-    CREATE TABLE IF NOT EXISTS ${schema}.devices (
-      device_id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      token TEXT NOT NULL,
-      system_version TEXT NOT NULL,
-      system_name TEXT NOT NULL,
-      endpoint_arn TEXT NOT NULL
-    );
+    adapted = adapted.replace(patterns[0], `CREATE TABLE IF NOT EXISTS ${schema}.${table}`)
+    adapted = adapted.replace(patterns[1], `ON ${schema}.${table}(`)
+    adapted = adapted.replace(patterns[2], `ON ${schema}.${table} `)
+  }
 
-    CREATE TABLE IF NOT EXISTS ${schema}.sessions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      token TEXT NOT NULL,
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      ip_address TEXT,
-      user_agent TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
+  // Convert Aurora DSQL specific syntax for regular PostgreSQL:
+  // - CREATE INDEX ASYNC → CREATE INDEX
+  adapted = adapted.replace(/CREATE INDEX ASYNC/g, 'CREATE INDEX')
 
-    CREATE TABLE IF NOT EXISTS ${schema}.accounts (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      account_id TEXT NOT NULL,
-      provider_id TEXT NOT NULL,
-      access_token TEXT,
-      refresh_token TEXT,
-      access_token_expires_at TIMESTAMP WITH TIME ZONE,
-      refresh_token_expires_at TIMESTAMP WITH TIME ZONE,
-      scope TEXT,
-      id_token TEXT,
-      password TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
+  // Convert UUID with gen_random_uuid() to TEXT for test simplicity
+  // (Tests use crypto.randomUUID() to generate IDs)
+  adapted = adapted.replace(/UUID PRIMARY KEY DEFAULT gen_random_uuid\(\)/g, 'TEXT PRIMARY KEY')
+  adapted = adapted.replace(/UUID NOT NULL/g, 'TEXT NOT NULL')
 
-    CREATE TABLE IF NOT EXISTS ${schema}.verification (
-      id TEXT PRIMARY KEY,
-      identifier TEXT NOT NULL,
-      value TEXT NOT NULL,
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
+  return adapted
+}
 
-    CREATE TABLE IF NOT EXISTS ${schema}.file_downloads (
-      file_id TEXT PRIMARY KEY,
-      status TEXT NOT NULL DEFAULT 'Pending',
-      retry_count INTEGER NOT NULL DEFAULT 0,
-      max_retries INTEGER NOT NULL DEFAULT 5,
-      retry_after TIMESTAMP WITH TIME ZONE,
-      error_category TEXT,
-      last_error TEXT,
-      scheduled_release_time TIMESTAMP WITH TIME ZONE,
-      source_url TEXT,
-      correlation_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
+/**
+ * Parse SQL file into individual statements.
+ * Handles multi-line statements and comments.
+ */
+function parseSqlStatements(sql: string): string[] {
+  // Remove SQL comments
+  const noComments = sql.replace(/--.*$/gm, '')
 
-    CREATE TABLE IF NOT EXISTS ${schema}.user_files (
-      user_id TEXT NOT NULL,
-      file_id TEXT NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id, file_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.user_devices (
-      user_id TEXT NOT NULL,
-      device_id TEXT NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id, device_id)
-    );
-
-    -- Indexes
-    CREATE INDEX IF NOT EXISTS ${schema}_users_email_idx ON ${schema}.users(email);
-    CREATE INDEX IF NOT EXISTS ${schema}_users_apple_device_idx ON ${schema}.users(apple_device_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_identity_providers_user_idx ON ${schema}.identity_providers(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_files_key_idx ON ${schema}.files(key);
-    CREATE INDEX IF NOT EXISTS ${schema}_file_downloads_status_idx ON ${schema}.file_downloads(status, retry_after);
-    CREATE INDEX IF NOT EXISTS ${schema}_sessions_user_idx ON ${schema}.sessions(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
-    CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, account_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_verification_identifier_idx ON ${schema}.verification(identifier);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_device_idx ON ${schema}.user_devices(device_id);
-  `
+  // Split by semicolons, filter empty statements
+  return noComments.split(';').map((s) => s.trim()).filter((s) => s.length > 0)
 }
 
 /** Creates worker-specific database schemas AND tables before test execution. */
@@ -166,15 +95,45 @@ export async function setup(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
   const prefix = getSchemaPrefix()
 
+  console.log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
+
+  // Read migration files
+  const migrationsDir = path.join(process.cwd(), 'migrations')
+  const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_initial_schema.sql'), 'utf8')
+  const indexMigration = fs.readFileSync(path.join(migrationsDir, '0002_create_indexes.sql'), 'utf8')
+
   const sql = postgres(databaseUrl)
 
   try {
     // Create schemas and tables for each worker BEFORE any tests run
     for (let i = 1; i <= MAX_WORKERS; i++) {
       const schemaName = `${prefix}worker_${i}`
+      console.log(`[globalSetup] Creating schema: ${schemaName}`)
+
+      // Create the schema
       await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`)
-      await sql.unsafe(getCreateTablesSql(schemaName))
+
+      // Adapt and execute schema migration
+      const adaptedSchema = adaptMigrationForSchema(schemaMigration, schemaName)
+      const schemaStatements = parseSqlStatements(adaptedSchema)
+      for (const statement of schemaStatements) {
+        await sql.unsafe(statement)
+      }
+
+      // Adapt and execute index migration
+      const adaptedIndexes = adaptMigrationForSchema(indexMigration, schemaName)
+      const indexStatements = parseSqlStatements(adaptedIndexes)
+      for (const statement of indexStatements) {
+        await sql.unsafe(statement)
+      }
+
+      console.log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} tables`)
     }
+
+    console.log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
+  } catch (error) {
+    console.error('[globalSetup] ERROR creating schemas:', error)
+    throw error
   } finally {
     await sql.end()
   }

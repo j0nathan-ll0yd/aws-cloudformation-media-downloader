@@ -22,7 +22,7 @@ import {createMockDevice, createMockFile, createMockUser} from './test-data'
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 // Worker-aware connection cache (not singleton - each worker gets its own)
-const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>}>()
+const workerConnections = new Map<string, {db: ReturnType<typeof drizzle>; sqlClient: ReturnType<typeof postgres>; initialized: boolean}>()
 
 /**
  * Get schema prefix for CI isolation.
@@ -35,11 +35,23 @@ function getSchemaPrefix(): string {
 
 /**
  * Get the current worker's schema name.
- * Uses JEST_WORKER_ID environment variable set by Jest/Vitest.
+ * Uses VITEST_POOL_ID environment variable set by Vitest for parallel workers.
+ * Falls back to JEST_WORKER_ID for Jest compatibility.
  * Includes CI run prefix for isolation when parallel CI runs occur.
+ *
+ * Note: VITEST_POOL_ID in threads mode is 0-indexed, so we add 1 to match
+ * our schema naming (worker_1, worker_2, etc.)
  */
 function getWorkerSchema(): string {
   const prefix = getSchemaPrefix()
+  // Vitest uses VITEST_POOL_ID for parallel workers
+  // In threads mode, it's 0-indexed, so we add 1 to get 1-indexed worker IDs
+  const vitestPoolId = process.env.VITEST_POOL_ID
+  if (vitestPoolId !== undefined) {
+    const workerId = parseInt(vitestPoolId, 10) + 1
+    return `${prefix}worker_${workerId}`
+  }
+  // Falls back to JEST_WORKER_ID for Jest, or '1' for single-threaded
   const workerId = process.env.JEST_WORKER_ID || '1'
   return `${prefix}worker_${workerId}`
 }
@@ -47,17 +59,55 @@ function getWorkerSchema(): string {
 /**
  * Get or create the test database connection for current worker.
  * Each worker has its own connection and operates in its own schema.
+ * Uses onconnect callback to set search_path on every new connection.
  */
-export function getTestDb() {
+export async function getTestDbAsync(): Promise<ReturnType<typeof drizzle>> {
   const schema = getWorkerSchema()
 
   if (!workerConnections.has(schema)) {
-    const sqlClient = postgres(TEST_DATABASE_URL)
+    // Create connection with search_path set on every new connection
+    // postgres.js uses a connection pool, so we need to set search_path on each connection
+    const sqlClient = postgres(TEST_DATABASE_URL, {
+      onnotice: () => {}, // Suppress NOTICE messages
+      max: 1, // Use single connection to avoid search_path issues with pool
+      // Set search_path via connection string options
+      transform: {undefined: null}
+    })
+
     const db = drizzle(sqlClient)
-    workerConnections.set(schema, {db, sqlClient})
+
+    // Set search_path immediately on this connection
+    await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+    workerConnections.set(schema, {db, sqlClient, initialized: true})
   }
 
   return workerConnections.get(schema)!.db
+}
+
+/**
+ * Get test database synchronously.
+ * WARNING: Only use after getTestDbAsync has been called at least once.
+ * For new code, prefer getTestDbAsync.
+ */
+export function getTestDb(): ReturnType<typeof drizzle> {
+  const schema = getWorkerSchema()
+  const conn = workerConnections.get(schema)
+  if (!conn) {
+    throw new Error('getTestDb called before getTestDbAsync. Call getTestDbAsync in beforeAll first.')
+  }
+  return conn.db
+}
+
+/**
+ * Ensure search_path is set for the current worker schema.
+ * Call this before making direct Drizzle queries in tests.
+ * Helper functions already call this internally.
+ */
+export async function ensureSearchPath(): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
 }
 
 /**

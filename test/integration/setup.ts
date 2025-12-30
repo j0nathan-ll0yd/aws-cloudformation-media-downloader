@@ -6,6 +6,7 @@
  */
 
 import {beforeAll} from 'vitest'
+import {getTestDbAsync} from './helpers/postgres-helpers'
 
 /**
  * Ensure USE_LOCALSTACK is set
@@ -51,11 +52,16 @@ async function waitForLocalStack(): Promise<void> {
 }
 
 /**
- * Run health check before tests
- * Only check if not in CI environment (CI will handle LocalStack lifecycle)
+ * Run health check before tests and initialize database connection
+ * - LocalStack health check (skipped in CI)
+ * - Initialize database connection with correct search_path for worker isolation
  */
 beforeAll(async () => {
   if (!process.env.CI) {
     await waitForLocalStack()
   }
+
+  // Initialize database connection with worker-specific search_path
+  // This ensures all postgres-helpers operations use the correct schema
+  await getTestDbAsync()
 })
