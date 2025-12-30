@@ -8,7 +8,7 @@
  * - ApnsClient.send() returns successfully for active devices
  * - ApnsClient.send() throws with statusCode 410 for disabled devices
  */
-import {vi, type Mock} from 'vitest'
+import {type Mock, vi} from 'vitest'
 
 export interface MockApnsResponse {
   deviceToken: string
@@ -20,10 +20,7 @@ export interface ApnsMockResult {
   Notification: Mock
   Priority: {throttled: number}
   PushType: {background: string}
-  mocks: {
-    send: Mock
-    clientConstructor: Mock
-  }
+  mocks: {send: Mock; clientConstructor: Mock}
 }
 
 /**
@@ -61,22 +58,14 @@ export function createApnsMock(deviceResponses: MockApnsResponse[]): ApnsMockRes
     return Promise.resolve({sent: [notification]})
   })
 
-  const clientConstructorMock = vi.fn().mockImplementation(() => ({
-    send: sendMock
-  }))
+  const clientConstructorMock = vi.fn().mockImplementation(() => ({send: sendMock}))
 
   return {
     ApnsClient: clientConstructorMock,
-    Notification: vi.fn().mockImplementation((token: string, payload: object) => ({
-      deviceToken: token,
-      ...payload
-    })),
+    Notification: vi.fn().mockImplementation((token: string, payload: object) => ({deviceToken: token, ...payload})),
     Priority: {throttled: 5},
     PushType: {background: 'background'},
-    mocks: {
-      send: sendMock,
-      clientConstructor: clientConstructorMock
-    }
+    mocks: {send: sendMock, clientConstructor: clientConstructorMock}
   }
 }
 
@@ -126,21 +115,13 @@ export function createFailingApnsMock(): ApnsMockResult {
     throw error
   })
 
-  const clientConstructorMock = vi.fn().mockImplementation(() => ({
-    send: sendMock
-  }))
+  const clientConstructorMock = vi.fn().mockImplementation(() => ({send: sendMock}))
 
   return {
     ApnsClient: clientConstructorMock,
-    Notification: vi.fn().mockImplementation((token: string, payload: object) => ({
-      deviceToken: token,
-      ...payload
-    })),
+    Notification: vi.fn().mockImplementation((token: string, payload: object) => ({deviceToken: token, ...payload})),
     Priority: {throttled: 5},
     PushType: {background: 'background'},
-    mocks: {
-      send: sendMock,
-      clientConstructor: clientConstructorMock
-    }
+    mocks: {send: sendMock, clientConstructor: clientConstructorMock}
   }
 }

@@ -212,10 +212,7 @@ export function createMockScheduledEvent(eventId: string, ruleName = 'ScheduledE
  * @param key - S3 object key (file path in bucket)
  * @param options - Optional overrides for event fields
  */
-export function createMockS3Event(
-  key: string,
-  options?: {bucket?: string; size?: number; eventName?: string; correlationId?: string}
-): S3Event {
+export function createMockS3Event(key: string, options?: {bucket?: string; size?: number; eventName?: string; correlationId?: string}): S3Event {
   const bucket = options?.bucket ?? 'test-media-bucket'
   const size = options?.size ?? 5242880
   const eventName = options?.eventName ?? 'ObjectCreated:Put'
@@ -259,7 +256,5 @@ export function createMockS3BatchEvent(keys: string[], bucket = 'test-media-buck
   const baseEvent = createMockS3Event(keys[0], {bucket})
   const additionalRecords = keys.slice(1).map((key) => createMockS3Event(key, {bucket}).Records[0])
 
-  return {
-    Records: [...baseEvent.Records, ...additionalRecords]
-  }
+  return {Records: [...baseEvent.Records, ...additionalRecords]}
 }

@@ -17,9 +17,19 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertDevice, insertFile, insertUser, linkUserDevice, linkUserFile, truncateAllTables} from '../../helpers/postgres-helpers'
+import {
+  closeTestDb,
+  createAllTables,
+  dropAllTables,
+  insertDevice,
+  insertFile,
+  insertUser,
+  linkUserDevice,
+  linkUserFile,
+  truncateAllTables
+} from '../../helpers/postgres-helpers'
 import {createMockContext} from '../../helpers/lambda-context'
-import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication, deleteTestEndpoint} from '../../helpers/sns-helpers'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestEndpoint, deleteTestPlatformApplication} from '../../helpers/sns-helpers'
 import {FileStatus} from '#types/enums'
 
 describe('External Services Failure Scenario Tests', () => {
@@ -152,9 +162,7 @@ describe('External Services Failure Scenario Tests', () => {
       const {handler} = await import('#lambdas/SendPushNotification/src/index')
 
       // Arrange: Create SQS event with no records
-      const event = {
-        Records: []
-      }
+      const event = {Records: []}
 
       // Act: Handler should handle empty batch
       const result = await handler(event as never, createMockContext())
@@ -239,10 +247,7 @@ describe('External Services Failure Scenario Tests', () => {
         httpMethod: 'POST',
         path: '/subscriptions',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          endpointArn: 'not-a-valid-arn',
-          topicArn: 'also-not-valid'
-        }),
+        body: JSON.stringify({endpointArn: 'not-a-valid-arn', topicArn: 'also-not-valid'}),
         isBase64Encoded: false,
         pathParameters: null,
         queryStringParameters: null,

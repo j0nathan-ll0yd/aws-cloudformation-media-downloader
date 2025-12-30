@@ -39,10 +39,7 @@ function createUserSubscribeEvent(userId: string, body: {endpointArn: string; to
   return {
     httpMethod: 'POST',
     path: '/subscriptions',
-    headers: {
-      'Authorization': `Bearer test-token-${userId}`,
-      'Content-Type': 'application/json'
-    },
+    headers: {Authorization: `Bearer test-token-${userId}`, 'Content-Type': 'application/json'},
     body: JSON.stringify(body),
     isBase64Encoded: false,
     pathParameters: null,
@@ -198,10 +195,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       await insertUser({userId, email: 'invalid-endpoint@example.com'})
 
       // Act: Invoke handler with invalid endpoint
-      const event = createUserSubscribeEvent(userId, {
-        endpointArn: 'invalid-arn-format',
-        topicArn
-      })
+      const event = createUserSubscribeEvent(userId, {endpointArn: 'invalid-arn-format', topicArn})
       const result = await handler(event as never, createMockContext())
 
       // Assert: Should fail validation
@@ -217,10 +211,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
 
       // Act: Invoke handler with invalid topic
-      const event = createUserSubscribeEvent(userId, {
-        endpointArn,
-        topicArn: 'invalid-topic-arn'
-      })
+      const event = createUserSubscribeEvent(userId, {endpointArn, topicArn: 'invalid-topic-arn'})
       const result = await handler(event as never, createMockContext())
 
       // Assert: Should fail
@@ -233,10 +224,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       await insertUser({userId, email: 'missing-endpoint@example.com'})
 
       // Act: Invoke handler with missing endpointArn
-      const event = createUserSubscribeEvent(userId, {
-        endpointArn: '',
-        topicArn
-      })
+      const event = createUserSubscribeEvent(userId, {endpointArn: '', topicArn})
       const result = await handler(event as never, createMockContext())
 
       // Assert: Should fail validation
@@ -252,10 +240,7 @@ describe('UserSubscribe Workflow Integration Tests', () => {
       const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
 
       // Act: Invoke handler with missing topicArn
-      const event = createUserSubscribeEvent(userId, {
-        endpointArn,
-        topicArn: ''
-      })
+      const event = createUserSubscribeEvent(userId, {endpointArn, topicArn: ''})
       const result = await handler(event as never, createMockContext())
 
       // Assert: Should fail validation

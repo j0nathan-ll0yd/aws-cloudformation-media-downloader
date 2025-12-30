@@ -24,8 +24,23 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getDevice, insertDevice, insertUser, linkUserDevice, truncateAllTables} from '../helpers/postgres-helpers'
-import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication, deleteTestEndpoint, isEndpointEnabled} from '../helpers/sns-helpers'
+import {
+  closeTestDb,
+  createAllTables,
+  dropAllTables,
+  getDevice,
+  insertDevice,
+  insertUser,
+  linkUserDevice,
+  truncateAllTables
+} from '../helpers/postgres-helpers'
+import {
+  createTestEndpoint,
+  createTestPlatformApplication,
+  deleteTestEndpoint,
+  deleteTestPlatformApplication,
+  isEndpointEnabled
+} from '../helpers/sns-helpers'
 
 describe('PruneDevices Workflow Integration Tests', () => {
   let platformAppArn: string

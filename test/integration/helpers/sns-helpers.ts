@@ -166,9 +166,7 @@ export async function listTestEndpoints(platformApplicationArn: string): Promise
  */
 export async function listSubscriptions(topicArn: string): Promise<Array<{subscriptionArn: string; endpoint: string; protocol: string}>> {
   const result = await snsClient.send(new ListSubscriptionsByTopicCommand({TopicArn: topicArn}))
-  return (result.Subscriptions || []).map((sub) => ({
-    subscriptionArn: sub.SubscriptionArn!,
-    endpoint: sub.Endpoint!,
-    protocol: sub.Protocol!
-  })).filter((sub) => sub.subscriptionArn !== 'PendingConfirmation')
+  return (result.Subscriptions || []).map((sub) => ({subscriptionArn: sub.SubscriptionArn!, endpoint: sub.Endpoint!, protocol: sub.Protocol!})).filter((
+    sub
+  ) => sub.subscriptionArn !== 'PendingConfirmation')
 }

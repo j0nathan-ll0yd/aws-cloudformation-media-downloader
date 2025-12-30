@@ -532,7 +532,9 @@ export async function getSessionByToken(token: string): Promise<{id: string; use
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   const result = await db.execute(sql`SELECT id, user_id, expires_at, updated_at FROM sessions WHERE token = ${token}`)
   const rows = [...result] as Array<{id: string; user_id: string; expires_at: string; updated_at: string}>
-  if (rows.length === 0) return null
+  if (rows.length === 0) {
+    return null
+  }
   const row = rows[0]
   return {id: row.id, userId: row.user_id, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }
@@ -547,7 +549,9 @@ export async function getSessionById(sessionId: string): Promise<{id: string; us
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   const result = await db.execute(sql`SELECT id, user_id, token, expires_at, updated_at FROM sessions WHERE id = ${sessionId}`)
   const rows = [...result] as Array<{id: string; user_id: string; token: string; expires_at: string; updated_at: string}>
-  if (rows.length === 0) return null
+  if (rows.length === 0) {
+    return null
+  }
   const row = rows[0]
   return {id: row.id, userId: row.user_id, token: row.token, expiresAt: new Date(row.expires_at), updatedAt: new Date(row.updated_at)}
 }

@@ -18,7 +18,19 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, getDevice, getUser, insertDevice, insertFile, insertUser, linkUserDevice, linkUserFile, truncateAllTables} from '../../helpers/postgres-helpers'
+import {
+  closeTestDb,
+  createAllTables,
+  dropAllTables,
+  getDevice,
+  getUser,
+  insertDevice,
+  insertFile,
+  insertUser,
+  linkUserDevice,
+  linkUserFile,
+  truncateAllTables
+} from '../../helpers/postgres-helpers'
 import {createMockContext} from '../../helpers/lambda-context'
 import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../../helpers/sns-helpers'
 import {FileStatus} from '#types/enums'
@@ -72,7 +84,7 @@ describe('Database Failure Scenario Tests', () => {
       const event = {
         httpMethod: 'GET',
         path: '/files',
-        headers: {'Authorization': 'Bearer test-token'},
+        headers: {Authorization: 'Bearer test-token'},
         body: null,
         isBase64Encoded: false,
         pathParameters: null,
