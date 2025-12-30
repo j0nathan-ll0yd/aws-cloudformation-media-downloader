@@ -111,7 +111,7 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.57.0",
     "@opentelemetry/id-generator-aws-xray": "^2.0.2",
     "@opentelemetry/instrumentation": "^0.57.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.50.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.64.1",
     "@opentelemetry/propagator-aws-xray": "^2.2.0",
     "@opentelemetry/resources": "^1.30.0",
     "@opentelemetry/sdk-trace-base": "^1.30.0",
