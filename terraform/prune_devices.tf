@@ -1,5 +1,5 @@
 locals {
-  prune_devices_function_name = "PruneDevices"
+  prune_devices_function_name = "${var.resource_prefix}-PruneDevices"
 }
 
 resource "aws_iam_role" "PruneDevices" {
@@ -51,7 +51,7 @@ resource "aws_cloudwatch_event_target" "PruneDevices" {
 
 
 resource "aws_cloudwatch_event_rule" "PruneDevices" {
-  name                = "PruneDevices"
+  name                = local.prune_devices_function_name
   schedule_expression = "rate(1 day)"
   state               = "ENABLED"
   tags                = local.common_tags
@@ -66,7 +66,7 @@ resource "aws_lambda_permission" "PruneDevices" {
 
 resource "aws_cloudwatch_log_group" "PruneDevices" {
   name              = "/aws/lambda/${aws_lambda_function.PruneDevices.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

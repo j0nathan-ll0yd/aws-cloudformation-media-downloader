@@ -1,5 +1,5 @@
 locals {
-  refresh_token_function_name = "RefreshToken"
+  refresh_token_function_name = "${var.resource_prefix}-RefreshToken"
 }
 
 resource "aws_iam_role" "RefreshToken" {
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "RefreshToken" {
 
 resource "aws_cloudwatch_log_group" "RefreshToken" {
   name              = "/aws/lambda/${aws_lambda_function.RefreshToken.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

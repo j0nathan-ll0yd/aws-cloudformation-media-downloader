@@ -1,5 +1,5 @@
 locals {
-  register_user_function_name = "RegisterUser"
+  register_user_function_name = "${var.resource_prefix}-RegisterUser"
 }
 
 resource "aws_iam_role" "RegisterUser" {
@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "RegisterUser" {
 
 resource "aws_cloudwatch_log_group" "RegisterUser" {
   name              = "/aws/lambda/${aws_lambda_function.RegisterUser.function_name}"
-  retention_in_days = 7
+  retention_in_days = var.log_retention_days
   tags              = local.common_tags
 }
 

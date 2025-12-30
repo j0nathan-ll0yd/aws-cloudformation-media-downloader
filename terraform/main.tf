@@ -41,7 +41,7 @@ locals {
   common_tags = {
     ManagedBy   = "terraform"
     Project     = "media-downloader"
-    Environment = "production"
+    Environment = var.environment
   }
 
   # Common environment variables for all lambdas with ADOT layer
@@ -56,7 +56,7 @@ locals {
     OPENTELEMETRY_EXTENSION_LOG_LEVEL  = "warn"
     OPENTELEMETRY_COLLECTOR_CONFIG_URI = "/var/task/collector.yaml"
     NODE_OPTIONS                       = "--no-deprecation"
-    LOG_LEVEL                          = "DEBUG"
+    LOG_LEVEL                          = var.log_level
     # Aurora DSQL connection configuration
     # Aurora DSQL endpoints follow the pattern: <identifier>.dsql.<region>.on.aws
     DSQL_CLUSTER_ENDPOINT = "${aws_dsql_cluster.media_downloader.identifier}.dsql.${data.aws_region.current.id}.on.aws"
@@ -81,7 +81,7 @@ data "aws_iam_policy_document" "CommonLambdaLogging" {
 }
 
 resource "aws_iam_policy" "CommonLambdaLogging" {
-  name        = "CommonLambdaLogging"
+  name        = "${var.resource_prefix}-CommonLambdaLogging"
   description = "Allows Lambda functions to write to ALL CloudWatch logs"
   policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
   tags        = local.common_tags
@@ -98,7 +98,7 @@ data "aws_iam_policy_document" "CommonLambdaXRay" {
 }
 
 resource "aws_iam_policy" "CommonLambdaXRay" {
-  name        = "CommonLambdaXRay"
+  name        = "${var.resource_prefix}-CommonLambdaXRay"
   description = "Allows Lambda functions to write X-Ray traces"
   policy      = data.aws_iam_policy_document.CommonLambdaXRay.json
   tags        = local.common_tags
