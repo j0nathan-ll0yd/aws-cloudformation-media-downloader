@@ -329,6 +329,213 @@ export const handler = withPowertools(    // Outer: observability
 | API endpoint (auth optional) | `withPowertools(wrapOptionalAuthHandler(...))` |
 | Scheduled job | `withPowertools(wrapScheduledHandler(...))` |
 | Lambda invocation | `withPowertools(wrapLambdaInvokeHandler(...))` |
+| API with validation | `withPowertools(wrapValidatedHandler(schema, ...))` |
+| Auth + validation | `withPowertools(wrapAuthenticatedValidatedHandler(schema, ...))` |
+| SQS batch processing | `withPowertools(wrapSqsBatchHandler(...))` |
+
+---
+
+## Request Validation Middleware
+
+### wrapValidatedHandler
+
+**Use for**: API handlers that require automatic Zod-based request body validation.
+
+**File**: `src/lib/lambda/middleware/validation.ts`
+
+**What it provides**:
+- Automatic JSON body parsing via `getPayloadFromEvent()`
+- Zod schema validation with detailed error messages
+- Typed body passed to handler
+- 400 response on validation failure
+
+**Signature**:
+```typescript
+function wrapValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
+  schema: z.ZodSchema<TBody>,
+  handler: (params: ValidatedApiParams<TBody, TEvent>) => Promise<APIGatewayProxyResult>
+): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult>
+```
+
+**Example**:
+```typescript
+import {wrapValidatedHandler} from '#lib/lambda/middleware/validation'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {z} from 'zod'
+
+const deviceSchema = z.object({
+  deviceId: z.string(),
+  token: z.string(),
+  platform: z.enum(['ios', 'android'])
+})
+
+export const handler = withPowertools(
+  wrapValidatedHandler(deviceSchema, async ({context, body}) => {
+    // body is typed as z.infer<typeof deviceSchema>
+    const device = await registerDevice(body.deviceId, body.token, body.platform)
+    return buildApiResponse(context, 200, {device})
+  })
+)
+```
+
+---
+
+### wrapAuthenticatedValidatedHandler
+
+**Use for**: API handlers requiring BOTH authentication AND request validation.
+
+**File**: `src/lib/lambda/middleware/validation.ts`
+
+**What it provides**:
+- Everything from `wrapAuthenticatedHandler`
+- Zod schema validation with typed body
+- Authentication checked BEFORE validation
+
+**Example**:
+```typescript
+import {wrapAuthenticatedValidatedHandler} from '#lib/lambda/middleware/validation'
+import {buildApiResponse} from '#lib/lambda/responses'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+
+export const handler = withPowertools(
+  wrapAuthenticatedValidatedHandler(deviceSchema, async ({context, userId, body}) => {
+    // userId is guaranteed string, body is validated and typed
+    const device = await registerDevice(userId, body.deviceId, body.token)
+    return buildApiResponse(context, 200, {device})
+  })
+)
+```
+
+---
+
+## SQS Batch Processing
+
+### wrapSqsBatchHandler
+
+**Use for**: SQS event handlers with standardized batch processing and partial failure support.
+
+**File**: `src/lib/lambda/middleware/sqs.ts`
+
+**What it provides**:
+- Automatic JSON body parsing per record
+- Per-record error handling with failure collection
+- Partial batch failure support via `SQSBatchResponse`
+- Batch processing statistics logging
+
+**Signature**:
+```typescript
+function wrapSqsBatchHandler<TBody = unknown>(
+  handler: (params: SqsRecordParams<TBody>) => Promise<void>,
+  options?: SqsBatchOptions
+): (event: SQSEvent, context: Context, metadata?: WrapperMetadata) => Promise<SQSBatchResponse>
+```
+
+**Options**:
+- `parseBody`: Parse body as JSON (default: `true`)
+- `stopOnError`: Stop on first error instead of continuing (default: `false`)
+
+**Example**:
+```typescript
+import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import type {NotificationPayload} from '#types/notification-types'
+
+export const handler = withPowertools(
+  wrapSqsBatchHandler<NotificationPayload>(async ({body, messageAttributes}) => {
+    const notificationType = messageAttributes.type?.stringValue
+    await sendNotification(body, notificationType)
+    // Throw to report failure (message returns to queue)
+    // Return normally to report success (message deleted)
+  })
+)
+```
+
+**Failure handling**:
+```typescript
+// Failed message IDs are automatically collected
+// Returned in SQSBatchResponse.batchItemFailures
+// Failed messages return to queue for retry
+// Successful messages are deleted
+```
+
+---
+
+## Middy Middleware
+
+### sanitizeInput
+
+**Use for**: XSS/injection protection for request bodies.
+
+**File**: `src/lib/lambda/middleware/sanitization.ts`
+
+**What it provides**:
+- Removes script tags and event handlers
+- Strips JavaScript/VBScript URLs
+- Removes iframe injection attempts
+- Strips control characters
+- Configurable field skipping (for passwords, tokens)
+- Optional string length limiting
+
+**Example**:
+```typescript
+import middy from '@middy/core'
+import {sanitizeInput} from '#lib/lambda/middleware/sanitization'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+
+export const handler = middy(wrapApiHandler(async ({event, context}) => {
+  // Body is already sanitized
+  const body = getPayloadFromEvent(event)
+  return buildApiResponse(context, 200, body)
+})).use(sanitizeInput({
+  skipFields: ['token', 'password'],
+  maxLength: 10000
+}))
+```
+
+---
+
+### securityHeaders
+
+**Use for**: Adding CORS and security headers to all responses.
+
+**File**: `src/lib/lambda/middleware/security-headers.ts`
+
+**What it provides**:
+- Default CORS headers (configurable)
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Strict-Transport-Security` (HSTS)
+- `Cache-Control: no-store`
+- Optional Content-Security-Policy
+- Custom headers support
+
+**Example**:
+```typescript
+import middy from '@middy/core'
+import {securityHeaders} from '#lib/lambda/middleware/security-headers'
+import {wrapApiHandler} from '#lib/lambda/middleware/api'
+
+export const handler = middy(wrapApiHandler(async ({event, context}) => {
+  return buildApiResponse(context, 200, {data: 'result'})
+})).use(securityHeaders({
+  corsOrigins: ['https://app.example.com'],
+  frameOptions: 'SAMEORIGIN'
+}))
+```
+
+**Default headers**:
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+Access-Control-Allow-Headers: Content-Type,Authorization,X-Correlation-Id
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Cache-Control: no-store
+```
 
 ---
 

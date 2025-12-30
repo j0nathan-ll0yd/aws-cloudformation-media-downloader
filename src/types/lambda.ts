@@ -171,6 +171,117 @@ export type OptionalAuthApiParams<TEvent = CustomAPIGatewayRequestAuthorizerEven
   userStatus: UserStatus
 }
 
+/**
+ * Parameters passed to validated API handlers.
+ * Used with wrapValidatedHandler for automatic request body validation.
+ *
+ * @see wrapValidatedHandler for implementation
+ */
+export type ValidatedApiParams<TBody, TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
+  /** Original API Gateway event */
+  event: TEvent
+  /** AWS Lambda execution context */
+  context: Context
+  /** Tracing metadata */
+  metadata: WrapperMetadata
+  /** Validated and typed request body */
+  body: TBody
+}
+
+/**
+ * Parameters passed to authenticated + validated API handlers.
+ * Combines authentication enforcement with request body validation.
+ *
+ * @see wrapAuthenticatedValidatedHandler for implementation
+ */
+export type AuthenticatedValidatedParams<TBody, TEvent = CustomAPIGatewayRequestAuthorizerEvent> = {
+  /** Original API Gateway event */
+  event: TEvent
+  /** AWS Lambda execution context */
+  context: Context
+  /** Tracing metadata */
+  metadata: WrapperMetadata
+  /** Authenticated user ID (guaranteed non-null) */
+  userId: string
+  /** Validated and typed request body */
+  body: TBody
+}
+
+// ============================================================================
+// SQS Batch Processing Types
+// ============================================================================
+
+/**
+ * Parameters passed to SQS batch handlers for each record.
+ * Used with wrapSqsBatchHandler for standardized batch processing.
+ *
+ * @see wrapSqsBatchHandler for implementation
+ */
+export type SqsRecordParams<TBody = unknown> = {
+  /** Original SQS record */
+  record: import('aws-lambda').SQSRecord
+  /** Parsed and typed message body */
+  body: TBody
+  /** AWS Lambda execution context */
+  context: Context
+  /** Tracing metadata */
+  metadata: WrapperMetadata
+  /** SQS message attributes */
+  messageAttributes: import('aws-lambda').SQSRecord['messageAttributes']
+}
+
+/**
+ * Options for SQS batch handler wrapper.
+ */
+export interface SqsBatchOptions {
+  /** Parse body as JSON (default: true) */
+  parseBody?: boolean
+  /** Stop on first error instead of continuing (default: false) */
+  stopOnError?: boolean
+}
+
+// ============================================================================
+// Sanitization Types
+// ============================================================================
+
+/**
+ * Options for input sanitization middleware.
+ * Controls which sanitization rules are applied to request bodies.
+ */
+export interface SanitizationOptions {
+  /** Fields to skip sanitization (e.g., password, token) */
+  skipFields?: string[]
+  /** Maximum string length (truncate longer) */
+  maxLength?: number
+  /** Remove HTML tags completely (default: true) */
+  stripHtml?: boolean
+  /** Remove control characters (default: true) */
+  stripControlChars?: boolean
+}
+
+// ============================================================================
+// Security Headers Types
+// ============================================================================
+
+/**
+ * Options for security headers middleware.
+ * Configures CORS and other security headers.
+ */
+export interface SecurityHeadersOptions {
+  /** CORS allowed origins (default: '*') */
+  corsOrigins?: string | string[]
+  /** CORS allowed methods (default: 'GET,POST,PUT,DELETE,OPTIONS') */
+  corsMethods?: string
+  /** CORS allowed headers */
+  corsHeaders?: string
+  /** Content-Security-Policy value */
+  csp?: string
+  /** X-Frame-Options value (default: 'DENY') */
+  frameOptions?: 'DENY' | 'SAMEORIGIN'
+  /** Custom headers to add */
+  customHeaders?: Record<string, string>
+}
+
 // ============================================================================
 // Operation Result Types
 // ============================================================================
