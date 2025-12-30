@@ -15,11 +15,12 @@ import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import type {File} from '#types/domain-models'
 import type {EventHandlerParams} from '#types/lambda'
 import {s3Records, wrapEventHandler} from '#lib/lambda/middleware/legacy'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {logDebug} from '#lib/system/logging'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
+import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
 import {NotFoundError} from '#lib/system/errors'
 import {getRequiredEnv} from '#lib/system/env'
+import {appendCorrelationToLogger, extractCorrelationFromS3Record} from '#lib/lambda/middleware/correlation'
 
 // Get file by S3 object key
 async function getFileByFilename(fileName: string): Promise<File> {
@@ -61,11 +62,51 @@ function dispatchFileNotificationToUser(file: File, userId: string) {
  * @notExported
  */
 async function processS3Record({record}: EventHandlerParams<S3EventRecord>): Promise<void> {
+  // Extract and set correlation ID for all subsequent logs
+  const correlationId = extractCorrelationFromS3Record(record)
+  appendCorrelationToLogger(correlationId)
+
   const fileName = decodeURIComponent(record.s3.object.key).replace(/\+/g, ' ')
   const file = await getFileByFilename(fileName)
   const userIds = await getUsersOfFile(file)
+
+  if (userIds.length === 0) {
+    logInfo('No users to notify for file', {fileId: file.fileId, fileName})
+    return
+  }
+
   // Use allSettled to continue processing even if some notifications fail
-  await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+  const results = await Promise.allSettled(userIds.map((userId) => dispatchFileNotificationToUser(file, userId)))
+
+  // Track results for observability
+  const succeeded = results.filter((r) => r.status === 'fulfilled')
+  const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+
+  // Emit CloudWatch metrics
+  metrics.addMetric('NotificationsSent', MetricUnit.Count, succeeded.length)
+  if (failed.length > 0) {
+    metrics.addMetric('NotificationsFailed', MetricUnit.Count, failed.length)
+
+    // Log each failure with userId for debugging
+    failed.forEach((failure) => {
+      // Find the original userId by matching the index in the results array
+      const userId = userIds[results.indexOf(failure)]
+      logError('Failed to dispatch notification', {
+        fileId: file.fileId,
+        userId,
+        error: failure.reason instanceof Error ? failure.reason.message : String(failure.reason)
+      })
+    })
+
+    logInfo('S3ObjectCreated completed with partial failures', {
+      fileId: file.fileId,
+      totalUsers: userIds.length,
+      succeeded: succeeded.length,
+      failed: failed.length
+    })
+  } else {
+    logInfo('All notifications dispatched successfully', {fileId: file.fileId, userCount: userIds.length})
+  }
 }
 
 /**

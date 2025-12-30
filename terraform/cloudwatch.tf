@@ -273,6 +273,49 @@ resource "aws_cloudwatch_dashboard" "Main" {
             ]
           }
         }
+      },
+      # Row 6: EventBridge Pipeline Health
+      {
+        type   = "metric"
+        x      = 0
+        y      = 30
+        width  = 12
+        height = 6
+        properties = {
+          title  = "EventBridge Pipeline Health"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["AWS/Events", "Invocations", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "DownloadRequested Invocations" }],
+            ["AWS/Events", "MatchedEvents", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "Matched Events" }],
+            ["AWS/Events", "FailedInvocations", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "Failed Invocations", color = "#d62728" }],
+            ["AWS/Events", "ThrottledRules", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "Throttled", color = "#ff7f0e" }]
+          ]
+        }
+      },
+      # Row 6: Event-Driven Flow Summary
+      {
+        type   = "metric"
+        x      = 12
+        y      = 30
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Event-Driven Flow (Webhook to Notification)"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", "WebhookFeedly", { label = "1. WebhookFeedly" }],
+            ["AWS/Events", "Invocations", "RuleName", aws_cloudwatch_event_rule.DownloadRequested.name, { label = "2. EventBridge" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "StartFileUpload", { label = "3. StartFileUpload" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "S3ObjectCreated", { label = "4. S3ObjectCreated" }],
+            ["AWS/Lambda", "Invocations", "FunctionName", "SendPushNotification", { label = "5. SendPushNotification" }]
+          ]
+        }
       }
     ]
   })
@@ -463,6 +506,53 @@ resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
 
   dimensions = {
     QueueName = aws_sqs_queue.SendPushNotification.name
+  }
+
+  # alarm_actions = [] # Add SNS topic ARN when configured
+}
+
+# =============================================================================
+# EventBridge Alarms
+# Monitors event delivery and throttling for the event-driven pipeline
+# =============================================================================
+
+# EventBridge FailedInvocations Alarm
+# Triggers when events fail to be delivered to targets (DownloadRequested -> SQS)
+resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
+  alarm_name          = "MediaDownloader-EventBridge-FailedInvocations"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "FailedInvocations"
+  namespace           = "AWS/Events"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  alarm_description   = "EventBridge rule failed to deliver events to target - check SQS queue permissions"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
+  }
+
+  # alarm_actions = [] # Add SNS topic ARN when configured
+}
+
+# EventBridge Throttled Alarm
+# Triggers when EventBridge rules are being throttled due to rate limits
+resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
+  alarm_name          = "MediaDownloader-EventBridge-Throttled"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ThrottledRules"
+  namespace           = "AWS/Events"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 0
+  alarm_description   = "EventBridge rules are being throttled - increase rate limits or reduce event frequency"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
   }
 
   # alarm_actions = [] # Add SNS topic ARN when configured

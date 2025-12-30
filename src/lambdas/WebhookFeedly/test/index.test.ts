@@ -46,10 +46,10 @@ vi.mock('#lib/vendor/AWS/S3', () => ({
 }))
 
 import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
-const publishEventMock = vi.fn<
+const publishEventWithRetryMock = vi.fn<
   (eventType: MediaDownloaderEventType, detail: Record<string, unknown>, options?: PublishEventOptions) => Promise<PutEventsResponse>
 >()
-vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
+vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEventWithRetry: publishEventWithRetryMock}))
 
 const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
 
@@ -71,7 +71,7 @@ describe('#WebhookFeedly', () => {
     process.env.EVENT_BUS_NAME = 'MediaDownloader'
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
     process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
-    publishEventMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
+    publishEventWithRetryMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
     vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
@@ -131,7 +131,7 @@ describe('#WebhookFeedly', () => {
     const body = JSON.parse(output.body)
     expect(body.body.status).toEqual('Accepted')
     // Verify publishEvent was called with DownloadRequested and proper event detail
-    expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested',
+    expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested',
       expect.objectContaining({
         fileId: expect.any(String),
         userId: fakeUserId,
@@ -170,7 +170,7 @@ describe('#WebhookFeedly', () => {
           MessageBody: expect.stringContaining('DownloadReadyNotification')
         })
       )
-      expect(publishEventMock).not.toHaveBeenCalled()
+      expect(publishEventWithRetryMock).not.toHaveBeenCalled()
     })
   })
 
@@ -198,7 +198,7 @@ describe('#WebhookFeedly', () => {
       // Should NOT create a new file record
       expect(vi.mocked(createFile)).not.toHaveBeenCalled()
       // Should still publish DownloadRequested event
-      expect(publishEventMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object), expect.any(Object))
+      expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested', expect.any(Object), expect.any(Object))
     })
 
     test('should skip file creation for existing downloading file', async () => {
@@ -232,7 +232,7 @@ describe('#WebhookFeedly', () => {
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockResolvedValue(mockFileRow())
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
-      publishEventMock.mockRejectedValue(new Error('EventBridge failure'))
+      publishEventWithRetryMock.mockRejectedValue(new Error('EventBridge failure'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)

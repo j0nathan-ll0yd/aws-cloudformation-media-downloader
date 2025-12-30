@@ -66,6 +66,26 @@ vi.mock('#lib/vendor/AWS/EventBridge', () => ({publishEvent: publishEventMock}))
 // Mock GitHub issue creation (for permanent failures)
 vi.mock('#lib/integrations/github/issue-service', () => ({createCookieExpirationIssue: vi.fn(), createVideoDownloadFailureIssue: vi.fn()}))
 
+// Mock circuit breaker - pass through to wrapped function in tests
+vi.mock('#lib/system/circuit-breaker',
+  () => ({
+    youtubeCircuitBreaker: {
+      execute: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+      getState: vi.fn(() => 'CLOSED'),
+      getFailureCount: vi.fn(() => 0),
+      reset: vi.fn()
+    },
+    CircuitBreakerOpenError: class CircuitBreakerOpenError extends Error {
+      public readonly retryAfterMs: number
+      public readonly circuitName: string
+      constructor(circuitName: string, retryAfterMs: number) {
+        super(`Circuit breaker '${circuitName}' is OPEN`)
+        this.circuitName = circuitName
+        this.retryAfterMs = retryAfterMs
+      }
+    }
+  }))
+
 const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload, upsertFile} from '#entities/queries'

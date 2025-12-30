@@ -698,13 +698,15 @@ export interface AwsCloudwatchLogGroup {
 }
 
 export interface AwsCloudwatchMetricAlarm {
-    DownloadDLQMessages:       Age[];
-    LambdaErrorsApi:           Lambda[];
-    LambdaErrorsBackground:    Lambda[];
-    LambdaThrottlesApi:        Lambda[];
-    LambdaThrottlesBackground: Lambda[];
-    SqsDlqMessages:            Age[];
-    SqsQueueAge:               Age[];
+    DownloadDLQMessages:          Age[];
+    EventBridgeFailedInvocations: EventBridge[];
+    EventBridgeThrottled:         EventBridge[];
+    LambdaErrorsApi:              Lambda[];
+    LambdaErrorsBackground:       Lambda[];
+    LambdaThrottlesApi:           Lambda[];
+    LambdaThrottlesBackground:    Lambda[];
+    SqsDlqMessages:               Age[];
+    SqsQueueAge:                  Age[];
 }
 
 export interface Age {
@@ -723,6 +725,24 @@ export interface Age {
 
 export interface DownloadDLQMessageDimensions {
     QueueName: string;
+}
+
+export interface EventBridge {
+    alarm_description:   string;
+    alarm_name:          string;
+    comparison_operator: string;
+    dimensions:          EventBridgeFailedInvocationDimensions;
+    evaluation_periods:  number;
+    metric_name:         string;
+    namespace:           string;
+    period:              number;
+    statistic:           string;
+    threshold:           number;
+    treat_missing_data:  string;
+}
+
+export interface EventBridgeFailedInvocationDimensions {
+    RuleName: string;
 }
 
 export interface Lambda {
@@ -1881,6 +1901,8 @@ const typeMap: any = {
     ], false),
     "AwsCloudwatchMetricAlarm": o([
         { json: "DownloadDLQMessages", js: "DownloadDLQMessages", typ: a(r("Age")) },
+        { json: "EventBridgeFailedInvocations", js: "EventBridgeFailedInvocations", typ: a(r("EventBridge")) },
+        { json: "EventBridgeThrottled", js: "EventBridgeThrottled", typ: a(r("EventBridge")) },
         { json: "LambdaErrorsApi", js: "LambdaErrorsApi", typ: a(r("Lambda")) },
         { json: "LambdaErrorsBackground", js: "LambdaErrorsBackground", typ: a(r("Lambda")) },
         { json: "LambdaThrottlesApi", js: "LambdaThrottlesApi", typ: a(r("Lambda")) },
@@ -1903,6 +1925,22 @@ const typeMap: any = {
     ], false),
     "DownloadDLQMessageDimensions": o([
         { json: "QueueName", js: "QueueName", typ: "" },
+    ], false),
+    "EventBridge": o([
+        { json: "alarm_description", js: "alarm_description", typ: "" },
+        { json: "alarm_name", js: "alarm_name", typ: "" },
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "dimensions", js: "dimensions", typ: r("EventBridgeFailedInvocationDimensions") },
+        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
+        { json: "metric_name", js: "metric_name", typ: "" },
+        { json: "namespace", js: "namespace", typ: "" },
+        { json: "period", js: "period", typ: 0 },
+        { json: "statistic", js: "statistic", typ: "" },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+    ], false),
+    "EventBridgeFailedInvocationDimensions": o([
+        { json: "RuleName", js: "RuleName", typ: "" },
     ], false),
     "Lambda": o([
         { json: "alarm_description", js: "alarm_description", typ: "" },
