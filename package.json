@@ -176,6 +176,7 @@
     "tsx": "^4.21.0",
     "typedoc": "^0.28.15",
     "typescript": "^5.9.3",
+    "vite": "6.4.1",
     "vitest": "^4.0.16",
     "vitest-monocart-coverage": "^4.0.1"
   },
