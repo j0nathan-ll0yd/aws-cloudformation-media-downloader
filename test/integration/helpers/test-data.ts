@@ -5,7 +5,9 @@
  * Reduces inline JSON and provides consistent test data patterns.
  */
 
-import type {S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import {UserStatus} from '#types/enums'
 import {FileStatus} from '#types/enums'
 import type {Device, File, User} from '#types/domain-models'
 
@@ -257,4 +259,173 @@ export function createMockS3BatchEvent(keys: string[], bucket = 'test-media-buck
   const additionalRecords = keys.slice(1).map((key) => createMockS3Event(key, {bucket}).Records[0])
 
   return {Records: [...baseEvent.Records, ...additionalRecords]}
+}
+
+/**
+ * Creates a basic API Gateway proxy event for Lambda handler testing
+ * @param options - Event configuration options
+ */
+export function createMockAPIGatewayEvent(
+  options: {
+    httpMethod: string
+    path: string
+    body?: string | null
+    headers?: Record<string, string>
+    pathParameters?: Record<string, string> | null
+    queryStringParameters?: Record<string, string> | null
+    principalId?: string
+  }
+): APIGatewayProxyEvent {
+  return {
+    httpMethod: options.httpMethod,
+    path: options.path,
+    headers: options.headers ?? {'Content-Type': 'application/json'},
+    body: options.body ?? null,
+    isBase64Encoded: false,
+    pathParameters: options.pathParameters ?? null,
+    queryStringParameters: options.queryStringParameters ?? null,
+    multiValueQueryStringParameters: null,
+    multiValueHeaders: {},
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      authorizer: options.principalId ? {principalId: options.principalId} : {},
+      httpMethod: options.httpMethod,
+      identity: {
+        accessKey: null,
+        accountId: null,
+        apiKey: null,
+        apiKeyId: null,
+        caller: null,
+        clientCert: null,
+        cognitoAuthenticationProvider: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityId: null,
+        cognitoIdentityPoolId: null,
+        principalOrgId: null,
+        sourceIp: '127.0.0.1',
+        user: null,
+        userAgent: 'test-agent',
+        userArn: null
+      },
+      path: options.path,
+      protocol: 'HTTP/1.1',
+      requestId: `test-request-${Date.now()}`,
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
+      stage: 'test'
+    },
+    resource: options.path
+  }
+}
+
+/**
+ * Creates an API Gateway authorizer request event
+ * @param overrides - Partial event overrides
+ */
+export function createMockAuthorizerEvent(overrides: Partial<APIGatewayRequestAuthorizerEvent> = {}): APIGatewayRequestAuthorizerEvent {
+  return {
+    type: 'REQUEST',
+    methodArn: 'arn:aws:execute-api:us-west-2:123456789012:api-id/stage/GET/resource',
+    resource: '/resource',
+    path: '/resource',
+    httpMethod: 'GET',
+    headers: {Authorization: 'Bearer valid-session-token', 'User-Agent': 'iOS/17.0 TestApp/1.0'},
+    multiValueHeaders: {},
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      authorizer: undefined,
+      protocol: 'HTTP/1.1',
+      httpMethod: 'GET',
+      path: '/resource',
+      stage: 'test',
+      requestId: `test-${Date.now()}`,
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'resource-id',
+      resourcePath: '/resource',
+      identity: {
+        accessKey: null,
+        accountId: null,
+        apiKey: null,
+        apiKeyId: null,
+        caller: null,
+        clientCert: null,
+        cognitoAuthenticationProvider: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityId: null,
+        cognitoIdentityPoolId: null,
+        principalOrgId: null,
+        sourceIp: '127.0.0.1',
+        user: null,
+        userAgent: 'iOS/17.0 TestApp/1.0',
+        userArn: null
+      }
+    },
+    ...overrides
+  }
+}
+
+/**
+ * Creates a custom API Gateway event with authorizer context (for authenticated routes)
+ * @param options - Event configuration options
+ */
+export function createMockAuthenticatedEvent(options: {
+  httpMethod: string
+  path: string
+  userId: string
+  userStatus?: UserStatus
+  body?: string | null
+  headers?: Record<string, string>
+}): CustomAPIGatewayRequestAuthorizerEvent {
+  return {
+    body: options.body ?? null,
+    headers: options.headers ?? {Authorization: `Bearer test-token-${options.userId}`, 'Content-Type': 'application/json'},
+    multiValueHeaders: {},
+    httpMethod: options.httpMethod,
+    isBase64Encoded: false,
+    path: options.path,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      accountId: '123456789012',
+      apiId: 'test-api',
+      protocol: 'HTTP/1.1',
+      httpMethod: options.httpMethod,
+      path: options.path,
+      stage: 'test',
+      requestId: `test-request-${Date.now()}`,
+      requestTime: '01/Jan/2024:00:00:00 +0000',
+      requestTimeEpoch: Date.now(),
+      resourceId: 'test-resource',
+      resourcePath: options.path,
+      authorizer: {principalId: options.userId, userId: options.userId, userStatus: options.userStatus ?? UserStatus.Authenticated, integrationLatency: 100},
+      identity: {
+        accessKey: null,
+        accountId: null,
+        apiKey: null,
+        apiKeyId: null,
+        caller: null,
+        cognitoAuthenticationProvider: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityId: null,
+        cognitoIdentityPoolId: null,
+        principalOrgId: null,
+        sourceIp: '127.0.0.1',
+        user: null,
+        userAgent: 'test-agent',
+        userArn: null
+      }
+    },
+    resource: options.path
+  } as CustomAPIGatewayRequestAuthorizerEvent
 }

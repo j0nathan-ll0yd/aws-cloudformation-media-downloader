@@ -64,7 +64,6 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
 
   describe('Single User Notification', () => {
     test('should dispatch notification to single user waiting for file', async () => {
-      // Arrange: Create file and user-file association
       const userId = crypto.randomUUID()
       const fileId = 'video-single-user'
       const fileKey = `${fileId}.mp4`
@@ -73,21 +72,17 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await insertUser({userId, email: 'single@example.com'})
       await linkUserFile(userId, fileId)
 
-      // Act: Invoke handler with S3 event
       const event = createMockS3Event(fileKey)
       await handler(event, createMockContext())
 
-      // Assert: Message should be in SQS queue
       const messages = await waitForMessages(queueUrl, 1, 10000)
       expect(messages.length).toBe(1)
 
-      // Verify message contains correct user and file info
       const body = JSON.parse(messages[0].Body!)
       expect(body.file.fileId).toBe(fileId)
     })
 
     test('should handle URL-encoded file keys correctly', async () => {
-      // Arrange: File key with spaces (gets URL-encoded in S3 events)
       const userId = crypto.randomUUID()
       const fileId = 'video-with-spaces'
       const fileKey = 'My Video File.mp4'
@@ -96,11 +91,9 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await insertUser({userId, email: 'spaces@example.com'})
       await linkUserFile(userId, fileId)
 
-      // Act: Invoke handler (createMockS3Event URL-encodes the key)
       const event = createMockS3Event(fileKey)
       await handler(event, createMockContext())
 
-      // Assert: Notification dispatched successfully
       const messages = await waitForMessages(queueUrl, 1, 10000)
       expect(messages.length).toBe(1)
     })
@@ -108,7 +101,6 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
 
   describe('Multi-User Fan-out', () => {
     test('should fan-out to multiple users waiting for same file', async () => {
-      // Arrange: Create file with multiple user associations
       const user1Id = crypto.randomUUID()
       const user2Id = crypto.randomUUID()
       const user3Id = crypto.randomUUID()
@@ -123,15 +115,12 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await linkUserFile(user2Id, fileId)
       await linkUserFile(user3Id, fileId)
 
-      // Act: Invoke handler
       const event = createMockS3Event(fileKey)
       await handler(event, createMockContext())
 
-      // Assert: 3 messages dispatched (one per user)
       const messages = await waitForMessages(queueUrl, 3, 15000)
       expect(messages.length).toBe(3)
 
-      // Verify all messages reference the same file
       for (const msg of messages) {
         const body = JSON.parse(msg.Body!)
         expect(body.file.fileId).toBe(fileId)
@@ -141,26 +130,20 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
 
   describe('Edge Cases', () => {
     test('should handle file not found gracefully', async () => {
-      // Arrange: S3 event for non-existent file
       const event = createMockS3Event('nonexistent-file.mp4')
 
-      // Act & Assert: Handler should not throw (logs error internally)
-      // The handler catches NotFoundError and logs it
       await expect(handler(event, createMockContext())).resolves.not.toThrow()
     })
 
     test('should handle no users waiting for file', async () => {
-      // Arrange: File exists but no users associated
       const fileId = 'video-no-users'
       const fileKey = `${fileId}.mp4`
 
       await insertFile({fileId, key: fileKey, status: FileStatus.Downloaded})
 
-      // Act: Invoke handler
       const event = createMockS3Event(fileKey)
       await handler(event, createMockContext())
 
-      // Assert: No messages dispatched (short wait to confirm)
       const messages = await waitForMessages(queueUrl, 1, 3000)
       expect(messages.length).toBe(0)
     })
@@ -168,7 +151,6 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
 
   describe('Batch Processing', () => {
     test('should process multiple S3 records in batch', async () => {
-      // Arrange: Create two files with different users
       const user1Id = crypto.randomUUID()
       const user2Id = crypto.randomUUID()
       const file1Key = 'video-batch-1.mp4'
@@ -181,21 +163,17 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await linkUserFile(user1Id, 'video-batch-1')
       await linkUserFile(user2Id, 'video-batch-2')
 
-      // Act: Invoke handler with batch event
       const event = createMockS3BatchEvent([file1Key, file2Key])
       await handler(event, createMockContext())
 
-      // Assert: 2 messages dispatched (one per file)
       const messages = await waitForMessages(queueUrl, 2, 15000)
       expect(messages.length).toBe(2)
 
-      // Verify both files are represented
       const fileIds = messages.map((msg) => JSON.parse(msg.Body!).file.fileId)
       expect(fileIds.sort()).toEqual(['video-batch-1', 'video-batch-2'])
     })
 
     test('should continue processing after individual record failure', async () => {
-      // Arrange: First file doesn't exist, second does
       const userId = crypto.randomUUID()
       const existingFileKey = 'video-exists.mp4'
 
@@ -203,11 +181,9 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await insertUser({userId, email: 'partial@example.com'})
       await linkUserFile(userId, 'video-exists')
 
-      // Act: Invoke handler with batch (first record will fail, second should succeed)
       const event = createMockS3BatchEvent(['nonexistent.mp4', existingFileKey])
       await handler(event, createMockContext())
 
-      // Assert: At least one message dispatched for the existing file
       const messages = await waitForMessages(queueUrl, 1, 10000)
       expect(messages.length).toBeGreaterThanOrEqual(1)
     })
@@ -215,7 +191,6 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
 
   describe('Correlation ID Preservation', () => {
     test('should preserve correlation ID from S3 metadata', async () => {
-      // Arrange: File with correlation ID in S3 metadata
       const userId = crypto.randomUUID()
       const fileId = 'video-correlation'
       const fileKey = `${fileId}.mp4`
@@ -225,11 +200,9 @@ describe.skipIf(Boolean(process.env.CI))('S3ObjectCreated Workflow Integration T
       await insertUser({userId, email: 'correlation@example.com'})
       await linkUserFile(userId, fileId)
 
-      // Act: Invoke handler with correlation ID in S3 event
       const event = createMockS3Event(fileKey, {correlationId})
       await handler(event, createMockContext())
 
-      // Assert: Message dispatched
       const messages = await waitForMessages(queueUrl, 1, 10000)
       expect(messages.length).toBe(1)
     })
