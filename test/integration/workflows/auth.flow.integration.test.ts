@@ -29,10 +29,7 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 // Better Auth configuration
 process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-better-auth-32-chars'
 process.env.APPLICATION_URL = 'https://api.example.com' // Used by getAuth() config
-process.env.SIGN_IN_WITH_APPLE_CONFIG = JSON.stringify({
-  client_id: 'com.example.service',
-  bundle_id: 'com.example.app'
-})
+process.env.SIGN_IN_WITH_APPLE_CONFIG = JSON.stringify({client_id: 'com.example.service', bundle_id: 'com.example.app'})
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
@@ -41,7 +38,7 @@ import {sql} from 'drizzle-orm'
 // Test helpers
 import {closeTestDb, createAllTables, getTestDbAsync, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
-import {startAppleJWKSMock, stopAppleJWKSMock, generateAppleIdToken} from '../helpers/apple-jwks-mock'
+import {generateAppleIdToken, startAppleJWKSMock, stopAppleJWKSMock} from '../helpers/apple-jwks-mock'
 
 // Import handlers after environment is set
 // NO MOCKING of Better Auth - we use the real implementation
@@ -181,17 +178,9 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       const appleUserId = 'apple-new-user-' + Date.now()
       const testEmail = `newuser-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({
-        sub: appleUserId,
-        email: testEmail,
-        aud: 'com.example.app'
-      })
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
 
-      const body: AuthRequestBody = {
-        idToken,
-        firstName: 'John',
-        lastName: 'Doe'
-      }
+      const body: AuthRequestBody = {idToken, firstName: 'John', lastName: 'Doe'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
@@ -222,18 +211,10 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       const appleUserId = 'apple-existing-' + Date.now()
       const testEmail = `existing-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({
-        sub: appleUserId,
-        email: testEmail,
-        aud: 'com.example.app'
-      })
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
 
       // First registration - sets the name
-      const firstBody: AuthRequestBody = {
-        idToken,
-        firstName: 'Original',
-        lastName: 'Name'
-      }
+      const firstBody: AuthRequestBody = {idToken, firstName: 'Original', lastName: 'Name'}
       const firstEvent = createAuthEvent(firstBody, '/auth/register')
       await registerHandler(firstEvent, mockContext)
 
@@ -244,11 +225,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       await db.execute(sql`UPDATE users SET created_at = ${tenSecondsAgo} WHERE email = ${testEmail}`)
 
       // Second registration with different name - should NOT update
-      const secondBody: AuthRequestBody = {
-        idToken,
-        firstName: 'Should',
-        lastName: 'NotUpdate'
-      }
+      const secondBody: AuthRequestBody = {idToken, firstName: 'Should', lastName: 'NotUpdate'}
       const secondEvent = createAuthEvent(secondBody, '/auth/register')
       const result = await registerHandler(secondEvent, mockContext)
 
@@ -265,11 +242,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       const appleUserId = 'apple-noname-' + Date.now()
       const testEmail = `noname-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({
-        sub: appleUserId,
-        email: testEmail,
-        aud: 'com.example.app'
-      })
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
 
       // Register without firstName/lastName
       const body: AuthRequestBody = {idToken}
@@ -295,11 +268,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
     })
 
     test('should handle malformed ID token', async () => {
-      const body: AuthRequestBody = {
-        idToken: 'bad-token',
-        firstName: 'Test',
-        lastName: 'User'
-      }
+      const body: AuthRequestBody = {idToken: 'bad-token', firstName: 'Test', lastName: 'User'}
       const event = createAuthEvent(body, '/auth/register')
       const result = await registerHandler(event, mockContext)
 
@@ -314,11 +283,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       const appleUserId = 'apple-headers-' + Date.now()
       const testEmail = `headers-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({
-        sub: appleUserId,
-        email: testEmail,
-        aud: 'com.example.app'
-      })
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
 
       const body: AuthRequestBody = {idToken}
       const event = createAuthEvent(body, '/auth/login')
@@ -340,11 +305,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
       const appleUserId = 'apple-expiry-' + Date.now()
       const testEmail = `expiry-${Date.now()}@example.com`
 
-      const idToken = generateAppleIdToken({
-        sub: appleUserId,
-        email: testEmail,
-        aud: 'com.example.app'
-      })
+      const idToken = generateAppleIdToken({sub: appleUserId, email: testEmail, aud: 'com.example.app'})
 
       const body: AuthRequestBody = {idToken}
       const event = createAuthEvent(body, '/auth/login')
