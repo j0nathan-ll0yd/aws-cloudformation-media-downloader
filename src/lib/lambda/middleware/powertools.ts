@@ -57,8 +57,11 @@ export function withPowertools<TEvent, TResult>(
     // This ensures ALL lambdas report cold starts without the "No application metrics" warning
     middyHandler.before(async () => {
       if (isColdStart) {
-        metrics.addMetric('ColdStart', MetricUnit.Count, 1)
-        metrics.publishStoredMetrics()
+        // Skip metrics output when LOG_LEVEL=SILENT (e.g., integration tests)
+        if (process.env.LOG_LEVEL !== 'SILENT') {
+          metrics.addMetric('ColdStart', MetricUnit.Count, 1)
+          metrics.publishStoredMetrics()
+        }
         isColdStart = false
       }
     })

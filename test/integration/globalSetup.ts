@@ -96,25 +96,33 @@ function parseSqlStatements(sql: string): string[] {
   return noComments.split(';').map((s) => s.trim()).filter((s) => s.length > 0)
 }
 
+/** Log helper that respects LOG_LEVEL=SILENT */
+function log(message: string): void {
+  if (process.env.LOG_LEVEL !== 'SILENT') {
+    console.log(message)
+  }
+}
+
 /** Creates worker-specific database schemas AND tables before test execution. */
 export async function setup(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
   const prefix = getSchemaPrefix()
 
-  console.log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
+  log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
 
   // Read migration files
   const migrationsDir = path.join(process.cwd(), 'migrations')
   const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_initial_schema.sql'), 'utf8')
   const indexMigration = fs.readFileSync(path.join(migrationsDir, '0002_create_indexes.sql'), 'utf8')
 
-  const sql = postgres(databaseUrl)
+  // Suppress PostgreSQL NOTICE messages (e.g., "relation already exists, skipping")
+  const sql = postgres(databaseUrl, {onnotice: () => {}})
 
   try {
     // Create schemas and tables for each worker BEFORE any tests run
     for (let i = 1; i <= MAX_WORKERS; i++) {
       const schemaName = `${prefix}worker_${i}`
-      console.log(`[globalSetup] Creating schema: ${schemaName}`)
+      log(`[globalSetup] Creating schema: ${schemaName}`)
 
       // Create the schema
       await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`)
@@ -133,10 +141,10 @@ export async function setup(): Promise<void> {
         await sql.unsafe(statement)
       }
 
-      console.log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} tables`)
+      log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} tables`)
     }
 
-    console.log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
+    log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
   } catch (error) {
     console.error('[globalSetup] ERROR creating schemas:', error)
     throw error
@@ -150,7 +158,8 @@ export async function teardown(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
   const prefix = getSchemaPrefix()
 
-  const sql = postgres(databaseUrl)
+  // Suppress PostgreSQL NOTICE messages during cleanup
+  const sql = postgres(databaseUrl, {onnotice: () => {}})
 
   try {
     for (let i = 1; i <= MAX_WORKERS; i++) {
