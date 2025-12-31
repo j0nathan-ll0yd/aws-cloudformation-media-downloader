@@ -142,6 +142,70 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 - Simplified setup with pre-configured query patterns
 - Supports all entity operations (get, create, update, query, etc.)
 
+## Typed Event Factories
+
+Use typed event factories instead of JSON fixture files for creating Lambda events. Located at `test/helpers/event-factories.ts`:
+
+```typescript
+import {createAPIGatewayEvent, createSQSEvent, createS3Event} from '#test/helpers/event-factories'
+import {createRegisterDeviceBody, createFeedlyWebhookBody} from '#test/helpers/event-factories'
+
+// API Gateway events with full type safety
+const event = createAPIGatewayEvent({
+  path: '/registerDevice',
+  httpMethod: 'POST',
+  body: createRegisterDeviceBody({token: 'test-token'}),
+  userId: 'user-123'  // Sets authenticated user
+})
+
+// SQS events for queue-triggered Lambdas
+const sqsEvent = createDownloadQueueEvent('video-id', {
+  correlationId: 'corr-123',
+  userId: 'user-123'
+})
+
+// S3 events for bucket-triggered Lambdas
+const s3Event = createS3Event({
+  records: [{key: 'videos/test.mp4', bucket: 'my-bucket'}]
+})
+```
+
+### Available Factories
+
+| Factory | Usage |
+|---------|-------|
+| `createAPIGatewayEvent()` | Authenticated API Gateway events |
+| `createSQSEvent()` | Generic SQS batch events |
+| `createDownloadQueueEvent()` | StartFileUpload queue messages |
+| `createPushNotificationEvent()` | SendPushNotification messages |
+| `createS3Event()` | S3 object events |
+| `createScheduledEvent()` | CloudWatch/EventBridge scheduled events |
+| `createRegisterDeviceBody()` | RegisterDevice request body |
+| `createSubscribeBody()` | UserSubscribe request body |
+| `createFeedlyWebhookBody()` | Feedly webhook request body |
+
+### Authentication Patterns
+
+```typescript
+// Authenticated user (default when userId provided)
+const authenticatedEvent = createAPIGatewayEvent({userId: 'user-123'})
+
+// Unauthenticated (Authorization header present but invalid)
+const unauthEvent = createAPIGatewayEvent({})
+unauthEvent.requestContext.authorizer!.principalId = 'unknown'
+
+// Anonymous (no Authorization header)
+const anonEvent = createAPIGatewayEvent({})
+delete anonEvent.headers.Authorization
+anonEvent.requestContext.authorizer!.principalId = 'unknown'
+```
+
+**Benefits**:
+- Full TypeScript type inference
+- Consistent test data across all Lambda tests
+- No JSON fixture file maintenance
+- Clear authentication state handling
+
 ## Testing Checklist
 
 - [ ] List all imports in test file
@@ -149,6 +213,7 @@ expect(filesMock.mocks.create).toHaveBeenCalledWith({
 - [ ] Mock ALL external dependencies
 - [ ] Mock BEFORE importing handler
 - [ ] Add TypeScript types to mocks
+- [ ] Use typed event factories (not JSON fixtures)
 - [ ] Test locally AND in CI
 
 ## Common Issues
