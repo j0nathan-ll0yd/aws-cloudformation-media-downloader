@@ -11,12 +11,10 @@
  * We mock the Better Auth module to test our Lambda orchestration logic.
  */
 
-// Test configuration
-const TEST_TABLE = 'test-auth-flow'
-
 // Set environment variables for Lambda
-process.env.DYNAMODB_TABLE_NAME = TEST_TABLE
 process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 // Required env vars
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -26,11 +24,11 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-better-auth-32-chars'
 process.env.BetterAuthUrl = 'https://api.example.com'
 
-import {afterAll, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {createFilesTable, deleteFilesTable} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getTestDbAsync, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,17 +87,22 @@ describe('Auth Flow Integration Tests', () => {
   let mockContext: Context
 
   beforeAll(async () => {
-    await createFilesTable()
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Initialize database connection and create tables
+    await getTestDbAsync()
+    await createAllTables()
     mockContext = createMockContext()
   })
 
+  afterEach(async () => {
+    vi.clearAllMocks()
+    await truncateAllTables()
+  })
+
   afterAll(async () => {
-    await deleteFilesTable()
+    await closeTestDb()
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     // Default mock for updateUser query function
     updateUserMock.mockResolvedValue({id: 'mock-user', name: 'Updated User'})
   })

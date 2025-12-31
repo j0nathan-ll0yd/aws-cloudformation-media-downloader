@@ -1,7 +1,7 @@
 /**
  * CleanupExpiredRecords Workflow Integration Tests
  *
- * Tests the scheduled cleanup workflow:
+ * Tests the scheduled cleanup workflow with REAL PostgreSQL:
  * - FileDownloads: Completed/Failed older than 24 hours
  * - Sessions: Expired sessions (expiresAt before now)
  * - Verification: Expired tokens (expiresAt before now)
@@ -15,154 +15,231 @@
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-// Store TEST_DATABASE_URL so we can disable it for this file and restore later
-const originalTestDatabaseUrl = process.env.TEST_DATABASE_URL
-// Disable TEST_DATABASE_URL to prevent real Drizzle client from being used (we mock it instead)
-delete process.env.TEST_DATABASE_URL
-
-import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockScheduledEvent} from '../helpers/test-data'
+import {
+  closeTestDb,
+  createAllTables,
+  getFileDownloads,
+  getSessions,
+  getTestDbAsync,
+  getVerificationTokens,
+  insertFileDownload,
+  insertSession,
+  insertVerification,
+  truncateAllTables
+} from '../helpers/postgres-helpers'
+import {DownloadStatus} from '#types/enums'
 
-// Mock Drizzle client - must use vi.hoisted for ESM
-const {mockDbClient, mockDeleteCount} = vi.hoisted(() => {
-  const counts = {fileDownloads: 0, sessions: 0, verification: 0}
-
-  // Create a chainable mock for db.delete().where().returning()
-  const createDeleteMock = (tableName: 'fileDownloads' | 'sessions' | 'verification') => ({
-    where: vi.fn().mockImplementation(() => ({
-      returning: vi.fn().mockImplementation(() => {
-        const count = counts[tableName]
-        counts[tableName] = 0 // Reset after read
-        // Return array with `count` items to match result.length check
-        return Promise.resolve(Array(count).fill({id: 'mock-id'}))
-      })
-    }))
-  })
-
-  return {
-    mockDbClient: {
-      delete: vi.fn().mockImplementation((table: {[key: string]: unknown}) => {
-        // Determine which table based on the mock table object
-        const tableName = Object.keys(table)[0] as 'fileDownloads' | 'sessions' | 'verification'
-        return createDeleteMock(tableName)
-      })
-    },
-    mockDeleteCount: counts
-  }
-})
-
-vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn().mockResolvedValue(mockDbClient)}))
-
-// Mock schema tables - provide identifiable objects for the mock client to distinguish
-vi.mock('#lib/vendor/Drizzle/schema',
-  () => ({
-    fileDownloads: {fileDownloads: true, id: 'fileDownloads', updatedAt: 'updatedAt', status: 'status'},
-    sessions: {sessions: true, id: 'sessions', expiresAt: 'expiresAt'},
-    verification: {verification: true, id: 'verification', expiresAt: 'expiresAt'}
-  }))
-
-// Mock Drizzle query helpers - these need to return comparable values
-vi.mock('#lib/vendor/Drizzle/types',
-  () => ({
-    and: vi.fn((...args: unknown[]) => ({type: 'and', args})),
-    or: vi.fn((...args: unknown[]) => ({type: 'or', args})),
-    eq: vi.fn((col: unknown, val: unknown) => ({type: 'eq', col, val})),
-    lt: vi.fn((col: unknown, val: unknown) => ({type: 'lt', col, val}))
-  }))
-
-// Import handler after mocks
+// Import handler - uses real Drizzle client via getDrizzleClient()
+// getDrizzleClient() detects TEST_DATABASE_URL and uses local PostgreSQL
 const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
 
 describe('CleanupExpiredRecords Workflow Integration Tests', () => {
-  beforeAll(() => {
-    // No database setup needed - we're mocking everything
+  beforeAll(async () => {
+    // Initialize test database connection and create tables
+    await getTestDbAsync()
+    await createAllTables()
   })
 
-  afterAll(() => {
-    // Restore TEST_DATABASE_URL for other test files in the same pool worker
-    if (originalTestDatabaseUrl) {
-      process.env.TEST_DATABASE_URL = originalTestDatabaseUrl
-    }
+  afterEach(async () => {
+    // Clean up data between tests
+    await truncateAllTables()
   })
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-    // Reset delete counts
-    mockDeleteCount.fileDownloads = 0
-    mockDeleteCount.sessions = 0
-    mockDeleteCount.verification = 0
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
+  afterAll(async () => {
+    // Close database connection
+    await closeTestDb()
   })
 
   describe('FileDownloads cleanup', () => {
     test('should delete Completed file downloads older than 24 hours', async () => {
-      // Setup: 1 file download to delete
-      mockDeleteCount.fileDownloads = 1
+      // Create an expired Completed download (25 hours old)
+      const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
+      await insertFileDownload({
+        fileId: 'expired-completed',
+        status: DownloadStatus.Completed,
+        updatedAt: expiredTime,
+        createdAt: expiredTime
+      })
+
+      // Create a recent Completed download (1 hour old - should NOT be deleted)
+      const recentTime = new Date(Date.now() - 1 * 60 * 60 * 1000)
+      await insertFileDownload({
+        fileId: 'recent-completed',
+        status: DownloadStatus.Completed,
+        updatedAt: recentTime,
+        createdAt: recentTime
+      })
+
+      // Verify both exist before cleanup
+      const beforeDownloads = await getFileDownloads()
+      expect(beforeDownloads).toHaveLength(2)
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
       expect(result.errors).toHaveLength(0)
+
+      // Verify only the expired one was deleted
+      const afterDownloads = await getFileDownloads()
+      expect(afterDownloads).toHaveLength(1)
+      expect(afterDownloads[0].fileId).toBe('recent-completed')
     })
 
     test('should delete Failed file downloads older than 24 hours', async () => {
-      mockDeleteCount.fileDownloads = 1
+      // Create an expired Failed download (25 hours old)
+      const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
+      await insertFileDownload({
+        fileId: 'expired-failed',
+        status: DownloadStatus.Failed,
+        updatedAt: expiredTime,
+        createdAt: expiredTime
+      })
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(1)
+
+      const afterDownloads = await getFileDownloads()
+      expect(afterDownloads).toHaveLength(0)
     })
 
     test('should not delete Pending or InProgress file downloads regardless of age', async () => {
-      // No file downloads to delete (only Pending/InProgress exist)
-      mockDeleteCount.fileDownloads = 0
+      // Create old Pending download (25 hours old - should NOT be deleted)
+      const oldTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
+      await insertFileDownload({
+        fileId: 'old-pending',
+        status: DownloadStatus.Pending,
+        updatedAt: oldTime,
+        createdAt: oldTime
+      })
+
+      // Create old InProgress download (25 hours old - should NOT be deleted)
+      await insertFileDownload({
+        fileId: 'old-inprogress',
+        status: DownloadStatus.InProgress,
+        updatedAt: oldTime,
+        createdAt: oldTime
+      })
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
+
+      // Verify both still exist
+      const afterDownloads = await getFileDownloads()
+      expect(afterDownloads).toHaveLength(2)
     })
   })
 
   describe('Sessions cleanup', () => {
     test('should delete expired sessions', async () => {
-      mockDeleteCount.sessions = 1
+      const userId = crypto.randomUUID()
+
+      // Create an expired session (expired 1 hour ago)
+      await insertSession({
+        userId,
+        token: 'expired-token',
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
+      })
+
+      // Create a valid session (expires in 1 hour - should NOT be deleted)
+      await insertSession({
+        userId,
+        token: 'valid-token',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      })
+
+      const beforeSessions = await getSessions()
+      expect(beforeSessions).toHaveLength(2)
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.sessionsDeleted).toBe(1)
+
+      const afterSessions = await getSessions()
+      expect(afterSessions).toHaveLength(1)
     })
 
     test('should delete all expired sessions when multiple exist', async () => {
-      mockDeleteCount.sessions = 3
+      const userId = crypto.randomUUID()
+
+      // Create 3 expired sessions
+      for (let i = 0; i < 3; i++) {
+        await insertSession({
+          userId,
+          token: `expired-token-${i}`,
+          expiresAt: new Date(Date.now() - (i + 1) * 60 * 60 * 1000)
+        })
+      }
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.sessionsDeleted).toBe(3)
+
+      const afterSessions = await getSessions()
+      expect(afterSessions).toHaveLength(0)
     })
   })
 
   describe('Verification tokens cleanup', () => {
     test('should delete expired verification tokens', async () => {
-      mockDeleteCount.verification = 1
+      // Create an expired verification token
+      await insertVerification({
+        identifier: 'test@example.com',
+        value: 'expired-token',
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
+      })
+
+      // Create a valid verification token (should NOT be deleted)
+      await insertVerification({
+        identifier: 'test2@example.com',
+        value: 'valid-token',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      })
+
+      const beforeTokens = await getVerificationTokens()
+      expect(beforeTokens).toHaveLength(2)
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.verificationTokensDeleted).toBe(1)
+
+      const afterTokens = await getVerificationTokens()
+      expect(afterTokens).toHaveLength(1)
     })
   })
 
   describe('Combined cleanup scenarios', () => {
     test('should clean all record types in single invocation', async () => {
-      mockDeleteCount.fileDownloads = 1
-      mockDeleteCount.sessions = 1
-      mockDeleteCount.verification = 1
+      const userId = crypto.randomUUID()
+      const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
+
+      // Create one of each expired record type
+      await insertFileDownload({
+        fileId: 'expired-download',
+        status: DownloadStatus.Completed,
+        updatedAt: expiredTime,
+        createdAt: expiredTime
+      })
+
+      await insertSession({
+        userId,
+        token: 'expired-session',
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
+      })
+
+      await insertVerification({
+        identifier: 'cleanup@example.com',
+        value: 'expired-verification',
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
+      })
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
@@ -173,11 +250,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     })
 
     test('should handle empty tables gracefully', async () => {
-      // All counts at 0 (default)
-      mockDeleteCount.fileDownloads = 0
-      mockDeleteCount.sessions = 0
-      mockDeleteCount.verification = 0
-
+      // Tables are empty after truncateAllTables in afterEach
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
       expect(result.fileDownloadsDeleted).toBe(0)
@@ -187,9 +260,27 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     })
 
     test('should handle large batch of expired records', async () => {
-      mockDeleteCount.fileDownloads = 20
-      mockDeleteCount.sessions = 15
-      mockDeleteCount.verification = 0
+      const userId = crypto.randomUUID()
+      const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
+
+      // Create 20 expired file downloads
+      for (let i = 0; i < 20; i++) {
+        await insertFileDownload({
+          fileId: `batch-download-${i}`,
+          status: DownloadStatus.Completed,
+          updatedAt: expiredTime,
+          createdAt: expiredTime
+        })
+      }
+
+      // Create 15 expired sessions
+      for (let i = 0; i < 15; i++) {
+        await insertSession({
+          userId,
+          token: `batch-session-${i}`,
+          expiresAt: new Date(Date.now() - 60 * 60 * 1000)
+        })
+      }
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 

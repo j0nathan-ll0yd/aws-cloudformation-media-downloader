@@ -17,18 +17,21 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
-import {closeTestDb, insertDevice, insertFile, insertUser, linkUserDevice, linkUserFile, truncateAllTables} from '../../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getTestDbAsync, insertDevice, insertFile, insertUser, linkUserDevice, linkUserFile, truncateAllTables} from '../../helpers/postgres-helpers'
 import {createMockContext} from '../../helpers/lambda-context'
-import {createTestEndpoint, createTestPlatformApplication, deleteTestEndpoint, deleteTestPlatformApplication} from '../../helpers/sns-helpers'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestEndpoint, deleteTestPlatformApplication, generateIsolatedAppName} from '../../helpers/sns-helpers'
 import {createMockAPIGatewayEvent} from '../../helpers/test-data'
 import {FileStatus} from '#types/enums'
 
-// Skip in CI: Uses LocalStack SNS/SQS which may not be reliably available
-describe.skipIf(Boolean(process.env.CI))('External Services Failure Scenario Tests', () => {
+describe('External Services Failure Scenario Tests', () => {
   let platformAppArn: string
-  const testAppName = `test-ext-failure-app-${Date.now()}`
+  const testAppName = generateIsolatedAppName('test-ext-failure')
 
   beforeAll(async () => {
+    // Initialize database connection and create tables
+    await getTestDbAsync()
+    await createAllTables()
+
     // Create LocalStack SNS platform application
     platformAppArn = await createTestPlatformApplication(testAppName)
     process.env.PLATFORM_APPLICATION_ARN = platformAppArn

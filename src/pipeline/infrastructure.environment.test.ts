@@ -94,6 +94,7 @@ const excludedSourceVariables: Record<string, number> = {
   // CI/debug environment variables
   CI: 1,
   DEBUG: 1,
+  GITHUB_RUN_ID: 1, // CI workflow isolation for parallel test runs
   // SemVer library constants (matched by minified pattern)
   COMPARATOR: 1,
   // Better Auth / Apple Sign-in constants and error codes

@@ -14,13 +14,20 @@
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
+// Required for Anonymous user flows (getDefaultFile)
+process.env.DEFAULT_FILE_SIZE = '1024'
+process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
+process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
+process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 
 // Test helpers
 import {
   closeTestDb,
+  createAllTables,
   getDevice,
+  getTestDbAsync,
   getUser,
   insertDevice,
   insertFile,
@@ -30,16 +37,19 @@ import {
   truncateAllTables
 } from '../../helpers/postgres-helpers'
 import {createMockContext} from '../../helpers/lambda-context'
-import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication} from '../../helpers/sns-helpers'
+import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApplication, generateIsolatedAppName} from '../../helpers/sns-helpers'
 import {createMockAPIGatewayEvent, createMockS3Event} from '../../helpers/test-data'
 import {FileStatus} from '#types/enums'
 
-// Skip in CI: Some tests invoke handlers that use own Drizzle connection
-describe.skipIf(Boolean(process.env.CI))('Database Failure Scenario Tests', () => {
+describe('Database Failure Scenario Tests', () => {
   let platformAppArn: string
-  const testAppName = `test-db-failure-app-${Date.now()}`
+  const testAppName = generateIsolatedAppName('test-db-failure')
 
   beforeAll(async () => {
+    // Initialize database and create tables
+    await getTestDbAsync()
+    await createAllTables()
+
     // Create LocalStack SNS platform application
     platformAppArn = await createTestPlatformApplication(testAppName)
     process.env.PLATFORM_APPLICATION_ARN = platformAppArn
@@ -71,7 +81,14 @@ describe.skipIf(Boolean(process.env.CI))('Database Failure Scenario Tests', () =
     test('should handle user not found in ListFiles', async () => {
       const {handler} = await import('#lambdas/ListFiles/src/index')
 
-      const event = createMockAPIGatewayEvent({httpMethod: 'GET', path: '/files', principalId: 'nonexistent-user-id'})
+      // Include Authorization header so user is Authenticated (not Anonymous)
+      // For Anonymous users, ListFiles returns a demo file instead of querying the database
+      const event = createMockAPIGatewayEvent({
+        httpMethod: 'GET',
+        path: '/files',
+        principalId: 'nonexistent-user-id',
+        headers: {Authorization: 'Bearer test-token'}
+      })
 
       const result = await handler(event as never, createMockContext())
 

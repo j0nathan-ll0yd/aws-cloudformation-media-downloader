@@ -17,9 +17,11 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {FileStatus} from '#types/enums'
 import {
   closeTestDb,
+  createAllTables,
   ensureSearchPath,
   getFile,
   getTestDb,
+  getTestDbAsync,
   getUser,
   insertFile,
   insertUser,
@@ -33,7 +35,9 @@ import {eq} from 'drizzle-orm'
 
 describe('StartFileUpload Workflow Integration Tests', () => {
   beforeAll(async () => {
-    // No setup needed - tables created by globalSetup
+    // Initialize database connection and create tables
+    await getTestDbAsync()
+    await createAllTables()
   })
 
   afterEach(async () => {
