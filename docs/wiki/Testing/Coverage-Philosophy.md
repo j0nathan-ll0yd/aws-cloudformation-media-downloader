@@ -51,6 +51,77 @@ test('download updates DynamoDB and notifies user', async () => {
 })
 ```
 
+## Decision Tree: Unit or Integration Test?
+
+Use this flowchart to decide which test type to write:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    What are you testing?                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+    ┌─────────────────┐             ┌─────────────────┐
+    │ Single function │             │ Multi-service   │
+    │ or module       │             │ workflow        │
+    └────────┬────────┘             └────────┬────────┘
+             │                                │
+             ▼                                ▼
+    ┌─────────────────┐             ┌─────────────────┐
+    │ Does it call    │             │ INTEGRATION     │
+    │ AWS services?   │             │ TEST            │
+    └────────┬────────┘             │                 │
+             │                      │ Use LocalStack  │
+      ┌──────┴──────┐               │ for all AWS     │
+      ▼             ▼               │ services        │
+    ┌────┐       ┌────┐             └─────────────────┘
+    │ No │       │Yes │
+    └──┬─┘       └──┬─┘
+       │            │
+       ▼            ▼
+ ┌───────────┐  ┌─────────────────────────────────────┐
+ │ UNIT TEST │  │ Can the service be emulated         │
+ │           │  │ by LocalStack?                      │
+ │ Mock all  │  └──────────────┬──────────────────────┘
+ │ imports   │          ┌──────┴──────┐
+ └───────────┘          ▼             ▼
+                      ┌────┐       ┌────┐
+                      │Yes │       │ No │
+                      └──┬─┘       └──┬─┘
+                         │            │
+                         ▼            ▼
+              ┌─────────────────┐  ┌─────────────────┐
+              │ INTEGRATION     │  │ UNIT TEST       │
+              │ TEST            │  │                 │
+              │                 │  │ Mock the        │
+              │ Use real        │  │ external        │
+              │ LocalStack      │  │ service         │
+              └─────────────────┘  └─────────────────┘
+```
+
+### Quick Reference
+
+| Testing... | Test Type | Mock Strategy |
+|------------|-----------|---------------|
+| Pure business logic | Unit | Mock everything |
+| Data transformations | Unit | Mock everything |
+| Single Lambda handler | Unit | Mock AWS + DB |
+| SNS/SQS/S3 workflows | Integration | Use LocalStack |
+| Database queries | Integration | Use real PostgreSQL |
+| Multi-Lambda chains | Integration | Use LocalStack |
+| APNS notifications | Unit | Mock apns2 (external) |
+| OAuth flows | Unit | Mock provider (external) |
+| GitHub API calls | Unit | Mock API (external) |
+
+### Key Principle
+
+**Integration tests should NEVER mock LocalStack-emulatable services.**
+
+If you find yourself mocking `#lib/vendor/AWS/SNS` or `#lib/vendor/AWS/SQS` in an integration test, you're writing a "mock disguised" test. Convert it to use real LocalStack.
+
+See: [Integration Test Audit](Integration-Test-Audit.md) for current test classification.
+
 ## Integration Test Priority
 
 ### High Priority (Multi-Service)

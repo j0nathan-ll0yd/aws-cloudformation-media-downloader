@@ -62,6 +62,8 @@ Central registry of all project conventions with their documentation and enforce
 
 | Convention | Documentation | Enforcement |
 |------------|---------------|-------------|
+| Integration Tests Use LocalStack | [LocalStack Testing](../Integration/LocalStack-Testing.md) | Code review + [Integration Test Audit](../Testing/Integration-Test-Audit.md) |
+| Only Mock External Services in Integration Tests | [Coverage Philosophy](../Testing/Coverage-Philosophy.md) | Code review |
 | Branch-First PR Workflow | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `pre-push` |
 | Authenticated Handler Wrappers | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
 | Lambda Response Helper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
