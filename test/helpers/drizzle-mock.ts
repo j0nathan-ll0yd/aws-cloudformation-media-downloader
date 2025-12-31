@@ -74,16 +74,7 @@ type QueryIndexName =
  *
  * @param options - Configuration options (queryIndexes: array of index names, hasScan: enable scan)
  * @returns Object with entity mock and individual mock functions
- *
- * @example
- * ```typescript
- * const usersMock = createDrizzleEntityMock<UserItem>({queryIndexes: ['byEmail', 'byAppleDeviceId']})
- * vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
- *
- * // Set up return values
- * usersMock.mocks.get.mockResolvedValue({data: mockUser})
- * usersMock.mocks.query.byEmail!.go.mockResolvedValue({data: [mockUser]})
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#entity-mock-helper-critical | Usage Examples}
  */
 export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes?: QueryIndexName[]; hasScan?: boolean}): DrizzleEntityMock<TData> {
   // Get operation: Entity.get({key}).go() or Entity.get([...]).go()
@@ -160,17 +151,7 @@ export function createDrizzleEntityMock<TData = unknown>(options?: {queryIndexes
  * Used when mocking src/lib/vendor/Drizzle/client
  *
  * @returns Mock Drizzle client with chainable query methods
- *
- * @example
- * ```typescript
- * const drizzleMock = createDrizzleClientMock()
- * vi.mock('#lib/vendor/Drizzle/client', () => ({
- *   getDrizzleClient: vi.fn().mockResolvedValue(drizzleMock.client)
- * }))
- *
- * // Set up return values
- * drizzleMock.mocks.select.where.mockReturnValue({limit: () => mockResult})
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#entity-mock-helper-critical | Usage Examples}
  */
 export function createDrizzleClientMock() {
   const limitMock = vi.fn()

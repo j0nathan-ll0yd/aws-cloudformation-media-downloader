@@ -4,17 +4,7 @@
  * Provides composable, type-safe factories for AWS Lambda events.
  * Replaces JSON fixture imports with programmatic event creation.
  *
- * Usage:
- * ```typescript
- * import {createAPIGatewayEvent, createSQSEvent, createS3Event} from '#test/helpers/event-factories'
- *
- * const event = createAPIGatewayEvent({
- *   path: '/registerDevice',
- *   httpMethod: 'POST',
- *   body: JSON.stringify({token: 'test-token', deviceId: 'device-123'})
- * })
- * ```
- *
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#typed-event-factories | Usage Examples}
  * @see test/integration/helpers/test-data.ts for integration test factories
  */
 

@@ -178,14 +178,7 @@ export type TransactionClient = PgTransaction<
  *
  * @param fn - The function to execute within the transaction
  * @returns The result of the function
- *
- * @example
- * ```typescript
- * await withTransaction(async (tx) => {
- *   await tx.insert(users).values(userData)
- *   await tx.insert(identityProviders).values(idpData)
- * })
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Drizzle-Patterns#withTransaction | Usage Examples}
  */
 export async function withTransaction<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
   const db = await getDrizzleClient()

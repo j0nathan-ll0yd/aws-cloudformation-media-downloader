@@ -4,13 +4,7 @@
  * Provides type-safe factories for AWS SDK response objects used in mocks.
  * Use these with aws-sdk-client-mock to configure consistent mock responses.
  *
- * Usage:
- * ```typescript
- * import {createSNSSubscribeResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
- *
- * snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
- * sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#aws-response-factories | Usage Examples}
  */
 
 import {v4 as uuidv4} from 'uuid'

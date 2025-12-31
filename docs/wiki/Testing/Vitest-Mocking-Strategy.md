@@ -250,6 +250,95 @@ Located at `test/helpers/aws-sdk-mock.ts`:
 
 These helpers integrate with the vendor wrapper architecture by injecting mock clients into `src/lib/vendor/AWS/clients.ts`.
 
+## Entity Fixtures
+
+Factory functions for creating mock entity rows in tests. Located at `test/helpers/entity-fixtures.ts`:
+
+```typescript
+import {createMockFile, createMockDevice, createMockUser} from '#test/helpers/entity-fixtures'
+import {createMockUserFile, createMockSession, createMockFileDownload} from '#test/helpers/entity-fixtures'
+
+// All defaults
+const file = createMockFile()
+const device = createMockDevice()
+const user = createMockUser()
+
+// Override specific fields
+const failedFile = createMockFile({status: 'Failed', size: 0})
+const customDevice = createMockDevice({name: "User's iPad", systemName: 'iPadOS'})
+const unverifiedUser = createMockUser({emailVerified: false})
+
+// Relationship entities
+const userFile = createMockUserFile({userId: 'user-123', fileId: 'file-456'})
+const session = createMockSession()
+const download = createMockFileDownload({status: 'Failed', lastError: 'Network timeout'})
+
+// Batch creation
+const files = createMockFiles(3)  // Creates 3 files with IDs file-1, file-2, file-3
+const devices = createMockDevices(2)  // Creates 2 devices
+```
+
+### Available Factories
+
+| Factory | Default Entity | Common Overrides |
+|---------|---------------|------------------|
+| `createMockFile()` | Downloaded video | `status`, `fileId`, `size` |
+| `createMockDevice()` | iPhone with APNS | `deviceId`, `name`, `token` |
+| `createMockUser()` | Verified Apple user | `id`, `email`, `emailVerified` |
+| `createMockUserFile()` | User-file link | `userId`, `fileId` |
+| `createMockUserDevice()` | User-device link | `userId`, `deviceId` |
+| `createMockSession()` | Valid session (24h) | `expiresAt`, `userId` |
+| `createMockIdentityProvider()` | Apple Sign In | `expiresAt`, `userId` |
+| `createMockFileDownload()` | Pending download | `status`, `retryCount`, `lastError` |
+| `createMockFiles(n)` | Multiple files | `status` (applied to all) |
+| `createMockDevices(n)` | Multiple devices | `name` (applied to all) |
+
+**Benefits**:
+- Type-safe with full inference from row types
+- Sensible defaults matching production data shapes
+- Composable overrides for specific test scenarios
+
+## AWS Response Factories
+
+Factory functions for creating AWS SDK response objects. Located at `test/helpers/aws-response-factories.ts`:
+
+```typescript
+import {createSNSPublishResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
+import {createSQSSendMessageResponse, createEventBridgePutEventsResponse} from '#test/helpers/aws-response-factories'
+
+// Configure mock responses
+snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
+snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
+eventBridgeMock.on(PutEventsCommand).resolves(createEventBridgePutEventsResponse())
+
+// Custom message IDs
+snsMock.on(PublishCommand).resolves(createSNSPublishResponse({messageId: 'custom-id'}))
+
+// Error scenarios
+eventBridgeMock.on(PutEventsCommand).resolves(
+  createEventBridgePutEventsFailureResponse('EventBridge failure')
+)
+```
+
+### Available Factories
+
+| Factory | Service | Response Type |
+|---------|---------|---------------|
+| `createSNSPublishResponse()` | SNS | PublishCommand result |
+| `createSNSSubscribeResponse()` | SNS | SubscribeCommand result |
+| `createSNSMetadataResponse()` | SNS | Delete/Unsubscribe result |
+| `createSNSEndpointResponse()` | SNS | CreatePlatformEndpoint result |
+| `createSNSSubscriptionListResponse()` | SNS | ListSubscriptionsByTopic result |
+| `createSQSSendMessageResponse()` | SQS | SendMessageCommand result |
+| `createEventBridgePutEventsResponse()` | EventBridge | PutEventsCommand result |
+| `createEventBridgePutEventsFailureResponse()` | EventBridge | Failed PutEvents result |
+
+**Benefits**:
+- Type-safe response objects matching AWS SDK types
+- Consistent across all Lambda tests using `aws-sdk-client-mock`
+- Easy customization via options parameters
+
 ## Related Patterns
 
 - [Mock Type Annotations](Mock-Type-Annotations.md) - TypeScript mock patterns

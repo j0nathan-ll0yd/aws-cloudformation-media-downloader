@@ -4,15 +4,7 @@
  * Factory functions for creating mock entity rows in tests.
  * Each factory provides sensible defaults that can be overridden.
  *
- * Usage:
- * ```typescript
- * import {createMockFile, createMockDevice, createMockUser} from '#test/helpers/entity-fixtures'
- *
- * const file = createMockFile()  // All defaults
- * const file2 = createMockFile({status: 'Failed', size: 0})  // Override specific fields
- * const device = createMockDevice({deviceId: 'custom-id'})
- * ```
- *
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#entity-fixtures | Usage Examples}
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
  */
 
@@ -118,13 +110,7 @@ export const DEFAULT_SESSION_ID = 'session-1234-5678-9abc-def012345678'
 
 /**
  * Create a mock file row with sensible defaults.
- *
  * Defaults to a "Downloaded" YouTube video with typical metadata.
- *
- * @example
- * const file = createMockFile()
- * const failedFile = createMockFile(\{status: 'Failed', size: 0\})
- * const customFile = createMockFile(\{fileId: 'custom123', title: 'My Video'\})
  */
 export function createMockFile(overrides: Partial<FileRow> = {}): FileRow {
   const fileId = overrides.fileId ?? DEFAULT_FILE_ID
@@ -146,12 +132,7 @@ export function createMockFile(overrides: Partial<FileRow> = {}): FileRow {
 
 /**
  * Create a mock device row with sensible defaults.
- *
  * Defaults to an iPhone with valid APNS token and endpoint ARN.
- *
- * @example
- * const device = createMockDevice()
- * const customDevice = createMockDevice(\{name: "User's iPad", systemName: 'iPadOS'\})
  */
 export function createMockDevice(overrides: Partial<DeviceRow> = {}): DeviceRow {
   const deviceId = overrides.deviceId ?? DEFAULT_DEVICE_ID
@@ -168,13 +149,7 @@ export function createMockDevice(overrides: Partial<DeviceRow> = {}): DeviceRow 
 
 /**
  * Create a mock user row with sensible defaults.
- *
  * Defaults to a verified user with Sign In With Apple fields populated.
- *
- * @example
- * const user = createMockUser()
- * const unverifiedUser = createMockUser(\{emailVerified: false\})
- * const customUser = createMockUser(\{id: 'custom-uuid', email: 'custom\@example.com'\})
  */
 export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
   const now = new Date()
@@ -195,12 +170,7 @@ export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
 
 /**
  * Create a mock user-file relationship row.
- *
  * Links a user to a file they have access to.
- *
- * @example
- * const userFile = createMockUserFile()
- * const customLink = createMockUserFile(\{userId: 'user-123', fileId: 'file-456'\})
  */
 export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFileRow {
   return {userId: DEFAULT_USER_ID, fileId: DEFAULT_FILE_ID, createdAt: new Date(), ...overrides}
@@ -208,12 +178,7 @@ export function createMockUserFile(overrides: Partial<UserFileRow> = {}): UserFi
 
 /**
  * Create a mock user-device relationship row.
- *
  * Links a user to a device they have registered.
- *
- * @example
- * const userDevice = createMockUserDevice()
- * const customLink = createMockUserDevice(\{userId: 'user-123', deviceId: 'device-456'\})
  */
 export function createMockUserDevice(overrides: Partial<UserDeviceRow> = {}): UserDeviceRow {
   return {userId: DEFAULT_USER_ID, deviceId: DEFAULT_DEVICE_ID, createdAt: new Date(), ...overrides}
@@ -221,12 +186,7 @@ export function createMockUserDevice(overrides: Partial<UserDeviceRow> = {}): Us
 
 /**
  * Create a mock session row with sensible defaults.
- *
  * Defaults to a valid session expiring in 24 hours.
- *
- * @example
- * const session = createMockSession()
- * const expiredSession = createMockSession(\{expiresAt: new Date(Date.now() - 3600000)\})
  */
 export function createMockSession(overrides: Partial<SessionRow> = {}): SessionRow {
   const now = new Date()
@@ -246,12 +206,7 @@ export function createMockSession(overrides: Partial<SessionRow> = {}): SessionR
 
 /**
  * Create a mock identity provider row.
- *
  * Defaults to a Sign In With Apple identity with valid tokens.
- *
- * @example
- * const idp = createMockIdentityProvider()
- * const expiredIdp = createMockIdentityProvider(\{expiresAt: Math.floor(Date.now() / 1000) - 3600\})
  */
 export function createMockIdentityProvider(overrides: Partial<IdentityProviderRow> = {}): IdentityProviderRow {
   return {
@@ -271,13 +226,7 @@ export function createMockIdentityProvider(overrides: Partial<IdentityProviderRo
 
 /**
  * Create a mock file download row.
- *
  * Defaults to a pending download with no errors.
- *
- * @example
- * const download = createMockFileDownload()
- * const failedDownload = createMockFileDownload(\{status: 'Failed', lastError: 'Network timeout'\})
- * const retrying = createMockFileDownload(\{retryCount: 2, retryAfter: new Date()\})
  */
 export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {}): FileDownloadRow {
   const now = new Date()
@@ -300,12 +249,7 @@ export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {})
 
 /**
  * Create multiple mock files with sequential IDs.
- *
  * Useful for testing list operations.
- *
- * @example
- * const files = createMockFiles(3)  // Creates 3 files with IDs file-1, file-2, file-3
- * const customFiles = createMockFiles(2, \{status: 'Queued'\})  // All files queued
  */
 export function createMockFiles(count: number, overrides: Partial<FileRow> = {}): FileRow[] {
   return Array.from({length: count}, (_, i) => createMockFile({fileId: `file-${i + 1}`, title: `Test Video ${i + 1}`, ...overrides}))
@@ -313,11 +257,7 @@ export function createMockFiles(count: number, overrides: Partial<FileRow> = {})
 
 /**
  * Create multiple mock devices with sequential IDs.
- *
  * Useful for testing multi-device scenarios.
- *
- * @example
- * const devices = createMockDevices(2)
  */
 export function createMockDevices(count: number, overrides: Partial<DeviceRow> = {}): DeviceRow[] {
   return Array.from({length: count}, (_, i) => createMockDevice({deviceId: `device-${i + 1}`, name: `Test Device ${i + 1}`, ...overrides}))

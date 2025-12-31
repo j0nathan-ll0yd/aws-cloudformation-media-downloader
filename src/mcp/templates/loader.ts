@@ -43,12 +43,6 @@ export function loadTemplate(templatePath: string): string {
  * @param template - Template string with placeholders
  * @param variables - Object with variable names and values
  * @returns Interpolated string
- *
- * @example
- * ```typescript
- * interpolate('Hello \{\{name\}\}!', {name: 'World'})
- * // Returns: 'Hello World!'
- * ```
  */
 export function interpolate(template: string, variables: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] ?? `{{${key}}}`)
