@@ -32,6 +32,7 @@
   "exclude": [
     "node_modules",
     "**/*.spec.ts",
+    "**/*.test.ts",
     "**/*.fixture.ts",
     "test/**/*",
     "./src/types/terraform.d.ts",

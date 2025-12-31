@@ -5,6 +5,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import type {MediaDownloaderEventType} from '#types/events'
 import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
+import {createAPIGatewayEvent, createFeedlyWebhookBody} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
 
@@ -12,17 +13,6 @@ const fakeUserId = uuidv4()
 
 // Create SQS mock - intercepts all SQSClient.send() calls
 const sqsMock = mockClient(SQSClient)
-
-// Type helper for aws-sdk-client-mock-vitest matchers
-type AwsMockExpect = (
-  mock: any // eslint-disable-line @typescript-eslint/no-explicit-any
-) => {
-  toHaveReceivedCommand: (cmd: unknown) => void
-  toHaveReceivedCommandTimes: (cmd: unknown, times: number) => void
-  toHaveReceivedCommandWith: (cmd: unknown, input: unknown) => void
-  not: {toHaveReceivedCommand: (cmd: unknown) => void}
-}
-const expectMock = expect as unknown as AwsMockExpect
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
@@ -58,9 +48,19 @@ vi.mock('#lib/vendor/AWS/S3', () => ({
   })
 }))
 
-const {default: handleFeedlyEventResponse} = await import('./fixtures/handleFeedlyEvent-200-OK.json', {assert: {type: 'json'}})
+// Feedly webhook body content
+const feedlyWebhookBody = {
+  articleFirstImageURL: 'https://i.ytimg.com/vi/7jEzw5WLiMI/maxresdefault.jpg',
+  articleCategories: 'YouTube',
+  articlePublishedAt: 'April 27, 2020 at 04:10PM',
+  articleTitle: 'WOW! Ariana Grande Meme Backlash & Meme War, COVID-19 Contact Tracing Problems, Mr. Beast & More',
+  articleURL: 'https://www.youtube.com/watch?v=wRG7lAGdRII',
+  createdAt: 'April 27, 2020 at 04:10PM',
+  sourceFeedURL: 'https://www.youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw',
+  sourceTitle: 'Philip DeFranco (uploads) on YouTube',
+  sourceURL: 'https://youtube.com/playlist?list=UUlFSU9_bUb4Rc6OYfTt5SPw'
+}
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 import {createFile, createFileDownload, createUserFile, getFile} from '#entities/queries'
 
@@ -73,7 +73,13 @@ describe('#WebhookFeedly', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
+    // Create event with Feedly webhook body
+    event = createAPIGatewayEvent({
+      path: '/webhooks/feedly',
+      httpMethod: 'POST',
+      body: createFeedlyWebhookBody({articleURL: feedlyWebhookBody.articleURL})
+    })
+
     vi.clearAllMocks()
     sqsMock.reset()
 
@@ -97,7 +103,7 @@ describe('#WebhookFeedly', () => {
 
   test('should continue processing even if user-file association fails', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    event.body = JSON.stringify(handleFeedlyEventResponse)
+    event.body = JSON.stringify(feedlyWebhookBody)
     vi.mocked(getFile).mockResolvedValue(null)
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
     vi.mocked(createUserFile).mockRejectedValue(new Error('Update failed'))
@@ -116,7 +122,7 @@ describe('#WebhookFeedly', () => {
   test('should return 401 when user ID is missing (unauthenticated)', async () => {
     // With Authorization header but unknown principalId = Unauthenticated
     event.requestContext.authorizer!.principalId = 'unknown'
-    event.body = JSON.stringify(handleFeedlyEventResponse)
+    event.body = JSON.stringify(feedlyWebhookBody)
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(401)
   })
@@ -124,7 +130,7 @@ describe('#WebhookFeedly', () => {
     // Without Authorization header = Anonymous
     delete event.headers.Authorization
     event.requestContext.authorizer!.principalId = 'unknown'
-    event.body = JSON.stringify(handleFeedlyEventResponse)
+    event.body = JSON.stringify(feedlyWebhookBody)
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(401)
   })
@@ -139,7 +145,7 @@ describe('#WebhookFeedly', () => {
   })
   test('should publish DownloadRequested event for new files', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    event.body = JSON.stringify(handleFeedlyEventResponse)
+    event.body = JSON.stringify(feedlyWebhookBody)
     vi.mocked(getFile).mockResolvedValue(null)
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
     vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
@@ -152,7 +158,7 @@ describe('#WebhookFeedly', () => {
       expect.objectContaining({
         fileId: expect.any(String),
         userId: fakeUserId,
-        sourceUrl: handleFeedlyEventResponse.articleURL,
+        sourceUrl: feedlyWebhookBody.articleURL,
         requestedAt: expect.any(String)
       }), expect.any(Object))
   })
@@ -160,7 +166,7 @@ describe('#WebhookFeedly', () => {
   describe('#AlreadyDownloadedFile', () => {
     test('should send notification and return 200 when file is already downloaded', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      event.body = JSON.stringify(handleFeedlyEventResponse)
+      event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an already-downloaded file
       vi.mocked(getFile).mockResolvedValue({
@@ -181,7 +187,7 @@ describe('#WebhookFeedly', () => {
       const body = JSON.parse(output.body)
       expect(body.body.status).toEqual('Dispatched')
       // Should send notification, NOT publish download event
-      expectMock(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
+      expect(sqsMock).toHaveReceivedCommandWith(SendMessageCommand, {
         QueueUrl: 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification',
         MessageBody: expect.stringContaining('DownloadReadyNotification')
       })
@@ -192,7 +198,7 @@ describe('#WebhookFeedly', () => {
   describe('#ExistingNonDownloadedFile', () => {
     test('should skip file creation but publish event for existing queued file', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      event.body = JSON.stringify(handleFeedlyEventResponse)
+      event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is still queued
       vi.mocked(getFile).mockResolvedValue({
@@ -218,7 +224,7 @@ describe('#WebhookFeedly', () => {
 
     test('should skip file creation for existing downloading file', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      event.body = JSON.stringify(handleFeedlyEventResponse)
+      event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is currently downloading
       vi.mocked(getFile).mockResolvedValue({
@@ -243,7 +249,7 @@ describe('#WebhookFeedly', () => {
   describe('#FailureHandling', () => {
     test('should return 500 when EventBridge publish fails', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      event.body = JSON.stringify(handleFeedlyEventResponse)
+      event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockResolvedValue(mockFileRow())
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
@@ -256,7 +262,7 @@ describe('#WebhookFeedly', () => {
 
     test('should return 500 when file creation fails', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      event.body = JSON.stringify(handleFeedlyEventResponse)
+      event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockRejectedValue(new Error('DynamoDB write failed'))
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())

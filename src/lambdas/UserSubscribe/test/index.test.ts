@@ -2,6 +2,7 @@ import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import {createAPIGatewayEvent, createSubscribeBody} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 
@@ -10,26 +11,20 @@ const fakeUserId = uuidv4()
 // Create SNS mock - intercepts all SNSClient.send() calls
 const snsMock = mockClient(SNSClient)
 
-// Type helper for aws-sdk-client-mock-vitest matchers
-type AwsMockExpect = (
-  mock: any // eslint-disable-line @typescript-eslint/no-explicit-any
-) => {
-  toHaveReceivedCommand: (cmd: unknown) => void
-  toHaveReceivedCommandWith: (cmd: unknown, input: unknown) => void
-  not: {toHaveReceivedCommand: (cmd: unknown) => void}
-}
-const expectMock = expect as unknown as AwsMockExpect
-
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
 describe('#UserSubscribe', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
-    event.headers.Authorization = 'Bearer test-token'
-    event.requestContext.authorizer!.principalId = fakeUserId
+    // Create event with subscribe request body
+    event = createAPIGatewayEvent({
+      path: '/subscribe',
+      httpMethod: 'POST',
+      body: createSubscribeBody(),
+      userId: fakeUserId
+    })
+
     snsMock.reset()
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
 
@@ -48,7 +43,7 @@ describe('#UserSubscribe', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
     expect(body.body).toHaveProperty('subscriptionArn')
-    expectMock(snsMock).toHaveReceivedCommand(SubscribeCommand)
+    expect(snsMock).toHaveReceivedCommand(SubscribeCommand)
   })
   test('should return an error if APNS is not configured', async () => {
     process.env.PLATFORM_APPLICATION_ARN = ''

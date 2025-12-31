@@ -5,6 +5,9 @@
  * This file runs before all tests via setupFiles in vitest.config.mts
  */
 
+// Import type augmentation for Vitest matchers (enables expect(mock).toHaveReceivedCommand())
+// The /extend export contains the Vitest module declaration that extends Matchers<T>
+import 'aws-sdk-client-mock-vitest/extend'
 import {expect} from 'vitest'
 import {allCustomMatcher} from 'aws-sdk-client-mock-vitest'
 

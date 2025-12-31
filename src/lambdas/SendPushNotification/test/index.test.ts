@@ -5,8 +5,9 @@ import {PublishCommand, SNSClient} from '@aws-sdk/client-sns'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {createPushNotificationEvent} from '#test/helpers/event-factories'
 
-const fakeUserId = uuidv4()
+const fakeUserId = '4722a099-bd68-4dd7-842e-0c1127638dd9'
 const fakeDeviceId = uuidv4()
 const getDeviceResponse = createMockDevice({deviceId: fakeDeviceId})
 const getUserDevicesByUserIdResponse = [createMockUserDevice({deviceId: fakeDeviceId, userId: fakeUserId})]
@@ -14,15 +15,9 @@ const getUserDevicesByUserIdResponse = [createMockUserDevice({deviceId: fakeDevi
 // Create SNS mock - intercepts all SNSClient.send() calls
 const snsMock = mockClient(SNSClient)
 
-// Type helper for aws-sdk-client-mock-vitest matchers
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AwsMockExpect = (mock: any) => {toHaveReceivedCommand: (cmd: unknown) => void; not: {toHaveReceivedCommand: (cmd: unknown) => void}}
-const expectMock = expect as unknown as AwsMockExpect
-
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getUserDevicesByUserId: vi.fn(), getDevice: vi.fn()}))
 
-const {default: eventMock} = await import('./fixtures/SQSEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 import {getDevice, getUserDevicesByUserId} from '#entities/queries'
 
@@ -30,7 +25,13 @@ describe('#SendPushNotification', () => {
   let event: SQSEvent
 
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock)) as SQSEvent
+    // Create push notification event with message ID for batch failure tracking
+    event = createPushNotificationEvent(fakeUserId, 'CGYBu-3Oi24', {
+      title: 'Philip DeFranco',
+      key: '20221017-[Philip DeFranco].mp4'
+    })
+    // Override the messageId to match expected batch failure ID
+    event.Records[0].messageId = 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'
     snsMock.reset()
   })
 
@@ -43,14 +44,13 @@ describe('#SendPushNotification', () => {
     vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
 
     // Configure SNS mock to return success
-    const publishSnsEventResponse = await import('./fixtures/publishSnsEvent-200-OK.json', {assert: {type: 'json'}})
-    snsMock.on(PublishCommand).resolves(publishSnsEventResponse.default)
+    snsMock.on(PublishCommand).resolves({MessageId: 'f03e3435-bc65-5006-8e52-62f8f1855e29'})
 
     const result = await handler(event, testContext)
 
     expect(result).toEqual({batchItemFailures: []})
     // Use aws-sdk-client-mock-vitest matchers for type-safe assertions
-    expectMock(snsMock).toHaveReceivedCommand(PublishCommand)
+    expect(snsMock).toHaveReceivedCommand(PublishCommand)
   })
 
   test('should exit gracefully if no devices exist', async () => {
@@ -60,7 +60,7 @@ describe('#SendPushNotification', () => {
 
     expect(result).toEqual({batchItemFailures: []})
     // Verify SNS was NOT called using the negative matcher
-    expectMock(snsMock).not.toHaveReceivedCommand(PublishCommand)
+    expect(snsMock).not.toHaveReceivedCommand(PublishCommand)
   })
 
   test('should exit if its a different notification type', async () => {
@@ -75,7 +75,7 @@ describe('#SendPushNotification', () => {
     const result = await handler(modifiedEvent, testContext)
 
     expect(result).toEqual({batchItemFailures: []})
-    expectMock(snsMock).not.toHaveReceivedCommand(PublishCommand)
+    expect(snsMock).not.toHaveReceivedCommand(PublishCommand)
   })
 
   describe('#AWSFailure', () => {
@@ -94,7 +94,7 @@ describe('#SendPushNotification', () => {
       const result = await handler(event, testContext)
 
       expect(result).toEqual({batchItemFailures: [{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}]})
-      expectMock(snsMock).not.toHaveReceivedCommand(PublishCommand)
+      expect(snsMock).not.toHaveReceivedCommand(PublishCommand)
     })
   })
 })
