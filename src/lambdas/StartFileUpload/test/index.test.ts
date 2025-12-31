@@ -9,6 +9,7 @@ import {createDownloadQueueEvent, createSQSEvent} from '#test/helpers/event-fact
 import {mockClient} from 'aws-sdk-client-mock'
 import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
 import {EventBridgeClient, PutEventsCommand} from '@aws-sdk/client-eventbridge'
+import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
 
 // Create AWS mocks - intercept all client.send() calls
 const sqsMock = mockClient(SQSClient)
@@ -90,9 +91,9 @@ describe('#StartFileUpload', () => {
     vi.mocked(upsertFile).mockResolvedValue(mockFileRow())
     vi.mocked(getUserFilesByFileId).mockResolvedValue([mockUserFileRow()])
 
-    // Configure AWS mock responses
-    sqsMock.on(SendMessageCommand).resolves({MessageId: 'msg-123'})
-    eventBridgeMock.on(PutEventsCommand).resolves({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
+    // Configure AWS mock responses using factories
+    sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
+    eventBridgeMock.on(PutEventsCommand).resolves(createEventBridgePutEventsResponse())
 
     process.env.BUCKET = 'test-bucket'
     process.env.AWS_REGION = 'us-west-2'

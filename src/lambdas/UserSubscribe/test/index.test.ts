@@ -5,6 +5,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import {createAPIGatewayEvent, createSubscribeBody} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 
 const fakeUserId = uuidv4()
 
@@ -23,10 +24,10 @@ describe('#UserSubscribe', () => {
     snsMock.reset()
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
 
-    // Configure SNS mock responses
-    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789:topic:uuid'})
-    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
-    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
+    // Configure SNS mock responses using factories
+    snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+    snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
+    snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
   })
 
   afterEach(() => {

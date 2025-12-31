@@ -4,6 +4,7 @@ import {createMockFile, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers
 import {createS3Event} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+import {createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
 
 // Create SQS mock - intercepts all SQSClient.send() calls
 const sqsMock = mockClient(SQSClient)
@@ -32,7 +33,7 @@ describe('#S3ObjectCreated', () => {
     // Default mock: file found, one user
     vi.mocked(getFilesByKey).mockResolvedValue([mockFileRow])
     vi.mocked(getUserFilesByFileId).mockResolvedValue([mockUserFileRow])
-    sqsMock.on(SendMessageCommand).resolves({MessageId: 'test-message-id'})
+    sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
   })
 
   afterEach(() => {
@@ -110,7 +111,7 @@ describe('#S3ObjectCreated', () => {
       ]
       vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
       // First call fails, second succeeds
-      sqsMock.on(SendMessageCommand).rejectsOnce(new Error('SQS send failed')).resolves({MessageId: 'success-id'})
+      sqsMock.on(SendMessageCommand).rejectsOnce(new Error('SQS send failed')).resolves(createSQSSendMessageResponse())
 
       const output = await handler(baseEvent, testContext)
       // Handler uses Promise.allSettled, so it continues despite failure

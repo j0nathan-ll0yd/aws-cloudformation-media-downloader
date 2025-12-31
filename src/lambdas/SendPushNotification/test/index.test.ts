@@ -6,6 +6,7 @@ import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 import {createPushNotificationEvent} from '#test/helpers/event-factories'
+import {createSNSPublishResponse} from '#test/helpers/aws-response-factories'
 
 const fakeUserId = '4722a099-bd68-4dd7-842e-0c1127638dd9'
 const fakeDeviceId = uuidv4()
@@ -40,8 +41,8 @@ describe('#SendPushNotification', () => {
     vi.mocked(getUserDevicesByUserId).mockResolvedValue(getUserDevicesByUserIdResponse)
     vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
 
-    // Configure SNS mock to return success
-    snsMock.on(PublishCommand).resolves({MessageId: 'f03e3435-bc65-5006-8e52-62f8f1855e29'})
+    // Configure SNS mock to return success using factory
+    snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
     const result = await handler(event, testContext)
 

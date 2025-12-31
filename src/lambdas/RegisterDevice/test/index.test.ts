@@ -12,6 +12,13 @@ import {
   UnsubscribeCommand
 } from '@aws-sdk/client-sns'
 import {createAPIGatewayEvent, createRegisterDeviceBody} from '#test/helpers/event-factories'
+import {createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {
+  createSNSEndpointResponse,
+  createSNSMetadataResponse,
+  createSNSSubscribeResponse,
+  createSNSSubscriptionListResponse
+} from '#test/helpers/aws-response-factories'
 
 const fakeUserId = uuidv4()
 
@@ -28,32 +35,14 @@ vi.mock('#lib/domain/device/device-service', () => ({
   unsubscribeEndpointToTopic: vi.fn()
 }))
 
-// SNS mock response factories
-const createEndpointResponse = {EndpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'}
-
-const listSubscriptionsResponse = {
-  Subscriptions: [{
-    SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:PushNotifications:subscription-id',
-    Owner: '123456789012',
-    Protocol: 'application',
-    Endpoint: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint',
-    TopicArn: 'arn:aws:sns:us-west-2:123456789012:PushNotifications'
-  }]
-}
-
-// Device query response mocks
-const existingDevicesResponse = [{
-  name: "Test User's iPhone",
-  systemName: 'iOS',
-  UUID: 'C49BA68B-E21A-4AEE-8D22-D99A2689B56A',
-  endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/existing',
-  systemVersion: '17.0',
-  token: 'existing-device-token'
-}]
-const noDevicesResponse: never[] = []
-
 const {handler} = await import('./../src')
 import {upsertDevice, upsertUserDevice} from '#entities/queries'
+
+// Reusable mock data - getUserDevices returns UserDevice[] (relationship records, not full Device objects)
+const existingUserDevices = [createMockUserDevice({userId: fakeUserId})]
+
+// Use a fixed endpoint ARN so CreatePlatformEndpoint and ListSubscriptionsByTopic responses match
+const testEndpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'
 
 describe('#RegisterDevice', () => {
   const context = testContext
@@ -64,16 +53,16 @@ describe('#RegisterDevice', () => {
     event = createAPIGatewayEvent({path: '/registerDevice', httpMethod: 'POST', body: createRegisterDeviceBody()})
 
     snsMock.reset()
-    getUserDevicesMock.mockReturnValue(existingDevicesResponse)
+    getUserDevicesMock.mockReturnValue(existingUserDevices)
     vi.mocked(upsertDevice).mockResolvedValue({} as ReturnType<typeof upsertDevice> extends Promise<infer T> ? T : never)
     vi.mocked(upsertUserDevice).mockResolvedValue({} as ReturnType<typeof upsertUserDevice> extends Promise<infer T> ? T : never)
 
-    // Configure SNS mock responses
-    snsMock.on(CreatePlatformEndpointCommand).resolves(createEndpointResponse)
-    snsMock.on(ListSubscriptionsByTopicCommand).resolves(listSubscriptionsResponse)
-    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789012:topic:uuid'})
-    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
-    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
+    // Configure SNS mock responses using factories - use same endpoint ARN for consistency
+    snsMock.on(CreatePlatformEndpointCommand).resolves(createSNSEndpointResponse({endpointArn: testEndpointArn}))
+    snsMock.on(ListSubscriptionsByTopicCommand).resolves(createSNSSubscriptionListResponse({subscriptions: [{Endpoint: testEndpointArn}]}))
+    snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+    snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
+    snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
 
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
     process.env.PUSH_NOTIFICATION_TOPIC_ARN = 'arn:aws:sns:us-west-2:203465012143:PushNotifications'
@@ -101,7 +90,7 @@ describe('#RegisterDevice', () => {
 
   test('(authenticated-first) should create an endpoint, store the device details, and unsubscribe from the unregistered topic (registered user, first)', async () => {
     event.requestContext.authorizer!.principalId = fakeUserId
-    getUserDevicesMock.mockReturnValue(noDevicesResponse)
+    getUserDevicesMock.mockReturnValue([])
     const output = await handler(event, context)
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
@@ -154,7 +143,7 @@ describe('#RegisterDevice', () => {
 
     test('AWS.SNS.listSubscriptionsByTopic = undefined', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       snsMock.on(ListSubscriptionsByTopicCommand).resolves(undefined as never)
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(503)
@@ -164,7 +153,7 @@ describe('#RegisterDevice', () => {
 
     test('AWS.SNS.listSubscriptionsByTopic = unexpected', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       snsMock.on(ListSubscriptionsByTopicCommand).resolves({Subscriptions: []})
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
@@ -176,7 +165,7 @@ describe('#RegisterDevice', () => {
   describe('#EdgeCases', () => {
     test('should handle device with very long token', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       // Device token is typically 64 hex characters
       const longToken = 'a'.repeat(256)
       event.body = createRegisterDeviceBody({token: longToken})
@@ -194,7 +183,7 @@ describe('#RegisterDevice', () => {
 
     test('should handle upsertDevice database failure', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       vi.mocked(upsertDevice).mockRejectedValue(new Error('Database write failed'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
@@ -202,7 +191,7 @@ describe('#RegisterDevice', () => {
 
     test('should handle upsertUserDevice database failure', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       vi.mocked(upsertUserDevice).mockRejectedValue(new Error('Database write failed'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
@@ -210,7 +199,7 @@ describe('#RegisterDevice', () => {
 
     test('should handle missing PUSH_NOTIFICATION_TOPIC_ARN', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
-      getUserDevicesMock.mockReturnValue(noDevicesResponse)
+      getUserDevicesMock.mockReturnValue([])
       delete process.env.PUSH_NOTIFICATION_TOPIC_ARN
       const output = await handler(event, context)
       // Should still work for device registration, topic subscription may fail

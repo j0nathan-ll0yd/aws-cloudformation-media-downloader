@@ -5,6 +5,8 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 import {mockClient} from 'aws-sdk-client-mock'
 import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
+import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 
 const fakeUserId = uuidv4()
 const fakeDevice1 = createMockDevice({deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1'})
@@ -37,7 +39,6 @@ vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUse
 
 vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 import {deleteUser, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 
@@ -47,13 +48,12 @@ describe('#UserDelete', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     snsMock.reset()
-    event = JSON.parse(JSON.stringify(eventMock))
-    event.requestContext.authorizer!.principalId = fakeUserId
+    event = createAPIGatewayEvent({path: '/users', httpMethod: 'DELETE', userId: fakeUserId})
 
-    // Configure SNS mock responses
-    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
-    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789:topic:uuid'})
-    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
+    // Configure SNS mock responses using factories
+    snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
+    snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+    snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
 
     // Set default mock return values
     deleteDeviceMock.mockResolvedValue(undefined)

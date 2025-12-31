@@ -8,6 +8,7 @@ import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/
 import {createAPIGatewayEvent, createFeedlyWebhookBody} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
 
 const fakeUserId = uuidv4()
 
@@ -83,9 +84,9 @@ describe('#WebhookFeedly', () => {
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'
     process.env.IDEMPOTENCY_TABLE_NAME = 'IdempotencyTable'
 
-    // Configure AWS mock responses
-    sqsMock.on(SendMessageCommand).resolves({MessageId: 'msg-123'})
-    publishEventWithRetryMock.mockResolvedValue({FailedEntryCount: 0, Entries: [{EventId: 'event-123'}]})
+    // Configure AWS mock responses using factories
+    sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
+    publishEventWithRetryMock.mockResolvedValue(createEventBridgePutEventsResponse())
 
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFile).mockResolvedValue(mockFileRow())

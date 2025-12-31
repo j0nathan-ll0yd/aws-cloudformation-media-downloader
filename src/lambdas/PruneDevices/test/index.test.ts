@@ -5,7 +5,7 @@ import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
 import {mockClient} from 'aws-sdk-client-mock'
 import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
-import {v4 as uuidv4} from 'uuid'
+import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 
 // Create SNS mock - intercepts all SNSClient.send() calls
 const snsMock = mockClient(SNSClient)
@@ -123,11 +123,11 @@ describe('#PruneDevices', () => {
   }
   const context = testContext
 
-  // Configure SNS mock responses for each test
+  // Configure SNS mock responses for each test using factories
   beforeEach(() => {
-    snsMock.on(DeleteEndpointCommand).resolves({$metadata: {requestId: uuidv4()}})
-    snsMock.on(SubscribeCommand).resolves({SubscriptionArn: 'arn:aws:sns:us-west-2:123456789:topic:uuid'})
-    snsMock.on(UnsubscribeCommand).resolves({$metadata: {requestId: uuidv4()}})
+    snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
+    snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+    snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
   })
 
   afterEach(() => {
