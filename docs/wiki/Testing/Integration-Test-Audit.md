@@ -11,8 +11,8 @@ Integration tests are classified by what services they actually exercise:
 
 | Classification | Description | Count |
 |----------------|-------------|-------|
-| **TRUE_INTEGRATION** | Uses real LocalStack services, no AWS vendor mocking | 16 |
-| **HYBRID** | Uses real services but mocks external APIs (APNS, OAuth) | 2 |
+| **TRUE_INTEGRATION** | Uses real LocalStack services, no AWS vendor mocking | 17 |
+| **HYBRID** | Uses real services but mocks external APIs (APNS) | 1 |
 
 ## Test Inventory
 
@@ -38,6 +38,7 @@ These tests use real LocalStack services with no AWS vendor wrapper mocking:
 | `userDelete.cascade.integration.test.ts` | - | PostgreSQL (mocked entities) |
 | `failures/externalServices.failure.integration.test.ts` | SNS, SQS | PostgreSQL |
 | `failures/database.failure.integration.test.ts` | SNS | PostgreSQL |
+| `auth.flow.integration.test.ts` | Better Auth (Apple JWKS mocked) | PostgreSQL |
 
 ### HYBRID Tests
 
@@ -46,7 +47,6 @@ These tests use real LocalStack but mock external services that cannot be emulat
 | Test File | Real Services | Mocked (External) | Reason |
 |-----------|--------------|-------------------|--------|
 | `pruneDevices.workflow.integration.test.ts` | SNS, PostgreSQL | APNS (apns2) | Apple Push Notification Service is external |
-| `auth.flow.integration.test.ts` | PostgreSQL | Better Auth OAuth | OAuth requires external identity providers |
 
 ## Services Coverage Matrix
 
@@ -66,11 +66,25 @@ The following mocks are acceptable in integration tests because they represent e
 | Mock | Reason | Tests Using |
 |------|--------|-------------|
 | **APNS (apns2)** | Apple Push Notification Service - external | pruneDevices |
-| **OAuth Providers** | Apple/Google Sign-In - external | auth.flow |
+| **Apple JWKS (mock-jwks)** | Apple's public key endpoint - external network call | auth.flow |
 | **GitHub API** | External service for issue creation | userDelete.cascade |
 | **API Gateway Rate Limiting** | LocalStack limitation | apiGatewayAuthorizer, apiGatewayAuth |
 
 ## Migration History
+
+### December 2024 - Auth Flow True Integration
+
+Converted auth.flow from HYBRID (mocking entire Better Auth) to TRUE_INTEGRATION:
+
+| Test | Before | After |
+|------|--------|-------|
+| auth.flow | Mock Better Auth signInSocial | Real Better Auth, mock Apple JWKS only |
+
+**Key changes:**
+- Added `mock-jwks` package to mock Apple's JWKS endpoint (`https://appleid.apple.com/auth/keys`)
+- Created `test/integration/helpers/apple-jwks-mock.ts` helper for generating valid Apple ID tokens
+- Updated `globalSetup.ts` to add proper column defaults for Better Auth compatibility
+- Real Better Auth code now executes against real PostgreSQL
 
 ### December 2024 - Mock Removal Sprint
 

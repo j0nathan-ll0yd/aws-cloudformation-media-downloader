@@ -127,150 +127,20 @@ export async function closeTestDb(): Promise<void> {
  * Create all tables in the worker's schema.
  * Run this in beforeAll() of integration tests.
  *
- * NOTE: Uses TEXT for UUID columns instead of UUID type to avoid race conditions
- * when parallel tests try to create UUID types simultaneously.
- * The Drizzle schema uses UUID, but TEXT works for integration tests.
+ * CONVENTION: Migrations are the single source of truth for SQL.
+ * Tables are created by globalSetup.ts from migrations/0001_initial_schema.sql.
+ * This function only ensures search_path is set for the current connection.
+ *
+ * DO NOT duplicate SQL table definitions here.
+ * All schema definitions belong in migrations/0001_initial_schema.sql.
  */
 export async function createAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
   // Set search_path for this connection to use worker's schema
+  // Tables are already created by globalSetup from migrations
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
-
-  // Create tables in worker schema (parents first)
-  // Using TEXT for UUID columns to avoid parallel test race conditions
-  await db.execute(sql.raw(`
-    CREATE TABLE IF NOT EXISTS ${schema}.users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-      name TEXT,
-      image TEXT,
-      first_name TEXT,
-      last_name TEXT,
-      apple_device_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.identity_providers (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      provider_user_id TEXT NOT NULL,
-      email TEXT NOT NULL,
-      email_verified BOOLEAN NOT NULL,
-      is_private_email BOOLEAN NOT NULL,
-      access_token TEXT NOT NULL,
-      refresh_token TEXT NOT NULL,
-      token_type TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.files (
-      file_id TEXT PRIMARY KEY,
-      size INTEGER NOT NULL DEFAULT 0,
-      author_name TEXT NOT NULL,
-      author_user TEXT NOT NULL,
-      publish_date TEXT NOT NULL,
-      description TEXT NOT NULL,
-      key TEXT NOT NULL,
-      url TEXT,
-      content_type TEXT NOT NULL,
-      title TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'Queued'
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.devices (
-      device_id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      token TEXT NOT NULL,
-      system_version TEXT NOT NULL,
-      system_name TEXT NOT NULL,
-      endpoint_arn TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.sessions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      token TEXT NOT NULL,
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      ip_address TEXT,
-      user_agent TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.accounts (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      account_id TEXT NOT NULL,
-      provider_id TEXT NOT NULL,
-      access_token TEXT,
-      refresh_token TEXT,
-      access_token_expires_at TIMESTAMP WITH TIME ZONE,
-      refresh_token_expires_at TIMESTAMP WITH TIME ZONE,
-      scope TEXT,
-      id_token TEXT,
-      password TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.verification (
-      id TEXT PRIMARY KEY,
-      identifier TEXT NOT NULL,
-      value TEXT NOT NULL,
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.file_downloads (
-      file_id TEXT PRIMARY KEY,
-      status TEXT NOT NULL DEFAULT 'Pending',
-      retry_count INTEGER NOT NULL DEFAULT 0,
-      max_retries INTEGER NOT NULL DEFAULT 5,
-      retry_after TIMESTAMP WITH TIME ZONE,
-      error_category TEXT,
-      last_error TEXT,
-      scheduled_release_time TIMESTAMP WITH TIME ZONE,
-      source_url TEXT,
-      correlation_id TEXT,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.user_files (
-      user_id TEXT NOT NULL,
-      file_id TEXT NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id, file_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ${schema}.user_devices (
-      user_id TEXT NOT NULL,
-      device_id TEXT NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (user_id, device_id)
-    );
-
-    -- Indexes
-    CREATE INDEX IF NOT EXISTS ${schema}_users_email_idx ON ${schema}.users(email);
-    CREATE INDEX IF NOT EXISTS ${schema}_users_apple_device_idx ON ${schema}.users(apple_device_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_identity_providers_user_idx ON ${schema}.identity_providers(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_files_key_idx ON ${schema}.files(key);
-    CREATE INDEX IF NOT EXISTS ${schema}_file_downloads_status_idx ON ${schema}.file_downloads(status, retry_after);
-    CREATE INDEX IF NOT EXISTS ${schema}_sessions_user_idx ON ${schema}.sessions(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_sessions_token_idx ON ${schema}.sessions(token);
-    CREATE INDEX IF NOT EXISTS ${schema}_accounts_user_idx ON ${schema}.accounts(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_accounts_provider_idx ON ${schema}.accounts(provider_id, account_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_verification_identifier_idx ON ${schema}.verification(identifier);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_files_user_idx ON ${schema}.user_files(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_files_file_idx ON ${schema}.user_files(file_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_user_idx ON ${schema}.user_devices(user_id);
-    CREATE INDEX IF NOT EXISTS ${schema}_user_devices_device_idx ON ${schema}.user_devices(device_id);
-  `))
 }
 
 /**

@@ -29,9 +29,15 @@ function getSchemaPrefix(): string {
 
 /**
  * Read and adapt migration SQL for a specific schema.
- * - Adds schema prefix to all table names
- * - Converts Aurora DSQL specific syntax for regular PostgreSQL
- * - Converts UUID to TEXT for test simplicity
+ *
+ * CONVENTION: Migrations are the single source of truth for SQL.
+ * This function only applies minimal transformations needed for test environment:
+ * - Schema prefix for worker isolation (parallel test execution)
+ * - Aurora DSQL → PostgreSQL syntax (CREATE INDEX ASYNC → CREATE INDEX)
+ * - UUID → TEXT for test simplicity with regular PostgreSQL
+ *
+ * DO NOT add DEFAULT NULL or other schema modifications here.
+ * All schema definitions belong in migrations/0001_initial_schema.sql.
  */
 function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   let adapted = migrationSql
@@ -51,7 +57,7 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
     'user_devices'
   ]
 
-  // Add schema prefix to table references
+  // Add schema prefix to table references (for worker isolation)
   for (const table of tables) {
     // Match table name in CREATE TABLE, CREATE INDEX, ON clauses
     // Use word boundaries to avoid partial matches
@@ -67,12 +73,12 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
   }
 
   // Convert Aurora DSQL specific syntax for regular PostgreSQL:
-  // - CREATE INDEX ASYNC → CREATE INDEX
+  // - CREATE INDEX ASYNC → CREATE INDEX (Aurora DSQL uses async index creation)
   adapted = adapted.replace(/CREATE INDEX ASYNC/g, 'CREATE INDEX')
 
-  // Convert UUID with gen_random_uuid() to TEXT for test simplicity
-  // (Tests use crypto.randomUUID() to generate IDs)
-  adapted = adapted.replace(/UUID PRIMARY KEY DEFAULT gen_random_uuid\(\)/g, 'TEXT PRIMARY KEY')
+  // Convert UUID to TEXT for test simplicity with regular PostgreSQL
+  // Better Auth uses `generateId: false` which sends DEFAULT for id columns
+  adapted = adapted.replace(/UUID PRIMARY KEY DEFAULT gen_random_uuid\(\)/g, 'TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text')
   adapted = adapted.replace(/UUID NOT NULL/g, 'TEXT NOT NULL')
 
   return adapted

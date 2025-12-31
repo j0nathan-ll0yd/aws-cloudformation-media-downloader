@@ -169,6 +169,7 @@
     "fastembed": "^2.1.0",
     "glob": "^13.0.0",
     "husky": "^9.1.7",
+    "mock-jwks": "^3.3.0",
     "quicktype": "^23.2.6",
     "redoc": "^2.5.2",
     "repomix": "^1.11.0",
