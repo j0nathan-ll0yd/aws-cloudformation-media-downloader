@@ -32,7 +32,7 @@ export const deleteTestPlatformApplication = deletePlatformApplication
 export const createTestEndpoint = createPlatformEndpoint
 export const deleteTestEndpoint = deleteEndpoint
 export const isEndpointEnabled = getEndpointEnabled
-export {publishToEndpoint, publishToTopic, subscribeQueueToTopic, subscribeEndpointToTopic}
+export { publishToEndpoint, publishToTopic, subscribeEndpointToTopic, subscribeQueueToTopic }
 
 /**
  * Lists all endpoints for a platform application

@@ -61,21 +61,11 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     test('should delete Completed file downloads older than 24 hours', async () => {
       // Create an expired Completed download (25 hours old)
       const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
-      await insertFileDownload({
-        fileId: 'expired-completed',
-        status: DownloadStatus.Completed,
-        updatedAt: expiredTime,
-        createdAt: expiredTime
-      })
+      await insertFileDownload({fileId: 'expired-completed', status: DownloadStatus.Completed, updatedAt: expiredTime, createdAt: expiredTime})
 
       // Create a recent Completed download (1 hour old - should NOT be deleted)
       const recentTime = new Date(Date.now() - 1 * 60 * 60 * 1000)
-      await insertFileDownload({
-        fileId: 'recent-completed',
-        status: DownloadStatus.Completed,
-        updatedAt: recentTime,
-        createdAt: recentTime
-      })
+      await insertFileDownload({fileId: 'recent-completed', status: DownloadStatus.Completed, updatedAt: recentTime, createdAt: recentTime})
 
       // Verify both exist before cleanup
       const beforeDownloads = await getFileDownloads()
@@ -95,12 +85,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     test('should delete Failed file downloads older than 24 hours', async () => {
       // Create an expired Failed download (25 hours old)
       const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
-      await insertFileDownload({
-        fileId: 'expired-failed',
-        status: DownloadStatus.Failed,
-        updatedAt: expiredTime,
-        createdAt: expiredTime
-      })
+      await insertFileDownload({fileId: 'expired-failed', status: DownloadStatus.Failed, updatedAt: expiredTime, createdAt: expiredTime})
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
@@ -113,20 +98,10 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
     test('should not delete Pending or InProgress file downloads regardless of age', async () => {
       // Create old Pending download (25 hours old - should NOT be deleted)
       const oldTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
-      await insertFileDownload({
-        fileId: 'old-pending',
-        status: DownloadStatus.Pending,
-        updatedAt: oldTime,
-        createdAt: oldTime
-      })
+      await insertFileDownload({fileId: 'old-pending', status: DownloadStatus.Pending, updatedAt: oldTime, createdAt: oldTime})
 
       // Create old InProgress download (25 hours old - should NOT be deleted)
-      await insertFileDownload({
-        fileId: 'old-inprogress',
-        status: DownloadStatus.InProgress,
-        updatedAt: oldTime,
-        createdAt: oldTime
-      })
+      await insertFileDownload({fileId: 'old-inprogress', status: DownloadStatus.InProgress, updatedAt: oldTime, createdAt: oldTime})
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
@@ -143,18 +118,10 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       const userId = crypto.randomUUID()
 
       // Create an expired session (expired 1 hour ago)
-      await insertSession({
-        userId,
-        token: 'expired-token',
-        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
-      })
+      await insertSession({userId, token: 'expired-token', expiresAt: new Date(Date.now() - 60 * 60 * 1000)})
 
       // Create a valid session (expires in 1 hour - should NOT be deleted)
-      await insertSession({
-        userId,
-        token: 'valid-token',
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
-      })
+      await insertSession({userId, token: 'valid-token', expiresAt: new Date(Date.now() + 60 * 60 * 1000)})
 
       const beforeSessions = await getSessions()
       expect(beforeSessions).toHaveLength(2)
@@ -172,11 +139,7 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
 
       // Create 3 expired sessions
       for (let i = 0; i < 3; i++) {
-        await insertSession({
-          userId,
-          token: `expired-token-${i}`,
-          expiresAt: new Date(Date.now() - (i + 1) * 60 * 60 * 1000)
-        })
+        await insertSession({userId, token: `expired-token-${i}`, expiresAt: new Date(Date.now() - (i + 1) * 60 * 60 * 1000)})
       }
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
@@ -191,18 +154,10 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
   describe('Verification tokens cleanup', () => {
     test('should delete expired verification tokens', async () => {
       // Create an expired verification token
-      await insertVerification({
-        identifier: 'test@example.com',
-        value: 'expired-token',
-        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
-      })
+      await insertVerification({identifier: 'test@example.com', value: 'expired-token', expiresAt: new Date(Date.now() - 60 * 60 * 1000)})
 
       // Create a valid verification token (should NOT be deleted)
-      await insertVerification({
-        identifier: 'test2@example.com',
-        value: 'valid-token',
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
-      })
+      await insertVerification({identifier: 'test2@example.com', value: 'valid-token', expiresAt: new Date(Date.now() + 60 * 60 * 1000)})
 
       const beforeTokens = await getVerificationTokens()
       expect(beforeTokens).toHaveLength(2)
@@ -222,24 +177,11 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
       const expiredTime = new Date(Date.now() - 25 * 60 * 60 * 1000)
 
       // Create one of each expired record type
-      await insertFileDownload({
-        fileId: 'expired-download',
-        status: DownloadStatus.Completed,
-        updatedAt: expiredTime,
-        createdAt: expiredTime
-      })
+      await insertFileDownload({fileId: 'expired-download', status: DownloadStatus.Completed, updatedAt: expiredTime, createdAt: expiredTime})
 
-      await insertSession({
-        userId,
-        token: 'expired-session',
-        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
-      })
+      await insertSession({userId, token: 'expired-session', expiresAt: new Date(Date.now() - 60 * 60 * 1000)})
 
-      await insertVerification({
-        identifier: 'cleanup@example.com',
-        value: 'expired-verification',
-        expiresAt: new Date(Date.now() - 60 * 60 * 1000)
-      })
+      await insertVerification({identifier: 'cleanup@example.com', value: 'expired-verification', expiresAt: new Date(Date.now() - 60 * 60 * 1000)})
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())
 
@@ -265,21 +207,12 @@ describe('CleanupExpiredRecords Workflow Integration Tests', () => {
 
       // Create 20 expired file downloads
       for (let i = 0; i < 20; i++) {
-        await insertFileDownload({
-          fileId: `batch-download-${i}`,
-          status: DownloadStatus.Completed,
-          updatedAt: expiredTime,
-          createdAt: expiredTime
-        })
+        await insertFileDownload({fileId: `batch-download-${i}`, status: DownloadStatus.Completed, updatedAt: expiredTime, createdAt: expiredTime})
       }
 
       // Create 15 expired sessions
       for (let i = 0; i < 15; i++) {
-        await insertSession({
-          userId,
-          token: `batch-session-${i}`,
-          expiresAt: new Date(Date.now() - 60 * 60 * 1000)
-        })
+        await insertSession({userId, token: `batch-session-${i}`, expiresAt: new Date(Date.now() - 60 * 60 * 1000)})
       }
 
       const result = await handler(createMockScheduledEvent('cleanup-test'), createMockContext())

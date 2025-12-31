@@ -28,15 +28,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
-import {
-  closeTestDb,
-  createAllTables,
-  getTestDbAsync,
-  insertFile,
-  insertUser,
-  linkUserFile,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 
 // Import handler - uses real Drizzle client via getDrizzleClient()
 const {handler} = await import('#lambdas/ListFiles/src/index')
@@ -47,8 +39,8 @@ function createListFilesEvent(userId: string | undefined, userStatus: UserStatus
     headers: userId && userStatus === UserStatus.Authenticated
       ? {Authorization: 'Bearer test-token'}
       : userStatus === UserStatus.Unauthenticated
-        ? {Authorization: 'Bearer invalid-token'}
-        : {},
+      ? {Authorization: 'Bearer invalid-token'}
+      : {},
     multiValueHeaders: {},
     httpMethod: 'GET',
     isBase64Encoded: false,
@@ -99,7 +91,14 @@ describe('ListFiles Workflow Integration Tests', () => {
     await insertUser({userId, email: 'listfiles@example.com'})
 
     await insertFile({fileId: 'video-1', key: 'video-1.mp4', status: FileStatus.Downloaded, title: 'Video 1', publishDate: '2024-01-03T00:00:00.000Z'})
-    await insertFile({fileId: 'video-2', key: 'video-2.mp4', status: FileStatus.Downloaded, title: 'Video 2', size: 10485760, publishDate: '2024-01-02T00:00:00.000Z'})
+    await insertFile({
+      fileId: 'video-2',
+      key: 'video-2.mp4',
+      status: FileStatus.Downloaded,
+      title: 'Video 2',
+      size: 10485760,
+      publishDate: '2024-01-02T00:00:00.000Z'
+    })
 
     await linkUserFile(userId, 'video-1')
     await linkUserFile(userId, 'video-2')

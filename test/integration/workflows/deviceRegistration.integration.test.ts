@@ -32,7 +32,13 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
-import {createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic, generateIsolatedAppName} from '../helpers/sns-helpers'
+import {
+  createTestPlatformApplication,
+  createTestTopic,
+  deleteTestPlatformApplication,
+  deleteTestTopic,
+  generateIsolatedAppName
+} from '../helpers/sns-helpers'
 
 // Mock entity queries - must use vi.hoisted for ESM
 // NOTE: These remain mocked because handlers use their own Drizzle connection

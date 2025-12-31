@@ -20,7 +20,14 @@ import {UserStatus} from '#types/enums'
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
-import {createTestEndpoint, createTestPlatformApplication, createTestTopic, deleteTestPlatformApplication, deleteTestTopic, generateIsolatedAppName} from '../helpers/sns-helpers'
+import {
+  createTestEndpoint,
+  createTestPlatformApplication,
+  createTestTopic,
+  deleteTestPlatformApplication,
+  deleteTestTopic,
+  generateIsolatedAppName
+} from '../helpers/sns-helpers'
 
 // Import handler WITHOUT mocks - uses real LocalStack SNS
 const {handler} = await import('#lambdas/UserSubscribe/src/index')

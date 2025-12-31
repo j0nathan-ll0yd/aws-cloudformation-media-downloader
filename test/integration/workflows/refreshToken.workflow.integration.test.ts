@@ -21,15 +21,7 @@ import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {
-  closeTestDb,
-  createAllTables,
-  getSessionById,
-  getTestDbAsync,
-  insertSession,
-  insertUser,
-  truncateAllTables
-} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
@@ -64,14 +56,8 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertSession({id: sessionId, userId, token, expiresAt: originalExpiry})
 
     // Act
-    const result = await handler(
-      createMockAPIGatewayProxyEvent({
-        path: '/auth/refresh',
-        httpMethod: 'POST',
-        headers: {Authorization: `Bearer ${token}`}
-      }),
-      mockContext
-    )
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+      mockContext)
 
     // Assert
     expect(result.statusCode).toBe(200)
@@ -91,10 +77,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
   })
 
   test('should return 401 when Authorization header is missing', async () => {
-    const result = await handler(
-      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST'}),
-      mockContext
-    )
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST'}), mockContext)
 
     expect(result.statusCode).toBe(401)
     const response = JSON.parse(result.body)
@@ -103,11 +86,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
 
   test('should return 401 for invalid token format', async () => {
     const result = await handler(
-      createMockAPIGatewayProxyEvent({
-        path: '/auth/refresh',
-        httpMethod: 'POST',
-        headers: {Authorization: 'invalid-token-format'}
-      }),
+      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: 'invalid-token-format'}}),
       mockContext
     )
 
@@ -125,14 +104,8 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertSession({id: sessionId, userId, token, expiresAt: expiredTime})
 
     // Act
-    const result = await handler(
-      createMockAPIGatewayProxyEvent({
-        path: '/auth/refresh',
-        httpMethod: 'POST',
-        headers: {Authorization: `Bearer ${token}`}
-      }),
-      mockContext
-    )
+    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
+      mockContext)
 
     // Assert
     expect(result.statusCode).toBe(401)
@@ -142,11 +115,7 @@ describe('RefreshToken Workflow Integration Tests', () => {
     const nonExistentToken = crypto.randomUUID()
 
     const result = await handler(
-      createMockAPIGatewayProxyEvent({
-        path: '/auth/refresh',
-        httpMethod: 'POST',
-        headers: {Authorization: `Bearer ${nonExistentToken}`}
-      }),
+      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${nonExistentToken}`}}),
       mockContext
     )
 
