@@ -21,6 +21,18 @@ process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 
 /**
+ * Suppress Powertools metrics EMF JSON output during tests
+ * Without this, CloudWatch Metrics JSON is emitted even with LOG_LEVEL=SILENT
+ */
+process.env.POWERTOOLS_METRICS_DISABLED = 'true'
+
+/**
+ * Set LOG_LEVEL to SILENT by default for integration tests
+ * This suppresses fixture markers, LocalStack health logs, and Powertools logs
+ */
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'SILENT'
+
+/**
  * Wait for LocalStack to be ready
  * Checks LocalStack health endpoint before running tests
  */
