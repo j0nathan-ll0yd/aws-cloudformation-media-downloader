@@ -77,7 +77,7 @@ export function createAPIGatewayEvent(options: APIGatewayEventOptions = {}): Cus
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'User-Agent': 'MediaDownloader/1.0 iOS/17.0',
-    'Authorization': 'Bearer test-token'
+    Authorization: 'Bearer test-token'
   }
 
   return {
@@ -92,12 +92,7 @@ export function createAPIGatewayEvent(options: APIGatewayEventOptions = {}): Cus
     stageVariables: null,
     requestContext: {
       resourceId: 'test-resource',
-      authorizer: {
-        principalId,
-        userId: isAuthenticated ? userId : undefined,
-        userStatus: isAuthenticated ? 0 : undefined,
-        integrationLatency: 100
-      },
+      authorizer: {principalId, userId: isAuthenticated ? userId : undefined, userStatus: isAuthenticated ? 0 : undefined, integrationLatency: 100},
       resourcePath: path,
       httpMethod,
       extendedRequestId: 'test-extended-request-id',
@@ -176,12 +171,10 @@ function createSQSRecord(options: SQSRecordOptions): SQSRecord {
       SenderId: 'AIDAIT2UOQQY3AUEKVGXU',
       ApproximateFirstReceiveTimestamp: String(Date.now())
     },
-    messageAttributes: Object.fromEntries(
-      Object.entries(messageAttributes).map(([key, value]) => [
-        key,
-        {...value, stringListValues: [], binaryListValues: []}
-      ])
-    ),
+    messageAttributes: Object.fromEntries(Object.entries(messageAttributes).map(([key, value]) => [
+      key,
+      {...value, stringListValues: [], binaryListValues: []}
+    ])),
     md5OfBody: 'test-md5',
     eventSource: 'aws:sqs',
     eventSourceARN: `arn:aws:sqs:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:${queueName}`,
@@ -208,13 +201,7 @@ export function createDownloadQueueEvent(
     attempt = 1
   } = options ?? {}
 
-  return createSQSEvent({
-    records: [{
-      messageId,
-      body: {fileId, sourceUrl, correlationId, userId, attempt},
-      queueName: 'DownloadQueue'
-    }]
-  })
+  return createSQSEvent({records: [{messageId, body: {fileId, sourceUrl, correlationId, userId, attempt}, queueName: 'DownloadQueue'}]})
 }
 
 /** Creates an SQS event for SendPushNotification (DownloadReadyNotification). */
@@ -233,10 +220,7 @@ export function createPushNotificationEvent(
   return createSQSEvent({
     records: [{
       messageId: `msg-${fileId}`,
-      body: {
-        notificationType: 'DownloadReadyNotification',
-        file: {fileId, key, size, url}
-      },
+      body: {notificationType: 'DownloadReadyNotification', file: {fileId, key, size, url}},
       messageAttributes: {
         notificationType: {stringValue: 'DownloadReadyNotification', dataType: 'String'},
         userId: {stringValue: userId, dataType: 'String'},
@@ -295,17 +279,8 @@ function createS3Record(options: S3RecordOptions): S3EventRecord {
     s3: {
       s3SchemaVersion: '1.0',
       configurationId: 'test-config',
-      bucket: {
-        name: bucket,
-        ownerIdentity: {principalId: 'EXAMPLE'},
-        arn: `arn:aws:s3:::${bucket}`
-      },
-      object: {
-        key: encodeURIComponent(key),
-        size,
-        eTag: 'test-etag',
-        sequencer: '123456789'
-      }
+      bucket: {name: bucket, ownerIdentity: {principalId: 'EXAMPLE'}, arn: `arn:aws:s3:::${bucket}`},
+      object: {key: encodeURIComponent(key), size, eTag: 'test-etag', sequencer: '123456789'}
     }
   }
 }
@@ -357,13 +332,7 @@ export function createScheduledEvent(options: ScheduledEventOptions = {}): Sched
 /**
  * Creates a RegisterDevice request body.
  */
-export function createRegisterDeviceBody(options?: {
-  token?: string
-  deviceId?: string
-  systemVersion?: string
-  systemName?: string
-  name?: string
-}): string {
+export function createRegisterDeviceBody(options?: {token?: string; deviceId?: string; systemVersion?: string; systemName?: string; name?: string}): string {
   return JSON.stringify({
     token: options?.token ?? '1270ac093113154918d1ae96e90247d068b98766842654b3cc2400c7342dc4ba',
     deviceId: options?.deviceId ?? '67C431DE-37D2-4BBA-9055-E9D2766517E1',
@@ -376,10 +345,7 @@ export function createRegisterDeviceBody(options?: {
 /**
  * Creates a UserSubscribe request body.
  */
-export function createSubscribeBody(options?: {
-  endpointArn?: string
-  topicArn?: string
-}): string {
+export function createSubscribeBody(options?: {endpointArn?: string; topicArn?: string}): string {
   return JSON.stringify({
     endpointArn: options?.endpointArn ?? `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:endpoint/APNS/app/device-uuid`,
     topicArn: options?.topicArn ?? `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:PushNotifications`
@@ -389,10 +355,6 @@ export function createSubscribeBody(options?: {
 /**
  * Creates a WebhookFeedly request body.
  */
-export function createFeedlyWebhookBody(options?: {
-  articleURL?: string
-}): string {
-  return JSON.stringify({
-    articleURL: options?.articleURL ?? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  })
+export function createFeedlyWebhookBody(options?: {articleURL?: string}): string {
+  return JSON.stringify({articleURL: options?.articleURL ?? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'})
 }

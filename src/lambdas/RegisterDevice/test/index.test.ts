@@ -29,9 +29,7 @@ vi.mock('#lib/domain/device/device-service', () => ({
 }))
 
 // SNS mock response factories
-const createEndpointResponse = {
-  EndpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'
-}
+const createEndpointResponse = {EndpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'}
 
 const listSubscriptionsResponse = {
   Subscriptions: [{
@@ -63,11 +61,7 @@ describe('#RegisterDevice', () => {
 
   beforeEach(() => {
     // Create event with device registration body
-    event = createAPIGatewayEvent({
-      path: '/registerDevice',
-      httpMethod: 'POST',
-      body: createRegisterDeviceBody()
-    })
+    event = createAPIGatewayEvent({path: '/registerDevice', httpMethod: 'POST', body: createRegisterDeviceBody()})
 
     snsMock.reset()
     getUserDevicesMock.mockReturnValue(existingDevicesResponse)

@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "precheck": "pnpm run check-types && pnpm run lint",
+    "precheck": "pnpm run check-types && pnpm run lint && pnpm run format:check",
     "check-types": "tsc --project ./tsconfig.json",
     "check-test-types": "tsc --project ./tsconfig.test.json --noEmit",
     "generate-graph": "node --experimental-strip-types scripts/generateDependencyGraph.ts",

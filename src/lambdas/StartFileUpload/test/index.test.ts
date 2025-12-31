@@ -261,8 +261,16 @@ describe('#StartFileUpload', () => {
   test('should process multiple SQS records in batch', async () => {
     const multiRecordEvent = createSQSEvent({
       records: [
-        {messageId: 'msg-1', body: {fileId: 'video-1', sourceUrl: 'https://www.youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-123', attempt: 1}, queueName: 'DownloadQueue'},
-        {messageId: 'msg-2', body: {fileId: 'video-2', sourceUrl: 'https://www.youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-123', attempt: 1}, queueName: 'DownloadQueue'}
+        {
+          messageId: 'msg-1',
+          body: {fileId: 'video-1', sourceUrl: 'https://www.youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-123', attempt: 1},
+          queueName: 'DownloadQueue'
+        },
+        {
+          messageId: 'msg-2',
+          body: {fileId: 'video-2', sourceUrl: 'https://www.youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-123', attempt: 1},
+          queueName: 'DownloadQueue'
+        }
       ]
     })
 
@@ -278,8 +286,16 @@ describe('#StartFileUpload', () => {
   test('should report only failed records in batch', async () => {
     const multiRecordEvent = createSQSEvent({
       records: [
-        {messageId: 'msg-success', body: {fileId: 'video-1', sourceUrl: 'https://www.youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-123', attempt: 1}, queueName: 'DownloadQueue'},
-        {messageId: 'msg-fail', body: {fileId: 'video-2', sourceUrl: 'https://www.youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-123', attempt: 1}, queueName: 'DownloadQueue'}
+        {
+          messageId: 'msg-success',
+          body: {fileId: 'video-1', sourceUrl: 'https://www.youtube.com/watch?v=video-1', correlationId: 'corr-1', userId: 'user-123', attempt: 1},
+          queueName: 'DownloadQueue'
+        },
+        {
+          messageId: 'msg-fail',
+          body: {fileId: 'video-2', sourceUrl: 'https://www.youtube.com/watch?v=video-2', correlationId: 'corr-2', userId: 'user-123', attempt: 1},
+          queueName: 'DownloadQueue'
+        }
       ]
     })
 

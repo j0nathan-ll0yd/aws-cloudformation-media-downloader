@@ -26,10 +26,7 @@ describe('#SendPushNotification', () => {
 
   beforeEach(() => {
     // Create push notification event with message ID for batch failure tracking
-    event = createPushNotificationEvent(fakeUserId, 'CGYBu-3Oi24', {
-      title: 'Philip DeFranco',
-      key: '20221017-[Philip DeFranco].mp4'
-    })
+    event = createPushNotificationEvent(fakeUserId, 'CGYBu-3Oi24', {title: 'Philip DeFranco', key: '20221017-[Philip DeFranco].mp4'})
     // Override the messageId to match expected batch failure ID
     event.Records[0].messageId = 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'
     snsMock.reset()

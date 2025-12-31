@@ -74,11 +74,7 @@ describe('#WebhookFeedly', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     // Create event with Feedly webhook body
-    event = createAPIGatewayEvent({
-      path: '/webhooks/feedly',
-      httpMethod: 'POST',
-      body: createFeedlyWebhookBody({articleURL: feedlyWebhookBody.articleURL})
-    })
+    event = createAPIGatewayEvent({path: '/webhooks/feedly', httpMethod: 'POST', body: createFeedlyWebhookBody({articleURL: feedlyWebhookBody.articleURL})})
 
     vi.clearAllMocks()
     sqsMock.reset()
@@ -155,12 +151,8 @@ describe('#WebhookFeedly', () => {
     expect(body.body.status).toEqual('Accepted')
     // Verify EventBridge was called with DownloadRequested
     expect(publishEventWithRetryMock).toHaveBeenCalledWith('DownloadRequested',
-      expect.objectContaining({
-        fileId: expect.any(String),
-        userId: fakeUserId,
-        sourceUrl: feedlyWebhookBody.articleURL,
-        requestedAt: expect.any(String)
-      }), expect.any(Object))
+      expect.objectContaining({fileId: expect.any(String), userId: fakeUserId, sourceUrl: feedlyWebhookBody.articleURL, requestedAt: expect.any(String)}),
+      expect.any(Object))
   })
 
   describe('#AlreadyDownloadedFile', () => {

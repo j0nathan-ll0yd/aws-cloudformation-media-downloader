@@ -18,12 +18,7 @@ describe('#UserSubscribe', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     // Create event with subscribe request body
-    event = createAPIGatewayEvent({
-      path: '/subscribe',
-      httpMethod: 'POST',
-      body: createSubscribeBody(),
-      userId: fakeUserId
-    })
+    event = createAPIGatewayEvent({path: '/subscribe', httpMethod: 'POST', body: createSubscribeBody(), userId: fakeUserId})
 
     snsMock.reset()
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
