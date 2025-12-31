@@ -68,6 +68,9 @@ jobs:
           exit 1
 
       - name: Verify SNS service readiness
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
         run: |
           # Create and delete a test platform app to verify SNS is fully operational
           # This catches cases where LocalStack reports healthy but SNS isn't ready
