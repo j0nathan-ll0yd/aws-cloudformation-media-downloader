@@ -183,3 +183,94 @@ export function createEventBridgePutEventsResponse(options: EventBridgePutEvents
 export function createEventBridgePutEventsFailureResponse(errorMessage = 'EventBridge failure') {
   return createEventBridgePutEventsResponse({failedEntryCount: 1, entries: [{errorCode: 'InternalError', errorMessage}]})
 }
+
+// ============================================================================
+// API Gateway Response Factories
+// ============================================================================
+
+export interface GetApiKeysResponseOptions {
+  /** API key value (the secret key string) */
+  value?: string
+  /** Whether the API key is enabled */
+  enabled?: boolean
+  /** API key ID */
+  id?: string
+  /** API key name */
+  name?: string
+}
+
+/**
+ * Creates a mock GetApiKeys response for testing API key validation.
+ * Used by: ApiGatewayAuthorizer
+ *
+ * @example
+ * ```ts
+ * // Default response with custom key value
+ * const response = createGetApiKeysResponse({value: myApiKey})
+ *
+ * // Disabled API key for error testing
+ * const disabledResponse = createGetApiKeysResponse({value: myApiKey, enabled: false})
+ * ```
+ */
+export function createGetApiKeysResponse(options: GetApiKeysResponseOptions = {}) {
+  const {value = 'test-api-key-value', enabled = true, id = 'meptp2mf8d', name = 'iOSAppKey'} = options
+
+  return {
+    items: [
+      {
+        id,
+        value,
+        name,
+        description: 'The key for the iOS App',
+        enabled,
+        createdDate: '2022-07-31T21:23:55.000Z',
+        lastUpdatedDate: '2022-07-31T21:23:55.000Z',
+        stageKeys: []
+      }
+    ]
+  }
+}
+
+export interface GetUsagePlansResponseOptions {
+  /** Usage plan ID */
+  id?: string
+  /** Usage plan name */
+  name?: string
+  /** API ID for the stage */
+  apiId?: string
+  /** Stage name */
+  stage?: string
+}
+
+/**
+ * Creates a mock GetUsagePlans response for testing usage plan lookup.
+ * Used by: ApiGatewayAuthorizer
+ */
+export function createGetUsagePlansResponse(options: GetUsagePlansResponseOptions = {}) {
+  const {id = 'ccibr9', name = 'iOSApp', apiId = 'naf24gu6t6', stage = 'prod'} = options
+
+  return {
+    items: [
+      {id, name, description: 'Internal consumption', apiStages: [{apiId, stage}]}
+    ]
+  }
+}
+
+export interface GetUsageResponseOptions {
+  /** Usage plan ID */
+  usagePlanId?: string
+  /** API key ID for usage data */
+  apiKeyId?: string
+  /** Usage data as [used, remaining] tuple */
+  usage?: [number, number]
+}
+
+/**
+ * Creates a mock GetUsage response for testing usage quota checks.
+ * Used by: ApiGatewayAuthorizer
+ */
+export function createGetUsageResponse(options: GetUsageResponseOptions = {}) {
+  const {usagePlanId = 'ccibr9', apiKeyId = 'meptp2mf8d', usage = [0, 0]} = options
+
+  return {usagePlanId, startDate: '2022-10-08', endDate: '2022-10-08', items: {[apiKeyId]: [usage]}}
+}

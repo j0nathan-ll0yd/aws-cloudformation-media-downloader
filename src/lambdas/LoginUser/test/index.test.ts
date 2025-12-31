@@ -2,9 +2,8 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {v4 as uuidv4} from 'uuid'
-
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
@@ -15,9 +14,11 @@ const {handler} = await import('./../src')
 describe('#LoginUser', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
+  const mockIdToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature'
 
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
+    event = createAPIGatewayEvent({path: '/loginUser', httpMethod: 'POST', body: JSON.stringify({idToken: mockIdToken})})
     authMock.mocks.signInSocial.mockReset()
   })
 

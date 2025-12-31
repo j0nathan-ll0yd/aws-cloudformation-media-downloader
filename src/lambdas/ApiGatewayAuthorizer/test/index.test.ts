@@ -4,7 +4,10 @@ import * as crypto from 'crypto'
 import {v4 as uuidv4} from 'uuid'
 import {UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/vitest-setup'
+import {createApiGatewayAuthorizerEvent} from '#test/helpers/event-factories'
+import {createGetApiKeysResponse, createGetUsagePlansResponse, createGetUsageResponse} from '#test/helpers/aws-response-factories'
 import type {SessionPayload} from '#types/util'
+
 const fakeUserId = uuidv4()
 const fakeUsageIdentifierKey = crypto.randomBytes(48).toString('hex')
 const unauthorizedError = new Error('Unauthorized')
@@ -12,20 +15,16 @@ const unauthorizedError = new Error('Unauthorized')
 const getApiKeysMock = vi.fn()
 const getUsagePlansMock = vi.fn()
 const getUsageMock = vi.fn()
-const {default: getUsagePlansResponse} = await import('./fixtures/getUsagePlans.json', {assert: {type: 'json'}})
-const {default: getUsageResponse} = await import('./fixtures/getUsage.json', {assert: {type: 'json'}})
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({
   getApiKeys: getApiKeysMock, // fmt: multiline
   getUsagePlans: getUsagePlansMock,
   getUsage: getUsageMock
 }))
 
-// Setup variations of the getApiKeys response
-const {default: getApiKeysResponse} = await import('./fixtures/getApiKeys.json', {assert: {type: 'json'}})
-const getApiKeysDefaultResponse = JSON.parse(JSON.stringify(getApiKeysResponse))
-getApiKeysDefaultResponse.items![0].value = fakeUsageIdentifierKey
-
-const {default: eventMock} = await import('./fixtures/Event.json', {assert: {type: 'json'}})
+// Setup API Gateway mock responses using factories
+const getApiKeysDefaultResponse = createGetApiKeysResponse({value: fakeUsageIdentifierKey})
+const getUsagePlansResponse = createGetUsagePlansResponse()
+const getUsageResponse = createGetUsageResponse()
 
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
 vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
@@ -37,8 +36,7 @@ describe('#APIGatewayAuthorizer', () => {
   describe('#HeaderApiKey', () => {
     let event: APIGatewayRequestAuthorizerEvent
     beforeEach(() => {
-      event = JSON.parse(JSON.stringify(eventMock))
-      event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
+      event = createApiGatewayAuthorizerEvent({queryStringParameters: {ApiKey: fakeUsageIdentifierKey}})
       process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
     })
     test('should throw an error if there is no API key', async () => {
@@ -51,18 +49,15 @@ describe('#APIGatewayAuthorizer', () => {
       await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
     test('should throw an error if the API key is disabled', async () => {
-      const getApiKeysErrorResponse = JSON.parse(JSON.stringify(getApiKeysResponse))
-      getApiKeysErrorResponse.items![0].value = fakeUsageIdentifierKey
-      getApiKeysErrorResponse.items![0].enabled = false
-      getApiKeysMock.mockReturnValue(getApiKeysErrorResponse)
+      const getApiKeysDisabledResponse = createGetApiKeysResponse({value: fakeUsageIdentifierKey, enabled: false})
+      getApiKeysMock.mockReturnValue(getApiKeysDisabledResponse)
       await expect(handler(event, testContext)).rejects.toThrow(unauthorizedError)
     })
   })
   describe('#HeaderAuthorization', () => {
     let event: APIGatewayRequestAuthorizerEvent
     beforeEach(() => {
-      event = JSON.parse(JSON.stringify(eventMock))
-      event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
+      event = createApiGatewayAuthorizerEvent({queryStringParameters: {ApiKey: fakeUsageIdentifierKey}, headers: {Authorization: 'Bearer test-token'}})
       process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
       validateSessionTokenMock.mockReset()
     })
@@ -142,8 +137,7 @@ describe('#APIGatewayAuthorizer', () => {
   describe('#AWSFailure', () => {
     let event: APIGatewayRequestAuthorizerEvent
     beforeEach(() => {
-      event = JSON.parse(JSON.stringify(eventMock))
-      event.queryStringParameters!['ApiKey'] = fakeUsageIdentifierKey
+      event = createApiGatewayAuthorizerEvent({queryStringParameters: {ApiKey: fakeUsageIdentifierKey}, headers: {Authorization: 'Bearer test-token'}})
       process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
     })
     test('should return 401 when headers are missing on non-multi-auth path', async () => {

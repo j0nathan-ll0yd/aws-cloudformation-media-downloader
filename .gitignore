@@ -47,7 +47,7 @@ local_cache/
 
 # TypeSpec generated output
 tsp-output/
-tsp/examples/
+# tsp/examples/ - Now committed for API documentation
 coverage-reports/
 
 # Mutation testing (Stryker)

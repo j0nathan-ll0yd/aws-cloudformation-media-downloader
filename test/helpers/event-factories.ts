@@ -8,7 +8,7 @@
  * @see test/integration/helpers/test-data.ts for integration test factories
  */
 
-import type {S3Event, S3EventRecord, ScheduledEvent, SQSEvent, SQSRecord} from 'aws-lambda'
+import type {APIGatewayRequestAuthorizerEvent, CloudFrontRequestEvent, S3Event, S3EventRecord, ScheduledEvent, SQSEvent, SQSRecord} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 /**
@@ -347,4 +347,170 @@ export function createSubscribeBody(options?: {endpointArn?: string; topicArn?: 
  */
 export function createFeedlyWebhookBody(options?: {articleURL?: string}): string {
   return JSON.stringify({articleURL: options?.articleURL ?? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'})
+}
+
+// ============================================================================
+// API Gateway Authorizer Events
+// ============================================================================
+
+export interface ApiGatewayAuthorizerEventOptions {
+  /** Method ARN for the API Gateway request */
+  methodArn?: string
+  /** API resource path */
+  resource?: string
+  /** Request path */
+  path?: string
+  /** HTTP method */
+  httpMethod?: string
+  /** HTTP headers */
+  headers?: Record<string, string>
+  /** Query string parameters */
+  queryStringParameters?: Record<string, string>
+  /** Source IP address */
+  sourceIp?: string
+}
+
+/**
+ * Creates a mock API Gateway custom authorizer request event.
+ * Used for testing Lambda authorizers (REQUEST type).
+ */
+export function createApiGatewayAuthorizerEvent(options: ApiGatewayAuthorizerEventOptions = {}): APIGatewayRequestAuthorizerEvent {
+  const {
+    methodArn = `arn:aws:execute-api:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:testapi/prod/POST/registerDevice`,
+    resource = '/registerDevice',
+    path = '/registerDevice',
+    httpMethod = 'POST',
+    headers = {},
+    queryStringParameters = {},
+    sourceIp = '127.0.0.1'
+  } = options
+
+  const defaultHeaders: Record<string, string> = {
+    Authorization: 'Bearer test-token',
+    'content-type': 'application/json',
+    'User-Agent': 'MediaDownloader/1.0 iOS/17.0',
+    'X-API-Key': DEFAULT_API_KEY
+  }
+
+  return {
+    type: 'REQUEST',
+    methodArn,
+    resource,
+    path,
+    httpMethod,
+    headers: {...defaultHeaders, ...headers},
+    multiValueHeaders: Object.fromEntries(Object.entries({...defaultHeaders, ...headers}).map(([k, v]) => [k, [v]])),
+    queryStringParameters: {ApiKey: DEFAULT_API_KEY, ...queryStringParameters},
+    multiValueQueryStringParameters: Object.fromEntries(Object.entries({ApiKey: DEFAULT_API_KEY, ...queryStringParameters}).map(([k, v]) => [k, [v]])),
+    pathParameters: {},
+    stageVariables: {},
+    requestContext: {
+      authorizer: undefined,
+      resourceId: 'test-resource',
+      resourcePath: path,
+      httpMethod,
+      extendedRequestId: 'test-extended-request-id',
+      requestTime: new Date().toISOString(),
+      path: `/prod${path}`,
+      accountId: DEFAULT_ACCOUNT_ID,
+      protocol: 'HTTP/1.1',
+      stage: 'prod',
+      domainPrefix: 'api',
+      requestTimeEpoch: Date.now(),
+      requestId: `request-${Date.now()}`,
+      identity: {
+        cognitoIdentityPoolId: null,
+        cognitoIdentityId: null,
+        apiKey: DEFAULT_API_KEY,
+        principalOrgId: null,
+        cognitoAuthenticationType: null,
+        userArn: null,
+        apiKeyId: 'test-api-key-id',
+        userAgent: 'MediaDownloader/1.0 iOS/17.0',
+        accountId: null,
+        caller: null,
+        sourceIp,
+        accessKey: null,
+        cognitoAuthenticationProvider: null,
+        user: null,
+        clientCert: null
+      },
+      domainName: 'api.example.com',
+      apiId: 'test-api-id'
+    }
+  }
+}
+
+// ============================================================================
+// CloudFront Events (Lambda@Edge)
+// ============================================================================
+
+export interface CloudFrontRequestEventOptions {
+  /** Request URI (path) */
+  uri?: string
+  /** HTTP method */
+  method?: string
+  /** Query string (without leading ?) */
+  querystring?: string
+  /** CloudFront headers (array format) */
+  headers?: Record<string, Array<{key: string; value: string}>>
+  /** Distribution domain name */
+  distributionDomainName?: string
+  /** Client IP address */
+  clientIp?: string
+}
+
+/**
+ * Creates a mock CloudFront origin-request event.
+ * Used for testing Lambda@Edge functions.
+ */
+export function createCloudFrontRequestEvent(options: CloudFrontRequestEventOptions = {}): CloudFrontRequestEvent {
+  const {
+    uri = '/files',
+    method = 'POST',
+    querystring = `ApiKey=${DEFAULT_API_KEY}`,
+    headers,
+    distributionDomainName = 'd1234.cloudfront.net',
+    clientIp = '127.0.0.1'
+  } = options
+
+  const defaultHeaders: Record<string, Array<{key: string; value: string}>> = {
+    host: [{key: 'Host', value: 'api.execute-api.us-west-2.amazonaws.com'}],
+    authorization: [{key: 'Authorization', value: 'Bearer test-token'}],
+    'user-agent': [{key: 'User-Agent', value: 'MediaDownloader/1.0 iOS/17.0'}],
+    'content-type': [{key: 'content-type', value: 'application/json'}],
+    'accept-encoding': [{key: 'accept-encoding', value: 'gzip, deflate, br'}]
+  }
+
+  return {
+    Records: [{
+      cf: {
+        config: {distributionDomainName, distributionId: 'EXAMPLE', eventType: 'origin-request' as const, requestId: 'test-request-id'},
+        request: {
+          clientIp,
+          headers: headers ?? defaultHeaders,
+          method,
+          querystring,
+          uri,
+          origin: {
+            custom: {
+              customHeaders: {
+                'x-encryption-key-secret-id': [{key: 'X-Encryption-Key-Secret-Id', value: 'PrivateEncryptionKey'}],
+                'x-multiauthentication-paths': [{key: 'X-Multiauthentication-Paths', value: 'registerDevice,files'}],
+                'x-unauthenticated-paths': [{key: 'X-Unauthenticated-Paths', value: 'registerUser,login'}],
+                'x-www-authenticate-realm': [{key: 'X-WWW-Authenticate-Realm', value: 'prod'}]
+              },
+              domainName: 'api.execute-api.us-west-2.amazonaws.com',
+              keepaliveTimeout: 5,
+              path: '/prod',
+              port: 443,
+              protocol: 'https',
+              readTimeout: 30,
+              sslProtocols: ['TLSv1.2']
+            }
+          }
+        }
+      }
+    }]
+  }
 }

@@ -1,8 +1,7 @@
 import {beforeEach, describe, expect, test} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
-
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 
 const {handler} = await import('./../src')
 
@@ -11,7 +10,11 @@ describe('#LogClientEvent', () => {
   let event: APIGatewayEvent
 
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
+    event = createAPIGatewayEvent({
+      path: '/logClientEvent',
+      httpMethod: 'POST',
+      headers: {'x-device-uuid': 'test-device-uuid'}
+    }) as unknown as APIGatewayEvent
   })
 
   test('should successfully log a client event and return 204', async () => {

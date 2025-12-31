@@ -22,7 +22,6 @@ interface Files {
    * - Unauthenticated users: returns 401 Unauthorized
    * 
    * Example response: See `tsp/examples/list-files-response.json`
-   * (sourced from `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json`)
    * 
    * @returns List of available files
    */
@@ -61,10 +60,8 @@ interface Devices {
    * 3. Subscribes the device to push notification topics
    *
    * Example request: See `tsp/examples/register-device-request.json`
-   * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json`)
    *
    * Example response: See `tsp/examples/register-device-response.json`
-   * (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json`)
    *
    * @returns Device registration confirmation with endpoint ARN
    */
@@ -137,10 +134,8 @@ interface Webhooks {
    * Background mode can be used to defer immediate download processing.
    * 
    * Example request: See `tsp/examples/webhook-feedly-request.json`
-   * (sourced from `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json`)
-   * 
+   *
    * Example response: See `tsp/examples/webhook-feedly-response.json`
-   * (sourced from `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json`)
    * 
    * @returns Webhook processing status
    */
@@ -181,10 +176,8 @@ interface Authentication {
    * All user details are sourced from the Apple identity token.
    * 
    * Example request: See `tsp/examples/register-user-request.json`
-   * (sourced from `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json`)
-   * 
+   *
    * Example response: See `tsp/examples/register-user-response.json`
-   * (sourced from `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json`)
    * 
    * @returns JWT access token
    */
@@ -214,10 +207,8 @@ interface Authentication {
    * Authenticates a user and returns a JWT access token.
    *
    * Example request: See `tsp/examples/login-user-request.json`
-   * (sourced from `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json`)
    *
    * Example response: See `tsp/examples/login-user-response.json`
-   * (sourced from `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json`)
    *
    * @returns JWT access token
    */

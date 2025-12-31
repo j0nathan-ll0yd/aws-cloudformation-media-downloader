@@ -2,6 +2,7 @@ import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {v4 as uuidv4} from 'uuid'
 
 // Mock Better Auth API - now exports getAuth as async function
@@ -11,9 +12,11 @@ vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => auth
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 import {updateUser} from '#entities/queries'
+
+const mockIdToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature'
 
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
@@ -24,7 +27,7 @@ describe('#RegisterUser', () => {
   })
 
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
+    event = createAPIGatewayEvent({path: '/registerUser', httpMethod: 'POST', body: JSON.stringify({idToken: mockIdToken})}) as unknown as APIGatewayEvent
     authMock.mocks.signInSocial.mockReset()
     vi.mocked(updateUser).mockClear()
     // Default mock - will be overridden in specific tests
@@ -48,6 +51,13 @@ describe('#RegisterUser', () => {
     const sessionId = uuidv4()
     const token = uuidv4()
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+
+    // Include firstName/lastName in request body (sent by iOS app from ASAuthorizationAppleIDCredential.fullName)
+    event = createAPIGatewayEvent({
+      path: '/registerUser',
+      httpMethod: 'POST',
+      body: JSON.stringify({idToken: mockIdToken, firstName: 'Jonathan', lastName: 'Lloyd'})
+    }) as unknown as APIGatewayEvent
 
     authMock.mocks.signInSocial.mockResolvedValue({
       user: {
