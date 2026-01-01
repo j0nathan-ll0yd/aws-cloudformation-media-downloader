@@ -462,7 +462,7 @@ export interface CloudFrontRequestEventOptions {
 
 /**
  * Creates a mock CloudFront origin-request event.
- * Used for testing Lambda@Edge functions.
+ * Used for testing Lambda\@Edge functions.
  */
 export function createCloudFrontRequestEvent(options: CloudFrontRequestEventOptions = {}): CloudFrontRequestEvent {
   const {
