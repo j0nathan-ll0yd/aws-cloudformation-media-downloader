@@ -41,7 +41,7 @@ describe('#RefreshToken', () => {
 
     const body = JSON.parse(output.body)
     expect(body.body.token).toEqual(fakeToken)
-    expect(body.body.expiresAt).toEqual(futureExpiresAt)
+    expect(typeof body.body.expiresAt).toEqual('string') // ISO 8601 timestamp
     expect(body.body.sessionId).toEqual(fakeSessionId)
     expect(body.body.userId).toEqual(fakeUserId)
 

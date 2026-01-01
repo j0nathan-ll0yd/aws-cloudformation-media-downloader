@@ -11,6 +11,7 @@ import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
 import {eq} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
+import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
 
 export type UserRow = InferSelectModel<typeof users>
 export type IdentityProviderRow = InferSelectModel<typeof identityProviders>
@@ -107,7 +108,9 @@ export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<Us
  * @returns The created user with identity provider data
  */
 export async function createUser(input: CreateUserInput): Promise<UserItem> {
-  const {identityProviders: idpData, ...userData} = input
+  // Validate user input against schema
+  const validatedUser = userInsertSchema.parse(input)
+  const {identityProviders: idpData, ...userData} = {...validatedUser, identityProviders: input.identityProviders}
   return await withTransaction(async (tx) => {
     const [user] = await tx.insert(users).values({...userData, updatedAt: new Date()}).returning()
     if (idpData) {
@@ -134,8 +137,10 @@ export async function createUser(input: CreateUserInput): Promise<UserItem> {
  * @returns The updated user with identity provider data
  */
 export async function updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
+  // Validate partial update data against schema
+  const validatedData = userUpdateSchema.partial().parse(data)
   const db = await getDrizzleClient()
-  const [updated] = await db.update(users).set({...data, updatedAt: new Date()}).where(eq(users.id, id)).returning()
+  const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
 
   // Fetch identity provider with separate query (only 1 user, not N+1)
   const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, id)).limit(1)

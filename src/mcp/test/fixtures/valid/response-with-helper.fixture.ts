@@ -1,11 +1,11 @@
 /**
  * @fixture valid
  * @rule response-helpers
- * @description Using buildApiResponse() helper (allowed)
+ * @description Using buildValidatedResponse() helper (allowed)
  * @expectedViolations 0
  */
-import {buildApiResponse} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 export async function handler() {
-  return buildApiResponse(200, {success: true})
+  return buildValidatedResponse(context, 200, {success: true})
 }

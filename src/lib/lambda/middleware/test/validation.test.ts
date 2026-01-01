@@ -41,12 +41,12 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should pass validated body to handler on valid input', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       let receivedBody: TestBody | undefined
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context, body}) => {
         receivedBody = body
-        return buildApiResponse(context, 200, {success: true})
+        return buildValidatedResponse(context, 200, {success: true})
       })
 
       const event = {body: JSON.stringify({name: 'John', email: 'john@example.com', age: 30})}
@@ -58,10 +58,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 400 with validation errors on invalid input', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {success: true})
+        return buildValidatedResponse(context, 200, {success: true})
       })
 
       const event = {body: JSON.stringify({name: '', email: 'invalid-email'})}
@@ -74,10 +74,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 400 on missing body', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {success: true})
+        return buildValidatedResponse(context, 200, {success: true})
       })
 
       const event = {}
@@ -88,10 +88,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 400 on invalid JSON body', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {success: true})
+        return buildValidatedResponse(context, 200, {success: true})
       })
 
       const event = {body: 'not valid json {'}
@@ -102,12 +102,12 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should pass metadata with traceId to handler', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       let receivedMetadata: {traceId: string; correlationId: string} | undefined
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
@@ -118,12 +118,12 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should use provided metadata when available', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       let receivedMetadata: {traceId: string; correlationId: string} | undefined
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
@@ -149,10 +149,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should log fixtures for incoming event and outgoing result', async () => {
       const {wrapValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {data: 'test'})
+        return buildValidatedResponse(context, 200, {data: 'test'})
       })
 
       const event = {body: JSON.stringify({name: 'John', email: 'john@example.com'})}
@@ -198,14 +198,14 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should pass userId and validated body for authenticated user', async () => {
       const {wrapAuthenticatedValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       let receivedUserId: string | undefined
       let receivedBody: TestBody | undefined
       const handler = wrapAuthenticatedValidatedHandler<TestBody, TestEvent>(testSchema, async ({context, userId, body}) => {
         receivedUserId = userId
         receivedBody = body
-        return buildApiResponse(context, 200, {userId, data: body})
+        return buildValidatedResponse(context, 200, {userId, data: body})
       })
 
       const result = await handler(authenticatedEvent, mockContext)
@@ -217,10 +217,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 401 for anonymous user before validation', async () => {
       const {wrapAuthenticatedValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapAuthenticatedValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       const result = await handler(anonymousEvent, mockContext)
@@ -230,10 +230,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 401 for unauthenticated user before validation', async () => {
       const {wrapAuthenticatedValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapAuthenticatedValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       const result = await handler(unauthenticatedEvent, mockContext)
@@ -243,10 +243,10 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should return 400 for authenticated user with invalid body', async () => {
       const {wrapAuthenticatedValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       const handler = wrapAuthenticatedValidatedHandler<TestBody, TestEvent>(testSchema, async ({context}) => {
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       const invalidBodyEvent = {...authenticatedEvent, body: JSON.stringify({name: '', email: 'invalid'})}
@@ -257,12 +257,12 @@ describe('Lambda:Middleware:Validation', () => {
 
     it('should pass metadata with traceId to handler', async () => {
       const {wrapAuthenticatedValidatedHandler} = await import('../../middleware/validation')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
 
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapAuthenticatedValidatedHandler<TestBody, TestEvent>(testSchema, async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)

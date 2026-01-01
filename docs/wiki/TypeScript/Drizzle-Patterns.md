@@ -84,11 +84,102 @@ afterAll(async () => {
 
 ---
 
+## Zod Schema Generation (drizzle-zod)
+
+**Use for**: Runtime validation of database insert and update operations.
+
+**File**: `src/lib/vendor/Drizzle/zod-schemas.ts`
+
+The project uses `drizzle-zod` to generate Zod validation schemas from Drizzle table definitions. All entity query functions validate input before database operations.
+
+### Importing Schemas
+
+```typescript
+import {userInsertSchema, fileSelectSchema} from '#lib/vendor/Drizzle/zod-schemas'
+
+// Validate insert data
+const validatedUser = userInsertSchema.parse(userData)
+
+// Validate partial update data
+const validatedData = userUpdateSchema.partial().parse(updateData)
+```
+
+### Available Schemas
+
+Each table has three schema variants:
+
+| Variant | Purpose | Example |
+|---------|---------|---------|
+| `*InsertSchema` | Validates data for INSERT operations | `userInsertSchema` |
+| `*SelectSchema` | Validates data from SELECT operations | `fileSelectSchema` |
+| `*UpdateSchema` | Validates data for UPDATE operations | `deviceUpdateSchema` |
+
+### Custom Refinements
+
+Use factory functions for custom validation rules:
+
+```typescript
+import {createInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {files} from '#lib/vendor/Drizzle/schema'
+
+const customFileSchema = createInsertSchema(files, {
+  title: (schema) => schema.min(1).max(200),
+  url: (schema) => schema.url()
+})
+```
+
+### Entity Query Integration
+
+All entity query insert/update functions validate input:
+
+```typescript
+// In entity query function
+export async function createUser(input: CreateUserInput): Promise<UserItem> {
+  // Validate input before database operation
+  const validatedInput = userInsertSchema.parse(input)
+  const db = await getDrizzleClient()
+  const [user] = await db.insert(users).values(validatedInput).returning()
+  return user
+}
+```
+
+---
+
+## ESLint Safety Rules (eslint-plugin-drizzle)
+
+**Use for**: Preventing accidental bulk delete/update operations.
+
+The project enforces two ESLint rules to prevent dangerous database operations:
+
+| Rule | Purpose |
+|------|---------|
+| `drizzle/enforce-delete-with-where` | Requires `.where()` on all delete operations |
+| `drizzle/enforce-update-with-where` | Requires `.where()` on all update operations |
+
+### Configured Object Names
+
+The rules apply to variables named `db` (main client) and `tx` (transaction client).
+
+### Examples
+
+```typescript
+// ALLOWED - has where clause
+await db.delete(users).where(eq(users.id, userId))
+await tx.update(files).set({status: 'Downloaded'}).where(eq(files.fileId, fileId))
+
+// BLOCKED by ESLint - no where clause
+await db.delete(users)  // Error: use where clause or .all() to confirm
+await tx.update(files).set({status: 'Failed'})  // Error: missing where clause
+```
+
+---
+
 ## Related Patterns
 
 - [Lambda Function Patterns](Lambda-Function-Patterns.md) - Handler patterns
 - [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Mocking Drizzle in tests
+- [Schema Consolidation Research](Schema-Consolidation-Research.md) - API vs Drizzle schema analysis
 
 ---
 
-*Always use the vendor wrapper, never import directly from 'drizzle-orm'.*
+*Always use the vendor wrapper, never import directly from 'drizzle-orm' or 'drizzle-zod'.*

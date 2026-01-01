@@ -10,6 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
+import {deviceInsertSchema, deviceUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 
@@ -46,8 +47,10 @@ export async function getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]>
  * @returns The created device row
  */
 export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
+  // Validate device input against schema
+  const validatedInput = deviceInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [device] = await db.insert(devices).values(input).returning()
+  const [device] = await db.insert(devices).values(validatedInput).returning()
   return device
 }
 
@@ -58,8 +61,10 @@ export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow>
  * @returns The created or updated device row
  */
 export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
+  // Validate device input against schema
+  const validatedInput = deviceInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [result] = await db.insert(devices).values(input).onConflictDoUpdate({
+  const [result] = await db.insert(devices).values(validatedInput).onConflictDoUpdate({
     target: devices.deviceId,
     set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
   }).returning()
@@ -73,8 +78,10 @@ export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow>
  * @returns The updated device row
  */
 export async function updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
+  // Validate partial update data against schema
+  const validatedData = deviceUpdateSchema.partial().parse(data)
   const db = await getDrizzleClient()
-  const [updated] = await db.update(devices).set(data).where(eq(devices.deviceId, deviceId)).returning()
+  const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
   return updated
 }
 

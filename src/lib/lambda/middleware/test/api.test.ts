@@ -35,8 +35,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return handler result on success', async () => {
       const {wrapApiHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {success: true}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildValidatedResponse(context, 200, {success: true}))
 
       const result = await handler({httpMethod: 'GET'}, mockContext)
 
@@ -57,11 +57,11 @@ describe('Lambda:Middleware:API', () => {
 
     it('should pass metadata with traceId to handler', async () => {
       const {wrapApiHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler({}, mockContext)
@@ -71,11 +71,11 @@ describe('Lambda:Middleware:API', () => {
 
     it('should use provided metadata traceId and correlationId when available', async () => {
       const {wrapApiHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       let receivedMetadata: {traceId: string; correlationId: string} | undefined
       const handler = wrapApiHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler({}, mockContext, {traceId: 'custom-trace-id', correlationId: 'custom-correlation-id'})
@@ -86,8 +86,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should log fixtures for incoming event and outgoing result', async () => {
       const {wrapApiHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {data: 'test'}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapApiHandler<TestEvent>(async ({context}) => buildValidatedResponse(context, 200, {data: 'test'}))
 
       await handler({testField: 'value'}, mockContext)
 
@@ -125,8 +125,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return handler result for authenticated user', async () => {
       const {wrapAuthenticatedHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => buildApiResponse(context, 200, {userId}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => buildValidatedResponse(context, 200, {userId}))
 
       const result = await handler(authenticatedEvent, mockContext)
 
@@ -137,11 +137,11 @@ describe('Lambda:Middleware:API', () => {
 
     it('should provide guaranteed userId to handler', async () => {
       const {wrapAuthenticatedHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       let receivedUserId: string | undefined
       const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, userId}) => {
         receivedUserId = userId
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -152,8 +152,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return 401 for unauthenticated user (invalid token)', async () => {
       const {wrapAuthenticatedHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildValidatedResponse(context, 200, {}))
 
       const result = await handler(unauthenticatedEvent, mockContext)
 
@@ -162,8 +162,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return 401 for anonymous user (no token)', async () => {
       const {wrapAuthenticatedHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapAuthenticatedHandler<TestEvent>(async ({context}) => buildValidatedResponse(context, 200, {}))
 
       const result = await handler(anonymousEvent, mockContext)
 
@@ -172,11 +172,11 @@ describe('Lambda:Middleware:API', () => {
 
     it('should pass metadata with traceId to handler', async () => {
       const {wrapAuthenticatedHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapAuthenticatedHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -222,8 +222,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return handler result for authenticated user', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId}) => buildApiResponse(context, 200, {userId}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId}) => buildValidatedResponse(context, 200, {userId}))
 
       const result = await handler(authenticatedEvent, mockContext)
 
@@ -234,13 +234,13 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return handler result for anonymous user', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       const {UserStatus} = await import('#types/enums')
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userStatus}) => {
         if (userStatus === UserStatus.Anonymous) {
-          return buildApiResponse(context, 200, {demo: true})
+          return buildValidatedResponse(context, 200, {demo: true})
         }
-        return buildApiResponse(context, 200, {demo: false})
+        return buildValidatedResponse(context, 200, {demo: false})
       })
 
       const result = await handler(anonymousEvent, mockContext)
@@ -252,8 +252,8 @@ describe('Lambda:Middleware:API', () => {
 
     it('should return 401 for unauthenticated user (invalid token)', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
-      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context}) => buildApiResponse(context, 200, {}))
+      const {buildValidatedResponse} = await import('../../responses')
+      const handler = wrapOptionalAuthHandler<TestEvent>(async ({context}) => buildValidatedResponse(context, 200, {}))
 
       const result = await handler(unauthenticatedEvent, mockContext)
 
@@ -262,14 +262,14 @@ describe('Lambda:Middleware:API', () => {
 
     it('should provide userId and userStatus to handler', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       const {UserStatus} = await import('#types/enums')
       let receivedUserId: string | undefined
       let receivedUserStatus: typeof UserStatus[keyof typeof UserStatus] | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId, userStatus}) => {
         receivedUserId = userId
         receivedUserStatus = userStatus
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)
@@ -280,14 +280,14 @@ describe('Lambda:Middleware:API', () => {
 
     it('should provide undefined userId for anonymous user', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       const {UserStatus} = await import('#types/enums')
       let receivedUserId: string | undefined
       let receivedUserStatus: typeof UserStatus[keyof typeof UserStatus] | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, userId, userStatus}) => {
         receivedUserId = userId
         receivedUserStatus = userStatus
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(anonymousEvent, mockContext)
@@ -298,11 +298,11 @@ describe('Lambda:Middleware:API', () => {
 
     it('should pass metadata with traceId to handler', async () => {
       const {wrapOptionalAuthHandler} = await import('../../middleware/api')
-      const {buildApiResponse} = await import('../../responses')
+      const {buildValidatedResponse} = await import('../../responses')
       let receivedMetadata: {traceId: string} | undefined
       const handler = wrapOptionalAuthHandler<TestEvent>(async ({context, metadata}) => {
         receivedMetadata = metadata
-        return buildApiResponse(context, 200, {})
+        return buildValidatedResponse(context, 200, {})
       })
 
       await handler(authenticatedEvent, mockContext)

@@ -11,7 +11,7 @@
 
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
@@ -24,5 +24,5 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const deviceId = event.headers['x-device-uuid']
   const message = event.body
   logInfo('Event received', {deviceId, message})
-  return buildApiResponse(context, 204)
+  return buildValidatedResponse(context, 204)
 }))

@@ -1,7 +1,7 @@
 import {describe, expect, test} from 'vitest'
 import {ForbiddenError, NotFoundError, ServiceUnavailableError, UnauthorizedError, UnexpectedError, ValidationError} from '#lib/system/errors'
 import {createMockContext} from '#util/vitest-setup'
-import {buildApiResponse, getErrorMessage} from './../responses'
+import {buildErrorResponse, buildValidatedResponse, getErrorMessage} from './../responses'
 
 describe('Response Helpers', () => {
   const mockContext = createMockContext({awsRequestId: 'test-request-id-123'})
@@ -29,10 +29,10 @@ describe('Response Helpers', () => {
     })
   })
 
-  describe('buildApiResponse', () => {
+  describe('buildValidatedResponse', () => {
     describe('success responses (2xx)', () => {
       test('should format 200 response with body', () => {
-        const result = buildApiResponse(mockContext, 200, {status: 'success', data: 'test'})
+        const result = buildValidatedResponse(mockContext, 200, {status: 'success', data: 'test'})
 
         expect(result.statusCode).toEqual(200)
         const body = JSON.parse(result.body)
@@ -42,7 +42,7 @@ describe('Response Helpers', () => {
       })
 
       test('should format 201 response with body', () => {
-        const result = buildApiResponse(mockContext, 201, {id: 'new-resource-123'})
+        const result = buildValidatedResponse(mockContext, 201, {id: 'new-resource-123'})
 
         expect(result.statusCode).toEqual(201)
         const body = JSON.parse(result.body)
@@ -50,65 +50,19 @@ describe('Response Helpers', () => {
       })
 
       test('should format 204 response with empty body', () => {
-        const result = buildApiResponse(mockContext, 204)
+        const result = buildValidatedResponse(mockContext, 204)
 
         expect(result.statusCode).toEqual(204)
         expect(result.body).toEqual('')
       })
     })
+  })
 
-    describe('client error responses (4xx)', () => {
-      test('should format 400 response with error wrapper', () => {
-        const result = buildApiResponse(mockContext, 400, 'Invalid request body')
-
-        expect(result.statusCode).toEqual(400)
-        const body = JSON.parse(result.body)
-        expect(body.error.code).toEqual('custom-4XX-generic')
-        expect(body.error.message).toEqual('Invalid request body')
-        expect(body.requestId).toEqual('test-request-id-123')
-      })
-
-      test('should format 401 response', () => {
-        const result = buildApiResponse(mockContext, 401, 'Unauthorized')
-
-        expect(result.statusCode).toEqual(401)
-        const body = JSON.parse(result.body)
-        expect(body.error.code).toEqual('custom-4XX-generic')
-        expect(body.error.message).toEqual('Unauthorized')
-      })
-
-      test('should format 404 response', () => {
-        const result = buildApiResponse(mockContext, 404, 'Resource not found')
-
-        expect(result.statusCode).toEqual(404)
-        const body = JSON.parse(result.body)
-        expect(body.error.message).toEqual('Resource not found')
-      })
-    })
-
-    describe('server error responses (5xx)', () => {
-      test('should format 500 response with error wrapper', () => {
-        const result = buildApiResponse(mockContext, 500, 'Internal server error')
-
-        expect(result.statusCode).toEqual(500)
-        const body = JSON.parse(result.body)
-        expect(body.error.code).toEqual('custom-5XX-generic')
-        expect(body.error.message).toEqual('Internal server error')
-      })
-
-      test('should format 503 response', () => {
-        const result = buildApiResponse(mockContext, 503, 'Service unavailable')
-
-        expect(result.statusCode).toEqual(503)
-        const body = JSON.parse(result.body)
-        expect(body.error.code).toEqual('custom-5XX-generic')
-      })
-    })
-
+  describe('buildErrorResponse', () => {
     describe('Error object handling', () => {
       test('should handle standard Error instance', () => {
         const error = new Error('Something went wrong')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(500)
         const body = JSON.parse(result.body)
@@ -117,7 +71,7 @@ describe('Response Helpers', () => {
 
       test('should use statusCode from CustomLambdaError', () => {
         const error = new ValidationError('Invalid email format')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(400)
         const body = JSON.parse(result.body)
@@ -126,7 +80,7 @@ describe('Response Helpers', () => {
 
       test('should use validation errors from ValidationError if present', () => {
         const error = new ValidationError('Validation failed', {email: 'Invalid format', password: 'Too short'})
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(400)
         const body = JSON.parse(result.body)
@@ -136,7 +90,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from ValidationError', () => {
         const error = new ValidationError('Invalid email format')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         const body = JSON.parse(result.body)
         expect(body.error.code).toEqual('VALIDATION_ERROR')
@@ -144,7 +98,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from UnauthorizedError', () => {
         const error = new UnauthorizedError('Session expired')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(401)
         const body = JSON.parse(result.body)
@@ -153,7 +107,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from ForbiddenError', () => {
         const error = new ForbiddenError('Access denied')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(403)
         const body = JSON.parse(result.body)
@@ -162,7 +116,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from NotFoundError', () => {
         const error = new NotFoundError('Resource not found')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(404)
         const body = JSON.parse(result.body)
@@ -171,7 +125,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from UnexpectedError', () => {
         const error = new UnexpectedError('Something went wrong')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(500)
         const body = JSON.parse(result.body)
@@ -180,7 +134,7 @@ describe('Response Helpers', () => {
 
       test('should include specific error code from ServiceUnavailableError', () => {
         const error = new ServiceUnavailableError('AWS service unavailable')
-        const result = buildApiResponse(mockContext, error)
+        const result = buildErrorResponse(mockContext, error)
 
         expect(result.statusCode).toEqual(503)
         const body = JSON.parse(result.body)
@@ -191,7 +145,7 @@ describe('Response Helpers', () => {
     describe('Plain object error handling', () => {
       test('should handle Better Auth style error objects with status', () => {
         const errorObj = {status: 404, message: 'User not found'}
-        const result = buildApiResponse(mockContext, errorObj)
+        const result = buildErrorResponse(mockContext, errorObj)
 
         expect(result.statusCode).toEqual(404)
         const body = JSON.parse(result.body)
@@ -200,7 +154,7 @@ describe('Response Helpers', () => {
 
       test('should handle error objects with statusCode property', () => {
         const errorObj = {statusCode: 403, message: 'Forbidden'}
-        const result = buildApiResponse(mockContext, errorObj)
+        const result = buildErrorResponse(mockContext, errorObj)
 
         expect(result.statusCode).toEqual(403)
         const body = JSON.parse(result.body)
@@ -209,7 +163,7 @@ describe('Response Helpers', () => {
 
       test('should default to 500 for objects without status', () => {
         const errorObj = {error: 'Unknown error occurred'}
-        const result = buildApiResponse(mockContext, errorObj)
+        const result = buildErrorResponse(mockContext, errorObj)
 
         expect(result.statusCode).toEqual(500)
       })
@@ -217,13 +171,13 @@ describe('Response Helpers', () => {
 
     describe('Unknown error type handling', () => {
       test('should handle undefined gracefully', () => {
-        const result = buildApiResponse(mockContext, undefined)
+        const result = buildErrorResponse(mockContext, undefined)
 
         expect(result.statusCode).toEqual(500)
       })
 
       test('should handle null gracefully', () => {
-        const result = buildApiResponse(mockContext, null)
+        const result = buildErrorResponse(mockContext, null)
 
         expect(result.statusCode).toEqual(500)
       })

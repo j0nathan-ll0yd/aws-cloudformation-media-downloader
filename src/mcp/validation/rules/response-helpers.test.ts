@@ -1,6 +1,6 @@
 /**
  * Unit tests for response-helpers rule
- * HIGH: Lambda handlers must use buildApiResponse() helper, not raw objects
+ * HIGH: Lambda handlers must use buildValidatedResponse() helper, not raw objects
  */
 
 import {beforeAll, describe, expect, test} from 'vitest'
@@ -139,11 +139,11 @@ describe('response-helpers rule', () => {
   })
 
   describe('allows proper response helper usage', () => {
-    test('should allow buildApiResponse() helper', () => {
-      const sourceFile = project.createSourceFile('test-response-helper.ts', `import {buildApiResponse} from '#util/lambda-helpers'
+    test('should allow buildValidatedResponse() helper', () => {
+      const sourceFile = project.createSourceFile('test-response-helper.ts', `import {buildValidatedResponse} from '#lib/lambda/responses'
 
 export async function handler() {
-  return buildApiResponse(200, {success: true})
+  return buildValidatedResponse(context, 200, {success: true})
 }`, {overwrite: true})
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
@@ -151,14 +151,14 @@ export async function handler() {
       expect(violations).toHaveLength(0)
     })
 
-    test('should allow buildApiResponse() for error handling', () => {
-      const sourceFile = project.createSourceFile('test-error-helper.ts', `import {buildApiResponse} from '#util/lambda-helpers'
+    test('should allow buildErrorResponse() for error handling', () => {
+      const sourceFile = project.createSourceFile('test-error-helper.ts', `import {buildErrorResponse} from '#lib/lambda/responses'
 
 export async function handler() {
   try {
-    return buildApiResponse(200, {})
+    return buildValidatedResponse(context, 200, {})
   } catch (error) {
-    return buildApiResponse(500, error as Error)
+    return buildErrorResponse(context, error)
   }
 }`, {overwrite: true})
 
@@ -168,11 +168,11 @@ export async function handler() {
     })
 
     test('should allow returning helper result', () => {
-      const sourceFile = project.createSourceFile('test-helper-result.ts', `import {buildApiResponse} from '#util/lambda-helpers'
+      const sourceFile = project.createSourceFile('test-helper-result.ts', `import {buildValidatedResponse} from '#lib/lambda/responses'
 
 export async function handler() {
   const result = await processData()
-  return buildApiResponse(200, result)
+  return buildValidatedResponse(context, 200, result)
 }`, {overwrite: true})
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
@@ -198,7 +198,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 
   describe('provides helpful suggestions', () => {
     test('should suggest response helper when detected', () => {
-      const sourceFile = project.createSourceFile('test-suggestion.ts', `import {buildApiResponse} from '#util/lambda-helpers'
+      const sourceFile = project.createSourceFile('test-suggestion.ts', `import {buildValidatedResponse} from '#lib/lambda/responses'
 
 export async function handler() {
   return {
@@ -209,7 +209,7 @@ export async function handler() {
 
       const violations = responseHelpersRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 
-      expect(violations[0].suggestion).toContain('buildApiResponse')
+      expect(violations[0].suggestion).toContain('buildValidatedResponse')
     })
 
     test('should suggest importing helper when missing', () => {

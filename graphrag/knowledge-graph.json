@@ -427,7 +427,10 @@
         "modelType": "model",
         "description": "User login response",
         "fields": [
-          "token"
+          "token",
+          "expiresAt",
+          "sessionId",
+          "userId"
         ]
       }
     },
@@ -453,7 +456,10 @@
         "modelType": "model",
         "description": "User registration response",
         "fields": [
-          "token"
+          "token",
+          "expiresAt",
+          "sessionId",
+          "userId"
         ]
       }
     },

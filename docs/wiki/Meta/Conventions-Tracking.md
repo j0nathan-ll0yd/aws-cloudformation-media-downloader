@@ -9,7 +9,7 @@ Central registry of all project conventions with their documentation and enforce
 | Method | Count | Description |
 |--------|-------|-------------|
 | **MCP Rules** | 18 | AST-based validation via ts-morph |
-| **ESLint** | 18 | Linting rules including 8 JSDoc rules |
+| **ESLint** | 20 | Linting rules including 8 JSDoc rules + 2 Drizzle safety rules |
 | **Git Hooks** | 5 | Pre-commit, commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 6 | Architectural boundary enforcement |
 | **CI Workflows** | 4 | Script validation, type checking, GraphRAG sync, security audit |
@@ -53,6 +53,8 @@ Central registry of all project conventions with their documentation and enforce
 | ElectroDB Test Mocking | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) | MCP + ESLint |
 | No Try-Catch for Required Env Vars | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) | MCP + ESLint |
 | Cascade Deletion Order | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| Drizzle Delete Requires Where | [Drizzle Patterns](../TypeScript/Drizzle-Patterns.md) | ESLint `drizzle/enforce-delete-with-where` |
+| Drizzle Update Requires Where | [Drizzle Patterns](../TypeScript/Drizzle-Patterns.md) | ESLint `drizzle/enforce-update-with-where` |
 | Migrations as Single Source of Truth | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
 | pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |

@@ -11,6 +11,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
+import {userDeviceInsertSchema, userFileInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
 import type {FileRow} from './file-queries'
 import type {DeviceRow} from './device-queries'
 
@@ -83,8 +84,10 @@ export async function getFilesForUser(userId: string): Promise<FileRow[]> {
  * @returns The created user-file row
  */
 export async function createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
+  // Validate user-file input against schema
+  const validatedInput = userFileInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [userFile] = await db.insert(userFiles).values(input).returning()
+  const [userFile] = await db.insert(userFiles).values(validatedInput).returning()
   return userFile
 }
 
@@ -95,10 +98,12 @@ export async function createUserFile(input: CreateUserFileInput): Promise<UserFi
  * @returns The existing or created user-file row
  */
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
+  // Validate user-file input against schema
+  const validatedInput = userFileInsertSchema.parse(input)
   const db = await getDrizzleClient()
 
   // Try to insert, do nothing on conflict (junction table has no updatable fields)
-  const result = await db.insert(userFiles).values(input).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
+  const result = await db.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
 
   // If conflict occurred (no rows returned), fetch existing record
   if (result.length === 0) {
@@ -225,8 +230,10 @@ export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]>
  * @returns The created user-device row
  */
 export async function createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
+  // Validate user-device input against schema
+  const validatedInput = userDeviceInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [userDevice] = await db.insert(userDevices).values(input).returning()
+  const [userDevice] = await db.insert(userDevices).values(validatedInput).returning()
   return userDevice
 }
 
@@ -237,10 +244,12 @@ export async function createUserDevice(input: CreateUserDeviceInput): Promise<Us
  * @returns The existing or created user-device row
  */
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
+  // Validate user-device input against schema
+  const validatedInput = userDeviceInsertSchema.parse(input)
   const db = await getDrizzleClient()
 
   // Try to insert, do nothing on conflict (junction table has no updatable fields)
-  const result = await db.insert(userDevices).values(input).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
+  const result = await db.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
 
   // If conflict occurred (no rows returned), fetch existing record
   if (result.length === 0) {

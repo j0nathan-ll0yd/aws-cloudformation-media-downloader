@@ -3,7 +3,7 @@ import type {AuthenticatedValidatedParams, ValidatedApiParams, WrapperMetadata} 
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
-import {buildApiResponse} from '../responses'
+import {buildErrorResponse} from '../responses'
 import {extractCorrelationId} from '../correlation'
 import {getPayloadFromEvent} from './api-gateway'
 import {validateSchema} from '#lib/validation/constraints'
@@ -42,7 +42,7 @@ export function wrapValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuth
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildApiResponse(context, error as Error)
+      const errorResult = buildErrorResponse(context, error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -90,7 +90,7 @@ export function wrapAuthenticatedValidatedHandler<TBody, TEvent = CustomAPIGatew
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildApiResponse(context, error as Error)
+      const errorResult = buildErrorResponse(context, error)
       logOutgoingFixture(errorResult)
       return errorResult
     }

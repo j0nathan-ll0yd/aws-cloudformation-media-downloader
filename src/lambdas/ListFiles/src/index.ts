@@ -12,10 +12,11 @@ import {getFilesForUser} from '#entities/queries'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {getDefaultFile} from '#config/constants'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
+import {fileListResponseSchema} from '#types/api-schema'
 
 // Get files for a user using a single JOIN query (replaces N+1 batch pattern)
 async function getFilesByUser(userId: string): Promise<File[]> {
@@ -41,7 +42,7 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
   if (userStatus === UserStatus.Anonymous) {
     myResponse.contents = [getDefaultFile()]
     myResponse.keyCount = myResponse.contents.length
-    return buildApiResponse(context, 200, myResponse)
+    return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
   }
 
   const files = await getFilesByUser(userId as string)
@@ -49,5 +50,5 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, u
     new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime()
   )
   myResponse.keyCount = myResponse.contents.length
-  return buildApiResponse(context, 200, myResponse)
+  return buildValidatedResponse(context, 200, myResponse, fileListResponseSchema)
 }))

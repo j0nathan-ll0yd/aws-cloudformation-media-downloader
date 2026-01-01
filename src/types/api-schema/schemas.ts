@@ -61,17 +61,18 @@ export const feedlyWebhookRequestSchema = z.object({
   createdAt: z.string().optional(),
   sourceFeedURL: z.string().url().optional(),
   sourceTitle: z.string().optional(),
-  sourceURL: z.string().url().optional()
+  sourceURL: z.string().url().optional(),
+  backgroundMode: z.boolean().optional()
 })
 
 export const webhookResponseSchema = z.object({status: z.union([z.literal('Dispatched'), z.literal('Initiated'), z.literal('Accepted')])})
 
 export const userLoginRequestSchema = z.object({idToken: z.string()})
 
-export const userLoginResponseSchema = z.object({token: z.string()})
+export const userLoginResponseSchema = z.object({token: z.string(), expiresAt: z.string(), sessionId: z.string(), userId: z.string()})
 
 export const userRegistrationRequestSchema = z.object({idToken: z.string(), firstName: z.string().optional(), lastName: z.string().optional()})
 
-export const userRegistrationResponseSchema = z.object({token: z.string()})
+export const userRegistrationResponseSchema = z.object({token: z.string(), expiresAt: z.string(), sessionId: z.string(), userId: z.string()})
 
 export const userSubscriptionRequestSchema = z.object({endpointArn: z.string(), topicArn: z.string()})

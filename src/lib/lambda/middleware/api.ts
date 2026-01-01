@@ -2,7 +2,7 @@ import type {ApiHandlerParams, AuthenticatedApiParams, OptionalAuthApiParams, Wr
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
-import {buildApiResponse} from '../responses'
+import {buildErrorResponse} from '../responses'
 import {getUserDetailsFromEvent} from '../context'
 import {extractCorrelationId} from '../correlation'
 import {UserStatus} from '#types/enums'
@@ -29,7 +29,7 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildApiResponse(context, error as Error)
+      const errorResult = buildErrorResponse(context, error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -69,7 +69,7 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildApiResponse(context, error as Error)
+      const errorResult = buildErrorResponse(context, error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -105,7 +105,7 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildApiResponse(context, error as Error)
+      const errorResult = buildErrorResponse(context, error)
       logOutgoingFixture(errorResult)
       return errorResult
     }
