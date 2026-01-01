@@ -345,6 +345,97 @@ export async function getDevice(deviceId: string): Promise<Partial<Device> | nul
   return result[0] || null
 }
 
+/**
+ * Update a device record in PostgreSQL
+ */
+export async function updateDevice(deviceId: string, updates: Partial<Device>): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.update(devices).set(updates).where(eq(devices.deviceId, deviceId))
+}
+
+/**
+ * Delete a device record from PostgreSQL
+ */
+export async function deleteDevice(deviceId: string): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.delete(devices).where(eq(devices.deviceId, deviceId))
+}
+
+/**
+ * Upsert a device record in PostgreSQL (insert or update on conflict)
+ */
+export async function upsertDevice(deviceData: Partial<Device>): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const defaults = createMockDevice(deviceData)
+  const now = new Date().toISOString()
+
+  // Use raw SQL for upsert since Drizzle's onConflictDoUpdate needs careful setup
+  await db.execute(sql`
+    INSERT INTO devices (device_id, name, token, system_version, system_name, endpoint_arn, created_at, updated_at)
+    VALUES (${defaults.deviceId}, ${defaults.name}, ${defaults.token}, ${defaults.systemVersion}, ${defaults.systemName}, ${defaults.endpointArn}, ${now}, ${now})
+    ON CONFLICT (device_id) DO UPDATE SET
+      name = EXCLUDED.name,
+      token = EXCLUDED.token,
+      system_version = EXCLUDED.system_version,
+      system_name = EXCLUDED.system_name,
+      endpoint_arn = EXCLUDED.endpoint_arn,
+      updated_at = EXCLUDED.updated_at
+  `)
+}
+
+/**
+ * Get all devices from PostgreSQL
+ */
+export async function getAllDevices(): Promise<Array<Partial<Device>>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(devices)
+  return result
+}
+
+/**
+ * Get multiple devices by IDs (batch lookup)
+ */
+export async function getDevicesBatch(deviceIds: string[]): Promise<Array<Partial<Device>>> {
+  if (deviceIds.length === 0) {
+    return []
+  }
+
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  // Build IN clause for batch lookup
+  const placeholders = deviceIds.map((id) => sql`${id}`).reduce((acc, curr, i) => (i === 0 ? curr : sql`${acc}, ${curr}`))
+  const result = await db.execute(sql`SELECT * FROM devices WHERE device_id IN (${placeholders})`)
+  const rows = [...result] as Array<
+    {device_id: string; name: string; token: string; system_version: string; system_name: string; endpoint_arn: string | null}
+  >
+
+  return rows.map((row) => ({
+    deviceId: row.device_id,
+    name: row.name,
+    token: row.token,
+    systemVersion: row.system_version,
+    systemName: row.system_name,
+    endpointArn: row.endpoint_arn ?? undefined
+  }))
+}
+
 // ============================================================================
 // Junction Table Operations
 // ============================================================================
@@ -369,6 +460,119 @@ export async function linkUserDevice(userId: string, deviceId: string): Promise<
 
   await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
   await db.insert(userDevices).values({userId, deviceId})
+}
+
+/**
+ * Upsert a user-device link (insert or ignore on conflict)
+ */
+export async function upsertUserDevice(data: {userId: string; deviceId: string}): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  // Insert or ignore on conflict
+  await db.execute(sql`
+    INSERT INTO user_devices (user_id, device_id, created_at)
+    VALUES (${data.userId}, ${data.deviceId}, ${new Date().toISOString()})
+    ON CONFLICT (user_id, device_id) DO NOTHING
+  `)
+}
+
+/**
+ * Get user-device links by user ID
+ */
+export async function getUserDevicesByUserId(userId: string): Promise<Array<{userId: string; deviceId: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+  return result.map((row) => ({userId: row.userId, deviceId: row.deviceId}))
+}
+
+/**
+ * Get user-device links by device ID
+ */
+export async function getUserDevicesByDeviceId(deviceId: string): Promise<Array<{userId: string; deviceId: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
+  return result.map((row) => ({userId: row.userId, deviceId: row.deviceId}))
+}
+
+/**
+ * Delete all user-device links for a user
+ */
+export async function deleteUserDevicesByUserId(userId: string): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.delete(userDevices).where(eq(userDevices.userId, userId))
+}
+
+/**
+ * Delete all user-device links for a device
+ */
+export async function deleteUserDevicesByDeviceId(deviceId: string): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.delete(userDevices).where(eq(userDevices.deviceId, deviceId))
+}
+
+/**
+ * Get user-file links by file ID
+ */
+export async function getUserFilesByFileId(fileId: string): Promise<Array<{userId: string; fileId: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(userFiles).where(eq(userFiles.fileId, fileId))
+  return result.map((row) => ({userId: row.userId, fileId: row.fileId}))
+}
+
+/**
+ * Delete all user-file links for a user
+ */
+export async function deleteUserFilesByUserId(userId: string): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.delete(userFiles).where(eq(userFiles.userId, userId))
+}
+
+/**
+ * Delete a user record from PostgreSQL
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  await db.delete(users).where(eq(users.id, userId))
+}
+
+/**
+ * Get files by S3 key
+ */
+export async function getFilesByKey(key: string): Promise<Array<Partial<File>>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(files).where(eq(files.key, key))
+  return result.map((row) => ({...row, url: row.url ?? undefined, status: row.status as FileStatus}))
 }
 
 // ============================================================================
