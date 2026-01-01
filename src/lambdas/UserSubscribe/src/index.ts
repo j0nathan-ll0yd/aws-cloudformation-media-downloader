@@ -11,7 +11,7 @@
 import {userSubscriptionRequestSchema} from '#types/api-schema'
 import type {UserSubscriptionRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
@@ -32,5 +32,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
   validateRequest(requestBody, userSubscriptionRequestSchema)
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
-  return buildApiResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
+  return buildValidatedResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
 }))

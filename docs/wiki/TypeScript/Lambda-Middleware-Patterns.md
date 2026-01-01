@@ -25,7 +25,7 @@ This project uses middleware wrappers to provide consistent behavior across all 
 **File**: `src/lib/lambda/middleware/api.ts`
 
 **What it provides**:
-- Automatic try-catch with `buildApiResponse(context, error)`
+- Automatic try-catch with `buildValidatedResponse(context, error)`
 - Request/response logging (`logInfo`)
 - Test fixture generation (`logIncomingFixture`, `logOutgoingFixture`)
 - Trace ID extraction
@@ -40,7 +40,7 @@ function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
 **Example**:
 ```typescript
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {UnauthorizedError} from '#lib/system/errors'
 
@@ -57,7 +57,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   const result = await processRequest(JSON.parse(body))
 
   // Return success response
-  return buildApiResponse(context, 200, result)
+  return buildValidatedResponse(context, 200, result)
 }))
 ```
 
@@ -98,7 +98,7 @@ function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthorizerEven
 **Example**:
 ```typescript
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 
 export const handler = withPowertools(wrapAuthenticatedHandler(
@@ -107,7 +107,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(
     // The wrapper already rejected unauthenticated and anonymous users
 
     const files = await getFilesByUser(userId)
-    return buildApiResponse(context, 200, {files})
+    return buildValidatedResponse(context, 200, {files})
   }
 ))
 ```
@@ -142,7 +142,7 @@ function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent
 **Example**:
 ```typescript
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {UserStatus} from '#types/enums'
 import {getDefaultFile} from '#config/constants'
@@ -153,13 +153,13 @@ export const handler = withPowertools(wrapOptionalAuthHandler(
     if (userStatus === UserStatus.Anonymous) {
       // Provide demo/sample content
       const demoContent = [getDefaultFile()]
-      return buildApiResponse(context, 200, {contents: demoContent})
+      return buildValidatedResponse(context, 200, {contents: demoContent})
     }
 
     // For authenticated users, userId is available
     // Note: cast to string since we've already handled anonymous case
     const files = await getFilesByUser(userId as string)
-    return buildApiResponse(context, 200, {contents: files})
+    return buildValidatedResponse(context, 200, {contents: files})
   }
 ))
 ```
@@ -239,7 +239,7 @@ function wrapLambdaInvokeHandler<TEvent, TResult>(
 ```typescript
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {logDebug} from '#lib/system/logging'
 
 interface StartFileUploadParams {
@@ -254,7 +254,7 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
 
     await downloadAndUploadFile(fileId)
 
-    return buildApiResponse(context, 200, {fileId, status: 'success'})
+    return buildValidatedResponse(context, 200, {fileId, status: 'success'})
   }
 ))
 ```
@@ -265,22 +265,47 @@ export const handler = withPowertools(wrapLambdaInvokeHandler<StartFileUploadPar
 
 ## Response Building
 
-### buildApiResponse
+### buildValidatedResponse
 
-**Use for**: Creating consistent API Gateway responses.
+**Use for**: Creating consistent API Gateway responses with optional schema validation.
 
 **File**: `src/lib/lambda/responses.ts`
 
-**Overloads**:
+**What it provides**:
+- Standard response formatting with requestId
+- Optional schema validation for success responses (2xx)
+- Body is optional (for 204 No Content responses)
+- In dev/test: throws on validation failure
+- In production: logs warning, continues with response
+
+**Signature**:
 ```typescript
-// Success with status code and body
-buildApiResponse(context, 200, {data: files})
+function buildValidatedResponse<T extends string | object>(
+  context: Context,
+  statusCode: number,
+  body?: T,
+  schema?: z.ZodSchema<T>
+): APIGatewayProxyResult
+```
 
-// Error with status code and message
-buildApiResponse(context, 404, 'File not found')
+**Examples**:
+```typescript
+import {buildValidatedResponse} from '#lib/lambda/responses'
+import {fileListResponseSchema} from '#types/api-schema'
 
-// Error from Error object (extracts status and message)
-buildApiResponse(context, new ValidationError('Invalid input'))
+// With schema validation
+export const handler = withPowertools(wrapAuthenticatedHandler(
+  async ({context, userId}) => {
+    const files = await getFilesByUser(userId)
+    return buildValidatedResponse(context, 200, {files}, fileListResponseSchema)
+  }
+))
+
+// Without schema (simple response)
+return buildValidatedResponse(context, 200, {status: 'success'})
+
+// 204 No Content (no body)
+return buildValidatedResponse(context, 204)
 ```
 
 **Response formats**:
@@ -291,53 +316,6 @@ Success (2xx):
   "body": { "data": [...] },
   "requestId": "abc-123"
 }
-```
-
-Error (4xx/5xx):
-```json
-{
-  "error": {
-    "code": "custom-4XX-generic",
-    "message": "File not found"
-  },
-  "requestId": "abc-123"
-}
-```
-
-### buildValidatedResponse
-
-**Use for**: Creating API responses with Zod schema validation.
-
-**File**: `src/lib/lambda/responses.ts`
-
-**What it provides**:
-- All functionality of `buildApiResponse`
-- Schema validation for success responses (2xx)
-- In dev/test: throws on validation failure
-- In production: logs warning, continues with response
-
-**Signature**:
-```typescript
-function buildValidatedResponse<T extends string | object>(
-  context: Context,
-  statusCode: number,
-  body: T,
-  schema?: z.ZodSchema<T>
-): APIGatewayProxyResult
-```
-
-**Example**:
-```typescript
-import {buildValidatedResponse} from '#lib/lambda/responses'
-import {fileListResponseSchema} from '#types/api-schema'
-
-export const handler = withPowertools(wrapAuthenticatedHandler(
-  async ({context, userId}) => {
-    const files = await getFilesByUser(userId)
-    // Validates response against schema before returning
-    return buildValidatedResponse(context, 200, {files}, fileListResponseSchema)
-  }
-))
 ```
 
 **Validation behavior**:
@@ -353,9 +331,69 @@ export const handler = withPowertools(wrapAuthenticatedHandler(
 ```
 
 **When to use**:
+- All Lambda handler success responses
 - API handlers with TypeSpec-generated response schemas
 - Endpoints where response shape must match API contract
-- Catching response drift during development/testing
+- 204 No Content responses (omit body)
+
+---
+
+### buildErrorResponse
+
+**Use for**: Converting Error objects to API Gateway error responses. Used by middleware for centralized error handling.
+
+**File**: `src/lib/lambda/responses.ts`
+
+**What it provides**:
+- Extracts status code from CustomLambdaError subclasses
+- Extracts error code and message
+- Handles plain objects (Better Auth style errors)
+- Falls back to 500 for unknown errors
+
+**Signature**:
+```typescript
+function buildErrorResponse(
+  context: Context,
+  error: Error | unknown
+): APIGatewayProxyResult
+```
+
+**Examples**:
+```typescript
+import {buildErrorResponse} from '#lib/lambda/responses'
+
+// Used in middleware catch blocks
+try {
+  const result = await handler({event, context})
+  return result
+} catch (error) {
+  return buildErrorResponse(context, error)
+}
+
+// CustomLambdaError subclasses use their statusCode
+throw new UnauthorizedError()           // → 401
+throw new ValidationError('Bad input')  // → 400
+throw new NotFoundError('No file')      // → 404
+
+// Standard errors become 500
+throw new Error('Unexpected failure')   // → 500
+```
+
+**Response format**:
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid email format"
+  },
+  "requestId": "abc-123"
+}
+```
+
+**When to use**:
+- Middleware error handling (wrappers use this internally)
+- Catch blocks that need to return error responses
+- NOT typically called directly from Lambda handlers (throw errors instead)
 
 ---
 
@@ -413,7 +451,7 @@ function wrapValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuthorizerE
 **Example**:
 ```typescript
 import {wrapValidatedHandler} from '#lib/lambda/middleware/validation'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {z} from 'zod'
 
@@ -427,7 +465,7 @@ export const handler = withPowertools(
   wrapValidatedHandler(deviceSchema, async ({context, body}) => {
     // body is typed as z.infer<typeof deviceSchema>
     const device = await registerDevice(body.deviceId, body.token, body.platform)
-    return buildApiResponse(context, 200, {device})
+    return buildValidatedResponse(context, 200, {device})
   })
 )
 ```
@@ -448,14 +486,14 @@ export const handler = withPowertools(
 **Example**:
 ```typescript
 import {wrapAuthenticatedValidatedHandler} from '#lib/lambda/middleware/validation'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 
 export const handler = withPowertools(
   wrapAuthenticatedValidatedHandler(deviceSchema, async ({context, userId, body}) => {
     // userId is guaranteed string, body is validated and typed
     const device = await registerDevice(userId, body.deviceId, body.token)
-    return buildApiResponse(context, 200, {device})
+    return buildValidatedResponse(context, 200, {device})
   })
 )
 ```
@@ -539,7 +577,7 @@ import {wrapApiHandler} from '#lib/lambda/middleware/api'
 export const handler = middy(wrapApiHandler(async ({event, context}) => {
   // Body is already sanitized
   const body = getPayloadFromEvent(event)
-  return buildApiResponse(context, 200, body)
+  return buildValidatedResponse(context, 200, body)
 })).use(sanitizeInput({
   skipFields: ['token', 'password'],
   maxLength: 10000
@@ -571,7 +609,7 @@ import {securityHeaders} from '#lib/lambda/middleware/security-headers'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 
 export const handler = middy(wrapApiHandler(async ({event, context}) => {
-  return buildApiResponse(context, 200, {data: 'result'})
+  return buildValidatedResponse(context, 200, {data: 'result'})
 })).use(securityHeaders({
   corsOrigins: ['https://app.example.com'],
   frameOptions: 'SAMEORIGIN'

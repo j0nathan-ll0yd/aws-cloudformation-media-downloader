@@ -1,6 +1,6 @@
 /**
  * response-helpers
- * HIGH: Lambda handlers must use buildApiResponse() helper, not raw objects
+ * HIGH: Lambda handlers must use buildValidatedResponse() helper, not raw objects
  *
  * Mirrors: src/mcp/validation/rules/response-helpers.ts
  */
@@ -9,13 +9,13 @@ module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Lambda handlers must use buildApiResponse() helper instead of raw response objects',
+      description: 'Lambda handlers must use buildValidatedResponse() helper instead of raw response objects',
       category: 'Best Practices',
       recommended: true
     },
     messages: {
-      rawResponse: 'Raw response object detected. Use buildApiResponse() from lambda-helpers instead.',
-      missingImport: 'Lambda handler returns API Gateway responses but does not import response helpers from lambda-helpers.'
+      rawResponse: 'Raw response object detected. Use buildValidatedResponse() from lambda/responses instead.',
+      missingImport: 'Lambda handler returns API Gateway responses but does not import response helpers from lambda/responses.'
     },
     schema: []
   },
@@ -38,12 +38,12 @@ module.exports = {
     return {
       ImportDeclaration(node) {
         const moduleSpec = node.source.value
-        if (moduleSpec.includes('lambda-helpers')) {
+        if (moduleSpec.includes('lambda/responses')) {
           const specifiers = node.specifiers || []
           for (const spec of specifiers) {
             if (spec.type === 'ImportSpecifier') {
               const name = spec.imported?.name || spec.local?.name
-              if (name === 'buildApiResponse') {
+              if (name === 'buildValidatedResponse' || name === 'buildErrorResponse') {
                 hasResponseImport = true
               }
             }

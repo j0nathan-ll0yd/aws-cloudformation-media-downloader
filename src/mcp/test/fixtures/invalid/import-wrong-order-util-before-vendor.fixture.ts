@@ -5,5 +5,5 @@
  * @description Utilities imported before vendor (wrong order)
  * @expectedViolations 1
  */
-import {buildApiResponse} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {queryItems} from '#lib/vendor/AWS/DynamoDB'

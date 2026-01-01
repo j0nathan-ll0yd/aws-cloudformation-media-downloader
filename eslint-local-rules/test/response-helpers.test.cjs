@@ -14,25 +14,25 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('response-helpers', rule, {
   valid: [
-    // Allowed: Using buildApiResponse() helper
+    // Allowed: Using buildValidatedResponse() helper
     {
       code: `
-        import {buildApiResponse} from '#util/lambda-helpers'
+        import {buildValidatedResponse} from '#lib/lambda/responses'
         export const handler = async () => {
-          return buildApiResponse(200, {data: 'test'})
+          return buildValidatedResponse(context, 200, {data: 'test'})
         }
       `,
       filename: 'src/lambdas/ListFiles/src/index.ts'
     },
-    // Allowed: Using buildApiResponse() for error handling
+    // Allowed: Using buildErrorResponse() for error handling
     {
       code: `
-        import {buildApiResponse} from '#util/lambda-helpers'
+        import {buildErrorResponse} from '#lib/lambda/responses'
         export const handler = async () => {
           try {
-            return buildApiResponse(200, {})
+            return buildValidatedResponse(context, 200, {})
           } catch (error) {
-            return buildApiResponse(500, error)
+            return buildErrorResponse(context, error)
           }
         }
       `,

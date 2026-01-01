@@ -13,7 +13,7 @@ import type {Device} from '#types/domain-models'
 import {deleteDevice, getUserDevices} from '#lib/domain/device/device-service'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {createFailedUserDeletionIssue} from '#lib/integrations/github/issue-service'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError} from '#lib/system/logging'
@@ -72,7 +72,10 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   const relationFailures = relationResults.filter((r) => r.status === 'rejected')
   if (relationFailures.length > 0) {
     logError('Cascade deletion partial failure (relations)', relationFailures)
-    return buildApiResponse(context, 207, {message: 'Partial deletion - some child records could not be removed', failedOperations: relationFailures.length})
+    return buildValidatedResponse(context, 207, {
+      message: 'Partial deletion - some child records could not be removed',
+      failedOperations: relationFailures.length
+    })
   }
 
   // 2. Delete devices (parents of UserDevices)
@@ -82,7 +85,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
   const deviceFailures = deviceResults.filter((r) => r.status === 'rejected')
   if (deviceFailures.length > 0) {
     logError('Cascade deletion partial failure (devices)', deviceFailures)
-    return buildApiResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
+    return buildValidatedResponse(context, 207, {message: 'Partial deletion - some devices could not be removed', failedOperations: deviceFailures.length})
   }
 
   // Delete parent LAST - only if all children succeeded
@@ -96,5 +99,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
     throw new UnexpectedError('Operation failed unexpectedly; but logged for resolution')
   }
 
-  return buildApiResponse(context, 204)
+  return buildValidatedResponse(context, 204)
 }))
