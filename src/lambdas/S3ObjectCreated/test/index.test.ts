@@ -13,13 +13,11 @@ beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
 })
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileId: vi.fn()}))
 
 const {handler} = await import('./../src')
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
-// Mock data using fixture factories
 const mockFileRow = createMockFile({fileId: '4TfEp8oG5gM', key: '20210122-[Philip DeFranco].mp4'})
 const mockUserFileRow = createMockUserFile({fileId: '4TfEp8oG5gM', userId: DEFAULT_USER_ID})
 
@@ -68,9 +66,9 @@ describe('#S3ObjectCreated', () => {
 
   test('should send notifications to multiple users for the same file', async () => {
     const multipleUsers = [
-      {fileId: '4TfEp8oG5gM', userId: 'user-1', createdAt: new Date()},
-      {fileId: '4TfEp8oG5gM', userId: 'user-2', createdAt: new Date()},
-      {fileId: '4TfEp8oG5gM', userId: 'user-3', createdAt: new Date()}
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'}),
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-3'})
     ]
     vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
     const output = await handler(baseEvent, testContext)
@@ -106,8 +104,8 @@ describe('#S3ObjectCreated', () => {
   describe('#PartialFailures', () => {
     test('should continue processing when one notification dispatch fails', async () => {
       const multipleUsers = [
-        {fileId: '4TfEp8oG5gM', userId: 'user-1', createdAt: new Date()},
-        {fileId: '4TfEp8oG5gM', userId: 'user-2', createdAt: new Date()}
+        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
+        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'})
       ]
       vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
       // First call fails, second succeeds

@@ -14,7 +14,6 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 const fakeUserId = uuidv4()
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFilesForUser: vi.fn()}))
 
 const {handler} = await import('./../src')

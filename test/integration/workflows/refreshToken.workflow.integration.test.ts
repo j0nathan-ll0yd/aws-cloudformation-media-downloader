@@ -1,15 +1,8 @@
 /**
  * RefreshToken Workflow Integration Tests
  *
- * Tests the session refresh workflow with REAL PostgreSQL:
- * - Session service uses real entity queries via getDrizzleClient()
- * - Session validation and refresh against real database
- *
- * Workflow:
- * 1. Extract session token from Authorization header
- * 2. Validate session exists and is not expired (real DB query)
- * 3. Extend session expiration (real DB update)
- * 4. Return updated session info
+ * Tests the session refresh workflow including token validation,
+ * session extension, and error handling.
  */
 
 // Set environment variables before imports
@@ -25,7 +18,6 @@ import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSess
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-// Import handler - uses real session-service which uses real entity queries
 const {handler} = await import('#lambdas/RefreshToken/src/index')
 
 describe('RefreshToken Workflow Integration Tests', () => {
@@ -46,7 +38,6 @@ describe('RefreshToken Workflow Integration Tests', () => {
   })
 
   test('should successfully refresh a valid session', async () => {
-    // Arrange: Create user and session in real database
     const userId = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
@@ -55,11 +46,9 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertUser({userId, email: 'refresh@example.com', firstName: 'Refresh'})
     await insertSession({id: sessionId, userId, token, expiresAt: originalExpiry})
 
-    // Act
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
     expect(response.body.token).toBe(token)
@@ -94,7 +83,6 @@ describe('RefreshToken Workflow Integration Tests', () => {
   })
 
   test('should return 401 when session is expired', async () => {
-    // Arrange: Create expired session
     const userId = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
@@ -103,11 +91,9 @@ describe('RefreshToken Workflow Integration Tests', () => {
     await insertUser({userId, email: 'expired@example.com'})
     await insertSession({id: sessionId, userId, token, expiresAt: expiredTime})
 
-    // Act
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(401)
   })
 

@@ -1,15 +1,8 @@
 /**
  * PruneDevices Workflow Integration Tests
  *
- * Tests the device pruning workflow with real PostgreSQL:
- * - Entity queries: Real PostgreSQL operations
- * - APNS: Mocked for device health checks (external service)
- * - SNS: Real LocalStack for endpoint operations
- *
- * Workflow:
- * 1. Get all devices via real PostgreSQL queries
- * 2. Check each device against APNS (mocked - external service)
- * 3. Delete disabled devices via real SNS and PostgreSQL
+ * Tests the device pruning workflow including device health checks
+ * and disabled device cleanup.
  */
 
 // Set environment variables before imports
@@ -49,9 +42,6 @@ vi.mock('apns2', () => ({
   PushType: {background: 'background'}
 }))
 
-// Entity queries and device service use real PostgreSQL and LocalStack SNS
-
-// Import handler after mocks
 const {handler} = await import('#lambdas/PruneDevices/src/index')
 
 describe('PruneDevices Workflow Integration Tests', () => {

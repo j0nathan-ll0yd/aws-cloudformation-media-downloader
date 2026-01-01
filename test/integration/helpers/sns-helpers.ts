@@ -16,8 +16,6 @@ import {
   deletePlatformApplication,
   deleteTopic,
   getEndpointEnabled,
-  listEndpoints,
-  listSubscriptions,
   publishToEndpoint,
   publishToTopic,
   subscribeEndpointToTopic,
@@ -33,26 +31,6 @@ export const createTestEndpoint = createPlatformEndpoint
 export const deleteTestEndpoint = deleteEndpoint
 export const isEndpointEnabled = getEndpointEnabled
 export { publishToEndpoint, publishToTopic, subscribeEndpointToTopic, subscribeQueueToTopic }
-
-/**
- * Lists all endpoints for a platform application
- * @param platformApplicationArn - ARN of the platform application
- * @returns Array of endpoint ARNs
- */
-export async function listTestEndpoints(platformApplicationArn: string): Promise<string[]> {
-  const endpoints = await listEndpoints(platformApplicationArn)
-  return endpoints.map((endpoint) => endpoint.EndpointArn!).filter(Boolean)
-}
-
-/**
- * Lists all subscriptions for a topic with structured format
- * @param topicArn - ARN of the topic
- * @returns Array of subscription details
- */
-export async function listTestSubscriptions(topicArn: string): Promise<Array<{subscriptionArn: string; endpoint: string; protocol: string}>> {
-  const subscriptions = await listSubscriptions(topicArn)
-  return subscriptions.map((sub) => ({subscriptionArn: sub.SubscriptionArn!, endpoint: sub.Endpoint!, protocol: sub.Protocol!}))
-}
 
 /**
  * Generates a unique, CI-isolated name for SNS platform applications.

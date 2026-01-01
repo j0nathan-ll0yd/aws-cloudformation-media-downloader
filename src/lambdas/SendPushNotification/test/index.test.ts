@@ -16,7 +16,6 @@ const getUserDevicesByUserIdResponse = [createMockUserDevice({deviceId: fakeDevi
 // Create SNS mock - intercepts all SNSClient.send() calls
 const snsMock = mockClient(SNSClient)
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getUserDevicesByUserId: vi.fn(), getDevice: vi.fn()}))
 
 const {handler} = await import('./../src')

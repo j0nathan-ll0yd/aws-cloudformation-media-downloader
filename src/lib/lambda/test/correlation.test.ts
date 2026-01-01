@@ -5,8 +5,9 @@
  */
 
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {APIGatewayProxyEvent, Context, S3Event, SQSEvent} from 'aws-lambda'
+import type {Context, S3Event, SQSEvent} from 'aws-lambda'
 import {extractCorrelationId} from '../correlation'
+import {createAPIGatewayEvent, createS3Event, createScheduledEvent, createSQSEvent} from '#test/helpers/event-factories'
 
 const mockContext: Context = {
   callbackWaitsForEmptyEventLoop: false,
@@ -31,19 +32,7 @@ describe('Correlation ID Extraction', () => {
   describe('extractCorrelationId', () => {
     describe('SQS Events', () => {
       it('should extract correlationId from SQS message body _correlationId', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({_correlationId: 'corr-from-body'}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {_correlationId: 'corr-from-body'}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -52,19 +41,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from SQS message body correlationId', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({correlationId: 'corr-from-correlationId'}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {correlationId: 'corr-from-correlationId'}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -72,19 +49,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from SQS message body detail._correlationId', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({detail: {_correlationId: 'corr-from-detail-underscore'}}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {detail: {_correlationId: 'corr-from-detail-underscore'}}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -92,19 +57,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from SQS message body detail.correlationId', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({detail: {correlationId: 'corr-from-detail'}}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {detail: {correlationId: 'corr-from-detail'}}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -112,19 +65,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should generate UUID when SQS body parsing fails', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: 'not-valid-json',
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: 'not-valid-json'}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -134,19 +75,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should generate UUID when SQS body has no correlationId', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({otherField: 'value'}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {otherField: 'value'}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -155,19 +84,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should prefer _correlationId over correlationId in SQS body', () => {
-        const sqsEvent: SQSEvent = {
-          Records: [{
-            messageId: 'msg-123',
-            receiptHandle: 'receipt',
-            body: JSON.stringify({_correlationId: 'underscore-first', correlationId: 'second'}),
-            attributes: {} as SQSEvent['Records'][0]['attributes'],
-            messageAttributes: {},
-            md5OfBody: 'md5',
-            eventSource: 'aws:sqs',
-            eventSourceARN: 'arn:aws:sqs:region:account:queue',
-            awsRegion: 'us-east-1'
-          }]
-        }
+        const sqsEvent = createSQSEvent({records: [{body: {_correlationId: 'underscore-first', correlationId: 'second'}}]})
 
         const result = extractCorrelationId(sqsEvent, mockContext)
 
@@ -177,20 +94,7 @@ describe('Correlation ID Extraction', () => {
 
     describe('API Gateway Events', () => {
       it('should extract correlationId from X-Correlation-ID header', () => {
-        const apiEvent: APIGatewayProxyEvent = {
-          body: null,
-          headers: {'X-Correlation-ID': 'api-corr-123'},
-          multiValueHeaders: {},
-          httpMethod: 'GET',
-          isBase64Encoded: false,
-          path: '/test',
-          pathParameters: null,
-          queryStringParameters: null,
-          multiValueQueryStringParameters: null,
-          stageVariables: null,
-          requestContext: {} as APIGatewayProxyEvent['requestContext'],
-          resource: '/test'
-        }
+        const apiEvent = createAPIGatewayEvent({path: '/test', headers: {'X-Correlation-ID': 'api-corr-123'}})
 
         const result = extractCorrelationId(apiEvent, mockContext)
 
@@ -198,20 +102,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from lowercase x-correlation-id header', () => {
-        const apiEvent: APIGatewayProxyEvent = {
-          body: null,
-          headers: {'x-correlation-id': 'api-corr-lowercase'},
-          multiValueHeaders: {},
-          httpMethod: 'GET',
-          isBase64Encoded: false,
-          path: '/test',
-          pathParameters: null,
-          queryStringParameters: null,
-          multiValueQueryStringParameters: null,
-          stageVariables: null,
-          requestContext: {} as APIGatewayProxyEvent['requestContext'],
-          resource: '/test'
-        }
+        const apiEvent = createAPIGatewayEvent({path: '/test', headers: {'x-correlation-id': 'api-corr-lowercase'}})
 
         const result = extractCorrelationId(apiEvent, mockContext)
 
@@ -219,20 +110,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from X-Correlation-Id header (mixed case)', () => {
-        const apiEvent: APIGatewayProxyEvent = {
-          body: null,
-          headers: {'X-Correlation-Id': 'api-corr-mixed'},
-          multiValueHeaders: {},
-          httpMethod: 'GET',
-          isBase64Encoded: false,
-          path: '/test',
-          pathParameters: null,
-          queryStringParameters: null,
-          multiValueQueryStringParameters: null,
-          stageVariables: null,
-          requestContext: {} as APIGatewayProxyEvent['requestContext'],
-          resource: '/test'
-        }
+        const apiEvent = createAPIGatewayEvent({path: '/test', headers: {'X-Correlation-Id': 'api-corr-mixed'}})
 
         const result = extractCorrelationId(apiEvent, mockContext)
 
@@ -240,20 +118,9 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should generate UUID when API Gateway has no correlation header', () => {
-        const apiEvent: APIGatewayProxyEvent = {
-          body: null,
-          headers: {},
-          multiValueHeaders: {},
-          httpMethod: 'GET',
-          isBase64Encoded: false,
-          path: '/test',
-          pathParameters: null,
-          queryStringParameters: null,
-          multiValueQueryStringParameters: null,
-          stageVariables: null,
-          requestContext: {} as APIGatewayProxyEvent['requestContext'],
-          resource: '/test'
-        }
+        const apiEvent = createAPIGatewayEvent({path: '/test'})
+        // Remove default headers to test the fallback
+        apiEvent.headers = {}
 
         const result = extractCorrelationId(apiEvent, mockContext)
 
@@ -261,20 +128,8 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should handle null headers in API Gateway event', () => {
-        const apiEvent = {
-          body: null,
-          headers: null,
-          multiValueHeaders: {},
-          httpMethod: 'GET',
-          isBase64Encoded: false,
-          path: '/test',
-          pathParameters: null,
-          queryStringParameters: null,
-          multiValueQueryStringParameters: null,
-          stageVariables: null,
-          requestContext: {} as APIGatewayProxyEvent['requestContext'],
-          resource: '/test'
-        } as unknown as APIGatewayProxyEvent
+        const apiEvent = createAPIGatewayEvent({path: '/test'}) // Test edge case: null headers (cast needed as factory always provides headers)
+        ;(apiEvent as unknown as {headers: null}).headers = null
 
         const result = extractCorrelationId(apiEvent, mockContext)
 
@@ -284,7 +139,7 @@ describe('Correlation ID Extraction', () => {
 
     describe('EventBridge Events', () => {
       it('should extract correlationId from EventBridge detail._correlationId', () => {
-        const ebEvent = {detail: {_correlationId: 'eb-corr-123', otherField: 'value'}}
+        const ebEvent = createScheduledEvent({detail: {_correlationId: 'eb-corr-123', otherField: 'value'}})
 
         const result = extractCorrelationId(ebEvent, mockContext)
 
@@ -292,7 +147,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should extract correlationId from EventBridge detail.correlationId', () => {
-        const ebEvent = {detail: {correlationId: 'eb-corr-no-underscore', otherField: 'value'}}
+        const ebEvent = createScheduledEvent({detail: {correlationId: 'eb-corr-no-underscore', otherField: 'value'}})
 
         const result = extractCorrelationId(ebEvent, mockContext)
 
@@ -300,7 +155,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should prefer _correlationId over correlationId in EventBridge', () => {
-        const ebEvent = {detail: {_correlationId: 'preferred', correlationId: 'fallback'}}
+        const ebEvent = createScheduledEvent({detail: {_correlationId: 'preferred', correlationId: 'fallback'}})
 
         const result = extractCorrelationId(ebEvent, mockContext)
 
@@ -308,7 +163,7 @@ describe('Correlation ID Extraction', () => {
       })
 
       it('should generate UUID when EventBridge detail has no correlationId', () => {
-        const ebEvent = {detail: {otherField: 'value'}}
+        const ebEvent = createScheduledEvent({detail: {otherField: 'value'}})
 
         const result = extractCorrelationId(ebEvent, mockContext)
 
@@ -318,24 +173,7 @@ describe('Correlation ID Extraction', () => {
 
     describe('S3 Events', () => {
       it('should generate UUID for S3 events', () => {
-        const s3Event: S3Event = {
-          Records: [{
-            eventVersion: '2.1',
-            eventSource: 'aws:s3',
-            awsRegion: 'us-east-1',
-            eventTime: '2024-01-01T00:00:00.000Z',
-            eventName: 'ObjectCreated:Put',
-            userIdentity: {principalId: 'EXAMPLE'},
-            requestParameters: {sourceIPAddress: '127.0.0.1'},
-            responseElements: {'x-amz-request-id': 's3-request-123', 'x-amz-id-2': 'id2'},
-            s3: {
-              s3SchemaVersion: '1.0',
-              configurationId: 'config-id',
-              bucket: {name: 'bucket', ownerIdentity: {principalId: 'EXAMPLE'}, arn: 'arn:aws:s3:::bucket'},
-              object: {key: 'test/file.txt', size: 100, eTag: 'etag', sequencer: 'seq'}
-            }
-          }]
-        }
+        const s3Event = createS3Event({records: [{key: 'test/file.txt'}]})
 
         const result = extractCorrelationId(s3Event, mockContext)
 

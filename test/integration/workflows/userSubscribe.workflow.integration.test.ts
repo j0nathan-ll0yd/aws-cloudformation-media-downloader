@@ -1,12 +1,8 @@
 /**
  * UserSubscribe Workflow Integration Tests
  *
- * Tests the subscription workflow using REAL LocalStack SNS:
- * 1. Validate authenticated user
- * 2. Subscribe device endpoint to SNS topic (real LocalStack)
- * 3. Return subscription ARN
- *
- * This is a TRUE integration test - no mocking of AWS services.
+ * Tests the subscription workflow including user validation,
+ * endpoint subscription, and subscription ARN handling.
  */
 
 // Set environment variables before imports
@@ -29,7 +25,6 @@ import {
   generateIsolatedAppName
 } from '../helpers/sns-helpers'
 
-// Import handler WITHOUT mocks - uses real LocalStack SNS
 const {handler} = await import('#lambdas/UserSubscribe/src/index')
 
 describe('UserSubscribe Workflow Integration Tests', () => {

@@ -9,7 +9,6 @@ import {v4 as uuidv4} from 'uuid'
 const authMock = createBetterAuthMock()
 vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => authMock.auth)}))
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({updateUser: vi.fn()}))
 
 const {handler} = await import('./../src')

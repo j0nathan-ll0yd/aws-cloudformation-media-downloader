@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 
 // Mock the Powertools logger
 const mockLogInfo = vi.fn()
@@ -87,12 +88,20 @@ describe('Logging', () => {
 
   describe('getRequestSummary', () => {
     test('should extract path, method, requestId, and sourceIp from API Gateway event', () => {
-      const event = {path: '/api/files', httpMethod: 'GET', requestContext: {requestId: 'req-123', identity: {sourceIp: '192.168.1.1'}}}
+      const event = createAPIGatewayEvent({path: '/api/files', httpMethod: 'GET'})
 
       const result = getRequestSummary(event)
 
-      expect(result).toEqual({path: '/api/files', method: 'GET', requestId: 'req-123', sourceIp: '192.168.1.1'})
+      expect(result).toEqual({
+        path: '/api/files',
+        method: 'GET',
+        requestId: event.requestContext.requestId,
+        sourceIp: event.requestContext.identity.sourceIp
+      })
     })
+
+    // Edge case tests use partial objects to verify fallback behavior
+    // These intentionally don't use factories to test graceful handling of incomplete data
 
     test('should fallback to resource when path is not available', () => {
       const event = {resource: '/api/users/{userId}', httpMethod: 'DELETE', requestContext: {requestId: 'req-456'}}

@@ -25,7 +25,6 @@ const fakeUserId = uuidv4()
 // Create SNS mock - intercepts all SNSClient.send() calls
 const snsMock = mockClient(SNSClient)
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
 const getUserDevicesMock = vi.fn()

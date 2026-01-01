@@ -1,15 +1,8 @@
 /**
  * CleanupExpiredRecords Workflow Integration Tests
  *
- * Tests the scheduled cleanup workflow with REAL PostgreSQL:
- * - FileDownloads: Completed/Failed older than 24 hours
- * - Sessions: Expired sessions (expiresAt before now)
- * - Verification: Expired tokens (expiresAt before now)
- *
- * Validates OUR business logic for:
- * - Correct expiration cutoff calculations
- * - Proper status filtering for file downloads
- * - Continuing cleanup when one table fails
+ * Tests the scheduled cleanup workflow including expiration cutoff
+ * calculations, status filtering, and partial failure handling.
  */
 
 // Set environment variables before imports
@@ -36,8 +29,6 @@ import {
 } from '../helpers/postgres-helpers'
 import {DownloadStatus} from '#types/enums'
 
-// Import handler - uses real Drizzle client via getDrizzleClient()
-// getDrizzleClient() detects TEST_DATABASE_URL and uses local PostgreSQL
 const {handler} = await import('#lambdas/CleanupExpiredRecords/src/index')
 
 describe('CleanupExpiredRecords Workflow Integration Tests', () => {
