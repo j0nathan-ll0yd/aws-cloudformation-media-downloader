@@ -21,20 +21,7 @@ import {UnauthorizedError} from '#lib/system/errors'
  * @param schema - Zod schema to validate request body against
  * @param handler - Business logic that receives validated, typed body
  * @returns Wrapped handler with validation
- *
- * @example
- * ```typescript
- * import {wrapValidatedHandler} from '#lib/lambda/middleware/validation'
- * import {deviceSchema} from '#types/api-schema'
- *
- * export const handler = withPowertools(
- *   wrapValidatedHandler(deviceSchema, async ({context, body}) => {
- *     // body is typed as z.infer<typeof deviceSchema>
- *     return buildApiResponse(context, 200, {deviceId: body.deviceId})
- *   })
- * )
- * ```
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapValidatedHandler | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#wrapValidatedHandler | Usage Examples}
  */
 export function wrapValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   schema: z.ZodSchema<TBody>,
@@ -70,21 +57,7 @@ export function wrapValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuth
  * @param schema - Zod schema to validate request body against
  * @param handler - Business logic with guaranteed userId and validated body
  * @returns Wrapped handler with authentication and validation
- *
- * @example
- * ```typescript
- * import {wrapAuthenticatedValidatedHandler} from '#lib/lambda/middleware/validation'
- * import {deviceRegistrationSchema} from '#types/api-schema'
- *
- * export const handler = withPowertools(
- *   wrapAuthenticatedValidatedHandler(deviceRegistrationSchema, async ({context, userId, body}) => {
- *     // userId is guaranteed string, body is validated and typed
- *     const device = await registerDevice(userId, body.deviceId, body.token)
- *     return buildApiResponse(context, 200, {device})
- *   })
- * )
- * ```
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapAuthenticatedValidatedHandler | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#wrapAuthenticatedValidatedHandler | Usage Examples}
  */
 export function wrapAuthenticatedValidatedHandler<TBody, TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   schema: z.ZodSchema<TBody>,

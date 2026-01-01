@@ -162,12 +162,108 @@ test('userResources collection', async () => {
 | Credentials error | Use 'test' for both key and secret |
 | Region mismatch | Use us-west-2 consistently |
 
+## True Integration vs Mock Disguised
+
+### The Problem
+
+"Mock disguised" tests look like integration tests but mock AWS vendor wrappers instead of using LocalStack. This defeats the purpose of integration testing.
+
+```typescript
+// ❌ WRONG: Mock Disguised Test
+const {publishSnsEventMock} = vi.hoisted(() => ({publishSnsEventMock: vi.fn()}))
+vi.mock('#lib/vendor/AWS/SNS', () => ({publishSnsEvent: publishSnsEventMock}))
+
+test('sends notification', async () => {
+  await handler(event, context)
+  expect(publishSnsEventMock).toHaveBeenCalled() // Testing mock, not real SNS
+})
+```
+
+```typescript
+// ✅ CORRECT: True Integration Test
+import {createTestPlatformApplication, createTestEndpoint} from '../helpers/sns-helpers'
+
+let platformAppArn: string
+let endpointArn: string
+
+beforeAll(async () => {
+  platformAppArn = await createTestPlatformApplication('test-app')
+  endpointArn = await createTestEndpoint(platformAppArn, 'device-token')
+})
+
+test('sends notification', async () => {
+  await handler(event, context)
+  // Real SNS endpoint receives real message
+})
+```
+
+### When Mocking IS Acceptable
+
+Only mock external services that cannot be emulated by LocalStack:
+
+| Service | Mock? | Reason |
+|---------|-------|--------|
+| SNS, SQS, S3, EventBridge | ❌ No | LocalStack provides full emulation |
+| PostgreSQL | ❌ No | Real database via Docker |
+| APNS (Apple Push) | ✅ Yes | External service, no emulator |
+| OAuth Providers | ✅ Yes | Requires real identity provider |
+| GitHub API | ✅ Yes | External service |
+| API Gateway Rate Limiting | ✅ Yes | LocalStack limitation |
+
+### SNS Test Helpers
+
+Use the SNS vendor wrapper for test operations:
+
+```typescript
+import {
+  createTestPlatformApplication,
+  createTestEndpoint,
+  createTestTopic,
+  deleteTestPlatformApplication,
+  deleteTestEndpoint,
+  deleteTestTopic,
+  generateIsolatedAppName
+} from '../helpers/sns-helpers'
+
+describe('SNS Integration Test', () => {
+  let platformAppArn: string
+  let endpointArn: string
+  const appName = generateIsolatedAppName('test-push')
+
+  beforeAll(async () => {
+    platformAppArn = await createTestPlatformApplication(appName)
+    endpointArn = await createTestEndpoint(platformAppArn, `token-${Date.now()}`)
+  })
+
+  afterAll(async () => {
+    await deleteTestEndpoint(endpointArn)
+    await deleteTestPlatformApplication(platformAppArn)
+  })
+
+  test('publishes to endpoint', async () => {
+    // Test with real LocalStack SNS
+  })
+})
+```
+
+### CI Isolation
+
+Use `generateIsolatedAppName()` for CI-safe platform application names:
+
+```typescript
+// Generates: "test-push-run12345-a1b2c3d4" in CI
+// Generates: "test-push-1704067200000-a1b2c3d4" locally
+const appName = generateIsolatedAppName('test-push')
+```
+
 ## Best Practices
 
 1. **Use vendor wrappers** - Automatic LocalStack detection
 2. **Set UseLocalstack=true** - Enable LocalStack mode
 3. **Clean state between tests** - Reset services in afterEach
-4. **Mock external services** - Don't call real APIs from LocalStack
+4. **Mock external services only** - APNS, OAuth, GitHub API
+5. **Never mock AWS vendors** - Use real LocalStack services
+6. **Use isolated names in CI** - `generateIsolatedAppName()` for SNS apps
 
 ## Related Patterns
 

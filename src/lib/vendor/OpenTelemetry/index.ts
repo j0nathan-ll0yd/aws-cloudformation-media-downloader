@@ -51,9 +51,6 @@ export function getCurrentSpan(): Span | undefined {
  * @param name - Name of the span/subsegment
  * @param kind - SpanKind (default: INTERNAL)
  * @returns New span or null if tracing disabled
- *
- * @example
- * const span = startSpan('db-query'); endSpan(span) // or endSpan(span, err)
  */
 export function startSpan(name: string, kind: SpanKind = SpanKind.INTERNAL): Span | null {
   if (!isTracingEnabled()) {
@@ -123,11 +120,6 @@ export function endSpan(span: Span | null, error?: Error): void {
  *
  * @param handler - Lambda handler function that receives event, context, and metadata
  * @returns Wrapped handler compatible with AWS Lambda runtime
- *
- * @example
- * ```typescript
- * export const handler = withTracing(async (event, ctx, meta) => { ... })
- * ```
  */
 export function withTracing<TEvent = unknown, TResult = unknown>(
   handler: (event: TEvent, context: Context, metadata?: {traceId: string}) => Promise<TResult>

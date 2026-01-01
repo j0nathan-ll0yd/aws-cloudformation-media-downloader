@@ -64,15 +64,8 @@ export class CircuitBreakerOpenError extends Error {
 }
 
 /**
- * Circuit breaker for protecting against cascading failures
- *
- * Usage:
- * ```typescript
- * const youtubeBreaker = new CircuitBreaker({ name: 'youtube', failureThreshold: 3 })
- *
- * // Wrap external calls
- * const result = await youtubeBreaker.execute(() => fetchVideoInfo(videoId))
- * ```
+ * Circuit breaker for protecting against cascading failures.
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Resilience-Patterns#CircuitBreaker | Usage Examples}
  */
 export class CircuitBreaker {
   private config: CircuitBreakerConfig

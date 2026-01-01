@@ -35,12 +35,32 @@ function isTestMode(): boolean {
 }
 
 /**
+ * Get schema prefix for CI isolation.
+ * Uses GITHUB_RUN_ID to ensure parallel CI runs don't interfere.
+ * Matches the logic in test/integration/helpers/postgres-helpers.ts
+ */
+function getSchemaPrefix(): string {
+  const runId = process.env.GITHUB_RUN_ID
+  return runId ? `run_${runId}_` : ''
+}
+
+/**
  * Get the worker schema name for test mode.
  * Matches the schema used by test helpers for isolation.
+ *
+ * Note: VITEST_POOL_ID is 0-indexed in threads mode, so we add 1 to match
+ * test helpers schema naming (worker_1, worker_2, etc.)
  */
 function getWorkerSchema(): string {
-  const workerId = process.env.VITEST_POOL_ID || '1'
-  return `worker_${workerId}`
+  const prefix = getSchemaPrefix()
+  const vitestPoolId = process.env.VITEST_POOL_ID
+  if (vitestPoolId !== undefined) {
+    const workerId = parseInt(vitestPoolId, 10) + 1
+    return `${prefix}worker_${workerId}`
+  }
+  // Fallback to JEST_WORKER_ID for Jest, or '1' for single-threaded
+  const workerId = process.env.JEST_WORKER_ID || '1'
+  return `${prefix}worker_${workerId}`
 }
 
 /**
@@ -158,14 +178,7 @@ export type TransactionClient = PgTransaction<
  *
  * @param fn - The function to execute within the transaction
  * @returns The result of the function
- *
- * @example
- * ```typescript
- * await withTransaction(async (tx) => {
- *   await tx.insert(users).values(userData)
- *   await tx.insert(identityProviders).values(idpData)
- * })
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Drizzle-Patterns#withTransaction | Usage Examples}
  */
 export async function withTransaction<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
   const db = await getDrizzleClient()

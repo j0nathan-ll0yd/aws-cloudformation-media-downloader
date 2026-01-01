@@ -1,33 +1,36 @@
 /**
  * ApiGatewayAuthorizer Workflow Integration Tests
  *
- * Tests the session token validation:
- * - Session service: Mocked for session lookup
- * - API Gateway SDK: Mocked for key validation
+ * Tests the session token validation against real PostgreSQL:
+ * - Session validation: Real database queries
+ * - API Gateway SDK: Mocked for key validation (LocalStack limitations)
  *
  * Workflow:
  * 1. Extract token from Authorization header
- * 2. Validate session via session service (mocked)
+ * 2. Validate session via real PostgreSQL queries
  * 3. Return IAM policy with userId principal
  */
 
 // Set environment variables before imports
 process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
 
-import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayRequestAuthorizerEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
 
+// Test helpers
+import {closeTestDb, createAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+
 // Mock API Gateway vendor calls - must use vi.hoisted for ESM
+// Note: API Gateway rate limiting must remain mocked due to LocalStack limitations
 const {mockGetApiKeys, mockGetUsagePlans, mockGetUsage} = vi.hoisted(() => ({mockGetApiKeys: vi.fn(), mockGetUsagePlans: vi.fn(), mockGetUsage: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: mockGetApiKeys, getUsagePlans: mockGetUsagePlans, getUsage: mockGetUsage}))
 
-// Mock session service - must use vi.hoisted for ESM
-const {validateSessionTokenMock} = vi.hoisted(() => ({validateSessionTokenMock: vi.fn()}))
-vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
+// Session validation uses real PostgreSQL - no mock needed
 
 // Import handler after mocks are set up
 const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
@@ -93,8 +96,9 @@ function setupApiGatewayMocks() {
 }
 
 describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
-  beforeAll(() => {
-    // No database setup needed - we're mocking everything
+  beforeAll(async () => {
+    await getTestDbAsync()
+    await createAllTables()
   })
 
   beforeEach(() => {
@@ -102,18 +106,25 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
     setupApiGatewayMocks()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.clearAllMocks()
+    await truncateAllTables()
+  })
+
+  afterAll(async () => {
+    await closeTestDb()
   })
 
   describe('Session token validation', () => {
     test('should Allow when session token is valid and not expired', async () => {
-      // Arrange: Mock valid session
+      // Arrange: Create real user and session in PostgreSQL
       const userId = crypto.randomUUID()
-      const sessionToken = 'valid-session-token-abc123'
-      const oneHourFromNow = Date.now() + 60 * 60 * 1000
+      const sessionId = crypto.randomUUID()
+      const sessionToken = crypto.randomUUID()
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
 
-      validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: oneHourFromNow})
+      await insertUser({userId, email: 'valid@example.com', firstName: 'Valid'})
+      await insertSession({id: sessionId, userId, token: sessionToken, expiresAt: oneHourFromNow})
 
       // Act
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
@@ -123,34 +134,41 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
       expect(result.usageIdentifierKey).toBe(TEST_API_KEY)
-      expect(validateSessionTokenMock).toHaveBeenCalledWith(sessionToken)
     })
 
     test('should throw Unauthorized when session token does not exist in database', async () => {
-      // Arrange: Mock session not found
-      validateSessionTokenMock.mockRejectedValue(new Error('Session not found'))
+      // Arrange: Use a token that doesn't exist in the database
+      const nonexistentToken = crypto.randomUUID()
 
       // Act & Assert: Should throw Unauthorized for invalid token on protected path
-      const event = createAuthorizerEvent({headers: {Authorization: 'Bearer nonexistent-token', 'User-Agent': 'iOS/17.0'}})
+      const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${nonexistentToken}`, 'User-Agent': 'iOS/17.0'}})
       await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
 
     test('should throw Unauthorized when session token is expired', async () => {
-      // Arrange: Mock expired session
-      validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
+      // Arrange: Create real user with expired session in PostgreSQL
+      const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      const expiredToken = crypto.randomUUID()
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+
+      await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
+      await insertSession({id: sessionId, userId, token: expiredToken, expiresAt: oneHourAgo})
 
       // Act & Assert: Should throw Unauthorized for expired token on protected path
-      const event = createAuthorizerEvent({headers: {Authorization: 'Bearer expired-session-token', 'User-Agent': 'iOS/17.0'}})
+      const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${expiredToken}`, 'User-Agent': 'iOS/17.0'}})
       await expect(handler(event, context)).rejects.toThrow('Unauthorized')
     })
 
     test('should validate specific session token', async () => {
-      // Arrange: User with valid session
+      // Arrange: Create real user with valid session in PostgreSQL
       const userId = crypto.randomUUID()
-      const sessionToken = 'specific-session-token'
-      const oneHourFromNow = Date.now() + 60 * 60 * 1000
+      const sessionId = crypto.randomUUID()
+      const sessionToken = crypto.randomUUID()
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
 
-      validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: oneHourFromNow})
+      await insertUser({userId, email: 'specific@example.com', firstName: 'Specific'})
+      await insertSession({id: sessionId, userId, token: sessionToken, expiresAt: oneHourFromNow})
 
       // Act
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
@@ -159,7 +177,6 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       // Assert: Correct session validated
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
-      expect(validateSessionTokenMock).toHaveBeenCalledWith(sessionToken)
     })
   })
 
@@ -181,10 +198,10 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
     })
 
     test('should Allow multi-auth path with invalid token (fallback to anonymous)', async () => {
-      // Arrange: Invalid token on multi-auth path
-      validateSessionTokenMock.mockRejectedValue(new Error('Session not found'))
+      // Arrange: Use a token that doesn't exist in the database on multi-auth path
+      const invalidToken = crypto.randomUUID()
 
-      const event = createAuthorizerEvent({path: '/files', resource: '/files', headers: {Authorization: 'Bearer invalid-token', 'User-Agent': 'iOS/17.0'}})
+      const event = createAuthorizerEvent({path: '/files', resource: '/files', headers: {Authorization: `Bearer ${invalidToken}`, 'User-Agent': 'iOS/17.0'}})
 
       // Act
       const result = await handler(event, context)
@@ -217,12 +234,15 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
     })
 
     test('should handle valid session with complex token format', async () => {
-      // Arrange: Session with JWT-like token (contains dots and hyphens)
+      // Arrange: Create real user and session with JWT-like token in PostgreSQL
       const userId = crypto.randomUUID()
+      const sessionId = crypto.randomUUID()
+      // Use a JWT-like token (contains dots and hyphens)
       const sessionToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
-      const oneHourFromNow = Date.now() + 60 * 60 * 1000
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
 
-      validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: oneHourFromNow})
+      await insertUser({userId, email: 'jwt@example.com', firstName: 'JWT'})
+      await insertSession({id: sessionId, userId, token: sessionToken, expiresAt: oneHourFromNow})
 
       // Act
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${sessionToken}`, 'User-Agent': 'iOS/17.0'}})
@@ -236,12 +256,17 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
 
   describe('Multiple sessions per user', () => {
     test('should validate specific token when user has multiple sessions', async () => {
-      // Arrange: Mock session validation for specific token
+      // Arrange: Create real user with multiple sessions in PostgreSQL
       const userId = crypto.randomUUID()
-      const token2 = 'session-token-2'
-      const oneHourFromNow = Date.now() + 60 * 60 * 1000
+      const sessionId1 = crypto.randomUUID()
+      const sessionId2 = crypto.randomUUID()
+      const token1 = crypto.randomUUID()
+      const token2 = crypto.randomUUID()
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
 
-      validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: oneHourFromNow})
+      await insertUser({userId, email: 'multi@example.com', firstName: 'Multi'})
+      await insertSession({id: sessionId1, userId, token: token1, expiresAt: oneHourFromNow})
+      await insertSession({id: sessionId2, userId, token: token2, expiresAt: oneHourFromNow})
 
       // Act: Validate using token2
       const event = createAuthorizerEvent({headers: {Authorization: `Bearer ${token2}`, 'User-Agent': 'iOS/17.0'}})
@@ -250,7 +275,6 @@ describe('ApiGatewayAuthorizer Workflow Integration Tests', () => {
       // Assert: Correct session validated
       expect(result.policyDocument.Statement[0].Effect).toBe('Allow')
       expect(result.principalId).toBe(userId)
-      expect(validateSessionTokenMock).toHaveBeenCalledWith(token2)
     })
   })
 })

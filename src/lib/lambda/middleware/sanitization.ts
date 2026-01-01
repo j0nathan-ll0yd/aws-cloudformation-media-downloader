@@ -121,23 +121,7 @@ function sanitizeObject(obj: unknown, options: SanitizationOptions, path = ''): 
  *
  * @param options - Sanitization configuration
  * @returns Middy middleware object
- *
- * @example
- * ```typescript
- * import middy from '@middy/core'
- * import {sanitizeInput} from '#lib/lambda/middleware/sanitization'
- * import {wrapApiHandler} from '#lib/lambda/middleware/api'
- *
- * export const handler = middy(wrapApiHandler(async ({event, context}) => {
- *   // Body is already sanitized
- *   const body = getPayloadFromEvent(event)
- *   return buildApiResponse(context, 200, body)
- * })).use(sanitizeInput({
- *   skipFields: ['token', 'password'],
- *   maxLength: 10000
- * }))
- * ```
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#sanitizeInput | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#sanitizeInput | Usage Examples}
  */
 export function sanitizeInput(options: SanitizationOptions = {}): MiddlewareObj<APIGatewayProxyEvent> {
   return {

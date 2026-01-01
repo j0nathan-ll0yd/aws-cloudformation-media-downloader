@@ -1,8 +1,14 @@
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/vitest-setup'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
+import {mockClient} from 'aws-sdk-client-mock'
+import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
+
+// Create SNS mock - intercepts all SNSClient.send() calls
+const snsMock = mockClient(SNSClient)
 
 // Set APNS env vars for ApnsClient
 process.env.APNS_SIGNING_KEY = fakePrivateKey
@@ -40,12 +46,6 @@ const fakeDevices = [
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesByDeviceId: vi.fn()}))
-
-vi.mock('#lib/vendor/AWS/SNS', () => ({
-  deleteEndpoint: vi.fn().mockReturnValue({ResponseMetadata: {RequestId: 'test-request-id'}}), // fmt: multiline
-  subscribe: vi.fn(),
-  unsubscribe: vi.fn()
-}))
 
 vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: vi.fn()}))
 
@@ -122,6 +122,19 @@ describe('#PruneDevices', () => {
     version: ''
   }
   const context = testContext
+
+  // Configure SNS mock responses for each test using factories
+  beforeEach(() => {
+    snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
+    snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
+    snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())
+  })
+
+  afterEach(() => {
+    snsMock.reset()
+    vi.clearAllMocks()
+  })
+
   test('should search for and remove disabled devices (single)', async () => {
     vi.mocked(getAllDevices).mockResolvedValue(fakeDevices)
     vi.mocked(deleteUserDevicesByDeviceId).mockResolvedValue(undefined)

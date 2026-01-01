@@ -87,14 +87,19 @@ The fast CI script (`pnpm run ci:local`) runs these checks in order:
 
 1. **Prerequisites** - Node.js 22+, hcl2json, jq
 2. **Dependencies** - `pnpm install --frozen-lockfile`
-3. **Build dependencies** - Terraform type generation
-4. **Webpack build** - Lambda function compilation
-5. **Type checking** - TypeScript compiler
-6. **Linting** - ESLint
-7. **Documentation validation** - Ensures documented scripts exist
-8. **Dependency rules** - Architectural boundary checks
-9. **GraphRAG validation** - Knowledge graph freshness
-10. **Unit tests** - Jest with mocked AWS services
+3. **TypeSpec compilation** - API spec validation
+4. **Build dependencies** - Terraform type generation
+5. **esbuild build** - Lambda function compilation
+6. **Type checking** - TypeScript compiler
+7. **Linting** - ESLint + Terraform formatting
+8. **Formatting** - dprint code formatting check
+9. **ESLint local rules** - Custom rule validation
+10. **Documentation validation** - Ensures documented scripts exist
+11. **Dependency rules** - Architectural boundary checks
+12. **GraphRAG validation** - Knowledge graph freshness
+13. **Documentation sync** - Wiki matches codebase
+14. **Unit tests** - Vitest with mocked AWS services
+15. **Test output validation** - No deprecation warnings or noisy output
 
 ## What ci:local Does NOT Check
 

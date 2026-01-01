@@ -19,23 +19,7 @@ import {logger} from '#lib/vendor/Powertools'
  * @param handler - Handler function to process each SQS record
  * @param options - Configuration options for batch processing
  * @returns Wrapped handler that returns SQSBatchResponse with failed message IDs
- *
- * @example
- * ```typescript
- * import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
- * import {withPowertools} from '#lib/lambda/middleware/powertools'
- * import type {NotificationPayload} from '#types/notification-types'
- *
- * export const handler = withPowertools(
- *   wrapSqsBatchHandler<NotificationPayload>(async ({body, messageAttributes}) => {
- *     const notificationType = messageAttributes.type?.stringValue
- *     await sendNotification(body, notificationType)
- *     // Throw to report failure (message returns to queue)
- *     // Return normally to report success (message deleted)
- *   })
- * )
- * ```
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#wrapSqsBatchHandler | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#wrapSqsBatchHandler | Usage Examples}
  */
 export function wrapSqsBatchHandler<TBody = unknown>(
   handler: (params: SqsRecordParams<TBody>) => Promise<void>,

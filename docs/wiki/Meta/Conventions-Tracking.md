@@ -38,6 +38,7 @@ Central registry of all project conventions with their documentation and enforce
 | response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | mock-formatting | mock | MEDIUM | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| aws-sdk-mock | sdk-mock | MEDIUM | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 
 ---
 
@@ -52,6 +53,7 @@ Central registry of all project conventions with their documentation and enforce
 | ElectroDB Test Mocking | [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) | MCP + ESLint |
 | No Try-Catch for Required Env Vars | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) | MCP + ESLint |
 | Cascade Deletion Order | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
+| Migrations as Single Source of Truth | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
 | pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
 | Use pnpm deploy, never tofu apply | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Script enforcement (pre-deploy-check.sh) |
@@ -61,6 +63,8 @@ Central registry of all project conventions with their documentation and enforce
 
 | Convention | Documentation | Enforcement |
 |------------|---------------|-------------|
+| Integration Tests Use LocalStack | [LocalStack Testing](../Integration/LocalStack-Testing.md) | Code review + [Integration Test Audit](../Testing/Integration-Test-Audit.md) |
+| Only Mock External Services in Integration Tests | [Coverage Philosophy](../Testing/Coverage-Philosophy.md) | Code review |
 | Branch-First PR Workflow | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `pre-push` |
 | Authenticated Handler Wrappers | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
 | Lambda Response Helper | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
@@ -88,6 +92,7 @@ Central registry of all project conventions with their documentation and enforce
 | ResponseStatus Enum | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | Mock Return Formatting | [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | MCP |
 | PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
+| AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | Code review |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
 

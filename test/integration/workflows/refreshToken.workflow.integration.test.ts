@@ -1,13 +1,14 @@
 /**
  * RefreshToken Workflow Integration Tests
  *
- * Tests the session refresh workflow against real services:
- * - PostgreSQL: Session records for validation and refresh
+ * Tests the session refresh workflow with REAL PostgreSQL:
+ * - Session service uses real entity queries via getDrizzleClient()
+ * - Session validation and refresh against real database
  *
  * Workflow:
  * 1. Extract session token from Authorization header
- * 2. Validate session exists and is not expired
- * 3. Extend session expiration
+ * 2. Validate session exists and is not expired (real DB query)
+ * 3. Extend session expiration (real DB update)
  * 4. Return updated session info
  */
 
@@ -16,61 +17,63 @@ process.env.USE_LOCALSTACK = 'true'
 process.env.AWS_REGION = 'us-west-2'
 process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
-import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, getSessionById, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-// Mock the session service since it has complex dependencies
-vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: vi.fn(), refreshSession: vi.fn()}))
-
-// Import after mocks
+// Import handler - uses real session-service which uses real entity queries
 const {handler} = await import('#lambdas/RefreshToken/src/index')
-import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
-import {UnauthorizedError} from '#lib/system/errors'
 
 describe('RefreshToken Workflow Integration Tests', () => {
   let mockContext: Context
 
   beforeAll(async () => {
+    await getTestDbAsync()
     await createAllTables()
     mockContext = createMockContext()
   })
 
   afterEach(async () => {
-    vi.clearAllMocks()
     await truncateAllTables()
   })
 
   afterAll(async () => {
-    await dropAllTables()
     await closeTestDb()
   })
 
   test('should successfully refresh a valid session', async () => {
+    // Arrange: Create user and session in real database
     const userId = crypto.randomUUID()
     const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
-    const newExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
+    const originalExpiry = new Date(Date.now() + 60000) // Expires in 1 minute
 
     await insertUser({userId, email: 'refresh@example.com', firstName: 'Refresh'})
-    await insertSession({id: sessionId, userId, token, expiresAt: new Date(Date.now() + 60000)})
+    await insertSession({id: sessionId, userId, token, expiresAt: originalExpiry})
 
-    vi.mocked(validateSessionToken).mockResolvedValue({sessionId, userId, expiresAt: Date.now() + 60000})
-    vi.mocked(refreshSession).mockResolvedValue({expiresAt: newExpiresAt})
-
+    // Act
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
 
+    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
     expect(response.body.token).toBe(token)
     expect(response.body.sessionId).toBe(sessionId)
     expect(response.body.userId).toBe(userId)
-    expect(response.body.expiresAt).toBe(newExpiresAt)
+
+    // Verify expiration was extended (should be ~30 days from now)
+    const thirtyDaysFromNow = Date.now() + 29 * 24 * 60 * 60 * 1000 // 29 days minimum
+    expect(response.body.expiresAt).toBeGreaterThan(thirtyDaysFromNow)
+
+    // Verify database was updated
+    const updatedSession = await getSessionById(sessionId)
+    expect(updatedSession).not.toBeNull()
+    expect(updatedSession!.expiresAt.getTime()).toBeGreaterThan(thirtyDaysFromNow)
   })
 
   test('should return 401 when Authorization header is missing', async () => {
@@ -91,21 +94,30 @@ describe('RefreshToken Workflow Integration Tests', () => {
   })
 
   test('should return 401 when session is expired', async () => {
+    // Arrange: Create expired session
+    const userId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
-    vi.mocked(validateSessionToken).mockRejectedValue(new UnauthorizedError('Session expired'))
+    const expiredTime = new Date(Date.now() - 60000) // Expired 1 minute ago
 
+    await insertUser({userId, email: 'expired@example.com'})
+    await insertSession({id: sessionId, userId, token, expiresAt: expiredTime})
+
+    // Act
     const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
       mockContext)
 
+    // Assert
     expect(result.statusCode).toBe(401)
   })
 
   test('should return 401 when session does not exist', async () => {
-    const token = crypto.randomUUID()
-    vi.mocked(validateSessionToken).mockRejectedValue(new UnauthorizedError('Session not found'))
+    const nonExistentToken = crypto.randomUUID()
 
-    const result = await handler(createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${token}`}}),
-      mockContext)
+    const result = await handler(
+      createMockAPIGatewayProxyEvent({path: '/auth/refresh', httpMethod: 'POST', headers: {Authorization: `Bearer ${nonExistentToken}`}}),
+      mockContext
+    )
 
     expect(result.statusCode).toBe(401)
   })

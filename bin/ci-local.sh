@@ -34,13 +34,14 @@ echo "  4. Build dependencies (Terraform types)"
 echo "  5. esbuild build"
 echo "  6. Type checking"
 echo "  7. Linting"
-echo "  8. ESLint local rules tests"
-echo "  9. Documentation validation"
-echo "  10. Dependency rules check"
-echo "  11. GraphRAG validation"
-echo "  12. Documentation sync validation"
-echo "  13. Unit tests"
-echo "  14. Test output validation"
+echo "  8. Formatting (dprint)"
+echo "  9. ESLint local rules tests"
+echo "  10. Documentation validation"
+echo "  11. Dependency rules check"
+echo "  12. GraphRAG validation"
+echo "  13. Documentation sync validation"
+echo "  14. Unit tests"
+echo "  15. Test output validation"
 echo ""
 echo -e "${BLUE}Note: Integration tests skipped. Use 'pnpm run ci:local:full' for complete CI.${NC}"
 echo ""
@@ -111,7 +112,7 @@ echo -e "${GREEN}  Type checks passed${NC}"
 echo ""
 
 # Step 7: Linting
-echo -e "${YELLOW}[7/14] Running linter...${NC}"
+echo -e "${YELLOW}[7/15] Running linter...${NC}"
 pnpm run lint
 
 # Check Terraform formatting
@@ -129,35 +130,45 @@ fi
 echo -e "${GREEN}  Linting passed${NC}"
 echo ""
 
-# Step 8: ESLint local rules tests
-echo -e "${YELLOW}[8/14] Testing ESLint local rules...${NC}"
+# Step 8: Formatting check (dprint)
+echo -e "${YELLOW}[8/15] Checking code formatting (dprint)...${NC}"
+if ! pnpm run format:check; then
+  echo -e "${RED}Error: Code formatting check failed.${NC}"
+  echo "Run 'pnpm run format' to fix."
+  exit 1
+fi
+echo -e "${GREEN}  Code formatting passed${NC}"
+echo ""
+
+# Step 9: ESLint local rules tests
+echo -e "${YELLOW}[9/15] Testing ESLint local rules...${NC}"
 pnpm run test:eslint-rules
 echo -e "${GREEN}  ESLint local rules tests passed${NC}"
 echo ""
 
-# Step 9: Documentation validation
-echo -e "${YELLOW}[9/14] Validating documented scripts...${NC}"
+# Step 10: Documentation validation
+echo -e "${YELLOW}[10/15] Validating documented scripts...${NC}"
 ./bin/validate-docs.sh
 echo ""
 
-# Step 10: Dependency rules check
-echo -e "${YELLOW}[10/14] Checking dependency rules...${NC}"
+# Step 11: Dependency rules check
+echo -e "${YELLOW}[11/15] Checking dependency rules...${NC}"
 pnpm run deps:check
 echo -e "${GREEN}  Dependency rules passed${NC}"
 echo ""
 
-# Step 11: GraphRAG validation
-echo -e "${YELLOW}[11/14] Validating GraphRAG...${NC}"
+# Step 12: GraphRAG validation
+echo -e "${YELLOW}[12/15] Validating GraphRAG...${NC}"
 ./bin/validate-graphrag.sh
 echo ""
 
-# Step 12: Documentation sync validation
-echo -e "${YELLOW}[12/14] Validating documentation sync...${NC}"
+# Step 13: Documentation sync validation
+echo -e "${YELLOW}[13/15] Validating documentation sync...${NC}"
 ./bin/validate-doc-sync.sh
 echo ""
 
-# Step 13: Unit tests
-echo -e "${YELLOW}[13/14] Running unit tests...${NC}"
+# Step 14: Unit tests
+echo -e "${YELLOW}[14/15] Running unit tests...${NC}"
 TEST_OUTPUT=$(pnpm test 2>&1)
 TEST_EXIT_CODE=$?
 echo "$TEST_OUTPUT"
@@ -169,8 +180,8 @@ fi
 echo -e "${GREEN}  Unit tests passed${NC}"
 echo ""
 
-# Step 14: Validate test output is clean
-echo -e "${YELLOW}[14/14] Validating test output...${NC}"
+# Step 15: Validate test output is clean
+echo -e "${YELLOW}[15/15] Validating test output...${NC}"
 TEST_ISSUES=0
 
 # Check for Vitest deprecation warnings
@@ -215,9 +226,9 @@ echo ""
 echo "All checks passed in ${MINUTES}m ${SECONDS}s"
 echo ""
 echo "What was checked:"
-echo "  Environment, dependencies, TypeSpec, build, types, lint, ESLint local rules,"
-echo "  documentation, dependency rules, GraphRAG, documentation sync, unit tests,"
-echo "  test output validation (deprecation, EMF metrics, MCR warnings)"
+echo "  Environment, dependencies, TypeSpec, build, types, lint, formatting (dprint),"
+echo "  ESLint local rules, documentation, dependency rules, GraphRAG, documentation sync,"
+echo "  unit tests, test output validation (deprecation, EMF metrics, MCR warnings)"
 echo ""
 echo "What was NOT checked (run ci:local:full for these):"
 echo "  Integration tests (LocalStack)"

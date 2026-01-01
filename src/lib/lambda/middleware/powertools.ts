@@ -32,12 +32,7 @@ let isColdStart = true
  * @param handler - Lambda handler function
  * @param options - Optional configuration (e.g., enableCustomMetrics for lambdas with custom metrics)
  * @returns Wrapped handler with Powertools middleware
- *
- * @example
- * ```typescript
- * export const handler = withPowertools(wrapAuthenticatedHandler(async (p) => { ... }))
- * ```
- * @see docs/wiki/TypeScript/Lambda-Middleware-Patterns.md
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#withPowertools | Usage Examples}
  */
 export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>,
@@ -57,8 +52,11 @@ export function withPowertools<TEvent, TResult>(
     // This ensures ALL lambdas report cold starts without the "No application metrics" warning
     middyHandler.before(async () => {
       if (isColdStart) {
-        metrics.addMetric('ColdStart', MetricUnit.Count, 1)
-        metrics.publishStoredMetrics()
+        // Skip metrics output when LOG_LEVEL=SILENT (e.g., integration tests)
+        if (process.env.LOG_LEVEL !== 'SILENT') {
+          metrics.addMetric('ColdStart', MetricUnit.Count, 1)
+          metrics.publishStoredMetrics()
+        }
         isColdStart = false
       }
     })

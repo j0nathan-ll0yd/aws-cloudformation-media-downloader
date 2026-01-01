@@ -17,9 +17,11 @@ process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://tes
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {
   closeTestDb,
+  createAllTables,
   ensureSearchPath,
   getDevice,
   getTestDb,
+  getTestDbAsync,
   getUser,
   insertDevice,
   insertUser,
@@ -31,7 +33,9 @@ import {eq} from 'drizzle-orm'
 
 describe('Better Auth Entities Integration Tests', () => {
   beforeAll(async () => {
-    // No setup needed - tables created by globalSetup
+    // Initialize database connection and create tables
+    await getTestDbAsync()
+    await createAllTables()
   })
 
   afterEach(async () => {

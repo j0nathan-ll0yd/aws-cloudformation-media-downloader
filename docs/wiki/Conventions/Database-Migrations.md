@@ -57,24 +57,20 @@ Files follow the format: `NNNN_description.sql`
    - Add `IF NOT EXISTS` to all CREATE statements
    - Replace `CREATE INDEX` with `CREATE INDEX ASYNC`
    - Ensure idempotency
+   - Add `DEFAULT NULL` to nullable columns (for Better Auth compatibility)
 
 4. **Copy to migrations directory** with proper naming:
    ```bash
    mv migrations/XXXX_migration.sql migrations/0003_add_new_table.sql
    ```
 
-5. **Update integration test helpers** if needed:
-   ```
-   test/integration/helpers/postgres-helpers.ts
-   ```
-
-6. **Test locally:**
+5. **Test locally:**
    ```bash
    docker-compose -f docker-compose.test.yml up -d
    pnpm run test:integration
    ```
 
-7. **Deploy:**
+6. **Deploy:**
    ```bash
    pnpm run deploy
    ```
@@ -108,6 +104,69 @@ CREATE TABLE user_files (
 ```
 
 Use application-layer validation in `src/lib/vendor/Drizzle/fk-enforcement.ts`.
+
+## Integration Testing
+
+### Single Source of Truth Convention
+
+**CRITICAL**: Migrations are the single source of truth for SQL. Test infrastructure reads from migration files, not from duplicate SQL definitions.
+
+```
+migrations/0001_initial_schema.sql  ← Single source of truth
+            ↓
+test/integration/globalSetup.ts     ← Reads and adapts migrations
+            ↓
+test/integration/helpers/           ← Uses tables created by globalSetup
+```
+
+### How It Works
+
+1. **globalSetup.ts** runs once before all tests:
+   - Reads SQL from `migrations/*.sql` files
+   - Applies minimal transformations for test environment:
+     - Schema prefix for worker isolation
+     - `CREATE INDEX ASYNC` → `CREATE INDEX` (PostgreSQL compatibility)
+     - `UUID` → `TEXT` (test simplicity with regular PostgreSQL)
+   - Creates tables in worker-specific schemas
+
+2. **Test files** call `createAllTables()` which only sets `search_path`
+
+3. **Between tests**, `truncateAllTables()` clears data
+
+### DO NOT Duplicate SQL
+
+```typescript
+// ❌ WRONG: Duplicate SQL in test helpers
+await db.execute(sql.raw(`
+  CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL
+  )
+`))
+
+// ✅ CORRECT: Use migration-created tables
+export async function createAllTables(): Promise<void> {
+  // Tables are created by globalSetup from migrations
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+}
+```
+
+### Why DEFAULT NULL in Migrations
+
+Better Auth uses `generateId: false` and sends `DEFAULT` for columns without values:
+
+```sql
+-- Better Auth generates:
+INSERT INTO users (id, email, name) VALUES (DEFAULT, 'user@example.com', DEFAULT)
+```
+
+PostgreSQL requires explicit `DEFAULT NULL` for nullable columns when `DEFAULT` is used in INSERT:
+
+```sql
+-- Must have DEFAULT NULL for nullable columns
+name TEXT DEFAULT NULL,
+image TEXT DEFAULT NULL,
+```
 
 ### UUID Generation
 

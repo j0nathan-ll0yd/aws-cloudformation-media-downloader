@@ -135,21 +135,70 @@ describe('Powertools Middleware', () => {
       const {getOptionalEnv} = await import('#lib/system/env')
       vi.mocked(getOptionalEnv).mockReturnValue('development')
 
-      const handler = vi.fn().mockResolvedValue('result')
-      const wrapped = withPowertools(handler) as unknown as {_middlewares: Array<{before?: () => Promise<void>}>}
+      // Cold start metrics require LOG_LEVEL to not be SILENT
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'INFO'
 
-      // Find the before middleware (cold start tracking)
-      const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
-      expect(beforeMiddleware).toBeDefined()
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: Array<{before?: () => Promise<void>}>}
 
-      // Execute the before middleware to trigger cold start
-      const {metrics} = await import('#lib/vendor/Powertools')
-      if (beforeMiddleware?.before) {
-        await beforeMiddleware.before()
+        // Find the before middleware (cold start tracking)
+        const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
+        expect(beforeMiddleware).toBeDefined()
+
+        // Execute the before middleware to trigger cold start
+        const {metrics} = await import('#lib/vendor/Powertools')
+        if (beforeMiddleware?.before) {
+          await beforeMiddleware.before()
+        }
+
+        expect(metrics.addMetric).toHaveBeenCalledWith('ColdStart', 'Count', 1)
+        expect(metrics.publishStoredMetrics).toHaveBeenCalled()
+      } finally {
+        // Restore original LOG_LEVEL
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
       }
+    })
 
-      expect(metrics.addMetric).toHaveBeenCalledWith('ColdStart', 'Count', 1)
-      expect(metrics.publishStoredMetrics).toHaveBeenCalled()
+    it('should skip cold start metrics when LOG_LEVEL is SILENT', async () => {
+      const {withPowertools} = await importPowertools()
+      const {getOptionalEnv} = await import('#lib/system/env')
+      vi.mocked(getOptionalEnv).mockReturnValue('development')
+
+      // Set LOG_LEVEL to SILENT (as used in integration tests)
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'SILENT'
+
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: Array<{before?: () => Promise<void>}>}
+
+        // Find the before middleware (cold start tracking)
+        const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
+        expect(beforeMiddleware).toBeDefined()
+
+        // Execute the before middleware
+        const {metrics} = await import('#lib/vendor/Powertools')
+        if (beforeMiddleware?.before) {
+          await beforeMiddleware.before()
+        }
+
+        // Metrics should NOT be called when SILENT
+        expect(metrics.addMetric).not.toHaveBeenCalled()
+        expect(metrics.publishStoredMetrics).not.toHaveBeenCalled()
+      } finally {
+        // Restore original LOG_LEVEL
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
+      }
     })
   })
 

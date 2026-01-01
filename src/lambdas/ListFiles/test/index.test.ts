@@ -4,6 +4,7 @@ import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {FileStatus} from '#types/enums'
 import {createMockFile as createMockFileBase} from '#test/helpers/entity-fixtures'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
 process.env.DEFAULT_FILE_SIZE = '1024'
@@ -12,7 +13,6 @@ process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 const fakeUserId = uuidv4()
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 // Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFilesForUser: vi.fn()}))
@@ -29,9 +29,7 @@ describe('#ListFiles', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
-    // Default to authenticated user
-    event.requestContext.authorizer!.principalId = fakeUserId
+    event = createAPIGatewayEvent({path: '/files', httpMethod: 'GET', userId: fakeUserId})
   })
   test('(anonymous) should return default file for anonymous users', async () => {
     // Without Authorization header = Anonymous

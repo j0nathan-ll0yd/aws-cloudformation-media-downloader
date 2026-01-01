@@ -65,20 +65,7 @@ function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
  *
  * @param options - Security headers configuration
  * @returns Middy middleware object
- *
- * @example
- * ```typescript
- * import middy from '@middy/core'
- * import {securityHeaders} from '#lib/lambda/middleware/security-headers'
- * import {wrapApiHandler} from '#lib/lambda/middleware/api'
- *
- * export const handler = middy(wrapApiHandler(async ({event, context}) => {
- *   return buildApiResponse(context, 200, {data: 'result'})
- * })).use(securityHeaders({
- *   frameOptions: 'SAMEORIGIN'
- * }))
- * ```
- * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Middleware-Patterns#securityHeaders | Usage Examples}
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Lambda-Middleware-Patterns#securityHeaders | Usage Examples}
  */
 export function securityHeaders(options: SecurityHeadersOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> {
   const headers = buildHeaders(options)

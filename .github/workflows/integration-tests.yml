@@ -67,6 +67,54 @@ jobs:
           docker compose -f docker-compose.test.yml logs
           exit 1
 
+      - name: Verify SNS service readiness
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+        run: |
+          # Create and delete a test platform app to verify SNS is fully operational
+          # This catches cases where LocalStack reports healthy but SNS isn't ready
+          echo "Verifying SNS platform application operations..."
+
+          # Create test platform app
+          CREATE_RESULT=$(aws --endpoint-url=http://localhost:4566 sns create-platform-application \
+            --name ci-readiness-check \
+            --platform APNS \
+            --attributes PlatformCredential=test,PlatformPrincipal=test \
+            --region us-west-2 \
+            --output json 2>&1) || {
+            echo "Failed to create test platform app: $CREATE_RESULT"
+            exit 1
+          }
+
+          APP_ARN=$(echo "$CREATE_RESULT" | jq -r '.PlatformApplicationArn')
+          echo "Created test platform app: $APP_ARN"
+
+          # Create test endpoint
+          ENDPOINT_RESULT=$(aws --endpoint-url=http://localhost:4566 sns create-platform-endpoint \
+            --platform-application-arn "$APP_ARN" \
+            --token "test-device-token-readiness" \
+            --region us-west-2 \
+            --output json 2>&1) || {
+            echo "Failed to create test endpoint: $ENDPOINT_RESULT"
+            exit 1
+          }
+
+          ENDPOINT_ARN=$(echo "$ENDPOINT_RESULT" | jq -r '.EndpointArn')
+          echo "Created test endpoint: $ENDPOINT_ARN"
+
+          # Clean up test endpoint
+          aws --endpoint-url=http://localhost:4566 sns delete-endpoint \
+            --endpoint-arn "$ENDPOINT_ARN" \
+            --region us-west-2 || echo "Warning: Failed to delete test endpoint"
+
+          # Clean up test platform app
+          aws --endpoint-url=http://localhost:4566 sns delete-platform-application \
+            --platform-application-arn "$APP_ARN" \
+            --region us-west-2 || echo "Warning: Failed to delete test platform app"
+
+          echo "SNS service is fully operational"
+
       - name: Run integration tests
         run: pnpm run test:integration --coverage
         env:

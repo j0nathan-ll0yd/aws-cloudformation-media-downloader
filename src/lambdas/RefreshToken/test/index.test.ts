@@ -1,10 +1,9 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayProxyEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
+import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {v4 as uuidv4} from 'uuid'
 import type {SessionPayload} from '#types/util'
-
-const {default: eventMock} = await import('./fixtures/APIGatewayEvent.json', {assert: {type: 'json'}})
 
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = vi.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
@@ -24,7 +23,11 @@ describe('#RefreshToken', () => {
   const futureExpiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock))
+    event = createAPIGatewayEvent({
+      path: '/refreshToken',
+      httpMethod: 'POST',
+      headers: {Authorization: `Bearer ${fakeToken}`}
+    }) as unknown as APIGatewayProxyEvent
     validateSessionTokenMock.mockReset()
     refreshSessionMock.mockReset()
   })

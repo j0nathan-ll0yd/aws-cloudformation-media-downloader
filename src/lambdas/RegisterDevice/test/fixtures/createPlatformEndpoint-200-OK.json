@@ -1,6 +1,0 @@
-{
-  "ResponseMetadata": {
-    "RequestId": "230b4145-4048-5133-a75e-171b3d21256b"
-  },
-  "EndpointArn": "arn:aws:sns:us-west-2:203465012143:endpoint/APNS_SANDBOX/OfflineMediaDownloader/a1d45a47-d1aa-3cb8-99ce-a77275c222ce"
-}

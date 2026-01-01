@@ -47,7 +47,7 @@ local_cache/
 
 # TypeSpec generated output
 tsp-output/
-tsp/examples/
+# tsp/examples/ - Now committed for API documentation
 coverage-reports/
 
 # Mutation testing (Stryker)
@@ -55,3 +55,4 @@ stryker-tmp/
 reports/stryker-incremental.json
 reports/mutation/
 *.webm
+stryker.log

@@ -1,9 +1,9 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {CloudFrontRequestEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
+import {createCloudFrontRequestEvent} from '#test/helpers/event-factories'
 import * as crypto from 'crypto'
 
-const {default: eventMock} = await import('./fixtures/CloudFrontRequestEvent.json', {assert: {type: 'json'}})
 const {handler} = await import('./../src')
 
 describe('#CloudfrontMiddleware', () => {
@@ -13,7 +13,7 @@ describe('#CloudfrontMiddleware', () => {
   const apiKeyValue = crypto.randomBytes(24).toString('hex')
   let event: CloudFrontRequestEvent
   beforeEach(() => {
-    event = JSON.parse(JSON.stringify(eventMock)) as CloudFrontRequestEvent
+    event = createCloudFrontRequestEvent({querystring: `ApiKey=${apiKeyValue}`})
   })
   test('should handle a request with (header: present, querystring: blank)', async () => {
     const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')

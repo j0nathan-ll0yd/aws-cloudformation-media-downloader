@@ -16,15 +16,17 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 
 -- Users table - Better Auth core table
+-- NOTE: Nullable columns use DEFAULT NULL for Better Auth compatibility
+-- (Better Auth sends DEFAULT in INSERT for columns without values)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
   email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-  name TEXT,
-  image TEXT,
-  first_name TEXT,
-  last_name TEXT,
-  apple_device_id TEXT,
+  name TEXT DEFAULT NULL,
+  image TEXT DEFAULT NULL,
+  first_name TEXT DEFAULT NULL,
+  last_name TEXT DEFAULT NULL,
+  apple_device_id TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -35,8 +37,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id UUID NOT NULL,
   token TEXT NOT NULL UNIQUE,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  ip_address TEXT,
-  user_agent TEXT,
+  ip_address TEXT DEFAULT NULL,
+  user_agent TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -47,13 +49,13 @@ CREATE TABLE IF NOT EXISTS accounts (
   user_id UUID NOT NULL,
   account_id TEXT NOT NULL,
   provider_id TEXT NOT NULL,
-  access_token TEXT,
-  refresh_token TEXT,
-  access_token_expires_at TIMESTAMP WITH TIME ZONE,
-  refresh_token_expires_at TIMESTAMP WITH TIME ZONE,
-  scope TEXT,
-  id_token TEXT,
-  password TEXT,
+  access_token TEXT DEFAULT NULL,
+  refresh_token TEXT DEFAULT NULL,
+  access_token_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  refresh_token_expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  scope TEXT DEFAULT NULL,
+  id_token TEXT DEFAULT NULL,
+  password TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -91,7 +93,7 @@ CREATE TABLE IF NOT EXISTS files (
   publish_date TEXT NOT NULL,
   description TEXT NOT NULL,
   key TEXT NOT NULL,
-  url TEXT,
+  url TEXT DEFAULT NULL,
   content_type TEXT NOT NULL,
   title TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'Queued'
@@ -103,12 +105,12 @@ CREATE TABLE IF NOT EXISTS file_downloads (
   status TEXT NOT NULL DEFAULT 'Pending',
   retry_count INTEGER NOT NULL DEFAULT 0,
   max_retries INTEGER NOT NULL DEFAULT 5,
-  retry_after TIMESTAMP WITH TIME ZONE,
-  error_category TEXT,
-  last_error TEXT,
-  scheduled_release_time TIMESTAMP WITH TIME ZONE,
-  source_url TEXT,
-  correlation_id TEXT,
+  retry_after TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  error_category TEXT DEFAULT NULL,
+  last_error TEXT DEFAULT NULL,
+  scheduled_release_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  source_url TEXT DEFAULT NULL,
+  correlation_id TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

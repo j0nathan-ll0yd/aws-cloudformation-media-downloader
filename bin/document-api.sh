@@ -11,19 +11,13 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 echo "📝 Generating API Documentation from TypeSpec..."
 echo ""
 
-# Step 1: Sync examples from test fixtures
-echo "🔄 Syncing test fixtures to TypeSpec examples..."
-"$SCRIPT_DIR/sync-examples.sh"
-
-echo ""
-
-# Step 2: Compile TypeSpec to OpenAPI
+# Step 1: Compile TypeSpec to OpenAPI
 echo "🔨 Compiling TypeSpec to OpenAPI..."
 pnpm exec tsp compile "$PROJECT_DIR/tsp" --output-dir "$PROJECT_DIR/docs/api"
 
 echo ""
 
-# Step 3: Update OpenAPI spec with title and version from package.json
+# Step 2: Update OpenAPI spec with title and version from package.json
 echo "📦 Updating title and version from package.json..."
 PACKAGE_NAME=$(node -p "require('$PROJECT_DIR/package.json').name")
 PACKAGE_VERSION=$(node -p "require('$PROJECT_DIR/package.json').version")
@@ -39,7 +33,7 @@ echo ""
 echo "✅ OpenAPI specification generated successfully!"
 echo ""
 
-# Step 4: Generate Redoc HTML documentation
+# Step 3: Generate Redoc HTML documentation
 echo "📄 Generating Redoc HTML documentation..."
 # Filter npm warnings about pnpm-specific .npmrc settings (redocly internally calls npm)
 pnpm exec redocly build-docs "$PROJECT_DIR/docs/api/openapi.yaml" -o "$PROJECT_DIR/docs/api/index.html" --title "$PACKAGE_NAME" 2>&1 | grep -v "^npm warn"
@@ -61,7 +55,7 @@ echo "   - Total Endpoints: $ENDPOINTS"
 echo "   - Categories:"
 grep "^  - name:" "$PROJECT_DIR/docs/api/openapi.yaml" | sed 's/^  - name: /     • /'
 
-# Step 5: Open the HTML file in the default browser (skip in CI)
+# Step 4: Open the HTML file in the default browser (skip in CI)
 if [ -z "$CI" ]; then
   echo ""
   echo "🌐 Opening documentation in browser..."

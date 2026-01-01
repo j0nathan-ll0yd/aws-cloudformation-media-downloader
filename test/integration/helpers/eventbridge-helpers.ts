@@ -4,10 +4,58 @@
  * Utilities for creating event buses, rules, and publishing events in LocalStack.
  * Used for integration testing event-driven workflows.
  */
-import {addSqsTarget, createEventBus, createRule, deleteEventBus, putEvents} from '../lib/vendor/AWS/EventBridge'
+import {addSqsTarget, createEventBus, createRule, deleteEventBus, listEventBuses, putEvents} from '../lib/vendor/AWS/EventBridge'
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 const AWS_ACCOUNT_ID = '000000000000' // LocalStack default account ID
+
+/** Default retry configuration for EventBridge operations */
+const DEFAULT_RETRY_CONFIG = {maxRetries: 5, initialDelayMs: 500, maxDelayMs: 5000}
+
+/**
+ * Sleeps for the specified duration
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Calculates exponential backoff delay with jitter
+ */
+function getBackoffDelay(attempt: number, initialDelay: number, maxDelay: number): number {
+  const exponentialDelay = initialDelay * Math.pow(2, attempt)
+  const jitter = Math.random() * 0.3 * exponentialDelay // Add 0-30% jitter
+  return Math.min(exponentialDelay + jitter, maxDelay)
+}
+
+/**
+ * Waits for EventBridge to be ready in LocalStack
+ * Performs health check by listing event buses and verifying the default bus exists
+ * @param maxWaitMs - Maximum time to wait in milliseconds (default: 30000)
+ * @returns true if EventBridge is ready, throws if timeout
+ */
+export async function waitForEventBridgeReady(maxWaitMs: number = 30000): Promise<boolean> {
+  const startTime = Date.now()
+  let attempt = 0
+
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const buses = await listEventBuses()
+      // LocalStack should have at least the 'default' event bus
+      if (buses.length > 0) {
+        return true
+      }
+    } catch {
+      // EventBridge not ready yet, will retry
+    }
+
+    const delay = getBackoffDelay(attempt, DEFAULT_RETRY_CONFIG.initialDelayMs, DEFAULT_RETRY_CONFIG.maxDelayMs)
+    await sleep(delay)
+    attempt++
+  }
+
+  throw new Error(`EventBridge not ready after ${maxWaitMs}ms`)
+}
 
 /**
  * Creates a test event bus in LocalStack

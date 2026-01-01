@@ -20,18 +20,18 @@ import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest
 import type {Context} from 'aws-lambda'
 
 // Test helpers
-import {closeTestDb, createAllTables, dropAllTables, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {closeTestDb, createAllTables, dropAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
 // Mock API Gateway SDK functions - must use vi.hoisted for ESM
+// Note: API Gateway rate limiting (getApiKeys, getUsagePlans, getUsage) must remain mocked
+// because LocalStack API Gateway emulation has limitations for these features
 const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({getApiKeysMock: vi.fn(), getUsagePlansMock: vi.fn(), getUsageMock: vi.fn()}))
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
 
-// Mock session validation service
-const {validateSessionTokenMock} = vi.hoisted(() => ({validateSessionTokenMock: vi.fn()}))
-vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
+// Session validation uses real PostgreSQL - no mock needed
 
 // Import handler after mocks
 const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
@@ -47,6 +47,7 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
   let mockContext: Context
 
   beforeAll(async () => {
+    await getTestDbAsync()
     await createAllTables()
     mockContext = createMockContext()
   })
@@ -67,11 +68,11 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
     const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
 
+    // Create real user and session in PostgreSQL
     await insertUser({userId, email: 'authorized@example.com', firstName: 'Authorized'})
     await insertSession({id: sessionId, userId, token, expiresAt: new Date(Date.now() + 3600000)})
 
-    validateSessionTokenMock.mockResolvedValue({sessionId, userId, expiresAt: Date.now() + 3600000})
-
+    // Real session validation against PostgreSQL
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
@@ -80,8 +81,13 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
   test('should return unknown principal for expired session', async () => {
     setupApiGatewayMocks()
+    const userId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
-    validateSessionTokenMock.mockRejectedValue(new Error('Session expired'))
+
+    // Create user with expired session in PostgreSQL
+    await insertUser({userId, email: 'expired@example.com', firstName: 'Expired'})
+    await insertSession({id: sessionId, userId, token, expiresAt: new Date(Date.now() - 3600000)}) // Expired 1 hour ago
 
     // Use a multi-auth path to avoid 401 on missing userId
     const event = createMockAPIGatewayRequestAuthorizerEvent({token, path: '/auth/login'})
@@ -115,21 +121,26 @@ describe('ApiGatewayAuthorizer Dedicated Integration Tests', () => {
 
   test('should throw Unauthorized when session validation fails on protected path', async () => {
     setupApiGatewayMocks()
+    // Use a token that doesn't exist in the database
     const token = crypto.randomUUID()
-    validateSessionTokenMock.mockRejectedValue(new Error('Session not found'))
 
     const event = createMockAPIGatewayRequestAuthorizerEvent({token, path: '/resource'})
 
+    // Real session validation will fail because token doesn't exist
     await expect(handler(event, mockContext)).rejects.toThrow('Unauthorized')
   })
 
   test('should allow access with valid session and include principalId', async () => {
     setupApiGatewayMocks()
     const userId = crypto.randomUUID()
+    const sessionId = crypto.randomUUID()
     const token = crypto.randomUUID()
 
-    validateSessionTokenMock.mockResolvedValue({sessionId: crypto.randomUUID(), userId, expiresAt: Date.now() + 3600000})
+    // Create real user and session in PostgreSQL
+    await insertUser({userId, email: 'principal@example.com', firstName: 'Principal'})
+    await insertSession({id: sessionId, userId, token, expiresAt: new Date(Date.now() + 3600000)})
 
+    // Real session validation against PostgreSQL
     const result = await handler(createMockAPIGatewayRequestAuthorizerEvent({token}), mockContext)
 
     expect(result.principalId).toBe(userId)
