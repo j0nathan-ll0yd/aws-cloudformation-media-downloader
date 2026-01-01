@@ -11,14 +11,14 @@
 import {upsertDevice as upsertDeviceRecord, upsertUserDevice} from '#entities/queries'
 import {createPlatformEndpoint, listSubscriptionsByTopic} from '#lib/vendor/AWS/SNS'
 import {UserStatus} from '#types/enums'
-import {deviceRegistrationRequestSchema} from '#types/api-schema'
+import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from '#types/api-schema'
 import type {DeviceRegistrationRequest} from '#types/api-schema'
 import type {Device} from '#types/domain-models'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/domain/device/device-service'
 import {getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, ServiceUnavailableError, UnexpectedError} from '#lib/system/errors'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
@@ -129,16 +129,16 @@ export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, con
     // Determine if the user already exists
     const userDevices = await getUserDevices(userId)
     if (userDevices.length === 1) {
-      return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
+      return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
     } else {
       // Confirm the subscription, and unsubscribe
       const subscriptionArn = await getSubscriptionArnFromEndpointAndTopic(device.endpointArn, pushNotificationTopicArn)
       await unsubscribeEndpointToTopic(subscriptionArn)
-      return buildApiResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn})
+      return buildValidatedResponse(context, 201, {endpointArn: platformEndpoint.EndpointArn}, deviceRegistrationResponseSchema)
     }
   } else if (userStatus === UserStatus.Anonymous) {
     // If the user hasn't registered; add them to the unregistered topic
     await subscribeEndpointToTopic(device.endpointArn, pushNotificationTopicArn)
   }
-  return buildApiResponse(context, 200, {endpointArn: device.endpointArn})
+  return buildValidatedResponse(context, 200, {endpointArn: device.endpointArn}, deviceRegistrationResponseSchema)
 }))

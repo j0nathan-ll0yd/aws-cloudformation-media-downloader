@@ -80,7 +80,7 @@ describe('#RegisterUser', () => {
 
     const body = JSON.parse(output.body)
     expect(typeof body.body.token).toEqual('string')
-    expect(typeof body.body.expiresAt).toEqual('number')
+    expect(typeof body.body.expiresAt).toEqual('string') // ISO 8601 timestamp
     expect(typeof body.body.sessionId).toEqual('string')
     expect(typeof body.body.userId).toEqual('string')
 
@@ -116,7 +116,7 @@ describe('#RegisterUser', () => {
 
     const body = JSON.parse(output.body)
     expect(typeof body.body.token).toEqual('string')
-    expect(typeof body.body.expiresAt).toEqual('number')
+    expect(typeof body.body.expiresAt).toEqual('string') // ISO 8601 timestamp
     expect(typeof body.body.sessionId).toEqual('string')
     expect(typeof body.body.userId).toEqual('string')
 

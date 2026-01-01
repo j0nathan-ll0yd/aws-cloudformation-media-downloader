@@ -3,14 +3,18 @@ import {
   createInsertSchema,
   deviceInsertSchema,
   deviceSelectSchema,
+  fileDownloadInsertSchema,
+  fileDownloadUpdateSchema,
   fileInsertSchema,
   fileSelectSchema,
+  fileUpdateSchema,
   sessionInsertSchema,
   userDeviceInsertSchema,
   userFileInsertSchema,
   userInsertSchema,
   userSelectSchema
 } from '../zod-schemas'
+import {DownloadStatus, FileStatus} from '#types/shared-primitives'
 
 describe('Drizzle Zod Schemas', () => {
   describe('userInsertSchema', () => {
@@ -190,6 +194,104 @@ describe('Drizzle Zod Schemas', () => {
   describe('Factory function re-export', () => {
     it('exports createInsertSchema for custom schemas', () => {
       expect(typeof createInsertSchema).toBe('function')
+    })
+  })
+
+  describe('Status Enum Validation', () => {
+    describe('FileStatus validation', () => {
+      it('accepts all valid FileStatus enum values', () => {
+        const validStatuses = [FileStatus.Queued, FileStatus.Downloading, FileStatus.Downloaded, FileStatus.Failed]
+        for (const status of validStatuses) {
+          const result = fileInsertSchema.safeParse({
+            fileId: 'test-file',
+            authorName: 'Test',
+            authorUser: 'test',
+            publishDate: '2024-01-01',
+            description: 'Test',
+            key: 'test-key',
+            contentType: 'video/mp4',
+            title: 'Test',
+            status
+          })
+          expect(result.success).toBe(true)
+        }
+      })
+
+      it('rejects invalid status string', () => {
+        const result = fileInsertSchema.safeParse({
+          fileId: 'test-file',
+          authorName: 'Test',
+          authorUser: 'test',
+          publishDate: '2024-01-01',
+          description: 'Test',
+          key: 'test-key',
+          contentType: 'video/mp4',
+          title: 'Test',
+          status: 'InvalidStatus'
+        })
+        expect(result.success).toBe(false)
+      })
+
+      it('rejects empty string status', () => {
+        const result = fileInsertSchema.safeParse({
+          fileId: 'test-file',
+          authorName: 'Test',
+          authorUser: 'test',
+          publishDate: '2024-01-01',
+          description: 'Test',
+          key: 'test-key',
+          contentType: 'video/mp4',
+          title: 'Test',
+          status: ''
+        })
+        expect(result.success).toBe(false)
+      })
+
+      it('validates FileStatus in update schema', () => {
+        const result = fileUpdateSchema.safeParse({status: FileStatus.Downloaded})
+        expect(result.success).toBe(true)
+      })
+
+      it('rejects invalid status in update schema', () => {
+        const result = fileUpdateSchema.safeParse({status: 'BadStatus'})
+        expect(result.success).toBe(false)
+      })
+    })
+
+    describe('DownloadStatus validation', () => {
+      it('accepts all valid DownloadStatus enum values', () => {
+        const validStatuses = [
+          DownloadStatus.Pending,
+          DownloadStatus.InProgress,
+          DownloadStatus.Scheduled,
+          DownloadStatus.Completed,
+          DownloadStatus.Failed
+        ]
+        for (const status of validStatuses) {
+          const result = fileDownloadInsertSchema.safeParse({fileId: 'test-file', status})
+          expect(result.success).toBe(true)
+        }
+      })
+
+      it('rejects invalid download status string', () => {
+        const result = fileDownloadInsertSchema.safeParse({fileId: 'test-file', status: 'InvalidDownloadStatus'})
+        expect(result.success).toBe(false)
+      })
+
+      it('rejects null status', () => {
+        const result = fileDownloadInsertSchema.safeParse({fileId: 'test-file', status: null})
+        expect(result.success).toBe(false)
+      })
+
+      it('validates DownloadStatus in update schema', () => {
+        const result = fileDownloadUpdateSchema.safeParse({status: DownloadStatus.Completed})
+        expect(result.success).toBe(true)
+      })
+
+      it('rejects invalid status in download update schema', () => {
+        const result = fileDownloadUpdateSchema.safeParse({status: 'NotAStatus'})
+        expect(result.success).toBe(false)
+      })
     })
   })
 })

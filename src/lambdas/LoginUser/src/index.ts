@@ -11,10 +11,10 @@
  */
 
 import {getAuth} from '#lib/vendor/BetterAuth/config'
-import {userLoginRequestSchema} from '#types/api-schema'
+import {userLoginRequestSchema, userLoginResponseSchema} from '#types/api-schema'
 import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
@@ -79,10 +79,11 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
   // 3. Return session token (Better Auth format)
-  return buildApiResponse(context, 200, {
+  const expiresAtMs = result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000
+  return buildValidatedResponse(context, 200, {
     token: result.token,
-    expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
-    sessionId: result.session?.id,
-    userId: result.user?.id
-  })
+    expiresAt: new Date(expiresAtMs).toISOString(),
+    sessionId: result.session?.id || '',
+    userId: result.user?.id || ''
+  }, userLoginResponseSchema)
 }))

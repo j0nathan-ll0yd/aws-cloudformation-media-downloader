@@ -217,18 +217,32 @@ Consider consolidation if:
 
 ## Implementation Actions
 
-No changes required. The current dual-source approach is appropriate:
+The following actions were taken to improve schema validation:
 
-1. **API validation**: Continue using TypeSpec-generated schemas
-2. **Database validation**: Use drizzle-zod schemas (newly added)
-3. **Runtime checks**: Entity query functions now validate inserts/updates
+1. **Response validation added** - Lambda handlers now validate responses using TypeSpec-generated API schemas via `buildValidatedResponse()`
+
+2. **Shared primitives created** - `src/types/shared-primitives.ts` derives Zod schemas from TypeScript enums, eliminating duplication:
+   - `fileStatusZodSchema` from `FileStatus` enum
+   - `downloadStatusZodSchema` from `DownloadStatus` enum
+   - `responseStatusZodSchema` from `ResponseStatus` enum
+
+3. **Drizzle enum validation** - Insert/update schemas validate status field values:
+   - `fileInsertSchema` uses `fileStatusZodSchema`
+   - `fileDownloadInsertSchema` uses `downloadStatusZodSchema`
+
+4. **TypeSpec schemas fixed** - `UserLoginResponse` and `UserRegistrationResponse` updated to include all response fields (token, expiresAt, sessionId, userId)
+
+## Current Architecture
+
+| Layer | Schema Source | Purpose |
+|-------|--------------|---------|
+| API Requests | TypeSpec (`api-schema/schemas.ts`) | Validate incoming request payloads |
+| API Responses | TypeSpec (`api-schema/schemas.ts`) | Validate outgoing response shapes |
+| Database Writes | Drizzle-Zod + Enum refinements | Validate entity inserts/updates |
+| Status Enums | Shared primitives (`shared-primitives.ts`) | Single source of truth for enum values |
 
 ## Future Considerations
 
-1. **Status enum consolidation**: Consider using `fileStatusSchema` from API schemas in Drizzle insert validation for type safety.
+1. **Schema documentation**: Generate schema documentation from both sources for API consumers.
 
-2. **Cross-layer validation**: Lambda handlers could validate both:
-   - Request body against API schema
-   - Entity input against Drizzle schema (now implemented)
-
-3. **Schema documentation**: Generate schema documentation from both sources for API consumers.
+2. **Additional refinements**: Consider adding more shared primitives for common patterns like UUIDs, ISO dates, or URLs.

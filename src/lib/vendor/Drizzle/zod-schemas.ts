@@ -8,6 +8,7 @@
  */
 import {createInsertSchema, createSelectSchema, createUpdateSchema} from 'drizzle-zod'
 import {accounts, devices, fileDownloads, files, identityProviders, sessions, userDevices, userFiles, users, verification} from './schema'
+import {downloadStatusZodSchema, fileStatusZodSchema} from '#types/shared-primitives'
 
 // User schemas
 export const userInsertSchema = createInsertSchema(users)
@@ -19,15 +20,15 @@ export const identityProviderInsertSchema = createInsertSchema(identityProviders
 export const identityProviderSelectSchema = createSelectSchema(identityProviders)
 export const identityProviderUpdateSchema = createUpdateSchema(identityProviders)
 
-// File schemas
-export const fileInsertSchema = createInsertSchema(files)
+// File schemas with status enum validation
+export const fileInsertSchema = createInsertSchema(files, {status: () => fileStatusZodSchema})
 export const fileSelectSchema = createSelectSchema(files)
-export const fileUpdateSchema = createUpdateSchema(files)
+export const fileUpdateSchema = createUpdateSchema(files, {status: () => fileStatusZodSchema.optional()})
 
-// FileDownload schemas
-export const fileDownloadInsertSchema = createInsertSchema(fileDownloads)
+// FileDownload schemas with status enum validation
+export const fileDownloadInsertSchema = createInsertSchema(fileDownloads, {status: () => downloadStatusZodSchema})
 export const fileDownloadSelectSchema = createSelectSchema(fileDownloads)
-export const fileDownloadUpdateSchema = createUpdateSchema(fileDownloads)
+export const fileDownloadUpdateSchema = createUpdateSchema(fileDownloads, {status: () => downloadStatusZodSchema.optional()})
 
 // Device schemas
 export const deviceInsertSchema = createInsertSchema(devices)

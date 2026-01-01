@@ -18,11 +18,11 @@
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
-import {userRegistrationRequestSchema} from '#types/api-schema'
+import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
@@ -108,10 +108,11 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   })
 
   // 4. Return session token (Better Auth format)
-  return buildApiResponse(context, 200, {
+  const expiresAtMs = result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000
+  return buildValidatedResponse(context, 200, {
     token: result.token,
-    expiresAt: result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000,
-    sessionId: result.session?.id,
-    userId: result.user?.id
-  })
+    expiresAt: new Date(expiresAtMs).toISOString(),
+    sessionId: result.session?.id || '',
+    userId: result.user?.id || ''
+  }, userRegistrationResponseSchema)
 }))

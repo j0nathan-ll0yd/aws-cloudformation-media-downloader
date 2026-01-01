@@ -10,12 +10,13 @@
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
 import {UnauthorizedError} from '#lib/system/errors'
+import {userLoginResponseSchema} from '#types/api-schema'
 
 /**
  * Lambda handler for refreshing session tokens.
@@ -53,12 +54,12 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   // Return success with updated session info
   const responseData = {
     token, // Same token, just extended expiration
-    expiresAt,
+    expiresAt: new Date(expiresAt).toISOString(),
     sessionId: sessionPayload.sessionId,
     userId: sessionPayload.userId
   }
 
   logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
-  return buildApiResponse(context, 200, responseData)
+  return buildValidatedResponse(context, 200, responseData, userLoginResponseSchema)
 }))

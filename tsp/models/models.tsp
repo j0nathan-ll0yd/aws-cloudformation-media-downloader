@@ -295,6 +295,21 @@ model UserLoginResponse {
    * JWT access token for authenticated requests
    */
   token: string;
+
+  /**
+   * ISO 8601 timestamp when the session expires
+   */
+  expiresAt: string;
+
+  /**
+   * Session identifier
+   */
+  sessionId: string;
+
+  /**
+   * User identifier
+   */
+  userId: string;
 }
 
 /**
@@ -325,6 +340,21 @@ model UserRegistrationResponse {
    * JWT access token for authenticated requests
    */
   token: string;
+
+  /**
+   * ISO 8601 timestamp when the session expires
+   */
+  expiresAt: string;
+
+  /**
+   * Session identifier
+   */
+  sessionId: string;
+
+  /**
+   * User identifier
+   */
+  userId: string;
 }
 
 /**

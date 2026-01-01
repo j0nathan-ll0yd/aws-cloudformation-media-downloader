@@ -304,6 +304,59 @@ Error (4xx/5xx):
 }
 ```
 
+### buildValidatedResponse
+
+**Use for**: Creating API responses with Zod schema validation.
+
+**File**: `src/lib/lambda/responses.ts`
+
+**What it provides**:
+- All functionality of `buildApiResponse`
+- Schema validation for success responses (2xx)
+- In dev/test: throws on validation failure
+- In production: logs warning, continues with response
+
+**Signature**:
+```typescript
+function buildValidatedResponse<T extends string | object>(
+  context: Context,
+  statusCode: number,
+  body: T,
+  schema?: z.ZodSchema<T>
+): APIGatewayProxyResult
+```
+
+**Example**:
+```typescript
+import {buildValidatedResponse} from '#lib/lambda/responses'
+import {fileListResponseSchema} from '#types/api-schema'
+
+export const handler = withPowertools(wrapAuthenticatedHandler(
+  async ({context, userId}) => {
+    const files = await getFilesByUser(userId)
+    // Validates response against schema before returning
+    return buildValidatedResponse(context, 200, {files}, fileListResponseSchema)
+  }
+))
+```
+
+**Validation behavior**:
+```typescript
+// Only validates 2xx responses (success paths)
+// Error responses (4xx, 5xx) skip validation
+
+// Environment-dependent behavior:
+// NODE_ENV=development → throws ValidationError
+// NODE_ENV=test → throws ValidationError
+// NODE_ENV=production → logs warning, returns response
+// NODE_ENV undefined → logs warning, returns response
+```
+
+**When to use**:
+- API handlers with TypeSpec-generated response schemas
+- Endpoints where response shape must match API contract
+- Catching response drift during development/testing
+
 ---
 
 ## Middleware Composition

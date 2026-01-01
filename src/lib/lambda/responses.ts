@@ -1,6 +1,8 @@
 import type {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
+import type {z} from 'zod'
 import {CustomLambdaError} from '#lib/system/errors'
 import {logDebug, logError} from '#lib/system/logging'
+import {validateResponse} from '#lib/lambda/middleware/api-gateway'
 
 /**
  * Extracts a human-readable message from an unknown error value.
@@ -102,4 +104,26 @@ export function buildApiResponse(context: Context, statusCodeOrError: number | E
   // Fallback for unknown error types
   logError('buildApiResponse (unknown)', String(statusCodeOrError))
   return formatResponse(context, 500, getErrorMessage(statusCodeOrError))
+}
+
+/**
+ * Build API Gateway response with optional schema validation.
+ * Only validates success responses (2xx status codes).
+ *
+ * @param context - AWS Lambda context for request ID
+ * @param statusCode - HTTP status code
+ * @param body - Response body
+ * @param schema - Optional Zod schema to validate response
+ * @returns Formatted API Gateway response
+ */
+export function buildValidatedResponse<T extends string | object>(
+  context: Context,
+  statusCode: number,
+  body: T,
+  schema?: z.ZodSchema<T>
+): APIGatewayProxyResult {
+  if (schema && statusCode >= 200 && statusCode < 300) {
+    validateResponse(body, schema)
+  }
+  return formatResponse(context, statusCode, body)
 }

@@ -15,13 +15,13 @@ import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
-import {feedlyWebhookRequestSchema} from '#types/api-schema'
+import {feedlyWebhookRequestSchema, webhookResponseSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
 import type {File} from '#types/domain-models'
 import type {DownloadRequestedDetail} from '#types/events'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
 import {getRequiredEnv} from '#lib/system/env'
-import {buildApiResponse} from '#lib/lambda/responses'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -165,5 +165,5 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, co
   // Process webhook with idempotency protection
   const result = await getIdempotentProcessor()({fileId, userId, articleURL: requestBody.articleURL, correlationId})
 
-  return buildApiResponse(context, result.statusCode, {status: result.status})
+  return buildValidatedResponse(context, result.statusCode, {status: result.status as 'Dispatched' | 'Initiated' | 'Accepted'}, webhookResponseSchema)
 }))
