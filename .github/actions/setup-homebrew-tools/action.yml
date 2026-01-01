@@ -19,4 +19,10 @@ runs:
       shell: bash
       run: |
         brew install hcl2json
-        brew link hcl2json --overwrite || true
+        # Force link in case it's already installed but not linked
+        brew link hcl2json --overwrite --force || true
+        # Ensure Homebrew bin is in PATH for subsequent steps
+        BREW_PREFIX="$(brew --prefix)"
+        echo "${BREW_PREFIX}/bin" >> "$GITHUB_PATH"
+        # Verify hcl2json is accessible
+        "${BREW_PREFIX}/bin/hcl2json" --version || echo "hcl2json installed at ${BREW_PREFIX}/bin/hcl2json"
