@@ -29,43 +29,14 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
 import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
+import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
 // Import handler - uses real Drizzle client via getDrizzleClient()
 const {handler} = await import('#lambdas/ListFiles/src/index')
 
+// Helper using centralized factory
 function createListFilesEvent(userId: string | undefined, userStatus: UserStatus): CustomAPIGatewayRequestAuthorizerEvent {
-  return {
-    body: null,
-    headers: userId && userStatus === UserStatus.Authenticated
-      ? {Authorization: 'Bearer test-token'}
-      : userStatus === UserStatus.Unauthenticated
-      ? {Authorization: 'Bearer invalid-token'}
-      : {},
-    multiValueHeaders: {},
-    httpMethod: 'GET',
-    isBase64Encoded: false,
-    path: '/files',
-    pathParameters: null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      protocol: 'HTTP/1.1',
-      httpMethod: 'GET',
-      path: '/files',
-      stage: 'test',
-      requestId: 'test-request',
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: '/files',
-      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
-      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-    },
-    resource: '/files'
-  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+  return createMockCustomAPIGatewayEvent({path: '/files', httpMethod: 'GET', userId, userStatus})
 }
 
 describe('ListFiles Workflow Integration Tests', () => {

@@ -39,6 +39,7 @@ import {sql} from 'drizzle-orm'
 import {closeTestDb, createAllTables, getTestDbAsync, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockContext} from '../helpers/lambda-context'
 import {generateAppleIdToken, startAppleJWKSMock, stopAppleJWKSMock} from '../helpers/apple-jwks-mock'
+import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
 // Import handlers after environment is set
 // NO MOCKING of Better Auth - we use the real implementation
@@ -51,36 +52,15 @@ interface AuthRequestBody {
   lastName?: string
 }
 
+// Helper using centralized factory for auth events (login/register don't need authorizer context)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createAuthEvent(body: AuthRequestBody, path: string): any {
-  return {
-    body: JSON.stringify(body),
-    headers: {'Content-Type': 'application/json', 'User-Agent': 'iOS/17.0 TestApp/1.0'},
-    multiValueHeaders: {},
-    httpMethod: 'POST',
-    isBase64Encoded: false,
+  return createMockAPIGatewayProxyEvent({
     path,
-    pathParameters: null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      protocol: 'HTTP/1.1',
-      httpMethod: 'POST',
-      path,
-      stage: 'test',
-      requestId: 'test-request',
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: path,
-      authorizer: {},
-      identity: {sourceIp: '127.0.0.1', userAgent: 'iOS/17.0 TestApp/1.0'}
-    },
-    resource: path
-  }
+    httpMethod: 'POST',
+    body: JSON.stringify(body),
+    headers: {'Content-Type': 'application/json', 'User-Agent': 'iOS/17.0 TestApp/1.0'}
+  })
 }
 
 describe('Auth Flow Integration Tests (True Integration)', () => {

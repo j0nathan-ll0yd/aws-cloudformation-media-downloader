@@ -191,20 +191,7 @@ describe('#StartFileUpload', () => {
   })
 
   test('should not retry when max retries exceeded', async () => {
-    vi.mocked(getFileDownload).mockResolvedValue({
-      fileId: 'test',
-      retryCount: 5,
-      maxRetries: 5,
-      status: 'InProgress',
-      retryAfter: null,
-      errorCategory: null,
-      lastError: null,
-      scheduledReleaseTime: null,
-      sourceUrl: null,
-      correlationId: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    })
+    vi.mocked(getFileDownload).mockResolvedValue(createMockFileDownload({fileId: 'test', retryCount: 5, maxRetries: 5, status: 'InProgress'}))
     fetchVideoInfoMock.mockResolvedValue(createFailureResult(new Error('Any error')))
 
     const result = await handler(event, context)
@@ -233,11 +220,11 @@ describe('#StartFileUpload', () => {
   })
 
   test('should dispatch MetadataNotifications to all waiting users', async () => {
-    vi.mocked(getUserFilesByFileId).mockResolvedValue([{userId: 'user-1', fileId: 'test', createdAt: new Date()}, {
-      userId: 'user-2',
-      fileId: 'test',
-      createdAt: new Date()
-    }, {userId: 'user-3', fileId: 'test', createdAt: new Date()}])
+    vi.mocked(getUserFilesByFileId).mockResolvedValue([
+      createMockUserFile({userId: 'user-1', fileId: 'test'}),
+      createMockUserFile({userId: 'user-2', fileId: 'test'}),
+      createMockUserFile({userId: 'user-3', fileId: 'test'})
+    ])
     fetchVideoInfoMock.mockResolvedValue(createSuccessResult({id: 'YcuKhcqzt7w', title: 'Test Video', uploader: 'Test Uploader'}))
     downloadVideoToS3Mock.mockResolvedValue({fileSize: 82784319, s3Url: 's3://test-bucket/test-video.mp4', duration: 45})
 

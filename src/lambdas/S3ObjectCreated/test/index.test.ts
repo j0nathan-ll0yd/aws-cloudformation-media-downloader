@@ -68,9 +68,9 @@ describe('#S3ObjectCreated', () => {
 
   test('should send notifications to multiple users for the same file', async () => {
     const multipleUsers = [
-      {fileId: '4TfEp8oG5gM', userId: 'user-1', createdAt: new Date()},
-      {fileId: '4TfEp8oG5gM', userId: 'user-2', createdAt: new Date()},
-      {fileId: '4TfEp8oG5gM', userId: 'user-3', createdAt: new Date()}
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'}),
+      createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-3'})
     ]
     vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
     const output = await handler(baseEvent, testContext)
@@ -106,8 +106,8 @@ describe('#S3ObjectCreated', () => {
   describe('#PartialFailures', () => {
     test('should continue processing when one notification dispatch fails', async () => {
       const multipleUsers = [
-        {fileId: '4TfEp8oG5gM', userId: 'user-1', createdAt: new Date()},
-        {fileId: '4TfEp8oG5gM', userId: 'user-2', createdAt: new Date()}
+        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-1'}),
+        createMockUserFile({fileId: '4TfEp8oG5gM', userId: 'user-2'})
       ]
       vi.mocked(getUserFilesByFileId).mockResolvedValue(multipleUsers)
       // First call fails, second succeeds

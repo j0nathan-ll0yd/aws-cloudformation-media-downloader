@@ -63,38 +63,14 @@ vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: deleteDeviceM
 const {createFailedUserDeletionIssueMock} = vi.hoisted(() => ({createFailedUserDeletionIssueMock: vi.fn()}))
 vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
-// Import handler after mocks
+// Import factory and handler after mocks
+import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
+
 const {handler} = await import('#lambdas/UserDelete/src/index')
 
+// Helper using centralized factory
 function createUserDeleteEvent(userId: string): CustomAPIGatewayRequestAuthorizerEvent {
-  return {
-    body: null,
-    headers: {Authorization: 'Bearer test-token'},
-    multiValueHeaders: {},
-    httpMethod: 'DELETE',
-    isBase64Encoded: false,
-    path: '/users',
-    pathParameters: null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      protocol: 'HTTP/1.1',
-      httpMethod: 'DELETE',
-      path: '/users',
-      stage: 'test',
-      requestId: 'test-request',
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: '/users',
-      authorizer: {principalId: userId, userId, userStatus: UserStatus.Authenticated, integrationLatency: 342},
-      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-    },
-    resource: '/users'
-  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+  return createMockCustomAPIGatewayEvent({path: '/users', httpMethod: 'DELETE', userId, userStatus: UserStatus.Authenticated})
 }
 
 describe('UserDelete Cascade Integration Tests', () => {
@@ -160,35 +136,8 @@ describe('UserDelete Cascade Integration Tests', () => {
   })
 
   test('should return 401 when no userId in event', async () => {
-    // Arrange: Event with no userId
-    const event = {
-      body: null,
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: 'DELETE',
-      isBase64Encoded: false,
-      path: '/users',
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {
-        accountId: '123456789012',
-        apiId: 'test-api',
-        protocol: 'HTTP/1.1',
-        httpMethod: 'DELETE',
-        path: '/users',
-        stage: 'test',
-        requestId: 'test-request',
-        requestTime: '01/Jan/2024:00:00:00 +0000',
-        requestTimeEpoch: Date.now(),
-        resourceId: 'test-resource',
-        resourcePath: '/users',
-        authorizer: {principalId: 'unknown', userId: undefined, userStatus: UserStatus.Unauthenticated, integrationLatency: 342},
-        identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-      },
-      resource: '/users'
-    } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+    // Arrange: Event with no userId (unauthenticated user)
+    const event = createMockCustomAPIGatewayEvent({path: '/users', httpMethod: 'DELETE', userId: undefined, userStatus: UserStatus.Unauthenticated})
 
     // Act
     const result = await handler(event, mockContext)

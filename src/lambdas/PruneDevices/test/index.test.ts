@@ -1,8 +1,8 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import type {ScheduledEvent} from 'aws-lambda'
 import {fakePrivateKey, testContext} from '#util/vitest-setup'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
+import {createScheduledEvent} from '#test/helpers/event-factories'
 import {mockClient} from 'aws-sdk-client-mock'
 import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
@@ -110,17 +110,7 @@ import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
 import {deleteDevice} from '#lib/domain/device/device-service'
 
 describe('#PruneDevices', () => {
-  const event: ScheduledEvent = {
-    'detail-type': 'Scheduled Event',
-    account: '',
-    detail: undefined,
-    id: '',
-    region: '',
-    resources: [],
-    source: '',
-    time: '',
-    version: ''
-  }
+  const event = createScheduledEvent()
   const context = testContext
 
   // Configure SNS mock responses for each test using factories

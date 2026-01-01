@@ -23,6 +23,7 @@ import {createMockContext} from '#util/vitest-setup'
 
 // Test helpers
 import {closeTestDb, createAllTables, getTestDbAsync, insertSession, insertUser, truncateAllTables} from '../helpers/postgres-helpers'
+import {createMockAPIGatewayRequestAuthorizerEvent} from '../helpers/test-data'
 
 // Mock API Gateway vendor calls - must use vi.hoisted for ESM
 // Note: API Gateway rate limiting must remain mocked due to LocalStack limitations
@@ -39,52 +40,21 @@ const TEST_API_KEY = 'test-api-key-12345'
 const TEST_API_KEY_ID = 'test-key-id'
 const TEST_USAGE_PLAN_ID = 'test-usage-plan'
 
-function createAuthorizerEvent(overrides: Partial<APIGatewayRequestAuthorizerEvent> = {}): APIGatewayRequestAuthorizerEvent {
-  return {
-    type: 'REQUEST',
-    methodArn: 'arn:aws:execute-api:us-west-2:123456789012:api-id/stage/GET/resource',
-    resource: '/resource',
-    path: '/resource',
-    httpMethod: 'GET',
-    headers: {Authorization: 'Bearer valid-session-token', 'User-Agent': 'iOS/17.0 TestApp/1.0'},
-    multiValueHeaders: {},
-    pathParameters: null,
-    queryStringParameters: {ApiKey: TEST_API_KEY},
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      authorizer: undefined,
-      protocol: 'HTTP/1.1',
-      httpMethod: 'GET',
-      path: '/resource',
-      stage: 'test',
-      requestId: `test-${Date.now()}`,
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'resource-id',
-      resourcePath: '/resource',
-      identity: {
-        accessKey: null,
-        accountId: null,
-        apiKey: null,
-        apiKeyId: null,
-        caller: null,
-        clientCert: null,
-        cognitoAuthenticationProvider: null,
-        cognitoAuthenticationType: null,
-        cognitoIdentityId: null,
-        cognitoIdentityPoolId: null,
-        principalOrgId: null,
-        sourceIp: '127.0.0.1',
-        user: null,
-        userAgent: 'iOS/17.0 TestApp/1.0',
-        userArn: null
-      }
-    },
-    ...overrides
+// Helper to create authorizer event using factory - delegates to centralized factory
+function createAuthorizerEvent(options: {path?: string; resource?: string; headers?: Record<string, string>} = {}): APIGatewayRequestAuthorizerEvent {
+  // Extract token from Authorization header if present
+  const authHeader = options.headers?.Authorization
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : undefined
+
+  const baseEvent = createMockAPIGatewayRequestAuthorizerEvent({token, path: options.path ?? '/resource', apiKey: TEST_API_KEY})
+
+  // Merge headers - the factory adds Authorization header if token is provided
+  // For cases where we want custom headers (e.g., no auth, or Basic auth), override
+  if (options.headers) {
+    baseEvent.headers = {...baseEvent.headers, ...options.headers}
   }
+
+  return baseEvent
 }
 
 const context = createMockContext({functionName: 'ApiGatewayAuthorizer'})

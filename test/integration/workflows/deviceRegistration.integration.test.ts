@@ -65,7 +65,9 @@ vi.mock('#lib/domain/device/device-service',
     unsubscribeEndpointToTopic: unsubscribeEndpointToTopicMock
   }))
 
-// Import handler after mocks
+// Import factory and handler after mocks
+import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
+
 const {handler} = await import('#lambdas/RegisterDevice/src/index')
 
 interface DeviceRegistrationBody {
@@ -76,43 +78,18 @@ interface DeviceRegistrationBody {
   systemVersion: string
 }
 
+// Helper using centralized pattern
 function createDeviceBody(deviceId: string, token: string): DeviceRegistrationBody {
   return {deviceId, token, name: 'Test Device', systemName: 'iOS', systemVersion: '17.0'}
 }
 
+// Helper using centralized factory
 function createRegisterDeviceEvent(
   body: DeviceRegistrationBody,
   userId: string | undefined,
   userStatus: UserStatus
 ): CustomAPIGatewayRequestAuthorizerEvent {
-  return {
-    body: JSON.stringify(body),
-    headers: userId ? {Authorization: 'Bearer test-token'} : {},
-    multiValueHeaders: {},
-    httpMethod: 'POST',
-    isBase64Encoded: false,
-    path: '/devices',
-    pathParameters: null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      accountId: '123456789012',
-      apiId: 'test-api',
-      protocol: 'HTTP/1.1',
-      httpMethod: 'POST',
-      path: '/devices',
-      stage: 'test',
-      requestId: 'test-request',
-      requestTime: '01/Jan/2024:00:00:00 +0000',
-      requestTimeEpoch: Date.now(),
-      resourceId: 'test-resource',
-      resourcePath: '/devices',
-      authorizer: {principalId: userStatus === UserStatus.Unauthenticated ? 'unknown' : userId || 'anonymous', userId, userStatus, integrationLatency: 342},
-      identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-    },
-    resource: '/devices'
-  } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+  return createMockCustomAPIGatewayEvent({path: '/devices', httpMethod: 'POST', userId, userStatus, body: JSON.stringify(body)})
 }
 
 describe('Device Registration Integration Tests', () => {
@@ -220,34 +197,7 @@ describe('Device Registration Integration Tests', () => {
     const token = `apns-token-unauth-${Date.now()}`
 
     const body = createDeviceBody(deviceId, token)
-    const event = {
-      body: JSON.stringify(body),
-      headers: {Authorization: 'Bearer invalid-token'},
-      multiValueHeaders: {},
-      httpMethod: 'POST',
-      isBase64Encoded: false,
-      path: '/devices',
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {
-        accountId: '123456789012',
-        apiId: 'test-api',
-        protocol: 'HTTP/1.1',
-        httpMethod: 'POST',
-        path: '/devices',
-        stage: 'test',
-        requestId: 'test-request',
-        requestTime: '01/Jan/2024:00:00:00 +0000',
-        requestTimeEpoch: Date.now(),
-        resourceId: 'test-resource',
-        resourcePath: '/devices',
-        authorizer: {principalId: 'unknown', userId: undefined, userStatus: UserStatus.Unauthenticated, integrationLatency: 342},
-        identity: {sourceIp: '127.0.0.1', userAgent: 'test-agent'}
-      },
-      resource: '/devices'
-    } as unknown as CustomAPIGatewayRequestAuthorizerEvent
+    const event = createRegisterDeviceEvent(body, undefined, UserStatus.Unauthenticated)
 
     const result = await handler(event, mockContext)
 

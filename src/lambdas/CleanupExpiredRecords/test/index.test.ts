@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import type {ScheduledEvent} from 'aws-lambda'
 import {createMockContext} from '#util/vitest-setup'
+import {createScheduledEvent} from '#test/helpers/event-factories'
 
 // Mock Drizzle client with proper chaining
 const mockReturning = vi.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
@@ -34,18 +34,6 @@ vi.mock('drizzle-orm',
 
 // Import handler after all mocks are set up
 const {handler} = await import('./../src')
-
-const createScheduledEvent = (): ScheduledEvent => ({
-  version: '0',
-  id: 'test-id',
-  'detail-type': 'Scheduled Event',
-  source: 'aws.events',
-  account: '123456789012',
-  time: new Date().toISOString(),
-  region: 'us-west-2',
-  resources: ['arn:aws:events:us-west-2:123456789012:rule/test-rule'],
-  detail: {}
-})
 
 const context = createMockContext({functionName: 'CleanupExpiredRecords'})
 

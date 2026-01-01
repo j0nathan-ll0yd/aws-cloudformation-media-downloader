@@ -162,19 +162,9 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an already-downloaded file
-      vi.mocked(getFile).mockResolvedValue({
-        fileId: 'wRG7lAGdRII',
-        key: 'wRG7lAGdRII.mp4',
-        status: 'Downloaded',
-        size: 50000000,
-        url: 'https://example.com/wRG7lAGdRII.mp4',
-        authorName: 'Author',
-        authorUser: 'author-user',
-        publishDate: '2024-01-01',
-        description: 'Desc',
-        title: 'Title',
-        contentType: 'video/mp4'
-      })
+      vi.mocked(getFile).mockResolvedValue(
+        createMockFile({fileId: 'wRG7lAGdRII', status: 'Downloaded', size: 50000000, url: 'https://example.com/wRG7lAGdRII.mp4'})
+      )
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
       const body = JSON.parse(output.body)
@@ -194,19 +184,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is still queued
-      vi.mocked(getFile).mockResolvedValue({
-        fileId: 'wRG7lAGdRII',
-        key: 'wRG7lAGdRII.mp4',
-        status: 'Queued',
-        size: 0,
-        url: null,
-        authorName: 'Author',
-        authorUser: 'author-user',
-        publishDate: '2024-01-01',
-        description: 'Desc',
-        title: 'Title',
-        contentType: 'video/mp4'
-      })
+      vi.mocked(getFile).mockResolvedValue(createMockFile({fileId: 'wRG7lAGdRII', status: 'Queued', size: 0, url: null}))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       // Should NOT create a new file record
@@ -220,19 +198,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is currently downloading
-      vi.mocked(getFile).mockResolvedValue({
-        fileId: 'wRG7lAGdRII',
-        key: 'wRG7lAGdRII.mp4',
-        status: 'Downloading',
-        size: 0,
-        url: null,
-        authorName: 'Author',
-        authorUser: 'author-user',
-        publishDate: '2024-01-01',
-        description: 'Desc',
-        title: 'Title',
-        contentType: 'video/mp4'
-      })
+      vi.mocked(getFile).mockResolvedValue(createMockFile({fileId: 'wRG7lAGdRII', status: 'Downloading', size: 0, url: null}))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(202)
       expect(vi.mocked(createFile)).not.toHaveBeenCalled()
