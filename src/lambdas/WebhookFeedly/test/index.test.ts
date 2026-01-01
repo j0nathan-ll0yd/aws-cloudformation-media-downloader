@@ -15,7 +15,6 @@ const fakeUserId = uuidv4()
 // Create SQS mock - intercepts all SQSClient.send() calls
 const sqsMock = mockClient(SQSClient)
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
 
 // Mock EventBridge vendor wrapper (has retry logic that can cause test timeouts)

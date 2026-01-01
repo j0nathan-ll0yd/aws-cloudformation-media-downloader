@@ -1,16 +1,8 @@
 /**
- * Device Registration Integration Tests (True Integration)
+ * Device Registration Integration Tests
  *
- * Tests the RegisterDevice workflow with REAL PostgreSQL and LocalStack SNS:
- * - Entity queries: Real Drizzle queries via getDrizzleClient()
- * - SNS: Uses REAL LocalStack for platform endpoints
- *
- * Workflow:
- * 1. Create SNS platform endpoint from device token (REAL LocalStack)
- * 2. Upsert Device record (REAL PostgreSQL)
- * 3. Upsert UserDevice association for authenticated users (REAL PostgreSQL)
- * 4. Handle duplicate device registration (same device, different users)
- * 5. Subscribe anonymous users to push notification topic (REAL LocalStack)
+ * Tests the RegisterDevice workflow including endpoint creation,
+ * device persistence, and user-device associations.
  */
 
 // Set environment variables before imports
@@ -38,10 +30,6 @@ import {
   generateIsolatedAppName
 } from '../helpers/sns-helpers'
 
-// No entity query mocks - uses REAL PostgreSQL via getDrizzleClient()
-// No device-service mocks - device-service calls entity queries which use real DB
-
-// Import factory and handler - no mocks needed
 import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
 const {handler} = await import('#lambdas/RegisterDevice/src/index')
@@ -68,7 +56,7 @@ function createRegisterDeviceEvent(
   return createMockCustomAPIGatewayEvent({path: '/devices', httpMethod: 'POST', userId, userStatus, body: JSON.stringify(body)})
 }
 
-describe('Device Registration Integration Tests (True Integration)', () => {
+describe('Device Registration Integration Tests', () => {
   let mockContext: Context
   let platformAppArn: string
   let topicArn: string
@@ -108,26 +96,21 @@ describe('Device Registration Integration Tests (True Integration)', () => {
     const deviceId = `device-new-${Date.now()}`
     const token = `apns-token-${Date.now()}`
 
-    // Arrange: Create user in real database
     await insertUser({userId, email: `test-${Date.now()}@example.com`})
 
-    // Act
     const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert: Check response
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
     expect(response.body.endpointArn).toContain('arn:aws:sns')
 
-    // Assert: Verify device was created in real database
     const device = await getDevice(deviceId)
     expect(device).toBeDefined()
     expect(device!.token).toBe(token)
     expect(device!.endpointArn).toContain('arn:aws:sns')
 
-    // Assert: Verify user-device link was created
     const userDevices = await getUserDevicesByUserId(userId)
     expect(userDevices).toHaveLength(1)
     expect(userDevices[0].deviceId).toBe(deviceId)
@@ -142,7 +125,6 @@ describe('Device Registration Integration Tests (True Integration)', () => {
     const token1 = `apns-token-first-${Date.now()}`
     const token2 = `apns-token-second-${Date.now()}`
 
-    // Arrange: Create user with first device in real database
     await insertUser({userId, email: `multi-${Date.now()}@example.com`})
 
     // Register first device (this will be the user's first device)
@@ -195,15 +177,12 @@ describe('Device Registration Integration Tests (True Integration)', () => {
     const deviceId = `device-anon-${Date.now()}`
     const token = `apns-token-anon-${Date.now()}`
 
-    // Act (no user setup needed for anonymous)
     const body = createDeviceBody(deviceId, token)
     const event = createRegisterDeviceEvent(body, undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
 
-    // Assert: Check response
     expect(result.statusCode).toBe(200)
 
-    // Assert: Device should be created but no UserDevice association
     const device = await getDevice(deviceId)
     expect(device).toBeDefined()
     expect(device!.token).toBe(token)
@@ -241,18 +220,14 @@ describe('Device Registration Integration Tests (True Integration)', () => {
     const deviceId = `device-full-${Date.now()}`
     const token = `apns-token-full-${Date.now()}`
 
-    // Arrange: Create user in real database
     await insertUser({userId, email: `full-${Date.now()}@example.com`})
 
-    // Act
     const body: DeviceRegistrationBody = {deviceId, token, name: 'iPhone 15 Pro Max', systemName: 'iOS', systemVersion: '17.2'}
     const event = createRegisterDeviceEvent(body, userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert: Check response
     expect(result.statusCode).toBe(200)
 
-    // Assert: Verify full device info was stored in real database
     const device = await getDevice(deviceId)
     expect(device).toBeDefined()
     expect(device!.name).toBe('iPhone 15 Pro Max')
@@ -266,7 +241,6 @@ describe('Device Registration Integration Tests (True Integration)', () => {
     const deviceId = `device-shared-${Date.now()}`
     const token = `apns-token-shared-${Date.now()}`
 
-    // Arrange: Create both users in real database
     await insertUser({userId: user1Id, email: `user1-${Date.now()}@example.com`})
     await insertUser({userId: user2Id, email: `user2-${Date.now()}@example.com`})
 

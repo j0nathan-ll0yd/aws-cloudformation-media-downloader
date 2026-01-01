@@ -1,14 +1,8 @@
 /**
  * WebhookFeedly Workflow Integration Tests
  *
- * Tests the Feedly webhook processing workflow with PostgreSQL:
- * 1. Extract video ID from article URL
- * 2. Create/update file records in database
- * 3. Associate files with users
- * 4. Handle duplicate webhooks (idempotency)
- *
- * These tests verify database operations using the postgres-helpers
- * against a real PostgreSQL instance (docker-compose.test.yml).
+ * Tests the Feedly webhook processing workflow including video extraction,
+ * file record management, and idempotency handling.
  */
 
 // Set environment variables before imports

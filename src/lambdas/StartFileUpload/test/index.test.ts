@@ -21,7 +21,6 @@ const downloadVideoToS3Mock = vi.fn<(url: string, bucket: string, key: string) =
 
 vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries',
   () => ({getFileDownload: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
 

@@ -1,17 +1,8 @@
 /**
- * Auth Flow Integration Tests (True Integration)
+ * Auth Flow Integration Tests
  *
- * Tests the LoginUser and RegisterUser workflows with REAL Better Auth:
- * 1. Register new user - creates User, Session, Account entities via Better Auth
- * 2. Login existing user - validates credentials, creates session
- * 3. Login with invalid credentials - returns error
- * 4. Handle new user name update from iOS app
- *
- * Uses real Better Auth with mocked Apple JWKS endpoint.
- * Only the external network call to Apple's JWKS is mocked.
- * All database operations happen on real PostgreSQL.
- *
- * @see docs/wiki/Testing/Integration-Test-Audit.md for classification
+ * Tests the LoginUser and RegisterUser workflows including
+ * user registration, session management, and credential validation.
  */
 
 // Set environment variables BEFORE any imports
@@ -41,8 +32,6 @@ import {createMockContext} from '../helpers/lambda-context'
 import {generateAppleIdToken, startAppleJWKSMock, stopAppleJWKSMock} from '../helpers/apple-jwks-mock'
 import {createMockAPIGatewayProxyEvent} from '../helpers/test-data'
 
-// Import handlers after environment is set
-// NO MOCKING of Better Auth - we use the real implementation
 const {handler: loginHandler} = await import('#lambdas/LoginUser/src/index')
 const {handler: registerHandler} = await import('#lambdas/RegisterUser/src/index')
 
@@ -63,7 +52,7 @@ function createAuthEvent(body: AuthRequestBody, path: string): any {
   })
 }
 
-describe('Auth Flow Integration Tests (True Integration)', () => {
+describe('Auth Flow Integration Tests', () => {
   let mockContext: Context
 
   beforeAll(async () => {
@@ -87,7 +76,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
     await closeTestDb()
   })
 
-  describe('LoginUser (True Integration)', () => {
+  describe('LoginUser', () => {
     test('should login/register user with valid Apple ID token', async () => {
       // Generate a valid Apple ID token using our mock JWKS
       // The token is signed with our test keys and will validate against the mock JWKS
@@ -152,7 +141,7 @@ describe('Auth Flow Integration Tests (True Integration)', () => {
     })
   })
 
-  describe('RegisterUser (True Integration)', () => {
+  describe('RegisterUser', () => {
     test('should register new user and update name', async () => {
       // Generate a valid Apple ID token
       const appleUserId = 'apple-new-user-' + Date.now()

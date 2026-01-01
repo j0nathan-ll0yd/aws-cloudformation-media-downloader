@@ -1,15 +1,8 @@
 /**
  * ListFiles Workflow Integration Tests
  *
- * Tests the file listing workflow with REAL PostgreSQL:
- * - Entity queries: Real Drizzle queries via getDrizzleClient()
- *
- * Workflow:
- * 1. Extract userId and userStatus from event (custom authorizer)
- * 2. Handle different user statuses (Authenticated, Anonymous, Unauthenticated)
- * 3. Query files for user via real database JOIN
- * 4. Filter to only Downloaded files
- * 5. Return file list to client
+ * Tests the file listing workflow including user status handling,
+ * file queries, and response filtering.
  */
 
 // Set environment variables before imports
@@ -31,7 +24,6 @@ import {createMockContext} from '../helpers/lambda-context'
 import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, linkUserFile, truncateAllTables} from '../helpers/postgres-helpers'
 import {createMockCustomAPIGatewayEvent} from '../helpers/test-data'
 
-// Import handler - uses real Drizzle client via getDrizzleClient()
 const {handler} = await import('#lambdas/ListFiles/src/index')
 
 // Helper using centralized factory
@@ -57,7 +49,6 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should query and return Downloaded files for authenticated user', async () => {
-    // Arrange: Create user and files in real database
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'listfiles@example.com'})
 
@@ -74,11 +65,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     await linkUserFile(userId, 'video-1')
     await linkUserFile(userId, 'video-2')
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
@@ -87,15 +76,12 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return empty list when user has no files', async () => {
-    // Arrange: Create user with no files
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'nofiles@example.com'})
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
     expect(response.body.keyCount).toBe(0)
@@ -103,11 +89,9 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return demo file for anonymous user without querying database', async () => {
-    // Act: Anonymous user (no userId) - doesn't need database setup
     const event = createListFilesEvent(undefined, UserStatus.Anonymous)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
@@ -117,16 +101,13 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return 401 for unauthenticated user', async () => {
-    // Act
     const event = createListFilesEvent(undefined, UserStatus.Unauthenticated)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(401)
   })
 
   test('should filter out non-Downloaded files', async () => {
-    // Arrange: Create user with mix of file statuses
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'mixed@example.com'})
 
@@ -142,11 +123,9 @@ describe('ListFiles Workflow Integration Tests', () => {
     await linkUserFile(userId, 'queued-1')
     await linkUserFile(userId, 'downloading-1')
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert - only Downloaded files should be returned
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
@@ -156,7 +135,6 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle large batch of files efficiently', async () => {
-    // Arrange: Create user with 25 Downloaded files
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'batch@example.com'})
 
@@ -166,11 +144,9 @@ describe('ListFiles Workflow Integration Tests', () => {
       await linkUserFile(userId, fileId)
     }
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
@@ -179,7 +155,6 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should return files with full metadata', async () => {
-    // Arrange: Create user and file with full metadata
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'metadata@example.com'})
 
@@ -199,11 +174,9 @@ describe('ListFiles Workflow Integration Tests', () => {
 
     await linkUserFile(userId, 'full-metadata')
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 
@@ -215,18 +188,15 @@ describe('ListFiles Workflow Integration Tests', () => {
   })
 
   test('should handle user with only non-Downloaded files', async () => {
-    // Arrange: Create user with only Queued files (no Downloaded)
     const userId = crypto.randomUUID()
     await insertUser({userId, email: 'queued-only@example.com'})
 
     await insertFile({fileId: 'queued-only', key: 'queued-only.mp4', status: FileStatus.Queued, title: 'Queued Only'})
     await linkUserFile(userId, 'queued-only')
 
-    // Act
     const event = createListFilesEvent(userId, UserStatus.Authenticated)
     const result = await handler(event, mockContext)
 
-    // Assert - no Downloaded files means empty response
     expect(result.statusCode).toBe(200)
     const response = JSON.parse(result.body)
 

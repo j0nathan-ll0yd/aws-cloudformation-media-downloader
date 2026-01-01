@@ -44,7 +44,6 @@ const fakeDevices = [
   })
 ]
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesByDeviceId: vi.fn()}))
 
 vi.mock('#lib/domain/device/device-service', () => ({deleteDevice: vi.fn()}))

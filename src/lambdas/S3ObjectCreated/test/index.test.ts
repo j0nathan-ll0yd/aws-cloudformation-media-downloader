@@ -13,13 +13,11 @@ beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
 })
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({getFilesByKey: vi.fn(), getUserFilesByFileId: vi.fn()}))
 
 const {handler} = await import('./../src')
 import {getFilesByKey, getUserFilesByFileId} from '#entities/queries'
 
-// Mock data using fixture factories
 const mockFileRow = createMockFile({fileId: '4TfEp8oG5gM', key: '20210122-[Philip DeFranco].mp4'})
 const mockUserFileRow = createMockUserFile({fileId: '4TfEp8oG5gM', userId: DEFAULT_USER_ID})
 

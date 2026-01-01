@@ -34,7 +34,6 @@ vi.mock('#lib/domain/device/device-service', () => ({
   deleteUserDevice: vi.fn()
 }))
 
-// Mock native Drizzle query functions
 vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUserId: vi.fn(), deleteUserFilesByUserId: vi.fn(), getDevicesBatch: vi.fn()}))
 
 vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))

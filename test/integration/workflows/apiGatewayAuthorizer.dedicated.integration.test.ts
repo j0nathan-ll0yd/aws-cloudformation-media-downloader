@@ -31,9 +31,6 @@ const {getApiKeysMock, getUsagePlansMock, getUsageMock} = vi.hoisted(() => ({get
 
 vi.mock('#lib/vendor/AWS/ApiGateway', () => ({getApiKeys: getApiKeysMock, getUsagePlans: getUsagePlansMock, getUsage: getUsageMock}))
 
-// Session validation uses real PostgreSQL - no mock needed
-
-// Import handler after mocks
 const {handler} = await import('#lambdas/ApiGatewayAuthorizer/src/index')
 
 // Helper to set up standard API Gateway mocks

@@ -1,13 +1,8 @@
 /**
  * StartFileUpload Workflow Integration Tests
  *
- * Tests the file upload workflow with PostgreSQL:
- * 1. File record creation and status tracking
- * 2. User-file association management
- * 3. FileDownloads state transitions (Pending, Downloading, Completed, Failed)
- *
- * These tests verify database operations using the postgres-helpers
- * against a real PostgreSQL instance (docker-compose.test.yml).
+ * Tests the file upload workflow including file record creation,
+ * user-file associations, and status transitions.
  */
 
 // Set environment variables before imports

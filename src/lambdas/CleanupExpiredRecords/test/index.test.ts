@@ -32,7 +32,6 @@ vi.mock('drizzle-orm',
     lt: vi.fn((col: unknown, val: unknown) => ({col, val}))
   }))
 
-// Import handler after all mocks are set up
 const {handler} = await import('./../src')
 
 const context = createMockContext({functionName: 'CleanupExpiredRecords'})

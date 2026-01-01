@@ -24,7 +24,6 @@ vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T ex
 
 vi.mock('#lib/lambda/middleware/internal', () => ({wrapLambdaInvokeHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
-// Import handler after all mocks are set up
 const {handler} = await import('./../src')
 
 const context = createMockContext({functionName: 'MigrateDSQL'})
