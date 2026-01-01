@@ -1,4 +1,5 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
+import drizzle from 'eslint-plugin-drizzle'
 import tsdoc from 'eslint-plugin-tsdoc'
 import jsdoc from 'eslint-plugin-jsdoc'
 import tsParser from '@typescript-eslint/parser'
@@ -44,7 +45,7 @@ export default [
   },
   ...compat.extends('eslint:recommended', 'plugin:@typescript-eslint/eslint-recommended', 'plugin:@typescript-eslint/recommended'),
   {
-    plugins: {'@typescript-eslint': typescriptEslint, tsdoc, jsdoc, 'local-rules': localRules},
+    plugins: {'@typescript-eslint': typescriptEslint, drizzle, tsdoc, jsdoc, 'local-rules': localRules},
 
     languageOptions: {parser: tsParser},
 
@@ -90,7 +91,11 @@ export default [
       'local-rules/env-validation': 'error',
       'local-rules/authenticated-handler-enforcement': 'warn',
       // Phase 4: STYLISTIC (comment conventions)
-      'local-rules/spacing-conventions': 'warn'
+      'local-rules/spacing-conventions': 'warn',
+
+      // Drizzle safety rules - prevent accidental bulk operations
+      'drizzle/enforce-delete-with-where': ['error', {drizzleObjectName: ['db', 'tx']}],
+      'drizzle/enforce-update-with-where': ['error', {drizzleObjectName: ['db', 'tx']}]
     }
   },
   // Relaxed JSDoc requirements for scripts and tooling (self-documenting per Code-Comments.md)

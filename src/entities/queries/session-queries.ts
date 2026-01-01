@@ -10,6 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {eq, lt} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
+import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
 
 export type SessionRow = InferSelectModel<typeof sessions>
 export type AccountRow = InferSelectModel<typeof accounts>
@@ -63,8 +64,10 @@ export async function getSessionsByUserId(userId: string): Promise<SessionRow[]>
  * @returns The created session row
  */
 export async function createSession(input: CreateSessionInput): Promise<SessionRow> {
+  // Validate session input against schema
+  const validatedInput = sessionInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [session] = await db.insert(sessions).values(input).returning()
+  const [session] = await db.insert(sessions).values(validatedInput).returning()
   return session
 }
 
@@ -75,8 +78,10 @@ export async function createSession(input: CreateSessionInput): Promise<SessionR
  * @returns The updated session row
  */
 export async function updateSession(id: string, data: UpdateSessionInput): Promise<SessionRow> {
+  // Validate partial update data against schema
+  const validatedData = sessionUpdateSchema.partial().parse(data)
   const db = await getDrizzleClient()
-  const [updated] = await db.update(sessions).set({...data, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
+  const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
   return updated
 }
 
@@ -135,8 +140,10 @@ export async function getAccountsByUserId(userId: string): Promise<AccountRow[]>
  * @returns The created account row
  */
 export async function createAccount(input: CreateAccountInput): Promise<AccountRow> {
+  // Validate account input against schema
+  const validatedInput = accountInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [account] = await db.insert(accounts).values(input).returning()
+  const [account] = await db.insert(accounts).values(validatedInput).returning()
   return account
 }
 
@@ -177,8 +184,10 @@ export async function getVerificationByIdentifier(identifier: string): Promise<V
  * @returns The created verification row
  */
 export async function createVerification(input: CreateVerificationInput): Promise<VerificationRow> {
+  // Validate verification input against schema
+  const validatedInput = verificationInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [token] = await db.insert(verification).values(input).returning()
+  const [token] = await db.insert(verification).values(validatedInput).returning()
   return token
 }
 

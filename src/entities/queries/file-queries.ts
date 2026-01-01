@@ -10,6 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, files} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
+import {fileDownloadInsertSchema, fileDownloadUpdateSchema, fileInsertSchema, fileUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
 
 export type FileRow = InferSelectModel<typeof files>
 export type FileDownloadRow = InferSelectModel<typeof fileDownloads>
@@ -74,8 +75,10 @@ export async function getFilesByKey(key: string): Promise<FileRow[]> {
  * @returns The created file row
  */
 export async function createFile(input: CreateFileInput): Promise<FileRow> {
+  // Validate file input against schema
+  const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
   const db = await getDrizzleClient()
-  const [file] = await db.insert(files).values({...input, size: input.size ?? 0}).returning()
+  const [file] = await db.insert(files).values(validatedInput).returning()
   return file
 }
 
@@ -86,8 +89,10 @@ export async function createFile(input: CreateFileInput): Promise<FileRow> {
  * @returns The created or updated file row
  */
 export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
+  // Validate file input against schema
+  const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
   const db = await getDrizzleClient()
-  const [result] = await db.insert(files).values({...input, size: input.size ?? 0}).onConflictDoUpdate({
+  const [result] = await db.insert(files).values(validatedInput).onConflictDoUpdate({
     target: files.fileId,
     set: {
       size: input.size ?? 0,
@@ -112,8 +117,10 @@ export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
  * @returns The updated file row
  */
 export async function updateFile(fileId: string, data: UpdateFileInput): Promise<FileRow> {
+  // Validate partial update data against schema
+  const validatedData = fileUpdateSchema.partial().parse(data)
   const db = await getDrizzleClient()
-  const [updated] = await db.update(files).set(data).where(eq(files.fileId, fileId)).returning()
+  const [updated] = await db.update(files).set(validatedData).where(eq(files.fileId, fileId)).returning()
   return updated
 }
 
@@ -145,8 +152,10 @@ export async function getFileDownload(fileId: string): Promise<FileDownloadRow |
  * @returns The created file download row
  */
 export async function createFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
+  // Validate file download input against schema
+  const validatedInput = fileDownloadInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [download] = await db.insert(fileDownloads).values(input).returning()
+  const [download] = await db.insert(fileDownloads).values(validatedInput).returning()
   return download
 }
 
@@ -157,8 +166,10 @@ export async function createFileDownload(input: CreateFileDownloadInput): Promis
  * @returns The created or updated file download row
  */
 export async function upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
+  // Validate file download input against schema
+  const validatedInput = fileDownloadInsertSchema.parse(input)
   const db = await getDrizzleClient()
-  const [result] = await db.insert(fileDownloads).values(input).onConflictDoUpdate({
+  const [result] = await db.insert(fileDownloads).values(validatedInput).onConflictDoUpdate({
     target: fileDownloads.fileId,
     set: {
       status: input.status,
@@ -183,8 +194,10 @@ export async function upsertFileDownload(input: CreateFileDownloadInput): Promis
  * @returns The updated file download row
  */
 export async function updateFileDownload(fileId: string, data: UpdateFileDownloadInput): Promise<FileDownloadRow> {
+  // Validate partial update data against schema
+  const validatedData = fileDownloadUpdateSchema.partial().parse(data)
   const db = await getDrizzleClient()
-  const [updated] = await db.update(fileDownloads).set({...data, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
+  const [updated] = await db.update(fileDownloads).set({...validatedData, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
   return updated
 }
 

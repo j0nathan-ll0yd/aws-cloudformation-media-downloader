@@ -1,0 +1,60 @@
+/**
+ * Drizzle-Zod Schema Generation
+ *
+ * Generates Zod validation schemas from Drizzle table definitions.
+ * Domain code should import from this module for entity validation.
+ *
+ * @see {@link file://../../../../docs/wiki/Conventions/Vendor-Encapsulation-Policy.md}
+ */
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from 'drizzle-zod'
+import {accounts, devices, fileDownloads, files, identityProviders, sessions, userDevices, userFiles, users, verification} from './schema'
+
+// User schemas
+export const userInsertSchema = createInsertSchema(users)
+export const userSelectSchema = createSelectSchema(users)
+export const userUpdateSchema = createUpdateSchema(users)
+
+// Identity provider schemas
+export const identityProviderInsertSchema = createInsertSchema(identityProviders)
+export const identityProviderSelectSchema = createSelectSchema(identityProviders)
+export const identityProviderUpdateSchema = createUpdateSchema(identityProviders)
+
+// File schemas
+export const fileInsertSchema = createInsertSchema(files)
+export const fileSelectSchema = createSelectSchema(files)
+export const fileUpdateSchema = createUpdateSchema(files)
+
+// FileDownload schemas
+export const fileDownloadInsertSchema = createInsertSchema(fileDownloads)
+export const fileDownloadSelectSchema = createSelectSchema(fileDownloads)
+export const fileDownloadUpdateSchema = createUpdateSchema(fileDownloads)
+
+// Device schemas
+export const deviceInsertSchema = createInsertSchema(devices)
+export const deviceSelectSchema = createSelectSchema(devices)
+export const deviceUpdateSchema = createUpdateSchema(devices)
+
+// Session schemas (Better Auth)
+export const sessionInsertSchema = createInsertSchema(sessions)
+export const sessionSelectSchema = createSelectSchema(sessions)
+export const sessionUpdateSchema = createUpdateSchema(sessions)
+
+// Account schemas (Better Auth)
+export const accountInsertSchema = createInsertSchema(accounts)
+export const accountSelectSchema = createSelectSchema(accounts)
+export const accountUpdateSchema = createUpdateSchema(accounts)
+
+// Verification schemas (Better Auth)
+export const verificationInsertSchema = createInsertSchema(verification)
+export const verificationSelectSchema = createSelectSchema(verification)
+export const verificationUpdateSchema = createUpdateSchema(verification)
+
+// Relationship schemas (insert only - no updates on junction tables)
+export const userFileInsertSchema = createInsertSchema(userFiles)
+export const userFileSelectSchema = createSelectSchema(userFiles)
+
+export const userDeviceInsertSchema = createInsertSchema(userDevices)
+export const userDeviceSelectSchema = createSelectSchema(userDevices)
+
+// Re-export factory functions for custom schema generation
+export { createInsertSchema, createSelectSchema, createUpdateSchema }
