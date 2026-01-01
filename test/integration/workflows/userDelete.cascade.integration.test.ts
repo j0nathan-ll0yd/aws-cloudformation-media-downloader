@@ -30,7 +30,7 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
-import {UserStatus} from '#types/enums'
+import {FileStatus, UserStatus} from '#types/enums'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 
 // Test helpers
@@ -115,7 +115,7 @@ describe('UserDelete Cascade Integration Tests (True Integration)', () => {
     await insertDevice({deviceId: deviceId2, token: `token-${deviceId2}`, endpointArn: endpoint2})
     await upsertUserDevice({userId, deviceId: deviceId1})
     await upsertUserDevice({userId, deviceId: deviceId2})
-    await insertFile({fileId, key: 'test-key', title: 'Test File', status: 'Downloaded', size: 1000})
+    await insertFile({fileId, key: 'test-key', title: 'Test File', status: FileStatus.Downloaded, size: 1000})
     await insertUserFile({userId, fileId})
 
     // Verify data exists before deletion
@@ -239,7 +239,7 @@ describe('UserDelete Cascade Integration Tests (True Integration)', () => {
     const fileId = `file-only-${Date.now()}`
 
     await insertUser({userId, email: `fileonly-${Date.now()}@example.com`})
-    await insertFile({fileId, key: 'file-only-key', title: 'File Only', status: 'Downloaded', size: 500})
+    await insertFile({fileId, key: 'file-only-key', title: 'File Only', status: FileStatus.Downloaded, size: 500})
     await insertUserFile({userId, fileId})
 
     // Act

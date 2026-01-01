@@ -541,6 +541,26 @@ export async function getUserFilesByFileId(fileId: string): Promise<Array<{userI
 }
 
 /**
+ * Get user-file links by user ID
+ */
+export async function getUserFilesByUserId(userId: string): Promise<Array<{userId: string; fileId: string}>> {
+  const db = getTestDb()
+  const schema = getWorkerSchema()
+
+  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+
+  const result = await db.select().from(userFiles).where(eq(userFiles.userId, userId))
+  return result.map((row) => ({userId: row.userId, fileId: row.fileId}))
+}
+
+/**
+ * Insert a user-file link
+ */
+export async function insertUserFile(data: {userId: string; fileId: string}): Promise<void> {
+  return linkUserFile(data.userId, data.fileId)
+}
+
+/**
  * Delete all user-file links for a user
  */
 export async function deleteUserFilesByUserId(userId: string): Promise<void> {
@@ -728,29 +748,3 @@ export async function getVerificationTokens(): Promise<Array<{id: string; identi
   const rows = [...result] as Array<{id: string; identifier: string}>
   return rows.map((row) => ({id: row.id, identifier: row.identifier}))
 }
-
-// ============================================================================
-// Legacy Aliases (for backward compatibility with DynamoDB tests)
-// ============================================================================
-
-/** @deprecated Use createAllTables instead */
-export const createFilesTable = createAllTables
-/** @deprecated Use createAllTables instead */
-export const createUsersTable = createAllTables
-/** @deprecated Use createAllTables instead */
-export const createUserFilesTable = createAllTables
-/** @deprecated Use createAllTables instead */
-export const createMediaDownloaderTable = createAllTables
-/** @deprecated Use createAllTables instead */
-export const createIdempotencyTable = createAllTables
-
-/** @deprecated Use dropAllTables instead */
-export const deleteFilesTable = dropAllTables
-/** @deprecated Use dropAllTables instead */
-export const deleteUsersTable = dropAllTables
-/** @deprecated Use dropAllTables instead */
-export const deleteUserFilesTable = dropAllTables
-/** @deprecated Use dropAllTables instead */
-export const deleteMediaDownloaderTable = dropAllTables
-/** @deprecated Use dropAllTables instead */
-export const deleteIdempotencyTable = dropAllTables

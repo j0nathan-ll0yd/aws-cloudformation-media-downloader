@@ -41,34 +41,6 @@ export function createMockFile(id: string, status: FileStatus, partial?: Partial
 }
 
 /**
- * Creates an array of mock files for batch testing
- * @param count - Number of files to create
- * @param status - Status for all files
- * @param idPrefix - Prefix for file IDs (default: 'video')
- */
-export function createMockFiles(count: number, status: FileStatus, idPrefix = 'video'): Partial<File>[] {
-  return Array.from({length: count}, (_, i) => createMockFile(`${idPrefix}-${i}`, status))
-}
-
-/**
- * Creates a mock UserFile record (user-file association)
- * @param userId - User UUID
- * @param fileId - File ID
- */
-export function createMockUserFile(userId: string, fileId: string) {
-  return {userId, fileId}
-}
-
-/**
- * Creates a mock UserDevice record (user-device association)
- * @param userId - User UUID
- * @param deviceId - Device UUID
- */
-export function createMockUserDevice(userId: string, deviceId: string) {
-  return {userId, deviceId}
-}
-
-/**
  * Creates a mock Device record with endpoint ARN.
  * @param partial - Partial device fields to override defaults
  */
@@ -149,41 +121,6 @@ export function createMockSQSFileNotificationEvent(
       md5OfBody: 'test-md5',
       eventSource: 'aws:sqs',
       eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:test-queue',
-      awsRegion: 'us-west-2'
-    }]
-  }
-}
-
-/**
- * Creates an SQS event for the DownloadQueue (StartFileUpload consumer)
- * @param fileId - Video file ID
- * @param options - Optional overrides for message fields
- */
-export function createMockDownloadQueueEvent(
-  fileId: string,
-  options?: {messageId?: string; sourceUrl?: string; correlationId?: string; userId?: string; attempt?: number}
-): SQSEvent {
-  const messageId = options?.messageId ?? `msg-${fileId}`
-  const sourceUrl = options?.sourceUrl ?? `https://www.youtube.com/watch?v=${fileId}`
-  const correlationId = options?.correlationId ?? `corr-${fileId}`
-  const userId = options?.userId ?? 'test-user'
-  const attempt = options?.attempt ?? 1
-
-  return {
-    Records: [{
-      messageId,
-      receiptHandle: `receipt-${messageId}`,
-      body: JSON.stringify({fileId, sourceUrl, correlationId, userId, attempt}),
-      attributes: {
-        ApproximateReceiveCount: String(attempt),
-        SentTimestamp: String(Date.now()),
-        SenderId: 'AIDAIT2UOQQY3AUEKVGXU',
-        ApproximateFirstReceiveTimestamp: String(Date.now())
-      },
-      messageAttributes: {},
-      md5OfBody: 'test-md5',
-      eventSource: 'aws:sqs',
-      eventSourceARN: 'arn:aws:sqs:us-west-2:123456789012:DownloadQueue',
       awsRegion: 'us-west-2'
     }]
   }

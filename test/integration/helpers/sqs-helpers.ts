@@ -4,7 +4,7 @@
  * Utilities for creating queues and receiving messages in LocalStack.
  * Used for integration testing event-driven workflows.
  */
-import {createQueue, deleteMessage, deleteQueue, getQueueArn, getQueueUrl, purgeQueue, receiveMessages, sendMessage} from '../lib/vendor/AWS/SQS'
+import {createQueue, deleteMessage, deleteQueue, getQueueArn, getQueueUrl, purgeQueue, receiveMessages} from '../lib/vendor/AWS/SQS'
 import type {Message} from '@aws-sdk/client-sqs'
 
 /**
@@ -106,18 +106,4 @@ export async function clearTestQueue(queueUrl: string): Promise<void> {
   } catch {
     // Queue might not exist or purge recently attempted
   }
-}
-
-/**
- * Sends a test message to a queue
- * @param queueUrl - URL of the queue
- * @param body - Message body (will be JSON stringified if object)
- * @param attributes - Message attributes
- */
-export async function sendTestMessage(queueUrl: string, body: unknown, attributes?: Record<string, string>): Promise<string> {
-  const messageBody = typeof body === 'string' ? body : JSON.stringify(body)
-  const messageAttributes = attributes
-    ? Object.fromEntries(Object.entries(attributes).map(([key, value]) => [key, {DataType: 'String', StringValue: value}]))
-    : undefined
-  return sendMessage(queueUrl, messageBody, messageAttributes)
 }
