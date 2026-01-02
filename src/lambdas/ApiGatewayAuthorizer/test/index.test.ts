@@ -33,6 +33,11 @@ const {handler} = await import('./../src')
 
 describe('#APIGatewayAuthorizer', () => {
   const successResponseKeys = ['context', 'policyDocument', 'principalId', 'usageIdentifierKey']
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('#HeaderApiKey', () => {
     let event: APIGatewayRequestAuthorizerEvent
     beforeEach(() => {
@@ -59,7 +64,6 @@ describe('#APIGatewayAuthorizer', () => {
     beforeEach(() => {
       event = createApiGatewayAuthorizerEvent({queryStringParameters: {ApiKey: fakeUsageIdentifierKey}, headers: {Authorization: 'Bearer test-token'}})
       process.env.MULTI_AUTHENTICATION_PATH_PARTS = 'files'
-      validateSessionTokenMock.mockReset()
     })
     test('should handle a valid Authorization header', async () => {
       getApiKeysMock.mockReturnValue(getApiKeysDefaultResponse)
