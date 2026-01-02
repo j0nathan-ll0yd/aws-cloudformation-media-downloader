@@ -21,10 +21,11 @@ import {
   waitForEventBridgeReady
 } from '../helpers/eventbridge-helpers'
 import {clearTestQueue, createTestQueue, deleteTestQueue, waitForMessages} from '../helpers/sqs-helpers'
+import {generateTestResourceName} from '../helpers/resource-naming'
 
-const TEST_EVENT_BUS = 'test-media-downloader-bus'
-const TEST_QUEUE = 'test-download-queue'
-const TEST_RULE = 'test-download-requested-rule'
+const TEST_EVENT_BUS = generateTestResourceName('test-bus')
+const TEST_QUEUE = generateTestResourceName('test-queue')
+const TEST_RULE = generateTestResourceName('test-rule')
 
 describe('Event Chain E2E Integration Tests', () => {
   let queueUrl: string

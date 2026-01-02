@@ -23,6 +23,14 @@ import {createSNSClient} from '#lib/vendor/AWS/clients'
 
 const snsClient = createSNSClient()
 
+/**
+ * Destroys the SNS client to release HTTP connections.
+ * Call this during global teardown.
+ */
+export function destroyClient(): void {
+  snsClient.destroy()
+}
+
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 const AWS_ACCOUNT_ID = '000000000000' // LocalStack default account ID
 

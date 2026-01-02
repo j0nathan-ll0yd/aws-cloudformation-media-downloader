@@ -12,6 +12,14 @@ import {createS3Client} from '#lib/vendor/AWS/clients'
 const s3Client = createS3Client()
 
 /**
+ * Destroys the S3 client to release HTTP connections.
+ * Call this during global teardown.
+ */
+export function destroyClient(): void {
+  s3Client.destroy()
+}
+
+/**
  * Creates an S3 bucket
  * @param bucketName - Name of the bucket to create
  */

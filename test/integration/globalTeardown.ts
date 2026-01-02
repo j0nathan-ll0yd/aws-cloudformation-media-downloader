@@ -2,11 +2,12 @@
  * Vitest Global Teardown for PostgreSQL Integration Tests
  *
  * Drops all worker schemas after all tests complete.
- * Cleans up the database for the next test run.
+ * Cleans up the database and AWS SDK clients for the next test run.
  *
  * Runs ONCE after all test files complete.
  */
 import postgres from 'postgres'
+import {destroyAllClients} from './helpers/aws-client-cleanup'
 
 // Must match MAX_WORKERS in globalSetup.ts
 const MAX_WORKERS = 8
@@ -36,4 +37,7 @@ export default async function globalTeardown() {
   } finally {
     await sql.end()
   }
+
+  // Destroy AWS SDK clients to release HTTP connections
+  await destroyAllClients()
 }

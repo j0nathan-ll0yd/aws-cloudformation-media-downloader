@@ -85,6 +85,36 @@ function adaptMigrationForSchema(migrationSql: string, schema: string): string {
 }
 
 /**
+ * Validate that Aurora DSQL-specific syntax has been properly adapted.
+ * Throws an error if unadapted features are detected.
+ *
+ * @param adapted - The adapted SQL string
+ * @throws Error if unadapted Aurora DSQL features are found
+ */
+function validateAdaptations(adapted: string): void {
+  const issues: string[] = []
+
+  // Check for unadapted Aurora DSQL features
+  if (adapted.includes('CREATE INDEX ASYNC')) {
+    issues.push('CREATE INDEX ASYNC not converted to CREATE INDEX')
+  }
+
+  if (adapted.includes('TIMESTAMP WITHOUT TIME ZONE')) {
+    issues.push('TIMESTAMP WITHOUT TIME ZONE found - may cause timezone issues')
+  }
+
+  // Warn (but don't fail) for UUID columns that might need attention
+  // Note: Some UUIDs are intentionally kept for specific use cases
+  if (adapted.match(/UUID\s+(NOT NULL|REFERENCES)/)) {
+    log('[globalSetup] INFO: UUID columns found in adapted schema - ensure test compatibility')
+  }
+
+  if (issues.length > 0) {
+    throw new Error(`Aurora DSQL adaptation issues detected:\n${issues.map((i) => `  - ${i}`).join('\n')}`)
+  }
+}
+
+/**
  * Parse SQL file into individual statements.
  * Handles multi-line statements and comments.
  */
@@ -129,6 +159,7 @@ export async function setup(): Promise<void> {
 
       // Adapt and execute schema migration
       const adaptedSchema = adaptMigrationForSchema(schemaMigration, schemaName)
+      validateAdaptations(adaptedSchema)
       const schemaStatements = parseSqlStatements(adaptedSchema)
       for (const statement of schemaStatements) {
         await sql.unsafe(statement)
@@ -136,6 +167,7 @@ export async function setup(): Promise<void> {
 
       // Adapt and execute index migration
       const adaptedIndexes = adaptMigrationForSchema(indexMigration, schemaName)
+      validateAdaptations(adaptedIndexes)
       const indexStatements = parseSqlStatements(adaptedIndexes)
       for (const statement of indexStatements) {
         await sql.unsafe(statement)

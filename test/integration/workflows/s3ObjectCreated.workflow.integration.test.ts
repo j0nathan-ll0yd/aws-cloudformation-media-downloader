@@ -19,13 +19,14 @@ import {createMockContext} from '../helpers/lambda-context'
 import {createMockS3Event} from '../helpers/test-data'
 import {clearTestQueue, createTestQueue, deleteTestQueue, receiveAndDeleteMessages} from '../helpers/sqs-helpers'
 import {closeTestDb, createAllTables, getTestDbAsync, insertFile, insertUser, insertUserFile, truncateAllTables} from '../helpers/postgres-helpers'
+import {generateTestResourceName} from '../helpers/resource-naming'
 
 const {handler} = await import('#lambdas/S3ObjectCreated/src/index')
 
 describe('S3ObjectCreated Workflow Integration Tests', () => {
   let mockContext: Context
   let queueUrl: string
-  const testQueueName = `test-s3-object-queue-${Date.now()}`
+  const testQueueName = generateTestResourceName('test-s3-object-queue')
 
   beforeAll(async () => {
     mockContext = createMockContext()
