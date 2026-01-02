@@ -349,6 +349,16 @@ export function createFeedlyWebhookBody(options?: {articleURL?: string}): string
   return JSON.stringify({articleURL: options?.articleURL ?? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'})
 }
 
+/**
+ * Creates a LoginUser request body with Sign In With Apple ID token.
+ */
+export function createLoginUserBody(options?: {idToken?: string; authorizationCode?: string}): string {
+  // Default mock ID token with valid JWT structure (header.payload.signature)
+  const defaultIdToken =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoibGlmZWdhbWVzLk9mZmxpbmVNZWRpYURvd25sb2FkZXIiLCJleHAiOjE1OTAwOTY2MzksImlhdCI6MTU5MDA5NjAzOSwic3ViIjoiMDAwMTg1Ljc3MjAzMTU1NzBmYzQ5ZDk5YTI2NWY5YWY0YjQ2ODc5LjIwMzQiLCJlbWFpbCI6IjI4bmNjaTMzYTNAcHJpdmF0ZXJlbGF5LmFwcGxlaWQuY29tIiwiZW1haWxfdmVyaWZpZWQiOiJ0cnVlIiwiaXNfcHJpdmF0ZV9lbWFpbCI6InRydWUifQ.mockSignature'
+  return JSON.stringify({idToken: options?.idToken ?? defaultIdToken, ...(options?.authorizationCode && {authorizationCode: options.authorizationCode})})
+}
+
 // ============================================================================
 // API Gateway Authorizer Events
 // ============================================================================
