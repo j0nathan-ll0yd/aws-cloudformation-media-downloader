@@ -63,7 +63,7 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
 │       └── validation/    # AST-based convention enforcement (13 rules)
 ├── test/helpers/          # Test utilities
-│   ├── entity-mock.ts     # Entity mock helper for unit tests
+│   ├── entity-fixtures.ts # Factory functions for mock entity rows
 │   └── aws-sdk-mock.ts    # AWS SDK v3 mock helpers (aws-sdk-client-mock)
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
@@ -332,9 +332,9 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 - **Files** ↔ **FileDownloads**: One-to-many (download tracking)
 
 ### Testing with Drizzle
-- **ALWAYS** use `test/helpers/entity-mock.ts` for mocking entities
-- **NEVER** create manual mocks for entities
-- See test style guide for detailed mocking patterns
+- **ALWAYS** mock `#entities/queries` with `vi.mock()` and `vi.fn()` for each query function
+- **PREFER** `test/helpers/entity-fixtures.ts` for creating mock entity data
+- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
 
 ### Testing with AWS SDK
 - **PREFER** `test/helpers/aws-sdk-mock.ts` for AWS SDK v3 mocking (uses aws-sdk-client-mock)
@@ -372,10 +372,10 @@ The following patterns have caused issues in this project and should be avoided:
 **Why**: Breaks encapsulation, makes testing difficult, loses environment detection (LocalStack/X-Ray)
 **Applies to**: AWS SDK, Drizzle, Better Auth, yt-dlp, and all third-party services
 
-### 2. Manual Entity Mocks (CRITICAL)
-**Wrong**: Hand-crafted mock objects for entities in tests
-**Right**: `const mock = createEntityMock({queryIndexes: ['byUser']})`
-**Why**: Inconsistent mocking leads to false positives and maintenance burden
+### 2. Legacy Entity Module Mocks (CRITICAL)
+**Wrong**: `vi.mock('#entities/Users', () => ({...}))`
+**Right**: `vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn()}))`
+**Why**: Legacy entity module mocking is deprecated; use query function mocking with `#entities/queries`
 
 ### 3. Promise.all for Cascade Deletions (CRITICAL)
 **Wrong**: `await Promise.all([deleteUser(), deleteUserFiles()])`
