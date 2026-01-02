@@ -1,13 +1,13 @@
-import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {createMockFile, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {createS3Event} from '#test/helpers/event-factories'
-import {mockClient} from 'aws-sdk-client-mock'
-import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+import {SendMessageCommand} from '@aws-sdk/client-sqs'
 import {createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
+import {createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-// Create SQS mock - intercepts all SQSClient.send() calls
-const sqsMock = mockClient(SQSClient)
+// Create SQS mock using helper - injects into vendor client factory
+const sqsMock = createSQSMock()
 
 beforeAll(() => {
   process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/test-queue'
@@ -36,6 +36,10 @@ describe('#S3ObjectCreated', () => {
 
   afterEach(() => {
     sqsMock.reset()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('should dispatch push notifications for each user with the file', async () => {

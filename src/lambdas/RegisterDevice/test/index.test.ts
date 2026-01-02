@@ -1,13 +1,11 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
-import {mockClient} from 'aws-sdk-client-mock'
 import {
   CreatePlatformEndpointCommand,
   DeleteEndpointCommand,
   ListSubscriptionsByTopicCommand,
-  SNSClient,
   SubscribeCommand,
   UnsubscribeCommand
 } from '@aws-sdk/client-sns'
@@ -19,11 +17,12 @@ import {
   createSNSSubscribeResponse,
   createSNSSubscriptionListResponse
 } from '#test/helpers/aws-response-factories'
+import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
 const fakeUserId = uuidv4()
 
-// Create SNS mock - intercepts all SNSClient.send() calls
-const snsMock = mockClient(SNSClient)
+// Create SNS mock using helper - injects into vendor client factory
+const snsMock = createSNSMock()
 
 vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
@@ -69,6 +68,10 @@ describe('#RegisterDevice', () => {
 
   afterEach(() => {
     snsMock.reset()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('(anonymous) should create an endpoint and subscribe to the unregistered topic', async () => {

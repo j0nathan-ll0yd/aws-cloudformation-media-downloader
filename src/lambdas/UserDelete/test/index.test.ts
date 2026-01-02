@@ -1,12 +1,12 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
-import {mockClient} from 'aws-sdk-client-mock'
-import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
+import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
 const fakeUserId = uuidv4()
 const fakeDevice1 = createMockDevice({deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1'})
@@ -16,8 +16,8 @@ const fakeUserDevicesResponse = [
   createMockUserDevice({deviceId: fakeDevice2.deviceId, userId: fakeUserId})
 ]
 
-// Create SNS mock - intercepts all SNSClient.send() calls
-const snsMock = mockClient(SNSClient)
+// Create SNS mock using helper - injects into vendor client factory
+const snsMock = createSNSMock()
 
 const fakeGithubIssueResponse = {
   status: '201',
@@ -64,6 +64,10 @@ describe('#UserDelete', () => {
 
   afterEach(() => {
     snsMock.reset()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('should delete all user data', async () => {

@@ -1,4 +1,4 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
@@ -6,14 +6,14 @@ import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
 import {testContext} from '#util/vitest-setup'
 import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
 import {createDownloadQueueEvent, createSQSEvent} from '#test/helpers/event-factories'
-import {mockClient} from 'aws-sdk-client-mock'
-import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
-import {EventBridgeClient, PutEventsCommand} from '@aws-sdk/client-eventbridge'
+import {SendMessageCommand} from '@aws-sdk/client-sqs'
+import {PutEventsCommand} from '@aws-sdk/client-eventbridge'
 import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
+import {createEventBridgeMock, createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-// Create AWS mocks - intercept all client.send() calls
-const sqsMock = mockClient(SQSClient)
-const eventBridgeMock = mockClient(EventBridgeClient)
+// Create AWS mocks using helpers - inject into vendor client factory
+const sqsMock = createSQSMock()
+const eventBridgeMock = createEventBridgeMock()
 
 // Mock YouTube functions
 const fetchVideoInfoMock = vi.fn<(url: string) => Promise<FetchVideoInfoResult>>()
@@ -105,6 +105,10 @@ describe('#StartFileUpload', () => {
   afterEach(() => {
     sqsMock.reset()
     eventBridgeMock.reset()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('should successfully download video and return no failures', async () => {

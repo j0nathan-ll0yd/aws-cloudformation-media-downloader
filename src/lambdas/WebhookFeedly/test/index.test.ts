@@ -1,4 +1,4 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
@@ -6,14 +6,14 @@ import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import type {MediaDownloaderEventType} from '#types/events'
 import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
 import {createAPIGatewayEvent, createFeedlyWebhookBody} from '#test/helpers/event-factories'
-import {mockClient} from 'aws-sdk-client-mock'
-import {SendMessageCommand, SQSClient} from '@aws-sdk/client-sqs'
+import {SendMessageCommand} from '@aws-sdk/client-sqs'
 import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
+import {createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
 const fakeUserId = uuidv4()
 
-// Create SQS mock - intercepts all SQSClient.send() calls
-const sqsMock = mockClient(SQSClient)
+// Create SQS mock using helper - injects into vendor client factory
+const sqsMock = createSQSMock()
 
 vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
 
@@ -95,6 +95,10 @@ describe('#WebhookFeedly', () => {
 
   afterEach(() => {
     sqsMock.reset()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('should continue processing even if user-file association fails', async () => {

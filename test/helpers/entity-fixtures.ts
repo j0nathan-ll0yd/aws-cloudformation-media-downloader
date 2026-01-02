@@ -100,6 +100,31 @@ export interface FileDownloadRow {
   updatedAt: Date
 }
 
+export interface AccountRow {
+  id: string
+  userId: string
+  accountId: string
+  providerId: string
+  accessToken: string | null
+  refreshToken: string | null
+  accessTokenExpiresAt: Date | null
+  refreshTokenExpiresAt: Date | null
+  scope: string | null
+  idToken: string | null
+  password: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface VerificationRow {
+  id: string
+  identifier: string
+  value: string
+  expiresAt: Date
+  createdAt: Date | null
+  updatedAt: Date | null
+}
+
 /**
  * Default UUIDs for consistent test data
  */
@@ -241,6 +266,47 @@ export function createMockFileDownload(overrides: Partial<FileDownloadRow> = {})
     scheduledReleaseTime: null,
     sourceUrl: 'https://www.youtube.com/watch?v=' + DEFAULT_FILE_ID,
     correlationId: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  }
+}
+
+/**
+ * Create a mock account row.
+ * Defaults to a Sign In With Apple OAuth account with valid tokens.
+ */
+export function createMockAccount(overrides: Partial<AccountRow> = {}): AccountRow {
+  const now = new Date()
+  return {
+    id: 'account-1234-5678-9abc-def012345678',
+    userId: DEFAULT_USER_ID,
+    accountId: '001234.abcdef1234567890.1234',
+    providerId: 'apple',
+    accessToken: 'test-access-token',
+    refreshToken: 'test-refresh-token',
+    accessTokenExpiresAt: new Date(now.getTime() + 3600000),
+    refreshTokenExpiresAt: null,
+    scope: null,
+    idToken: 'test-id-token',
+    password: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  }
+}
+
+/**
+ * Create a mock verification row.
+ * Defaults to a verification token expiring in 24 hours.
+ */
+export function createMockVerification(overrides: Partial<VerificationRow> = {}): VerificationRow {
+  const now = new Date()
+  return {
+    id: 'verification-1234-5678-9abc-def012345678',
+    identifier: 'test@example.com',
+    value: 'verification-token-abc123',
+    expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
     createdAt: now,
     updatedAt: now,
     ...overrides
