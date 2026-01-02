@@ -1,7 +1,7 @@
 # Dependency Graph Analysis
 
 ## Quick Reference
-- **When to use**: Finding transitive dependencies for Jest mocking
+- **When to use**: Finding transitive dependencies for Vitest mocking
 - **Enforcement**: Required for accurate test mocking
 - **Impact if violated**: HIGH - Missing mocks cause test failures
 
@@ -31,7 +31,7 @@ The `build/graph.json` file is automatically generated before builds and tests, 
 }
 ```
 
-## Usage for Jest Testing
+## Usage for Vitest Testing
 
 **CRITICAL**: Use `transitiveDependencies` to find ALL mocks needed for a test file.
 
@@ -41,15 +41,15 @@ The `build/graph.json` file is automatically generated before builds and tests, 
 cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'
 
 # Check if a specific module is needed
-cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/index.ts"]' | grep electrodb
+cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/index.ts"]' | grep drizzle
 ```
 
 ### Test Setup Process
-1. Generate the graph: `npm run generate-graph`
+1. Generate the graph: `pnpm run generate-graph`
 2. Find your file in `transitiveDependencies`
 3. Mock ALL external packages listed
 4. Mock ALL vendor wrappers (lib/vendor/*)
-5. Mock ALL entities if using ElectroDB
+5. Mock entity queries from `#entities/queries`
 
 ## Common Patterns
 
@@ -59,15 +59,16 @@ cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/in
 // 2. Mock everything external BEFORE imports
 
 // If graph.json shows these dependencies:
-// ["aws-lambda", "@aws-sdk/client-s3", "electrodb", "../../../entities/Files"]
+// ["aws-lambda", "@aws-sdk/client-s3", "drizzle-orm", "../../../entities/queries"]
 
 // Then mock them all:
-jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn()
+vi.mock('@aws-sdk/client-s3', () => ({
+  S3Client: vi.fn()
 }))
 
-jest.unstable_mockModule('../../../entities/Files', () => ({
-  Files: createElectroDBEntityMock().entity
+vi.mock('../../../entities/queries', () => ({
+  getFilesForUser: vi.fn(),
+  updateFile: vi.fn()
 }))
 
 // 3. Import handler AFTER mocking
@@ -105,10 +106,10 @@ The graph is generated automatically:
 
 ## Related Patterns
 
-- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md) - How to mock
+- [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - How to mock
 - [Mock Type Annotations](Mock-Type-Annotations.md) - TypeScript patterns
 - [Integration Testing](Integration-Testing.md) - When to use real deps
 
 ---
 
-*Use build/graph.json to identify ALL transitive dependencies for comprehensive Jest mocking.*
+*Use build/graph.json to identify ALL transitive dependencies for comprehensive Vitest mocking.*

@@ -125,10 +125,10 @@ export function resetService(): void { service = null }
 ### Works with Mocks
 ```typescript
 // Mock BEFORE importing handler
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  headObject: jest.fn<() => Promise<{ContentLength: number}>>()
+vi.mock('../../../lib/vendor/AWS/S3', () => ({
+  headObject: vi.fn<() => Promise<{ContentLength: number}>>()
     .mockResolvedValue({ContentLength: 1024}),
-  resetS3Client: jest.fn()
+  resetS3Client: vi.fn()
 }))
 
 const {handler} = await import('../src/index')
@@ -190,7 +190,7 @@ grep -rn "= new.*Client({" lib/vendor/AWS/*.ts | grep -v "function\|if ("
 ```
 
 ## Related Patterns
-- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking before imports
+- [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking before imports
 - [LocalStack Testing](../Integration/LocalStack-Testing.md) - Testing with LocalStack
 - [AWS SDK Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - Vendor wrapper pattern
 

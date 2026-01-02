@@ -109,38 +109,43 @@ vi.mock('../../../lib/vendor/AWS/DynamoDB', () => ({
 }))
 ```
 
-### Entity Mock Helper (CRITICAL)
+### Entity Query Mocking
 
-**Zero-tolerance rule**: ALWAYS use `createEntityMock()` from `test/helpers/entity-mock.ts` for mocking entities.
+Mock entity query functions from `#entities/queries`:
 
 ```typescript
-import {createEntityMock} from '../../../test/helpers/entity-mock'
-import type {File} from '../../../types/domain-models'
+import {vi, describe, test, expect, beforeEach} from 'vitest'
+import {createMockFile, createMockUser} from '#test/helpers/entity-fixtures'
 
-// Create mock before mocking module
-const filesMock = createEntityMock<File>()
-
-// Mock the entity module
-vi.mock('../../../entities/Files', () => ({
-  Files: filesMock.entity
+// Mock entity queries
+vi.mock('#entities/queries', () => ({
+  getFilesForUser: vi.fn(),
+  getUser: vi.fn(),
+  updateFile: vi.fn()
 }))
 
-// Later in tests - use the mocks for assertions
-filesMock.mocks.get.mockResolvedValue({
-  data: {fileId: '123', status: 'Downloaded'}
+// Import mocked functions
+import {getFilesForUser, getUser, updateFile} from '#entities/queries'
+
+beforeEach(() => {
+  vi.clearAllMocks()
 })
 
-expect(filesMock.mocks.create).toHaveBeenCalledWith({
-  fileId: '123',
-  // ... other properties
+test('lists files for user', async () => {
+  const mockFiles = [createMockFile({status: 'Downloaded'})]
+  vi.mocked(getFilesForUser).mockResolvedValue(mockFiles)
+
+  const result = await handler(event, context)
+
+  expect(getFilesForUser).toHaveBeenCalledWith('user-123')
+  expect(result.statusCode).toBe(200)
 })
 ```
 
-**Benefits**:
-- Type-safe mocks with full TypeScript inference
-- Consistent mock structure across all tests
-- Simplified setup with pre-configured query patterns
-- Supports all entity operations (get, create, update, query, etc.)
+**Key patterns**:
+- Mock `#entities/queries`, not individual entity modules
+- Use `vi.mocked()` for type-safe mock setup
+- Use entity fixtures from `#test/helpers/entity-fixtures`
 
 ## Typed Event Factories
 
@@ -230,7 +235,7 @@ anonEvent.requestContext.authorizer!.principalId = 'unknown'
 1. **Mock first, import second** - Always mock before importing
 2. **Mock everything external** - All npm packages and AWS SDK
 3. **Use type assertions** - Add proper types to mocks
-4. **Use mock helpers** - Entity mock helper for entities, AWS SDK mock helpers for AWS services
+4. **Use mock helpers** - Entity fixtures for test data, AWS SDK mock helpers for AWS services
 5. **Map dependencies** - Trace all transitive imports
 6. **Prefer aws-sdk-client-mock** - For AWS SDK v3 clients, use `aws-sdk-client-mock` for type-safe assertions
 
