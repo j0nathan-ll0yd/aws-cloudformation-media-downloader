@@ -46,7 +46,6 @@ describe('#UserDelete', () => {
   const context = testContext
   beforeEach(() => {
     vi.clearAllMocks()
-    snsMock.reset()
     event = createAPIGatewayEvent({path: '/users', httpMethod: 'DELETE', userId: fakeUserId})
 
     // Configure SNS mock responses using factories
@@ -75,6 +74,8 @@ describe('#UserDelete', () => {
     vi.mocked(getDevicesBatch).mockResolvedValue([fakeDevice1, fakeDevice2])
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
+    // Verify device deletion was called for each device
+    expect(deleteDeviceMock).toHaveBeenCalledTimes(2)
   })
   test('should create an issue if deletion fails', async () => {
     vi.mocked(deleteUser).mockRejectedValueOnce(new Error('Delete failed'))

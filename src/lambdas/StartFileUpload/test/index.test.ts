@@ -77,12 +77,9 @@ describe('#StartFileUpload', () => {
   const mockUserFileRow = () => createMockUserFile({userId: 'user-123', fileId: 'test'})
 
   beforeEach(() => {
+    vi.clearAllMocks()
     // Create SQS event with download queue message
     event = createDownloadQueueEvent('YcuKhcqzt7w', {messageId: 'test-message-id-123'})
-
-    vi.clearAllMocks()
-    sqsMock.reset()
-    eventBridgeMock.reset()
 
     vi.mocked(getFileDownload).mockResolvedValue(null)
     vi.mocked(updateFileDownload).mockResolvedValue(mockFileDownloadRow())

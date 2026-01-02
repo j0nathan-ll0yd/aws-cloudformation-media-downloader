@@ -73,11 +73,9 @@ describe('#WebhookFeedly', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
+    vi.clearAllMocks()
     // Create event with Feedly webhook body
     event = createAPIGatewayEvent({path: '/webhooks/feedly', httpMethod: 'POST', body: createFeedlyWebhookBody({articleURL: feedlyWebhookBody.articleURL})})
-
-    vi.clearAllMocks()
-    sqsMock.reset()
 
     process.env.EVENT_BUS_NAME = 'MediaDownloader'
     process.env.SNS_QUEUE_URL = 'https://sqs.us-west-2.amazonaws.com/123456789/SendPushNotification'

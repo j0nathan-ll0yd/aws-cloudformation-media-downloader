@@ -115,7 +115,6 @@ describe('#PruneDevices', () => {
   // Configure SNS mock responses for each test using factories
   beforeEach(() => {
     vi.clearAllMocks()
-    snsMock.reset()
     snsMock.on(DeleteEndpointCommand).resolves(createSNSMetadataResponse())
     snsMock.on(SubscribeCommand).resolves(createSNSSubscribeResponse())
     snsMock.on(UnsubscribeCommand).resolves(createSNSMetadataResponse())

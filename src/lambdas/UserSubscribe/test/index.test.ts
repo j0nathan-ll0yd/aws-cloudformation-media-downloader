@@ -1,4 +1,4 @@
-import {afterAll, afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
@@ -18,10 +18,10 @@ describe('#UserSubscribe', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
+    vi.clearAllMocks()
     // Create event with subscribe request body
     event = createAPIGatewayEvent({path: '/subscribe', httpMethod: 'POST', body: createSubscribeBody(), userId: fakeUserId})
 
-    snsMock.reset()
     process.env.PLATFORM_APPLICATION_ARN = 'arn:aws:sns:region:account_id:topic:uuid'
 
     // Configure SNS mock responses using factories
@@ -43,7 +43,11 @@ describe('#UserSubscribe', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
     expect(body.body).toHaveProperty('subscriptionArn')
-    expect(snsMock).toHaveReceivedCommand(SubscribeCommand)
+    expect(snsMock).toHaveReceivedCommandWith(SubscribeCommand, {
+      Protocol: 'application',
+      Endpoint: expect.stringContaining('arn:aws:sns'),
+      TopicArn: expect.stringContaining('arn:aws:sns')
+    })
   })
   test('should return an error if APNS is not configured', async () => {
     process.env.PLATFORM_APPLICATION_ARN = ''

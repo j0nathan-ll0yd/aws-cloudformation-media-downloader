@@ -27,7 +27,6 @@ describe('#S3ObjectCreated', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    sqsMock.reset()
     // Default mock: file found, one user
     vi.mocked(getFilesByKey).mockResolvedValue([mockFileRow])
     vi.mocked(getUserFilesByFileId).mockResolvedValue([mockUserFileRow])

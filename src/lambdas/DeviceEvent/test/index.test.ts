@@ -1,7 +1,14 @@
-import {beforeEach, describe, expect, test} from 'vitest'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
 import {testContext} from '#util/vitest-setup'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
+
+// Mock the logging module to verify logging behavior
+const logInfoMock = vi.fn()
+vi.mock('#lib/system/logging', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#lib/system/logging')>()
+  return {...actual, logInfo: logInfoMock}
+})
 
 const {handler} = await import('./../src')
 
@@ -10,6 +17,7 @@ describe('#LogClientEvent', () => {
   let event: APIGatewayEvent
 
   beforeEach(() => {
+    vi.clearAllMocks()
     event = createAPIGatewayEvent({
       path: '/logClientEvent',
       httpMethod: 'POST',
@@ -18,15 +26,21 @@ describe('#LogClientEvent', () => {
   })
 
   test('should successfully log a client event and return 204', async () => {
+    event.body = JSON.stringify({type: 'app_opened', timestamp: Date.now()})
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
+    // Verify logging was called with correct parameters
+    expect(logInfoMock).toHaveBeenCalledWith('Event received', {deviceId: 'test-device-uuid', message: event.body})
   })
 
   test('should handle missing device UUID header', async () => {
     delete event.headers['x-device-uuid']
+    event.body = JSON.stringify({type: 'test_event'})
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
+    // Verify logging was called with undefined deviceId
+    expect(logInfoMock).toHaveBeenCalledWith('Event received', {deviceId: undefined, message: event.body})
   })
 
   test('should handle null body', async () => {
@@ -34,6 +48,8 @@ describe('#LogClientEvent', () => {
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
+    // Verify logging was called with null message
+    expect(logInfoMock).toHaveBeenCalledWith('Event received', {deviceId: 'test-device-uuid', message: null})
   })
 
   test('should handle empty body', async () => {
@@ -41,6 +57,8 @@ describe('#LogClientEvent', () => {
 
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(204)
+    // Verify logging was called with empty message
+    expect(logInfoMock).toHaveBeenCalledWith('Event received', {deviceId: 'test-device-uuid', message: ''})
   })
 
   describe('#EdgeCases', () => {

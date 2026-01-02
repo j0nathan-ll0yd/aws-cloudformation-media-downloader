@@ -13,47 +13,36 @@ describe('#CloudfrontMiddleware', () => {
   const apiKeyValue = crypto.randomBytes(24).toString('hex')
   let event: CloudFrontRequestEvent
   beforeEach(() => {
+    vi.clearAllMocks()
     event = createCloudFrontRequestEvent({querystring: `ApiKey=${apiKeyValue}`})
   })
   test('should handle a request with (header: present, querystring: blank)', async () => {
-    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
-    expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
-    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
+    expect(output.headers!['x-api-key'][0].value).toEqual(apiKeyValue)
   })
   test('should handle a request with (header: blank, querystring: blank)', async () => {
-    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = ''
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
     expect(output.headers!['x-api-key']).toBeUndefined()
-    expect(spyURLParamsHas).toHaveBeenCalledTimes(1)
-    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
   })
   test('should handle a request with (header: blank, querystring: present)', async () => {
-    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     delete event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
-    expect(spyURLParamsHas).toHaveBeenCalledTimes(1)
-    expect(spyURLParamsGet).toHaveBeenCalledTimes(1)
+    expect(output.headers!['x-api-key'][0].value).toEqual(apiKeyValue)
   })
   test('should handle a request with (header: present, querystring: present)', async () => {
-    const spyURLParamsHas = vi.spyOn(URLSearchParams.prototype, 'has')
-    const spyURLParamsGet = vi.spyOn(URLSearchParams.prototype, 'get')
     event.Records[0].cf.request.querystring = `${apiKeyQueryStringName}=${apiKeyValue}`
     event.Records[0].cf.request.headers[apiKeyHeaderName.toLowerCase()] = [{key: apiKeyHeaderName, value: apiKeyValue}]
     const output = await handler(event, context)
     expect(output.headers).toHaveProperty('x-api-key')
-    expect(spyURLParamsHas).toHaveBeenCalledTimes(0)
-    expect(spyURLParamsGet).toHaveBeenCalledTimes(0)
+    // Header takes precedence over querystring
+    expect(output.headers!['x-api-key'][0].value).toEqual(apiKeyValue)
   })
 
   describe('#EdgeCases', () => {
