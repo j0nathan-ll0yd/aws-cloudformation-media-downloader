@@ -185,6 +185,8 @@ const s3Event = createS3Event({
 | `createPushNotificationEvent()` | SendPushNotification messages |
 | `createS3Event()` | S3 object events |
 | `createScheduledEvent()` | CloudWatch/EventBridge scheduled events |
+| `createApiGatewayAuthorizerEvent()` | Custom authorizer REQUEST event |
+| `createCloudFrontRequestEvent()` | Lambda@Edge origin-request event |
 | `createRegisterDeviceBody()` | RegisterDevice request body |
 | `createSubscribeBody()` | UserSubscribe request body |
 | `createFeedlyWebhookBody()` | Feedly webhook request body |
@@ -326,6 +328,8 @@ const devices = createMockDevices(2)  // Creates 2 devices
 | `createMockSession()` | Valid session (24h) | `expiresAt`, `userId` |
 | `createMockIdentityProvider()` | Apple Sign In | `expiresAt`, `userId` |
 | `createMockFileDownload()` | Pending download | `status`, `retryCount`, `lastError` |
+| `createMockAccount()` | Apple OAuth account | `userId`, `providerId`, `accessToken` |
+| `createMockVerification()` | Verification token (24h) | `identifier`, `expiresAt` |
 | `createMockFiles(n)` | Multiple files | `status` (applied to all) |
 | `createMockDevices(n)` | Multiple devices | `name` (applied to all) |
 
@@ -369,6 +373,9 @@ eventBridgeMock.on(PutEventsCommand).resolves(
 | `createSQSSendMessageResponse()` | SQS | SendMessageCommand result |
 | `createEventBridgePutEventsResponse()` | EventBridge | PutEventsCommand result |
 | `createEventBridgePutEventsFailureResponse()` | EventBridge | Failed PutEvents result |
+| `createGetApiKeysResponse()` | API Gateway | GetApiKeysCommand result |
+| `createGetUsagePlansResponse()` | API Gateway | GetUsagePlansCommand result |
+| `createGetUsageResponse()` | API Gateway | GetUsageCommand result |
 
 **Benefits**:
 - Type-safe response objects matching AWS SDK types
