@@ -225,6 +225,36 @@ anonEvent.requestContext.authorizer!.principalId = 'unknown'
 | Property X doesn't exist | Incomplete mock | Add missing properties |
 | Works locally, fails CI | Environment differences | Mock all transitive deps |
 
+## Mock Reset Pattern (Required)
+
+All test files MUST follow this pattern for consistent mock state:
+
+```typescript
+// Module-level mock creation
+const sqsMock = mockClient(SQSClient)
+
+beforeEach(() => {
+  vi.clearAllMocks()  // Reset all vi.fn() mocks
+  sqsMock.reset()     // Reset aws-sdk-client-mock instances
+  // Configure default mock responses...
+})
+
+afterEach(() => {
+  sqsMock.reset()     // Ensure clean state for next test
+})
+```
+
+**Rationale**:
+- `beforeEach` reset ensures tests start from clean state
+- `vi.clearAllMocks()` resets all Vitest mocks, not just AWS
+- `afterEach` reset prevents leakage between test files
+- Always reset BEFORE configuring mock responses
+
+**Common mistakes**:
+- Forgetting `vi.clearAllMocks()` in beforeEach (vi.fn() mocks retain state)
+- Putting `vi.clearAllMocks()` in afterEach instead of beforeEach
+- Not resetting AWS mocks between tests
+
 ## Best Practices
 
 1. **Mock first, import second** - Always mock before importing
@@ -233,6 +263,7 @@ anonEvent.requestContext.authorizer!.principalId = 'unknown'
 4. **Use mock helpers** - Entity mock helper for entities, AWS SDK mock helpers for AWS services
 5. **Map dependencies** - Trace all transitive imports
 6. **Prefer aws-sdk-client-mock** - For AWS SDK v3 clients, use `aws-sdk-client-mock` for type-safe assertions
+7. **Reset mocks in beforeEach** - Always use `vi.clearAllMocks()` and `awsMock.reset()` in beforeEach
 
 ## AWS SDK Mock Utilities
 

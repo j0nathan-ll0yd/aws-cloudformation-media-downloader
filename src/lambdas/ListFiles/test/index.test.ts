@@ -28,6 +28,7 @@ describe('#ListFiles', () => {
   const context = testContext
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
+    vi.clearAllMocks()
     event = createAPIGatewayEvent({path: '/files', httpMethod: 'GET', userId: fakeUserId})
   })
   test('(anonymous) should return default file for anonymous users', async () => {
