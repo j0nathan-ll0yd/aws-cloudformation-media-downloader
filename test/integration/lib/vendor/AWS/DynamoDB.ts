@@ -12,6 +12,14 @@ import {createDynamoDBClient} from '#lib/vendor/AWS/clients'
 const dynamoDBClient = createDynamoDBClient()
 
 /**
+ * Destroys the DynamoDB client to release HTTP connections.
+ * Call this during global teardown.
+ */
+export function destroyClient(): void {
+  dynamoDBClient.destroy()
+}
+
+/**
  * Creates a DynamoDB table
  * @param input - Table configuration matching AWS SDK CreateTableCommandInput
  */

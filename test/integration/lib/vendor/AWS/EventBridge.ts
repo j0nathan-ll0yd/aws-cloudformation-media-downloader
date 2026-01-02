@@ -22,6 +22,14 @@ import {createEventBridgeClient} from '#lib/vendor/AWS/clients'
 const eventBridgeClient = createEventBridgeClient()
 
 /**
+ * Destroys the EventBridge client to release HTTP connections.
+ * Call this during global teardown.
+ */
+export function destroyClient(): void {
+  eventBridgeClient.destroy()
+}
+
+/**
  * Creates an EventBridge event bus
  * @param busName - Name of the event bus to create
  */

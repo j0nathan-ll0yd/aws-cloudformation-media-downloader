@@ -20,6 +20,14 @@ import {createSQSClient} from '#lib/vendor/AWS/clients'
 const sqsClient = createSQSClient()
 
 /**
+ * Destroys the SQS client to release HTTP connections.
+ * Call this during global teardown.
+ */
+export function destroyClient(): void {
+  sqsClient.destroy()
+}
+
+/**
  * Creates an SQS queue
  * @param queueName - Name of the queue to create
  */
