@@ -35,7 +35,17 @@ import {type AwsClientStub, mockClient} from 'aws-sdk-client-mock'
 import {SQSClient} from '@aws-sdk/client-sqs'
 import {SNSClient} from '@aws-sdk/client-sns'
 import {EventBridgeClient} from '@aws-sdk/client-eventbridge'
-import {setTestEventBridgeClient, setTestSNSClient, setTestSQSClient} from '#lib/vendor/AWS/clients'
+import {S3Client} from '@aws-sdk/client-s3'
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb'
+import {LambdaClient} from '@aws-sdk/client-lambda'
+import {
+  setTestDynamoDBClient,
+  setTestEventBridgeClient,
+  setTestLambdaClient,
+  setTestS3Client,
+  setTestSNSClient,
+  setTestSQSClient
+} from '#lib/vendor/AWS/clients'
 
 // Base interface for mock instances with reset/restore methods
 interface MockInstance {
@@ -80,6 +90,39 @@ export function createEventBridgeMock(): AwsClientStub<EventBridgeClient> {
 }
 
 /**
+ * Creates a mock S3 client and injects it into the client factory.
+ * @returns The mock client instance for configuring responses and assertions
+ */
+export function createS3Mock(): AwsClientStub<S3Client> {
+  const mock = mockClient(S3Client)
+  mockInstances.push(mock)
+  setTestS3Client(mock as unknown as S3Client)
+  return mock
+}
+
+/**
+ * Creates a mock DynamoDB client and injects it into the client factory.
+ * @returns The mock client instance for configuring responses and assertions
+ */
+export function createDynamoDBMock(): AwsClientStub<DynamoDBClient> {
+  const mock = mockClient(DynamoDBClient)
+  mockInstances.push(mock)
+  setTestDynamoDBClient(mock as unknown as DynamoDBClient)
+  return mock
+}
+
+/**
+ * Creates a mock Lambda client and injects it into the client factory.
+ * @returns The mock client instance for configuring responses and assertions
+ */
+export function createLambdaMock(): AwsClientStub<LambdaClient> {
+  const mock = mockClient(LambdaClient)
+  mockInstances.push(mock)
+  setTestLambdaClient(mock as unknown as LambdaClient)
+  return mock
+}
+
+/**
  * Resets all AWS mock clients and clears the test client injections.
  * Call this in afterAll() to clean up between test files.
  */
@@ -94,6 +137,9 @@ export function resetAllAwsMocks(): void {
   setTestSQSClient(null)
   setTestSNSClient(null)
   setTestEventBridgeClient(null)
+  setTestS3Client(null)
+  setTestDynamoDBClient(null)
+  setTestLambdaClient(null)
 }
 
 // Re-export types for convenience

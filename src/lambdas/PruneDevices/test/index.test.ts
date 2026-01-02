@@ -1,14 +1,14 @@
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {fakePrivateKey, testContext} from '#util/vitest-setup'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
 import {createScheduledEvent} from '#test/helpers/event-factories'
-import {mockClient} from 'aws-sdk-client-mock'
-import {DeleteEndpointCommand, SNSClient, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
+import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
+import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-// Create SNS mock - intercepts all SNSClient.send() calls
-const snsMock = mockClient(SNSClient)
+// Create SNS mock using helper - injects into vendor client factory
+const snsMock = createSNSMock()
 
 // Set APNS env vars for ApnsClient
 process.env.APNS_SIGNING_KEY = fakePrivateKey
@@ -122,6 +122,10 @@ describe('#PruneDevices', () => {
   afterEach(() => {
     snsMock.reset()
     vi.clearAllMocks()
+  })
+
+  afterAll(() => {
+    resetAllAwsMocks()
   })
 
   test('should search for and remove disabled devices (single)', async () => {
