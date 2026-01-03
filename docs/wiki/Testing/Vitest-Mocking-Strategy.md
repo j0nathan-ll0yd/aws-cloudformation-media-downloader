@@ -240,25 +240,30 @@ const sqsMock = mockClient(SQSClient)
 
 beforeEach(() => {
   vi.clearAllMocks()  // Reset all vi.fn() mocks
-  sqsMock.reset()     // Reset aws-sdk-client-mock instances
   // Configure default mock responses...
+  sqsMock.on(SendMessageCommand).resolves(createSQSSendMessageResponse())
 })
 
 afterEach(() => {
-  sqsMock.reset()     // Ensure clean state for next test
+  sqsMock.reset()     // Reset aws-sdk-client-mock instances
+})
+
+afterAll(() => {
+  resetAllAwsMocks()  // Clean up test client injection
 })
 ```
 
 **Rationale**:
-- `beforeEach` reset ensures tests start from clean state
-- `vi.clearAllMocks()` resets all Vitest mocks, not just AWS
-- `afterEach` reset prevents leakage between test files
-- Always reset BEFORE configuring mock responses
+- `vi.clearAllMocks()` in beforeEach resets Vitest mocks before each test
+- AWS mock `reset()` in afterEach only - NOT in beforeEach (avoids redundant reset)
+- `resetAllAwsMocks()` in afterAll cleans up vendor wrapper injection
+- Configure mock responses AFTER clearing, in beforeEach
 
 **Common mistakes**:
+- Resetting AWS mocks in BOTH beforeEach AND afterEach (redundant, wastes cycles)
 - Forgetting `vi.clearAllMocks()` in beforeEach (vi.fn() mocks retain state)
+- Not using `afterAll` to clean up vendor wrapper injection
 - Putting `vi.clearAllMocks()` in afterEach instead of beforeEach
-- Not resetting AWS mocks between tests
 
 ## Best Practices
 
@@ -268,7 +273,38 @@ afterEach(() => {
 4. **Use mock helpers** - Entity fixtures for test data, AWS SDK mock helpers for AWS services
 5. **Map dependencies** - Trace all transitive imports
 6. **Prefer aws-sdk-client-mock** - For AWS SDK v3 clients, use `aws-sdk-client-mock` for type-safe assertions
-7. **Reset mocks in beforeEach** - Always use `vi.clearAllMocks()` and `awsMock.reset()` in beforeEach
+7. **Reset pattern** - Use `vi.clearAllMocks()` in beforeEach, `awsMock.reset()` in afterEach only
+8. **Prefer `toHaveReceivedCommandWith`** - Verify AWS SDK call parameters, not just command existence
+9. **Use fixture constants** - Import `DEFAULT_USER_ID`, `DEFAULT_SESSION_ID` from entity-fixtures instead of generating random UUIDs
+10. **Test behavior, not implementation** - Avoid `vi.spyOn` on standard library prototypes; verify outputs instead
+
+## Anti-Patterns to Avoid
+
+### spyOn on Standard Library Prototypes
+
+```typescript
+// BAD: Testing implementation details
+vi.spyOn(URLSearchParams.prototype, 'has')
+vi.spyOn(URLSearchParams.prototype, 'get')
+expect(URLSearchParams.prototype.has).toHaveBeenCalledWith('ApiKey')
+
+// GOOD: Test behavior via outputs
+const result = await handler(event, context)
+expect(result.headers!['x-api-key'][0].value).toEqual(expectedApiKey)
+```
+
+### Random UUIDs in Tests
+
+```typescript
+// BAD: Random values each test run
+const fakeUserId = uuidv4()
+const fakeSessionId = uuidv4()
+
+// GOOD: Consistent fixture constants
+import {DEFAULT_USER_ID, DEFAULT_SESSION_ID} from '#test/helpers/entity-fixtures'
+const fakeUserId = DEFAULT_USER_ID
+const fakeSessionId = DEFAULT_SESSION_ID
+```
 
 ## AWS SDK Mock Utilities
 

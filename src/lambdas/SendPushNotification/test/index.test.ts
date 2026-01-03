@@ -30,7 +30,6 @@ describe('#SendPushNotification', () => {
     event = createPushNotificationEvent(fakeUserId, 'CGYBu-3Oi24', {title: 'Philip DeFranco', key: '20221017-[Philip DeFranco].mp4'})
     // Override the messageId to match expected batch failure ID
     event.Records[0].messageId = 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'
-    snsMock.reset()
   })
 
   afterEach(() => {
@@ -51,8 +50,12 @@ describe('#SendPushNotification', () => {
     const result = await handler(event, testContext)
 
     expect(result).toEqual({batchItemFailures: []})
-    // Use aws-sdk-client-mock-vitest matchers for type-safe assertions
-    expect(snsMock).toHaveReceivedCommand(PublishCommand)
+    // Use aws-sdk-client-mock-vitest matchers for type-safe assertions with parameter verification
+    expect(snsMock).toHaveReceivedCommandWith(PublishCommand, {
+      TargetArn: expect.stringContaining('arn:aws:sns'),
+      Message: expect.stringContaining('DownloadReadyNotification'),
+      MessageAttributes: expect.objectContaining({'AWS.SNS.MOBILE.APNS.PUSH_TYPE': expect.any(Object)})
+    })
   })
 
   test('should exit gracefully if no devices exist', async () => {

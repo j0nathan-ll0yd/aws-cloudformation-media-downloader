@@ -47,10 +47,10 @@ describe('#RegisterDevice', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
 
   beforeEach(() => {
+    vi.clearAllMocks()
     // Create event with device registration body
     event = createAPIGatewayEvent({path: '/registerDevice', httpMethod: 'POST', body: createRegisterDeviceBody()})
 
-    snsMock.reset()
     getUserDevicesMock.mockReturnValue(existingUserDevices)
     vi.mocked(upsertDevice).mockResolvedValue({} as ReturnType<typeof upsertDevice> extends Promise<infer T> ? T : never)
     vi.mocked(upsertUserDevice).mockResolvedValue({} as ReturnType<typeof upsertUserDevice> extends Promise<infer T> ? T : never)
@@ -81,7 +81,10 @@ describe('#RegisterDevice', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(200)
     expect(body.body).toHaveProperty('endpointArn')
-    expect(snsMock).toHaveReceivedCommand(CreatePlatformEndpointCommand)
+    expect(snsMock).toHaveReceivedCommandWith(CreatePlatformEndpointCommand, {
+      PlatformApplicationArn: expect.stringContaining('arn:aws:sns'),
+      Token: expect.any(String)
+    })
   })
 
   test('(unauthenticated) throw an error; need to be either anonymous or authenticated', async () => {
@@ -97,8 +100,11 @@ describe('#RegisterDevice', () => {
     const body = JSON.parse(output.body)
     expect(output.statusCode).toEqual(201)
     expect(body.body).toHaveProperty('endpointArn')
-    expect(snsMock).toHaveReceivedCommand(CreatePlatformEndpointCommand)
-    expect(snsMock).toHaveReceivedCommand(ListSubscriptionsByTopicCommand)
+    expect(snsMock).toHaveReceivedCommandWith(CreatePlatformEndpointCommand, {
+      PlatformApplicationArn: expect.stringContaining('arn:aws:sns'),
+      Token: expect.any(String)
+    })
+    expect(snsMock).toHaveReceivedCommandWith(ListSubscriptionsByTopicCommand, {TopicArn: expect.stringContaining('PushNotifications')})
   })
 
   test('(authenticated-subsequent) should create an endpoint, check the device details, and return', async () => {
