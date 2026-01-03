@@ -11,6 +11,7 @@
 
 import {Project} from 'ts-morph'
 import {type CommitInfo, getBlame, getCommitFiles, getFileAtRef, getFileHistory, searchCommits} from '../shared/git-utils.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 export type GitHistoryQueryType = 'file' | 'symbol' | 'pattern' | 'blame_semantic'
 
@@ -239,15 +240,7 @@ function getSemanticBlame(filePath: string): SemanticBlame[] {
 export async function handleGitHistoryQuery(args: GitHistoryArgs) {
   const {query, target, limit = 10} = args
   if (!target) {
-    return {
-      error: 'Target required',
-      examples: [
-        {query: 'file', target: 'src/entities/Files.ts'},
-        {query: 'symbol', target: 'src/entities/Files.ts:FileEntity'},
-        {query: 'pattern', target: 'getRequiredEnv'},
-        {query: 'blame_semantic', target: 'src/util/env-validation.ts'}
-      ]
-    }
+    return createErrorResponse('Target required', 'Examples: file:src/entities/Files.ts, symbol:file.ts:SymbolName')
   }
   switch (query) {
     case 'file': {
@@ -278,7 +271,7 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
         // List all symbols in the file
         const content = getFileAtRef(filePath, 'HEAD')
         if (!content) {
-          return {error: `File not found: ${filePath}`}
+          return createErrorResponse(`File not found: ${filePath}`)
         }
 
         const symbols = extractSymbols(content, filePath)
@@ -349,15 +342,6 @@ export async function handleGitHistoryQuery(args: GitHistoryArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['file', 'symbol', 'pattern', 'blame_semantic'],
-        examples: [
-          {query: 'file', target: 'src/entities/Files.ts', limit: 10},
-          {query: 'symbol', target: 'src/entities/Files.ts:FileEntity'},
-          {query: 'pattern', target: 'getRequiredEnv'},
-          {query: 'blame_semantic', target: 'src/util/env-validation.ts'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: file, symbol, pattern, blame_semantic')
   }
 }

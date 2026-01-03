@@ -11,6 +11,7 @@
 import {Project, SourceFile} from 'ts-morph'
 import {fileExistsAtRef, getChangedFiles, getFileAtRef} from '../shared/git-utils.js'
 import {loadDependencyGraph} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 export type SemanticDiffQueryType = 'changes' | 'breaking' | 'impact'
 
@@ -356,10 +357,8 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
   try {
     changedFiles = getChangedFiles(baseRef, headRef)
   } catch (error) {
-    return {
-      error: `Failed to get changed files: ${error instanceof Error ? error.message : String(error)}`,
-      hint: 'Ensure both refs exist. Use HEAD~1 for last commit, or a branch name.'
-    }
+    return createErrorResponse(`Failed to get changed files: ${error instanceof Error ? error.message : String(error)}`,
+      'Ensure both refs exist. Use HEAD~1 for last commit, or a branch name.')
   }
 
   // Filter by scope
@@ -517,14 +516,6 @@ export async function handleSemanticDiffQuery(args: SemanticDiffArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['changes', 'breaking', 'impact'],
-        examples: [
-          {query: 'changes', baseRef: 'HEAD~1', headRef: 'HEAD'},
-          {query: 'breaking', baseRef: 'main', headRef: 'feature-branch'},
-          {query: 'impact', scope: 'entities'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: changes, breaking, impact')
   }
 }

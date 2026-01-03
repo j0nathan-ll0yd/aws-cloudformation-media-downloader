@@ -10,6 +10,7 @@
 
 import {discoverLambdas, getTransitiveDependencies, loadDependencyGraph} from '../data-loader.js'
 import {handleBundleSizeQuery} from './bundle-size.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 export type ColdStartQueryType = 'estimate' | 'compare' | 'optimize'
 
@@ -289,7 +290,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
 
     case 'compare': {
       if (!lambda) {
-        return {error: 'Lambda name required for compare query', example: {query: 'compare', lambda: 'ListFiles'}}
+        return createErrorResponse('Lambda name required for compare query', 'Example: {query: "compare", lambda: "ListFiles"}')
       }
 
       // Compare different memory configurations
@@ -337,7 +338,7 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
 
     case 'optimize': {
       if (!lambda) {
-        return {error: 'Lambda name required for optimize query', example: {query: 'optimize', lambda: 'ListFiles'}}
+        return createErrorResponse('Lambda name required for optimize query', 'Example: {query: "optimize", lambda: "ListFiles"}')
       }
 
       const estimate = await estimateColdStart(lambda, memory)
@@ -369,15 +370,6 @@ export async function handleColdStartQuery(args: ColdStartArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['estimate', 'compare', 'optimize'],
-        examples: [
-          {query: 'estimate'},
-          {query: 'estimate', lambda: 'ListFiles', memory: 512},
-          {query: 'compare', lambda: 'WebhookFeedly'},
-          {query: 'optimize', lambda: 'StartFileUpload', memory: 256}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: estimate, compare, optimize')
   }
 }

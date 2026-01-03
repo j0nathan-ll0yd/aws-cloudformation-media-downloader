@@ -2,6 +2,7 @@ import * as lancedb from '@lancedb/lancedb'
 import path from 'node:path'
 import {generateEmbedding} from '../../../scripts/embeddings.js'
 import {indexCodebase} from '../../../scripts/indexCodebase.js'
+import {createErrorResponse, createSuccessResponse, createTextResponse} from './shared/response-types.js'
 
 const DB_DIR = path.join(process.cwd(), '.lancedb')
 const TABLE_NAME = 'code_chunks'
@@ -20,7 +21,7 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
     const tableNames = await db.tableNames()
 
     if (!tableNames.includes(TABLE_NAME)) {
-      return {content: [{type: 'text', text: 'Codebase has not been indexed yet. Please run "pnpm run index:codebase" first.'}]}
+      return createErrorResponse('Codebase has not been indexed yet', 'Run "pnpm run index:codebase" to create the semantic index')
     }
 
     const table = await db.openTable(TABLE_NAME)
@@ -36,9 +37,10 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
       snippet: result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '')
     }))
 
-    return {content: [{type: 'text', text: JSON.stringify(formattedResults, null, 2)}]}
+    return createSuccessResponse(formattedResults)
   } catch (error) {
-    return {content: [{type: 'text', text: `Error during semantic search: ${error instanceof Error ? error.message : String(error)}`}]}
+    return createErrorResponse(`Semantic search failed: ${error instanceof Error ? error.message : String(error)}`,
+      'Ensure the codebase is indexed with "pnpm run index:codebase"')
   }
 }
 
@@ -48,8 +50,8 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
 export async function handleIndexCodebase() {
   try {
     await indexCodebase()
-    return {content: [{type: 'text', text: 'Indexing completed successfully.'}]}
+    return createTextResponse('Indexing completed successfully.')
   } catch (error) {
-    return {content: [{type: 'text', text: `Indexing failed: ${error instanceof Error ? error.message : String(error)}`}]}
+    return createErrorResponse(`Indexing failed: ${error instanceof Error ? error.message : String(error)}`, 'Check that LanceDB dependencies are installed')
   }
 }

@@ -12,6 +12,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {type Convention, loadConventions} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -306,13 +307,7 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
 
     case 'import': {
       if (!source) {
-        return {
-          error: 'Source required for import',
-          examples: [
-            {query: 'import', source: 'https://example.com/conventions.json'},
-            {query: 'import', source: './external-conventions.yaml', merge: true}
-          ]
-        }
+        return createErrorResponse('Source required for import', 'Example: {query: "import", source: "https://example.com/conventions.json"}')
       }
 
       try {
@@ -335,19 +330,13 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
           nextStep: 'Review imported conventions and manually update docs/wiki/Meta/Conventions-Tracking.md'
         }
       } catch (error) {
-        return {error: `Failed to load from source: ${error instanceof Error ? error.message : String(error)}`, source}
+        return createErrorResponse(`Failed to load from source: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
 
     case 'diff': {
       if (!source) {
-        return {
-          error: 'Source required for diff',
-          examples: [
-            {query: 'diff', source: 'https://example.com/conventions.json'},
-            {query: 'diff', source: '../other-repo/conventions.yaml'}
-          ]
-        }
+        return createErrorResponse('Source required for diff', 'Example: {query: "diff", source: "https://example.com/conventions.json"}')
       }
 
       try {
@@ -374,21 +363,11 @@ export async function handleConventionSyncQuery(args: SyncConventionsArgs) {
             : 'Local has additional conventions not in remote'
         }
       } catch (error) {
-        return {error: `Failed to diff with source: ${error instanceof Error ? error.message : String(error)}`, source}
+        return createErrorResponse(`Failed to diff with source: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['import', 'export', 'diff'],
-        availableFormats: ['json', 'yaml', 'markdown'],
-        examples: [
-          {query: 'export', format: 'json'},
-          {query: 'export', format: 'markdown'},
-          {query: 'import', source: './conventions.json'},
-          {query: 'diff', source: 'https://example.com/conventions.json'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: import, export, diff')
   }
 }

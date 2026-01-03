@@ -11,6 +11,7 @@
  */
 
 import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 // Re-export with old name for backwards compatibility
 export { handleEntityQuery as handleElectroDBQuery }
@@ -21,30 +22,34 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
   const {entities, relationships} = await getEntityInfo()
   switch (query) {
     case 'list':
-      return {entities, count: entities.length}
+      return createSuccessResponse({entities, count: entities.length})
 
     case 'schema':
       if (entity) {
         if (!entities.includes(entity)) {
-          return {error: `Entity '${entity}' not found. Available: ${entities.join(', ')}`}
+          return createErrorResponse(`Entity '${entity}' not found`, `Available entities: ${entities.join(', ')}`)
         }
-        return {entity, note: 'Schema is defined in src/entities/' + entity + '.ts', suggestion: 'Read the entity file for full schema details'}
+        return createSuccessResponse({
+          entity,
+          note: 'Schema is defined in src/entities/' + entity + '.ts',
+          suggestion: 'Read the entity file for full schema details'
+        })
       }
       // Return all entity names with their file locations
-      return {entities: entities.map((e) => ({name: e, file: `src/entities/${e}.ts`}))}
+      return createSuccessResponse({entities: entities.map((e) => ({name: e, file: `src/entities/${e}.ts`}))})
 
     case 'relationships': {
       if (entity) {
         // Filter relationships for this entity
         const related = relationships.filter((r) => r.from === entity || r.to === entity)
-        return {entity, relationships: related}
+        return createSuccessResponse({entity, relationships: related})
       }
-      return {relationships}
+      return createSuccessResponse({relationships})
     }
 
     case 'collections': {
       // Collections are defined in src/entities/Collections.ts
-      return {
+      return createSuccessResponse({
         file: 'src/entities/Collections.ts',
         description: 'Service combining entities for JOIN-like queries',
         collections: [
@@ -54,7 +59,7 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
           {name: 'userSessions', description: 'Get all sessions for a user'},
           {name: 'userAccounts', description: 'Get all accounts for a user'}
         ]
-      }
+      })
     }
 
     case 'usage': {
@@ -71,13 +76,13 @@ export async function handleEntityQuery(args: {entity?: string; query: string}) 
         }
       }
 
-      return {entityUsage: usage}
+      return createSuccessResponse({entityUsage: usage})
     }
 
     case 'all':
-      return {entities, relationships, collectionsFile: 'src/entities/Collections.ts'}
+      return createSuccessResponse({entities, relationships, collectionsFile: 'src/entities/Collections.ts'})
 
     default:
-      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'schema', 'relationships', 'collections', 'usage', 'all']}
+      return createErrorResponse(`Unknown query: ${query}`, `Available queries: list, schema, relationships, collections, usage, all`)
   }
 }

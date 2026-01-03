@@ -14,6 +14,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {handleValidationQuery} from '../validation.js'
 import {loadDependencyGraph} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -396,14 +397,6 @@ export async function handleMigrationQuery(args: MigrationArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['plan', 'script', 'verify'],
-        examples: [
-          {query: 'plan', convention: 'aws-sdk'},
-          {query: 'script', convention: 'aws-sdk', outputFormat: 'ts-morph'},
-          {query: 'verify', convention: 'aws-sdk'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: plan, script, verify')
   }
 }

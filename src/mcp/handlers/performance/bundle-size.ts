@@ -14,6 +14,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {discoverLambdas} from '../data-loader.js'
 import {execGit} from '../shared/git-utils.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -389,13 +390,13 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
 
     case 'breakdown': {
       if (!lambda) {
-        return {error: 'Lambda name required for breakdown query', example: {query: 'breakdown', lambda: 'ListFiles'}}
+        return createErrorResponse('Lambda name required for breakdown query', 'Example: {query: "breakdown", lambda: "ListFiles"}')
       }
 
       const breakdown = await getBundleBreakdown(lambda)
 
       if (!breakdown) {
-        return {error: `Lambda not found: ${lambda}`}
+        return createErrorResponse(`Lambda not found: ${lambda}`)
       }
 
       return {
@@ -449,16 +450,14 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
           note: 'Comparison is estimated from source file sizes. For accurate comparison, build both refs.'
         }
       } catch (error) {
-        return {
-          error: `Comparison failed: ${error instanceof Error ? error.message : String(error)}`,
-          hint: `Ensure ref '${ref}' exists and contains Lambda source files`
-        }
+        return createErrorResponse(`Comparison failed: ${error instanceof Error ? error.message : String(error)}`,
+          `Ensure ref '${ref}' exists and contains Lambda source files`)
       }
     }
 
     case 'optimize': {
       if (!lambda) {
-        return {error: 'Lambda name required for optimize query', example: {query: 'optimize', lambda: 'ListFiles'}}
+        return createErrorResponse('Lambda name required for optimize query', 'Example: {query: "optimize", lambda: "ListFiles"}')
       }
 
       const suggestions = await getOptimizationSuggestions(lambda)
@@ -485,16 +484,6 @@ export async function handleBundleSizeQuery(args: BundleSizeArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['summary', 'breakdown', 'compare', 'optimize'],
-        examples: [
-          {query: 'summary'},
-          {query: 'summary', threshold: 200000},
-          {query: 'breakdown', lambda: 'ListFiles'},
-          {query: 'compare', compareRef: 'HEAD~5'},
-          {query: 'optimize', lambda: 'WebhookFeedly'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: summary, breakdown, compare, optimize')
   }
 }
