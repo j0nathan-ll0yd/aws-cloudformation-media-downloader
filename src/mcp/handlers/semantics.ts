@@ -1,6 +1,6 @@
-import * as lancedb from '@lancedb/lancedb'
 import path from 'node:path'
-import {generateEmbedding} from '../../../scripts/embeddings.js'
+import * as lancedb from '@lancedb/lancedb'
+import {search} from '../../../scripts/searchCodebase.js'
 import {indexCodebase} from '../../../scripts/indexCodebase.js'
 
 const DB_DIR = path.join(process.cwd(), '.lancedb')
@@ -9,10 +9,11 @@ const TABLE_NAME = 'code_chunks'
 export interface SemanticSearchArgs {
   query: string
   limit?: number
+  expandQuery?: boolean
 }
 
 /**
- * Handle semantic search queries via LanceDB
+ * Handle semantic search queries via LanceDB with optional query expansion
  */
 export async function handleSemanticSearch(args: SemanticSearchArgs) {
   try {
@@ -23,9 +24,11 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
       return {content: [{type: 'text', text: 'Codebase has not been indexed yet. Please run "pnpm run index:codebase" first.'}]}
     }
 
-    const table = await db.openTable(TABLE_NAME)
-    const vector = await generateEmbedding(args.query)
-    const results = await table.vectorSearch(vector).limit(args.limit || 5).toArray()
+    // Use the improved search function with query expansion
+    const results = await search(args.query, {
+      limit: args.limit || 5,
+      expand: args.expandQuery !== false // Default to true
+    })
 
     const formattedResults = results.map((result) => ({
       file: result.filePath,
@@ -33,6 +36,7 @@ export async function handleSemanticSearch(args: SemanticSearchArgs) {
       type: result.type,
       name: result.name,
       distance: result._distance,
+      adjustedDistance: result.adjustedDistance,
       snippet: result.text.substring(0, 500) + (result.text.length > 500 ? '...' : '')
     }))
 

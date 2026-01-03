@@ -8,6 +8,47 @@ import {generateEmbedding} from './embeddings.js'
 const DB_DIR = '.lancedb'
 const TABLE_NAME = 'code_chunks'
 
+/**
+ * Maximum tokens for optimal embedding performance with AllMiniLML6V2
+ */
+const MAX_CHUNK_CHARS = 2000
+
+/**
+ * Get semantic hints based on file path to improve conceptual query matching
+ */
+function getPathHints(filePath: string): string {
+  if (filePath.includes('lambdas/UserDelete/')) return 'User deletion with cascade delete pattern using Promise.allSettled'
+  if (filePath.includes('lambdas/SendPushNotification/')) return 'Push notification delivery to iOS devices via APNS'
+  if (filePath.includes('lambdas/StartFileUpload/')) return 'Video download with retry logic and error handling'
+  if (filePath.includes('lambdas/ApiGatewayAuthorizer/')) return 'Authentication and authorization flow'
+  if (filePath.includes('lambdas/RegisterDevice/')) return 'Device registration and push notification setup'
+  if (filePath.includes('lambdas/')) return 'AWS Lambda handler'
+  if (filePath.includes('entities/queries/')) return 'Database query operations using Drizzle ORM'
+  if (filePath.includes('lib/vendor/AWS/')) return 'AWS SDK wrapper for service integration'
+  if (filePath.includes('lib/vendor/')) return 'External service integration wrapper'
+  if (filePath.includes('lib/domain/auth/')) return 'Authentication and session management'
+  if (filePath.includes('lib/domain/video/')) return 'Video download and error classification'
+  if (filePath.includes('lib/domain/device/')) return 'Device management and push notifications'
+  if (filePath.includes('lib/domain/')) return 'Business logic and domain service'
+  if (filePath.includes('lib/lambda/middleware/')) return 'Request processing middleware'
+  if (filePath.includes('lib/lambda/responses')) return 'API response formatting and error handling'
+  if (filePath.includes('lib/system/errors')) return 'Error classes and error handling patterns'
+  if (filePath.includes('lib/system/retry')) return 'Retry logic with exponential backoff'
+  if (filePath.includes('lib/system/')) return 'System utilities'
+  if (filePath.includes('types/')) return 'Type definitions'
+  return 'Source code'
+}
+
+/**
+ * Type descriptions for better semantic matching
+ */
+const TYPE_CONTEXTS: Record<string, string> = {
+  function: 'Function implementation',
+  class: 'TypeScript class',
+  interface: 'Type definition interface',
+  variable: 'Exported constant or configuration'
+}
+
 interface CodeChunk {
   vector: number[]
   text: string
@@ -98,19 +139,55 @@ export async function indexCodebase() {
   console.log('Successfully indexed codebase!')
 }
 
+/**
+ * Extract JSDoc comment from a node if present
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractJsDoc(node: any): string {
+  try {
+    const jsDocs = node.getJsDocs?.() || []
+    if (jsDocs.length > 0) {
+      return jsDocs.map((d: {getText: () => string}) => d.getText()).join('\n')
+    }
+  } catch {
+    // Node doesn't support getJsDocs
+  }
+  return ''
+}
+
+/**
+ * Create a code chunk with enhanced context headers for better semantic matching
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function createChunk(node: any, type: string, name: string, filePath: string): Promise<CodeChunk> {
   const text = node.getText()
   const startLine = node.getStartLineNumber()
   const endLine = node.getEndLineNumber()
-  
-  // Create a descriptive header for better embedding context
-  const contextHeader = `File: ${filePath}\nType: ${type}\nName: ${name}\n\n`
-  const vector = await generateEmbedding(contextHeader + text)
+
+  // Get semantic path hints
+  const pathHints = getPathHints(filePath)
+  const typeContext = TYPE_CONTEXTS[type] || type
+
+  // Extract documentation if present
+  const jsDoc = extractJsDoc(node)
+  const docSection = jsDoc ? `\nDocumentation: ${jsDoc.replace(/\/\*\*|\*\/|\n\s*\*/g, ' ').trim()}\n` : ''
+
+  // Create enhanced context header for better conceptual query matching
+  const contextHeader = `File: ${filePath}
+Type: ${typeContext}
+Name: ${name}
+Purpose: ${pathHints}${docSection}
+
+`
+
+  // Truncate very long chunks to stay within embedding model limits
+  const truncatedText = text.length > MAX_CHUNK_CHARS ? text.slice(0, MAX_CHUNK_CHARS) + '...' : text
+
+  const vector = await generateEmbedding(contextHeader + truncatedText)
 
   return {
     vector,
-    text,
+    text: truncatedText,
     filePath,
     startLine,
     endLine,
