@@ -58,7 +58,7 @@
     {
       "documentedPath": "test/helpers/",
       "mustExist": true,
-      "documentedIn": ["AGENTS.md", "docs/wiki/Testing/ElectroDB-Testing-Patterns.md"]
+      "documentedIn": ["AGENTS.md", "docs/wiki/Testing/Vitest-Mocking-Strategy.md"]
     },
     {
       "documentedPath": "graphrag/",
@@ -94,7 +94,26 @@
     "directory": "docs/wiki",
     "pattern": "**/*.md",
     "assertion": "links-resolve",
+    "blocking": true,
     "description": "All relative markdown links in wiki must resolve to existing files"
+  },
+
+  "codePathValidation": {
+    "directory": "docs/wiki",
+    "pattern": "**/*.md",
+    "pathPrefixes": ["src/", "test/", "util/", "types/", "build/", "graphrag/", "terraform/", "bin/", "scripts/"],
+    "assertion": "paths-exist",
+    "blocking": false,
+    "description": "Backtick-wrapped code paths in wiki docs must exist in filesystem"
+  },
+
+  "orphanPageValidation": {
+    "rootPages": ["docs/wiki/Home.md", "docs/wiki/Getting-Started.md"],
+    "directory": "docs/wiki",
+    "pattern": "**/*.md",
+    "assertion": "reachable-from-root",
+    "blocking": false,
+    "description": "All wiki pages should be reachable from Home.md"
   },
 
   "autoFixSuggestions": {

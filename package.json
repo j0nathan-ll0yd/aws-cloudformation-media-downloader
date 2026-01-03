@@ -41,6 +41,7 @@
     "test:mutation:auth": "stryker run --mutate 'src/lambdas/{ApiGatewayAuthorizer,LoginUser,RegisterUser,RefreshToken}/**/src/**/*.ts'",
     "validate:docs": "./bin/validate-docs.sh",
     "validate:doc-sync": "./bin/validate-doc-sync.sh",
+    "audit:wiki": "./bin/audit-wiki-docs.sh",
     "validate:graphrag": "./bin/validate-graphrag.sh",
     "validate:conventions": "node --import tsx scripts/validateConventions.ts",
     "validate:config": "node --import tsx scripts/validateConfig.ts",

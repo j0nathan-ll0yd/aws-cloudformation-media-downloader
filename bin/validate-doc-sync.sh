@@ -11,7 +11,10 @@
 #   4. Documented paths exist in filesystem
 #   5. No stale patterns (Prettier, wrong vendor path)
 #   6. GraphRAG metadata includes all entities
-#   7. Wiki internal links resolve
+#   7. Wiki internal links resolve (BLOCKING)
+#   8. Documentation structure (markdown in wiki/, machine files in root)
+#   9. Code path references in wiki docs
+#  10. Import alias validation in code blocks
 #
 # Issue #145: Living Documentation System with Stale Page Detection
 
@@ -37,7 +40,7 @@ WARNINGS=""
 # =============================================================================
 # Check 1: Entity query file count matches documentation
 # =============================================================================
-echo -n "  [1/8] Checking entity query files... "
+echo -n "  [1/10] Checking entity query files... "
 # Count query files in src/entities/queries/ (excluding index.ts and test files)
 QUERY_FILE_COUNT=$(find src/entities/queries -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
@@ -55,7 +58,7 @@ fi
 # =============================================================================
 # Check 2: Lambda count matches documentation
 # =============================================================================
-echo -n "  [2/8] Checking Lambda count... "
+echo -n "  [2/10] Checking Lambda count... "
 LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
@@ -72,7 +75,7 @@ fi
 # =============================================================================
 # Check 3: MCP validation rule count
 # =============================================================================
-echo -n "  [3/8] Checking MCP rule count... "
+echo -n "  [3/10] Checking MCP rule count... "
 MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
@@ -89,7 +92,7 @@ fi
 # =============================================================================
 # Check 4: Critical paths exist
 # =============================================================================
-echo -n "  [4/8] Checking documented paths exist... "
+echo -n "  [4/10] Checking documented paths exist... "
 PATHS_OK=true
 
 REQUIRED_PATHS=(
@@ -118,7 +121,7 @@ fi
 # =============================================================================
 # Check 5: Forbidden patterns in AGENTS.md
 # =============================================================================
-echo -n "  [5/8] Checking for stale patterns... "
+echo -n "  [5/10] Checking for stale patterns... "
 STALE_OK=true
 
 # Check for old Prettier reference (should be dprint)
@@ -143,7 +146,7 @@ fi
 # =============================================================================
 # Check 6: GraphRAG metadata completeness
 # =============================================================================
-echo -n "  [6/8] Checking GraphRAG metadata... "
+echo -n "  [6/10] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
 # Get query file names from entities/queries/ directory
@@ -177,7 +180,7 @@ fi
 # =============================================================================
 # Check 7: Wiki internal links resolve
 # =============================================================================
-echo -n "  [7/8] Checking wiki links... "
+echo -n "  [7/10] Checking wiki links... "
 WIKI_OK=true
 BROKEN_LINKS=""
 
@@ -214,14 +217,14 @@ done < <(find docs/wiki -name "*.md" 2> /dev/null)
 if [ "$WIKI_OK" = true ]; then
   echo -e "${GREEN}OK${NC}"
 else
-  echo -e "${YELLOW}BROKEN LINKS${NC} (warning only)"
-  WARNINGS="$WARNINGS$BROKEN_LINKS"
+  echo -e "${RED}BROKEN LINKS${NC}"
+  ERRORS="$ERRORS$BROKEN_LINKS"
 fi
 
 # =============================================================================
 # Check 8: Documentation structure (markdown in wiki/, machine files in root)
 # =============================================================================
-echo -n "  [8/8] Checking docs/ structure... "
+echo -n "  [8/10] Checking docs/ structure... "
 DOCS_OK=true
 
 # Allowed files in docs/ root
@@ -280,6 +283,107 @@ if [ "$DOCS_OK" = true ]; then
   echo -e "${GREEN}OK${NC}"
 else
   echo -e "${RED}STRUCTURE VIOLATION${NC}"
+fi
+
+# =============================================================================
+# Check 9: Code path references in wiki docs
+# =============================================================================
+echo -n "  [9/10] Checking code path references... "
+CODE_PATHS_OK=true
+STALE_PATHS=""
+
+# Check for common stale path patterns in wiki docs
+while IFS= read -r md_file; do
+  # Extract backtick-wrapped paths and check if they exist
+  while IFS= read -r line_content; do
+    # Look for paths that start with common prefixes
+    while IFS= read -r path; do
+      [ -z "$path" ] && continue
+
+      # Only check paths that look like file/directory references
+      if [[ "$path" =~ ^(src|test|util|types|build|graphrag|terraform|bin|scripts)/ ]]; then
+        # Check if path exists
+        if [ ! -e "$path" ]; then
+          STALE_PATHS="$STALE_PATHS\n  - $md_file: stale path '$path'"
+          CODE_PATHS_OK=false
+        fi
+      elif [[ "$path" =~ ^lib/ ]]; then
+        # Check for common error: lib/ without src/ prefix
+        correct_path="src/$path"
+        if [ -e "$correct_path" ]; then
+          STALE_PATHS="$STALE_PATHS\n  - $md_file: path '$path' should be '$correct_path'"
+          CODE_PATHS_OK=false
+        fi
+      fi
+    done < <(echo "$line_content" | grep -oE '`[^`]+`' | tr -d '`' || true)
+  done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2>/dev/null || true)
+done < <(find docs/wiki -name "*.md" 2>/dev/null)
+
+if [ "$CODE_PATHS_OK" = true ]; then
+  echo -e "${GREEN}OK${NC}"
+else
+  echo -e "${YELLOW}STALE PATHS${NC} (warning only)"
+  WARNINGS="$WARNINGS$STALE_PATHS"
+fi
+
+# =============================================================================
+# Check 10: Import alias validation in code blocks
+# =============================================================================
+echo -n "  [10/10] Checking import aliases... "
+IMPORTS_OK=true
+STALE_IMPORTS=""
+
+# Map import alias to actual path (bash 3 compatible)
+get_alias_path() {
+  case "$1" in
+    "#lib") echo "src/lib" ;;
+    "#entities") echo "src/entities" ;;
+    "#types") echo "src/types" ;;
+    "#test") echo "test" ;;
+    "#util") echo "util" ;;
+    *) echo "" ;;
+  esac
+}
+
+while IFS= read -r md_file; do
+  in_code_block=false
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^\`\`\`(typescript|ts|javascript|js)?$ ]]; then
+      in_code_block=true
+      continue
+    fi
+
+    if [[ "$line" == '```' ]] && [ "$in_code_block" = true ]; then
+      in_code_block=false
+      continue
+    fi
+
+    if [ "$in_code_block" = true ]; then
+      # Look for import statements with aliases
+      if [[ "$line" =~ import.*from[[:space:]]+[\'\"]#([a-z]+)/([^\'\"/]*)[\'\"] ]]; then
+        alias="#${BASH_REMATCH[1]}"
+        import_path="${BASH_REMATCH[2]}"
+
+        alias_base=$(get_alias_path "$alias")
+        if [ -n "$alias_base" ]; then
+          full_path="$alias_base/$import_path"
+          # Check if it's a valid module (file or directory with index)
+          if [ ! -f "$full_path.ts" ] && [ ! -f "$full_path/index.ts" ] && [ ! -d "$full_path" ]; then
+            STALE_IMPORTS="$STALE_IMPORTS\n  - $md_file: import '$alias/$import_path' may not exist"
+            IMPORTS_OK=false
+          fi
+        fi
+      fi
+    fi
+  done < "$md_file"
+done < <(find docs/wiki -name "*.md" 2>/dev/null)
+
+if [ "$IMPORTS_OK" = true ]; then
+  echo -e "${GREEN}OK${NC}"
+else
+  echo -e "${YELLOW}STALE IMPORTS${NC} (warning only)"
+  WARNINGS="$WARNINGS$STALE_IMPORTS"
 fi
 
 # =============================================================================

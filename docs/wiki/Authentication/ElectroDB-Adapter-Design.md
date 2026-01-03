@@ -583,4 +583,4 @@ Areas where the community could contribute:
 - [ElectroDB Documentation](https://electrodb.dev/)
 - [DynamoDB Best Practices](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices.html)
 - [Better Auth Architecture](Better-Auth-Architecture.md)
-- [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md)
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)

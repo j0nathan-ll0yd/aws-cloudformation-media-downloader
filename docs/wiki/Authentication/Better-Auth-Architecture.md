@@ -409,7 +409,7 @@ LocalStack tests validate full Better Auth flows:
 4. Query sessions by user
 5. Delete session
 
-See `docs/wiki/Testing/ElectroDB-Testing-Patterns.md` for detailed examples.
+See [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) for detailed entity mocking examples.
 
 ## Performance Considerations
 
@@ -529,4 +529,4 @@ aws dynamodb describe-table --table-name MediaDownloader \
 - [Apple Sign In Documentation](https://developer.apple.com/sign-in-with-apple/)
 - [iOS ID Token Migration](../iOS/Apple-Sign-In-ID-Token-Migration.md)
 - [ElectroDB Adapter Design](ElectroDB-Adapter-Design.md)
-- [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md)
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
