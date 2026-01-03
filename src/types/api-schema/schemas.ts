@@ -76,3 +76,9 @@ export const userRegistrationRequestSchema = z.object({idToken: z.string(), firs
 export const userRegistrationResponseSchema = z.object({token: z.string(), expiresAt: z.string(), sessionId: z.string(), userId: z.string()})
 
 export const userSubscriptionRequestSchema = z.object({endpointArn: z.string(), topicArn: z.string()})
+
+export const userSubscriptionResponseSchema = z.object({subscriptionArn: z.string()})
+
+export const tokenRefreshResponseSchema = z.object({token: z.string(), expiresAt: z.string(), sessionId: z.string(), userId: z.string()})
+
+export const clientEventRequestSchema = z.object({message: z.string()})

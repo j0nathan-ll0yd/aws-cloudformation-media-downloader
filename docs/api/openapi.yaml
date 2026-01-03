@@ -36,15 +36,15 @@ paths:
             type: string
       responses:
         '204':
-          description: No content on success
+          description: 'There is no content to send for this request, but the headers may be useful. '
         '400':
-          description: No content on success
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: No content on success
+          description: Server error
           content:
             application/json:
               schema:
@@ -70,10 +70,8 @@ paths:
         3. Subscribes the device to push notification topics
 
         Example request: See `tsp/examples/register-device-request.json`
-        (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiRequest-POST-device.json`)
 
         Example response: See `tsp/examples/register-device-response.json`
-        (sourced from `src/lambdas/RegisterDevice/test/fixtures/apiResponse-POST-200-OK.json`)
       parameters:
         - name: Authorization
           in: header
@@ -87,7 +85,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Device registration confirmation with endpoint ARN
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -107,7 +105,7 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '201':
-          description: Device registration confirmation with endpoint ARN
+          description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
@@ -127,25 +125,25 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '400':
-          description: Device registration confirmation with endpoint ARN
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Device registration confirmation with endpoint ARN
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
-          description: Device registration confirmation with endpoint ARN
+          description: Access is forbidden.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '500':
-          description: Device registration confirmation with endpoint ARN
+          description: Server error
           content:
             application/json:
               schema:
@@ -172,10 +170,8 @@ paths:
         Background mode can be used to defer immediate download processing.
 
         Example request: See `tsp/examples/webhook-feedly-request.json`
-        (sourced from `src/lambdas/WebhookFeedly/test/fixtures/apiRequest-POST-webhook.json`)
 
         Example response: See `tsp/examples/webhook-feedly-response.json`
-        (sourced from `src/lambdas/WebhookFeedly/test/fixtures/apiResponse-POST-200-OK.json`)
       parameters:
         - name: Authorization
           in: header
@@ -189,7 +185,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Webhook processing status
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -209,7 +205,7 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '202':
-          description: Webhook processing status
+          description: The request has been accepted for processing, but processing has not yet completed.
           content:
             application/json:
               schema:
@@ -229,19 +225,19 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '400':
-          description: Webhook processing status
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Webhook processing status
+          description: Access is forbidden.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '500':
-          description: Webhook processing status
+          description: Server error
           content:
             application/json:
               schema:
@@ -267,7 +263,6 @@ paths:
         - Unauthenticated users: returns 401 Unauthorized
 
         Example response: See `tsp/examples/list-files-response.json`
-        (sourced from `src/lambdas/ListFiles/test/fixtures/apiResponse-GET-200-OK.json`)
       parameters:
         - name: Authorization
           in: header
@@ -281,7 +276,7 @@ paths:
             type: string
       responses:
         '200':
-          description: List of available files
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -301,19 +296,19 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '401':
-          description: List of available files
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
-          description: List of available files
+          description: Access is forbidden.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '500':
-          description: List of available files
+          description: Server error
           content:
             application/json:
               schema:
@@ -342,21 +337,21 @@ paths:
             type: string
       responses:
         '204':
-          description: No content on success
+          description: 'There is no content to send for this request, but the headers may be useful. '
         '207':
-          description: No content on success
+          description: Successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: No content on success
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: No content on success
+          description: Server error
           content:
             application/json:
               schema:
@@ -373,10 +368,8 @@ paths:
         Authenticates a user and returns a JWT access token.
 
         Example request: See `tsp/examples/login-user-request.json`
-        (sourced from `src/lambdas/LoginUser/test/fixtures/apiRequest-POST-login.json`)
 
         Example response: See `tsp/examples/login-user-response.json`
-        (sourced from `src/lambdas/LoginUser/test/fixtures/apiResponse-POST-200-OK.json`)
       parameters:
         - name: X-API-Key
           in: header
@@ -385,7 +378,7 @@ paths:
             type: string
       responses:
         '200':
-          description: JWT access token
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -405,31 +398,31 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '400':
-          description: JWT access token
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: JWT access token
+          description: Access is forbidden.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '404':
-          description: JWT access token
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: JWT access token
+          description: The request conflicts with the current state of the server.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: JWT access token
+          description: Server error
           content:
             application/json:
               schema:
@@ -464,7 +457,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Refreshed session information
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -484,13 +477,13 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '401':
-          description: Refreshed session information
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: Refreshed session information
+          description: Server error
           content:
             application/json:
               schema:
@@ -508,10 +501,8 @@ paths:
         All user details are sourced from the Apple identity token.
 
         Example request: See `tsp/examples/register-user-request.json`
-        (sourced from `src/lambdas/RegisterUser/test/fixtures/apiRequest-POST-register.json`)
 
         Example response: See `tsp/examples/register-user-response.json`
-        (sourced from `src/lambdas/RegisterUser/test/fixtures/apiResponse-POST-200-OK.json`)
       parameters:
         - name: X-API-Key
           in: header
@@ -520,7 +511,7 @@ paths:
             type: string
       responses:
         '200':
-          description: JWT access token
+          description: The request has succeeded.
           content:
             application/json:
               schema:
@@ -540,19 +531,19 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '400':
-          description: JWT access token
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: JWT access token
+          description: Access is forbidden.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '500':
-          description: JWT access token
+          description: Server error
           content:
             application/json:
               schema:
@@ -586,7 +577,7 @@ paths:
             type: string
       responses:
         '201':
-          description: Subscription ARN
+          description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
@@ -606,19 +597,19 @@ paths:
                   Standard API response wrapper for successful responses.
                   All 2xx responses are wrapped in this format.
         '400':
-          description: Subscription ARN
+          description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Subscription ARN
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: Subscription ARN
+          description: Server error
           content:
             application/json:
               schema:
@@ -926,10 +917,22 @@ components:
       type: object
       required:
         - token
+        - expiresAt
+        - sessionId
+        - userId
       properties:
         token:
           type: string
           description: JWT access token for authenticated requests
+        expiresAt:
+          type: string
+          description: ISO 8601 timestamp when the session expires
+        sessionId:
+          type: string
+          description: Session identifier
+        userId:
+          type: string
+          description: User identifier
       description: User login response
     Models.UserRegistrationRequest:
       type: object
@@ -950,10 +953,22 @@ components:
       type: object
       required:
         - token
+        - expiresAt
+        - sessionId
+        - userId
       properties:
         token:
           type: string
           description: JWT access token for authenticated requests
+        expiresAt:
+          type: string
+          description: ISO 8601 timestamp when the session expires
+        sessionId:
+          type: string
+          description: Session identifier
+        userId:
+          type: string
+          description: User identifier
       description: User registration response
     Models.UserSubscriptionRequest:
       type: object

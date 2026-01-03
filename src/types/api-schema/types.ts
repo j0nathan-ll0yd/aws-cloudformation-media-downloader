@@ -22,3 +22,6 @@ export type UserLoginResponse = z.infer<typeof schemas.userLoginResponseSchema>
 export type UserRegistrationRequest = z.infer<typeof schemas.userRegistrationRequestSchema>
 export type UserRegistrationResponse = z.infer<typeof schemas.userRegistrationResponseSchema>
 export type UserSubscriptionRequest = z.infer<typeof schemas.userSubscriptionRequestSchema>
+export type UserSubscriptionResponse = z.infer<typeof schemas.userSubscriptionResponseSchema>
+export type TokenRefreshResponse = z.infer<typeof schemas.tokenRefreshResponseSchema>
+export type ClientEventRequest = z.infer<typeof schemas.clientEventRequestSchema>
