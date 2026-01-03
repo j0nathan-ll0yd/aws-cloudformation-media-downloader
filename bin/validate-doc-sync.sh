@@ -15,6 +15,7 @@
 #   8. Documentation structure (markdown in wiki/, machine files in root)
 #   9. Code path references in wiki docs
 #  10. Import alias validation in code blocks
+#  11. TypeSpec covers all API endpoints
 #
 # Issue #145: Living Documentation System with Stale Page Detection
 
@@ -40,7 +41,7 @@ WARNINGS=""
 # =============================================================================
 # Check 1: Entity query file count matches documentation
 # =============================================================================
-echo -n "  [1/10] Checking entity query files... "
+echo -n "  [1/11] Checking entity query files... "
 # Count query files in src/entities/queries/ (excluding index.ts and test files)
 QUERY_FILE_COUNT=$(find src/entities/queries -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" 2> /dev/null | wc -l | tr -d ' ')
 
@@ -58,7 +59,7 @@ fi
 # =============================================================================
 # Check 2: Lambda count matches documentation
 # =============================================================================
-echo -n "  [2/10] Checking Lambda count... "
+echo -n "  [2/11] Checking Lambda count... "
 LAMBDA_COUNT=$(find src/lambdas -mindepth 1 -maxdepth 1 -type d 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
@@ -75,7 +76,7 @@ fi
 # =============================================================================
 # Check 3: MCP validation rule count
 # =============================================================================
-echo -n "  [3/10] Checking MCP rule count... "
+echo -n "  [3/11] Checking MCP rule count... "
 MCP_RULE_COUNT=$(find src/mcp/validation/rules -name "*.ts" ! -name "*.test.ts" ! -name "index.ts" ! -name "types.ts" 2> /dev/null | wc -l | tr -d ' ')
 
 # Count rules in the allRules array by counting lines ending with "Rule" or "Rule,"
@@ -92,7 +93,7 @@ fi
 # =============================================================================
 # Check 4: Critical paths exist
 # =============================================================================
-echo -n "  [4/10] Checking documented paths exist... "
+echo -n "  [4/11] Checking documented paths exist... "
 PATHS_OK=true
 
 REQUIRED_PATHS=(
@@ -121,7 +122,7 @@ fi
 # =============================================================================
 # Check 5: Forbidden patterns in AGENTS.md
 # =============================================================================
-echo -n "  [5/10] Checking for stale patterns... "
+echo -n "  [5/11] Checking for stale patterns... "
 STALE_OK=true
 
 # Check for old Prettier reference (should be dprint)
@@ -146,7 +147,7 @@ fi
 # =============================================================================
 # Check 6: GraphRAG metadata completeness
 # =============================================================================
-echo -n "  [6/10] Checking GraphRAG metadata... "
+echo -n "  [6/11] Checking GraphRAG metadata... "
 GRAPHRAG_OK=true
 
 # Get query file names from entities/queries/ directory
@@ -180,7 +181,7 @@ fi
 # =============================================================================
 # Check 7: Wiki internal links resolve
 # =============================================================================
-echo -n "  [7/10] Checking wiki links... "
+echo -n "  [7/11] Checking wiki links... "
 WIKI_OK=true
 BROKEN_LINKS=""
 
@@ -224,7 +225,7 @@ fi
 # =============================================================================
 # Check 8: Documentation structure (markdown in wiki/, machine files in root)
 # =============================================================================
-echo -n "  [8/10] Checking docs/ structure... "
+echo -n "  [8/11] Checking docs/ structure... "
 DOCS_OK=true
 
 # Allowed files in docs/ root
@@ -288,7 +289,7 @@ fi
 # =============================================================================
 # Check 9: Code path references in wiki docs
 # =============================================================================
-echo -n "  [9/10] Checking code path references... "
+echo -n "  [9/11] Checking code path references... "
 CODE_PATHS_OK=true
 STALE_PATHS=""
 
@@ -329,7 +330,7 @@ fi
 # =============================================================================
 # Check 10: Import alias validation in code blocks
 # =============================================================================
-echo -n "  [10/10] Checking import aliases... "
+echo -n "  [10/11] Checking import aliases... "
 IMPORTS_OK=true
 STALE_IMPORTS=""
 
@@ -384,6 +385,42 @@ if [ "$IMPORTS_OK" = true ]; then
 else
   echo -e "${YELLOW}STALE IMPORTS${NC} (warning only)"
   WARNINGS="$WARNINGS$STALE_IMPORTS"
+fi
+
+# =============================================================================
+# Check 11: TypeSpec covers all API endpoints
+# =============================================================================
+echo -n "  [11/11] Checking TypeSpec endpoint coverage... "
+COVERAGE_OK=true
+
+# Get API Lambda names from AGENTS.md trigger table (API Gateway triggered)
+API_LAMBDAS=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null |
+  grep -E '^\| [A-Z].*API Gateway' |
+  awk -F'|' '{print $2}' | tr -d ' ')
+
+# Get operationIds from TypeSpec-generated OpenAPI
+if [ -f "docs/api/openapi.yaml" ]; then
+  TYPESPEC_OPS=$(grep "operationId:" docs/api/openapi.yaml 2> /dev/null |
+    sed 's/.*operationId: //' | tr -d ' ')
+
+  for lambda in $API_LAMBDAS; do
+    # Convert Lambda name to expected operationId pattern (PascalCase to camelCase)
+    # shellcheck disable=SC2001
+    expected_op=$(echo "$lambda" | sed 's/^\(.\)/\L\1/')
+
+    if ! echo "$TYPESPEC_OPS" | grep -qi "$expected_op"; then
+      WARNINGS="$WARNINGS\n  - Lambda '$lambda' may not have a TypeSpec operationId (expected: $expected_op)"
+      COVERAGE_OK=false
+    fi
+  done
+
+  if [ "$COVERAGE_OK" = true ]; then
+    echo -e "${GREEN}OK${NC}"
+  else
+    echo -e "${YELLOW}INCOMPLETE${NC} (warning only)"
+  fi
+else
+  echo -e "${YELLOW}SKIPPED${NC} (run pnpm run document-api first)"
 fi
 
 # =============================================================================

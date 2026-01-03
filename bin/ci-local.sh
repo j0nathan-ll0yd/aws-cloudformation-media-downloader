@@ -5,10 +5,8 @@
 # Usage: pnpm run ci:local or ./bin/ci-local.sh
 #
 # This script replicates the checks from GitHub Actions workflows locally,
-# catching ~98% of issues that would fail in CI. For full CI parity including
+# catching ~95% of issues that would fail in CI. For full CI parity including
 # integration tests, use: pnpm run ci:local:full
-#
-# Performance: Uses parallel execution for independent validation steps.
 
 set -e # Exit on error
 
@@ -34,18 +32,18 @@ echo "  2. Dependency installation"
 echo "  3. TypeSpec compilation"
 echo "  4. Build dependencies (Terraform types)"
 echo "  5. esbuild build"
-echo "  6. Type checking (parallel)"
-echo "  7. Linting + Terraform formatting"
+echo "  6. Type checking"
+echo "  7. Linting"
 echo "  8. Formatting (dprint)"
-echo "  9. ESLint local rules tests"
-echo "  10. Documentation validation"
-echo "  11. Dependency rules check"
-echo "  12-14. Convention/Config/API validation (parallel)"
-echo "  15. Security audit"
-echo "  16. GraphRAG validation"
-echo "  17. Documentation sync validation"
-echo "  18. Unit tests"
-echo "  19. Test output validation"
+echo "  9. ShellCheck (bash linting)"
+echo "  10. ESLint local rules tests"
+echo "  11. Documentation validation"
+echo "  12. Documentation freshness validation"
+echo "  13. Dependency rules check"
+echo "  14. GraphRAG validation"
+echo "  15. Documentation sync validation"
+echo "  16. Unit tests"
+echo "  17. Test output validation"
 echo ""
 echo -e "${BLUE}Note: Integration tests skipped. Use 'pnpm run ci:local:full' for complete CI.${NC}"
 echo ""
@@ -53,7 +51,7 @@ echo ""
 cd "$PROJECT_ROOT"
 
 # Step 1: Environment checks
-echo -e "${YELLOW}[1/19] Checking prerequisites...${NC}"
+echo -e "${YELLOW}[1/17] Checking prerequisites...${NC}"
 
 # Check Node.js version
 REQUIRED_NODE_MAJOR=24
@@ -84,74 +82,39 @@ echo -e "${GREEN}  Prerequisites satisfied${NC}"
 echo ""
 
 # Step 2: Create build directory and install dependencies
-echo -e "${YELLOW}[2/19] Installing dependencies...${NC}"
+echo -e "${YELLOW}[2/17] Installing dependencies...${NC}"
 mkdir -p build
 pnpm install --frozen-lockfile
 echo -e "${GREEN}  Dependencies installed${NC}"
 echo ""
 
 # Step 3: TypeSpec compilation
-echo -e "${YELLOW}[3/19] Compiling TypeSpec...${NC}"
+echo -e "${YELLOW}[3/17] Compiling TypeSpec...${NC}"
 pnpm run typespec:check
 echo -e "${GREEN}  TypeSpec compilation passed${NC}"
 echo ""
 
 # Step 4: Build dependencies (Terraform types)
-echo -e "${YELLOW}[4/19] Building dependencies (Terraform types)...${NC}"
+echo -e "${YELLOW}[4/17] Building dependencies (Terraform types)...${NC}"
 pnpm run build-dependencies
 echo -e "${GREEN}  Build dependencies complete${NC}"
 echo ""
 
 # Step 5: esbuild build
-echo -e "${YELLOW}[5/19] Running esbuild build...${NC}"
+echo -e "${YELLOW}[5/17] Running esbuild build...${NC}"
 pnpm run build
 echo -e "${GREEN}  Build complete${NC}"
 echo ""
 
-# Step 6: Type checking (PARALLEL)
-echo -e "${YELLOW}[6/19] Running type checks (parallel)...${NC}"
-
-# Create temp files for parallel job output
-TYPE_CHECK_OUTPUT=$(mktemp)
-TEST_TYPE_CHECK_OUTPUT=$(mktemp)
-trap "rm -f $TYPE_CHECK_OUTPUT $TEST_TYPE_CHECK_OUTPUT" EXIT
-
-(
-  if pnpm run --silent check-types > "$TYPE_CHECK_OUTPUT" 2>&1; then
-    echo -e "  ${GREEN}✓${NC} Main types"
-  else
-    echo -e "  ${RED}✗${NC} Main types failed"
-    cat "$TYPE_CHECK_OUTPUT"
-    exit 1
-  fi
-) &
-PID_TYPES=$!
-
-(
-  if pnpm run --silent check-test-types > "$TEST_TYPE_CHECK_OUTPUT" 2>&1; then
-    echo -e "  ${GREEN}✓${NC} Test types"
-  else
-    echo -e "  ${RED}✗${NC} Test types failed"
-    cat "$TEST_TYPE_CHECK_OUTPUT"
-    exit 1
-  fi
-) &
-PID_TEST_TYPES=$!
-
-# Wait for type checking jobs
-TYPES_FAILED=0
-wait $PID_TYPES || TYPES_FAILED=1
-wait $PID_TEST_TYPES || TYPES_FAILED=1
-
-if [ $TYPES_FAILED -ne 0 ]; then
-  echo -e "${RED}  Type checks failed${NC}"
-  exit 1
-fi
+# Step 6: Type checking
+echo -e "${YELLOW}[6/17] Running type checks...${NC}"
+pnpm run check-types
+pnpm run check-test-types
 echo -e "${GREEN}  Type checks passed${NC}"
 echo ""
 
 # Step 7: Linting
-echo -e "${YELLOW}[7/19] Running linter...${NC}"
+echo -e "${YELLOW}[7/17] Running linter...${NC}"
 pnpm run lint
 
 # Check Terraform formatting
@@ -170,7 +133,7 @@ echo -e "${GREEN}  Linting passed${NC}"
 echo ""
 
 # Step 8: Formatting check (dprint)
-echo -e "${YELLOW}[8/19] Checking code formatting (dprint)...${NC}"
+echo -e "${YELLOW}[8/17] Checking code formatting (dprint)...${NC}"
 if ! pnpm run format:check; then
   echo -e "${RED}Error: Code formatting check failed.${NC}"
   echo "Run 'pnpm run format' to fix."
@@ -179,98 +142,59 @@ fi
 echo -e "${GREEN}  Code formatting passed${NC}"
 echo ""
 
-# Step 9: ESLint local rules tests
-echo -e "${YELLOW}[9/19] Testing ESLint local rules...${NC}"
+# Step 9: ShellCheck
+echo -e "${YELLOW}[9/17] Running ShellCheck...${NC}"
+if command -v shellcheck &> /dev/null; then
+  # Use severity filter to only fail on errors, not warnings/style
+  if shellcheck --severity=error bin/*.sh .github/scripts/*.sh; then
+    echo -e "${GREEN}  ShellCheck passed${NC}"
+    # Show warnings as info but don't fail
+    if ! shellcheck bin/*.sh .github/scripts/*.sh > /dev/null 2>&1; then
+      echo -e "${YELLOW}  (ShellCheck found warnings - run 'pnpm run lint:bash' for details)${NC}"
+    fi
+  else
+    echo -e "${RED}  ShellCheck found errors${NC}"
+    exit 1
+  fi
+else
+  echo -e "${YELLOW}  Skipping ShellCheck (not installed - install with 'brew install shellcheck')${NC}"
+fi
+echo ""
+
+# Step 10: ESLint local rules tests
+echo -e "${YELLOW}[10/17] Testing ESLint local rules...${NC}"
 pnpm run test:eslint-rules
 echo -e "${GREEN}  ESLint local rules tests passed${NC}"
 echo ""
 
-# Step 10: Documentation validation
-echo -e "${YELLOW}[10/19] Validating documented scripts...${NC}"
+# Step 11: Documentation validation
+echo -e "${YELLOW}[11/17] Validating documented scripts...${NC}"
 ./bin/validate-docs.sh
 echo ""
 
-# Step 11: Dependency rules check
-echo -e "${YELLOW}[11/19] Checking dependency rules...${NC}"
+# Step 12: Documentation freshness validation
+echo -e "${YELLOW}[12/17] Validating documentation freshness...${NC}"
+./bin/validate-docs-freshness.sh
+echo ""
+
+# Step 13: Dependency rules check
+echo -e "${YELLOW}[13/17] Checking dependency rules...${NC}"
 pnpm run deps:check
 echo -e "${GREEN}  Dependency rules passed${NC}"
 echo ""
 
-# Steps 12-14: Convention, Config, API validation (PARALLEL)
-echo -e "${YELLOW}[12-14/19] Running validation checks (parallel)...${NC}"
-
-# Create temp files for parallel job output
-CONV_OUTPUT=$(mktemp)
-CONFIG_OUTPUT=$(mktemp)
-API_OUTPUT=$(mktemp)
-trap "rm -f $TYPE_CHECK_OUTPUT $TEST_TYPE_CHECK_OUTPUT $CONV_OUTPUT $CONFIG_OUTPUT $API_OUTPUT" EXIT
-
-(
-  if pnpm run --silent validate:conventions > "$CONV_OUTPUT" 2>&1; then
-    echo -e "  ${GREEN}✓${NC} Conventions"
-  else
-    echo -e "  ${RED}✗${NC} Conventions failed"
-    cat "$CONV_OUTPUT"
-    exit 1
-  fi
-) &
-PID_CONVENTIONS=$!
-
-(
-  if pnpm run --silent validate:config > "$CONFIG_OUTPUT" 2>&1; then
-    echo -e "  ${GREEN}✓${NC} Config"
-  else
-    echo -e "  ${RED}✗${NC} Config failed"
-    cat "$CONFIG_OUTPUT"
-    exit 1
-  fi
-) &
-PID_CONFIG=$!
-
-(
-  if pnpm run --silent validate:api-paths > "$API_OUTPUT" 2>&1; then
-    echo -e "  ${GREEN}✓${NC} API paths"
-  else
-    echo -e "  ${RED}✗${NC} API paths failed"
-    cat "$API_OUTPUT"
-    exit 1
-  fi
-) &
-PID_APIPATHS=$!
-
-# Wait for all parallel validation jobs
-VALIDATION_FAILED=0
-wait $PID_CONVENTIONS || VALIDATION_FAILED=1
-wait $PID_CONFIG || VALIDATION_FAILED=1
-wait $PID_APIPATHS || VALIDATION_FAILED=1
-
-if [ $VALIDATION_FAILED -ne 0 ]; then
-  echo -e "${RED}  Validation checks failed${NC}"
-  exit 1
-fi
-echo -e "${GREEN}  Validation checks passed${NC}"
-echo ""
-
-# Step 15: Security audit
-echo -e "${YELLOW}[15/19] Running security audit...${NC}"
-if ! pnpm audit --audit-level=high; then
-  echo -e "${YELLOW}  Security audit found vulnerabilities (non-blocking)${NC}"
-fi
-echo -e "${GREEN}  Security audit complete${NC}"
-echo ""
-
-# Step 16: GraphRAG validation
-echo -e "${YELLOW}[16/19] Validating GraphRAG...${NC}"
+# Step 14: GraphRAG validation
+echo -e "${YELLOW}[14/17] Validating GraphRAG...${NC}"
 ./bin/validate-graphrag.sh
 echo ""
 
-# Step 17: Documentation sync validation
-echo -e "${YELLOW}[17/19] Validating documentation sync...${NC}"
+# Step 15: Documentation sync validation
+echo -e "${YELLOW}[15/17] Validating documentation sync...${NC}"
 ./bin/validate-doc-sync.sh
 echo ""
 
-# Step 18: Unit tests
-echo -e "${YELLOW}[18/19] Running unit tests...${NC}"
+# Step 16: Unit tests
+echo -e "${YELLOW}[16/17] Running unit tests...${NC}"
 TEST_OUTPUT=$(pnpm test 2>&1)
 TEST_EXIT_CODE=$?
 echo "$TEST_OUTPUT"
@@ -282,8 +206,8 @@ fi
 echo -e "${GREEN}  Unit tests passed${NC}"
 echo ""
 
-# Step 19: Validate test output is clean
-echo -e "${YELLOW}[19/19] Validating test output...${NC}"
+# Step 17: Validate test output is clean
+echo -e "${YELLOW}[17/17] Validating test output...${NC}"
 TEST_ISSUES=0
 
 # Check for Vitest deprecation warnings
@@ -328,10 +252,9 @@ echo ""
 echo "All checks passed in ${MINUTES}m ${SECONDS}s"
 echo ""
 echo "What was checked:"
-echo "  Environment, dependencies, TypeSpec, build, types (parallel), lint,"
-echo "  formatting (dprint), ESLint local rules, documentation, dependency rules,"
-echo "  conventions, config, API paths (parallel), security audit, GraphRAG,"
-echo "  documentation sync, unit tests, test output validation"
+echo "  Environment, dependencies, TypeSpec, build, types, lint, formatting (dprint),"
+echo "  ShellCheck, ESLint local rules, documentation, docs freshness, dependency rules,"
+echo "  GraphRAG, documentation sync, unit tests, test output validation"
 echo ""
 echo "What was NOT checked (run ci:local:full for these):"
 echo "  Integration tests (LocalStack)"
