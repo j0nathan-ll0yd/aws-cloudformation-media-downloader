@@ -298,6 +298,10 @@ function generateTypesFile(schemas: GeneratedSchema[]): string {
 
 /**
  * Generate the index.ts file content
+ *
+ * TODO: Consider generating named exports instead of wildcard to improve tree-shaking.
+ * Current pattern `export *` bundles all schemas even when Lambda only needs 1-2.
+ * See: docs/wiki/Infrastructure/Bundle-Size-Analysis.md
  */
 function generateIndexFile(): string {
   return `/**
