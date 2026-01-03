@@ -48,6 +48,8 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 │   │       ├── device-queries.ts     # Device operations
 │   │       ├── session-queries.ts    # Session, Account, VerificationToken operations
 │   │       ├── relationship-queries.ts # UserFiles, UserDevices operations
+│   │       ├── prepared-queries.ts   # Performance-critical prepared statements
+│   │       ├── cascade-operations.ts # Transaction-wrapped multi-entity operations
 │   │       └── index.ts              # Barrel export for all queries
 │   ├── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │   │   └── [lambda-name]/

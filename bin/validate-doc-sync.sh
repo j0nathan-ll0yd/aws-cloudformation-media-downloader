@@ -54,7 +54,8 @@ main() {
 
   # Count query files listed in AGENTS.md between entities/ and lambdas/ sections
   # Each query file is listed with │   │       ├── or │   │       └──
-  DOCUMENTED_QUERY_COUNT=$(awk '/entities\/.*query functions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*-queries\.ts' | wc -l | tr -d ' ')
+  # Count all .ts files (queries, operations, etc.) excluding index.ts
+  DOCUMENTED_QUERY_COUNT=$(awk '/entities\/.*query functions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.(ts)' | grep -v 'index\.ts' | wc -l | tr -d ' ')
 
   if [ "$QUERY_FILE_COUNT" -ne "$DOCUMENTED_QUERY_COUNT" ]; then
     echo -e "${RED}MISMATCH${NC}"

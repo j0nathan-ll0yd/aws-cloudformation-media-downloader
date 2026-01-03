@@ -122,3 +122,9 @@ export {
   type UserDeviceRow,
   type UserFileRow
 } from './relationship-queries'
+
+// Prepared queries (performance-critical paths)
+export { getFileByKeyPrepared, getSessionByTokenPrepared, getUserFilesPrepared, resetPreparedStatements } from './prepared-queries'
+
+// Cascade operations (transaction-wrapped multi-entity operations)
+export { deleteUserAuthRecords, deleteUserCascade, deleteUserRelationships } from './cascade-operations'
