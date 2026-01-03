@@ -133,6 +133,37 @@ function log(message: string): void {
   }
 }
 
+/** Sleep helper for retry logic */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Wait for PostgreSQL to be ready with retry logic.
+ * This handles cases where PostgreSQL is still starting up in CI.
+ */
+async function waitForPostgres(databaseUrl: string, maxRetries = 30, retryDelayMs = 1000): Promise<postgres.Sql> {
+  let lastError: Error | undefined
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const sql = postgres(databaseUrl, {onnotice: () => {}})
+      // Test the connection with a simple query
+      await sql`SELECT 1`
+      log(`[globalSetup] PostgreSQL connection established on attempt ${attempt}`)
+      return sql
+    } catch (error) {
+      lastError = error as Error
+      if (attempt < maxRetries) {
+        log(`[globalSetup] PostgreSQL not ready (attempt ${attempt}/${maxRetries}), retrying in ${retryDelayMs}ms...`)
+        await sleep(retryDelayMs)
+      }
+    }
+  }
+
+  throw new Error(`Failed to connect to PostgreSQL after ${maxRetries} attempts: ${lastError?.message}`)
+}
+
 /** Creates worker-specific database schemas AND tables before test execution. */
 export async function setup(): Promise<void> {
   const databaseUrl = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
@@ -145,8 +176,8 @@ export async function setup(): Promise<void> {
   const schemaMigration = fs.readFileSync(path.join(migrationsDir, '0001_initial_schema.sql'), 'utf8')
   const indexMigration = fs.readFileSync(path.join(migrationsDir, '0002_create_indexes.sql'), 'utf8')
 
-  // Suppress PostgreSQL NOTICE messages (e.g., "relation already exists, skipping")
-  const sql = postgres(databaseUrl, {onnotice: () => {}})
+  // Wait for PostgreSQL to be ready with retry logic (handles CI startup delays)
+  const sql = await waitForPostgres(databaseUrl)
 
   try {
     // Create schemas and tables for each worker BEFORE any tests run

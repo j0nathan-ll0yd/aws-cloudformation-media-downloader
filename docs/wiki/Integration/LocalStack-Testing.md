@@ -265,6 +265,90 @@ const appName = generateIsolatedAppName('test-push')
 5. **Never mock AWS vendors** - Use real LocalStack services
 6. **Use isolated names in CI** - `generateIsolatedAppName()` for SNS apps
 
+## Integration Test Coverage Matrix
+
+| Lambda | Trigger Type | Test File | Coverage |
+|--------|-------------|-----------|----------|
+| ApiGatewayAuthorizer | API Gateway | `apiGatewayAuthorizer.dedicated.integration.test.ts` | Full |
+| CleanupExpiredRecords | CloudWatch Schedule | `cleanupExpiredRecords.workflow.integration.test.ts` | Full |
+| DeviceEvent | API Gateway | `deviceRegistration.integration.test.ts` | Partial |
+| ListFiles | API Gateway | `listFiles.workflow.integration.test.ts` | Full |
+| LoginUser | API Gateway | `auth.flow.integration.test.ts` | Partial |
+| PruneDevices | CloudWatch Schedule | `pruneDevices.workflow.integration.test.ts` | Full |
+| RefreshToken | API Gateway | `refreshToken.workflow.integration.test.ts` | Full |
+| RegisterDevice | API Gateway | `deviceRegistration.integration.test.ts` | Full |
+| S3ObjectCreated | S3 Event | `s3ObjectCreated.workflow.integration.test.ts` | Full |
+| SendPushNotification | SQS | `sendPushNotification.workflow.integration.test.ts` | Full |
+| StartFileUpload | SQS (EventBridge) | `startFileUpload.workflow.integration.test.ts` | Partial |
+| UserDelete | API Gateway | `userDelete.cascade.integration.test.ts` | Full |
+| UserSubscribe | API Gateway | `userSubscribe.workflow.integration.test.ts` | Partial |
+| WebhookFeedly | API Gateway | `webhookFeedly.workflow.integration.test.ts` | Full |
+| CloudfrontMiddleware | CloudFront | N/A | None (edge function) |
+| MigrateDSQL | Manual CLI | N/A | None (utility) |
+
+**Trigger Coverage Summary:**
+- API Gateway: 10/10 tested
+- SQS: 2/2 tested
+- S3 Events: 1/1 tested
+- CloudWatch Schedule: 2/2 tested
+- EventBridge: 1/1 tested (E2E chain)
+- CloudFront: 0/1 tested (edge functions not supported)
+
+## Worker Schema Isolation
+
+Integration tests use PostgreSQL schema isolation for parallel test execution:
+
+```
+globalSetup.ts       → Creates schemas worker_1...worker_8 before tests
+                     └→ Reads migrations/0001_initial_schema.sql
+                     └→ Applies Aurora DSQL → PostgreSQL adaptations
+                     └→ Creates tables in each schema
+
+setup.ts             → Sets USE_LOCALSTACK=true
+                     └→ Initializes database connection
+                     └→ Sets search_path to worker schema
+
+postgres-helpers.ts  → getWorkerSchema() uses VITEST_POOL_ID
+                     └→ Manages per-worker connections
+                     └→ Sets search_path before each query
+```
+
+### Isolation Mechanisms
+
+| Mechanism | Implementation | Purpose |
+|-----------|---------------|---------|
+| CI Isolation | `GITHUB_RUN_ID` prefix | Prevents concurrent CI runs from conflicting |
+| Worker Isolation | Schemas (worker_1...worker_8) | Each Vitest worker gets own schema |
+| Test Isolation | `truncateAllTables()` in afterEach | Clears data between tests |
+| Connection Management | `max: 1` per worker | Avoids search_path issues with pool |
+
+### Aurora DSQL → PostgreSQL Adaptations
+
+| Aurora DSQL Feature | PostgreSQL Adaptation | Applied In |
+|---------------------|----------------------|------------|
+| `CREATE INDEX ASYNC` | `CREATE INDEX` | globalSetup.ts:77 |
+| UUID PRIMARY KEY | TEXT PRIMARY KEY | globalSetup.ts:81 |
+| UUID NOT NULL | TEXT NOT NULL | globalSetup.ts:82 |
+
+## Known Limitations
+
+1. **CloudFront edge functions** cannot be tested via LocalStack
+2. **API Gateway rate limiting** must be mocked (LocalStack limitation)
+3. **UUID columns use TEXT** in tests vs UUID in Aurora DSQL
+4. **APNS push notifications** require mocking (external service)
+5. **OAuth providers** require mocking (external service)
+
+## Failure Scenario Testing
+
+Failure scenarios are tested in `test/integration/workflows/failures/`:
+
+| Category | Test File | Scenarios Covered |
+|----------|-----------|-------------------|
+| Database Failures | `database.failure.integration.test.ts` | Entity not found, constraint violations, cascade deletions |
+| External Services | `externalServices.failure.integration.test.ts` | SNS endpoint disabled, SQS failures, partial batch failures |
+
+See [Failure Scenario Testing](../Testing/Failure-Scenario-Testing.md) for detailed documentation.
+
 ## Related Patterns
 
 - [Vendor Wrappers](../Conventions/Vendor-Encapsulation-Policy.md) - AWS SDK encapsulation

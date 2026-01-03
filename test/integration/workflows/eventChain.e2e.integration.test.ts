@@ -5,12 +5,18 @@
  * 1. EventBridge receives DownloadRequested event
  * 2. Rule routes event to SQS DownloadQueue
  * 3. Message arrives with correct structure and correlation ID
+ * 4. Full E2E chain with database operations and message processing
  *
  * These tests verify the event-driven pipeline using LocalStack
  * for EventBridge and SQS emulation.
  *
  * @see docs/wiki/Integration/LocalStack-Testing.md
  */
+
+// Set environment variables before imports
+process.env.USE_LOCALSTACK = 'true'
+process.env.AWS_REGION = 'us-west-2'
+process.env.TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
 
 import {afterAll, afterEach, beforeAll, describe, expect, test} from 'vitest'
 import {
@@ -22,6 +28,18 @@ import {
 } from '../helpers/eventbridge-helpers'
 import {clearTestQueue, createTestQueue, deleteTestQueue, waitForMessages} from '../helpers/sqs-helpers'
 import {generateTestResourceName} from '../helpers/resource-naming'
+import {
+  closeTestDb,
+  createAllTables,
+  getFile,
+  getTestDbAsync,
+  insertFile,
+  insertFileDownload,
+  insertUser,
+  linkUserFile,
+  truncateAllTables
+} from '../helpers/postgres-helpers'
+import {FileStatus} from '#types/enums'
 
 const TEST_EVENT_BUS = generateTestResourceName('test-bus')
 const TEST_QUEUE = generateTestResourceName('test-queue')
@@ -32,6 +50,10 @@ describe('Event Chain E2E Integration Tests', () => {
   let queueArn: string
 
   beforeAll(async () => {
+    // Initialize PostgreSQL for full E2E tests
+    await getTestDbAsync()
+    await createAllTables()
+
     // Wait for EventBridge to be ready (with retry logic for LocalStack startup)
     await waitForEventBridgeReady(30000)
 
@@ -45,14 +67,16 @@ describe('Event Chain E2E Integration Tests', () => {
   })
 
   afterEach(async () => {
-    // Clear messages between tests
+    // Clear messages and database between tests
     await clearTestQueue(queueUrl)
+    await truncateAllTables()
   })
 
   afterAll(async () => {
     // Clean up test infrastructure
     await deleteTestEventBus(TEST_EVENT_BUS)
     await deleteTestQueue(queueUrl)
+    await closeTestDb()
   })
 
   describe('EventBridge to SQS Routing', () => {
@@ -137,6 +161,105 @@ describe('Event Chain E2E Integration Tests', () => {
       // Should receive the matching event
       const matchingMessages = await waitForMessages(queueUrl, 1, 10000)
       expect(matchingMessages.length).toBe(1)
+    })
+  })
+
+  describe('Full E2E Chain with Database', () => {
+    test('should route event for existing file record and verify message structure', async () => {
+      // 1. Set up database state - create file and user association
+      const userId = crypto.randomUUID()
+      const fileId = `e2e-video-${Date.now()}`
+      const correlationId = `e2e-correlation-${Date.now()}`
+      const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
+
+      await insertUser({userId, email: `e2e-${Date.now()}@example.com`})
+      await insertFile({fileId, status: FileStatus.Queued, title: 'E2E Test Video'})
+      await linkUserFile(userId, fileId)
+
+      // 2. Publish DownloadRequested event to EventBridge
+      const failedCount = await publishDownloadRequestedEvent(TEST_EVENT_BUS, fileId, fileUrl, correlationId)
+      expect(failedCount).toBe(0)
+
+      // 3. Wait for message in SQS
+      const messages = await waitForMessages(queueUrl, 1, 10000)
+      expect(messages.length).toBe(1)
+
+      // 4. Verify message contains correct file data
+      const body = JSON.parse(messages[0].Body!)
+      expect(body.detail.fileId).toBe(fileId)
+      expect(body.detail.fileUrl).toBe(fileUrl)
+      expect(body.detail.correlationId).toBe(correlationId)
+
+      // 5. Verify file exists in database with correct state
+      const file = await getFile(fileId)
+      expect(file).not.toBeNull()
+      expect(file?.status).toBe(FileStatus.Queued)
+    })
+
+    test('should handle E2E chain with file download record tracking', async () => {
+      // 1. Set up database state with download tracking
+      const userId = crypto.randomUUID()
+      const fileId = `download-track-${Date.now()}`
+      const correlationId = `download-correlation-${Date.now()}`
+      const fileUrl = `https://www.youtube.com/watch?v=${fileId}`
+
+      await insertUser({userId, email: `download-track-${Date.now()}@example.com`})
+      await insertFile({fileId, status: FileStatus.Queued, title: 'Download Tracking Video'})
+      await insertFileDownload({fileId, status: 'Pending', correlationId, sourceUrl: fileUrl})
+      await linkUserFile(userId, fileId)
+
+      // 2. Publish event
+      const failedCount = await publishDownloadRequestedEvent(TEST_EVENT_BUS, fileId, fileUrl, correlationId)
+      expect(failedCount).toBe(0)
+
+      // 3. Verify message arrives with matching correlation ID
+      const messages = await waitForMessages(queueUrl, 1, 10000)
+      expect(messages.length).toBe(1)
+
+      const body = JSON.parse(messages[0].Body!)
+      expect(body.detail.correlationId).toBe(correlationId)
+
+      // 4. Verify database state is ready for processing
+      const file = await getFile(fileId)
+      expect(file).not.toBeNull()
+    })
+
+    test('should route multiple file events with distinct database records', async () => {
+      const userId = crypto.randomUUID()
+      const files = [
+        {fileId: `multi-1-${Date.now()}`, title: 'Multi File 1'},
+        {fileId: `multi-2-${Date.now()}`, title: 'Multi File 2'},
+        {fileId: `multi-3-${Date.now()}`, title: 'Multi File 3'}
+      ]
+
+      // 1. Set up database state for all files
+      await insertUser({userId, email: `multi-${Date.now()}@example.com`})
+      for (const f of files) {
+        await insertFile({fileId: f.fileId, status: FileStatus.Queued, title: f.title})
+        await linkUserFile(userId, f.fileId)
+      }
+
+      // 2. Publish events for all files concurrently
+      const publishResults = await Promise.all(
+        files.map((f) => publishDownloadRequestedEvent(TEST_EVENT_BUS, f.fileId, `https://youtube.com/watch?v=${f.fileId}`, `corr-${f.fileId}`))
+      )
+      expect(publishResults.every((r) => r === 0)).toBe(true)
+
+      // 3. Wait for all messages
+      const messages = await waitForMessages(queueUrl, 3, 15000)
+      expect(messages.length).toBe(3)
+
+      // 4. Verify all files match what's in database
+      const receivedFileIds = messages.map((m) => JSON.parse(m.Body!).detail.fileId).sort()
+      const expectedFileIds = files.map((f) => f.fileId).sort()
+      expect(receivedFileIds).toEqual(expectedFileIds)
+
+      // 5. Verify all files exist in database
+      for (const f of files) {
+        const file = await getFile(f.fileId)
+        expect(file).not.toBeNull()
+        expect(file?.title).toBe(f.title)
+      }
     })
   })
 })
