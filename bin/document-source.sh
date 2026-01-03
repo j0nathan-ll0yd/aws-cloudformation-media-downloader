@@ -42,8 +42,7 @@ main() {
   rm "${test_file_path}"
 
   # generate the documentation
-  local typedoc_command="${PROJECT_ROOT}/node_modules/typedoc/bin/typedoc --options ./typedoc.json"
-  eval "$typedoc_command"
+  node "${PROJECT_ROOT}/node_modules/typedoc/bin/typedoc" --options ./typedoc.json
 
   # retrieve or rebuild the files
   git checkout "${test_file_path}"
