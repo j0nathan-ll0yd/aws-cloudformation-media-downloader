@@ -23,7 +23,7 @@ Add this to your project's `.claude/settings.local.json`:
   "mcpServers": {
     "media-downloader": {
       "command": "node",
-      "args": ["--loader", "ts-node/esm", "src/mcp/server.ts"]
+      "args": ["--import", "tsx", "src/mcp/server.ts"]
     }
   }
 }
@@ -38,7 +38,7 @@ Add this to your Claude Desktop configuration (`~/Library/Application Support/Cl
   "mcpServers": {
     "media-downloader": {
       "command": "node",
-      "args": ["--loader", "ts-node/esm", "/path/to/project/src/mcp/server.ts"]
+      "args": ["--import", "tsx", "/path/to/project/src/mcp/server.ts"]
     }
   }
 }
@@ -221,7 +221,7 @@ Use: query_dependencies({ query: "circular" })
 
 ```bash
 # Run the server directly
-node --loader ts-node/esm src/mcp/server.ts
+node --import tsx src/mcp/server.ts
 
 # Or compile and run
 pnpm run build

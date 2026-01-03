@@ -41,14 +41,14 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 ## Testing Scripts
 
 ### `pnpm run test`
-**Purpose**: Run unit tests with Jest
-**Dependencies**: Jest, ts-node
+**Purpose**: Run unit tests with vitest
+**Dependencies**: vitest
 **CI Coverage**: Yes (unit-tests.yml)
 **Notes**: Runs `generate-graph` first; use `--coverage` for reports
 
 ### `pnpm run test:integration`
 **Purpose**: Run integration tests against LocalStack
-**Dependencies**: LocalStack (Docker), Jest
+**Dependencies**: LocalStack (Docker), vitest
 **CI Coverage**: Yes (integration-tests.yml)
 **Notes**: Requires LocalStack already running. Use for fast iteration when developing integration tests (~30s). For full lifecycle management, use `ci:local:full` instead.
 
