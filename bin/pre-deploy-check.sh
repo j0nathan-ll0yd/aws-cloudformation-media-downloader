@@ -37,7 +37,9 @@ if [[ ! -f "${PROJECT_ROOT}/.env" ]]; then
 fi
 
 # Load environment variables
-eval export $(cat "${PROJECT_ROOT}/.env")
+set -a
+source "${PROJECT_ROOT}/.env"
+set +a
 
 # Check if state file exists
 if [[ ! -f "${TERRAFORM_DIR}/terraform.tfstate" ]] && [[ ! -L "${TERRAFORM_DIR}/terraform.tfstate" ]]; then

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # API Documentation Generator
 # This script generates API documentation from TypeSpec definitions

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Extract test fixtures from CloudWatch logs
 # Usage: ./bin/extract-fixtures.sh [days-back] [output-dir]
 

@@ -32,7 +32,9 @@ echo ""
 
 # Load environment variables
 if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-  eval export $(cat "${PROJECT_ROOT}/.env")
+  set -a
+  source "${PROJECT_ROOT}/.env"
+  set +a
 fi
 
 cd "${TERRAFORM_DIR}"

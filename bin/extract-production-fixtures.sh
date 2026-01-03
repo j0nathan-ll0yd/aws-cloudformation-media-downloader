@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Extract production fixtures from CloudWatch logs - LOCAL VERSION
 # This script replaces the GitHub workflow for manual fixture extraction
 #

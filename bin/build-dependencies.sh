@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Get the directory of this file (where the package.json file is located)
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
@@ -19,15 +20,13 @@ infrastructure_json_file_path="${project_root}/build/infrastructure.json"
 echo "infrastructure_files_list = $infrastructure_files_list"
 
 echo 'Concatenating infrastructure files'
-consolidate_command="cat ${infrastructure_files_list} > ${infrastructure_hcl_file_path}"
-eval $consolidate_command
+cat ${infrastructure_files_list} > "${infrastructure_hcl_file_path}"
 
 echo 'Converting HCL to JSON (via hcl2json)'
 hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"
 
 echo 'Converting JSON to TypeScript (via Quicktype)'
-quicktype_command="${project_root}/node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
-eval $quicktype_command
+node "${project_root}/node_modules/quicktype/dist/index.js" "${infrastructure_json_file_path}" -o "${types_file_path}"
 
 echo 'Checking Secrets (secrets.yaml) via SOPS'
 secrets_file_path="${project_root}/secrets.yaml"
@@ -73,4 +72,4 @@ else
 fi
 
 echo 'Prepending Typescript nocheck on file'
-printf '%s\n%s\n' "// @ts-nocheck" "$(cat $types_file_path)" > "$types_file_path"
+printf '%s\n%s\n' "// @ts-nocheck" "$(cat "$types_file_path")" > "$types_file_path"

@@ -317,8 +317,8 @@ while IFS= read -r md_file; do
         fi
       fi
     done < <(echo "$line_content" | grep -oE '`[^`]+`' | tr -d '`' || true)
-  done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2>/dev/null || true)
-done < <(find docs/wiki -name "*.md" 2>/dev/null)
+  done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null || true)
+done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
 if [ "$CODE_PATHS_OK" = true ]; then
   echo -e "${GREEN}OK${NC}"
@@ -378,7 +378,7 @@ while IFS= read -r md_file; do
       fi
     fi
   done < "$md_file"
-done < <(find docs/wiki -name "*.md" 2>/dev/null)
+done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
 if [ "$IMPORTS_OK" = true ]; then
   echo -e "${GREEN}OK${NC}"
