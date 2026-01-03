@@ -9,9 +9,9 @@ Central registry of all project conventions with their documentation and enforce
 | Method | Count | Description |
 |--------|-------|-------------|
 | **MCP Rules** | 19 | AST-based validation via ts-morph |
-| **ESLint** | 20 | Linting rules including 8 JSDoc rules + 2 Drizzle safety rules |
-| **Git Hooks** | 5 | Pre-commit, commit-msg, pre-push, post-checkout |
-| **Dependency Cruiser** | 6 | Architectural boundary enforcement |
+| **ESLint** | 23 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 7 local rules + TSDoc |
+| **Git Hooks** | 4 | Pre-commit, commit-msg, pre-push, post-checkout |
+| **Dependency Cruiser** | 8 | Architectural boundary enforcement |
 | **CI Workflows** | 4 | Script validation, type checking, GraphRAG sync, security audit |
 | **Dependabot** | 2 | npm + GitHub Actions ecosystem updates |
 | **Build-Time** | 1 | pnpm lifecycle script protection |
@@ -104,8 +104,25 @@ Central registry of all project conventions with their documentation and enforce
 
 | Convention | Current | Proposed | Priority |
 |------------|---------|----------|----------|
-| Terraform Lambda Environment | Manual review | MCP rule for `merge(common_lambda_env, ...)` | Medium |
-| Template File Organization | Code review | MCP rule for embedded templates | Low |
+| Migrations as Single Source of Truth | Code review | MCP rule: detect schema changes outside migrations | HIGH |
+| Aurora DSQL CREATE INDEX ASYNC | Code review | MCP rule: validate migration files | MEDIUM |
+| AWS SDK Mock Pattern | Code review | ESLint rule extension | MEDIUM |
+| Terraform Lambda Environment | Manual review | MCP rule for `merge(common_lambda_env, ...)` | MEDIUM |
+| Template File Organization | Code review | MCP rule for embedded templates | LOW |
+
+---
+
+## Phase 3 Rules (Defined, Not Yet Enabled)
+
+These ESLint rules are defined in `eslint-local-rules/` but not yet enabled in `eslint.config.mjs`:
+
+| Rule | ESLint Name | Purpose | Blocker |
+|------|-------------|---------|---------|
+| PowerTools Enforcement | `local-rules/enforce-powertools` | Require Lambda handlers wrapped with PowerTools | Existing code migration needed |
+| Domain Layer Purity | `local-rules/no-domain-leakage` | Prevent domain layer from importing outer layers | Need domain layer boundary definition |
+| Strict Env Vars | `local-rules/strict-env-vars` | Forbid direct `process.env` in handlers | Migration to `getRequiredEnv()` needed |
+
+**Activation Path**: Each rule requires migrating existing code to comply before enabling. Track migration progress via GitHub issues.
 
 ---
 

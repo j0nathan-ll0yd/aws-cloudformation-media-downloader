@@ -1,6 +1,7 @@
 /**
  * Naming Conventions Rule
  * HIGH: Validates TypeScript type names follow project conventions
+ * Consistent naming affects API compatibility and iOS client parsing.
  *
  * Pattern Standards:
  * - Domain entities: Simple nouns (User, File, Device)
@@ -59,7 +60,7 @@ function toPascalCase(str: string): string {
 export const namingConventionsRule: ValidationRule = {
   name: RULE_NAME,
   description: 'Enforce naming conventions for files, types, and properties.',
-  severity: 'MEDIUM', // Most are stylistic
+  severity: 'HIGH', // Consistency required across codebase
   appliesTo: ['src/**/*.ts', 'src/**/*.d.ts'],
   excludes: ['src/**/*.test.ts', 'test/**/*.ts', 'src/types/infrastructure.d.ts'], // Infrastructure types are auto-generated
 
