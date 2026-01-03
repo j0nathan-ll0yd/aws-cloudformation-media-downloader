@@ -15,15 +15,13 @@ namespace OfflineMediaDownloader.Operations;
 interface Files {
   /**
    * List all files available to the authenticated user.
-   * 
+   *
    * Returns files based on authentication status:
    * - Authenticated users: returns their personal file library
    * - Anonymous users: returns a demo file for training purposes
    * - Unauthenticated users: returns 401 Unauthorized
-   * 
+   *
    * Example response: See `tsp/examples/list-files-response.json`
-   * 
-   * @returns List of available files
    */
   @get
   @summary("List available files")
@@ -31,15 +29,19 @@ interface Files {
     @header("Authorization") authorization: string,
     @header("X-API-Key") apiKey: string,
   ): {
+    @doc("List of available files")
     @statusCode statusCode: 200;
     @body body: ApiResponse<FileListResponse>;
   } | {
+    @doc("Authentication failed - invalid or missing session token")
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
   } | {
+    @doc("Access denied - invalid API key")
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -62,8 +64,6 @@ interface Devices {
    * Example request: See `tsp/examples/register-device-request.json`
    *
    * Example response: See `tsp/examples/register-device-response.json`
-   *
-   * @returns Device registration confirmation with endpoint ARN
    */
   @post
   @route("/register")
@@ -73,21 +73,27 @@ interface Devices {
     @header("X-API-Key") apiKey: string,
     @body device: DeviceRegistrationRequest,
   ): {
+    @doc("Device updated with new push token")
     @statusCode statusCode: 200;
     @body body: ApiResponse<DeviceRegistrationResponse>;
   } | {
+    @doc("Device registered for the first time")
     @statusCode statusCode: 201;
     @body body: ApiResponse<DeviceRegistrationResponse>;
   } | {
+    @doc("Invalid request - missing or malformed fields")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("Authentication failed - invalid or missing session token")
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
   } | {
+    @doc("Access denied - invalid API key")
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -97,8 +103,6 @@ interface Devices {
    *
    * Receives event data from the iOS client and logs it to CloudWatch
    * for later analysis. Used for debugging and usage analytics.
-   *
-   * @returns No content on success
    */
   @post
   @route("/event")
@@ -108,11 +112,14 @@ interface Devices {
     @header("X-Device-UUID") deviceId?: string,
     @body event: ClientEventRequest,
   ): {
+    @doc("Event logged successfully")
     @statusCode statusCode: 204;
   } | {
+    @doc("Invalid request - missing or malformed fields")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -126,18 +133,16 @@ interface Devices {
 interface Webhooks {
   /**
    * Receive a webhook from Feedly to download media.
-   * 
+   *
    * When a webhook is received:
    * - If the file exists: associates it with the user and sends push notification
    * - If the file doesn't exist: creates it, associates with user, and queues for download
-   * 
+   *
    * Background mode can be used to defer immediate download processing.
-   * 
+   *
    * Example request: See `tsp/examples/webhook-feedly-request.json`
    *
    * Example response: See `tsp/examples/webhook-feedly-response.json`
-   * 
-   * @returns Webhook processing status
    */
   @post
   @summary("Process Feedly webhook")
@@ -146,18 +151,23 @@ interface Webhooks {
     @header("X-API-Key") apiKey: string,
     @body webhook: FeedlyWebhookRequest,
   ): {
+    @doc("File already downloaded and notification sent")
     @statusCode statusCode: 200;
     @body body: ApiResponse<WebhookResponse>;
   } | {
+    @doc("File queued for download")
     @statusCode statusCode: 202;
     @body body: ApiResponse<WebhookResponse>;
   } | {
+    @doc("Invalid request - missing or invalid URL")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("Access denied - invalid API key")
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -171,15 +181,13 @@ interface Webhooks {
 interface Authentication {
   /**
    * Register a new user with Sign in with Apple.
-   * 
+   *
    * Creates a new user account or returns existing user token.
    * All user details are sourced from the Apple identity token.
-   * 
+   *
    * Example request: See `tsp/examples/register-user-request.json`
    *
    * Example response: See `tsp/examples/register-user-response.json`
-   * 
-   * @returns JWT access token
    */
   @post
   @route("/register")
@@ -188,15 +196,19 @@ interface Authentication {
     @header("X-API-Key") apiKey: string,
     @body registration: UserRegistrationRequest,
   ): {
+    @doc("User registered successfully with JWT access token")
     @statusCode statusCode: 200;
     @body body: ApiResponse<UserRegistrationResponse>;
   } | {
+    @doc("Invalid request - missing or malformed fields")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("Access denied - invalid API key")
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -209,8 +221,6 @@ interface Authentication {
    * Example request: See `tsp/examples/login-user-request.json`
    *
    * Example response: See `tsp/examples/login-user-response.json`
-   *
-   * @returns JWT access token
    */
   @post
   @route("/login")
@@ -219,21 +229,27 @@ interface Authentication {
     @header("X-API-Key") apiKey: string,
     @body login: UserLoginRequest,
   ): {
+    @doc("Login successful with JWT access token")
     @statusCode statusCode: 200;
     @body body: ApiResponse<UserLoginResponse>;
   } | {
-    @statusCode statusCode: 409;
-    @body body: ErrorResponse;
-  } | {
+    @doc("Invalid request - missing or malformed fields")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("User not found - needs registration first")
     @statusCode statusCode: 404;
     @body body: ErrorResponse;
   } | {
+    @doc("Access denied - invalid API key")
     @statusCode statusCode: 403;
     @body body: ForbiddenError;
   } | {
+    @doc("Conflict - user already exists with different provider")
+    @statusCode statusCode: 409;
+    @body body: ErrorResponse;
+  } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -243,8 +259,6 @@ interface Authentication {
    *
    * Extends the session expiration time without re-authenticating.
    * The same token is returned with an updated expiration time.
-   *
-   * @returns Refreshed session information
    */
   @post
   @route("/refresh")
@@ -253,12 +267,15 @@ interface Authentication {
     @header("Authorization") authorization: string,
     @header("X-API-Key") apiKey: string,
   ): {
+    @doc("Session refreshed with extended expiration")
     @statusCode statusCode: 200;
     @body body: ApiResponse<TokenRefreshResponse>;
   } | {
+    @doc("Authentication failed - invalid or expired session token")
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -268,8 +285,6 @@ interface Authentication {
    *
    * Required for Sign in with Apple compliance (account deletion requirement).
    * Deletes user files, devices, and the user record itself.
-   *
-   * @returns No content on success
    */
   @delete
   @summary("Delete user account")
@@ -277,14 +292,18 @@ interface Authentication {
     @header("Authorization") authorization: string,
     @header("X-API-Key") apiKey: string,
   ): {
+    @doc("User deleted successfully")
     @statusCode statusCode: 204;
   } | {
+    @doc("Partial deletion - some resources could not be removed")
     @statusCode statusCode: 207;
     @body body: ErrorResponse;
   } | {
+    @doc("Authentication failed - invalid or missing session token")
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
@@ -293,8 +312,6 @@ interface Authentication {
    * Subscribe a user's device to push notification topics.
    *
    * Links an SNS endpoint (device) to an SNS topic for receiving notifications.
-   *
-   * @returns Subscription ARN
    */
   @post
   @route("/subscribe")
@@ -304,17 +321,20 @@ interface Authentication {
     @header("X-API-Key") apiKey: string,
     @body subscription: UserSubscriptionRequest,
   ): {
+    @doc("Subscription created successfully")
     @statusCode statusCode: 201;
     @body body: ApiResponse<UserSubscriptionResponse>;
   } | {
+    @doc("Invalid request - missing or malformed fields")
     @statusCode statusCode: 400;
     @body body: ErrorResponse;
   } | {
+    @doc("Authentication failed - invalid or missing session token")
     @statusCode statusCode: 401;
     @body body: UnauthorizedError;
   } | {
+    @doc("Internal server error")
     @statusCode statusCode: 500;
     @body body: InternalServerError;
   };
 }
-
