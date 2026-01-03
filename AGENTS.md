@@ -1,366 +1,36 @@
 # Project Context for AI Agents
 
-## Convention Capture System
-
-**CRITICAL**: This project captures emergent conventions during development. Read `docs/wiki/Meta/Conventions-Tracking.md` at session start.
-
-### Detection Signals:
-- 🚨 **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
-- ⚠️ **HIGH**: "MUST", "REQUIRED", "ALWAYS"
-- 📋 **MEDIUM**: "Prefer X over Y", repeated decisions
-
-### When Convention Detected:
-1. Update `docs/wiki/Meta/Conventions-Tracking.md` with the new convention
-2. Document in appropriate wiki page under `docs/wiki/`
-3. Mark as documented in tracking file
-
-### Reference:
-- **Active Conventions**: `docs/wiki/Meta/Conventions-Tracking.md`
-- **Documentation Guide**: `docs/wiki/Meta/Convention-Capture-System.md`
-
-**Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.
+AWS Serverless media downloader service built with OpenTofu and TypeScript. Downloads YouTube videos for offline playback via a companion iOS app.
 
 ---
 
-## Project Overview
+## TL;DR (Quick Reference)
 
-AWS Serverless media downloader service built with OpenTofu and TypeScript. Downloads media content (primarily YouTube videos) and integrates with a companion iOS app for offline playback. Created as a cost-effective alternative to YouTube Premium's offline playback feature.
+**Stack**: TypeScript, AWS Lambda (Node.js 22.x), Aurora DSQL (Drizzle ORM), S3, API Gateway
 
-### Architecture
-- **Infrastructure**: OpenTofu (IaC)
-- **Runtime**: AWS Lambda (Node.js 22.x)
-- **Language**: TypeScript
-- **Storage**: Amazon S3
-- **API**: AWS API Gateway with custom authorizer
-- **Notifications**: Apple Push Notification Service (APNS)
-- **Database**: Aurora DSQL with Drizzle ORM
-- **Monitoring**: CloudWatch, X-Ray (optional)
+### 5 CRITICAL Rules (Zero Tolerance)
 
-### Project Structure
-```
-.
-├── terraform/             # AWS Infrastructure definitions (OpenTofu)
-├── src/
-│   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
-│   │   └── queries/       # Native Drizzle query modules
-│   │       ├── user-queries.ts       # User operations (create, get, update, delete)
-│   │       ├── file-queries.ts       # File and FileDownload operations
-│   │       ├── device-queries.ts     # Device operations
-│   │       ├── session-queries.ts    # Session, Account, VerificationToken operations
-│   │       ├── relationship-queries.ts # UserFiles, UserDevices operations
-│   │       └── index.ts              # Barrel export for all queries
-│   ├── lambdas/           # Lambda functions (each subdirectory = one Lambda)
-│   │   └── [lambda-name]/
-│   │       ├── src/index.ts         # Lambda handler
-│   │       └── test/index.test.ts   # Unit tests
-│   ├── lib/vendor/        # 3rd party API wrappers & AWS SDK encapsulation
-│   │   ├── AWS/           # AWS SDK vendor wrappers (src/lib/vendor/AWS/)
-│   │   ├── BetterAuth/    # Better Auth configuration & adapter
-│   │   ├── Drizzle/       # Drizzle ORM configuration & schema
-│   │   └── YouTube.ts     # YouTube/yt-dlp wrapper
-│   └── mcp/               # Model Context Protocol server & validation
-│       ├── server.ts      # MCP server entry point
-│       ├── handlers/      # Query tools (entities, lambda, infrastructure, etc.)
-│       └── validation/    # AST-based convention enforcement (13 rules)
-├── test/helpers/          # Test utilities
-│   ├── entity-fixtures.ts # Factory functions for mock entity rows
-│   └── aws-sdk-mock.ts    # AWS SDK v3 mock helpers (aws-sdk-client-mock)
-├── types/                 # TypeScript type definitions
-├── util/                  # Shared utility functions
-├── docs/
-│   ├── wiki/              # All documentation and style guides
-│   └── conventions-tracking.md  # Project-specific conventions
-└── build/graph.json       # Code graph (ts-morph) - READ THIS
-```
+1. **Vendor Encapsulation**: NEVER import `@aws-sdk/*` directly. Use `#lib/vendor/AWS/`
+2. **Entity Mocking**: Mock `#entities/queries`, NOT legacy entity modules
+3. **No AI in Commits**: NO emojis, "Claude", "AI", "Generated with" in commit messages
+4. **Cascade Deletions**: Use `Promise.allSettled`, delete children before parents
+5. **Environment Variables**: Use `getRequiredEnv()` inside functions, not at module level
 
-## System Architecture
-
-### Lambda Data Flow
-
-```mermaid
-graph TD
-    %% External Triggers
-    API[API Gateway] --> Authorizer[ApiGatewayAuthorizer]
-    Authorizer --> ListFiles[ListFiles Lambda]
-    Authorizer --> LoginUser[LoginUser Lambda]
-    Authorizer --> RegisterDevice[RegisterDevice Lambda]
-    Authorizer --> RegisterUser[RegisterUser Lambda]
-    Authorizer --> RefreshToken[RefreshToken Lambda]
-    Authorizer --> UserDelete[UserDelete Lambda]
-    Authorizer --> UserSubscribe[UserSubscribe Lambda]
-
-    Feedly[Feedly Webhook] --> WebhookFeedly[WebhookFeedly Lambda]
-
-    %% Scheduled Tasks
-    Schedule[CloudWatch Schedule] --> PruneDevices[PruneDevices Lambda]
-
-    %% Event-Driven Downloads
-    WebhookFeedly --> EventBridge[EventBridge]
-    EventBridge --> DownloadQueue[SQS DownloadQueue]
-    DownloadQueue --> StartFileUpload[StartFileUpload Lambda]
-
-    %% S3 Triggers
-    S3Upload[S3 Upload Event] --> S3ObjectCreated[S3ObjectCreated Lambda]
-    S3ObjectCreated --> SQS[SQS Queue]
-    SQS --> SendPushNotification[SendPushNotification Lambda]
-
-    %% Data Stores
-    ListFiles --> DDB[(DynamoDB)]
-    LoginUser --> DDB
-    RegisterDevice --> DDB
-    RegisterUser --> DDB
-    WebhookFeedly --> DDB
-    UserDelete --> DDB
-    PruneDevices --> DDB
-    S3ObjectCreated --> DDB
-    StartFileUpload --> DDB
-
-    StartFileUpload --> S3Storage[(S3 Storage)]
-    WebhookFeedly --> S3Storage
-
-    SendPushNotification --> APNS[Apple Push Service]
-```
-
-### Entity Relationship Model
-
-```mermaid
-erDiagram
-    USERS ||--o{ USER_FILES : has
-    USERS ||--o{ USER_DEVICES : owns
-    USERS ||--o{ SESSIONS : has
-    USERS ||--o{ ACCOUNTS : has
-    FILES ||--o{ USER_FILES : shared_with
-    FILES ||--o{ FILE_DOWNLOADS : tracks
-    DEVICES ||--o{ USER_DEVICES : registered_to
-
-    USERS {
-        string userId PK
-        string email
-        string status
-        timestamp createdAt
-    }
-
-    FILES {
-        string fileId PK
-        string fileName
-        string url
-        string status
-        number size
-        timestamp createdAt
-    }
-
-    FILE_DOWNLOADS {
-        string downloadId PK
-        string fileId FK
-        string status
-        timestamp startedAt
-        timestamp completedAt
-    }
-
-    DEVICES {
-        string deviceId PK
-        string deviceToken
-        string platform
-        timestamp lastActive
-    }
-
-    SESSIONS {
-        string sessionId PK
-        string userId FK
-        string token
-        timestamp expiresAt
-    }
-
-    ACCOUNTS {
-        string accountId PK
-        string userId FK
-        string provider
-        string providerAccountId
-    }
-
-    VERIFICATION_TOKENS {
-        string token PK
-        string identifier
-        timestamp expiresAt
-    }
-
-    USER_FILES {
-        string userId FK
-        string fileId FK
-        timestamp createdAt
-    }
-
-    USER_DEVICES {
-        string userId FK
-        string deviceId FK
-        timestamp createdAt
-    }
-```
-
-### Service Interaction Map
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        API Gateway                          │
-│                    (Custom Authorizer)                      │
-└────────────┬────────────────────────────────────┬───────────┘
-             │                                    │
-             ▼                                    ▼
-┌─────────────────────┐              ┌─────────────────────┐
-│   Lambda Functions  │              │   External Services │
-├─────────────────────┤              ├─────────────────────┤
-│ • ListFiles         │              │ • Feedly API        │
-│ • LoginUser         │              │ • YouTube (yt-dlp)  │
-│ • RegisterDevice    │              │ • APNS              │
-│ • StartFileUpload   │              │ • Sign In w/ Apple  │
-│ • WebhookFeedly     │              │ • GitHub API        │
-└──────────┬──────────┘              └─────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     AWS Services Layer                      │
-├─────────────────────┬───────────────┬──────────────────────┤
-│   Aurora DSQL       │      S3       │    CloudWatch        │
-│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
-└─────────────────────┴───────────────┴──────────────────────┘
-```
-
-### Dependency Analysis with graph.json
-
-The `build/graph.json` file contains comprehensive dependency information. Key queries:
+### Essential Commands
 
 ```bash
-# Get all transitive dependencies for a Lambda function
-cat build/graph.json | jq '.transitiveDependencies["src/lambdas/ListFiles/src/index.ts"]'
-
-# Find all files that import a specific module
-cat build/graph.json | jq '.files | to_entries[] | select(.value.imports[]? | contains("entities/Files")) | .key'
-
-# List all Lambda entry points
-cat build/graph.json | jq '.files | keys[] | select(contains("src/lambdas") and contains("/src/index.ts"))'
-
-# Get import count for complexity analysis
-cat build/graph.json | jq '.files | to_entries | map({file: .key, importCount: (.value.imports | length)}) | sort_by(.importCount) | reverse[:10]'
+pnpm run precheck           # TypeScript + ESLint (run before commits)
+pnpm run validate:conventions  # AST-based convention checks
+pnpm run test               # Unit tests
 ```
 
-### Keeping MCP & GraphRAG in Sync
+### Key Files
 
-The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources for accuracy:
+- **Conventions**: `docs/wiki/Meta/Conventions-Tracking.md`
+- **Dependencies**: `build/graph.json` (use for test mocking)
+- **Testing**: `test/helpers/entity-fixtures.ts`, `test/helpers/aws-sdk-mock.ts`
 
-| Data Source | Purpose | Auto-Updated |
-|-------------|---------|--------------|
-| `src/lambdas/` | Lambda discovery | ✓ Filesystem scan |
-| `src/entities/` | Entity discovery | ✓ Filesystem scan |
-| `build/graph.json` | Dependencies | ✓ Generated before build |
-| `graphrag/metadata.json` | Semantic info | ✗ Manual updates required |
-
-**When adding/removing Lambdas or Entities:**
-1. The MCP handlers and GraphRAG auto-discover from filesystem
-2. Update `graphrag/metadata.json` with trigger types and purposes
-3. Run `pnpm run graphrag:extract` to regenerate the knowledge graph
-4. CI will fail if `knowledge-graph.json` is out of date
-
-**When changing Lambda invocation chains:**
-1. Update `graphrag/metadata.json` `lambdaInvocations` array
-2. Run `pnpm run graphrag:extract`
-
-### Lambda Trigger Patterns
-
-| Lambda | Trigger Type | Source | Purpose |
-|--------|-------------|--------|---------|
-| ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
-| CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
-| CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| DeviceEvent | API Gateway | POST /events | Log client-side device events |
-| ListFiles | API Gateway | GET /files | List user's available files |
-| LoginUser | API Gateway | POST /auth/login | Authenticate user |
-| MigrateDSQL | Manual | CLI invocation | Run Drizzle migrations on Aurora DSQL |
-| PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
-| RefreshToken | API Gateway | POST /auth/refresh | Refresh authentication token |
-| RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
-| RegisterUser | API Gateway | POST /auth/register | Register new user |
-| S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
-| SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
-| StartFileUpload | SQS | DownloadQueue (via EventBridge) | Download video from YouTube to S3 |
-| UserDelete | API Gateway | DELETE /users | Delete user and cascade |
-| UserSubscribe | API Gateway | POST /subscriptions | Manage user topic subscriptions |
-| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles, publish events |
-
-### Data Access Patterns
-
-| Pattern | Entity | Access Method | Index Used |
-|---------|--------|--------------|------------|
-| User's files | UserFiles → Files | Query by userId | GSI1 |
-| User's devices | UserDevices → Devices | Query by userId | GSI1 |
-| File's users | UserFiles | Query by fileId | GSI2 |
-| Device lookup | Devices | Get by deviceId | Primary |
-| User resources | Collections.userResources | Batch query | GSI1 |
-
-## Critical Project-Specific Rules
-
-1. **Use build/graph.json for dependency analysis**:
-   - Auto-generated before every build
-   - Shows file-level imports and transitive dependencies
-   - **CRITICAL for Vitest tests**: Use `transitiveDependencies` to find all mocks needed
-   - Example: `cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'`
-2. **pnpm lifecycle script protection** (security hardening):
-   - All lifecycle scripts disabled by default in `.npmrc`
-   - Protects against AI-targeted typosquatting and supply chain attacks
-   - Scripts blocked during installation - must explicitly allowlist packages
-   - If package requires install scripts, audit code first then add to `.npmrc`
-3. **Feedly webhook** uses query-based authentication (custom authorizer)
-4. **APNS certificates** required for iOS push notifications (p12 format)
-5. **YouTube downloads** require cookie authentication due to bot detection
-6. **LocalStack integration** for local AWS testing via vendor wrappers
-7. **Webpack externals** must be updated when adding AWS SDK packages
-
-## Drizzle ORM Architecture
-
-**CRITICAL**: This project uses Drizzle ORM with Aurora DSQL for type-safe, serverless database operations.
-
-### Key Drizzle Features
-- **Serverless Aurora DSQL**: PostgreSQL-compatible with automatic scaling, no VPC required
-- **IAM Authentication**: Secure connection using AWS IAM tokens (auto-refreshed)
-- **Type-safe queries**: Full TypeScript type inference for all operations
-- **Relational support**: Standard SQL JOINs, foreign keys (application-enforced)
-
-### Entity Relationships
-- **Users** ↔ **Files**: Many-to-many via UserFiles entity
-- **Users** ↔ **Devices**: Many-to-many via UserDevices entity
-- **Users** ↔ **Sessions**: One-to-many (Better Auth sessions)
-- **Users** ↔ **Accounts**: One-to-many (Better Auth OAuth accounts)
-- **Files** ↔ **FileDownloads**: One-to-many (download tracking)
-
-### Testing with Drizzle
-- **ALWAYS** mock `#entities/queries` with `vi.mock()` and `vi.fn()` for each query function
-- **PREFER** `test/helpers/entity-fixtures.ts` for creating mock entity data
-- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
-
-### Testing with AWS SDK
-- **PREFER** `test/helpers/aws-sdk-mock.ts` for AWS SDK v3 mocking (uses aws-sdk-client-mock)
-- Mock helpers integrate with vendor wrappers via test client injection
-- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md) for patterns
-
-## Wiki Conventions to Follow
-
-**BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
-
-### Core Conventions
-- **Git Workflow**: [docs/wiki/Conventions/Git-Workflow.md](docs/wiki/Conventions/Git-Workflow.md) - NO AI attribution in commits
-- **Naming**: [docs/wiki/Conventions/Naming-Conventions.md](docs/wiki/Conventions/Naming-Conventions.md) - camelCase, PascalCase rules
-- **Comments**: [docs/wiki/Conventions/Code-Comments.md](docs/wiki/Conventions/Code-Comments.md) - Git as source of truth
-
-### TypeScript & Testing
-- **Lambda Patterns**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- **Vitest Mocking**: [docs/wiki/Testing/Vitest-Mocking-Strategy.md](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
-- **Mock Types**: [docs/wiki/Testing/Mock-Type-Annotations.md](docs/wiki/Testing/Mock-Type-Annotations.md)
-- **Coverage Philosophy**: [docs/wiki/Testing/Coverage-Philosophy.md](docs/wiki/Testing/Coverage-Philosophy.md)
-- **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
-
-### AWS & Infrastructure
-- **Vendor Encapsulation**: [docs/wiki/Conventions/Vendor-Encapsulation-Policy.md](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
-- **Bash Scripts**: [docs/wiki/Bash/Script-Patterns.md](docs/wiki/Bash/Script-Patterns.md)
-- **OpenTofu/Terraform**: [docs/wiki/Infrastructure/OpenTofu-Patterns.md](docs/wiki/Infrastructure/OpenTofu-Patterns.md)
+---
 
 ## Anti-Patterns to Avoid
 
@@ -407,180 +77,259 @@ The following patterns have caused issues in this project and should be avoided:
 **Right**: `return response(200, data)`
 **Why**: Inconsistent formatting, missing headers, no type safety
 
-## Type Naming Patterns
+---
 
-| Pattern | Usage | Examples |
-|---------|-------|----------|
-| Simple nouns | Domain entities | `User`, `File`, `Device`, `Session` |
-| `*Row` | Drizzle database rows | `UserRow`, `FileRow`, `DeviceRow` |
-| `*Item` | Entity row types with joins | `UserItem`, `FileItem`, `DeviceItem` |
-| `*Input` | Request payloads & mutations | `UserLoginInput`, `CreateFileInput` |
-| `*Response` | API response wrappers | `FileResponse`, `LoginResponse` |
-| `*Error` | Error classes | `AuthorizationError`, `ValidationError` |
+## Critical Project-Specific Rules
 
-### File Organization (`src/types/`)
+1. **Use build/graph.json for dependency analysis**:
+   - Auto-generated before every build
+   - Shows file-level imports and transitive dependencies
+   - **CRITICAL for Vitest tests**: Use `transitiveDependencies` to find all mocks needed
+   - Example: `cat build/graph.json | jq '.transitiveDependencies["src/lambdas/WebhookFeedly/src/index.ts"]'`
+2. **pnpm lifecycle script protection** (security hardening):
+   - All lifecycle scripts disabled by default in `.npmrc`
+   - Protects against AI-targeted typosquatting and supply chain attacks
+   - Scripts blocked during installation - must explicitly allowlist packages
+3. **Feedly webhook** uses query-based authentication (custom authorizer)
+4. **APNS certificates** required for iOS push notifications (p12 format)
+5. **YouTube downloads** require cookie authentication due to bot detection
+6. **LocalStack integration** for local AWS testing via vendor wrappers
 
-| File | Contents |
-|------|----------|
-| `domain-models.d.ts` | User, File, Device, IdentityProvider |
-| `request-types.d.ts` | *Input types for API requests |
-| `notification-types.d.ts` | Push notification payloads |
-| `persistence-types.d.ts` | Relationship types (UserDevice, UserFile) |
-| `infrastructure-types.d.ts` | AWS/API Gateway types |
-| `enums.ts` | FileStatus, UserStatus, ResponseStatus |
+---
 
-### Enum Values (PascalCase)
+## Convention Capture System
 
-```typescript
-// FileStatus values (aligned with iOS)
-Queued | Downloading | Downloaded | Failed
+**CRITICAL**: This project captures emergent conventions during development. Read `docs/wiki/Meta/Conventions-Tracking.md` at session start.
+
+### Detection Signals
+- **CRITICAL**: "NEVER", "FORBIDDEN", "Zero-tolerance"
+- **HIGH**: "MUST", "REQUIRED", "ALWAYS"
+- **MEDIUM**: "Prefer X over Y", repeated decisions
+
+### When Convention Detected
+1. Update `docs/wiki/Meta/Conventions-Tracking.md` with the new convention
+2. Document in appropriate wiki page under `docs/wiki/`
+3. Mark as documented in tracking file
+
+**Philosophy**: Current state documented in wiki. History lives in git/PRs. No duplicate documentation.
+
+---
+
+## Project Overview
+
+### Architecture
+- **Infrastructure**: OpenTofu (IaC)
+- **Runtime**: AWS Lambda (Node.js 22.x)
+- **Language**: TypeScript
+- **Storage**: Amazon S3
+- **API**: AWS API Gateway with custom authorizer
+- **Notifications**: Apple Push Notification Service (APNS)
+- **Database**: Aurora DSQL with Drizzle ORM
+- **Monitoring**: CloudWatch, X-Ray (optional)
+
+### Project Structure
 ```
+.
+├── terraform/             # AWS Infrastructure (OpenTofu)
+├── src/
+│   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
+│   │   └── queries/       # Native Drizzle query modules
+│   │       ├── user-queries.ts       # User operations
+│   │       ├── file-queries.ts       # File and FileDownload operations
+│   │       ├── device-queries.ts     # Device operations
+│   │       ├── session-queries.ts    # Session, Account, VerificationToken
+│   │       └── relationship-queries.ts # UserFiles, UserDevices
+│   ├── lambdas/           # Lambda functions (17 total)
+│   ├── lib/vendor/        # 3rd party wrappers (src/lib/vendor/AWS/, Drizzle/)
+│   └── mcp/               # MCP server & validation rules
+├── test/helpers/          # Test utilities (fixtures, mocks)
+├── types/                 # TypeScript definitions
+├── docs/wiki/             # All documentation
+└── build/graph.json       # Dependency graph (READ THIS)
+```
+
+---
+
+## System Architecture
+
+### Service Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        API Gateway                          │
+│                    (Custom Authorizer)                      │
+└────────────┬────────────────────────────────────┬───────────┘
+             │                                    │
+             ▼                                    ▼
+┌─────────────────────┐              ┌─────────────────────┐
+│   Lambda Functions  │              │   External Services │
+├─────────────────────┤              ├─────────────────────┤
+│ • ListFiles         │              │ • Feedly API        │
+│ • LoginUser         │              │ • YouTube (yt-dlp)  │
+│ • RegisterDevice    │              │ • APNS              │
+│ • StartFileUpload   │              │ • Sign In w/ Apple  │
+│ • WebhookFeedly     │              │ • GitHub API        │
+└──────────┬──────────┘              └─────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     AWS Services Layer                      │
+├─────────────────────┬───────────────┬──────────────────────┤
+│   Aurora DSQL       │      S3       │    CloudWatch        │
+│   (Drizzle ORM)     │  (Media Files)│   (Logs/Metrics)     │
+└─────────────────────┴───────────────┴──────────────────────┘
+```
+
+**Full diagrams**: [docs/wiki/Architecture/System-Diagrams.md](docs/wiki/Architecture/System-Diagrams.md) (Mermaid flowcharts, ER diagrams)
+
+### Lambda Trigger Patterns
+
+| Lambda | Trigger Type | Purpose |
+|--------|-------------|---------|
+| ApiGatewayAuthorizer | API Gateway | Authorize API requests via Better Auth |
+| CleanupExpiredRecords | CloudWatch Events | Clean expired records |
+| CloudfrontMiddleware | CloudFront | Edge processing for CDN |
+| DeviceEvent | API Gateway | Log client-side device events |
+| ListFiles | API Gateway | List user's available files |
+| LoginUser | API Gateway | Authenticate user |
+| MigrateDSQL | Manual | Run Drizzle migrations on Aurora DSQL |
+| PruneDevices | CloudWatch Events | Clean inactive devices |
+| RefreshToken | API Gateway | Refresh authentication token |
+| RegisterDevice | API Gateway | Register iOS device for push |
+| RegisterUser | API Gateway | Register new user |
+| S3ObjectCreated | S3 Event | Handle uploaded files, notify users |
+| SendPushNotification | SQS | Send APNS notifications |
+| StartFileUpload | SQS | Download video from YouTube to S3 |
+| UserDelete | API Gateway | Delete user and cascade |
+| UserSubscribe | API Gateway | Manage user topic subscriptions |
+| WebhookFeedly | API Gateway | Process Feedly articles, publish events |
+
+### Data Access Patterns
+
+| Pattern | Entity | Access Method |
+|---------|--------|--------------|
+| User's files | UserFiles -> Files | Query by userId |
+| User's devices | UserDevices -> Devices | Query by userId |
+| File's users | UserFiles | Query by fileId |
+
+---
+
+## Drizzle ORM Architecture
+
+**CRITICAL**: This project uses Drizzle ORM with Aurora DSQL for type-safe, serverless database operations.
+
+### Key Features
+- **Serverless Aurora DSQL**: PostgreSQL-compatible with automatic scaling, no VPC required
+- **IAM Authentication**: Secure connection using AWS IAM tokens (auto-refreshed)
+- **Type-safe queries**: Full TypeScript type inference for all operations
+
+### Entity Relationships
+- **Users** <-> **Files**: Many-to-many via UserFiles
+- **Users** <-> **Devices**: Many-to-many via UserDevices
+- **Users** <-> **Sessions**: One-to-many (Better Auth)
+- **Files** <-> **FileDownloads**: One-to-many (tracking)
+
+### Testing
+- **ALWAYS** mock `#entities/queries` with `vi.mock()` and `vi.fn()`
+- **PREFER** `test/helpers/entity-fixtures.ts` for mock data
+- **PREFER** `test/helpers/aws-sdk-mock.ts` for AWS SDK mocking
+- See [Vitest Mocking Strategy](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
+
+---
+
+## Wiki Conventions
+
+**BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
+
+### Core Conventions
+- **Git Workflow**: [docs/wiki/Conventions/Git-Workflow.md](docs/wiki/Conventions/Git-Workflow.md) - NO AI attribution
+- **Vendor Encapsulation**: [docs/wiki/Conventions/Vendor-Encapsulation-Policy.md](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
+- **Naming**: [docs/wiki/Conventions/Naming-Conventions.md](docs/wiki/Conventions/Naming-Conventions.md)
+
+### TypeScript & Testing
+- **Lambda Patterns**: [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
+- **Vitest Mocking**: [docs/wiki/Testing/Vitest-Mocking-Strategy.md](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
+- **Integration Testing**: [docs/wiki/Integration/LocalStack-Testing.md](docs/wiki/Integration/LocalStack-Testing.md)
+
+---
 
 ## Development Workflow
 
 ### Essential Commands
 ```bash
 # Build & Check
-pnpm run precheck       # TypeScript type checking and lint (run before commits)
-pnpm run build          # Build Lambda functions with esbuild
-pnpm run format         # Auto-format with dprint (157 char lines)
+pnpm run precheck       # TypeScript + ESLint (run before commits)
+pnpm run build          # Build Lambda functions
+pnpm run format         # Auto-format with dprint
 
 # Testing
-pnpm run test           # Run unit tests
-
-# Local CI (run before pushing)
-pnpm run ci:local       # Fast CI checks (~2-3 min, no integration)
-pnpm run ci:local:full  # Full CI checks (~5-10 min, with integration)
-
-# Comprehensive cleanup (build, format, lint, validate, test, generate docs)
-pnpm run cleanup        # Full cleanup with integration tests
-pnpm run cleanup:fast   # Skip integration tests (faster)
-pnpm run cleanup:check  # Dry-run: check only, no fixes/generation
-
-# Integration testing
-pnpm run localstack:start        # Start LocalStack
-pnpm run test:integration        # Run integration tests (assumes LocalStack running)
-
-# Remote testing
-pnpm run test-remote-list        # Test file listing
-pnpm run test-remote-hook        # Test Feedly webhook
-pnpm run test-remote-registerDevice  # Test device registration
-
-# Documentation
-pnpm run document-source         # Generate TSDoc documentation
+pnpm run test           # Unit tests
+pnpm run ci:local       # Fast CI checks (~2-3 min)
 
 # AI Context
-pnpm run pack:context    # Pack codebase into repomix-output.xml for context
-pnpm run pack:light      # Pack only interfaces and docs
-pnpm run index:codebase  # Re-index codebase for semantic search (LanceDB)
-pnpm run search:codebase "query" # Search codebase using natural language
-pnpm run validate:conventions # Run AST-based convention checks
-
-# Deployment
-pnpm run deploy          # Deploy infrastructure with OpenTofu
+pnpm run pack:context   # Pack codebase for AI sessions
+pnpm run index:codebase # Re-index semantic search
+pnpm run validate:conventions # Check convention compliance
 ```
-
-## AI Context Optimization
-This repository is optimized for AI agents using:
-- **Semantic Memory**: Local vector database (LanceDB) for natural language code search. Run `pnpm run index:codebase` to update.
-- **Repomix**: Packed codebase context in `repomix-output.xml`. Run `pnpm run pack:context` to update.
-- **Convention Validation**: CI/CD enforcement of rules in `AGENTS.md` via `pnpm run validate:conventions`.
-- **Gemini Instructions**: Custom instructions in `.gemini/instructions.md`.
-
-### LLM Context Files
-
-| File | Purpose | Git Status | Generation |
-|------|---------|------------|------------|
-| `docs/llms.txt` | Curated index for external AI crawlers (GPTBot, Perplexity) | Committed | Manual |
-| `docs/llms-full.txt` | Complete docs for AI agents needing full context | Gitignored | `pnpm run generate:llms` |
-| `repomix-output.xml` | Full codebase context for local Claude Code sessions | Gitignored | `pnpm run pack:context` |
-
-### Claude Code Context Loading
-Claude Code automatically reads `CLAUDE.md` and `AGENTS.md` at session start. For additional codebase context beyond these files, generate and reference the packed context:
-```bash
-pnpm run pack:context  # Generates repomix-output.xml
-```
-Then drag `repomix-output.xml` into the Claude Code conversation or copy relevant sections as needed.
 
 ### Pre-Commit Checklist
-1. Run `pnpm run validate:conventions` - Ensure no rule violations
-2. Run `pnpm run precheck` - TypeScript type checking and lint
-3. Run `pnpm run format` - Auto-format code
-4. Run `pnpm run pack:context` - Update context for other agents
-5. Run `pnpm test` - Ensure all tests pass
-6. Verify NO AI references in commit message
-7. Stage changes: `git add -A`
-8. Commit with clean message: `git commit -m "type: description"`
-9. **NEVER push automatically** - Wait for user request
+1. `pnpm run validate:conventions` - Ensure no rule violations
+2. `pnpm run precheck` - TypeScript + ESLint
+3. `pnpm run format` - Auto-format
+4. `pnpm run test` - All tests pass
+5. **NO AI references** in commit message
+6. Commit with clean message: `git commit -m "type: description"`
 
+---
 
-## Integration Points
+## Type Naming Patterns
 
-### External Services
-- **Feedly**: Webhook-based article processing (query auth)
-- **YouTube**: yt-dlp for video downloads (cookie auth required)
-- **APNS**: iOS push notifications (requires certificates)
-- **Sign In With Apple**: Authentication for iOS app
-- **GitHub API**: Automated issue creation for errors
+| Pattern | Usage | Examples |
+|---------|-------|----------|
+| Simple nouns | Domain entities | `User`, `File`, `Device` |
+| `*Row` | Drizzle database rows | `UserRow`, `FileRow` |
+| `*Item` | Entity with joins | `UserItem`, `FileItem` |
+| `*Input` | Request payloads | `UserLoginInput`, `CreateFileInput` |
+| `*Response` | API responses | `FileResponse`, `LoginResponse` |
+
+---
+
+## AI Context Optimization
+
+This repository is optimized for AI agents using:
+- **Semantic Memory**: LanceDB for natural language code search (`pnpm run index:codebase`)
+- **Repomix**: Packed codebase in `repomix-output.xml` (`pnpm run pack:context`)
+- **Convention Validation**: CI/CD enforcement via `pnpm run validate:conventions`
+- **Gemini Instructions**: `.gemini/instructions.md`
+
+### Context Files
+
+| File | Purpose | Generation |
+|------|---------|------------|
+| `docs/llms.txt` | External AI crawler index | Manual |
+| `repomix-output.xml` | Full codebase context | `pnpm run pack:context` |
+
+---
+
+## Quick Reference
+
+### Integration Points
+- **Feedly**: Webhook article processing (query auth)
+- **YouTube**: yt-dlp downloads (cookie auth)
+- **APNS**: iOS push notifications (p12 certs)
+- **Sign In With Apple**: iOS authentication
 
 ### AWS Services
-- **Lambda**: Event-driven compute (all business logic)
-- **S3**: Media storage with transfer acceleration
-- **Aurora DSQL**: Serverless PostgreSQL-compatible database via Drizzle ORM for all entities
-- **API Gateway**: REST endpoints with custom authorizer
-- **SNS**: Push notification delivery
-- **CloudWatch**: Logging and metrics
-- **X-Ray**: Distributed tracing (optional)
+- **Lambda**: All business logic
+- **S3**: Media storage (transfer acceleration)
+- **Aurora DSQL**: Drizzle ORM database
+- **API Gateway**: REST endpoints
+- **CloudWatch**: Logs and metrics
 
-## Common Development Tasks
-
-### Adding New Lambda Function
-1. Create `src/lambdas/[name]/` directory structure
-2. Implement handler in `src/index.ts` with TypeDoc
-3. Write tests in `test/index.test.ts` with fixtures
-4. Mock ALL transitive dependencies (see Wiki)
-5. Define Lambda resource in OpenTofu
-6. Verify esbuild discovers new Lambda entry point
-7. Configure appropriate IAM permissions
-8. Import utilities from `util/` directory
-
-### Debugging Production Issues
-1. Check CloudWatch logs for Lambda
-2. Review automated GitHub issues
-3. Use AWS X-Ray for tracing (if enabled)
-4. Test with production-like data locally
-5. Use `test-remote-*` scripts for validation
-
-### Updating API Endpoints
-1. Modify API Gateway configuration in OpenTofu
-2. Update Lambda handler code
-3. Adjust custom authorizer if needed
-4. Test with `test-remote-*` scripts
-5. Update iOS app if contract changes
-
-## Security & Secrets
-
-- **SOPS**: All secrets managed via SOPS (`secrets.encrypted.yaml`)
-- **Environment Variables**: Production secrets via Lambda environment
-- **APNS Certificates**: P12 format, separate sandbox/production
-- **API Tokens**: Query-based for Feedly compatibility
-- **Never commit**: secrets.yaml, certificates, .env files
-
-## Performance Considerations
-
-- Lambda memory allocation: Optimize for cold starts
-- S3 transfer acceleration: For large media files
-- API Gateway caching: Reduce Lambda invocations
-- DynamoDB indexes: Query optimization
-- Webpack externals: Reduce bundle size
-
-## Support Resources
-
-- **CI/CD**: GitHub Actions with test pipeline
-- **Local Testing**: LocalStack for AWS service emulation
-- **Documentation**: TSDoc + terraform-docs
-- **Error Tracking**: Automated GitHub issue creation
-- **Monitoring**: CloudWatch dashboards and alarms
+### Common Tasks
+- **Add Lambda**: See [docs/wiki/TypeScript/Lambda-Function-Patterns.md](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
+- **Debug Production**: CloudWatch logs, X-Ray tracing
+- **Update API**: OpenTofu config + Lambda handler
 
 ---
 
