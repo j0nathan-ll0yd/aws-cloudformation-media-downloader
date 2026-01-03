@@ -525,8 +525,6 @@ aws dynamodb describe-table --table-name MediaDownloader \
 ## References
 
 - [Better Auth Documentation](https://www.better-auth.com/docs)
-- [ElectroDB Documentation](https://electrodb.dev/)
 - [Apple Sign In Documentation](https://developer.apple.com/sign-in-with-apple/)
 - [iOS ID Token Migration](../iOS/Apple-Sign-In-ID-Token-Migration.md)
-- [ElectroDB Adapter Design](ElectroDB-Adapter-Design.md)
 - [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
