@@ -15,8 +15,9 @@ import * as path from 'path'
 import postgres from 'postgres'
 
 // Create more schemas than maxWorkers to handle edge cases where Vitest
-// assigns higher pool IDs (e.g., for the main thread or test shuffling)
-const MAX_WORKERS = 8
+// assigns higher pool IDs (e.g., for the main thread, test shuffling, or
+// internal coordination threads). Vitest may use pool IDs beyond maxWorkers.
+const MAX_WORKERS = 12
 
 /**
  * Get schema prefix for CI isolation.
