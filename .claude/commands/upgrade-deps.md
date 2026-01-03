@@ -220,10 +220,89 @@ for pkg in $UPGRADED_PACKAGES; do
 done
 ```
 
+---
+
+## Human Checkpoints
+
+1. **Review breaking change analysis** - Before applying any upgrades
+2. **Verify local CI passes** - After `pnpm run ci:local` completes
+3. **Monitor GitHub CI** - After push, watch for failures
+4. **Confirm merge** - Before squash-merging the PR
+5. **Verify Dependabot PRs closed** - After merge completes
+
+---
+
+## CI Failure Rollback
+
+If GitHub CI fails after push:
+
+### Step 1: Analyze Failure
+
+```bash
+# Check which job failed
+unset GITHUB_TOKEN && gh pr checks
+
+# Get failure details
+unset GITHUB_TOKEN && gh run view --log-failed
+```
+
+### Step 2: Fix in Worktree
+
+```bash
+# Return to worktree
+cd ~/wt/aws-cloudformation-media-downloader-upgrade
+
+# Make fixes
+# ... edit files ...
+
+# Commit fix
+git add -A
+git commit -m 'fix(deps): resolve CI failure from upgrade'
+
+# Push fix
+git push
+```
+
+### Step 3: If Fix Not Possible - Rollback
+
+```bash
+# Close the PR
+unset GITHUB_TOKEN && gh pr close --comment "Dependency upgrade caused unfixable CI failure. Rolling back."
+
+# Clean up worktree
+cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
+git worktree remove ~/wt/aws-cloudformation-media-downloader-upgrade --force
+
+# Delete remote branch
+git push origin --delete chore/upgrade-dependencies
+```
+
+### Step 4: Worktree Cleanup (Always)
+
+After successful merge OR rollback:
+
+```bash
+# Return to main repo
+cd /Users/jlloyd/Repositories/aws-cloudformation-media-downloader
+
+# Pull merged changes (if merged)
+git fetch origin && git pull origin master
+
+# Remove worktree
+git worktree remove ~/wt/aws-cloudformation-media-downloader-upgrade --force
+
+# Delete local branch
+git branch -D chore/upgrade-dependencies 2>/dev/null || true
+
+# Verify cleanup
+git worktree list
+```
+
+---
+
 ## Notes
 
 - **GitHub auth**: If you see 401 errors, the `GITHUB_TOKEN` env var may be invalid. Use `unset GITHUB_TOKEN` to fall back to keyring auth.
 - **AWS SDK alignment**: Per `docs/wiki/Methodologies/Dependabot-Resolution.md`, all AWS SDK packages must be updated together.
 - **Major version upgrades**: Check changelogs for Jest, Joi, glob, and other major bumps before proceeding.
 - **Pre-push hook**: The project runs `ci:local:full` on push, which includes integration tests with LocalStack.
-- **Human checkpoint**: Always review breaking change analysis before applying upgrades.

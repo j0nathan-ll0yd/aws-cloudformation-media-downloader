@@ -304,6 +304,98 @@ jobs:
 1. **Approve AGENTS.md changes** - affects all AI agents
 2. **Review generated documentation** - may need refinement
 3. **Verify wiki accuracy** - generated content needs human review
+4. **Confirm auto-fixes** - before applying automatic corrections
+
+---
+
+## Auto-Fix Capability
+
+For automatically correcting common documentation issues:
+
+### Fix Orphaned References
+
+```bash
+# Find and list orphaned references
+grep -roh 'src/[a-zA-Z0-9/_.-]*' docs/wiki/ | sort -u | while read ref; do
+  if [ ! -e "$ref" ]; then
+    echo "ORPHANED: $ref"
+  fi
+done
+```
+
+### Update Metadata Automatically
+
+```
+MCP Tool: query_lambda
+Query: list
+```
+
+Compare output with `graphrag/metadata.json` and add missing entries.
+
+### Regenerate Documentation
+
+```bash
+# TypeDoc for source documentation
+pnpm run document-source
+
+# Terraform documentation
+pnpm run document-terraform
+
+# API documentation from TypeSpec
+pnpm run document-api
+```
+
+### Validate with MCP Tools
+
+```
+MCP Tool: query_conventions
+Query: wiki
+Term: [search term]
+```
+
+Search wiki for specific topics to verify coverage.
+
+---
+
+## Structured Validation Workflow
+
+### Step 1: Detect Drift
+
+```
+MCP Tool: query_lambda
+Query: list
+```
+
+Cross-reference against metadata.json.
+
+### Step 2: Identify Gaps
+
+```
+MCP Tool: query_conventions
+Query: list
+Category: documentation
+```
+
+List all documentation conventions to check compliance.
+
+### Step 3: Generate Fixes
+
+For each undocumented component, generate wiki content following templates in Step 4 of the main workflow.
+
+### Step 4: Apply Fixes
+
+**CHECKPOINT**: Before applying:
+- [ ] Review generated content
+- [ ] Verify no sensitive information exposed
+- [ ] Check links are valid
+
+Apply changes and regenerate:
+```bash
+pnpm run graphrag:extract
+pnpm run generate:llms
+```
+
+---
 
 ## Notes
 
