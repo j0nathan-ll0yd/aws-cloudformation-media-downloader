@@ -406,6 +406,120 @@ pnpm run check-types
 
 1. **Name and trigger approval** - Before creating files
 2. **Review generated code** - Before committing
+3. **Terraform plan review** - Verify infrastructure changes before apply
+4. **Entity requirements** - Confirm if new entities are needed
+
+---
+
+## Entity Creation Template
+
+If the Lambda requires a new entity:
+
+### Step 1: Define Drizzle Schema
+
+Create `src/lib/vendor/Drizzle/schema/${entity-name}.ts`:
+
+```typescript
+import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+
+export const ${entityName} = pgTable('${table_name}', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Add fields based on requirements
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+```
+
+### Step 2: Create Query Module
+
+Create `src/entities/queries/${entity-name}-queries.ts`:
+
+```typescript
+import { eq } from 'drizzle-orm';
+import { getDb } from '#lib/vendor/Drizzle';
+import { ${entityName} } from '#lib/vendor/Drizzle/schema/${entity-name}';
+
+export const get${EntityName} = async (id: string) => {
+  const db = getDb();
+  return db.select().from(${entityName}).where(eq(${entityName}.id, id));
+};
+
+export const create${EntityName} = async (data: typeof ${entityName}.$inferInsert) => {
+  const db = getDb();
+  return db.insert(${entityName}).values(data).returning();
+};
+```
+
+### Step 3: Export from Index
+
+Update `src/entities/queries/index.ts`:
+
+```typescript
+export * from './${entity-name}-queries';
+```
+
+---
+
+## API Gateway Route Configuration
+
+For API Gateway triggered Lambdas:
+
+### Step 1: Add Route to API Gateway Module
+
+In `terraform/api-gateway.tf`, add:
+
+```hcl
+resource "aws_api_gateway_resource" "${name}" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
+  path_part   = "${path}"
+}
+
+resource "aws_api_gateway_method" "${name}" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.${name}.id
+  http_method   = "${HTTP_METHOD}"
+  authorization = "CUSTOM"
+  authorizer_id = aws_api_gateway_authorizer.main.id
+}
+
+resource "aws_api_gateway_integration" "${name}" {
+  rest_api_id             = aws_api_gateway_rest_api.main.id
+  resource_id             = aws_api_gateway_resource.${name}.id
+  http_method             = aws_api_gateway_method.${name}.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.${NAME}.invoke_arn
+}
+```
+
+### Step 2: Add Lambda Permission
+
+```hcl
+resource "aws_lambda_permission" "${name}_api" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.${NAME}.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+```
+
+### Step 3: Terraform Plan Review
+
+**CHECKPOINT**: Before applying infrastructure:
+
+```bash
+cd terraform && tofu plan
+```
+
+Review the plan output for:
+- [ ] Lambda function created correctly
+- [ ] IAM role has appropriate permissions
+- [ ] API Gateway route configured (if applicable)
+- [ ] No unintended resource changes
+
+---
 
 ## Notes
 

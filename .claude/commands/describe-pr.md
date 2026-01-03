@@ -55,21 +55,71 @@ Based on the changed files, categorize the PR:
 | `package.json`, `pnpm-lock.yaml` | Dependencies |
 | `src/types/**/*.ts` | Type definitions |
 
-### Step 5: Check Impact
+### Step 5: Extract Linked Issues
+
+Automatically detect linked issues from branch name and commits:
+
+```bash
+# Extract issue from branch name (e.g., feat/ENG-123-description)
+BRANCH=$(git branch --show-current)
+ISSUE_ID=$(echo "$BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+
+# Extract issues from commit messages
+git log $BASE_BRANCH..HEAD --format="%s %b" | grep -oE '(#[0-9]+|[A-Z]+-[0-9]+)' | sort -u
+```
+
+**Supported formats**:
+- GitHub: `#123`, `Closes #123`, `Fixes #123`
+- Linear: `ENG-123`, `TEAM-456`
+- Branch pattern: `feat/ENG-123-description`
+
+### Step 6: Validate Commit Messages
+
+Check commits follow conventional format:
+
+```bash
+# Validate commit message format
+git log $BASE_BRANCH..HEAD --format="%s" | while read msg; do
+  if ! echo "$msg" | grep -qE '^(feat|fix|docs|style|refactor|test|chore)(\([^)]+\))?: .+'; then
+    echo "WARNING: Non-conventional commit: $msg"
+  fi
+done
+```
+
+**Convention**: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, test, chore
+- No emojis
+- No AI attribution
+
+### Step 7: Check Impact
 
 Use MCP tools to understand impact:
 
-```bash
-# For each modified source file, check dependents
-# This helps identify what else might be affected
+```
+MCP Tool: lambda_impact
+File: [changed file]
+Query: all
 ```
 
-Query the MCP server:
-- Use `lambda_impact` for Lambda changes
-- Use `query_dependencies` for import chain analysis
-- Use `diff_semantic` for breaking change detection
+```
+MCP Tool: query_dependencies
+File: [changed file]
+Query: dependents
+```
 
-### Step 6: Generate Description
+```
+MCP Tool: diff_semantic
+Query: breaking
+BaseRef: origin/master
+HeadRef: HEAD
+```
+
+These tools provide:
+- Affected Lambdas
+- Import chain analysis
+- Breaking change detection
+
+### Step 8: Generate Description
 
 Create a PR description following this template:
 
@@ -107,13 +157,21 @@ Create a PR description following this template:
 - Related to #[related-pr] (if applicable)
 ```
 
-### Step 7: Output
+### Step 9: Output
 
-Present the generated description for review. The human should:
-1. Review and adjust the summary
-2. Verify impact analysis is accurate
-3. Add any missing context
-4. Copy to GitHub PR
+Present the generated description for review.
+
+---
+
+## Human Checkpoints
+
+1. **Review summary accuracy** - Ensure bullet points capture the essence of changes
+2. **Verify impact analysis** - Confirm affected Lambdas and breaking change detection is accurate
+3. **Validate linked issues** - Verify auto-detected issues are correct
+4. **Check commit messages** - Address any non-conventional commit warnings
+5. **Add missing context** - Include any context the automation missed
+
+---
 
 ## Usage Notes
 

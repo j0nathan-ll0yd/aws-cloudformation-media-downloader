@@ -208,9 +208,108 @@ The validation report should be formatted as:
 
 ## Human Checkpoints
 
-1. **CRITICAL violations**: Must be fixed before proceeding
-2. **HIGH violations**: Review each fix before applying
-3. **MEDIUM violations**: Can be auto-fixed or deferred
+1. **CRITICAL violations**: Must be fixed before proceeding - blocks commit
+2. **HIGH violations**: Review each suggested fix before applying
+3. **Preview all auto-fixes**: Always review dryRun output before applying
+4. **MEDIUM violations**: Can be auto-fixed or deferred to later
+
+---
+
+## Batch Fix Capability
+
+For fixing multiple violations at once:
+
+### Step 1: Identify Fixable Violations
+
+```
+MCP Tool: validate_pattern
+Query: summary
+```
+
+This groups violations by fixability:
+- **Auto-fixable**: Can be applied automatically
+- **Manual-fix**: Requires developer intervention
+- **Deferred**: Low priority, can wait
+
+### Step 2: Preview Batch Fixes
+
+```
+MCP Tool: apply_convention
+Convention: all
+File: [file with violations]
+DryRun: true
+```
+
+Review the proposed changes for each file.
+
+### Step 3: Generate Migration Script
+
+For large-scale fixes across multiple files:
+
+```
+MCP Tool: generate_migration
+Query: plan
+Convention: all
+Scope: ["src/lambdas/**/*.ts"]
+```
+
+This creates a migration plan showing all files and fixes.
+
+### Step 4: Execute Batch Fix (With Confirmation)
+
+**CHECKPOINT**: Before applying, confirm:
+- [ ] Preview reviewed and approved
+- [ ] Tests will be updated if needed
+- [ ] Backup exists (git commit)
+
+```
+MCP Tool: generate_migration
+Query: script
+Convention: all
+Execute: true
+```
+
+### Step 5: Re-validate
+
+```
+MCP Tool: validate_pattern
+Query: all
+```
+
+Confirm all violations are resolved.
+
+---
+
+## Fix by Convention Type
+
+### AWS SDK Violations
+
+```
+MCP Tool: apply_convention
+Convention: aws-sdk-wrapper
+File: [file]
+DryRun: false
+```
+
+### Response Helper Violations
+
+```
+MCP Tool: apply_convention
+Convention: response-helper
+File: [file]
+DryRun: false
+```
+
+### Environment Validation
+
+```
+MCP Tool: apply_convention
+Convention: env-validation
+File: [file]
+DryRun: false
+```
+
+---
 
 ## Notes
 
@@ -218,3 +317,4 @@ The validation report should be formatted as:
 - Re-validate after applying fixes
 - Some violations may require manual refactoring
 - Update test files if fixes change function signatures
+- Commit between fix batches for easier rollback

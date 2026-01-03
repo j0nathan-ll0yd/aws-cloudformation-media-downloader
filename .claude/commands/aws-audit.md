@@ -210,6 +210,120 @@ jobs:
       - run: ./bin/aws-audit.sh
 ```
 
+## MCP Tool Integration
+
+Use MCP tools for enhanced audit capabilities:
+
+### Query Infrastructure State
+
+```
+MCP Tool: query_infrastructure
+Resource: all
+Query: config
+```
+
+Returns configured AWS services with their dependencies.
+
+### Validate Lambda Configurations
+
+```
+MCP Tool: query_lambda
+Query: list
+```
+
+Cross-reference with live AWS Lambda list to identify discrepancies.
+
+### Check Infrastructure Dependencies
+
+```
+MCP Tool: query_infrastructure
+Resource: all
+Query: dependencies
+```
+
+Understand service relationships before deleting orphaned resources.
+
+---
+
+## Human Checkpoints
+
+1. **Review orphaned resources** - Before any deletion, present list for approval
+2. **Confirm import vs delete decision** - For each orphaned resource
+3. **Verify remediation** - After changes, confirm `tofu plan` shows no drift
+4. **Approve prune operations** - Never auto-delete without explicit confirmation
+
+---
+
+## Structured Output Format
+
+```markdown
+## AWS Audit Report
+
+### Summary
+- **Terraform Resources**: [count]
+- **AWS Resources**: [count]
+- **Orphaned**: [count]
+- **Duplicates**: [count]
+- **Drift Detected**: [Yes/No]
+
+### Orphaned Resources (CRITICAL)
+| Resource Type | Resource Name | Action Recommended |
+|---------------|---------------|-------------------|
+| Lambda | OldFunction-1 | DELETE |
+| IAM Role | LegacyRole | IMPORT |
+
+### Duplicates (HIGH)
+| Original | Duplicates | Action |
+|----------|------------|--------|
+| ListFiles | ListFiles-1, ListFiles-2 | DELETE duplicates |
+
+### Drift (MEDIUM)
+| Resource | Expected | Actual | Resolution |
+|----------|----------|--------|------------|
+| Lambda memory | 256 MB | 512 MB | Apply config |
+
+### Recommended Actions
+1. [ ] Delete orphaned resources: [list]
+2. [ ] Import resources to state: [list]
+3. [ ] Run `tofu apply` to fix drift
+```
+
+---
+
+## Rollback & Recovery
+
+### If Import Fails
+
+```bash
+# Restore state backup
+cp terraform/terraform.tfstate.backup terraform/terraform.tfstate
+
+# Re-sync state
+cd terraform && tofu refresh
+```
+
+### If Accidental Deletion
+
+1. Check AWS CloudTrail for resource ARN
+2. Recreate resource via Terraform (add to config, apply)
+3. Or restore from AWS backup if available
+
+### State Recovery
+
+```bash
+# If state is corrupted
+cd terraform
+tofu state pull > /tmp/state-backup.json
+
+# Remove corrupted resource
+tofu state rm aws_lambda_function.CorruptedResource
+
+# Re-import if needed
+tofu import aws_lambda_function.ResourceName actual-function-name
+```
+
+---
+
 ## Notes
 
 - Primary region: `us-west-2`
