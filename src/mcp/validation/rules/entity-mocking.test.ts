@@ -1,9 +1,10 @@
 /**
  * Unit tests for entity-mocking rule
- * MEDIUM: Detect legacy entity mocking patterns (deprecated)
+ * CRITICAL: Detect legacy entity mocking patterns (deprecated)
  *
  * With native Drizzle query functions, tests should mock #entities/queries directly
  * using vi.fn() for each function. Legacy ElectroDB-style entity mocks are deprecated.
+ * This is CRITICAL because incorrect mocking causes test failures when entity layer changes.
  */
 
 import {beforeAll, describe, expect, test} from 'vitest'
@@ -26,8 +27,8 @@ describe('entity-mocking rule', () => {
       expect(entityMockingRule.name).toBe('entity-mocking')
     })
 
-    test('should have MEDIUM severity', () => {
-      expect(entityMockingRule.severity).toBe('MEDIUM')
+    test('should have CRITICAL severity', () => {
+      expect(entityMockingRule.severity).toBe('CRITICAL')
     })
 
     test('should apply to test files', () => {
@@ -78,7 +79,7 @@ vi.mock('#entities/Users', () => ({
       const violations = entityMockingRule.validate(sourceFile, 'src/lambdas/Test/test/index.test.ts')
 
       expect(violations).toHaveLength(1)
-      expect(violations[0].severity).toBe('MEDIUM')
+      expect(violations[0].severity).toBe('CRITICAL')
       expect(violations[0].message).toContain('#entities/Users')
       expect(violations[0].message).toContain('#entities/queries')
     })

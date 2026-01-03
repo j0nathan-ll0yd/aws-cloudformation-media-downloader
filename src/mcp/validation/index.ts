@@ -31,8 +31,9 @@ import {authenticatedHandlerEnforcementRule} from './rules/authenticated-handler
 import {commentConventionsRule} from './rules/comment-conventions'
 import {docsStructureRule} from './rules/docs-structure'
 import {powertoolsMetricsRule} from './rules/powertools-metrics'
+import {migrationsSafetyRule} from './rules/migrations-safety'
 
-// Export all rules (19 total: 6 CRITICAL + 9 HIGH + 4 MEDIUM)
+// Export all rules (20 total: 7 CRITICAL + 9 HIGH + 4 MEDIUM)
 export const allRules: ValidationRule[] = [
   // CRITICAL
   awsSdkEncapsulationRule,
@@ -41,6 +42,7 @@ export const allRules: ValidationRule[] = [
   configEnforcementRule,
   envValidationRule,
   cascadeSafetyRule,
+  migrationsSafetyRule,
   // HIGH
   responseHelpersRule,
   typesLocationRule,
@@ -80,6 +82,8 @@ export const rulesByName: Record<string, ValidationRule> = {
   env: envValidationRule, // alias
   'cascade-safety': cascadeSafetyRule,
   cascade: cascadeSafetyRule, // alias
+  'migrations-safety': migrationsSafetyRule,
+  migrations: migrationsSafetyRule, // alias
   // HIGH rules
   'response-helpers': responseHelpersRule,
   response: responseHelpersRule, // alias
@@ -129,6 +133,7 @@ export {
   entityMockingRule,
   envValidationRule,
   importOrderRule,
+  migrationsSafetyRule,
   mockFormattingRule,
   namingConventionsRule,
   powertoolsMetricsRule,

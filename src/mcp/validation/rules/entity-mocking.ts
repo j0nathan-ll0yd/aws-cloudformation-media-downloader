@@ -1,11 +1,13 @@
 /**
  * Entity Mocking Rule
- * MEDIUM: Test files should mock entity query functions consistently
+ * CRITICAL: Test files should mock entity query functions consistently
  *
  * With native Drizzle query functions, tests mock `#entities/queries` directly
  * using standard vi.mock() patterns with vi.fn() for each function.
  *
  * This rule validates that entity query mocks are properly structured.
+ * Using legacy ElectroDB-style mocks will cause test failures when the
+ * entity layer changes. Correct mocking is critical for test reliability.
  */
 
 import type {SourceFile} from 'ts-morph'
@@ -14,7 +16,7 @@ import {createViolation} from '../types'
 import type {ValidationRule, Violation} from '../types'
 
 const RULE_NAME = 'entity-mocking'
-const SEVERITY = 'MEDIUM' as const
+const SEVERITY = 'CRITICAL' as const
 
 /**
  * Legacy entity names (no longer used directly, kept for backwards compatibility detection)

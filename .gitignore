@@ -41,6 +41,9 @@ test/fixtures/raw
 # Repomix context (generated on demand)
 repomix-output.xml
 
+# Convention dashboard (generated on demand)
+docs/convention-coverage-dashboard.md
+
 # LLM context (llms-full.txt generated on demand, llms.txt committed)
 docs/llms-full.txt
 local_cache/
