@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # pre-push hook: Block direct master pushes and run CI checks
 # This enforces the worktree workflow and ensures code quality
 #
