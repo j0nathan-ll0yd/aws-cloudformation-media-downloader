@@ -42,7 +42,7 @@ elif [ ! -f "$sops_config_path" ]; then
   echo "Warning: SOPS config file does not exist at $sops_config_path"
   echo "Please refer to the README for SOPS configuration instructions"
   echo "Skipping encryption step"
-elif grep -q "^sops:" "$secrets_file_path" 2>/dev/null; then
+elif grep -q "^sops:" "$secrets_file_path" 2> /dev/null; then
   # Source file is already encrypted (has sops metadata) - skip
   echo "Warning: secrets.yaml appears to already be encrypted - skipping"
   echo "If this is unintentional, decrypt it with: sops --decrypt secrets.yaml > secrets_plain.yaml"
