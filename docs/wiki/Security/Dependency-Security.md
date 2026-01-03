@@ -69,6 +69,11 @@ Only direct dependencies can use exotic sources.
 |---------|--------|--------------|
 | @lancedb/lancedb | Native bindings for vector DB | 2025-01-02 |
 | onnxruntime-node | ML inference runtime | 2025-01-02 |
+| esbuild | Bundler with native binary | 2025-01-02 |
+| dprint | Code formatter with native binary | 2025-01-02 |
+| core-js | Polyfills (telemetry postinstall) | 2025-01-02 |
+| protobufjs | Protocol buffers | 2025-01-02 |
+| msw | Mock Service Worker | 2025-01-02 |
 
 ## Updating the Allowlist
 

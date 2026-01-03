@@ -39,6 +39,17 @@ strictDepBuilds: true
 # -----------------------------------------------------------------------------
 # Explicitly allow packages that require lifecycle scripts
 # All other packages have scripts blocked by default
+# Audit each package before adding to this list
 allowBuilds:
+  # Native bindings
   "@lancedb/lancedb": true      # Native bindings for vector DB
   "onnxruntime-node": true      # ML inference runtime (native)
+
+  # Build tools (require native compilation)
+  "esbuild": true               # Bundler with native binary
+  "dprint": true                # Code formatter with native binary
+
+  # Runtime dependencies with postinstall
+  "core-js": true               # Polyfills (telemetry postinstall)
+  "protobufjs": true            # Protocol buffers (postinstall)
+  "msw": true                   # Mock Service Worker (postinstall)
