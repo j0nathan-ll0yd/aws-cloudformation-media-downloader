@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Extract production fixtures from CloudWatch logs - LOCAL VERSION
 # This script replaces the GitHub workflow for manual fixture extraction
 #
@@ -27,91 +27,98 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Change to project root
-cd "${PROJECT_ROOT}"
+# Error handler
+error() {
+  echo -e "${RED}✗${NC} Error: $1" >&2
+  exit "${2:-1}"
+}
 
-echo -e "${BLUE}=== Production Fixture Extraction ===${NC}"
-echo -e "Days to extract: ${YELLOW}${DAYS_BACK}${NC}"
-echo -e "Create PR: ${YELLOW}${CREATE_PR}${NC}"
-echo ""
+main() {
+  # Change to project root
+  cd "${PROJECT_ROOT}"
 
-# Step 1: Verify AWS credentials
-echo -e "${BLUE}[1/5] Verifying AWS credentials...${NC}"
-if ! aws sts get-caller-identity > /dev/null 2>&1; then
-  echo -e "${RED}Error: AWS credentials not configured${NC}"
-  echo "Please configure AWS CLI with production credentials:"
-  echo "  aws configure"
-  exit 1
-fi
+  echo -e "${BLUE}=== Production Fixture Extraction ===${NC}"
+  echo -e "Days to extract: ${YELLOW}${DAYS_BACK}${NC}"
+  echo -e "Create PR: ${YELLOW}${CREATE_PR}${NC}"
+  echo ""
 
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-echo -e "${GREEN}✅ Connected to AWS account: ${ACCOUNT_ID}${NC}"
+  # Step 1: Verify AWS credentials
+  echo -e "${BLUE}[1/5] Verifying AWS credentials...${NC}"
+  if ! aws sts get-caller-identity > /dev/null 2>&1; then
+    echo -e "${RED}Error: AWS credentials not configured${NC}"
+    echo "Please configure AWS CLI with production credentials:"
+    echo "  aws configure"
+    exit 1
+  fi
 
-# Step 2: Extract fixtures from CloudWatch
-echo -e "\n${BLUE}[2/5] Extracting fixtures from CloudWatch...${NC}"
-chmod +x "${SCRIPT_DIR}/extract-fixtures.sh"
-"${SCRIPT_DIR}/extract-fixtures.sh" "${DAYS_BACK}"
+  ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+  echo -e "${GREEN}✓${NC} Connected to AWS account: ${ACCOUNT_ID}"
 
-# Step 3: Process fixtures
-echo -e "\n${BLUE}[3/5] Processing fixtures...${NC}"
-chmod +x "${SCRIPT_DIR}/process-fixtures.js"
-node "${SCRIPT_DIR}/process-fixtures.js"
+  # Step 2: Extract fixtures from CloudWatch
+  echo -e "\n${BLUE}[2/5] Extracting fixtures from CloudWatch...${NC}"
+  chmod +x "${SCRIPT_DIR}/extract-fixtures.sh"
+  "${SCRIPT_DIR}/extract-fixtures.sh" "${DAYS_BACK}"
 
-# Step 4: Check for changes
-echo -e "\n${BLUE}[4/5] Checking for changes...${NC}"
-if git diff --quiet test/fixtures/api-contracts/; then
-  echo -e "${YELLOW}ℹ️  No fixture changes detected${NC}"
-  echo "No updates needed."
-  exit 0
-else
-  echo -e "${GREEN}✅ Fixture changes detected${NC}"
+  # Step 3: Process fixtures
+  echo -e "\n${BLUE}[3/5] Processing fixtures...${NC}"
+  chmod +x "${SCRIPT_DIR}/process-fixtures.js"
+  node "${SCRIPT_DIR}/process-fixtures.js"
 
-  # Show summary of changes
-  echo -e "\n${BLUE}Changed files:${NC}"
-  git diff --name-status test/fixtures/api-contracts/ | while read -r status file; do
-    case "$status" in
-      A) echo -e "  ${GREEN}+ ${file}${NC}" ;;
-      M) echo -e "  ${YELLOW}~ ${file}${NC}" ;;
-      D) echo -e "  ${RED}- ${file}${NC}" ;;
-      *) echo "  ${status} ${file}" ;;
-    esac
-  done || true
-fi
+  # Step 4: Check for changes
+  echo -e "\n${BLUE}[4/5] Checking for changes...${NC}"
+  if git diff --quiet test/fixtures/api-contracts/; then
+    echo -e "${BLUE}➜${NC} No fixture changes detected"
+    echo "No updates needed."
+    exit 0
+  else
+    echo -e "${GREEN}✓${NC} Fixture changes detected"
 
-# Step 5: Create PR or commit changes
-echo -e "\n${BLUE}[5/5] Finalizing changes...${NC}"
+    # Show summary of changes
+    echo -e "\n${BLUE}Changed files:${NC}"
+    git diff --name-status test/fixtures/api-contracts/ | while read -r status file; do
+      case "$status" in
+        A) echo -e "  ${GREEN}+ ${file}${NC}" ;;
+        M) echo -e "  ${YELLOW}~ ${file}${NC}" ;;
+        D) echo -e "  ${RED}- ${file}${NC}" ;;
+        *) echo "  ${status} ${file}" ;;
+      esac
+    done || true
+  fi
 
-if [[ "${CREATE_PR}" == "true" ]]; then
-  # Create a new branch and PR
-  BRANCH_NAME="fixtures/manual-$(date +%Y%m%d-%H%M%S)"
+  # Step 5: Create PR or commit changes
+  echo -e "\n${BLUE}[5/5] Finalizing changes...${NC}"
 
-  echo -e "Creating branch: ${YELLOW}${BRANCH_NAME}${NC}"
-  git checkout -b "${BRANCH_NAME}"
+  if [[ "${CREATE_PR}" == "true" ]]; then
+    # Create a new branch and PR
+    BRANCH_NAME="fixtures/manual-$(date +%Y%m%d-%H%M%S)"
 
-  # Stage changes
-  git add test/fixtures/api-contracts/
+    echo -e "Creating branch: ${YELLOW}${BRANCH_NAME}${NC}"
+    git checkout -b "${BRANCH_NAME}"
 
-  # Commit
-  COMMIT_MSG="chore: update fixtures from production CloudWatch logs
+    # Stage changes
+    git add test/fixtures/api-contracts/
+
+    # Commit
+    COMMIT_MSG="chore: update fixtures from production CloudWatch logs
 
 Extraction Details:
 - Date: $(date)
 - Days extracted: ${DAYS_BACK}
 - AWS Account: ${ACCOUNT_ID}"
 
-  git commit -m "${COMMIT_MSG}"
+    git commit -m "${COMMIT_MSG}"
 
-  # Push branch
-  echo -e "\n${BLUE}Pushing branch...${NC}"
-  git push -u origin "${BRANCH_NAME}"
+    # Push branch
+    echo -e "\n${BLUE}Pushing branch...${NC}"
+    git push -u origin "${BRANCH_NAME}"
 
-  # Create PR using GitHub CLI if available
-  if command -v gh &> /dev/null; then
-    echo -e "\n${BLUE}Creating pull request...${NC}"
+    # Create PR using GitHub CLI if available
+    if command -v gh &> /dev/null; then
+      echo -e "\n${BLUE}Creating pull request...${NC}"
 
-    PR_BODY="## Automated Fixture Update
+      PR_BODY="## Automated Fixture Update
 
 This PR contains fixtures extracted from production CloudWatch logs.
 
@@ -137,22 +144,25 @@ pnpm test
 pnpm run test:integration
 \`\`\`"
 
-    gh pr create \
-      --title "🔄 Manual Fixture Update from Production" \
-      --body "${PR_BODY}" \
-      --label "fixtures,testing" \
-      --draft
+      gh pr create \
+        --title "🔄 Manual Fixture Update from Production" \
+        --body "${PR_BODY}" \
+        --label "fixtures,testing" \
+        --draft
 
-    echo -e "${GREEN}✅ Pull request created${NC}"
+      echo -e "${GREEN}✓${NC} Pull request created"
+    else
+      echo -e "${YELLOW}GitHub CLI not installed. Please create PR manually:${NC}"
+      echo "  https://github.com/$(git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/pull/new/${BRANCH_NAME}"
+    fi
   else
-    echo -e "${YELLOW}GitHub CLI not installed. Please create PR manually:${NC}"
-    echo "  https://github.com/$(git remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/pull/new/${BRANCH_NAME}"
+    # Just show the diff
+    echo -e "${YELLOW}Changes ready to commit:${NC}"
+    echo "To stage changes: git add test/fixtures/api-contracts/"
+    echo "To create PR: $0 ${DAYS_BACK} true"
   fi
-else
-  # Just show the diff
-  echo -e "${YELLOW}Changes ready to commit:${NC}"
-  echo "To stage changes: git add test/fixtures/api-contracts/"
-  echo "To create PR: $0 ${DAYS_BACK} true"
-fi
 
-echo -e "\n${GREEN}✅ Fixture extraction complete!${NC}"
+  echo -e "\n${GREEN}✓${NC} Fixture extraction complete!"
+}
+
+main "$@"
