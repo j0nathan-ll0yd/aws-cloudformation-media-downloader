@@ -102,12 +102,27 @@ async function discoverLambdas(): Promise<string[]> {
 }
 
 /**
- * Discover Entity names from src/entities/ directory
+ * Discover Entity names dynamically from Drizzle schema
+ * Parses src/lib/vendor/Drizzle/schema.ts to find all pgTable definitions
  */
 async function discoverEntities(): Promise<string[]> {
-  const entitiesDir = path.join(projectRoot, 'src', 'entities')
-  const entries = await fs.readdir(entitiesDir)
-  return entries.filter((e) => e.endsWith('.ts') && !e.includes('.test.') && e !== 'Collections.ts').map((e) => e.replace('.ts', ''))
+  const schemaPath = path.join(projectRoot, 'src', 'lib', 'vendor', 'Drizzle', 'schema.ts')
+  const content = await fs.readFile(schemaPath, 'utf-8')
+
+  // Match pattern: export const tableName = pgTable('
+  const tableRegex = /export\s+const\s+(\w+)\s*=\s*pgTable\s*\(/g
+  const entities: string[] = []
+
+  let match
+  while ((match = tableRegex.exec(content)) !== null) {
+    const varName = match[1]
+    // Convert camelCase to PascalCase (e.g., userFiles -> UserFiles, verification -> Verification)
+    const entityName = varName.charAt(0).toUpperCase() + varName.slice(1)
+    entities.push(entityName)
+  }
+
+  // Map 'verification' table to 'VerificationTokens' for consistency with existing naming
+  return entities.map((e) => (e === 'Verification' ? 'VerificationTokens' : e))
 }
 
 /**
@@ -169,9 +184,10 @@ async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
  * This is maintained in sync with tsp/operations/operations.tsp.
  */
 async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> {
-  // Hardcoded endpoint definitions based on operations.tsp
+  // All endpoint definitions based on operations.tsp
   // These map directly to TypeSpec interface operations
   return [
+    // Files interface
     {
       name: 'listFiles',
       route: '/files',
@@ -180,6 +196,7 @@ async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> 
       responseModel: 'FileListResponse',
       description: 'List available files for authenticated user'
     },
+    // Devices interface
     {
       name: 'registerDevice',
       route: '/device/register',
@@ -190,6 +207,15 @@ async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> 
       description: 'Register device for push notifications'
     },
     {
+      name: 'logClientEvent',
+      route: '/device/event',
+      method: 'POST',
+      handler: 'DeviceEvent',
+      requestModel: 'ClientEventRequest',
+      description: 'Log client-side device events'
+    },
+    // Webhooks interface
+    {
       name: 'processFeedlyWebhook',
       route: '/feedly',
       method: 'POST',
@@ -198,6 +224,7 @@ async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> 
       responseModel: 'WebhookResponse',
       description: 'Process Feedly webhook'
     },
+    // Authentication interface
     {
       name: 'registerUser',
       route: '/user/register',
@@ -215,6 +242,30 @@ async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> 
       requestModel: 'UserLoginRequest',
       responseModel: 'UserLoginResponse',
       description: 'Login existing user'
+    },
+    {
+      name: 'refreshToken',
+      route: '/user/refresh',
+      method: 'POST',
+      handler: 'RefreshToken',
+      responseModel: 'TokenRefreshResponse',
+      description: 'Refresh authentication token'
+    },
+    {
+      name: 'deleteUser',
+      route: '/user',
+      method: 'DELETE',
+      handler: 'UserDelete',
+      description: 'Delete user account'
+    },
+    {
+      name: 'subscribeUser',
+      route: '/user/subscribe',
+      method: 'POST',
+      handler: 'UserSubscribe',
+      requestModel: 'UserSubscriptionRequest',
+      responseModel: 'UserSubscriptionResponse',
+      description: 'Subscribe user to topic'
     }
   ]
 }
@@ -262,14 +313,27 @@ function extractAwsServices(deps: string[], awsServices: ServiceMetadata[]): str
  */
 function extractExternalServices(deps: string[], externalServices: ServiceMetadata[]): string[] {
   const services: Set<string> = new Set()
+
+  // Map vendor directories to external service names
+  const vendorToService: Record<string, string> = {
+    BetterAuth: 'Sign In With Apple',
+    YouTube: 'YouTube'
+  }
+
   for (const dep of deps) {
     // Match src/lib/vendor/* patterns (non-AWS)
     const vendorMatch = dep.match(/src\/lib\/vendor\/(\w+)/)
-    if (vendorMatch && vendorMatch[1] !== 'AWS' && vendorMatch[1] !== 'ElectroDB') {
+    if (vendorMatch && vendorMatch[1] !== 'AWS' && vendorMatch[1] !== 'ElectroDB' && vendorMatch[1] !== 'Drizzle') {
       const vendorName = vendorMatch[1]
-      const service = externalServices.find((s) => s.name.toLowerCase() === vendorName.toLowerCase())
-      if (service) {
-        services.add(service.name)
+      // Check explicit mapping first
+      if (vendorToService[vendorName]) {
+        services.add(vendorToService[vendorName])
+      } else {
+        // Fall back to case-insensitive name matching
+        const service = externalServices.find((s) => s.name.toLowerCase() === vendorName.toLowerCase())
+        if (service) {
+          services.add(service.name)
+        }
       }
     }
 
@@ -282,17 +346,57 @@ function extractExternalServices(deps: string[], externalServices: ServiceMetada
         services.add(service.name)
       }
     }
+
+    // Detect APNS usage via SNS platform application patterns
+    if (dep.includes('SNS') && (dep.includes('Platform') || dep.includes('push') || dep.includes('Endpoint'))) {
+      services.add('APNS')
+    }
+
+    // Detect GitHub usage via issue creation
+    if (dep.includes('GitHub') || dep.includes('github')) {
+      services.add('GitHub')
+    }
   }
   return Array.from(services)
 }
 
 /**
  * Extract entities used by a Lambda from its transitive dependencies
+ * Detects both direct entity imports and queries/ module access
  */
 function extractEntities(deps: string[], knownEntities: string[]): string[] {
   const entities: Set<string> = new Set()
+
+  // Map query modules to entity names they access
+  const queryModuleToEntities: Record<string, string[]> = {
+    'user-queries': ['Users', 'IdentityProviders'],
+    'file-queries': ['Files', 'FileDownloads'],
+    'device-queries': ['Devices'],
+    'session-queries': ['Sessions', 'Accounts', 'VerificationTokens'],
+    'relationship-queries': ['UserFiles', 'UserDevices']
+  }
+
   for (const dep of deps) {
-    const entityMatch = dep.match(/src\/entities\/(\w+)/)
+    // Match src/entities/queries/* patterns (Drizzle ORM pattern)
+    const queryMatch = dep.match(/src\/entities\/queries\/(\w+-queries)/)
+    if (queryMatch) {
+      const queryModule = queryMatch[1]
+      const mappedEntities = queryModuleToEntities[queryModule] || []
+      mappedEntities.forEach((e) => entities.add(e))
+    }
+
+    // Match src/entities/queries barrel import (without specific file)
+    // This handles paths like "src/entities/queries" or "src/entities/queries/index"
+    if (dep === 'src/entities/queries' || dep.includes('src/entities/queries/index') || dep.includes('src/entities/queries.ts')) {
+      // Barrel import means access to all entities - add common ones
+      entities.add('Users')
+      entities.add('Files')
+      entities.add('Devices')
+      entities.add('Sessions')
+    }
+
+    // Legacy: Match src/entities/* patterns (direct entity imports)
+    const entityMatch = dep.match(/src\/entities\/(\w+)\.ts/)
     if (entityMatch) {
       const entityName = entityMatch[1]
       if (knownEntities.includes(entityName)) {
@@ -480,13 +584,26 @@ export async function extractKnowledgeGraph(): Promise<KnowledgeGraph> {
     // Add trigger service edge based on metadata
     const lambdaMeta = metadata.lambdas[lambdaName]
     if (lambdaMeta) {
-      const triggerService = metadata.awsServices.find((s) => s.name === lambdaMeta.trigger)
-      if (triggerService) {
-        edges.push({
-          source: `service:${triggerService.name}`,
-          target: `lambda:${lambdaName}`,
-          relationship: 'triggers'
-        })
+      // Map trigger names to AWS service names
+      const triggerToService: Record<string, string> = {
+        'API Gateway': 'API Gateway',
+        'S3 Event': 'S3',
+        'SQS': 'SQS',
+        'CloudWatch Events': 'CloudWatch',
+        CloudFront: 'CloudFront',
+        Manual: '' // Manual triggers don't have a service
+      }
+
+      const serviceName = triggerToService[lambdaMeta.trigger] || lambdaMeta.trigger
+      if (serviceName) {
+        const triggerService = metadata.awsServices.find((s) => s.name === serviceName)
+        if (triggerService) {
+          edges.push({
+            source: `service:${triggerService.name}`,
+            target: `lambda:${lambdaName}`,
+            relationship: 'triggers'
+          })
+        }
       }
     }
   }

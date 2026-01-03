@@ -26,10 +26,38 @@ interface DependencyGraph {
 }
 
 /**
+ * Path alias mappings from tsconfig.json
+ */
+const pathAliases: Record<string, string> = {
+  '#entities/': 'src/entities/',
+  '#lambdas/': 'src/lambdas/',
+  '#lib/': 'src/lib/',
+  '#util/': 'src/util/',
+  '#config/': 'src/config/',
+  '#types/': 'src/types/',
+  '#test/': 'test/'
+}
+
+/**
  * Resolves an import path to a relative project path
  */
 function resolveImportPath(sourceFile: SourceFile, importPath: string, projectRoot: string): string | null {
-  // Ignore node_modules imports
+  // Handle path aliases (e.g., #entities/queries)
+  for (const [alias, replacement] of Object.entries(pathAliases)) {
+    if (importPath.startsWith(alias)) {
+      const resolvedAlias = importPath.replace(alias, replacement)
+      // Try common extensions
+      const extensions = ['', '.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx']
+      for (const ext of extensions) {
+        const testPath = resolvedAlias + ext
+        if (testPath.startsWith('src/') || testPath.startsWith('test/') || testPath.startsWith('config/')) {
+          return testPath
+        }
+      }
+    }
+  }
+
+  // Ignore node_modules imports (non-relative, non-aliased)
   if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
     return null
   }
