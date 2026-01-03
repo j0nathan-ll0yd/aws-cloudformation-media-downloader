@@ -67,7 +67,7 @@ The MCP server is already installed as part of the project:
 ls -la src/mcp/server.ts
 
 # Test the server
-node --loader ts-node/esm src/mcp/server.ts
+node --import tsx src/mcp/server.ts
 ```
 
 ### 2. Configure Claude Desktop
@@ -80,8 +80,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     "media-downloader": {
       "command": "node",
       "args": [
-        "--loader",
-        "ts-node/esm",
+        "--import",
+        "tsx",
         "/Users/YOUR_USERNAME/path/to/aws-cloudformation-media-downloader-2/src/mcp/server.ts"
       ]
     }
@@ -163,7 +163,7 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | grep medi
 
 2. Test server directly:
 ```bash
-node --loader ts-node/esm src/mcp/server.ts
+node --import tsx src/mcp/server.ts
 # Should output: "MCP Server running on stdio"
 ```
 

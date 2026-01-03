@@ -37,9 +37,5 @@
     "test/**/*",
     "./src/types/terraform.d.ts",
     "src/mcp/test/fixtures/**/*"
-  ],
-  "ts-node": {
-    "compilerOptions": { "module": "esnext" },
-    "esm": true
-  }
+  ]
 }
