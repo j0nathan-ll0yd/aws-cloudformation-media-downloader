@@ -171,6 +171,7 @@ export async function setup(): Promise<void> {
   const prefix = getSchemaPrefix()
 
   log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
+  log(`[globalSetup] MAX_WORKERS: ${MAX_WORKERS}`)
 
   // Read migration files
   const migrationsDir = path.join(process.cwd(), 'migrations')
