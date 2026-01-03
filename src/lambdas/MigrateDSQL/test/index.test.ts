@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
+import {createDrizzleExecuteMock, createDrizzleOperatorMocks} from '#test/helpers/drizzle-mock'
 
 // Mock fs module for reading migration files
 const mockReaddirSync = vi.fn<() => string[]>()
@@ -11,13 +12,13 @@ vi.mock('path', () => ({join: vi.fn((...args: string[]) => args.join('/')), dirn
 
 vi.mock('url', () => ({fileURLToPath: vi.fn(() => '/lambda/index.js')}))
 
-// Mock Drizzle client with proper chaining for execute
-// postgres-js returns RowList which is directly iterable as an array
-const mockExecute = vi.fn<() => Promise<Array<{version: string}>>>()
-vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({execute: mockExecute}))}))
+// Create Drizzle execute mock using helper
+const {executeMock, mocks: drizzleMocks} = createDrizzleExecuteMock()
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({execute: executeMock}))}))
 
-// Mock drizzle-orm sql template
-vi.mock('drizzle-orm', () => ({sql: {raw: vi.fn((s: string) => s)}}))
+// Mock drizzle-orm sql template using operators helper
+const operatorMocks = createDrizzleOperatorMocks()
+vi.mock('drizzle-orm', () => ({sql: operatorMocks.sql}))
 
 // Mock middleware - pass through the handler function
 vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
@@ -43,7 +44,7 @@ describe('MigrateDSQL Lambda', () => {
       return ''
     })
     // Default: no migrations applied yet (empty array)
-    mockExecute.mockResolvedValue([])
+    drizzleMocks.execute.mockResolvedValue([])
   })
 
   it('should apply all migrations when none are applied', async () => {
@@ -53,12 +54,12 @@ describe('MigrateDSQL Lambda', () => {
     expect(result.skipped).toEqual([])
     expect(result.errors).toEqual([])
     // 4 calls: create table, select applied, apply 0001, record 0001, apply 0002, record 0002
-    expect(mockExecute).toHaveBeenCalledTimes(6)
+    expect(drizzleMocks.execute).toHaveBeenCalledTimes(6)
   })
 
   it('should skip already applied migrations', async () => {
     // First call returns empty (for create table), second returns applied migrations
-    mockExecute.mockResolvedValueOnce([]) // CREATE TABLE schema_migrations
+    drizzleMocks.execute.mockResolvedValueOnce([]) // CREATE TABLE schema_migrations
       .mockResolvedValueOnce([{version: '0001'}]) // SELECT applied
       .mockResolvedValue([]) // Remaining operations
 
@@ -70,7 +71,7 @@ describe('MigrateDSQL Lambda', () => {
   })
 
   it('should skip all migrations when all are applied', async () => {
-    mockExecute.mockResolvedValueOnce([]) // CREATE TABLE
+    drizzleMocks.execute.mockResolvedValueOnce([]) // CREATE TABLE
       .mockResolvedValueOnce([{version: '0001'}, {version: '0002'}]) // SELECT applied
 
     const result = await handler({source: 'terraform-deploy'}, context)
@@ -81,7 +82,7 @@ describe('MigrateDSQL Lambda', () => {
   })
 
   it('should stop on first migration error', async () => {
-    mockExecute.mockResolvedValueOnce([]) // CREATE TABLE
+    drizzleMocks.execute.mockResolvedValueOnce([]) // CREATE TABLE
       .mockResolvedValueOnce([]) // SELECT applied (none)
       .mockRejectedValueOnce(new Error('SQL syntax error')) // Apply 0001 fails
 
@@ -121,7 +122,7 @@ describe('MigrateDSQL Lambda', () => {
 
   describe('#EdgeCases', () => {
     it('should handle database connection timeout', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('Connection timeout after 30000ms'))
+      drizzleMocks.execute.mockRejectedValueOnce(new Error('Connection timeout after 30000ms'))
 
       await expect(handler({source: 'terraform-deploy'}, context)).rejects.toThrow('Connection timeout')
     })
@@ -137,7 +138,7 @@ describe('MigrateDSQL Lambda', () => {
         }
         return ''
       })
-      mockExecute.mockResolvedValue([])
+      drizzleMocks.execute.mockResolvedValue([])
 
       const result = await handler({source: 'terraform-deploy'}, context)
 
@@ -149,7 +150,7 @@ describe('MigrateDSQL Lambda', () => {
     it('should handle concurrent migration attempts (schema_migrations table exists)', async () => {
       // First call succeeds (table already exists, no error)
       // Second call returns existing migrations
-      mockExecute.mockResolvedValueOnce([]) // CREATE TABLE IF NOT EXISTS succeeds
+      drizzleMocks.execute.mockResolvedValueOnce([]) // CREATE TABLE IF NOT EXISTS succeeds
         .mockResolvedValueOnce([{version: '0001'}, {version: '0002'}]) // All already applied
 
       const result = await handler({source: 'terraform-deploy'}, context)
@@ -159,7 +160,7 @@ describe('MigrateDSQL Lambda', () => {
     })
 
     it('should handle recording migration version failure', async () => {
-      mockExecute.mockResolvedValueOnce([]) // CREATE TABLE
+      drizzleMocks.execute.mockResolvedValueOnce([]) // CREATE TABLE
         .mockResolvedValueOnce([]) // SELECT applied
         .mockResolvedValueOnce([]) // Apply migration 0001 succeeds
         .mockRejectedValueOnce(new Error('Failed to insert migration record')) // Recording fails
@@ -175,7 +176,7 @@ describe('MigrateDSQL Lambda', () => {
       // Files returned out of order
       mockReaddirSync.mockReturnValue(['0003_third.sql', '0001_first.sql', '0002_second.sql'])
       mockReadFileSync.mockReturnValue('-- Migration')
-      mockExecute.mockResolvedValue([])
+      drizzleMocks.execute.mockResolvedValue([])
 
       const result = await handler({source: 'terraform-deploy'}, context)
 

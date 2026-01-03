@@ -1,21 +1,19 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
 import {createScheduledEvent} from '#test/helpers/event-factories'
+import {createDrizzleDeleteMock, createDrizzleOperatorMocks, createMockSchemaTable} from '#test/helpers/drizzle-mock'
 
-// Mock Drizzle client with proper chaining
-const mockReturning = vi.fn<() => Promise<Array<{fileId?: string; id?: string}>>>()
-const mockWhere = vi.fn(() => ({returning: mockReturning}))
-const mockDelete = vi.fn(() => ({where: mockWhere}))
+// Create Drizzle delete mock using helper
+const {deleteMock, mocks: drizzleMocks} = createDrizzleDeleteMock()
 
-vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({delete: mockDelete}))}))
+vi.mock('#lib/vendor/Drizzle/client', () => ({getDrizzleClient: vi.fn(async () => ({delete: deleteMock}))}))
 
 // Mock Drizzle schema - provide table references for delete()
-// Updated to use Better Auth aligned schema (id instead of sessionId, verification instead of verificationTokens)
 vi.mock('#lib/vendor/Drizzle/schema',
   () => ({
-    fileDownloads: {fileId: 'fileId', status: 'status', updatedAt: 'updatedAt'},
-    sessions: {id: 'id', expiresAt: 'expiresAt'},
-    verification: {id: 'id', expiresAt: 'expiresAt'}
+    fileDownloads: createMockSchemaTable(['fileId', 'status', 'updatedAt']),
+    sessions: createMockSchemaTable(['id', 'expiresAt']),
+    verification: createMockSchemaTable(['id', 'expiresAt'])
   }))
 
 // Mock middleware
@@ -23,14 +21,8 @@ vi.mock('#lib/lambda/middleware/powertools', () => ({withPowertools: vi.fn(<T ex
 
 vi.mock('#lib/lambda/middleware/internal', () => ({wrapScheduledHandler: vi.fn(<T extends (...args: never[]) => unknown>(handler: T) => handler)}))
 
-// Mock drizzle-orm operators
-vi.mock('drizzle-orm',
-  () => ({
-    and: vi.fn((...args: unknown[]) => args),
-    or: vi.fn((...args: unknown[]) => args),
-    eq: vi.fn((col: unknown, val: unknown) => ({col, val})),
-    lt: vi.fn((col: unknown, val: unknown) => ({col, val}))
-  }))
+// Mock drizzle-orm operators using helper
+vi.mock('drizzle-orm', () => createDrizzleOperatorMocks())
 
 const {handler} = await import('./../src')
 
@@ -39,11 +31,11 @@ const context = createMockContext({functionName: 'CleanupExpiredRecords'})
 describe('CleanupExpiredRecords Lambda', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockReturning.mockResolvedValue([])
+    drizzleMocks.returning.mockResolvedValue([])
   })
 
   it('should successfully cleanup all record types', async () => {
-    mockReturning.mockResolvedValueOnce([{fileId: 'file1'}]) // fileDownloads
+    drizzleMocks.returning.mockResolvedValueOnce([{fileId: 'file1'}]) // fileDownloads
       .mockResolvedValueOnce([{id: 'session1'}, {id: 'session2'}]) // sessions
       .mockResolvedValueOnce([]) // verification
 
@@ -53,7 +45,7 @@ describe('CleanupExpiredRecords Lambda', () => {
   })
 
   it('should continue cleanup when one type fails', async () => {
-    mockReturning.mockRejectedValueOnce(new Error('Database connection failed')) // fileDownloads fails
+    drizzleMocks.returning.mockRejectedValueOnce(new Error('Database connection failed')) // fileDownloads fails
       .mockResolvedValueOnce([{id: 'session1'}]) // sessions succeeds
       .mockResolvedValueOnce([{id: 'verification1'}]) // verification succeeds
 
@@ -67,7 +59,9 @@ describe('CleanupExpiredRecords Lambda', () => {
   })
 
   it('should collect all errors when multiple cleanups fail', async () => {
-    mockReturning.mockRejectedValueOnce(new Error('Error 1')).mockRejectedValueOnce(new Error('Error 2')).mockRejectedValueOnce(new Error('Error 3'))
+    drizzleMocks.returning.mockRejectedValueOnce(new Error('Error 1')).mockRejectedValueOnce(new Error('Error 2')).mockRejectedValueOnce(
+      new Error('Error 3')
+    )
 
     const result = await handler(createScheduledEvent(), context)
 
@@ -79,7 +73,7 @@ describe('CleanupExpiredRecords Lambda', () => {
 
   it('should handle empty tables gracefully (no records to delete)', async () => {
     // All tables return empty arrays - nothing to cleanup
-    mockReturning.mockResolvedValueOnce([]) // fileDownloads
+    drizzleMocks.returning.mockResolvedValueOnce([]) // fileDownloads
       .mockResolvedValueOnce([]) // sessions
       .mockResolvedValueOnce([]) // verification
 
@@ -87,7 +81,7 @@ describe('CleanupExpiredRecords Lambda', () => {
 
     expect(result).toEqual({fileDownloadsDeleted: 0, sessionsDeleted: 0, verificationTokensDeleted: 0, errors: []})
     // Should still call delete for each table
-    expect(mockDelete).toHaveBeenCalledTimes(3)
+    expect(drizzleMocks.delete).toHaveBeenCalledTimes(3)
   })
 
   it('should handle large batch deletions correctly', async () => {
@@ -95,7 +89,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     const manyFileDownloads = Array.from({length: 100}, (_, i) => ({fileId: `file-${i}`}))
     const manySessions = Array.from({length: 50}, (_, i) => ({id: `session-${i}`}))
 
-    mockReturning.mockResolvedValueOnce(manyFileDownloads).mockResolvedValueOnce(manySessions).mockResolvedValueOnce([])
+    drizzleMocks.returning.mockResolvedValueOnce(manyFileDownloads).mockResolvedValueOnce(manySessions).mockResolvedValueOnce([])
 
     const result = await handler(createScheduledEvent(), context)
 
@@ -106,21 +100,21 @@ describe('CleanupExpiredRecords Lambda', () => {
   })
 
   it('should call delete operations in correct order', async () => {
-    mockReturning.mockResolvedValue([])
+    drizzleMocks.returning.mockResolvedValue([])
 
     await handler(createScheduledEvent(), context)
 
     // Verify delete was called 3 times (once per table)
-    expect(mockDelete).toHaveBeenCalledTimes(3)
+    expect(drizzleMocks.delete).toHaveBeenCalledTimes(3)
     // Verify where was called for each delete
-    expect(mockWhere).toHaveBeenCalledTimes(3)
+    expect(drizzleMocks.where).toHaveBeenCalledTimes(3)
     // Verify returning was called to get deleted record IDs
-    expect(mockReturning).toHaveBeenCalledTimes(3)
+    expect(drizzleMocks.returning).toHaveBeenCalledTimes(3)
   })
 
   it('should handle non-Error objects in catch blocks', async () => {
     // Some libraries throw strings or other non-Error objects
-    mockReturning.mockRejectedValueOnce('String error').mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    drizzleMocks.returning.mockRejectedValueOnce('String error').mockResolvedValueOnce([]).mockResolvedValueOnce([])
 
     const result = await handler(createScheduledEvent(), context)
 
@@ -132,7 +126,7 @@ describe('CleanupExpiredRecords Lambda', () => {
     it('should handle database timeout during cleanup', async () => {
       const timeoutError = new Error('Query timeout after 30000ms')
       Object.assign(timeoutError, {code: 'ETIMEDOUT'})
-      mockReturning.mockRejectedValueOnce(timeoutError).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+      drizzleMocks.returning.mockRejectedValueOnce(timeoutError).mockResolvedValueOnce([]).mockResolvedValueOnce([])
 
       const result = await handler(createScheduledEvent(), context)
 
@@ -142,7 +136,7 @@ describe('CleanupExpiredRecords Lambda', () => {
 
     it('should handle transaction rollback error', async () => {
       const rollbackError = new Error('Transaction aborted: constraint violation')
-      mockReturning.mockRejectedValueOnce(rollbackError).mockResolvedValueOnce([{id: 's1'}]).mockResolvedValueOnce([])
+      drizzleMocks.returning.mockRejectedValueOnce(rollbackError).mockResolvedValueOnce([{id: 's1'}]).mockResolvedValueOnce([])
 
       const result = await handler(createScheduledEvent(), context)
 
@@ -157,7 +151,7 @@ describe('CleanupExpiredRecords Lambda', () => {
       const sessions = [{id: 's1'}, {id: 's2'}]
       const verifications = [{id: 'v1'}]
 
-      mockReturning.mockResolvedValueOnce(fileDownloads).mockResolvedValueOnce(sessions).mockResolvedValueOnce(verifications)
+      drizzleMocks.returning.mockResolvedValueOnce(fileDownloads).mockResolvedValueOnce(sessions).mockResolvedValueOnce(verifications)
 
       const result = await handler(createScheduledEvent(), context)
 
@@ -169,7 +163,7 @@ describe('CleanupExpiredRecords Lambda', () => {
 
     it('should handle null/undefined return from delete operations', async () => {
       // Edge case where returning() might return undefined or null
-      mockReturning.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+      drizzleMocks.returning.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
 
       const result = await handler(createScheduledEvent(), context)
 
