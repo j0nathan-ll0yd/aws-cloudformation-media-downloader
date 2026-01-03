@@ -8,7 +8,7 @@ Central registry of all project conventions with their documentation and enforce
 
 | Method | Count | Description |
 |--------|-------|-------------|
-| **MCP Rules** | 18 | AST-based validation via ts-morph |
+| **MCP Rules** | 19 | AST-based validation via ts-morph |
 | **ESLint** | 20 | Linting rules including 8 JSDoc rules + 2 Drizzle safety rules |
 | **Git Hooks** | 5 | Pre-commit, commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 6 | Architectural boundary enforcement |
@@ -21,6 +21,7 @@ Central registry of all project conventions with their documentation and enforce
 | Rule | Alias | Severity | Documentation |
 |------|-------|----------|---------------|
 | aws-sdk-encapsulation | aws-sdk | CRITICAL | [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) |
+| drizzle-orm-encapsulation | drizzle | CRITICAL | [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) |
 | entity-mocking | entity | CRITICAL | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | config-enforcement | config | CRITICAL | [MCP Convention Tools](../MCP/Convention-Tools.md) |
 | env-validation | env | CRITICAL | [Lambda Environment Variables](../AWS/Lambda-Environment-Variables.md) |
@@ -38,7 +39,6 @@ Central registry of all project conventions with their documentation and enforce
 | response-enum | enum | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | mock-formatting | mock | MEDIUM | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 | powertools-metrics | metrics | MEDIUM | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
-| aws-sdk-mock | sdk-mock | MEDIUM | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) |
 
 ---
 
