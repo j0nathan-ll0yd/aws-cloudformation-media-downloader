@@ -35,34 +35,33 @@ Each entry follows this structure:
 
 ## Current Emerging Conventions
 
-### 2025-11-24 - ElectroDB Mock Helper Pattern
+### 2025-11-24 - Drizzle Query Mock Pattern
 
 **Type**: Pattern
 **Priority**: High
-**Context**: Unit testing with ElectroDB entities
+**Context**: Unit testing with Drizzle ORM query functions
 
-**What**: Always use `test/helpers/electrodb-mock.ts` for mocking ElectroDB entities
+**What**: Mock `#entities/queries` with vi.mock() for testing Lambda handlers
 
-**Why**: 
+**Why**:
 - Consistent mock structure across all tests
-- Handles ElectroDB's complex entity API
+- Standard function mocking (simpler than ORM entity mocking)
 - Reduces test boilerplate
-- Easier to update mocks when ElectroDB changes
+- Type-safe with entity fixture factories
 
 **Example**:
 ```typescript
-import {createElectroDBMock} from '../../../test/helpers/electrodb-mock'
+import {createMockUser} from '#test/helpers/entity-fixtures'
 
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entity', () =>
-  createElectroDBMock({
-    get: jest.fn().mockResolvedValue({data: mockUser}),
-    query: jest.fn().mockResolvedValue({data: [mockUser]})
-  })
-)
+vi.mock('#entities/queries', () => ({
+  getUser: vi.fn().mockResolvedValue(createMockUser()),
+  createUser: vi.fn().mockResolvedValue(createMockUser()),
+  updateUser: vi.fn().mockResolvedValue(createMockUser())
+}))
 ```
 
 **Status**: Validated (in use across test suite)
-**Wiki Page**: Mentioned in Testing/Vitest-Mocking-Strategy.md
+**Wiki Page**: Testing/Vitest-Mocking-Strategy.md
 
 ---
 

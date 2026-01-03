@@ -674,11 +674,225 @@ Is this a scheduled CloudWatch event?
 
 ---
 
+## Powertools Integration
+
+### withPowertools
+
+**Use for**: All Lambda handlers. Provides AWS Powertools observability.
+
+**File**: `src/lib/lambda/middleware/powertools.ts`
+
+**What it provides**:
+- Logger initialization with correlation ID
+- Cold start metric tracking (automatic)
+- X-Ray tracing integration
+- Metrics flushing (when `enableCustomMetrics: true`)
+
+**Signature**:
+```typescript
+function withPowertools<TEvent, TResult>(
+  handler: (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult>,
+  options?: PowertoolsOptions
+): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult>
+```
+
+**Options**:
+```typescript
+interface PowertoolsOptions {
+  enableCustomMetrics?: boolean  // Enable Powertools metrics middleware (default: false)
+}
+```
+
+**Example**:
+```typescript
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
+
+// Basic usage - cold start tracking only
+export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
+  return buildValidatedResponse(context, 200, {data: 'result'})
+}))
+
+// With custom metrics enabled
+export const handler = withPowertools(wrapScheduledHandler(async ({event, context}) => {
+  const count = await processRecords()
+  metrics.addMetric('RecordsProcessed', MetricUnit.Count, count)
+  return {processed: count}
+}), {enableCustomMetrics: true})
+```
+
+---
+
+## Correlation ID Handling
+
+### correlationMiddleware
+
+**Use for**: Propagating correlation IDs across Lambda invocations.
+
+**File**: `src/lib/lambda/middleware/correlation.ts`
+
+**What it provides**:
+- Extracts correlation ID from headers or generates new
+- Sets correlation ID in logger context
+- Propagates to downstream service calls
+
+**Usage**: Automatically applied by `withPowertools` wrapper.
+
+**Header format**:
+```
+X-Correlation-Id: abc123-def456-ghi789
+```
+
+**Accessing in handler**:
+```typescript
+import {getCorrelationId} from '#lib/lambda/middleware/correlation'
+
+export const handler = withPowertools(wrapApiHandler(async ({context}) => {
+  const correlationId = getCorrelationId()
+  // Use for logging, downstream calls, etc.
+  return buildValidatedResponse(context, 200, {correlationId})
+}))
+```
+
+---
+
+## API Gateway Type Helpers
+
+### Type exports
+
+**File**: `src/lib/lambda/middleware/api-gateway.ts`
+
+**Exports**:
+```typescript
+// Re-exports from aws-lambda for convenience
+export type {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context
+} from 'aws-lambda'
+
+// Custom authorizer event with user context
+export interface CustomAPIGatewayRequestAuthorizerEvent
+  extends APIGatewayProxyEvent {
+  requestContext: {
+    authorizer?: {
+      userId?: string
+      userStatus?: string
+    }
+  }
+}
+```
+
+---
+
+## Legacy Wrappers
+
+### wrapAuthorizer
+
+**Use for**: API Gateway custom authorizer Lambdas.
+
+**File**: `src/lib/lambda/middleware/legacy.ts`
+
+**What it provides**:
+- Event logging for authorizer events
+- Error handling that propagates `Error('Unauthorized')` correctly
+- IAM policy result handling
+
+**Signature**:
+```typescript
+function wrapAuthorizer(
+  handler: (params: AuthorizerParams) => Promise<CustomAuthorizerResult>
+): (event: APIGatewayRequestAuthorizerEvent, context: Context) => Promise<CustomAuthorizerResult>
+```
+
+**Example**:
+```typescript
+import {wrapAuthorizer} from '#lib/lambda/middleware/legacy'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+
+export const handler = withPowertools(wrapAuthorizer(async ({event}) => {
+  const token = event.headers?.Authorization
+
+  if (!token) {
+    throw new Error('Unauthorized')  // Returns 401
+  }
+
+  const session = await validateToken(token)
+  return generateAllow(session.userId, event.methodArn)
+}))
+```
+
+---
+
+### wrapEventHandler
+
+**Use for**: S3, SQS, and other event-driven handlers with batch processing.
+
+**File**: `src/lib/lambda/middleware/legacy.ts`
+
+**What it provides**:
+- Batch record processing with per-record error handling
+- Configurable record extraction
+- Error logging without stopping batch
+
+**Signature**:
+```typescript
+function wrapEventHandler<TRecord>(
+  handler: (params: EventHandlerParams<TRecord>) => Promise<void>,
+  options: {getRecords: (event: unknown) => TRecord[]}
+): (event: unknown, context: Context) => Promise<void>
+```
+
+**Example**:
+```typescript
+import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {s3Records, sqsRecords} from '#util/lambda-helpers'
+
+// S3 event handler
+export const handler = withPowertools(wrapEventHandler(
+  async ({record}) => {
+    const key = record.s3.object.key
+    await processS3Object(key)
+  },
+  {getRecords: s3Records}
+))
+
+// SQS event handler
+export const handler = withPowertools(wrapEventHandler(
+  async ({record}) => {
+    const body = JSON.parse(record.body)
+    await processMessage(body)
+  },
+  {getRecords: sqsRecords}
+))
+```
+
+---
+
+## Middleware File Summary
+
+| File | Purpose | Key Exports |
+|------|---------|-------------|
+| `api.ts` | API handler wrappers | `wrapApiHandler`, `wrapAuthenticatedHandler`, `wrapOptionalAuthHandler` |
+| `api-gateway.ts` | Type definitions | `CustomAPIGatewayRequestAuthorizerEvent` |
+| `validation.ts` | Request validation | `wrapValidatedHandler`, `wrapAuthenticatedValidatedHandler` |
+| `sanitization.ts` | XSS/injection protection | `sanitizeInput` |
+| `security-headers.ts` | CORS and security | `securityHeaders` |
+| `sqs.ts` | SQS batch processing | `wrapSqsBatchHandler` |
+| `powertools.ts` | Observability | `withPowertools`, `metrics`, `MetricUnit` |
+| `correlation.ts` | Correlation IDs | `correlationMiddleware`, `getCorrelationId` |
+| `internal.ts` | Internal handlers | `wrapScheduledHandler`, `wrapLambdaInvokeHandler` |
+| `legacy.ts` | Legacy patterns | `wrapAuthorizer`, `wrapEventHandler` |
+
+---
+
 ## Related Patterns
 
 - [Lambda Function Patterns](Lambda-Function-Patterns.md) - Handler structure conventions
 - [Error Handling](TypeScript-Error-Handling.md) - CustomLambdaError hierarchy
-- [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Testing these wrappers
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Testing these wrappers
+- [System Library](System-Library.md) - Error types and logging
 
 ---
 

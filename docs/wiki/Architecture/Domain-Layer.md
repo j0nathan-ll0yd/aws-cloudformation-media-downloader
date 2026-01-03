@@ -1,5 +1,7 @@
 # Domain Layer Purity
 
+> **Status**: This is an architectural guideline for future development. The `src/lib/domain/` directory will be created as business logic is extracted from Lambda handlers.
+
 The domain layer (`src/lib/domain/`) contains pure business logic that must remain infrastructure-agnostic.
 
 ## Architecture Rule
@@ -121,3 +123,90 @@ export function processUser(user: User, notify: (email: string, msg: string) => 
   notify(user.email, 'Welcome!')
 }
 ```
+
+---
+
+## Candidates for Domain Extraction
+
+When business logic is currently embedded in Lambda handlers, consider extracting to the domain layer:
+
+### Good Candidates
+
+| Current Location | Extraction Target | Why Domain |
+|-----------------|-------------------|------------|
+| Video URL validation | `domain/video/validators.ts` | Pure string logic, no AWS |
+| Error classification | `domain/video/error-classifier.ts` | Pure pattern matching |
+| Notification formatting | `domain/notification/formatters.ts` | Pure data transformation |
+| Rate limit calculation | `domain/user/rate-limits.ts` | Pure arithmetic |
+| File status transitions | `domain/file/state-machine.ts` | Pure state logic |
+
+### Not Candidates
+
+| Logic | Why Not Domain |
+|-------|---------------|
+| S3 upload orchestration | Requires AWS SDK |
+| DynamoDB queries | Requires AWS SDK |
+| APNS notification sending | Requires external service |
+| SQS message publishing | Requires AWS SDK |
+
+### Extraction Checklist
+
+When extracting business logic:
+
+1. **Identify pure functions** - No side effects, no I/O
+2. **Extract to domain module** - Create file in `src/lib/domain/`
+3. **Define interfaces for callbacks** - Any I/O becomes a callback parameter
+4. **Update Lambda handler** - Pass concrete implementations
+5. **Write unit tests** - No mocking required for pure domain logic
+
+---
+
+## Benefits in Practice
+
+### Testability Example
+
+```typescript
+// Domain layer (pure, easy to test)
+export function shouldRetryDownload(error: Error, attemptCount: number): boolean {
+  if (attemptCount >= 3) return false
+  if (error.message.includes('cookie')) return false
+  return error.message.includes('timeout') || error.message.includes('network')
+}
+
+// Test (no mocks needed!)
+describe('shouldRetryDownload', () => {
+  it('returns false after 3 attempts', () => {
+    expect(shouldRetryDownload(new Error('timeout'), 3)).toBe(false)
+  })
+
+  it('returns true for network errors', () => {
+    expect(shouldRetryDownload(new Error('network failure'), 1)).toBe(true)
+  })
+})
+```
+
+### Portability Example
+
+```typescript
+// Domain layer works anywhere
+import {formatPushPayload} from '#lib/domain/notification/formatters'
+
+// Works in Lambda
+const apnsPayload = formatPushPayload({title: 'Download Complete', fileId: '123'})
+await sendApns(apnsPayload)
+
+// Works in CLI tool
+const payload = formatPushPayload({title: 'Test', fileId: 'test'})
+console.log(JSON.stringify(payload, null, 2))
+
+// Works in tests
+expect(formatPushPayload({title: 'X', fileId: 'Y'})).toEqual({...})
+```
+
+---
+
+## Related Documentation
+
+- [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - Handler structure
+- [Vendor Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - Import rules
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Testing patterns

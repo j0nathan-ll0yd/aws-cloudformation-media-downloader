@@ -112,41 +112,45 @@ This project demonstrates production-grade serverless architecture that exceeds 
 
 ### 3. Database Architecture - EXCELLENT (Industry-Leading)
 
-| Aspect | Your Implementation | Industry Best Practice | Assessment |
+> **Note (January 2026)**: This project has migrated from DynamoDB/ElectroDB to **Aurora DSQL with Drizzle ORM**.
+> This assessment section describes the original architecture; the new architecture offers similar benefits with
+> native PostgreSQL compatibility and serverless scaling.
+
+| Aspect | Current Implementation | Industry Best Practice | Assessment |
 |--------|---------------------|----------------------|------------|
-| Database Choice | DynamoDB (single-table) | DynamoDB for serverless | Optimal |
-| ORM | ElectroDB | ElectroDB or DynamoDB-Toolbox | Best choice |
-| Billing Mode | PAY_PER_REQUEST | On-demand for variable traffic | Cost-effective |
-| GSI Strategy | 5+ GSIs for access patterns | Design GSIs per access pattern | Proper design |
+| Database Choice | Aurora DSQL | Aurora DSQL for serverless SQL | Optimal |
+| ORM | Drizzle ORM | Drizzle or Prisma | Modern choice |
+| Authentication | IAM Token | AWS IAM for serverless | Secure |
+| Query Pattern | Native SQL with type-safe queries | Type-safe ORM | Excellent |
 
 **Why This is Industry-Leading:**
 
-1. **Single-Table Design**: Your 9-entity single-table design follows Rick Houlihan's re:Invent guidance exactly
-2. **ElectroDB Choice**: Per [DEV.to comparison](https://dev.to/thomasaribart/an-in-depth-comparison-of-the-most-popular-dynamodb-wrappers-5b73), ElectroDB is the "best DynamoDB client wrapper" with superior type inference
-3. **Collections Pattern**: Your `Collections.ts` implements JOIN-like queries efficiently
-4. **Type Safety**: Full TypeScript inference for all entity operations
+1. **Serverless SQL**: Aurora DSQL provides PostgreSQL compatibility with automatic scaling
+2. **Drizzle ORM**: Type-safe queries with full TypeScript inference
+3. **Query Functions**: Native `#entities/queries` pattern for clean separation
+4. **Type Safety**: Full TypeScript inference for all database operations
 
-**Comparison to Aurora Serverless:**
-| Factor | DynamoDB | Aurora Serverless v2 |
-|--------|----------|---------------------|
-| Cold starts | None | Possible |
-| Scaling | Instant | Seconds |
-| Pricing | Pay-per-request | Capacity-based |
-| Your use case | Perfect fit | Overkill |
+**Benefits of Aurora DSQL:**
+| Factor | Aurora DSQL |
+|--------|-------------|
+| Cold starts | Minimal (IAM token auth) |
+| Scaling | Automatic |
+| Pricing | Serverless billing |
+| SQL Features | Full PostgreSQL |
 
-Your choice of DynamoDB is optimal for this workload.
+The migration to Aurora DSQL provides native SQL capabilities while maintaining serverless benefits.
 
 ### 4. Testing Strategy - EXCELLENT
 
 | Aspect | Your Implementation | Industry Best Practice | Assessment |
 |--------|---------------------|----------------------|------------|
-| Mock Strategy | Custom ElectroDB mock helper | Centralized mock utilities | Superior |
+| Mock Strategy | Entity fixtures + query mocks | Centralized mock utilities | Superior |
 | Integration Tests | LocalStack | LocalStack or cloud testing | Cost-effective |
-| ESM Support | `jest.unstable_mockModule` | Required for ES modules | Modern |
-| Fixtures | JSON from real AWS responses | Production-like fixtures | Best practice |
+| ESM Support | `vi.mock()` with Vitest | Required for ES modules | Modern |
+| Fixtures | Factory functions for entity data | Production-like fixtures | Best practice |
 
 **Your Innovation:**
-- `test/helpers/electrodb-mock.ts` is a unique, type-safe solution
+- `test/helpers/entity-fixtures.ts` provides type-safe factory functions
 - Transitive dependency tracking via `build/graph.json` ensures complete mocking
 
 **Industry Validation:**

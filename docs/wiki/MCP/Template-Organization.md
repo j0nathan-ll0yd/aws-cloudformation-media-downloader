@@ -23,7 +23,7 @@ Code templates and fixtures must be stored in external files, not embedded as st
 src/mcp/templates/
 ├── loader.ts                           # Template loading utilities
 ├── test-scaffold/
-│   ├── entity-mock.template.txt        # ElectroDB mock setup
+│   ├── entity-mock.template.txt        # Drizzle query mock setup
 │   ├── vendor-mock.template.txt        # Vendor wrapper mock
 │   ├── test-structure.template.txt     # Test file structure
 │   └── describe-block.template.txt     # Test describe blocks
@@ -60,15 +60,13 @@ const code = loadAndInterpolate('test-scaffold/entity-mock.template.txt', {
 Templates use `{{placeholder}}` syntax:
 
 ```txt
-// {{fileName}} - ElectroDB entity mock
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+// {{fileName}} - Drizzle query mock
+import {createMock{{entityName}}} from '#test/helpers/entity-fixtures'
 
-const {{entityName}}Mock = createElectroDBEntityMock({
-  queryIndexes: [{{queryIndexes}}]
-})
-
-vi.mock('#entities/{{entityName}}', () => ({
-  {{entityName}}: {{entityName}}Mock
+vi.mock('#entities/queries', () => ({
+  get{{entityName}}: vi.fn().mockResolvedValue(createMock{{entityName}}()),
+  create{{entityName}}: vi.fn().mockResolvedValue(createMock{{entityName}}()),
+  update{{entityName}}: vi.fn().mockResolvedValue(createMock{{entityName}}())
 }))
 ```
 
@@ -78,11 +76,11 @@ vi.mock('#entities/{{entityName}}', () => ({
 // WRONG - Embedded string literal
 function generateMock(entityName: string) {
   return `
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+import {createMock${entityName}} from '#test/helpers/entity-fixtures'
 
-const ${entityName}Mock = createElectroDBEntityMock({
-  queryIndexes: []
-})
+vi.mock('#entities/queries', () => ({
+  get${entityName}: vi.fn()
+}))
 `
 }
 ```

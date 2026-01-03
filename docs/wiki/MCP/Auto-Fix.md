@@ -34,23 +34,22 @@ import {getDynamoDBClient} from '#lib/vendor/AWS/DynamoDB'
 - `@aws-sdk/client-sns` → `#lib/vendor/AWS/SNS`
 - `@aws-sdk/client-sqs` → `#lib/vendor/AWS/SQS`
 
-### 2. ElectroDB Mock Helper (`electrodb-mock`)
+### 2. Drizzle Query Mock Helper (`drizzle-mock`)
 
-**What It Does**: Provides guidance for using the centralized ElectroDB mock helper.
+**What It Does**: Provides guidance for mocking Drizzle ORM query functions.
 
 **Status**: 🔄 Manual guidance (auto-fix planned)
 
 **Guidance**:
 ```typescript
-// Replace manual mocks with:
-import {createElectroDBEntityMock} from '#test/helpers/electrodb-mock'
+// Replace manual mocks with entity fixtures:
+import {createMockUser} from '#test/helpers/entity-fixtures'
 
-jest.unstable_mockModule('#entities/Users', () =>
-  createElectroDBEntityMock({
-    get: jest.fn().mockResolvedValue({data: mockUser}),
-    query: jest.fn().mockResolvedValue({data: [mockUser]})
-  })
-)
+vi.mock('#entities/queries', () => ({
+  getUser: vi.fn().mockResolvedValue(createMockUser()),
+  createUser: vi.fn().mockResolvedValue(createMockUser()),
+  updateUser: vi.fn().mockResolvedValue(createMockUser())
+}))
 ```
 
 ### 3. Response Helper (`response-helper`)
@@ -400,7 +399,7 @@ describe('applyMyConvention', () => {
 ## Roadmap
 
 ### Short Term (Next 30 days)
-- [ ] Auto-fix for ElectroDB mocks
+- [ ] Auto-fix for Drizzle query mocks
 - [ ] Auto-fix for response helpers
 - [ ] Auto-fix for env validation
 

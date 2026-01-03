@@ -22,6 +22,11 @@ Core development conventions that apply universally:
 TypeScript-specific patterns and best practices:
 
 - [Lambda Function Patterns](TypeScript/Lambda-Function-Patterns.md) - Handler organization
+- [Lambda Reference Index](TypeScript/Lambda-Reference-Index.md) - All 18 Lambda functions reference
+- [Lambda Middleware Patterns](TypeScript/Lambda-Middleware-Patterns.md) - Wrapper functions
+- [Entity Query Patterns](TypeScript/Entity-Query-Patterns.md) - Drizzle ORM query functions
+- [System Library](TypeScript/System-Library.md) - Circuit breaker, retry, errors
+- [External Integrations](TypeScript/External-Integrations.md) - YouTube, GitHub integrations
 - [Error Handling](TypeScript/TypeScript-Error-Handling.md) - API Gateway vs event-driven
 - [Type Definitions](TypeScript/Type-Definitions.md) - Where to put types
 - [Module Best Practices](TypeScript/Module-Best-Practices.md) - Export patterns
@@ -74,6 +79,8 @@ Meta-documentation about the documentation system itself:
 - [Emerging Conventions](Meta/Emerging-Conventions.md) - Live append-only log
 - [AI Tool Context Files](Meta/AI-Tool-Context-Files.md) - AGENTS.md, CLAUDE.md standards
 - [Documentation Patterns](Meta/Documentation-Patterns.md) - Passthrough files, organization
+- [Documentation Coverage Matrix](Meta/Documentation-Coverage-Matrix.md) - Audit results
+- [Documentation Gap Analysis](Meta/Documentation-Gap-Analysis.md) - Priority rankings
 
 ## Key Principles
 

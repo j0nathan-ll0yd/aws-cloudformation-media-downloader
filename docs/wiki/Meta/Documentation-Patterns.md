@@ -137,19 +137,20 @@ function validateCredentials(username: string, password: string) {
 ```
 
 ### From AGENTS.md
-```markdown
+
+AGENTS.md references wiki pages using repo-root paths:
+
+```text
 ## Wiki Conventions to Follow
 
-**BEFORE WRITING ANY CODE, READ THE APPLICABLE GUIDE:**
-
 ### Core Conventions
-- [Git Workflow](docs/wiki/Conventions/Git-Workflow.md) - NO AI attribution
-- [Naming](docs/wiki/Conventions/Naming-Conventions.md) - camelCase rules
+- Git Workflow (docs/wiki/Conventions/Git-Workflow) - NO AI attribution
+- Naming (docs/wiki/Conventions/Naming-Conventions) - camelCase rules
 
 ### Language-Specific
-- [Lambda](docs/wiki/TypeScript/Lambda-Function-Patterns.md)
-- [Testing](docs/wiki/Testing/Vitest-Mocking-Strategy.md)
-- [AWS SDK](docs/wiki/Conventions/Vendor-Encapsulation-Policy.md) - ZERO tolerance
+- Lambda (docs/wiki/TypeScript/Lambda-Function-Patterns)
+- Testing (docs/wiki/Testing/Vitest-Mocking-Strategy)
+- AWS SDK (docs/wiki/Conventions/Vendor-Encapsulation-Policy) - ZERO tolerance
 ```
 
 ## Multi-Project Documentation
