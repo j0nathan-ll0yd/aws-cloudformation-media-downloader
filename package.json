@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "engines": {
     "node": ">=22.0.0",
-    "pnpm": ">=10.0.0"
+    "pnpm": ">=10.27.0"
   },
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@10.27.0",
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -190,10 +190,6 @@
     "overrides": {
       "qs": ">=6.14.1",
       "drizzle-zod>zod": "$zod"
-    },
-    "onlyBuiltDependencies": [
-      "@lancedb/lancedb",
-      "onnxruntime-node"
-    ]
+    }
   }
 }
