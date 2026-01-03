@@ -13,6 +13,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {loadDependencyGraph} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -345,13 +346,7 @@ async function executeExtraction(
 export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
   const {query, sourceFile, symbols, targetModule, createBarrel = false} = args
   if (!sourceFile) {
-    return {
-      error: 'Source file required',
-      examples: [
-        {query: 'analyze', sourceFile: 'src/util/helpers.ts'},
-        {query: 'preview', sourceFile: 'src/util/helpers.ts', symbols: ['helperA', 'helperB'], targetModule: 'src/util/new-helpers.ts'}
-      ]
-    }
+    return createErrorResponse('Source file required', 'Example: {query: "analyze", sourceFile: "src/util/helpers.ts"}')
   }
   switch (query) {
     case 'analyze': {
@@ -379,11 +374,11 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
 
     case 'preview': {
       if (!symbols || symbols.length === 0) {
-        return {error: 'Symbols array required for preview', hint: "First use query: 'analyze' to see available symbols"}
+        return createErrorResponse('Symbols array required for preview', "First use query: 'analyze' to see available symbols")
       }
 
       if (!targetModule) {
-        return {error: 'Target module path required', example: 'src/util/extracted-helpers.ts'}
+        return createErrorResponse('Target module path required', 'Example: src/util/extracted-helpers.ts')
       }
 
       try {
@@ -399,17 +394,17 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
             : "Use query: 'execute' to create the new module"
         }
       } catch (error) {
-        return {error: error instanceof Error ? error.message : String(error)}
+        return createErrorResponse(error instanceof Error ? error.message : String(error))
       }
     }
 
     case 'execute': {
       if (!symbols || symbols.length === 0) {
-        return {error: 'Symbols array required', hint: "First use query: 'analyze' then 'preview'"}
+        return createErrorResponse('Symbols array required', "First use query: 'analyze' then 'preview'")
       }
 
       if (!targetModule) {
-        return {error: 'Target module path required'}
+        return createErrorResponse('Target module path required')
       }
 
       const result = await executeExtraction(sourceFile, symbols, targetModule, createBarrel)
@@ -425,14 +420,6 @@ export async function handleExtractModuleQuery(args: ExtractModuleArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['analyze', 'preview', 'execute'],
-        examples: [
-          {query: 'analyze', sourceFile: 'src/util/helpers.ts'},
-          {query: 'preview', sourceFile: 'src/util/helpers.ts', symbols: ['fn1', 'fn2'], targetModule: 'src/util/new-module.ts'},
-          {query: 'execute', sourceFile: 'src/util/helpers.ts', symbols: ['fn1'], targetModule: 'src/util/new-module.ts', createBarrel: true}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: analyze, preview, execute')
   }
 }

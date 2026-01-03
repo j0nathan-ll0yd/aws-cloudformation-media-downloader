@@ -8,6 +8,7 @@
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {allRules, rulesByName, validateFile} from '../validation/index.js'
+import {createErrorResponse} from './shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -40,7 +41,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
 
     case 'all': {
       if (!file) {
-        return {error: 'File path required for validation', example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'all'}}
+        return createErrorResponse('File path required for validation', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "all"}')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -58,11 +59,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
 
     case 'aws-sdk': {
       if (!file) {
-        return {
-          error: 'File path required',
-          description: 'Validates AWS SDK encapsulation (CRITICAL rule)',
-          example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'aws-sdk'}
-        }
+        return createErrorResponse('File path required', 'Validates AWS SDK encapsulation (CRITICAL rule)')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -82,11 +79,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
 
     case 'electrodb': {
       if (!file) {
-        return {
-          error: 'File path required',
-          description: 'Validates ElectroDB mocking patterns in test files (CRITICAL rule)',
-          example: {file: 'src/lambdas/ListFiles/test/index.test.ts', query: 'electrodb'}
-        }
+        return createErrorResponse('File path required', 'Validates ElectroDB mocking patterns in test files (CRITICAL rule)')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -107,11 +100,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
 
     case 'imports': {
       if (!file) {
-        return {
-          error: 'File path required',
-          description: 'Validates import ordering in Lambda handlers (MEDIUM rule)',
-          example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'imports'}
-        }
+        return createErrorResponse('File path required', 'Validates import ordering in Lambda handlers (MEDIUM rule)')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -130,11 +119,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
 
     case 'response': {
       if (!file) {
-        return {
-          error: 'File path required',
-          description: 'Validates response helper usage in Lambda handlers (HIGH rule)',
-          example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'response'}
-        }
+        return createErrorResponse('File path required', 'Validates response helper usage in Lambda handlers (HIGH rule)')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -156,7 +141,7 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
     case 'summary': {
       // Validate a file and return a concise summary
       if (!file) {
-        return {error: 'File path required', example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'summary'}}
+        return createErrorResponse('File path required', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "summary"}')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
@@ -188,14 +173,6 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['all', 'aws-sdk', 'electrodb', 'imports', 'response', 'rules', 'summary'],
-        examples: [
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'all'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'aws-sdk'},
-          {query: 'rules'}
-        ]
-      }
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: all, aws-sdk, electrodb, imports, response, rules, summary')
   }
 }

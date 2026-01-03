@@ -13,6 +13,7 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import {handleValidationQuery} from '../validation.js'
 import {discoverLambdas} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -381,11 +382,7 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
 
     case 'compare': {
       if (!pattern) {
-        return {
-          error: 'Pattern name required for compare query',
-          availablePatterns: Object.keys(PATTERN_DEFINITIONS),
-          examples: [{query: 'compare', pattern: 'error-handling', referenceImpl: 'src/lambdas/ListFiles/src/index.ts'}]
-        }
+        return createErrorResponse('Pattern name required for compare query', `Available patterns: ${Object.keys(PATTERN_DEFINITIONS).join(', ')}`)
       }
 
       const comparison = await comparePatterns(pattern, referenceImpl)
@@ -441,15 +438,6 @@ export async function handlePatternConsistencyQuery(args: PatternConsistencyArgs
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['scan', 'compare', 'drift'],
-        availablePatterns: Object.keys(PATTERN_DEFINITIONS),
-        examples: [
-          {query: 'scan', pattern: 'error-handling'},
-          {query: 'compare', pattern: 'aws-vendor'},
-          {query: 'drift', paths: ['src/lambdas/']}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: scan, compare, drift')
   }
 }

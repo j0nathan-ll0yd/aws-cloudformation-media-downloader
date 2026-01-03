@@ -9,6 +9,7 @@
 
 import {discoverWikiPages, loadConventions, loadWikiPage, searchWikiPages} from './data-loader.js'
 import {type ConventionCategory, type ConventionSeverity, filterByCategory, filterBySeverity, searchConventions} from '../parsers/convention-parser.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 export type ConventionQueryType = 'list' | 'search' | 'category' | 'enforcement' | 'detail' | 'wiki'
 
@@ -54,7 +55,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
 
     case 'search': {
       if (!term) {
-        return {error: 'Search term required for search query', example: {query: 'search', term: 'mock'}}
+        return createErrorResponse('Search term required for search query', 'Example: {query: "search", term: "mock"}')
       }
 
       // Search conventions
@@ -112,11 +113,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
 
     case 'detail': {
       if (!convention) {
-        return {
-          error: 'Convention name required for detail query',
-          availableConventions: conventions.map((c) => c.name),
-          example: {query: 'detail', convention: 'AWS SDK Encapsulation Policy'}
-        }
+        return createErrorResponse('Convention name required for detail query', `Available: ${conventions.map((c) => c.name).slice(0, 5).join(', ')}...`)
       }
 
       // Find convention by name (case-insensitive partial match)
@@ -124,7 +121,7 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
       const match = conventions.find((c) => c.name.toLowerCase().includes(conventionLower))
 
       if (!match) {
-        return {error: `Convention '${convention}' not found`, availableConventions: conventions.map((c) => c.name)}
+        return createErrorResponse(`Convention '${convention}' not found`, `Available: ${conventions.map((c) => c.name).slice(0, 5).join(', ')}...`)
       }
 
       // If wiki path exists, load the full documentation
@@ -176,27 +173,16 @@ export async function handleConventionsQuery(args: ConventionQueryArgs) {
       // Load specific page
       try {
         const content = await loadWikiPage(term)
-        return {
+        return createSuccessResponse({
           path: term,
           content: content.substring(0, 5000) // Limit content size
-        }
+        })
       } catch {
-        return {error: `Wiki page not found: ${term}`}
+        return createErrorResponse(`Wiki page not found: ${term}`)
       }
     }
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['list', 'search', 'category', 'enforcement', 'detail', 'wiki'],
-        examples: [
-          {query: 'list'},
-          {query: 'search', term: 'mock'},
-          {query: 'category', category: 'testing'},
-          {query: 'enforcement', severity: 'CRITICAL'},
-          {query: 'detail', convention: 'AWS SDK Encapsulation'},
-          {query: 'wiki'}
-        ]
-      }
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: list, search, category, enforcement, detail, wiki')
   }
 }

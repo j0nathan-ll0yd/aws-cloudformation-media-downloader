@@ -148,14 +148,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'validate_pattern',
-        description: 'Validate code against project conventions using AST analysis',
+        description: 'Validate code against project conventions using AST analysis (19 rules: 6 CRITICAL, 9 HIGH, 4 MEDIUM)',
         inputSchema: {
           type: 'object',
           properties: {
-            file: {type: 'string', description: 'File path to validate'},
+            file: {type: 'string', description: 'File path to validate (relative to project root). If omitted, validates based on query type.'},
             query: {
               type: 'string',
-              description: 'Validation type (all, aws-sdk, electrodb, imports, response, rules, summary)',
+              description:
+                'Validation type: all (run all rules), aws-sdk (vendor encapsulation), electrodb (entity mocking), imports (order), response (helpers), rules (list available), summary (violation counts)',
               enum: ['all', 'aws-sdk', 'electrodb', 'imports', 'response', 'rules', 'summary']
             }
           },
@@ -164,12 +165,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'check_coverage',
-        description: 'Analyze which dependencies need mocking for Jest tests',
+        description: 'Analyze which dependencies need mocking for Vitest tests',
         inputSchema: {
           type: 'object',
           properties: {
-            file: {type: 'string', description: 'File path to analyze'},
-            query: {type: 'string', description: 'Query type (required, missing, all, summary)', enum: ['required', 'missing', 'all', 'summary']}
+            file: {type: 'string', description: 'Source file path to analyze for test dependencies (e.g., src/lambdas/ListFiles/src/index.ts)'},
+            query: {
+              type: 'string',
+              description: 'Query type: required (all deps needing mocks), missing (unmocked deps), all (complete analysis), summary (coverage overview)',
+              enum: ['required', 'missing', 'all', 'summary']
+            }
           },
           required: ['file', 'query']
         }
@@ -245,17 +250,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'apply_convention',
-        description: 'Automatically apply architectural conventions to code (AWS SDK wrappers, ElectroDB mocks, response helpers, etc.)',
+        description: 'Automatically apply architectural conventions to code (AWS SDK wrappers, entity mocks, response helpers, etc.)',
         inputSchema: {
           type: 'object',
           properties: {
-            file: {type: 'string', description: 'File path to apply conventions to'},
+            file: {type: 'string', description: 'File path to apply conventions to (relative to project root)'},
             convention: {
               type: 'string',
-              description: 'Convention to apply',
+              description:
+                'Convention to apply: aws-sdk-wrapper (vendor encapsulation), electrodb-mock (entity mocking), response-helper (Lambda responses), env-validation (getRequiredEnv), powertools (AWS Powertools), all (apply all)',
               enum: ['aws-sdk-wrapper', 'electrodb-mock', 'response-helper', 'env-validation', 'powertools', 'all']
             },
-            dryRun: {type: 'boolean', description: 'Preview changes without applying them (default: false)'}
+            dryRun: {type: 'boolean', description: 'If true, preview changes without modifying files. Default: false (applies changes)'}
           },
           required: ['file', 'convention']
         }

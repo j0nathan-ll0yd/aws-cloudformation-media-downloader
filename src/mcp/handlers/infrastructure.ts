@@ -8,6 +8,7 @@
  */
 
 import {getAwsServices, getExternalServices, getLambdaConfigs} from './data-loader.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 /** Handles MCP queries for AWS and external service infrastructure. */
 export async function handleInfrastructureQuery(args: {resource?: string; query: string}) {
@@ -15,7 +16,7 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
   const [awsServices, externalServices] = await Promise.all([getAwsServices(), getExternalServices()])
   switch (query) {
     case 'services':
-      return {aws: awsServices, external: externalServices}
+      return createSuccessResponse({aws: awsServices, external: externalServices})
 
     case 'config':
       if (resource) {
@@ -23,22 +24,22 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         const extService = externalServices.find((s) => s.name.toLowerCase() === resource.toLowerCase())
 
         if (awsService) {
-          return {
+          return createSuccessResponse({
             service: awsService,
             note: 'Configuration is defined in terraform/*.tf files',
             suggestion: 'Check terraform/ directory for resource definitions'
-          }
+          })
         }
         if (extService) {
-          return {service: extService, note: 'External service configuration varies by integration'}
+          return createSuccessResponse({service: extService, note: 'External service configuration varies by integration'})
         }
-        return {error: `Service '${resource}' not found`}
+        return createErrorResponse(`Service '${resource}' not found`, 'Check available services with query: services')
       }
-      return {aws: awsServices, external: externalServices}
+      return createSuccessResponse({aws: awsServices, external: externalServices})
 
     case 'usage': {
       if (!resource) {
-        return {error: 'Resource name required for usage query'}
+        return createErrorResponse('Resource name required for usage query', 'Provide a resource name to check usage')
       }
 
       const lambdaConfigs = await getLambdaConfigs()
@@ -50,7 +51,7 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         }
       }
 
-      return {resource, usedBy, count: usedBy.length}
+      return createSuccessResponse({resource, usedBy, count: usedBy.length})
     }
 
     case 'dependencies': {
@@ -66,11 +67,11 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
         }
       }
 
-      return {dependencies: serviceDeps}
+      return createSuccessResponse({dependencies: serviceDeps})
     }
 
     case 'dynamodb':
-      return {
+      return createSuccessResponse({
         description: 'Single-table design with ElectroDB ORM',
         tableFile: 'terraform/dynamodb.tf',
         entitiesDir: 'src/entities/',
@@ -80,27 +81,32 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
           {name: 'GSI1', pk: 'gsi1pk', sk: 'gsi1sk', description: 'User-based queries'},
           {name: 'GSI2', pk: 'gsi2pk', sk: 'gsi2sk', description: 'File/Device lookups'}
         ]
-      }
+      })
 
     case 's3':
-      return {
+      return createSuccessResponse({
         description: 'Media file storage with transfer acceleration',
         configFile: 'terraform/s3.tf',
         features: ['Transfer Acceleration', 'Lifecycle policies', 'CloudFront distribution']
-      }
+      })
 
     case 'apigateway':
-      return {
+      return createSuccessResponse({
         description: 'REST API with custom authorizer',
         configFiles: ['terraform/api_gateway.tf', 'terraform/api_gateway_authorizer.tf'],
         authType: 'Better Auth session-based',
         authorizerLambda: 'ApiGatewayAuthorizer'
-      }
+      })
 
     case 'all':
-      return {aws: awsServices, external: externalServices, terraformDir: 'terraform/', note: 'Use specific resource queries for detailed configuration'}
+      return createSuccessResponse({
+        aws: awsServices,
+        external: externalServices,
+        terraformDir: 'terraform/',
+        note: 'Use specific resource queries for detailed configuration'
+      })
 
     default:
-      return {error: `Unknown query: ${query}`, availableQueries: ['services', 'config', 'usage', 'dependencies', 'dynamodb', 's3', 'apigateway', 'all']}
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: services, config, usage, dependencies, dynamodb, s3, apigateway, all')
   }
 }

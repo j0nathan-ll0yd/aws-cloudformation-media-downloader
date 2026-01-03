@@ -9,6 +9,7 @@
 
 import {discoverEntities, loadDependencyGraph} from './data-loader.js'
 import {loadAndInterpolate, loadTemplate} from '../templates/loader.js'
+import {createErrorResponse} from './shared/response-types.js'
 
 export type TestScaffoldQueryType = 'scaffold' | 'mocks' | 'fixtures' | 'structure'
 
@@ -126,7 +127,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   const {file, query} = args
 
   if (!file) {
-    return {error: 'File path required', example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'scaffold'}}
+    return createErrorResponse('File path required', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "scaffold"}')
   }
 
   // Load data
@@ -141,7 +142,8 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   if (transitiveDeps.length === 0) {
     const suggestions = Object.keys(depGraph.transitiveDependencies).filter((k) => k.includes(file.split('/').pop()!.replace('.ts', ''))).slice(0, 5)
 
-    return {error: `File '${file}' not found in dependency graph`, suggestions: suggestions.length > 0 ? suggestions : undefined}
+    return createErrorResponse(`File '${file}' not found in dependency graph`,
+      suggestions.length > 0 ? `Did you mean: ${suggestions.slice(0, 3).join(', ')}?` : undefined)
   }
 
   // Extract Lambda name
@@ -162,11 +164,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
   switch (query) {
     case 'scaffold': {
       if (!lambdaName) {
-        return {
-          error: 'scaffold query only supports Lambda handler files',
-          hint: 'Provide a path like src/lambdas/ListFiles/src/index.ts',
-          file: normalizedFile
-        }
+        return createErrorResponse('scaffold query only supports Lambda handler files', 'Provide a path like src/lambdas/ListFiles/src/index.ts')
       }
 
       const scaffoldCode = generateTestScaffold(lambdaName, mocks)
@@ -260,14 +258,6 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['scaffold', 'mocks', 'fixtures', 'structure'],
-        examples: [
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'scaffold'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'mocks'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'fixtures'}
-        ]
-      }
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: scaffold, mocks, fixtures, structure')
   }
 }

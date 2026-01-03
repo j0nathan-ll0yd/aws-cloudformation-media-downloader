@@ -8,6 +8,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import {discoverEntities, loadDependencyGraph} from './data-loader.js'
+import {createErrorResponse} from './shared/response-types.js'
 
 export type CoverageQueryType = 'required' | 'missing' | 'all' | 'summary'
 
@@ -104,7 +105,7 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
   const {file, query} = args
 
   if (!file) {
-    return {error: 'File path required', example: {file: 'src/lambdas/ListFiles/src/index.ts', query: 'required'}}
+    return createErrorResponse('File path required', 'Example: {file: "src/lambdas/ListFiles/src/index.ts", query: "required"}')
   }
 
   // Load dependency graph and entity names
@@ -118,14 +119,11 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
     const possiblePaths = Object.keys(depGraph.transitiveDependencies).filter((k) => k.includes(file) || file.includes(k))
 
     if (possiblePaths.length > 0) {
-      return {error: `File not found exactly as '${file}'. Did you mean one of these?`, suggestions: possiblePaths.slice(0, 5)}
+      return createErrorResponse(`File not found exactly as '${file}'`, `Did you mean: ${possiblePaths.slice(0, 3).join(', ')}?`)
     }
 
-    return {
-      error: `File '${file}' not found in dependency graph`,
-      hint: 'Make sure the file path is relative to project root (e.g., src/lambdas/ListFiles/src/index.ts)',
-      availableFiles: Object.keys(depGraph.transitiveDependencies).filter((k) => k.includes('lambdas')).slice(0, 10)
-    }
+    return createErrorResponse(`File '${file}' not found in dependency graph`,
+      'Path must be relative to project root (e.g., src/lambdas/ListFiles/src/index.ts)')
   }
 
   // Categorize all dependencies
@@ -212,14 +210,6 @@ export async function handleCoverageQuery(args: CoverageQueryArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['required', 'missing', 'all', 'summary'],
-        examples: [
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'required'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'missing'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'all'}
-        ]
-      }
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: required, missing, all, summary')
   }
 }

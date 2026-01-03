@@ -6,6 +6,7 @@
  */
 
 import {getLambdaInvocations, loadDependencyGraph, loadMetadata} from './data-loader.js'
+import {createErrorResponse} from './shared/response-types.js'
 
 export type ImpactQueryType = 'dependents' | 'cascade' | 'tests' | 'infrastructure' | 'all'
 
@@ -85,7 +86,7 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
   const {file, query} = args
 
   if (!file) {
-    return {error: 'File path required', example: {file: 'src/entities/Files.ts', query: 'dependents'}}
+    return createErrorResponse('File path required', 'Example: {file: "src/entities/Files.ts", query: "dependents"}')
   }
 
   // Load data
@@ -99,11 +100,8 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
   if (!fileExists) {
     const suggestions = Object.keys(depGraph.files).filter((f) => f.includes(file.split('/').pop()!.replace('.ts', ''))).slice(0, 5)
 
-    return {
-      error: `File '${file}' not found in dependency graph`,
-      suggestions: suggestions.length > 0 ? suggestions : undefined,
-      hint: 'Use relative path from project root (e.g., src/entities/Files.ts)'
-    }
+    return createErrorResponse(`File '${file}' not found in dependency graph`,
+      suggestions.length > 0 ? `Did you mean: ${suggestions.slice(0, 3).join(', ')}?` : 'Use relative path from project root')
   }
 
   switch (query) {
@@ -309,15 +307,6 @@ export async function handleImpactQuery(args: ImpactQueryArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query: ${query}`,
-        availableQueries: ['dependents', 'cascade', 'tests', 'infrastructure', 'all'],
-        examples: [
-          {file: 'src/entities/Files.ts', query: 'dependents'},
-          {file: 'src/entities/Files.ts', query: 'cascade'},
-          {file: 'src/lambdas/ListFiles/src/index.ts', query: 'tests'},
-          {file: 'src/util/lambda-helpers.ts', query: 'all'}
-        ]
-      }
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: dependents, cascade, tests, infrastructure, all')
   }
 }

@@ -9,6 +9,7 @@
  */
 
 import {getLambdaConfigs, getLambdaInvocations} from './data-loader.js'
+import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
 
 /** Handles MCP queries for Lambda function configuration and triggers. */
 export async function handleLambdaQuery(args: {lambda?: string; query: string}) {
@@ -16,13 +17,13 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
   const lambdaConfigs = await getLambdaConfigs() // Load configs dynamically
   switch (query) {
     case 'list':
-      return {lambdas: Object.keys(lambdaConfigs).sort(), count: Object.keys(lambdaConfigs).length}
+      return createSuccessResponse({lambdas: Object.keys(lambdaConfigs).sort(), count: Object.keys(lambdaConfigs).length})
 
     case 'config':
       if (lambda && lambdaConfigs[lambda]) {
-        return lambdaConfigs[lambda]
+        return createSuccessResponse(lambdaConfigs[lambda])
       }
-      return {error: `Lambda '${lambda}' not found. Available: ${Object.keys(lambdaConfigs).join(', ')}`}
+      return createErrorResponse(`Lambda '${lambda}' not found`, `Available: ${Object.keys(lambdaConfigs).join(', ')}`)
 
     case 'triggers': {
       const triggers: Record<string, string[]> = {}
@@ -33,7 +34,7 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
         }
         triggers[trigger].push(name)
       }
-      return {triggers}
+      return createSuccessResponse({triggers})
     }
 
     case 'dependencies': {
@@ -41,7 +42,7 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
       for (const [name, config] of Object.entries(lambdaConfigs)) {
         deps[name] = config.dependencies
       }
-      return {dependencies: deps}
+      return createSuccessResponse({dependencies: deps})
     }
 
     case 'entities': {
@@ -49,28 +50,28 @@ export async function handleLambdaQuery(args: {lambda?: string; query: string}) 
       for (const [name, config] of Object.entries(lambdaConfigs)) {
         entityUsage[name] = config.entities
       }
-      return {entityUsage}
+      return createSuccessResponse({entityUsage})
     }
 
     case 'invocations': {
       const invocations = await getLambdaInvocations()
-      return {invocations}
+      return createSuccessResponse({invocations})
     }
 
     case 'env':
       if (lambda) {
         // Environment variables are defined in Terraform, return a note
-        return {
+        return createSuccessResponse({
           note: 'Environment variables are defined in terraform/*.tf files',
           suggestion: `Check terraform/${lambda.toLowerCase()}.tf or terraform/variables.tf`
-        }
+        })
       }
-      return {error: 'Lambda name required for env query'}
+      return createErrorResponse('Lambda name required for env query', 'Provide a Lambda function name')
 
     case 'all':
-      return {lambdas: lambdaConfigs, invocations: await getLambdaInvocations()}
+      return createSuccessResponse({lambdas: lambdaConfigs, invocations: await getLambdaInvocations()})
 
     default:
-      return {error: `Unknown query: ${query}`, availableQueries: ['list', 'config', 'triggers', 'dependencies', 'entities', 'invocations', 'env', 'all']}
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: list, config, triggers, dependencies, entities, invocations, env, all')
   }
 }

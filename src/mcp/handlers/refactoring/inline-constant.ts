@@ -12,6 +12,7 @@ import {Project, SyntaxKind, VariableDeclaration} from 'ts-morph'
 import path from 'path'
 import {fileURLToPath} from 'url'
 import {loadDependencyGraph} from '../data-loader.js'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -333,16 +334,14 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
 
     case 'preview': {
       if (!constant || !file) {
-        return {
-          error: 'Both constant and file required for preview',
-          examples: [{query: 'preview', constant: 'DEFAULT_TIMEOUT', file: 'src/util/constants.ts'}]
-        }
+        return createErrorResponse('Both constant and file required for preview',
+          'Example: {query: "preview", constant: "DEFAULT_TIMEOUT", file: "src/util/constants.ts"}')
       }
 
       const preview = await previewInline(constant, file)
 
       if (!preview) {
-        return {error: `Constant '${constant}' not found in ${file}`}
+        return createErrorResponse(`Constant '${constant}' not found in ${file}`)
       }
 
       return {
@@ -374,14 +373,6 @@ export async function handleInlineConstantQuery(args: InlineConstantArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['find', 'preview', 'execute'],
-        examples: [
-          {query: 'find', maxUses: 3},
-          {query: 'find', file: 'src/util/constants.ts'},
-          {query: 'preview', constant: 'DEFAULT_TIMEOUT', file: 'src/util/constants.ts'}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: find, preview, execute')
   }
 }

@@ -13,6 +13,7 @@ import {Node, Project, SourceFile} from 'ts-morph'
 import fs from 'fs/promises'
 import path from 'path'
 import {fileURLToPath} from 'url'
+import {createErrorResponse} from '../shared/response-types.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -318,16 +319,16 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
   const {query, symbol, newName, scope = 'project', file, type = 'all', dryRun = true} = args
 
   if (!symbol) {
-    return {error: 'Symbol name required', example: {query: 'preview', symbol: 'oldName', newName: 'newName'}}
+    return createErrorResponse('Symbol name required', 'Example: {query: "preview", symbol: "oldName", newName: "newName"}')
   }
 
   if (!newName && query !== 'preview') {
-    return {error: 'New name required for validate/execute queries'}
+    return createErrorResponse('New name required for validate/execute queries')
   }
 
   // Validate symbol name format
   if (newName && !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(newName)) {
-    return {error: `Invalid identifier: '${newName}'`, hint: 'Must be a valid JavaScript/TypeScript identifier'}
+    return createErrorResponse(`Invalid identifier: '${newName}'`, 'Must be a valid JavaScript/TypeScript identifier')
   }
 
   const project = await getProject()
@@ -418,14 +419,6 @@ export async function handleRenameSymbolQuery(args: RenameSymbolArgs) {
     }
 
     default:
-      return {
-        error: `Unknown query type: ${query}`,
-        availableQueries: ['preview', 'validate', 'execute'],
-        examples: [
-          {query: 'preview', symbol: 'oldName'},
-          {query: 'validate', symbol: 'oldName', newName: 'newName'},
-          {query: 'execute', symbol: 'oldName', newName: 'newName', dryRun: false}
-        ]
-      }
+      return createErrorResponse(`Unknown query type: ${query}`, 'Available queries: preview, validate, execute')
   }
 }

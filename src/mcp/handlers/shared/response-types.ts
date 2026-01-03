@@ -1,0 +1,95 @@
+/**
+ * Standardized MCP response types following 2025-11-25 spec
+ *
+ * According to MCP spec, tool execution errors MUST be reported within
+ * the result object using `isError: true`, NOT as protocol-level errors.
+ * This allows the LLM to see and potentially handle the error.
+ */
+
+/**
+ * MCP content block structure
+ */
+export interface McpContentBlock {
+  type: 'text'
+  text: string
+}
+
+/**
+ * Standardized MCP error response
+ * Tool errors use content with isError flag, NOT protocol errors
+ */
+export interface McpErrorResponse {
+  content: McpContentBlock[]
+  isError: true
+}
+
+/**
+ * Standardized MCP success response
+ */
+export interface McpSuccessResponse {
+  content: McpContentBlock[]
+  isError?: false
+}
+
+/**
+ * Union type for all MCP responses
+ */
+export type McpResponse = McpErrorResponse | McpSuccessResponse
+
+/**
+ * Create a standardized error response following MCP 2025-11-25 spec
+ *
+ * @param message - The error message to display
+ * @param hint - Optional hint for how to resolve the error
+ * @returns MCP-compliant error response with isError: true
+ *
+ * @example
+ * ```typescript
+ * return createErrorResponse('File not found', 'Check that the file path is correct')
+ * ```
+ */
+export function createErrorResponse(message: string, hint?: string): McpErrorResponse {
+  const text = hint ? `Error: ${message}\n\nHint: ${hint}` : `Error: ${message}`
+  return {content: [{type: 'text', text}], isError: true}
+}
+
+/**
+ * Create a standardized success response following MCP 2025-11-25 spec
+ *
+ * @param data - The data to include in the response (will be JSON stringified)
+ * @returns MCP-compliant success response
+ *
+ * @example
+ * ```typescript
+ * return createSuccessResponse({files: [...], count: 10})
+ * ```
+ */
+export function createSuccessResponse<T>(data: T): McpSuccessResponse {
+  return {content: [{type: 'text', text: JSON.stringify(data, null, 2)}]}
+}
+
+/**
+ * Create a text-only success response (no JSON serialization)
+ *
+ * @param text - The text content to return
+ * @returns MCP-compliant success response with raw text
+ *
+ * @example
+ * ```typescript
+ * return createTextResponse('Operation completed successfully')
+ * ```
+ */
+export function createTextResponse(text: string): McpSuccessResponse {
+  return {content: [{type: 'text', text}]}
+}
+
+/**
+ * Wrap an existing result object in MCP response format
+ * Maintains backwards compatibility while adding proper typing
+ *
+ * @param result - The result object to wrap
+ * @returns MCP-compliant response
+ */
+export function wrapResponse<T>(result: T): McpSuccessResponse {
+  return createSuccessResponse(result)
+}
