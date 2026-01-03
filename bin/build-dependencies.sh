@@ -38,15 +38,13 @@ main() {
   echo "infrastructure_files_list = $infrastructure_files_list"
 
   echo 'Concatenating infrastructure files'
-  local consolidate_command="cat ${infrastructure_files_list} > ${infrastructure_hcl_file_path}"
-  eval "$consolidate_command"
+  cat ${infrastructure_files_list} > "${infrastructure_hcl_file_path}"
 
   echo 'Converting HCL to JSON (via hcl2json)'
   hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"
 
   echo 'Converting JSON to TypeScript (via Quicktype)'
-  local quicktype_command="${PROJECT_ROOT}/node_modules/quicktype/dist/index.js ${infrastructure_json_file_path} -o ${types_file_path}"
-  eval "$quicktype_command"
+  node "${PROJECT_ROOT}/node_modules/quicktype/dist/index.js" "${infrastructure_json_file_path}" -o "${types_file_path}"
 
   echo 'Checking Secrets (secrets.yaml) via SOPS'
   local secrets_file_path="${PROJECT_ROOT}/secrets.yaml"

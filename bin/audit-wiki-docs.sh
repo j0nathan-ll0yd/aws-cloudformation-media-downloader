@@ -67,15 +67,15 @@ validate_internal_links() {
       target_path="$md_dir/$link_path"
 
       # Normalize the path
-      normalized_path=$(cd "$md_dir" 2>/dev/null && realpath -m "$link_path" 2>/dev/null || echo "")
+      normalized_path=$(cd "$md_dir" 2> /dev/null && realpath -m "$link_path" 2> /dev/null || echo "")
 
       # Check if file exists
       if [ ! -f "$target_path" ] && [ ! -f "$normalized_path" ]; then
         BROKEN_LINKS+=("$md_file|$link_path")
         ((broken_count++)) || true
       fi
-    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2>/dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
-  done < <(find docs/wiki -name "*.md" 2>/dev/null)
+    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null | grep -oE '\]\([^)]+\.md[^)]*\)' | sed 's/\](\([^)]*\))/\1/' | sed 's/#.*//' || true)
+  done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
   if [ "$broken_count" -eq 0 ]; then
     echo -e "  ${GREEN}OK${NC} - All internal links resolve"
@@ -123,8 +123,8 @@ validate_code_paths() {
           fi
         fi
       done < <(echo "$line_content" | grep -oE '`[^`]+`' | tr -d '`' || true)
-    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2>/dev/null || true)
-  done < <(find docs/wiki -name "*.md" 2>/dev/null)
+    done < <(awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$md_file" 2> /dev/null || true)
+  done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
   if [ "$stale_count" -eq 0 ]; then
     echo -e "  ${GREEN}OK${NC} - All code path references valid"
@@ -153,23 +153,23 @@ detect_orphan_pages() {
     local file="$1"
     local dir=$(dirname "$file")
 
-    awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$file" 2>/dev/null | \
-      grep -oE '\]\([^)]+\.md[^)]*\)' | \
-      sed 's/\](\([^)]*\))/\1/' | \
-      sed 's/#.*//' | \
+    awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$file" 2> /dev/null |
+      grep -oE '\]\([^)]+\.md[^)]*\)' |
+      sed 's/\](\([^)]*\))/\1/' |
+      sed 's/#.*//' |
       while read -r link; do
         [ -z "$link" ] && continue
         [[ "$link" == http* ]] && continue
 
         # Resolve relative path
-        target=$(cd "$dir" 2>/dev/null && realpath -m "$link" 2>/dev/null || echo "")
+        target=$(cd "$dir" 2> /dev/null && realpath -m "$link" 2> /dev/null || echo "")
         [ -f "$target" ] && echo "$target"
       done
   }
 
   # Check if a page is visited
   is_visited() {
-    grep -Fxq "$1" "$visited_file" 2>/dev/null
+    grep -Fxq "$1" "$visited_file" 2> /dev/null
   }
 
   # Mark a page as visited
@@ -212,7 +212,7 @@ detect_orphan_pages() {
         ((orphan_count++)) || true
       fi
     fi
-  done < <(find docs/wiki -name "*.md" 2>/dev/null)
+  done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
   if [ "$orphan_count" -eq 0 ]; then
     echo -e "  ${GREEN}OK${NC} - No orphan pages detected"
@@ -277,7 +277,7 @@ validate_import_aliases() {
         fi
       fi
     done < "$md_file"
-  done < <(find docs/wiki -name "*.md" 2>/dev/null)
+  done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
   echo -e "  ${GREEN}OK${NC} - Import alias check complete"
 }
@@ -291,8 +291,8 @@ echo ""
 echo -e "${YELLOW}Generating reports...${NC}"
 
 # Get current git info
-GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-GIT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
+GIT_SHA=$(git rev-parse --short HEAD 2> /dev/null || echo "unknown")
+GIT_BRANCH=$(git branch --show-current 2> /dev/null || echo "unknown")
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Generate JSON report
