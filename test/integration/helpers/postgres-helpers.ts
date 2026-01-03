@@ -139,9 +139,10 @@ export async function createAllTables(): Promise<void> {
   const schema = getWorkerSchema()
 
   // Wait for schema to be available (handles race conditions with globalSetup)
-  // Retry up to 10 times with 500ms delay (5 seconds total)
-  const maxRetries = 10
-  const retryDelayMs = 500
+  // Retry up to 30 times with 1000ms delay (30 seconds total)
+  // CI environments may have slower schema creation due to resource contention
+  const maxRetries = 30
+  const retryDelayMs = 1000
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const result = await db.execute(sql.raw(`
@@ -164,9 +165,9 @@ export async function createAllTables(): Promise<void> {
     }
   }
 
-  // If we get here, schema still doesn't exist after retries
+  // If we get here, schema still doesn't exist after 30 seconds
   // This indicates a globalSetup failure - throw a clear error
-  throw new Error(`Schema '${schema}' not found after ${maxRetries} retries. Check globalSetup.ts execution.`)
+  throw new Error(`Schema '${schema}' not found after ${maxRetries}s. Check globalSetup.ts execution or increase MAX_WORKERS.`)
 }
 
 /**
