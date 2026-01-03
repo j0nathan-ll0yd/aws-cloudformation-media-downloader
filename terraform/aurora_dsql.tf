@@ -25,18 +25,6 @@ resource "aws_iam_policy" "LambdaDSQLAccess" {
   tags        = local.common_tags
 }
 
-# Output the cluster endpoint for Lambda configuration
-# Aurora DSQL endpoints follow the pattern: <identifier>.dsql.<region>.on.aws
-output "dsql_cluster_endpoint" {
-  description = "Aurora DSQL cluster endpoint"
-  value       = "${aws_dsql_cluster.media_downloader.identifier}.dsql.${data.aws_region.current.id}.on.aws"
-}
-
-output "dsql_cluster_arn" {
-  description = "Aurora DSQL cluster ARN"
-  value       = aws_dsql_cluster.media_downloader.arn
-}
-
 # Wait for DSQL cluster to be fully available before running migrations
 # Aurora DSQL clusters may take a moment to be connection-ready after creation
 resource "time_sleep" "wait_for_dsql" {

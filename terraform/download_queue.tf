@@ -76,13 +76,3 @@ resource "aws_cloudwatch_metric_alarm" "DownloadDLQMessages" {
     QueueName = aws_sqs_queue.DownloadDLQ.name
   }
 }
-
-output "download_queue_url" {
-  description = "Download Queue URL"
-  value       = aws_sqs_queue.DownloadQueue.id
-}
-
-output "download_queue_arn" {
-  description = "Download Queue ARN"
-  value       = aws_sqs_queue.DownloadQueue.arn
-}

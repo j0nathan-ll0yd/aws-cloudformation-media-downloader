@@ -22,13 +22,3 @@ resource "aws_dynamodb_table" "IdempotencyTable" {
     Purpose = "Powertools idempotency storage"
   })
 }
-
-output "idempotency_table_name" {
-  description = "Name of the Idempotency DynamoDB table"
-  value       = aws_dynamodb_table.IdempotencyTable.name
-}
-
-output "idempotency_table_arn" {
-  description = "ARN of the Idempotency DynamoDB table"
-  value       = aws_dynamodb_table.IdempotencyTable.arn
-}

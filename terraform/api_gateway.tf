@@ -131,19 +131,3 @@ resource "aws_iam_role_policy" "ApiGatewayCloudwatch" {
 resource "aws_api_gateway_account" "Main" {
   cloudwatch_role_arn = aws_iam_role.ApiGatewayCloudwatch.arn
 }
-
-output "api_gateway_subdomain" {
-  description = "The subdomain of the API Gateway (e.g. ow9mzeewuf)"
-  value       = aws_api_gateway_rest_api.Main.id
-}
-
-output "api_gateway_stage" {
-  description = "The stage of the API Gateway (e.g. prod, staging)"
-  value       = aws_api_gateway_stage.Production.stage_name
-}
-
-output "api_gateway_api_key" {
-  description = "The API key for the API Gateway"
-  value       = aws_api_gateway_api_key.iOSApp.value
-  sensitive   = true
-}
