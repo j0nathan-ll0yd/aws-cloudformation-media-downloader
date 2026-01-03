@@ -1,44 +1,67 @@
 #!/usr/bin/env bash
-# Auto-update GraphRAG knowledge graph when relevant files change
-# This should be triggered by CI or as a git hook
+# Script: auto-update-graphrag.sh
+# Purpose: Auto-update GraphRAG knowledge graph when relevant files change
+# Usage: Triggered by CI or as a git hook
 
 set -euo pipefail
 
-echo "🔍 Checking for changes that require GraphRAG update..."
+# Color definitions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Files that require GraphRAG re-extraction when changed
-TRIGGER_PATHS=(
-  "src/lambdas/"
-  "src/entities/"
-  "src/lib/vendor/"
-  "graphrag/metadata.json"
-  "tsp/"
-)
+# Error handler
+error() {
+  echo -e "${RED}✗${NC} Error: $1" >&2
+  exit "${2:-1}"
+}
 
-# Check if any trigger files have changed
-CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2> /dev/null || echo "")
+# Directory resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-if [ -z "$CHANGED_FILES" ]; then
-  echo "ℹ️  No changes detected (possibly first commit)"
-  exit 0
-fi
+main() {
+  echo -e "${BLUE}➜${NC} Checking for changes that require GraphRAG update..."
 
-NEEDS_UPDATE=false
+  # Files that require GraphRAG re-extraction when changed
+  local TRIGGER_PATHS=(
+    "src/lambdas/"
+    "src/entities/"
+    "src/lib/vendor/"
+    "graphrag/metadata.json"
+    "tsp/"
+  )
 
-for path in "${TRIGGER_PATHS[@]}"; do
-  if echo "$CHANGED_FILES" | grep -q "^${path}"; then
-    echo "📝 Detected changes in: $path"
-    NEEDS_UPDATE=true
-    break
+  # Check if any trigger files have changed
+  local CHANGED_FILES
+  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2> /dev/null || echo "")
+
+  if [ -z "$CHANGED_FILES" ]; then
+    echo -e "${BLUE}➜${NC} No changes detected (possibly first commit)"
+    exit 0
   fi
-done
 
-if [ "$NEEDS_UPDATE" = true ]; then
-  echo "🔄 Updating GraphRAG knowledge graph..."
-  pnpm run graphrag:extract
+  local NEEDS_UPDATE=false
 
-  echo "✅ GraphRAG knowledge graph updated"
-  echo "ℹ️  Vector database is now synchronized with source code"
-else
-  echo "✅ No GraphRAG update needed"
-fi
+  for path in "${TRIGGER_PATHS[@]}"; do
+    if echo "$CHANGED_FILES" | grep -q "^${path}"; then
+      echo -e "${BLUE}➜${NC} Detected changes in: $path"
+      NEEDS_UPDATE=true
+      break
+    fi
+  done
+
+  if [ "$NEEDS_UPDATE" = true ]; then
+    echo -e "${BLUE}➜${NC} Updating GraphRAG knowledge graph..."
+    pnpm run graphrag:extract
+
+    echo -e "${GREEN}✓${NC} GraphRAG knowledge graph updated"
+    echo -e "${BLUE}➜${NC} Vector database is now synchronized with source code"
+  else
+    echo -e "${GREEN}✓${NC} No GraphRAG update needed"
+  fi
+}
+
+main "$@"

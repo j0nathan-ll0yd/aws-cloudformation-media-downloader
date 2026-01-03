@@ -1,30 +1,53 @@
 #!/usr/bin/env bash
+# Script: document-source.sh
+# Purpose: Generate TSDoc documentation for TypeScript source files
+# Usage: pnpm run document-source or ./bin/document-source.sh
+#
+# Note: Workarounds in place because TSDoc's exclude method doesn't work as expected
 
-# THESE WORKAROUNDS ARE IN PLACE BECAUSE THE EXCLUDE METHOD OF TDSOC DOESN'T WORK
-# TODO: File a bug demonstrating the issue to the TSDoc project
+set -euo pipefail
 
-# Get the directory of this file (where the package.json file is located)
-bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
+# Color definitions
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-test_file_path="${bin_dir}/../src/pipeline/infrastructure.environment.test.ts"
-types_file_path="${bin_dir}/../src/types/infrastructure.d.ts"
-git_diff_output=$(git diff ${test_file_path})
-git_diff_output_length=${#git_diff_output}
-if [[ $git_diff_output_length -gt 0 ]]; then
-  echo "Test file has changed; commit changes before running"
-  exit
-fi
+# Error handler
+error() {
+  echo -e "${RED}✗${NC} Error: $1" >&2
+  exit "${2:-1}"
+}
 
-# remove the generated definitions and the file(s) they rely on
-if test -f $types_file_path; then
-  rm "${bin_dir}/../src/types/infrastructure.d.ts"
-fi
-rm "${test_file_path}"
+# Directory resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# generate the documentation
-typedoc_command="${bin_dir}/../node_modules/typedoc/bin/typedoc --options ./typedoc.json"
-eval $typedoc_command
+main() {
+  local test_file_path="${PROJECT_ROOT}/src/pipeline/infrastructure.environment.test.ts"
+  local types_file_path="${PROJECT_ROOT}/src/types/infrastructure.d.ts"
+  local git_diff_output
+  git_diff_output=$(git diff "${test_file_path}")
+  local git_diff_output_length=${#git_diff_output}
 
-# retrieve or rebuild the files
-git checkout "${test_file_path}"
-pnpm run build-dependencies
+  if [[ $git_diff_output_length -gt 0 ]]; then
+    error "Test file has changed; commit changes before running"
+  fi
+
+  # remove the generated definitions and the file(s) they rely on
+  if test -f "$types_file_path"; then
+    rm "${PROJECT_ROOT}/src/types/infrastructure.d.ts"
+  fi
+  rm "${test_file_path}"
+
+  # generate the documentation
+  local typedoc_command="${PROJECT_ROOT}/node_modules/typedoc/bin/typedoc --options ./typedoc.json"
+  eval "$typedoc_command"
+
+  # retrieve or rebuild the files
+  git checkout "${test_file_path}"
+  pnpm run build-dependencies
+}
+
+main "$@"

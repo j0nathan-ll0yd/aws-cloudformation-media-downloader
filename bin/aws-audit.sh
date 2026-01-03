@@ -24,7 +24,7 @@
 #   - SQS queues
 #   - CloudWatch log groups
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -72,103 +72,11 @@ else
   NC='\033[0m'
 fi
 
-# Project resource patterns (adjust based on your naming conventions)
-LAMBDA_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator)"
-IAM_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator|ApiGatewayCloudwatch|SNSLogging)"
-DYNAMODB_PATTERN="(MediaDownloader|Idempotency)"
-S3_PATTERN="(media-downloader|lifegames)"
-CLOUDFRONT_PATTERN="(MediaDownloader|media)"
-
-# Temporary files for comparison
-TMP_DIR=$(mktemp -d)
-trap "rm -rf $TMP_DIR" EXIT
-
-echo -e "${BLUE}AWS Infrastructure Audit${NC}"
-echo "========================="
-echo ""
-
-# Load environment variables
-if [[ -f "${PROJECT_ROOT}/.env" ]]; then
-  eval export $(cat "${PROJECT_ROOT}/.env")
-fi
-
-# Verify AWS credentials
-echo -e "${YELLOW}[1/7] Verifying AWS credentials...${NC}"
-AWS_IDENTITY=$(aws sts get-caller-identity --output json 2> /dev/null) || {
-  echo -e "${RED}ERROR: AWS credentials not configured or expired${NC}"
-  exit 1
+# Error handler
+error() {
+  echo -e "${RED}✗${NC} Error: $1" >&2
+  exit "${2:-1}"
 }
-AWS_ACCOUNT=$(echo "$AWS_IDENTITY" | jq -r '.Account')
-AWS_REGION=$(aws configure get region || echo "us-west-2")
-echo "  Account: ${AWS_ACCOUNT}"
-echo "  Region:  ${AWS_REGION}"
-echo ""
-
-# Collect Terraform state
-echo -e "${YELLOW}[2/7] Collecting Terraform state...${NC}"
-cd "${TERRAFORM_DIR}"
-
-tofu state list 2> /dev/null | grep "aws_lambda_function\." | sed 's/aws_lambda_function\.//' > "$TMP_DIR/tf_lambdas.txt" || true
-tofu state list 2> /dev/null | grep "aws_iam_role\." | sed 's/aws_iam_role\.//' > "$TMP_DIR/tf_roles.txt" || true
-tofu state list 2> /dev/null | grep "aws_iam_policy\." | sed 's/aws_iam_policy\.//' > "$TMP_DIR/tf_policies.txt" || true
-tofu state list 2> /dev/null | grep "aws_cloudfront_distribution\." | sed 's/aws_cloudfront_distribution\.//' > "$TMP_DIR/tf_cloudfront.txt" || true
-tofu state list 2> /dev/null | grep "aws_api_gateway_rest_api\." | sed 's/aws_api_gateway_rest_api\.//' > "$TMP_DIR/tf_apigw.txt" || true
-tofu state list 2> /dev/null | grep "aws_dynamodb_table\." | sed 's/aws_dynamodb_table\.//' > "$TMP_DIR/tf_dynamodb.txt" || true
-tofu state list 2> /dev/null | grep "aws_s3_bucket\." | sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
-tofu state list 2> /dev/null | grep "aws_sqs_queue\." | sed 's/aws_sqs_queue\.//' > "$TMP_DIR/tf_sqs.txt" || true
-
-TF_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/tf_lambdas.txt" | tr -d ' ')
-TF_ROLE_COUNT=$(wc -l < "$TMP_DIR/tf_roles.txt" | tr -d ' ')
-TF_POLICY_COUNT=$(wc -l < "$TMP_DIR/tf_policies.txt" | tr -d ' ')
-
-echo "  Lambdas in state:   ${TF_LAMBDA_COUNT}"
-echo "  IAM Roles in state: ${TF_ROLE_COUNT}"
-echo "  IAM Policies:       ${TF_POLICY_COUNT}"
-echo ""
-
-# Collect AWS resources
-echo -e "${YELLOW}[3/7] Collecting AWS resources...${NC}"
-
-# Lambda functions
-aws lambda list-functions --query 'Functions[*].FunctionName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_lambdas_all.txt"
-grep -E "$LAMBDA_PATTERN" "$TMP_DIR/aws_lambdas_all.txt" > "$TMP_DIR/aws_lambdas.txt" 2> /dev/null || true
-
-# IAM roles (filter to project-related)
-aws iam list-roles --query 'Roles[*].RoleName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_roles_all.txt"
-grep -E "$IAM_PATTERN" "$TMP_DIR/aws_roles_all.txt" > "$TMP_DIR/aws_roles.txt" 2> /dev/null || true
-
-# IAM policies (filter to project-related)
-aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_policies_all.txt"
-grep -E "$IAM_PATTERN" "$TMP_DIR/aws_policies_all.txt" > "$TMP_DIR/aws_policies.txt" 2> /dev/null || true
-
-# CloudFront distributions
-aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2> /dev/null > "$TMP_DIR/aws_cloudfront.txt" || true
-
-# API Gateway
-aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw.txt" || true
-
-# DynamoDB
-aws dynamodb list-tables --query 'TableNames' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
-grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2> /dev/null || true
-
-# S3 buckets
-aws s3api list-buckets --query 'Buckets[*].Name' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
-grep -E "$S3_PATTERN" "$TMP_DIR/aws_s3_all.txt" > "$TMP_DIR/aws_s3.txt" 2> /dev/null || true
-
-# SQS queues
-aws sqs list-queues --query 'QueueUrls' --output text 2> /dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs.txt" 2> /dev/null || true
-
-AWS_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/aws_lambdas.txt" | tr -d ' ')
-AWS_ROLE_COUNT=$(wc -l < "$TMP_DIR/aws_roles.txt" | tr -d ' ')
-AWS_POLICY_COUNT=$(wc -l < "$TMP_DIR/aws_policies.txt" | tr -d ' ')
-
-echo "  Lambdas in AWS:     ${AWS_LAMBDA_COUNT} (project-related)"
-echo "  IAM Roles in AWS:   ${AWS_ROLE_COUNT} (project-related)"
-echo "  IAM Policies:       ${AWS_POLICY_COUNT} (project-related)"
-echo ""
-
-# Identify orphaned resources
-echo -e "${YELLOW}[4/7] Identifying orphaned resources...${NC}"
 
 # Function to find orphans (in AWS but not in TF state)
 find_orphans() {
@@ -182,260 +90,362 @@ find_orphans() {
   done < "$aws_file"
 }
 
-# Get function names from Terraform state (extract actual names, not resource identifiers)
-# For now, use the resource identifiers which should match function names in this project
-ORPHAN_LAMBDAS=$(find_orphans "$TMP_DIR/aws_lambdas.txt" "$TMP_DIR/tf_lambdas.txt" | sort -u)
-ORPHAN_ROLES=$(find_orphans "$TMP_DIR/aws_roles.txt" "$TMP_DIR/tf_roles.txt" | sort -u)
-ORPHAN_POLICIES=$(find_orphans "$TMP_DIR/aws_policies.txt" "$TMP_DIR/tf_policies.txt" | sort -u)
+main() {
+  # Project resource patterns (adjust based on your naming conventions)
+  LAMBDA_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator)"
+  IAM_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator|ApiGatewayCloudwatch|SNSLogging)"
+  DYNAMODB_PATTERN="(MediaDownloader|Idempotency)"
+  S3_PATTERN="(media-downloader|lifegames)"
+  CLOUDFRONT_PATTERN="(MediaDownloader|media)"
 
-ORPHAN_LAMBDA_COUNT=$(echo "$ORPHAN_LAMBDAS" | grep -c . || echo 0)
-ORPHAN_ROLE_COUNT=$(echo "$ORPHAN_ROLES" | grep -c . || echo 0)
-ORPHAN_POLICY_COUNT=$(echo "$ORPHAN_POLICIES" | grep -c . || echo 0)
+  # Temporary files for comparison
+  TMP_DIR=$(mktemp -d)
+  trap "rm -rf $TMP_DIR" EXIT
 
-if [[ -n "$ORPHAN_LAMBDAS" ]]; then
-  echo -e "${RED}Orphaned Lambda functions:${NC}"
-  echo "$ORPHAN_LAMBDAS" | while read -r item; do
-    [[ -n "$item" ]] && echo "  - $item"
-  done
-else
-  echo -e "${GREEN}No orphaned Lambda functions${NC}"
-fi
-
-if [[ -n "$ORPHAN_ROLES" ]]; then
-  echo -e "${RED}Orphaned IAM Roles:${NC}"
-  echo "$ORPHAN_ROLES" | while read -r item; do
-    [[ -n "$item" ]] && echo "  - $item"
-  done
-else
-  echo -e "${GREEN}No orphaned IAM Roles${NC}"
-fi
-
-if [[ -n "$ORPHAN_POLICIES" ]]; then
-  echo -e "${RED}Orphaned IAM Policies:${NC}"
-  echo "$ORPHAN_POLICIES" | while read -r item; do
-    [[ -n "$item" ]] && echo "  - $item"
-  done
-else
-  echo -e "${GREEN}No orphaned IAM Policies${NC}"
-fi
-echo ""
-
-# Check for duplicates
-echo -e "${YELLOW}[5/7] Checking for duplicates...${NC}"
-
-# Find duplicates (names with numeric suffixes that shouldn't have them)
-DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
-DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
-DUPLICATE_CLOUDFRONT=$(awk -F'\t' '{print $2}' "$TMP_DIR/aws_cloudfront.txt" 2> /dev/null | grep -E "(OfflineMedia|MediaDownloader)" | sort | uniq -d || true)
-
-if [[ -n "$DUPLICATE_LAMBDAS" ]]; then
-  echo -e "${RED}Potential duplicate Lambdas:${NC}"
-  echo "$DUPLICATE_LAMBDAS" | while read -r item; do
-    [[ -n "$item" ]] && echo "  - $item"
-  done
-else
-  echo -e "${GREEN}No duplicate Lambdas found${NC}"
-fi
-
-if [[ -n "$DUPLICATE_ROLES" ]]; then
-  echo -e "${RED}Potential duplicate IAM Roles:${NC}"
-  echo "$DUPLICATE_ROLES" | while read -r item; do
-    [[ -n "$item" ]] && echo "  - $item"
-  done
-else
-  echo -e "${GREEN}No duplicate IAM Roles found${NC}"
-fi
-
-# Count CloudFront and API Gateway
-CLOUDFRONT_COUNT=$(wc -l < "$TMP_DIR/aws_cloudfront.txt" | tr -d ' ')
-APIGW_COUNT=$(wc -l < "$TMP_DIR/aws_apigw.txt" | tr -d ' ')
-
-if [[ "$CLOUDFRONT_COUNT" -gt 2 ]]; then
-  echo -e "${RED}Multiple CloudFront distributions found (expected 2):${NC}"
-  cat "$TMP_DIR/aws_cloudfront.txt" | while read -r id comment; do
-    echo "  - $id ($comment)"
-  done
-fi
-
-if [[ "$APIGW_COUNT" -gt 1 ]]; then
-  echo -e "${RED}Multiple API Gateways found (expected 1):${NC}"
-  cat "$TMP_DIR/aws_apigw.txt" | while read -r id name; do
-    echo "  - $id ($name)"
-  done
-fi
-echo ""
-
-# Check for untagged resources
-echo -e "${YELLOW}[6/7] Checking for untagged resources...${NC}"
-
-UNTAGGED_COUNT=0
-while IFS= read -r func; do
-  [[ -z "$func" ]] && continue
-  TAGS=$(aws lambda get-function --function-name "$func" --query 'Tags.ManagedBy' --output text 2> /dev/null || echo "None")
-  if [[ "$TAGS" != "terraform" ]]; then
-    if [[ $UNTAGGED_COUNT -eq 0 ]]; then
-      echo -e "${YELLOW}Lambdas missing ManagedBy=terraform tag:${NC}"
-    fi
-    echo "  - $func (ManagedBy=$TAGS)"
-    ((UNTAGGED_COUNT++))
-  fi
-done < "$TMP_DIR/aws_lambdas.txt"
-
-if [[ $UNTAGGED_COUNT -eq 0 ]]; then
-  echo -e "${GREEN}All Lambda functions properly tagged${NC}"
-fi
-echo ""
-
-# Summary and remediation
-echo -e "${YELLOW}[7/7] Summary${NC}"
-echo "============="
-echo ""
-
-TOTAL_ORPHANS=$((ORPHAN_LAMBDA_COUNT + ORPHAN_ROLE_COUNT + ORPHAN_POLICY_COUNT))
-
-echo "Orphaned resources:    ${TOTAL_ORPHANS}"
-echo "  - Lambda functions:  ${ORPHAN_LAMBDA_COUNT}"
-echo "  - IAM Roles:         ${ORPHAN_ROLE_COUNT}"
-echo "  - IAM Policies:      ${ORPHAN_POLICY_COUNT}"
-echo "CloudFront dists:      ${CLOUDFRONT_COUNT} (expected: 2)"
-echo "API Gateways:          ${APIGW_COUNT} (expected: 1)"
-echo "Untagged Lambdas:      ${UNTAGGED_COUNT}"
-echo ""
-
-# Generate remediation commands
-if [[ $TOTAL_ORPHANS -gt 0 ]]; then
-  echo -e "${BLUE}Remediation Commands${NC}"
-  echo "===================="
+  echo -e "${BLUE}AWS Infrastructure Audit${NC}"
+  echo "========================="
   echo ""
 
+  # Load environment variables
+  if [[ -f "${PROJECT_ROOT}/.env" ]]; then
+    eval export $(cat "${PROJECT_ROOT}/.env")
+  fi
+
+  # Verify AWS credentials
+  echo -e "${YELLOW}[1/7] Verifying AWS credentials...${NC}"
+  AWS_IDENTITY=$(aws sts get-caller-identity --output json 2> /dev/null) || {
+    echo -e "${RED}ERROR: AWS credentials not configured or expired${NC}"
+    exit 1
+  }
+  AWS_ACCOUNT=$(echo "$AWS_IDENTITY" | jq -r '.Account')
+  AWS_REGION=$(aws configure get region || echo "us-west-2")
+  echo "  Account: ${AWS_ACCOUNT}"
+  echo "  Region:  ${AWS_REGION}"
+  echo ""
+
+  # Collect Terraform state
+  echo -e "${YELLOW}[2/7] Collecting Terraform state...${NC}"
+  cd "${TERRAFORM_DIR}"
+
+  tofu state list 2> /dev/null | grep "aws_lambda_function\." | sed 's/aws_lambda_function\.//' > "$TMP_DIR/tf_lambdas.txt" || true
+  tofu state list 2> /dev/null | grep "aws_iam_role\." | sed 's/aws_iam_role\.//' > "$TMP_DIR/tf_roles.txt" || true
+  tofu state list 2> /dev/null | grep "aws_iam_policy\." | sed 's/aws_iam_policy\.//' > "$TMP_DIR/tf_policies.txt" || true
+  tofu state list 2> /dev/null | grep "aws_cloudfront_distribution\." | sed 's/aws_cloudfront_distribution\.//' > "$TMP_DIR/tf_cloudfront.txt" || true
+  tofu state list 2> /dev/null | grep "aws_api_gateway_rest_api\." | sed 's/aws_api_gateway_rest_api\.//' > "$TMP_DIR/tf_apigw.txt" || true
+  tofu state list 2> /dev/null | grep "aws_dynamodb_table\." | sed 's/aws_dynamodb_table\.//' > "$TMP_DIR/tf_dynamodb.txt" || true
+  tofu state list 2> /dev/null | grep "aws_s3_bucket\." | sed 's/aws_s3_bucket\.//' > "$TMP_DIR/tf_s3.txt" || true
+  tofu state list 2> /dev/null | grep "aws_sqs_queue\." | sed 's/aws_sqs_queue\.//' > "$TMP_DIR/tf_sqs.txt" || true
+
+  TF_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/tf_lambdas.txt" | tr -d ' ')
+  TF_ROLE_COUNT=$(wc -l < "$TMP_DIR/tf_roles.txt" | tr -d ' ')
+  TF_POLICY_COUNT=$(wc -l < "$TMP_DIR/tf_policies.txt" | tr -d ' ')
+
+  echo "  Lambdas in state:   ${TF_LAMBDA_COUNT}"
+  echo "  IAM Roles in state: ${TF_ROLE_COUNT}"
+  echo "  IAM Policies:       ${TF_POLICY_COUNT}"
+  echo ""
+
+  # Collect AWS resources
+  echo -e "${YELLOW}[3/7] Collecting AWS resources...${NC}"
+
+  # Lambda functions
+  aws lambda list-functions --query 'Functions[*].FunctionName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_lambdas_all.txt"
+  grep -E "$LAMBDA_PATTERN" "$TMP_DIR/aws_lambdas_all.txt" > "$TMP_DIR/aws_lambdas.txt" 2> /dev/null || true
+
+  # IAM roles (filter to project-related)
+  aws iam list-roles --query 'Roles[*].RoleName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_roles_all.txt"
+  grep -E "$IAM_PATTERN" "$TMP_DIR/aws_roles_all.txt" > "$TMP_DIR/aws_roles.txt" 2> /dev/null || true
+
+  # IAM policies (filter to project-related)
+  aws iam list-policies --scope Local --query 'Policies[*].PolicyName' --output text 2> /dev/null | tr '\t' '\n' | sort > "$TMP_DIR/aws_policies_all.txt"
+  grep -E "$IAM_PATTERN" "$TMP_DIR/aws_policies_all.txt" > "$TMP_DIR/aws_policies.txt" 2> /dev/null || true
+
+  # CloudFront distributions
+  aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,Comment]' --output text 2> /dev/null > "$TMP_DIR/aws_cloudfront.txt" || true
+
+  # API Gateway
+  aws apigateway get-rest-apis --query 'items[*].[id,name]' --output text 2> /dev/null > "$TMP_DIR/aws_apigw.txt" || true
+
+  # DynamoDB
+  aws dynamodb list-tables --query 'TableNames' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_dynamodb_all.txt" || true
+  grep -E "$DYNAMODB_PATTERN" "$TMP_DIR/aws_dynamodb_all.txt" > "$TMP_DIR/aws_dynamodb.txt" 2> /dev/null || true
+
+  # S3 buckets
+  aws s3api list-buckets --query 'Buckets[*].Name' --output text 2> /dev/null | tr '\t' '\n' > "$TMP_DIR/aws_s3_all.txt" || true
+  grep -E "$S3_PATTERN" "$TMP_DIR/aws_s3_all.txt" > "$TMP_DIR/aws_s3.txt" 2> /dev/null || true
+
+  # SQS queues
+  aws sqs list-queues --query 'QueueUrls' --output text 2> /dev/null | tr '\t' '\n' | xargs -I{} basename {} > "$TMP_DIR/aws_sqs.txt" 2> /dev/null || true
+
+  AWS_LAMBDA_COUNT=$(wc -l < "$TMP_DIR/aws_lambdas.txt" | tr -d ' ')
+  AWS_ROLE_COUNT=$(wc -l < "$TMP_DIR/aws_roles.txt" | tr -d ' ')
+  AWS_POLICY_COUNT=$(wc -l < "$TMP_DIR/aws_policies.txt" | tr -d ' ')
+
+  echo "  Lambdas in AWS:     ${AWS_LAMBDA_COUNT} (project-related)"
+  echo "  IAM Roles in AWS:   ${AWS_ROLE_COUNT} (project-related)"
+  echo "  IAM Policies:       ${AWS_POLICY_COUNT} (project-related)"
+  echo ""
+
+  # Identify orphaned resources
+  echo -e "${YELLOW}[4/7] Identifying orphaned resources...${NC}"
+
+  # Get function names from Terraform state (extract actual names, not resource identifiers)
+  # For now, use the resource identifiers which should match function names in this project
+  ORPHAN_LAMBDAS=$(find_orphans "$TMP_DIR/aws_lambdas.txt" "$TMP_DIR/tf_lambdas.txt" | sort -u)
+  ORPHAN_ROLES=$(find_orphans "$TMP_DIR/aws_roles.txt" "$TMP_DIR/tf_roles.txt" | sort -u)
+  ORPHAN_POLICIES=$(find_orphans "$TMP_DIR/aws_policies.txt" "$TMP_DIR/tf_policies.txt" | sort -u)
+
+  ORPHAN_LAMBDA_COUNT=$(echo "$ORPHAN_LAMBDAS" | grep -c . || echo 0)
+  ORPHAN_ROLE_COUNT=$(echo "$ORPHAN_ROLES" | grep -c . || echo 0)
+  ORPHAN_POLICY_COUNT=$(echo "$ORPHAN_POLICIES" | grep -c . || echo 0)
+
   if [[ -n "$ORPHAN_LAMBDAS" ]]; then
-    echo "# Delete orphaned Lambda functions:"
+    echo -e "${RED}Orphaned Lambda functions:${NC}"
     echo "$ORPHAN_LAMBDAS" | while read -r item; do
-      [[ -n "$item" ]] && echo "aws lambda delete-function --function-name \"$item\""
+      [[ -n "$item" ]] && echo "  - $item"
     done
-    echo ""
+  else
+    echo -e "${GREEN}No orphaned Lambda functions${NC}"
   fi
 
   if [[ -n "$ORPHAN_ROLES" ]]; then
-    echo "# Delete orphaned IAM Roles (detach policies first):"
+    echo -e "${RED}Orphaned IAM Roles:${NC}"
     echo "$ORPHAN_ROLES" | while read -r item; do
-      [[ -n "$item" ]] && echo "aws iam delete-role --role-name \"$item\""
+      [[ -n "$item" ]] && echo "  - $item"
     done
-    echo ""
+  else
+    echo -e "${GREEN}No orphaned IAM Roles${NC}"
   fi
 
   if [[ -n "$ORPHAN_POLICIES" ]]; then
-    echo "# Delete orphaned IAM Policies:"
+    echo -e "${RED}Orphaned IAM Policies:${NC}"
     echo "$ORPHAN_POLICIES" | while read -r item; do
-      if [[ -n "$item" ]]; then
-        POLICY_ARN="arn:aws:iam::${AWS_ACCOUNT}:policy/${item}"
-        echo "aws iam delete-policy --policy-arn \"$POLICY_ARN\""
-      fi
+      [[ -n "$item" ]] && echo "  - $item"
     done
-    echo ""
+  else
+    echo -e "${GREEN}No orphaned IAM Policies${NC}"
+  fi
+  echo ""
+
+  # Check for duplicates
+  echo -e "${YELLOW}[5/7] Checking for duplicates...${NC}"
+
+  # Find duplicates (names with numeric suffixes that shouldn't have them)
+  DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
+  DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
+  DUPLICATE_CLOUDFRONT=$(awk -F'\t' '{print $2}' "$TMP_DIR/aws_cloudfront.txt" 2> /dev/null | grep -E "(OfflineMedia|MediaDownloader)" | sort | uniq -d || true)
+
+  if [[ -n "$DUPLICATE_LAMBDAS" ]]; then
+    echo -e "${RED}Potential duplicate Lambdas:${NC}"
+    echo "$DUPLICATE_LAMBDAS" | while read -r item; do
+      [[ -n "$item" ]] && echo "  - $item"
+    done
+  else
+    echo -e "${GREEN}No duplicate Lambdas found${NC}"
   fi
 
-  # Prune mode
-  if [[ "$PRUNE_MODE" == "true" ]]; then
+  if [[ -n "$DUPLICATE_ROLES" ]]; then
+    echo -e "${RED}Potential duplicate IAM Roles:${NC}"
+    echo "$DUPLICATE_ROLES" | while read -r item; do
+      [[ -n "$item" ]] && echo "  - $item"
+    done
+  else
+    echo -e "${GREEN}No duplicate IAM Roles found${NC}"
+  fi
+
+  # Count CloudFront and API Gateway
+  CLOUDFRONT_COUNT=$(wc -l < "$TMP_DIR/aws_cloudfront.txt" | tr -d ' ')
+  APIGW_COUNT=$(wc -l < "$TMP_DIR/aws_apigw.txt" | tr -d ' ')
+
+  if [[ "$CLOUDFRONT_COUNT" -gt 2 ]]; then
+    echo -e "${RED}Multiple CloudFront distributions found (expected 2):${NC}"
+    cat "$TMP_DIR/aws_cloudfront.txt" | while read -r id comment; do
+      echo "  - $id ($comment)"
+    done
+  fi
+
+  if [[ "$APIGW_COUNT" -gt 1 ]]; then
+    echo -e "${RED}Multiple API Gateways found (expected 1):${NC}"
+    cat "$TMP_DIR/aws_apigw.txt" | while read -r id name; do
+      echo "  - $id ($name)"
+    done
+  fi
+  echo ""
+
+  # Check for untagged resources
+  echo -e "${YELLOW}[6/7] Checking for untagged resources...${NC}"
+
+  UNTAGGED_COUNT=0
+  while IFS= read -r func; do
+    [[ -z "$func" ]] && continue
+    TAGS=$(aws lambda get-function --function-name "$func" --query 'Tags.ManagedBy' --output text 2> /dev/null || echo "None")
+    if [[ "$TAGS" != "terraform" ]]; then
+      if [[ $UNTAGGED_COUNT -eq 0 ]]; then
+        echo -e "${YELLOW}Lambdas missing ManagedBy=terraform tag:${NC}"
+      fi
+      echo "  - $func (ManagedBy=$TAGS)"
+      ((UNTAGGED_COUNT++))
+    fi
+  done < "$TMP_DIR/aws_lambdas.txt"
+
+  if [[ $UNTAGGED_COUNT -eq 0 ]]; then
+    echo -e "${GREEN}All Lambda functions properly tagged${NC}"
+  fi
+  echo ""
+
+  # Summary and remediation
+  echo -e "${YELLOW}[7/7] Summary${NC}"
+  echo "============="
+  echo ""
+
+  TOTAL_ORPHANS=$((ORPHAN_LAMBDA_COUNT + ORPHAN_ROLE_COUNT + ORPHAN_POLICY_COUNT))
+
+  echo "Orphaned resources:    ${TOTAL_ORPHANS}"
+  echo "  - Lambda functions:  ${ORPHAN_LAMBDA_COUNT}"
+  echo "  - IAM Roles:         ${ORPHAN_ROLE_COUNT}"
+  echo "  - IAM Policies:      ${ORPHAN_POLICY_COUNT}"
+  echo "CloudFront dists:      ${CLOUDFRONT_COUNT} (expected: 2)"
+  echo "API Gateways:          ${APIGW_COUNT} (expected: 1)"
+  echo "Untagged Lambdas:      ${UNTAGGED_COUNT}"
+  echo ""
+
+  # Generate remediation commands
+  if [[ $TOTAL_ORPHANS -gt 0 ]]; then
+    echo -e "${BLUE}Remediation Commands${NC}"
+    echo "===================="
     echo ""
-    echo -e "${RED}PRUNE MODE ACTIVE${NC}"
-    echo ""
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-      echo "Dry run - no resources will be deleted."
+    if [[ -n "$ORPHAN_LAMBDAS" ]]; then
+      echo "# Delete orphaned Lambda functions:"
+      echo "$ORPHAN_LAMBDAS" | while read -r item; do
+        [[ -n "$item" ]] && echo "aws lambda delete-function --function-name \"$item\""
+      done
       echo ""
-    else
-      echo -e "${YELLOW}WARNING: This will delete ${TOTAL_ORPHANS} orphaned resources.${NC}"
+    fi
+
+    if [[ -n "$ORPHAN_ROLES" ]]; then
+      echo "# Delete orphaned IAM Roles (detach policies first):"
+      echo "$ORPHAN_ROLES" | while read -r item; do
+        [[ -n "$item" ]] && echo "aws iam delete-role --role-name \"$item\""
+      done
       echo ""
-      read -p "Are you sure you want to proceed? [y/N] " -n 1 -r
+    fi
+
+    if [[ -n "$ORPHAN_POLICIES" ]]; then
+      echo "# Delete orphaned IAM Policies:"
+      echo "$ORPHAN_POLICIES" | while read -r item; do
+        if [[ -n "$item" ]]; then
+          POLICY_ARN="arn:aws:iam::${AWS_ACCOUNT}:policy/${item}"
+          echo "aws iam delete-policy --policy-arn \"$POLICY_ARN\""
+        fi
+      done
+      echo ""
+    fi
+
+    # Prune mode
+    if [[ "$PRUNE_MODE" == "true" ]]; then
+      echo ""
+      echo -e "${RED}PRUNE MODE ACTIVE${NC}"
       echo ""
 
-      if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Backup state first
-        echo "Backing up state file..."
-        cp "${TERRAFORM_DIR}/terraform.tfstate" "${TERRAFORM_DIR}/terraform.tfstate.backup.$(date +%Y%m%d%H%M%S)"
-
-        # Delete orphaned Lambdas
-        if [[ -n "$ORPHAN_LAMBDAS" ]]; then
-          echo ""
-          echo "Deleting orphaned Lambda functions..."
-          echo "$ORPHAN_LAMBDAS" | while read -r item; do
-            if [[ -n "$item" ]]; then
-              echo -n "  Deleting $item... "
-              if aws lambda delete-function --function-name "$item" 2> /dev/null; then
-                echo -e "${GREEN}OK${NC}"
-              else
-                echo -e "${RED}FAILED${NC}"
-              fi
-            fi
-          done
-        fi
-
-        # Delete orphaned policies (before roles, as policies may be attached)
-        if [[ -n "$ORPHAN_POLICIES" ]]; then
-          echo ""
-          echo "Deleting orphaned IAM Policies..."
-          echo "$ORPHAN_POLICIES" | while read -r item; do
-            if [[ -n "$item" ]]; then
-              POLICY_ARN="arn:aws:iam::${AWS_ACCOUNT}:policy/${item}"
-              echo -n "  Deleting $item... "
-
-              # First, detach from all roles
-              ATTACHED_ROLES=$(aws iam list-entities-for-policy --policy-arn "$POLICY_ARN" --query 'PolicyRoles[*].RoleName' --output text 2> /dev/null || true)
-              for role in $ATTACHED_ROLES; do
-                aws iam detach-role-policy --role-name "$role" --policy-arn "$POLICY_ARN" 2> /dev/null || true
-              done
-
-              if aws iam delete-policy --policy-arn "$POLICY_ARN" 2> /dev/null; then
-                echo -e "${GREEN}OK${NC}"
-              else
-                echo -e "${RED}FAILED${NC}"
-              fi
-            fi
-          done
-        fi
-
-        # Delete orphaned roles
-        if [[ -n "$ORPHAN_ROLES" ]]; then
-          echo ""
-          echo "Deleting orphaned IAM Roles..."
-          echo "$ORPHAN_ROLES" | while read -r item; do
-            if [[ -n "$item" ]]; then
-              echo -n "  Deleting $item... "
-
-              # Detach all policies first
-              ATTACHED=$(aws iam list-attached-role-policies --role-name "$item" --query 'AttachedPolicies[*].PolicyArn' --output text 2> /dev/null || true)
-              for policy in $ATTACHED; do
-                aws iam detach-role-policy --role-name "$item" --policy-arn "$policy" 2> /dev/null || true
-              done
-
-              # Delete inline policies
-              INLINE=$(aws iam list-role-policies --role-name "$item" --query 'PolicyNames' --output text 2> /dev/null || true)
-              for policy in $INLINE; do
-                aws iam delete-role-policy --role-name "$item" --policy-name "$policy" 2> /dev/null || true
-              done
-
-              if aws iam delete-role --role-name "$item" 2> /dev/null; then
-                echo -e "${GREEN}OK${NC}"
-              else
-                echo -e "${RED}FAILED${NC}"
-              fi
-            fi
-          done
-        fi
-
+      if [[ "$DRY_RUN" == "true" ]]; then
+        echo "Dry run - no resources will be deleted."
         echo ""
-        echo -e "${GREEN}Pruning complete.${NC}"
-        echo ""
-        echo "Run 'pnpm run state:verify' to confirm state consistency."
       else
-        echo "Aborted."
+        echo -e "${YELLOW}WARNING: This will delete ${TOTAL_ORPHANS} orphaned resources.${NC}"
+        echo ""
+        read -p "Are you sure you want to proceed? [y/N] " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+          # Backup state first
+          echo "Backing up state file..."
+          cp "${TERRAFORM_DIR}/terraform.tfstate" "${TERRAFORM_DIR}/terraform.tfstate.backup.$(date +%Y%m%d%H%M%S)"
+
+          # Delete orphaned Lambdas
+          if [[ -n "$ORPHAN_LAMBDAS" ]]; then
+            echo ""
+            echo "Deleting orphaned Lambda functions..."
+            echo "$ORPHAN_LAMBDAS" | while read -r item; do
+              if [[ -n "$item" ]]; then
+                echo -n "  Deleting $item... "
+                if aws lambda delete-function --function-name "$item" 2> /dev/null; then
+                  echo -e "${GREEN}OK${NC}"
+                else
+                  echo -e "${RED}FAILED${NC}"
+                fi
+              fi
+            done
+          fi
+
+          # Delete orphaned policies (before roles, as policies may be attached)
+          if [[ -n "$ORPHAN_POLICIES" ]]; then
+            echo ""
+            echo "Deleting orphaned IAM Policies..."
+            echo "$ORPHAN_POLICIES" | while read -r item; do
+              if [[ -n "$item" ]]; then
+                POLICY_ARN="arn:aws:iam::${AWS_ACCOUNT}:policy/${item}"
+                echo -n "  Deleting $item... "
+
+                # First, detach from all roles
+                ATTACHED_ROLES=$(aws iam list-entities-for-policy --policy-arn "$POLICY_ARN" --query 'PolicyRoles[*].RoleName' --output text 2> /dev/null || true)
+                for role in $ATTACHED_ROLES; do
+                  aws iam detach-role-policy --role-name "$role" --policy-arn "$POLICY_ARN" 2> /dev/null || true
+                done
+
+                if aws iam delete-policy --policy-arn "$POLICY_ARN" 2> /dev/null; then
+                  echo -e "${GREEN}OK${NC}"
+                else
+                  echo -e "${RED}FAILED${NC}"
+                fi
+              fi
+            done
+          fi
+
+          # Delete orphaned roles
+          if [[ -n "$ORPHAN_ROLES" ]]; then
+            echo ""
+            echo "Deleting orphaned IAM Roles..."
+            echo "$ORPHAN_ROLES" | while read -r item; do
+              if [[ -n "$item" ]]; then
+                echo -n "  Deleting $item... "
+
+                # Detach all policies first
+                ATTACHED=$(aws iam list-attached-role-policies --role-name "$item" --query 'AttachedPolicies[*].PolicyArn' --output text 2> /dev/null || true)
+                for policy in $ATTACHED; do
+                  aws iam detach-role-policy --role-name "$item" --policy-arn "$policy" 2> /dev/null || true
+                done
+
+                # Delete inline policies
+                INLINE=$(aws iam list-role-policies --role-name "$item" --query 'PolicyNames' --output text 2> /dev/null || true)
+                for policy in $INLINE; do
+                  aws iam delete-role-policy --role-name "$item" --policy-name "$policy" 2> /dev/null || true
+                done
+
+                if aws iam delete-role --role-name "$item" 2> /dev/null; then
+                  echo -e "${GREEN}OK${NC}"
+                else
+                  echo -e "${RED}FAILED${NC}"
+                fi
+              fi
+            done
+          fi
+
+          echo ""
+          echo -e "${GREEN}Pruning complete.${NC}"
+          echo ""
+          echo "Run 'pnpm run state:verify' to confirm state consistency."
+        else
+          echo "Aborted."
+        fi
       fi
     fi
+  else
+    echo -e "${GREEN}No orphaned resources found. Infrastructure is clean.${NC}"
   fi
-else
-  echo -e "${GREEN}No orphaned resources found. Infrastructure is clean.${NC}"
-fi
 
-echo ""
-echo "Audit complete."
+  echo ""
+  echo "Audit complete."
+}
+
+main "$@"
