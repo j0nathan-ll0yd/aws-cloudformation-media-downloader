@@ -11,17 +11,17 @@
 // 1. AWS Lambda types
 import {APIGatewayProxyResult, Context} from 'aws-lambda'
 
-// 2. ElectroDB entities
-import {Files} from '../../../entities/Files'
+// 2. Entity query functions
+import {getFile, updateFile} from '#entities/queries'
 
 // 3. Vendor libraries
-import {createS3Upload} from '../../../lib/vendor/AWS/S3'
+import {uploadToS3} from '#lib/vendor/AWS/S3'
 
 // 4. Type imports
-import type {File} from '../../../types/domain-models'
+import type {FileRow} from '#entities/queries'
 
 // 5. Utilities
-import {logInfo, response} from '../../../util/lambda-helpers'
+import {logInfo, response} from '#util/lambda-helpers'
 
 // ❌ NEVER import AWS SDK directly - use vendor wrappers
 ```
@@ -37,7 +37,7 @@ import {response} from '#util/lambda-helpers'
 
 // Helper functions first
 async function processFile(fileId: string): Promise<void> {
-  const file = await Files.get({fileId}).go()
+  const file = await getFile(fileId)
   // Process...
 }
 
