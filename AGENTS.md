@@ -132,9 +132,15 @@ The following patterns have caused issues in this project and should be avoided:
 .
 ├── terraform/             # AWS Infrastructure (OpenTofu)
 ├── src/
-│   ├── entities/queries/  # Drizzle query modules
-│   ├── lambdas/           # Lambda functions
-│   ├── lib/vendor/        # AWS SDK & 3rd party wrappers
+│   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
+│   │   └── queries/       # Native Drizzle query modules
+│   │       ├── user-queries.ts       # User operations
+│   │       ├── file-queries.ts       # File and FileDownload operations
+│   │       ├── device-queries.ts     # Device operations
+│   │       ├── session-queries.ts    # Session, Account, VerificationToken
+│   │       └── relationship-queries.ts # UserFiles, UserDevices
+│   ├── lambdas/           # Lambda functions (17 total)
+│   ├── lib/vendor/        # 3rd party wrappers (src/lib/vendor/AWS/, Drizzle/)
 │   └── mcp/               # MCP server & validation rules
 ├── test/helpers/          # Test utilities (fixtures, mocks)
 ├── types/                 # TypeScript definitions
@@ -176,17 +182,35 @@ The following patterns have caused issues in this project and should be avoided:
 
 **Full diagrams**: [docs/wiki/Architecture/System-Diagrams.md](docs/wiki/Architecture/System-Diagrams.md) (Mermaid flowcharts, ER diagrams)
 
-### Key Lambda Triggers
+### Lambda Trigger Patterns
 
-| Lambda | Trigger | Purpose |
-|--------|---------|---------|
-| ListFiles | API Gateway | List user's files |
+| Lambda | Trigger Type | Purpose |
+|--------|-------------|---------|
+| ApiGatewayAuthorizer | API Gateway | Authorize API requests via Better Auth |
+| CleanupExpiredRecords | CloudWatch Events | Clean expired records |
+| CloudfrontMiddleware | CloudFront | Edge processing for CDN |
+| DeviceEvent | API Gateway | Log client-side device events |
+| ListFiles | API Gateway | List user's available files |
 | LoginUser | API Gateway | Authenticate user |
-| RegisterDevice | API Gateway | Register iOS device |
-| StartFileUpload | SQS | Download video to S3 |
-| WebhookFeedly | API Gateway | Process Feedly articles |
-| S3ObjectCreated | S3 Event | Notify users of uploads |
-| PruneDevices | CloudWatch | Clean inactive devices |
+| MigrateDSQL | Manual | Run Drizzle migrations on Aurora DSQL |
+| PruneDevices | CloudWatch Events | Clean inactive devices |
+| RefreshToken | API Gateway | Refresh authentication token |
+| RegisterDevice | API Gateway | Register iOS device for push |
+| RegisterUser | API Gateway | Register new user |
+| S3ObjectCreated | S3 Event | Handle uploaded files, notify users |
+| SendPushNotification | SQS | Send APNS notifications |
+| StartFileUpload | SQS | Download video from YouTube to S3 |
+| UserDelete | API Gateway | Delete user and cascade |
+| UserSubscribe | API Gateway | Manage user topic subscriptions |
+| WebhookFeedly | API Gateway | Process Feedly articles, publish events |
+
+### Data Access Patterns
+
+| Pattern | Entity | Access Method |
+|---------|--------|--------------|
+| User's files | UserFiles -> Files | Query by userId |
+| User's devices | UserDevices -> Devices | Query by userId |
+| File's users | UserFiles | Query by fileId |
 
 ---
 
