@@ -43,8 +43,8 @@ Analysis of the Convention Capture System's effectiveness with recommendations f
 
 | Tool | Coverage | Notes |
 |------|----------|-------|
-| MCP | 6/12 (50%) | Primary enforcement for TypeScript patterns |
-| ESLint | 5/12 (42%) | Mirrors MCP for in-editor feedback |
+| MCP | 7/12 (58%) | Primary enforcement for TypeScript patterns |
+| ESLint | 6/12 (50%) | Mirrors MCP for in-editor feedback |
 | Git Hooks | 2/12 (17%) | Targeted enforcement (AI commits, push protection) |
 | Dependency Cruiser | 2/12 (17%) | Architectural boundaries only |
 | CI/CD | 1/12 (8%) | Security audit via Dependabot |
@@ -79,17 +79,19 @@ Analysis of the Convention Capture System's effectiveness with recommendations f
 
 ### Medium-Term (Infrastructure)
 
-1. **Add MCP rule for migrations**
-   - Detect schema changes outside `drizzle/migrations/`
-   - Enforce CRITICAL "Migrations as Single Source of Truth" convention
+1. **Add MCP rule for migrations** ✅ *Implemented*
+   - `migrations-safety` MCP rule detects schema changes outside schema.ts
+   - `migrations-safety` ESLint rule provides multi-layer enforcement
+   - Enforces CRITICAL "Migrations as Single Source of Truth" convention
 
-2. **Enhance enforcement gap reporting**
-   - Add script to compare documented conventions vs implemented enforcement
-   - Run in CI to detect drift
+2. **Enhance enforcement gap reporting** ✅ *Implemented*
+   - `pnpm run report:gaps` compares documented conventions vs implemented enforcement
+   - Scans MCP rules, ESLint rules, Git hooks, and Dependency Cruiser
 
-3. **Create convention coverage dashboard**
-   - Generate markdown report of coverage percentages
-   - Track coverage trends over time
+3. **Create convention coverage dashboard** ✅ *Implemented*
+   - `pnpm run dashboard:conventions` generates markdown report
+   - Shows coverage by tool and severity
+   - Outputs to docs/convention-coverage-dashboard.md
 
 ### Long-Term (Automation)
 
@@ -114,12 +116,14 @@ Example: **Vendor Library Encapsulation**
 
 **Why it works**: Catches issues at development time (ESLint), build time (MCP), and architectural review (Dep Cruiser).
 
-### Pattern 2: Single-Tool Enforcement (Risky)
+### Pattern 2: Multi-Layer Critical Enforcement (Migrations)
 
-Example: **Migrations as Single Source of Truth**
-- Only enforced via code review
+Example: **Migrations as Single Source of Truth** ✅ *Now multi-layer*
+- MCP: `migrations-safety` rule
+- ESLint: `local-rules/migrations-safety`
+- Blocks: schema changes outside schema.ts, DDL in application code
 
-**Why it's risky**: Easy to bypass during fast iteration. Consider adding automated enforcement.
+**Why it works**: Catches schema changes at development time (ESLint) and validation time (MCP).
 
 ### Pattern 3: Git Hook Enforcement (Targeted)
 
@@ -132,13 +136,14 @@ Example: **Zero AI References in Commits**
 
 ## Implementation Priority
 
-| Improvement | Impact | Effort | Priority |
-|-------------|--------|--------|----------|
-| Add migrations MCP rule | High | Medium | 1 |
-| Document Phase 3 activation path | Medium | Low | 2 |
-| Create enforcement coverage report | Medium | Medium | 3 |
-| Improve LOW severity usage | Low | Low | 4 |
-| Session boundary automation | High | High | 5 |
+| Improvement | Impact | Effort | Priority | Status |
+|-------------|--------|--------|----------|--------|
+| Add migrations MCP rule | High | Medium | 1 | ✅ Done |
+| Create enforcement coverage report | Medium | Medium | 2 | ✅ Done |
+| Create convention coverage dashboard | Medium | Medium | 3 | ✅ Done |
+| Document Phase 3 activation path | Medium | Low | 4 | Pending |
+| Improve LOW severity usage | Low | Low | 5 | Pending |
+| Session boundary automation | High | High | 6 | Pending |
 
 ---
 

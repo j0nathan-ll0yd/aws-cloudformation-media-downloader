@@ -23,6 +23,7 @@
 const noDirectAwsSdkImport = require('./rules/no-direct-aws-sdk-import.cjs')
 const cascadeDeleteOrder = require('./rules/cascade-delete-order.cjs')
 const useEntityMockHelper = require('./rules/use-entity-mock-helper.cjs')
+const migrationsSafety = require('./rules/migrations-safety.cjs')
 const responseHelpers = require('./rules/response-helpers.cjs')
 const envValidation = require('./rules/env-validation.cjs')
 const authenticatedHandlerEnforcement = require('./rules/authenticated-handler-enforcement.cjs')
@@ -37,6 +38,7 @@ module.exports = {
     'no-direct-aws-sdk-import': noDirectAwsSdkImport,
     'cascade-delete-order': cascadeDeleteOrder,
     'use-entity-mock-helper': useEntityMockHelper,
+    'migrations-safety': migrationsSafety,
     // Phase 2: HIGH
     'response-helpers': responseHelpers,
     'env-validation': envValidation,
