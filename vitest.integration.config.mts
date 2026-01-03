@@ -18,6 +18,7 @@ export default defineConfig({
     exclude: ['node_modules/**', 'dist/**', 'build/**'],
     clearMocks: true,
     testTimeout: 30000,
+    hookTimeout: 60000, // Allow 60s for beforeAll/afterAll hooks (schema creation may retry up to 30s)
     pool: 'threads',
     maxWorkers,
     minWorkers: 1,
