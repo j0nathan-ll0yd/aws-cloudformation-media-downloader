@@ -15,8 +15,9 @@ import * as path from 'path'
 import postgres from 'postgres'
 
 // Create more schemas than maxWorkers to handle edge cases where Vitest
-// assigns higher pool IDs (e.g., for the main thread or test shuffling)
-const MAX_WORKERS = 8
+// assigns higher pool IDs (e.g., for the main thread, test shuffling, or
+// internal coordination threads). Vitest may use pool IDs beyond maxWorkers.
+const MAX_WORKERS = 12
 
 /**
  * Get schema prefix for CI isolation.
@@ -170,6 +171,7 @@ export async function setup(): Promise<void> {
   const prefix = getSchemaPrefix()
 
   log(`[globalSetup] Starting schema creation with prefix: "${prefix}"`)
+  log(`[globalSetup] MAX_WORKERS: ${MAX_WORKERS}`)
 
   // Read migration files
   const migrationsDir = path.join(process.cwd(), 'migrations')

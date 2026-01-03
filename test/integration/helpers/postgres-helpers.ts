@@ -129,7 +129,7 @@ export async function closeTestDb(): Promise<void> {
  *
  * CONVENTION: Migrations are the single source of truth for SQL.
  * Tables are created by globalSetup.ts from migrations/0001_initial_schema.sql.
- * This function only ensures search_path is set for the current connection.
+ * This function ensures schema exists and sets search_path for the connection.
  *
  * DO NOT duplicate SQL table definitions here.
  * All schema definitions belong in migrations/0001_initial_schema.sql.
@@ -138,9 +138,36 @@ export async function createAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
-  // Set search_path for this connection to use worker's schema
-  // Tables are already created by globalSetup from migrations
-  await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+  // Wait for schema to be available (handles race conditions with globalSetup)
+  // Retry up to 30 times with 1000ms delay (30 seconds total)
+  // CI environments may have slower schema creation due to resource contention
+  const maxRetries = 30
+  const retryDelayMs = 1000
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const result = await db.execute(sql.raw(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = '${schema}' AND table_name = 'users'
+      ) as exists
+    `))
+
+    const rows = [...result] as Array<{exists: boolean}>
+    if (rows[0]?.exists) {
+      // Schema and tables exist, set search_path and return
+      await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
+      return
+    }
+
+    if (attempt < maxRetries) {
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+    }
+  }
+
+  // If we get here, schema still doesn't exist after 30 seconds
+  // This indicates a globalSetup failure - throw a clear error
+  throw new Error(`Schema '${schema}' not found after ${maxRetries}s. Check globalSetup.ts execution or increase MAX_WORKERS.`)
 }
 
 /**
@@ -168,10 +195,28 @@ export async function dropAllTables(): Promise<void> {
 
 /**
  * Truncate all tables (faster than drop/create for between-test cleanup)
+ *
+ * Uses conditional logic to handle cases where tables may not exist yet
+ * (e.g., race conditions between globalSetup and test execution in CI).
  */
 export async function truncateAllTables(): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
+
+  // Check if schema and tables exist before truncating
+  // This handles race conditions where globalSetup hasn't finished for this worker
+  const schemaExists = await db.execute(sql.raw(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = '${schema}' AND table_name = 'users'
+    ) as exists
+  `))
+
+  const rows = [...schemaExists] as Array<{exists: boolean}>
+  if (!rows[0]?.exists) {
+    // Schema/tables don't exist yet - nothing to truncate
+    return
+  }
 
   await db.execute(sql.raw(`
     TRUNCATE ${schema}.user_devices, ${schema}.user_files, ${schema}.file_downloads,

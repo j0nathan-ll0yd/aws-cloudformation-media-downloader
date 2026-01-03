@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+
+# validate-docs-freshness.sh
+# Validates that generated documentation is newer than source files
+# Usage: pnpm run validate:docs-freshness or ./bin/validate-docs-freshness.sh
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${YELLOW}Validating generated documentation freshness...${NC}"
+echo ""
+
+cd "$PROJECT_ROOT"
+
+STALE=""
+
+# Check 1: TSDoc freshness (docs/source/ vs src/)
+echo -n "  [1/3] Checking TSDoc freshness... "
+if [ -d "docs/source" ]; then
+  # Use stat with format that works on both macOS and Linux
+  if stat --version &> /dev/null; then
+    # GNU stat (Linux)
+    DOCS_MTIME=$(find docs/source -type f -name "*.html" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+    SRC_MTIME=$(find src -type f -name "*.ts" ! -name "*.test.ts" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  else
+    # BSD stat (macOS)
+    DOCS_MTIME=$(find docs/source -type f -name "*.html" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+    SRC_MTIME=$(find src -type f -name "*.ts" ! -name "*.test.ts" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  fi
+
+  if [ "$SRC_MTIME" -gt "$DOCS_MTIME" ]; then
+    echo -e "${YELLOW}STALE${NC}"
+    STALE="$STALE\n  - TSDoc (docs/source/) is older than source files"
+  else
+    echo -e "${GREEN}OK${NC}"
+  fi
+else
+  echo -e "${YELLOW}MISSING${NC} (run pnpm run document-source)"
+fi
+
+# Check 2: OpenAPI freshness (docs/api/ vs tsp/)
+echo -n "  [2/3] Checking OpenAPI freshness... "
+if [ -f "docs/api/openapi.yaml" ]; then
+  if stat --version &> /dev/null; then
+    # GNU stat (Linux)
+    API_MTIME=$(stat -c %Y docs/api/openapi.yaml 2> /dev/null || echo "0")
+    TSP_MTIME=$(find tsp -type f -name "*.tsp" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  else
+    # BSD stat (macOS)
+    API_MTIME=$(stat -f %m docs/api/openapi.yaml 2> /dev/null || echo "0")
+    TSP_MTIME=$(find tsp -type f -name "*.tsp" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  fi
+
+  if [ "$TSP_MTIME" -gt "$API_MTIME" ]; then
+    echo -e "${YELLOW}STALE${NC}"
+    STALE="$STALE\n  - OpenAPI (docs/api/) is older than TypeSpec files"
+  else
+    echo -e "${GREEN}OK${NC}"
+  fi
+else
+  echo -e "${YELLOW}MISSING${NC} (run pnpm run document-api)"
+fi
+
+# Check 3: Terraform docs freshness
+echo -n "  [3/3] Checking Terraform docs freshness... "
+if [ -f "docs/terraform.md" ]; then
+  if stat --version &> /dev/null; then
+    # GNU stat (Linux)
+    TF_DOC_MTIME=$(stat -c %Y docs/terraform.md 2> /dev/null || echo "0")
+    TF_SRC_MTIME=$(find terraform -type f -name "*.tf" -exec stat -c %Y {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  else
+    # BSD stat (macOS)
+    TF_DOC_MTIME=$(stat -f %m docs/terraform.md 2> /dev/null || echo "0")
+    TF_SRC_MTIME=$(find terraform -type f -name "*.tf" -exec stat -f %m {} \; 2> /dev/null | sort -rn | head -1 || echo "0")
+  fi
+
+  if [ "$TF_SRC_MTIME" -gt "$TF_DOC_MTIME" ]; then
+    echo -e "${YELLOW}STALE${NC}"
+    STALE="$STALE\n  - Terraform docs (docs/terraform.md) is older than .tf files"
+  else
+    echo -e "${GREEN}OK${NC}"
+  fi
+else
+  echo -e "${YELLOW}MISSING${NC} (run pnpm run document-terraform)"
+fi
+
+echo ""
+
+if [ -n "$STALE" ]; then
+  echo -e "${RED}Documentation is stale:${NC}"
+  echo -e "$STALE"
+  echo ""
+  echo "To regenerate:"
+  echo "  pnpm run document-source   # TSDoc"
+  echo "  pnpm run document-api      # OpenAPI"
+  echo "  pnpm run document-terraform # Terraform"
+  exit 1
+fi
+
+echo -e "${GREEN}All generated documentation is up to date${NC}"
