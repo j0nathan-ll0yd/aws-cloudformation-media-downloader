@@ -189,7 +189,7 @@ git filter-branch --force --index-filter \
 
 ## Related Patterns
 
-- [ElectroDB Testing Patterns](ElectroDB-Testing-Patterns.md)
+- [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md)
 - [Integration Testing](Integration-Testing.md)
 - [Coverage Philosophy](Coverage-Philosophy.md)
 

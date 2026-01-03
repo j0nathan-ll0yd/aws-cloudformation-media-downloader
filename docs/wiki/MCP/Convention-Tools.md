@@ -254,9 +254,8 @@ src/mcp/
 ## Related Documentation
 
 - [Dependency Graph Analysis](../Testing/Dependency-Graph-Analysis.md) - build/graph.json usage
-- [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Mocking patterns
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Mocking and entity testing patterns
 - [SDK Encapsulation Policy](../Conventions/Vendor-Encapsulation-Policy.md) - AWS SDK rules
-- [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) - Entity mocking
 
 ---
 

@@ -31,6 +31,9 @@ jobs:
       - name: Validate documentation sync
         run: pnpm run validate:doc-sync
 
+      - name: Audit wiki documentation
+        run: pnpm run audit:wiki
+
       - name: Security audit
         run: pnpm audit --audit-level=high
 

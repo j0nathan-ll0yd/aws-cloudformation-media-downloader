@@ -151,7 +151,7 @@ test('userResources collection', async () => {
 })
 ```
 
-**See**: [ElectroDB Testing Patterns](../Testing/ElectroDB-Testing-Patterns.md) for comprehensive examples
+**See**: [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) for comprehensive entity mocking examples
 
 ## Common Issues
 
