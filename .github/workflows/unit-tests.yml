@@ -67,6 +67,15 @@ jobs:
       - name: Test ESLint local rules
         run: pnpm run test:eslint-rules
 
+      - name: Check Terraform formatting
+        run: |
+          # Install tofu for formatting check
+          if command -v tofu &> /dev/null; then
+            tofu fmt -check -recursive terraform/
+          else
+            echo "OpenTofu not installed, skipping Terraform fmt check"
+          fi
+
   # Parallel job 3: Build and validate artifacts
   build-and-validate:
     runs-on: ubuntu-latest
@@ -110,9 +119,34 @@ jobs:
           path: build/
 
       - name: Run unit tests
-        run: pnpm test --coverage
+        run: pnpm test --coverage 2>&1 | tee test-output.txt
         env:
           CI: true
+
+      - name: Validate test output
+        if: always()
+        run: |
+          # Check for Vitest deprecation warnings
+          if grep -q "DEPRECATED" test-output.txt 2>/dev/null; then
+            echo "::error::Found Vitest deprecation warnings in test output"
+            grep "DEPRECATED" test-output.txt | head -3
+            exit 1
+          fi
+
+          # Check for EMF metrics spam (Powertools not silenced)
+          if grep -q '"_aws".*"CloudWatchMetrics"' test-output.txt 2>/dev/null; then
+            echo "::error::Found Powertools EMF metrics in test output (should be silenced)"
+            exit 1
+          fi
+
+          # Check for MCR source content warnings
+          if grep -q '\[MCR\] not found source content' test-output.txt 2>/dev/null; then
+            echo "::error::Found MCR source content warnings in test output"
+            grep '\[MCR\] not found' test-output.txt | head -3
+            exit 1
+          fi
+
+          echo "Test output is clean"
 
       - name: Post coverage to job summary
         if: always() && hashFiles('coverage/unit/coverage-summary.md') != ''
