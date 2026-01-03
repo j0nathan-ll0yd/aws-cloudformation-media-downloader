@@ -1,6 +1,44 @@
-# pnpm workspace configuration
-# This file enables future monorepo architecture
-# Currently unused but positions project for growth
+# =============================================================================
+# PNPM WORKSPACE CONFIGURATION
+# =============================================================================
+# Security settings for supply chain protection (pnpm 10.16+)
+# Documentation: https://pnpm.io/settings
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# WORKSPACE PACKAGES (future monorepo architecture)
+# -----------------------------------------------------------------------------
 packages:
   - 'packages/*'
   - 'apps/*'
+
+# -----------------------------------------------------------------------------
+# SUPPLY CHAIN SECURITY
+# -----------------------------------------------------------------------------
+
+# Block packages published less than 24 hours ago (zero-day protection)
+# CIS Supply Chain Security Benchmark recommends 60 days for critical systems
+# 24 hours balances security with development velocity
+minimumReleaseAge: 1440
+
+# Prevent trust downgrades (compromised maintainer detection)
+# Blocks if package version has weaker authentication than previous releases
+# Trust levels: Trusted Publisher > Provenance > No Evidence
+trustPolicy: no-downgrade
+
+# Block exotic protocols in transitive dependencies
+# Direct deps can use git/tarball, subdeps cannot (common attack vector)
+blockExoticSubdeps: true
+
+# Strict build script handling (fail-fast on unexpected scripts)
+# Installation will exit non-zero if any deps have unreviewed build scripts
+strictDepBuilds: true
+
+# -----------------------------------------------------------------------------
+# BUILD SCRIPT ALLOWLIST
+# -----------------------------------------------------------------------------
+# Explicitly allow packages that require lifecycle scripts
+# All other packages have scripts blocked by default
+allowBuilds:
+  "@lancedb/lancedb": true      # Native bindings for vector DB
+  "onnxruntime-node": true      # ML inference runtime (native)

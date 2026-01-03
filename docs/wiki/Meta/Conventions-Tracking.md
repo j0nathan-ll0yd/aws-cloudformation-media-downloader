@@ -56,7 +56,7 @@ Central registry of all project conventions with their documentation and enforce
 | Drizzle Delete Requires Where | [Drizzle Patterns](../TypeScript/Drizzle-Patterns.md) | ESLint `drizzle/enforce-delete-with-where` |
 | Drizzle Update Requires Where | [Drizzle Patterns](../TypeScript/Drizzle-Patterns.md) | ESLint `drizzle/enforce-update-with-where` |
 | Migrations as Single Source of Truth | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
-| pnpm Lifecycle Script Protection | [pnpm Migration](pnpm-Migration.md) | Build-time (.npmrc) |
+| pnpm Supply Chain Security | [Dependency Security](../Security/Dependency-Security.md) | pnpm-workspace.yaml + .npmrc |
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
 | Use pnpm deploy, never tofu apply | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Script enforcement (pre-deploy-check.sh) |
 | Security Audit in CI | [Dependabot Resolution](../Methodologies/Dependabot-Resolution.md) | GitHub Actions + Dependabot |
