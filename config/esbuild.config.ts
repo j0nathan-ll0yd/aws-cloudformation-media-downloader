@@ -51,12 +51,15 @@ async function build() {
       entryPoints: [entryFile],
       bundle: true,
       platform: 'node',
-      target: 'es2022', // Node.js 24 supports ES2022
+      target: 'node24', // Node.js 24 Lambda runtime
       format: 'esm', // ESM for Node.js 24
       outfile: `${lambdaDir}/index.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
       external: awsSdkExternals,
       minify: true,
+      legalComments: 'none', // Strip license comments from minified output
+      drop: ['debugger'], // Remove debugger statements in production
+      charset: 'utf8', // Explicit UTF-8 encoding
       sourcemap: false,
       metafile: isAnalyze, // Generate metafile for bundle analysis
       treeShaking: true,
