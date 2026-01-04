@@ -71,14 +71,13 @@ export function securityHeaders(options: SecurityHeadersOptions = {}): Middlewar
   const headers = buildHeaders(options)
   return {
     after: async (request) => {
-      if (request.response) {
-        // Merge headers, with handler headers taking precedence
+      // Only add headers to API Gateway responses (have statusCode), not SQS/EventBridge
+      if (request.response && typeof request.response === 'object' && 'statusCode' in request.response) {
         request.response.headers = {...headers, ...request.response.headers}
       }
     },
     onError: async (request) => {
-      // Also add headers to error responses
-      if (request.response) {
+      if (request.response && typeof request.response === 'object' && 'statusCode' in request.response) {
         request.response.headers = {...headers, ...request.response.headers}
       }
     }
