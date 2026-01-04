@@ -86,6 +86,7 @@ Central registry of all project conventions with their documentation and enforce
 | Post-Deploy State Verification | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Manual (`pnpm run state:verify`) |
 | Database Migrations via SQL Files | [Database Migrations](../Conventions/Database-Migrations.md) | MigrateDSQL Lambda + Terraform |
 | Aurora DSQL CREATE INDEX ASYNC | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
+| Lambda Layer Binary Version Tracking | [Lambda Layers](../Infrastructure/Lambda-Layers.md) | Terraform + Code review |
 
 ### MEDIUM Severity
 
