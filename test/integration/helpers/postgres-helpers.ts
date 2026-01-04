@@ -17,6 +17,8 @@ import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle
 import type {Device, File, User} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
+import {waitFor} from './wait-utils'
+import {POLLING, TIMEOUTS} from './timeout-config'
 
 // Test database connection configuration
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgres://test:test@localhost:5432/media_downloader_test'
@@ -42,7 +44,7 @@ function getSchemaPrefix(): string {
  * Note: VITEST_POOL_ID in threads mode is 0-indexed, so we add 1 to match
  * our schema naming (worker_1, worker_2, etc.)
  */
-function getWorkerSchema(): string {
+export function getWorkerSchema(): string {
   const prefix = getSchemaPrefix()
   // Vitest uses VITEST_POOL_ID for parallel workers
   // In threads mode, it's 0-indexed, so we add 1 to get 1-indexed worker IDs
@@ -139,35 +141,29 @@ export async function createAllTables(): Promise<void> {
   const schema = getWorkerSchema()
 
   // Wait for schema to be available (handles race conditions with globalSetup)
-  // Retry up to 30 times with 1000ms delay (30 seconds total)
-  // CI environments may have slower schema creation due to resource contention
-  const maxRetries = 30
-  const retryDelayMs = 1000
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  // Uses exponential backoff with jitter for resilient waiting in CI
+  await waitFor(async () => {
     const result = await db.execute(sql.raw(`
-      SELECT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = '${schema}' AND table_name = 'users'
-      ) as exists
-    `))
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = '${schema}' AND table_name = 'users'
+        ) as exists
+      `))
 
     const rows = [...result] as Array<{exists: boolean}>
     if (rows[0]?.exists) {
       // Schema and tables exist, set search_path and return
       await db.execute(sql.raw(`SET search_path TO ${schema}, public`))
-      return
+      return true
     }
-
-    if (attempt < maxRetries) {
-      // Wait before retrying
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
-    }
-  }
-
-  // If we get here, schema still doesn't exist after 30 seconds
-  // This indicates a globalSetup failure - throw a clear error
-  throw new Error(`Schema '${schema}' not found after ${maxRetries}s. Check globalSetup.ts execution or increase MAX_WORKERS.`)
+    return null
+  }, {
+    initialDelayMs: POLLING.initialDelay,
+    maxDelayMs: POLLING.maxDelay,
+    maxTotalMs: TIMEOUTS.schemaCreation,
+    jitterFactor: POLLING.jitterFactor,
+    description: `schema '${schema}' to be ready`
+  })
 }
 
 /**

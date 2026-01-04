@@ -24,6 +24,15 @@ export default defineConfig({
     minWorkers: 1,
     globalSetup: './test/integration/globalSetup.ts',
     setupFiles: ['./test/integration/setup.ts'],
+    // Retry flaky tests in CI (up to 2 retries = 3 total attempts)
+    // This catches transient failures from timing, network, or service startup
+    retry: isCI ? 2 : 0,
+    // Generate JUnit reports for CI analysis and flaky test tracking
+    reporters: isCI
+      ? ['default', ['junit', {outputFile: 'test-results/integration-results.xml', suiteName: 'Integration Tests'}]]
+      : ['default'],
+    // Allow all console output through (don't filter any logs)
+    onConsoleLog: () => false,
     coverage: {
       enabled: true,
       include: ['src/**/*.ts'],

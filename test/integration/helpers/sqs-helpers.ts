@@ -6,6 +6,8 @@
  */
 import {createQueue, deleteMessage, deleteQueue, getQueueArn, getQueueUrl, purgeQueue, receiveMessages} from '../lib/vendor/AWS/SQS'
 import type {Message} from '@aws-sdk/client-sqs'
+import {waitFor, type WaitOptions} from './wait-utils'
+import {POLLING, TIMEOUTS} from './timeout-config'
 
 /**
  * Creates a test SQS queue in LocalStack
@@ -77,23 +79,45 @@ export async function receiveAndDeleteMessages(
 }
 
 /**
- * Waits for messages to arrive in a queue with timeout
+ * Waits for messages to arrive in a queue with exponential backoff.
+ *
+ * Uses exponential backoff with jitter to reduce race conditions and
+ * improve reliability in CI environments.
+ *
  * @param queueUrl - URL of the queue
  * @param expectedCount - Number of messages to wait for
  * @param timeoutMs - Maximum wait time in milliseconds
+ * @param options - Optional wait configuration overrides
  * @returns Array of raw SQS messages
  */
-export async function waitForMessages(queueUrl: string, expectedCount: number, timeoutMs = 30000): Promise<Message[]> {
-  const startTime = Date.now()
+export async function waitForMessages(queueUrl: string, expectedCount: number, timeoutMs?: number, options?: Partial<WaitOptions>): Promise<Message[]> {
   const allMessages: Message[] = []
-  while (allMessages.length < expectedCount && Date.now() - startTime < timeoutMs) {
-    const messages = await receiveMessages(queueUrl, expectedCount - allMessages.length, 2)
-    allMessages.push(...messages)
-    if (allMessages.length < expectedCount) {
-      await new Promise((resolve) => setTimeout(resolve, 500))
+
+  // Use environment-aware default timeout
+  const effectiveTimeout = timeoutMs ?? (expectedCount > 1 ? TIMEOUTS.sqsMultipleMessages : TIMEOUTS.sqsMessage)
+
+  const result = await waitFor(async () => {
+    // Try to receive remaining messages
+    const remaining = expectedCount - allMessages.length
+    if (remaining <= 0) {
+      return allMessages
     }
-  }
-  return allMessages
+
+    const messages = await receiveMessages(queueUrl, remaining, 2)
+    allMessages.push(...messages)
+
+    // Return messages if we have enough, otherwise null to continue waiting
+    return allMessages.length >= expectedCount ? allMessages : null
+  }, {
+    initialDelayMs: POLLING.initialDelay,
+    maxDelayMs: POLLING.maxDelay,
+    maxTotalMs: effectiveTimeout,
+    jitterFactor: POLLING.jitterFactor,
+    description: `${expectedCount} SQS message(s)`,
+    ...options
+  })
+
+  return result.value
 }
 
 /**

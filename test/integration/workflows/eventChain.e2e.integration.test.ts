@@ -27,6 +27,7 @@ import {
   waitForEventBridgeReady
 } from '../helpers/eventbridge-helpers'
 import {clearTestQueue, createTestQueue, deleteTestQueue, waitForMessages} from '../helpers/sqs-helpers'
+import {TIMEOUTS} from '../helpers/timeout-config'
 import {generateTestResourceName} from '../helpers/resource-naming'
 import {
   closeTestDb,
@@ -55,7 +56,7 @@ describe('Event Chain E2E Integration Tests', () => {
     await createAllTables()
 
     // Wait for EventBridge to be ready (with retry logic for LocalStack startup)
-    await waitForEventBridgeReady(30000)
+    await waitForEventBridgeReady(TIMEOUTS.eventBridgeReady)
 
     // Create test infrastructure
     const queueInfo = await createTestQueue(TEST_QUEUE)
@@ -90,7 +91,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(failedCount).toBe(0)
 
       // Wait for message to arrive in SQS
-      const messages = await waitForMessages(queueUrl, 1, 10000)
+      const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
       // Verify message structure
@@ -119,7 +120,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(results.every((r) => r === 0)).toBe(true)
 
       // Wait for all messages
-      const messages = await waitForMessages(queueUrl, 3, 15000)
+      const messages = await waitForMessages(queueUrl, 3, TIMEOUTS.sqsMultipleMessages)
       expect(messages.length).toBe(3)
 
       // Verify all events arrived
@@ -135,7 +136,7 @@ describe('Event Chain E2E Integration Tests', () => {
 
       await publishDownloadRequestedEvent(TEST_EVENT_BUS, 'correlation-test', 'https://youtube.com/watch?v=test', correlationId)
 
-      const messages = await waitForMessages(queueUrl, 1, 10000)
+      const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
       const body = JSON.parse(messages[0].Body!)
@@ -151,15 +152,21 @@ describe('Event Chain E2E Integration Tests', () => {
         {EventBusName: TEST_EVENT_BUS, Source: 'media-downloader', DetailType: 'SomeOtherEvent', Detail: JSON.stringify({test: 'data'}), Time: new Date()}
       ])
 
-      // Should not receive any messages (short timeout)
-      const messages = await waitForMessages(queueUrl, 1, 3000)
-      expect(messages.length).toBe(0)
+      // Should not receive any messages (short timeout - expected to timeout)
+      // waitForMessages throws on timeout, so we expect zero messages
+      let unexpectedMessages: Awaited<ReturnType<typeof waitForMessages>> = []
+      try {
+        unexpectedMessages = await waitForMessages(queueUrl, 1, 3000)
+      } catch {
+        // Expected - no messages should arrive for non-matching event type
+      }
+      expect(unexpectedMessages.length).toBe(0)
 
       // Now publish a matching event
       await publishDownloadRequestedEvent(TEST_EVENT_BUS, 'filter-test', 'https://youtube.com/test', 'filter-corr')
 
       // Should receive the matching event
-      const matchingMessages = await waitForMessages(queueUrl, 1, 10000)
+      const matchingMessages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(matchingMessages.length).toBe(1)
     })
   })
@@ -181,7 +188,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(failedCount).toBe(0)
 
       // 3. Wait for message in SQS
-      const messages = await waitForMessages(queueUrl, 1, 10000)
+      const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
       // 4. Verify message contains correct file data
@@ -213,7 +220,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(failedCount).toBe(0)
 
       // 3. Verify message arrives with matching correlation ID
-      const messages = await waitForMessages(queueUrl, 1, 10000)
+      const messages = await waitForMessages(queueUrl, 1, TIMEOUTS.sqsMessage)
       expect(messages.length).toBe(1)
 
       const body = JSON.parse(messages[0].Body!)
@@ -246,7 +253,7 @@ describe('Event Chain E2E Integration Tests', () => {
       expect(publishResults.every((r) => r === 0)).toBe(true)
 
       // 3. Wait for all messages
-      const messages = await waitForMessages(queueUrl, 3, 15000)
+      const messages = await waitForMessages(queueUrl, 3, TIMEOUTS.sqsMultipleMessages)
       expect(messages.length).toBe(3)
 
       // 4. Verify all files match what's in database
