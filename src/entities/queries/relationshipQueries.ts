@@ -1,11 +1,7 @@
 /**
- * Relationship Queries - Native Drizzle ORM queries for user-file and user-device relationships.
- *
- * Replaces the ElectroDB-style UserFiles and UserDevices entity wrappers with direct Drizzle queries.
+ * Relationship Queries - Drizzle ORM queries for user-file and user-device relationships.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
- * @see src/entities/UserFiles.ts for legacy ElectroDB wrapper (to be deprecated)
- * @see src/entities/UserDevices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'

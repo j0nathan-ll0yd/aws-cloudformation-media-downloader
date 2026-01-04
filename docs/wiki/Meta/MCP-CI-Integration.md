@@ -5,7 +5,7 @@ This document provides CI/CD integration patterns for the MCP server tools.
 ## Available MCP Tools (21 Total)
 
 ### Query Tools (14)
-- `query_entities` - ElectroDB entity schemas
+- `query_entities` - Drizzle ORM entity schemas
 - `query_lambda` - Lambda configurations
 - `query_infrastructure` - AWS infrastructure
 - `query_dependencies` - Code dependency graph
@@ -281,7 +281,7 @@ EOF
 | Convention | Auto-Fix Level | Tool |
 |------------|----------------|------|
 | aws-sdk-wrapper | Full | `apply_convention` |
-| electrodb-mock | Partial | `apply_convention` |
+| entity-mock | Partial | `apply_convention` |
 | response-helper | Full | `apply_convention` |
 | env-validation | Full | `apply_convention` |
 | naming-conventions | Full | `refactor_rename_symbol` |

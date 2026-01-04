@@ -1,10 +1,7 @@
 /**
- * Session Queries - Native Drizzle ORM queries for session operations.
- *
- * Replaces the ElectroDB-style Sessions entity wrapper with direct Drizzle queries.
+ * Session Queries - Drizzle ORM queries for session operations.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
- * @see src/entities/Sessions.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'

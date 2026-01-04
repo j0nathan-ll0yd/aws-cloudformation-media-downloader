@@ -112,42 +112,40 @@ aws --endpoint-url=http://localhost:4566 lambda create-function \
   --runtime nodejs22.x
 ```
 
-## ElectroDB Integration Testing
+## Aurora DSQL Integration Testing
 
 ### Setup Helper
 
 ```typescript
-import {setupLocalStackTable, cleanupLocalStackTable} from '../helpers/electrodb-localstack'
+import {setupTestDatabase, cleanupTestDatabase} from '../helpers/drizzle-localstack'
 
 beforeAll(async () => {
-  await setupLocalStackTable()
+  await setupTestDatabase()
 })
 
 afterAll(async () => {
-  await cleanupLocalStackTable()
+  await cleanupTestDatabase()
 })
 ```
 
-**Creates**: MediaDownloader table with all GSIs (gsi1/userResources, gsi2/fileUsers, gsi3/deviceUsers)
+**Note**: Integration tests use Aurora DSQL with Drizzle ORM. For unit tests, mock the query functions.
 
-### Testing Collections
+### Testing with Query Functions
 
 ```typescript
-import {collections} from '../../../src/entities/Collections'
+import {createUser, createFile, createUserFile, getUserFiles} from '#entities/queries'
 
-test('userResources collection', async () => {
+test('user files relationship', async () => {
   // Create test data
-  await Users.create({userId: 'user-1', appleDeviceIdentifier: 'apple-1'}).go()
-  await Files.create({fileId: 'file-1', status: 'Downloaded', url: 'https://...'}).go()
-  await UserFiles.create({userId: 'user-1', fileId: 'file-1'}).go()
+  const user = await createUser({appleDeviceIdentifier: 'apple-1'})
+  const file = await createFile({status: 'Downloaded', url: 'https://...'})
+  await createUserFile({userId: user.id, fileId: file.id})
 
-  // Query collection (JOIN-like operation)
-  const result = await collections.userResources({userId: 'user-1'}).go()
+  // Query relationship
+  const userFiles = await getUserFiles(user.id)
 
-  // Validate single-table design
-  expect(result.data.Users).toHaveLength(1)
-  expect(result.data.Files).toHaveLength(1)
-  expect(result.data.UserFiles).toHaveLength(1)
+  expect(userFiles).toHaveLength(1)
+  expect(userFiles[0].fileId).toBe(file.id)
 })
 ```
 
@@ -353,7 +351,7 @@ See [Failure Scenario Testing](../Testing/Failure-Scenario-Testing.md) for detai
 
 - [Vendor Wrappers](../Conventions/Vendor-Encapsulation-Policy.md) - AWS SDK encapsulation
 - [Integration Testing](../Testing/Integration-Testing.md) - Test strategies
-- [Jest ESM Mocking](../Testing/Vitest-Mocking-Strategy.md) - Mocking patterns
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) - Mocking patterns
 
 ---
 

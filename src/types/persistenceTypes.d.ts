@@ -23,7 +23,7 @@
  * Created by: RegisterDevice Lambda
  * Deleted by: UserDelete Lambda (cascade), PruneDevices Lambda (stale cleanup)
  *
- * @see UserDevices entity for ElectroDB definition
+ * @see userDevices table in Drizzle schema
  * @see Collections.userResources for batch queries
  */
 export interface UserDevice {
@@ -48,7 +48,7 @@ export interface UserDevice {
  * - Query by userId: "Get all files for user" (ListFiles)
  * - Query by fileId: "Get all users for file" (S3ObjectCreated notifications)
  *
- * @see UserFiles entity for ElectroDB definition
+ * @see userFiles table in Drizzle schema
  * @see Collections.userResources for batch queries
  */
 export interface UserFile {

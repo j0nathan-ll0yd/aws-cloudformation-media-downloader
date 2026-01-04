@@ -101,7 +101,7 @@ This ~200 byte shim is prepended to every Lambda bundle as a banner.
 
 ### Why It's Necessary
 
-When esbuild bundles CommonJS code (like ElectroDB) to ESM format, it generates a compatibility wrapper:
+When esbuild bundles CommonJS code to ESM format, it generates a compatibility wrapper:
 
 ```javascript
 var O=(r=>typeof require<"u"?require:...)(function(r){
@@ -120,15 +120,15 @@ The `createRequire` shim provides a `require` function that works in ESM context
 
 ### Why Not Patch Instead?
 
-We investigated patching ElectroDB (our primary CJS dependency) similar to our jsonschema patch. The analysis revealed:
+For CJS dependencies, patching may not be feasible. Analysis of typical packages reveals:
 
-| Metric | ElectroDB | jsonschema (patched) |
-|--------|-----------|---------------------|
-| External requires | 3 | 1 |
+| Metric | Large CJS Package | jsonschema (patched) |
+|--------|-------------------|---------------------|
+| External requires | 3+ | 1 |
 | Internal requires | ~100 across 20 files | ~10 |
 | Maintenance burden | Fork-equivalent | Minimal |
 
-**Conclusion**: Patching ElectroDB would require converting ~100 `require()` statements across 20+ files - essentially maintaining a fork. The 200-byte shim is the pragmatic solution.
+**Conclusion**: Patching large CJS packages would require converting many `require()` statements - essentially maintaining a fork. The 200-byte shim is the pragmatic solution for most cases.
 
 ---
 
@@ -151,9 +151,10 @@ We investigated patching ElectroDB (our primary CJS dependency) similar to our j
 
 | Package | Version | Mitigation |
 |---------|---------|------------|
-| electrodb | 3.5.0 | `createRequire` shim |
 | jsonschema | 1.2.7 | pnpm patch (ESM imports) |
 | apns2 | 12.2.0 | Dynamic import |
+
+**Note**: With the migration from DynamoDB to Aurora DSQL with Drizzle ORM, many CJS dependencies have been eliminated.
 
 ---
 
@@ -391,22 +392,6 @@ node -e "require('<package>')" 2>&1 | grep -i esm
 
 ---
 
-## DynamoDB ORM Comparison (For Future Reference)
-
-If ElectroDB ever needs replacement, here's the ESM landscape:
-
-| ORM | Native ESM | Type Safety | Recommendation |
-|-----|------------|-------------|----------------|
-| ElectroDB (current) | NO | Best | Keep with shim |
-| DynamoDB-Toolbox | YES | Excellent | Best ESM alternative |
-| DynamoDB OneTable | YES | Strong | Viable alternative |
-| TypeDORM | Partial | Strong | Not recommended |
-| Dynamoose | NO | Beta | Not recommended |
-
-**Migration effort to DynamoDB-Toolbox**: HIGH (all entities + Lambdas)
-
----
-
 ## Summary
 
 | Situation | Solution |
@@ -429,4 +414,4 @@ If ElectroDB ever needs replacement, here's the ESM landscape:
 
 ---
 
-*Pure ESM with pragmatic CJS compatibility. The shim stays until ElectroDB supports ESM natively.*
+*Pure ESM with pragmatic CJS compatibility. The shim is maintained for any remaining CJS dependencies.*

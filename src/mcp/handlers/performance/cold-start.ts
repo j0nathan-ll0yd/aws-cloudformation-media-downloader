@@ -104,11 +104,11 @@ async function analyzeColdStartFactors(lambdaName: string): Promise<ColdStartFac
   // Count AWS SDK clients
   const awsSdkClients = dependencies.filter((d) => d.includes('lib/vendor/AWS/')).length
 
-  // Count database connections (ElectroDB/DynamoDB)
-  const databaseConnections = dependencies.filter((d) => d.includes('entities/') || d.includes('ElectroDB/')).length > 0 ? 1 : 0
+  // Count database connections (Drizzle/Aurora DSQL)
+  const databaseConnections = dependencies.filter((d) => d.includes('entities/') || d.includes('Drizzle/')).length > 0 ? 1 : 0
 
   // Count HTTP clients
-  const httpClients = dependencies.filter((d) => d.includes('vendor/') && !d.includes('AWS/') && !d.includes('ElectroDB/')).length
+  const httpClients = dependencies.filter((d) => d.includes('vendor/') && !d.includes('AWS/') && !d.includes('Drizzle/')).length
 
   return {bundleSize, importDepth: maxDepth, awsSdkClients, databaseConnections, httpClients}
 }

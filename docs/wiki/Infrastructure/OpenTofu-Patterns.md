@@ -273,7 +273,7 @@ resource "aws_cloudwatch_log_group" "FunctionNameLogGroup" {
 
 ## DynamoDB Tables
 
-### ElectroDB Single-Table Design
+### Idempotency Table
 
 ```hcl
 resource "aws_dynamodb_table" "MediaDownloader" {

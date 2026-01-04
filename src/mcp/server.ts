@@ -14,7 +14,7 @@
 import {Server} from '@modelcontextprotocol/sdk/server/index.js'
 import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js'
 import {CallToolRequestSchema, ListToolsRequestSchema} from '@modelcontextprotocol/sdk/types.js'
-import {handleElectroDBQuery} from './handlers/electrodb.js'
+import {handleEntityQuery} from './handlers/entities.js'
 import {handleLambdaQuery} from './handlers/lambda.js'
 import {handleInfrastructureQuery} from './handlers/infrastructure.js'
 import {handleConventionsQuery} from './handlers/conventions.js'
@@ -148,7 +148,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'validate_pattern',
-        description: 'Validate code against project conventions using AST analysis (19 rules: 6 CRITICAL, 9 HIGH, 4 MEDIUM)',
+        description: 'Validate code against project conventions using AST analysis (20 rules: 7 CRITICAL, 9 HIGH, 4 MEDIUM)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -156,8 +156,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             query: {
               type: 'string',
               description:
-                'Validation type: all (run all rules), aws-sdk (vendor encapsulation), electrodb (entity mocking), imports (order), response (helpers), rules (list available), summary (violation counts)',
-              enum: ['all', 'aws-sdk', 'electrodb', 'imports', 'response', 'rules', 'summary']
+                'Validation type: all (run all rules), aws-sdk (vendor encapsulation), entity (entity mocking), imports (order), response (helpers), rules (list available), summary (violation counts)',
+              enum: ['all', 'aws-sdk', 'entity', 'imports', 'response', 'rules', 'summary']
             }
           },
           required: ['query']
@@ -258,8 +258,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             convention: {
               type: 'string',
               description:
-                'Convention to apply: aws-sdk-wrapper (vendor encapsulation), electrodb-mock (entity mocking), response-helper (Lambda responses), env-validation (getRequiredEnv), powertools (AWS Powertools), all (apply all)',
-              enum: ['aws-sdk-wrapper', 'electrodb-mock', 'response-helper', 'env-validation', 'powertools', 'all']
+                'Convention to apply: aws-sdk-wrapper (vendor encapsulation), entity-mock (entity mocking), response-helper (Lambda responses), env-validation (getRequiredEnv), powertools (AWS Powertools), all (apply all)',
+              enum: ['aws-sdk-wrapper', 'entity-mock', 'response-helper', 'env-validation', 'powertools', 'all']
             },
             dryRun: {type: 'boolean', description: 'If true, preview changes without modifying files. Default: false (applies changes)'}
           },
@@ -316,7 +316,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Query type: plan (analyze violations), script (generate executable), verify (check completeness)',
               enum: ['plan', 'script', 'verify']
             },
-            convention: {type: 'string', description: 'Convention to migrate (default: all)', enum: ['aws-sdk', 'electrodb', 'imports', 'response', 'all']},
+            convention: {type: 'string', description: 'Convention to migrate (default: all)', enum: ['aws-sdk', 'entity', 'imports', 'response', 'all']},
             scope: {type: 'array', items: {type: 'string'}, description: 'File/directory patterns to include'},
             outputFormat: {type: 'string', description: 'Script format: ts-morph or shell', enum: ['ts-morph', 'codemod', 'shell']},
             execute: {type: 'boolean', description: 'Execute the migration immediately (default: false)'}
@@ -464,7 +464,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'query_entities':
-        return await handleElectroDBQuery(args as {entity?: string; query: string})
+        return await handleEntityQuery(args as {entity?: string; query: string})
 
       case 'query_lambda':
         return await handleLambdaQuery(args as {lambda?: string; query: string})

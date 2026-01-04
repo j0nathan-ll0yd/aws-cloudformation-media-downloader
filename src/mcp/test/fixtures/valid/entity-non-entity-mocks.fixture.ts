@@ -1,6 +1,6 @@
 /**
  * @fixture valid
- * @rule electrodb-mocking
+ * @rule entity-mocking
  * @description Non-entity mocks (allowed)
  * @expectedViolations 0
  * @simulatedPath src/lambdas/Test/test/index.test.ts

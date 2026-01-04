@@ -1,5 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
@@ -43,7 +43,7 @@ import {deleteUser, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevic
 
 describe('#UserDelete', () => {
   let event: CustomAPIGatewayRequestAuthorizerEvent
-  const context = testContext
+  const context = createMockContext()
   beforeEach(() => {
     vi.clearAllMocks()
     event = createAPIGatewayEvent({path: '/users', httpMethod: 'DELETE', userId: fakeUserId})

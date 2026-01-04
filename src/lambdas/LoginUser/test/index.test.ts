@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent, createLoginUserBody} from '#test/helpers/event-factories'
@@ -12,7 +12,7 @@ vi.mock('#lib/vendor/BetterAuth/config', () => ({getAuth: vi.fn(async () => auth
 const {handler} = await import('./../src')
 
 describe('#LoginUser', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: CustomAPIGatewayRequestAuthorizerEvent
 
   beforeEach(() => {

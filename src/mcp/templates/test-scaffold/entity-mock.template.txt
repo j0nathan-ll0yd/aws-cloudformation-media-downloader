@@ -1,3 +1,7 @@
-// {{entityName}} entity mock
-const {{entityNameLower}}Mock = createElectroDBEntityMock({queryIndexes: ['byKey']})
-jest.unstable_mockModule('#entities/{{entityName}}', () => ({{{entityName}}: {{entityNameLower}}Mock.entity}))
+// {{entityName}} query function mocks
+vi.mock('#entities/queries', () => ({
+  get{{entityName}}: vi.fn(),
+  create{{entityName}}: vi.fn(),
+  update{{entityName}}: vi.fn(),
+  delete{{entityName}}: vi.fn()
+}))

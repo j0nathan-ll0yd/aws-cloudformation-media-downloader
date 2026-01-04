@@ -202,7 +202,7 @@ Then add test coverage in `src/util/test/security.test.ts`.
 ```typescript
 // ❌ PII leaked in logs
 logInfo('event <=', event)   // Authorization headers exposed!
-logDebug('ElectroDB Adapter: create', {model, data})  // emails, names exposed!
+logDebug('Drizzle query', {model, data})  // emails, names exposed!
 ```
 
 ### After (Protected)
@@ -210,7 +210,7 @@ logDebug('ElectroDB Adapter: create', {model, data})  // emails, names exposed!
 ```typescript
 // ✅ PII automatically redacted in ALL logging functions
 logInfo('event <=', event)   // Authorization: [REDACTED]
-logDebug('ElectroDB Adapter: create', {model, data})  // email, name: [REDACTED]
+logDebug('Drizzle query', {model, data})  // email, name: [REDACTED]
 ```
 
 ## Security Considerations

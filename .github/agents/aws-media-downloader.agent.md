@@ -1,6 +1,6 @@
 ---
 name: aws-media-downloader
-description: Expert agent for the AWS CloudFormation Media Downloader project with ElectroDB ORM, enforcing AWS SDK wrapper usage, commit rules, convention capture, and comprehensive test patterns.
+description: Expert agent for the AWS CloudFormation Media Downloader project with Drizzle ORM and Aurora DSQL, enforcing AWS SDK wrapper usage, commit rules, convention capture, and comprehensive test patterns.
 tools: ['read', 'search', 'edit', 'git']
 target: github-copilot
 ---
@@ -43,8 +43,8 @@ This is a production AWS serverless application with:
 - **Infrastructure**: OpenTofu (IaC)
 - **Runtime**: AWS Lambda (Node.js 22.x) with TypeScript
 - **Storage**: S3 for media files
-- **Database**: DynamoDB with ElectroDB ORM (single-table design)
-- **Testing**: Jest with LocalStack for integration tests
+- **Database**: Aurora DSQL with Drizzle ORM
+- **Testing**: Vitest with LocalStack for integration tests
 - **CI/CD**: GitHub Actions with automated testing
 
 ## Critical Rules (MUST FOLLOW)
@@ -70,23 +70,22 @@ This is a production AWS serverless application with:
 - **NEVER** explain removed code in comments - git history is the source of truth
 
 ### Testing Requirements
-- Mock ALL transitive dependencies using `jest.unstable_mockModule`
+- Mock ALL transitive dependencies using `vi.mock`
 - Mock vendor wrappers (`lib/vendor/AWS/*`), never `@aws-sdk/*` directly
-- **ALWAYS** use `test/helpers/electrodb-mock.ts` for mocking ElectroDB entities
-- Use specific type annotations for `jest.fn()` when using `mockResolvedValue`
+- **ALWAYS** use `vi.fn()` to mock `#entities/queries` functions
+- Use specific type annotations for `vi.fn()` when using `mockResolvedValue`
 - Run integration tests against LocalStack for AWS service changes
 
 ## Project Structure
 
 ```
 src/
-├── entities/              # ElectroDB entity definitions (single-table design)
-│   ├── Collections.ts     # Service combining entities for JOIN-like queries
-│   ├── Files.ts          # File entity
-│   ├── Users.ts          # User entity
-│   ├── Devices.ts        # Device entity
-│   ├── UserFiles.ts      # User-File relationships
-│   └── UserDevices.ts    # User-Device relationships
+├── entities/
+│   └── queries/           # Drizzle ORM query functions
+│       ├── userQueries.ts
+│       ├── fileQueries.ts
+│       ├── deviceQueries.ts
+│       └── index.ts       # Barrel export
 ├── lambdas/[name]/
 │   ├── src/index.ts      # Lambda handler with TypeDoc
 │   └── test/
@@ -94,25 +93,26 @@ src/
 │       └── fixtures/     # Test data
 lib/vendor/
 ├── AWS/                  # AWS SDK wrappers (S3, DynamoDB, Lambda, etc.)
-└── ElectroDB/           # ElectroDB configuration & service
+└── Drizzle/              # Drizzle ORM configuration & schema
 test/
 ├── helpers/              # Test utilities
-│   └── electrodb-mock.ts # ElectroDB mock helper
+│   ├── entity-fixtures.ts # Entity mock data
+│   └── aws-sdk-mock.ts   # AWS SDK mock helpers
 └── integration/          # LocalStack integration tests
 util/                     # Shared utilities
 terraform/                # OpenTofu infrastructure
 build/graph.json         # Code dependency graph - READ THIS FIRST
 ```
 
-## ElectroDB Architecture (CRITICAL)
+## Database Architecture (CRITICAL)
 
-This project uses ElectroDB as the DynamoDB ORM for type-safe database operations:
+This project uses Drizzle ORM with Aurora DSQL for type-safe database operations:
 
 ### Key Features
-- **Single-table design**: All entities in one DynamoDB table
-- **Type-safe queries**: Full TypeScript type inference
-- **Collections**: JOIN-like queries across entities (see `src/entities/Collections.ts`)
-- **Batch operations**: Efficient bulk reads/writes
+- **Aurora DSQL**: Serverless PostgreSQL-compatible database
+- **Type-safe queries**: Full TypeScript type inference via Drizzle
+- **Native SQL**: Standard JOINs, no N+1 queries
+- **Simple mocking**: Mock query functions directly with vi.fn()
 
 ### Entity Relationships
 - **Users** ↔ **Files**: Many-to-many via UserFiles
@@ -120,9 +120,9 @@ This project uses ElectroDB as the DynamoDB ORM for type-safe database operation
 - **Collections.userResources**: Query all files & devices for a user
 - **Collections.fileUsers**: Get all users with a file (for notifications)
 
-### Testing with ElectroDB
-- **ALWAYS** use `test/helpers/electrodb-mock.ts` for mocking
-- **NEVER** create manual mocks for ElectroDB entities
+### Testing with Drizzle
+- **ALWAYS** mock `#entities/queries` with `vi.fn()`
+- **NEVER** mock raw database connections
 - See wiki testing guides for patterns
 
 ## Lambda Development Pattern
@@ -162,31 +162,29 @@ export const handler = withXRay(async (event, context, {traceId}) => {
 Tests MUST mock all transitive dependencies:
 
 ```typescript
-// 1. Mock ElectroDB entities FIRST using the helper
-jest.unstable_mockModule('../../../lib/vendor/ElectroDB/entity', () =>
-  createElectroDBMock({
-    // Mock entity methods as needed
-    get: jest.fn().mockResolvedValue({ data: mockUser }),
-    query: jest.fn().mockResolvedValue({ data: [mockUser] })
-  })
-)
+// 1. Mock entity queries FIRST
+vi.mock('#entities/queries', () => ({
+  getUser: vi.fn(),
+  createUser: vi.fn(),
+  getUserFiles: vi.fn()
+}))
 
 // 2. Mock vendor wrappers (never @aws-sdk/* directly)
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  headObject: jest.fn<() => Promise<{ContentLength: number}>>()
+vi.mock('#lib/vendor/AWS/S3', () => ({
+  headObject: vi.fn<() => Promise<{ContentLength: number}>>()
     .mockResolvedValue({ContentLength: 1024}),
-  createS3Upload: jest.fn()
+  createS3Upload: vi.fn()
 }))
 
 // 3. Mock Node.js built-ins if needed
-jest.unstable_mockModule('fs', () => ({
+vi.mock('fs', () => ({
   promises: {
-    copyFile: jest.fn<() => Promise<void>>()
+    copyFile: vi.fn<() => Promise<void>>()
   }
 }))
 
-// 4. THEN import the handler
-const {handler} = await import('../src')
+// 4. Import the handler
+import {handler} from '../src'
 ```
 
 ## Common Operations
@@ -224,13 +222,13 @@ git commit -m "type: description"  # NO AI references!
 - **Lambda**: `util/lambda-helpers.ts` - Response formatting, logging
 - **Transformers**: `util/transformers.ts` - Data format conversions
 - **Shared**: `util/shared.ts` - Cross-lambda functionality
-- **ElectroDB**: `src/entities/` - Type-safe database operations (replaces old DynamoDB helpers)
+- **Drizzle**: `src/entities/queries/` - Type-safe database operations via Drizzle ORM
 
 ## AWS Services Used
 
 - **Lambda**: Serverless compute (15+ functions)
 - **S3**: Media file storage with transfer acceleration
-- **DynamoDB**: Single-table design via ElectroDB ORM (all entities)
+- **Aurora DSQL**: Serverless PostgreSQL-compatible database via Drizzle ORM
 - **SNS**: Push notifications to iOS devices
 - **API Gateway**: REST endpoints with custom authorizer (query-based for Feedly)
 - **CloudWatch**: Logging and metrics
@@ -276,7 +274,7 @@ git commit -m "type: description"  # NO AI references!
 - ❌ Including AI references in commits
 - ❌ Creating new files unnecessarily (prefer editing existing)
 - ❌ Missing transitive dependency mocks in tests
-- ❌ Creating manual mocks for ElectroDB entities (use `test/helpers/electrodb-mock.ts`)
+- ❌ Creating manual mocks for entity queries (use `vi.mock('#entities/queries')`)
 - ❌ Explaining removed code in comments
 - ❌ Using wrong naming convention (camelCase vs PascalCase)
 - ❌ Forgetting to update esbuild externals for new AWS SDKs
@@ -290,8 +288,8 @@ When working on this project, always consult:
 - `AGENTS.md` - Primary project documentation
 - `docs/wiki/` - All style guides and patterns (MUST READ applicable guides)
 - `docs/wiki/Meta/Conventions-Tracking.md` - Project-specific conventions
-- `src/entities/` - ElectroDB entity definitions
-- `test/helpers/electrodb-mock.ts` - ElectroDB testing patterns
+- `src/entities/queries/` - Drizzle ORM query functions
+- `test/helpers/entity-fixtures.ts` - Entity mock data
 - `package.json` - Dependencies and scripts
 - `config/esbuild.config.ts` - Build configuration
 - `test/integration/README.md` - Integration testing guide

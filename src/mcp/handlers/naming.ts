@@ -57,7 +57,7 @@ const NAMING_RULES = {
     {suffix: 'Response', contexts: ['api', 'http', 'lambda'], description: 'API response wrapper'},
     {suffix: 'Request', contexts: ['api', 'http', 'lambda'], description: 'API request payload'},
     {suffix: 'Input', contexts: ['mutation', 'create', 'update'], description: 'Mutation input parameters'},
-    {suffix: 'Item', contexts: ['entity', 'electrodb'], description: 'ElectroDB entity return type'},
+    {suffix: 'Item', contexts: ['entity', 'drizzle'], description: 'Drizzle entity return type'},
     {suffix: 'Record', contexts: ['persistence', 'database'], description: 'Database record type'}
   ],
   domainModels: ['User', 'File', 'Device', 'Session', 'IdentityProvider']

@@ -1,5 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createAPIGatewayEvent, createSubscribeBody} from '#test/helpers/event-factories'
@@ -15,7 +15,7 @@ const snsMock = createSNSMock()
 const {handler} = await import('./../src')
 
 describe('#UserSubscribe', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     vi.clearAllMocks()

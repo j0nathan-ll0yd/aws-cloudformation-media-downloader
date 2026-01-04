@@ -198,7 +198,7 @@ This is a zero-tolerance rule to maintain encapsulation and testability.
 4. Suggest wiki updates if needed
 
 ### Debugging Test Failures
-1. Check [Jest ESM Mocking](Testing/Vitest-Mocking-Strategy.md)
+1. Check [Vitest Mocking Strategy](Testing/Vitest-Mocking-Strategy.md)
 2. Review transitive dependencies
 3. Follow 7-step checklist
 4. Mock all module-level imports

@@ -128,7 +128,7 @@ export const FORBIDDEN_AWS_PACKAGES = [
 
 export const ALLOWED_VENDOR_PATHS = [
   'lib/vendor/AWS',
-  'lib/vendor/ElectroDB',
+  'lib/vendor/Drizzle',
 ]
 
 export const ENTITY_NAMES = [

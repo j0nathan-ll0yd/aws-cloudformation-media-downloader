@@ -18,7 +18,7 @@
 | Location | Reason |
 |----------|--------|
 | `src/types/**/*.ts` | Canonical location for types |
-| `src/entities/**/*.ts` | Entity-derived types from ElectroDB |
+| `src/entities/**/*.ts` | Entity-derived types from Drizzle ORM |
 | `src/mcp/**/*.ts` | Self-contained MCP module |
 | `**/*.test.ts`, `test/**/*.ts` | Test-only types |
 | `src/lib/vendor/**/*.ts` | Internal vendor wrapper types |
@@ -59,7 +59,7 @@ export type HelperConfig = {maxRetries: number}  // Should be in src/types/util.
 
 1. **Exported Types in `types/` Directory** - All exported types must be in `src/types/`
 2. **Inline Types for Single-Use Cases** - Define internal (non-exported) types inline
-3. **Entity Types with Entities** - ElectroDB entity types stay with entity definitions
+3. **Entity Types with Entities** - Drizzle entity types stay with entity definitions
 4. **Use `import type` Syntax** - Better tree-shaking and clearer intent
 
 ## Examples

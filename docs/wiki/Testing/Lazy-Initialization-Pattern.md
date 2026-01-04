@@ -102,22 +102,22 @@ export function configureS3Client(config: S3Config): void {
 }
 ```
 
-### ElectroDB Service
+### Drizzle ORM Client
 ```typescript
-import {Service} from 'electrodb'
-import {Users, Files, Devices} from '../../src/entities'
+import {drizzle} from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
 
-let service: Service | null = null
+let client: ReturnType<typeof drizzle> | null = null
 
-export function getService(): Service {
-  if (!service) {
-    service = new Service({Users, Files, Devices})
+export function getDrizzleClient() {
+  if (!client) {
+    const connectionString = process.env.DATABASE_URL!
+    client = drizzle(postgres(connectionString))
   }
-  return service
+  return client
 }
 
-export const table = process.env.TABLE_NAME || 'MediaDownloader'
-export function resetService(): void { service = null }
+export function resetClient(): void { client = null }
 ```
 
 ## Testing Benefits

@@ -41,11 +41,6 @@
       "documentedIn": ["AGENTS.md"]
     },
     {
-      "documentedPath": "src/lib/vendor/ElectroDB/",
-      "mustExist": true,
-      "documentedIn": ["AGENTS.md"]
-    },
-    {
       "documentedPath": "src/mcp/",
       "mustExist": true,
       "documentedIn": ["AGENTS.md"]

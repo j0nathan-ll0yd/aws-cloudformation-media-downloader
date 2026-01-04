@@ -123,5 +123,5 @@ resource "aws_s3_object" "DefaultFile" {
   key          = "default-file.mp4"
   source       = data.local_file.DefaultFile.filename
   etag         = filemd5(data.local_file.DefaultFile.filename)
-  acl          = "public-read"
+  # ACL removed - CloudFront OAC provides secure access
 }

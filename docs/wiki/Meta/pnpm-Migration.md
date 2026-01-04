@@ -47,8 +47,8 @@ pnpm install aws-dynamodb  # ✅ Refuses to run scripts
 
 pnpm workspaces enable future evolution:
 - Extract `cloudwatch-fixture-extractor` as standalone package (#102)
-- Extract `electrodb-dynamodb-adapter` for Better Auth (#85)
-- Share ElectroDB entities across multiple projects
+- Extract shared utilities as standalone packages
+- Share Drizzle entities across multiple projects
 - Dependency isolation per Lambda package
 
 ## Configuration Files

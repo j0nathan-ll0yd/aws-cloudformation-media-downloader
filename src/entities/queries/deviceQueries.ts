@@ -1,10 +1,7 @@
 /**
- * Device Queries - Native Drizzle ORM queries for device operations.
- *
- * Replaces the ElectroDB-style Devices entity wrapper with direct Drizzle queries.
+ * Device Queries - Drizzle ORM queries for device operations.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
- * @see src/entities/Devices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices} from '#lib/vendor/Drizzle/schema'

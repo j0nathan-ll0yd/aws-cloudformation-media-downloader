@@ -34,7 +34,7 @@ TypeScript-specific patterns and best practices:
 ### 🧪 Testing
 Comprehensive testing strategies and patterns:
 
-- [Jest ESM Mocking Strategy](Testing/Vitest-Mocking-Strategy.md) - Transitive dependencies solution
+- [Vitest Mocking Strategy](Testing/Vitest-Mocking-Strategy.md) - Transitive dependencies solution
 - [Mock Type Annotations](Testing/Mock-Type-Annotations.md) - Specific vs generic types
 - [Lazy Initialization Pattern](Testing/Lazy-Initialization-Pattern.md) - Defer SDK clients
 - [Coverage Philosophy](Testing/Coverage-Philosophy.md) - Test YOUR code principle
@@ -142,7 +142,7 @@ To add or update conventions:
 | AWS SDK Encapsulation | AWS | Zero-tolerance |
 | No AI in Commits | Git | Zero-tolerance |
 | camelCase for variables | Naming | Required |
-| Jest transitive mocking | Testing | Required |
+| Vitest transitive mocking | Testing | Required |
 | Git as source of truth | Comments | Required |
 
 ---

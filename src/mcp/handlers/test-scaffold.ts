@@ -248,7 +248,7 @@ export async function handleTestScaffoldQuery(args: TestScaffoldQueryArgs) {
           ].filter(Boolean),
           setup: {beforeAll: 'Environment variables', mocks: mocks.map((m) => `${m.type}: ${m.name}`), handlerImport: 'await import after mocks'},
           testSuites: ['success cases', 'error cases', 'edge cases'],
-          helpers: ['testContext', 'createTestEvent']
+          helpers: ['createMockContext', 'createTestEvent']
         },
         dependencies: {
           entities: mocks.filter((m) => m.type === 'entity').map((m) => m.name),

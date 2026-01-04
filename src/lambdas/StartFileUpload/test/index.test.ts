@@ -3,7 +3,7 @@ import type {SQSEvent} from 'aws-lambda'
 import type {FetchVideoInfoResult} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {CookieExpirationError, UnexpectedError} from '#lib/system/errors'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
 import {createDownloadQueueEvent, createSQSEvent} from '#test/helpers/event-factories'
 import {SendMessageCommand} from '@aws-sdk/client-sqs'
@@ -51,7 +51,7 @@ const {handler} = await import('./../src')
 import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload, upsertFile} from '#entities/queries'
 
 describe('#StartFileUpload', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: SQSEvent
 
   const createSuccessResult = (info: Partial<YtDlpVideoInfo>): FetchVideoInfoResult => ({

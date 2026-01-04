@@ -1,5 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {fakePrivateKey, testContext} from '#util/vitest-setup'
+import {createMockContext, fakePrivateKey} from '#util/vitest-setup'
 import {UnexpectedError} from '#lib/system/errors'
 import {createMockDevice} from '#test/helpers/entity-fixtures'
 import {createScheduledEvent} from '#test/helpers/event-factories'
@@ -110,7 +110,7 @@ import {deleteDevice} from '#lib/domain/device/deviceService'
 
 describe('#PruneDevices', () => {
   const event = createScheduledEvent()
-  const context = testContext
+  const context = createMockContext()
 
   // Configure SNS mock responses for each test using factories
   beforeEach(() => {

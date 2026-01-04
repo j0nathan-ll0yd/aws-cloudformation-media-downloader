@@ -25,11 +25,6 @@ export function getErrorMessage(error: unknown): string {
   }
 }
 
-/** @deprecated Use getErrorMessage instead. Kept for backwards compatibility. */
-export function formatUnknownError(unknownVariable: unknown): string {
-  return getErrorMessage(unknownVariable)
-}
-
 /**
  * Internal function to format API Gateway responses.
  * Automatically detects error vs success based on status code.

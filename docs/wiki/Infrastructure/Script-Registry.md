@@ -34,7 +34,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **Purpose**: Generate `build/graph.json` dependency analysis
 **Dependencies**: ts-morph
 **CI Coverage**: Yes (via build/test)
-**Notes**: Critical for Jest mocking - shows transitive dependencies
+**Notes**: Critical for Vitest mocking - shows transitive dependencies
 
 ---
 

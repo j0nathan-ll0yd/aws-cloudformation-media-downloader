@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 
 // Mock the logging module to verify logging behavior
@@ -13,7 +13,7 @@ vi.mock('#lib/system/logging', async (importOriginal) => {
 const {handler} = await import('./../src')
 
 describe('#LogClientEvent', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: APIGatewayEvent
 
   beforeEach(() => {

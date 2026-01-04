@@ -12,7 +12,7 @@ import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure
 
 /**
  * Creates a mock file object with sensible defaults
- * Provides ALL required ElectroDB fields for database operations
+ * Provides ALL required fields for database operations
  * @param id - File ID (e.g., 'video-123')
  * @param status - File status from FileStatus enum
  * @param partial - Partial file data to override defaults

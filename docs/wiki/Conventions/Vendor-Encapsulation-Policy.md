@@ -11,7 +11,7 @@
 
 This applies to:
 - AWS SDK (`@aws-sdk/*`)
-- ElectroDB
+- Drizzle ORM
 - Better Auth
 - yt-dlp (YouTube)
 - Any other third-party service integration
@@ -22,7 +22,6 @@ This applies to:
 |---------|------------------|---------|
 | AWS SDK | `lib/vendor/AWS/` | S3, DynamoDB, SNS, SQS, Lambda |
 | Drizzle ORM | `lib/vendor/Drizzle/` | Aurora DSQL database access |
-| ElectroDB | `lib/vendor/ElectroDB/` | DynamoDB ORM configuration |
 | Better Auth | `lib/vendor/BetterAuth/` | Authentication framework |
 | yt-dlp | `lib/vendor/YouTube.ts` | Video download wrapper |
 
@@ -47,20 +46,20 @@ import {uploadToS3} from '#lib/vendor/AWS/S3'
 import {queryItems} from '#lib/vendor/AWS/DynamoDB'
 ```
 
-### ElectroDB
+### Drizzle ORM
 
 #### ❌ FORBIDDEN
 ```typescript
-// Direct ElectroDB configuration
-import {Entity} from 'electrodb'
-const client = new DynamoDBClient({})
+// Direct Drizzle imports in Lambda handlers
+import {drizzle} from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
 ```
 
 #### ✅ REQUIRED
 ```typescript
-// Use configured service
-import {Files} from '#entities/Files'
-const file = await Files.get({fileId}).go()
+// Use entity query functions from vendor wrapper
+import {getFileById} from '#entities/queries'
+const file = await getFileById(fileId)
 ```
 
 ### Better Auth

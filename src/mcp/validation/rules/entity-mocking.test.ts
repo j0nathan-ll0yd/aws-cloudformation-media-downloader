@@ -2,8 +2,8 @@
  * Unit tests for entity-mocking rule
  * CRITICAL: Detect legacy entity mocking patterns (deprecated)
  *
- * With native Drizzle query functions, tests should mock #entities/queries directly
- * using vi.fn() for each function. Legacy ElectroDB-style entity mocks are deprecated.
+ * With Drizzle query functions, tests should mock #entities/queries directly
+ * using vi.fn() for each function. Legacy entity module mocks are deprecated.
  * This is CRITICAL because incorrect mocking causes test failures when entity layer changes.
  */
 

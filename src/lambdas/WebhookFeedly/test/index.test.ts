@@ -1,5 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
@@ -70,7 +70,7 @@ const mockUserFileRow = () => createMockUserFile({userId: fakeUserId, fileId: 't
 const mockFileDownloadRow = () => createMockFileDownload({fileId: 'test-file-id'})
 
 describe('#WebhookFeedly', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     vi.clearAllMocks()

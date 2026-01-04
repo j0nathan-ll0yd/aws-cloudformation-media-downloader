@@ -81,7 +81,7 @@ const PATTERN_DEFINITIONS: Record<
 
   'entity-access': {
     name: 'Entity Access Pattern',
-    description: 'ElectroDB entity access via vendor wrapper',
+    description: 'Drizzle entity access via query functions',
     detect: (sourceFile) => {
       const matches: PatternMatch[] = []
       const filePath = sourceFile.getFilePath()
@@ -322,7 +322,7 @@ async function detectDrift(patternName?: string, paths?: string[]): Promise<Patt
           pattern = 'env-access'
         } else if (violation.rule === 'response-helpers') {
           pattern = 'error-handling'
-        } else if (violation.rule === 'electrodb-mocking') {
+        } else if (violation.rule === 'entity-mocking') {
           pattern = 'entity-access'
         }
 

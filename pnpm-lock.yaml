@@ -8,6 +8,7 @@ overrides:
   qs: '>=6.14.1'
   drizzle-zod>zod: ^4.3.4
   esbuild: '>=0.25.0'
+  undici-types: 7.16.0
 
 importers:
 
@@ -47,10 +48,10 @@ importers:
         specifier: 3.958.0
         version: 3.958.0
       '@aws-sdk/client-sqs':
-        specifier: 3.960.0
-        version: 3.960.0
+        specifier: 3.958.0
+        version: 3.958.0
       '@aws-sdk/dsql-signer':
-        specifier: ^3.958.0
+        specifier: 3.958.0
         version: 3.958.0
       '@aws-sdk/lib-dynamodb':
         specifier: 3.958.0
@@ -390,8 +391,8 @@ packages:
     resolution: {integrity: sha512-KSsfhNXt8npsadJL5tF3UhARkPtqcbszMt3bKwkF4j5KA5Hdf5XD6tzjwBGkJnvBPHZJbLZEquzIvt4Z3KGIrw==}
     engines: {node: '>=18.0.0'}
 
-  '@aws-sdk/client-sqs@3.960.0':
-    resolution: {integrity: sha512-c5QYFPc90Sbl1/Lr622Y3dfe+qPGcmqh0rIplZxA/f55NZGVhoEmLaF/qu3YlzbSlU2fieBzadsQwN8TGuK12w==}
+  '@aws-sdk/client-sqs@3.958.0':
+    resolution: {integrity: sha512-QkcTQHohpYxkFzGWmDniUjM0KxAVHkmXJR1w6Out8+56Jh1EJyAvJUebOMh1y2JhiYUfrsNeMmeOUKoV7pcPNA==}
     engines: {node: '>=18.0.0'}
 
   '@aws-sdk/client-sso@3.958.0':
@@ -5729,9 +5730,6 @@ packages:
   underscore@1.13.7:
     resolution: {integrity: sha512-GMXzWtsc57XAtguZgaQViUOzs0KTkk8ojr3/xAxXLITqf/3EMwxC0inyETfDFjH/Krbhuep0HNbbjI9i/q3F3g==}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
-
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -6572,7 +6570,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-sqs@3.960.0':
+  '@aws-sdk/client-sqs@3.958.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -9383,7 +9381,7 @@ snapshots:
 
   '@types/node@20.19.27':
     dependencies:
-      undici-types: 6.21.0
+      undici-types: 7.16.0
 
   '@types/node@25.0.3':
     dependencies:
@@ -12547,8 +12545,6 @@ snapshots:
   ulid@3.0.2: {}
 
   underscore@1.13.7: {}
-
-  undici-types@6.21.0: {}
 
   undici-types@7.16.0: {}
 

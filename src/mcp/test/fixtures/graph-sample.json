@@ -24,13 +24,13 @@
     "src/entities/Files.ts": {
       "file": "src/entities/Files.ts",
       "imports": [
-        "src/lib/vendor/ElectroDB/config"
+        "src/lib/vendor/Drizzle/client"
       ]
     },
     "src/entities/Users.ts": {
       "file": "src/entities/Users.ts",
       "imports": [
-        "src/lib/vendor/ElectroDB/config"
+        "src/lib/vendor/Drizzle/client"
       ]
     },
     "src/util/lambda-helpers.ts": {
@@ -41,8 +41,8 @@
       "file": "src/lib/vendor/AWS/DynamoDB.ts",
       "imports": []
     },
-    "src/lib/vendor/ElectroDB/config.ts": {
-      "file": "src/lib/vendor/ElectroDB/config.ts",
+    "src/lib/vendor/Drizzle/client.ts": {
+      "file": "src/lib/vendor/Drizzle/client.ts",
       "imports": [
         "src/lib/vendor/AWS/DynamoDB"
       ]
@@ -53,22 +53,22 @@
       "src/entities/Files",
       "src/entities/Users",
       "src/lib/vendor/AWS/DynamoDB",
-      "src/lib/vendor/ElectroDB/config",
+      "src/lib/vendor/Drizzle/client",
       "src/util/lambda-helpers"
     ],
     "src/lambdas/AnotherLambda/src/index.ts": [
       "src/entities/Files",
       "src/lib/vendor/AWS/DynamoDB",
-      "src/lib/vendor/ElectroDB/config",
+      "src/lib/vendor/Drizzle/client",
       "src/util/lambda-helpers"
     ],
     "src/entities/Files.ts": [
       "src/lib/vendor/AWS/DynamoDB",
-      "src/lib/vendor/ElectroDB/config"
+      "src/lib/vendor/Drizzle/client"
     ],
     "src/entities/Users.ts": [
       "src/lib/vendor/AWS/DynamoDB",
-      "src/lib/vendor/ElectroDB/config"
+      "src/lib/vendor/Drizzle/client"
     ]
   },
   "circularDependencies": []

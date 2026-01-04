@@ -97,7 +97,7 @@ describe('validation exports', () => {
       expect(rulesByName['aws-sdk']).toBe(rulesByName['aws-sdk-encapsulation'])
       expect(rulesByName['drizzle']).toBe(rulesByName['drizzle-orm-encapsulation'])
       expect(rulesByName['drizzle-orm']).toBe(rulesByName['drizzle-orm-encapsulation'])
-      expect(rulesByName['electrodb']).toBe(rulesByName['entity-mocking'])
+      expect(rulesByName['entity']).toBe(rulesByName['entity-mocking'])
       expect(rulesByName['config']).toBe(rulesByName['config-enforcement'])
       expect(rulesByName['env']).toBe(rulesByName['env-validation'])
       expect(rulesByName['cascade']).toBe(rulesByName['cascade-safety'])

@@ -9,7 +9,7 @@
  * - Primary keys: 'id' field (Better Auth convention)
  * - Timestamps: All use TIMESTAMP WITH TIME ZONE (Better Auth expects Date objects)
  *
- * Key changes from ElectroDB/DynamoDB:
+ * Key changes from DynamoDB:
  * - Users.identityProviders embedded map becomes separate identity_providers table
  * - GSI patterns become PostgreSQL indexes
  * - Single-table design becomes normalized relational tables

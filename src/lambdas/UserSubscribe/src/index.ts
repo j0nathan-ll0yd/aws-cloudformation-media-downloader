@@ -4,7 +4,7 @@
  * Subscribes user's device endpoint to an SNS topic for push notifications.
  * Requires authenticated user with valid device registration.
  *
- * Trigger: API Gateway POST /subscriptions
+ * Trigger: API Gateway POST /user/subscribe
  * Input: UserSubscriptionRequest with endpointArn and topicArn
  * Output: APIGatewayProxyResult with subscription confirmation
  */

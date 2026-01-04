@@ -1,7 +1,7 @@
 import {logDebug} from '#lib/system/logging'
 
 /**
- * Scans all pages of a DynamoDB table using ElectroDB pagination
+ * Scans all pages of a DynamoDB table using pagination
  * Handles the cursor-based pagination automatically
  * @param scanFn - Function that performs a scan with optional cursor
  * @returns All items from all pages combined

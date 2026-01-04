@@ -72,15 +72,9 @@ export async function handleInfrastructureQuery(args: {resource?: string; query:
 
     case 'dynamodb':
       return createSuccessResponse({
-        description: 'Single-table design with ElectroDB ORM',
+        description: 'DynamoDB tables for idempotency and legacy support',
         tableFile: 'terraform/dynamodb.tf',
-        entitiesDir: 'src/entities/',
-        collectionsFile: 'src/entities/Collections.ts',
-        indexes: [
-          {name: 'Primary', pk: 'pk', sk: 'sk'}, // fmt: multiline
-          {name: 'GSI1', pk: 'gsi1pk', sk: 'gsi1sk', description: 'User-based queries'},
-          {name: 'GSI2', pk: 'gsi2pk', sk: 'gsi2sk', description: 'File/Device lookups'}
-        ]
+        note: 'Primary data store is Aurora DSQL (see Aurora DSQL for entity storage)'
       })
 
     case 's3':

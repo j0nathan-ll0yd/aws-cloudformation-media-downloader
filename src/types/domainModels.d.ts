@@ -2,9 +2,9 @@
  * Domain Model Types
  *
  * Core business entities representing users, files, devices, and authentication.
- * These are the "clean" domain types, separate from persistence (ElectroDB) types.
+ * These are the "clean" domain types, separate from persistence (Drizzle) types.
  *
- * @see src/entities/ for ElectroDB entity definitions
+ * @see src/entities/queries/ for Drizzle query functions
  * @see src/types/persistence-types.d.ts for relationship types
  */
 

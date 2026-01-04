@@ -1,11 +1,9 @@
 /**
- * User Queries - Native Drizzle ORM queries for user operations.
+ * User Queries - Drizzle ORM queries for user operations.
  *
- * Replaces the ElectroDB-style Users entity wrapper with direct Drizzle queries.
  * Uses LEFT JOINs to fetch identity providers efficiently (no N+1 queries).
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
- * @see src/entities/Users.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'

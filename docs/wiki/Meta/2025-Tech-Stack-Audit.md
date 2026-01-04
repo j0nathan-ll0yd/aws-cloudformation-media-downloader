@@ -26,7 +26,7 @@ This project employs a cutting-edge, "paranoid-security" stack (Node 22, pnpm 10
 - **Supply Chain (Verified):** `pnpm` v10 configuration adheres to "Deny by Default" for lifecycle scripts.
   - *Configuration:* `.npmrc` blocks scripts; `package.json` allowlists only `@lancedb/lancedb`.
   - *Verdict:* 🛡️ **Best-in-Class**. This protects against `postinstall` malware vectors.
-- **Authentication:** Uses Better Auth with a custom ElectroDB adapter.
+- **Authentication:** Uses Better Auth with a custom Drizzle adapter for Aurora DSQL.
   - *Verdict:* Align with "Lambda as Orchestrator" pattern.
 
 ### 4. Testing Strategy

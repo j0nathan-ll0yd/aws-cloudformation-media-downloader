@@ -234,22 +234,23 @@ export interface CommonTags {
 }
 
 export interface Output {
-    api_gateway_api_key:            APIGatewayAPIKey[];
-    api_gateway_stage:              APIGatewayStage[];
-    api_gateway_subdomain:          APIGatewayStage[];
-    cloudfront_distribution_domain: APIGatewayStage[];
-    cloudfront_media_files_domain:  APIGatewayStage[];
-    cloudwatch_dashboard_url:       APIGatewayStage[];
-    download_queue_arn:             APIGatewayStage[];
-    download_queue_url:             APIGatewayStage[];
-    dsql_cluster_arn:               APIGatewayStage[];
-    dsql_cluster_endpoint:          APIGatewayStage[];
-    event_bus_arn:                  APIGatewayStage[];
-    event_bus_name:                 APIGatewayStage[];
-    idempotency_table_arn:          APIGatewayStage[];
-    idempotency_table_name:         APIGatewayStage[];
-    migration_result:               APIGatewayStage[];
-    public_ip:                      APIGatewayStage[];
+    api_gateway_api_key:             APIGatewayAPIKey[];
+    api_gateway_stage:               APIGatewayStage[];
+    api_gateway_subdomain:           APIGatewayStage[];
+    cloudfront_distribution_domain:  APIGatewayStage[];
+    cloudfront_media_files_domain:   APIGatewayStage[];
+    cloudwatch_dashboard_url:        APIGatewayStage[];
+    download_queue_arn:              APIGatewayStage[];
+    download_queue_url:              APIGatewayStage[];
+    dsql_cluster_arn:                APIGatewayStage[];
+    dsql_cluster_endpoint:           APIGatewayStage[];
+    event_bus_arn:                   APIGatewayStage[];
+    event_bus_name:                  APIGatewayStage[];
+    idempotency_table_arn:           APIGatewayStage[];
+    idempotency_table_name:          APIGatewayStage[];
+    migration_result:                APIGatewayStage[];
+    operations_alerts_sns_topic_arn: APIGatewayStage[];
+    public_ip:                       APIGatewayStage[];
 }
 
 export interface APIGatewayAPIKey {
@@ -676,10 +677,10 @@ export interface AwsCloudwatchDashboardMain {
 }
 
 export interface AwsCloudwatchEventBus {
-    MediaDownloader: MediaDownloader[];
+    MediaDownloader: MediaDownloaderElement[];
 }
 
-export interface MediaDownloader {
+export interface MediaDownloaderElement {
     name: string;
     tags: string;
 }
@@ -758,6 +759,8 @@ export interface Age {
     statistic:           string;
     threshold:           number;
     treat_missing_data:  string;
+    alarm_actions?:      string[];
+    ok_actions?:         string[];
 }
 
 export interface DownloadDLQMessageDimensions {
@@ -765,6 +768,7 @@ export interface DownloadDLQMessageDimensions {
 }
 
 export interface EventBridge {
+    alarm_actions:       string[];
     alarm_description:   string;
     alarm_name:          string;
     comparison_operator: string;
@@ -772,6 +776,7 @@ export interface EventBridge {
     evaluation_periods:  number;
     metric_name:         string;
     namespace:           string;
+    ok_actions:          string[];
     period:              number;
     statistic:           string;
     threshold:           number;
@@ -783,12 +788,14 @@ export interface EventBridgeFailedInvocationDimensions {
 }
 
 export interface Lambda {
+    alarm_actions:       string[];
     alarm_description:   string;
     alarm_name:          string;
     comparison_operator: string;
     dynamic:             LambdaErrorsAPIDynamic;
     evaluation_periods:  number;
     metric_query:        LambdaErrorsAPIMetricQuery[];
+    ok_actions:          string[];
     threshold:           number;
     treat_missing_data:  string;
 }
@@ -827,10 +834,10 @@ export interface LambdaErrorsAPIMetricQuery {
 }
 
 export interface AwsDsqlCluster {
-    media_downloader: MediaDownloaderElement[];
+    media_downloader: MediaDownloaderClass[];
 }
 
-export interface MediaDownloaderElement {
+export interface MediaDownloaderClass {
     deletion_protection_enabled: boolean;
     tags:                        string;
 }
@@ -1066,7 +1073,6 @@ export interface AwsS3Object {
 }
 
 export interface AwsS3ObjectDefaultFile {
-    acl:          string;
     bucket:       string;
     content_type: string;
     etag:         string;
@@ -1089,6 +1095,7 @@ export interface OfflineMediaDownloader {
 }
 
 export interface AwsSnsTopic {
+    OperationsAlerts:  MediaDownloaderElement[];
     PushNotifications: PushNotification[];
 }
 
@@ -1553,6 +1560,7 @@ const typeMap: any = {
         { json: "idempotency_table_arn", js: "idempotency_table_arn", typ: a(r("APIGatewayStage")) },
         { json: "idempotency_table_name", js: "idempotency_table_name", typ: a(r("APIGatewayStage")) },
         { json: "migration_result", js: "migration_result", typ: a(r("APIGatewayStage")) },
+        { json: "operations_alerts_sns_topic_arn", js: "operations_alerts_sns_topic_arn", typ: a(r("APIGatewayStage")) },
         { json: "public_ip", js: "public_ip", typ: a(r("APIGatewayStage")) },
     ], false),
     "APIGatewayAPIKey": o([
@@ -1906,9 +1914,9 @@ const typeMap: any = {
         { json: "dashboard_name", js: "dashboard_name", typ: "" },
     ], false),
     "AwsCloudwatchEventBus": o([
-        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloader")) },
+        { json: "MediaDownloader", js: "MediaDownloader", typ: a(r("MediaDownloaderElement")) },
     ], false),
-    "MediaDownloader": o([
+    "MediaDownloaderElement": o([
         { json: "name", js: "name", typ: "" },
         { json: "tags", js: "tags", typ: "" },
     ], false),
@@ -1977,11 +1985,14 @@ const typeMap: any = {
         { json: "statistic", js: "statistic", typ: "" },
         { json: "threshold", js: "threshold", typ: 0 },
         { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+        { json: "alarm_actions", js: "alarm_actions", typ: u(undefined, a("")) },
+        { json: "ok_actions", js: "ok_actions", typ: u(undefined, a("")) },
     ], false),
     "DownloadDLQMessageDimensions": o([
         { json: "QueueName", js: "QueueName", typ: "" },
     ], false),
     "EventBridge": o([
+        { json: "alarm_actions", js: "alarm_actions", typ: a("") },
         { json: "alarm_description", js: "alarm_description", typ: "" },
         { json: "alarm_name", js: "alarm_name", typ: "" },
         { json: "comparison_operator", js: "comparison_operator", typ: "" },
@@ -1989,6 +2000,7 @@ const typeMap: any = {
         { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
         { json: "metric_name", js: "metric_name", typ: "" },
         { json: "namespace", js: "namespace", typ: "" },
+        { json: "ok_actions", js: "ok_actions", typ: a("") },
         { json: "period", js: "period", typ: 0 },
         { json: "statistic", js: "statistic", typ: "" },
         { json: "threshold", js: "threshold", typ: 0 },
@@ -1998,12 +2010,14 @@ const typeMap: any = {
         { json: "RuleName", js: "RuleName", typ: "" },
     ], false),
     "Lambda": o([
+        { json: "alarm_actions", js: "alarm_actions", typ: a("") },
         { json: "alarm_description", js: "alarm_description", typ: "" },
         { json: "alarm_name", js: "alarm_name", typ: "" },
         { json: "comparison_operator", js: "comparison_operator", typ: "" },
         { json: "dynamic", js: "dynamic", typ: r("LambdaErrorsAPIDynamic") },
         { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
         { json: "metric_query", js: "metric_query", typ: a(r("LambdaErrorsAPIMetricQuery")) },
+        { json: "ok_actions", js: "ok_actions", typ: a("") },
         { json: "threshold", js: "threshold", typ: 0 },
         { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
     ], false),
@@ -2035,9 +2049,9 @@ const typeMap: any = {
         { json: "return_data", js: "return_data", typ: true },
     ], false),
     "AwsDsqlCluster": o([
-        { json: "media_downloader", js: "media_downloader", typ: a(r("MediaDownloaderElement")) },
+        { json: "media_downloader", js: "media_downloader", typ: a(r("MediaDownloaderClass")) },
     ], false),
-    "MediaDownloaderElement": o([
+    "MediaDownloaderClass": o([
         { json: "deletion_protection_enabled", js: "deletion_protection_enabled", typ: true },
         { json: "tags", js: "tags", typ: "" },
     ], false),
@@ -2208,7 +2222,6 @@ const typeMap: any = {
         { json: "DefaultFile", js: "DefaultFile", typ: a(r("AwsS3ObjectDefaultFile")) },
     ], false),
     "AwsS3ObjectDefaultFile": o([
-        { json: "acl", js: "acl", typ: "" },
         { json: "bucket", js: "bucket", typ: "" },
         { json: "content_type", js: "content_type", typ: "" },
         { json: "etag", js: "etag", typ: "" },
@@ -2228,6 +2241,7 @@ const typeMap: any = {
         { json: "success_feedback_role_arn", js: "success_feedback_role_arn", typ: "" },
     ], false),
     "AwsSnsTopic": o([
+        { json: "OperationsAlerts", js: "OperationsAlerts", typ: a(r("MediaDownloaderElement")) },
         { json: "PushNotifications", js: "PushNotifications", typ: a(r("PushNotification")) },
     ], false),
     "PushNotification": o([

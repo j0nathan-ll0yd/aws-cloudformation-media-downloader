@@ -19,7 +19,7 @@ import {Project} from 'ts-morph'
 interface ImportInfo {
   modulePath: string
   isAwsSdk: boolean
-  isElectroDB: boolean
+  isEntity: boolean
   isVendorWrapper: boolean
   namedImports: string[]
 }
@@ -40,7 +40,7 @@ function analyzeSourceFile(filePath: string): ImportInfo[] {
     imports.push({
       modulePath: moduleSpecifier,
       isAwsSdk: moduleSpecifier.startsWith('@aws-sdk/'),
-      isElectroDB: moduleSpecifier.includes('entities') || moduleSpecifier.includes('ElectroDB'),
+      isEntity: moduleSpecifier.includes('entities') || moduleSpecifier.includes('queries'),
       isVendorWrapper: moduleSpecifier.includes('#lib/vendor/'),
       namedImports
     })
@@ -53,17 +53,14 @@ function analyzeSourceFile(filePath: string): ImportInfo[] {
  * Generate mock setup code for an import
  */
 function generateMockSetup(imp: ImportInfo): string {
-  if (imp.isElectroDB) {
-    return `// Mock entity
-jest.unstable_mockModule('${imp.modulePath}', () =>
-  createEntityMock({
-    get: jest.fn().mockResolvedValue({data: null}),
-    query: jest.fn().mockResolvedValue({data: []}),
-    put: jest.fn().mockResolvedValue({data: {}}),
-    update: jest.fn().mockResolvedValue({data: {}}),
-    delete: jest.fn().mockResolvedValue({data: {}})
-  })
-)`
+  if (imp.isEntity) {
+    return `// Mock entity queries
+vi.mock('${imp.modulePath}', () => ({
+  getUser: vi.fn(),
+  createUser: vi.fn(),
+  updateUser: vi.fn(),
+  deleteUser: vi.fn()
+}))`
   }
   
   if (imp.isVendorWrapper) {
@@ -107,7 +104,7 @@ function generateTestFile(sourceFilePath: string, imports: ImportInfo[]): string
     .map(imp => generateMockSetup(imp))
     .join('\n\n')
   
-  const hasEntityImport = imports.some(imp => imp.isElectroDB)
+  const hasEntityImport = imports.some(imp => imp.isEntity)
   const helperImports = hasEntityImport
     ? "import {createEntityMock} from '#test/helpers/entity-mock'\n"
     : ""

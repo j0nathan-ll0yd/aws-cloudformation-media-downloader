@@ -1,6 +1,6 @@
 import {beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayEvent} from 'aws-lambda'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {v4 as uuidv4} from 'uuid'
@@ -19,7 +19,7 @@ const mockIdToken =
 
 describe('#RegisterUser', () => {
   let event: APIGatewayEvent
-  const context = testContext
+  const context = createMockContext()
 
   beforeAll(() => {
     process.env.LOG_LEVEL = 'SILENT'

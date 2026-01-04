@@ -7,7 +7,7 @@ This document describes the project's code organization principles and enforceme
 ```
 src/
 ├── config/           # Build and runtime configuration
-├── entities/         # ElectroDB entity definitions (single-table design)
+├── entities/         # Entity query functions (Drizzle ORM with Aurora DSQL)
 ├── lambdas/          # Lambda function handlers (one per directory)
 ├── lib/              # Shared library code
 │   ├── data/         # Data utilities (pagination, retry)
