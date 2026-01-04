@@ -154,7 +154,7 @@ describe('Event Chain E2E Integration Tests', () => {
 
       // Should not receive any messages (short timeout - expected to timeout)
       // waitForMessages throws on timeout, so we expect zero messages
-      let unexpectedMessages: typeof import('@aws-sdk/client-sqs').Message[] = []
+      let unexpectedMessages: Awaited<ReturnType<typeof waitForMessages>> = []
       try {
         unexpectedMessages = await waitForMessages(queueUrl, 1, 3000)
       } catch {
