@@ -65,9 +65,24 @@ resource "aws_api_gateway_method_settings" "Production" {
 resource "aws_api_gateway_usage_plan" "iOSApp" {
   name        = "iOSApp"
   description = "Internal consumption"
+
   api_stages {
     api_id = aws_api_gateway_rest_api.Main.id
     stage  = aws_api_gateway_stage.Production.stage_name
+  }
+
+  # Conservative rate limiting for single-user iOS app
+  # Burst: Maximum concurrent requests allowed
+  # Rate: Steady-state requests per second
+  throttle_settings {
+    burst_limit = 100
+    rate_limit  = 50
+  }
+
+  # Daily request quota to prevent abuse
+  quota_settings {
+    limit  = 10000
+    period = "DAY"
   }
 }
 
@@ -87,6 +102,15 @@ resource "aws_api_gateway_usage_plan_key" "iOSApp" {
 resource "aws_api_gateway_gateway_response" "Default400GatewayResponse" {
   rest_api_id   = aws_api_gateway_rest_api.Main.id
   response_type = "DEFAULT_4XX"
+
+  # Security headers for error responses (before Lambda execution)
+  response_parameters = {
+    "gatewayresponse.header.X-Content-Type-Options" = "'nosniff'"
+    "gatewayresponse.header.X-Frame-Options"        = "'DENY'"
+    "gatewayresponse.header.X-XSS-Protection"       = "'1; mode=block'"
+    "gatewayresponse.header.Cache-Control"          = "'no-store'"
+  }
+
   response_templates = {
     "application/json" = "{\"error\":{\"code\":\"custom-4XX-generic\",\"message\":$context.error.messageString},\"requestId\":\"$context.requestId\"}"
   }
@@ -95,6 +119,15 @@ resource "aws_api_gateway_gateway_response" "Default400GatewayResponse" {
 resource "aws_api_gateway_gateway_response" "Default500GatewayResponse" {
   rest_api_id   = aws_api_gateway_rest_api.Main.id
   response_type = "DEFAULT_5XX"
+
+  # Security headers for error responses (before Lambda execution)
+  response_parameters = {
+    "gatewayresponse.header.X-Content-Type-Options" = "'nosniff'"
+    "gatewayresponse.header.X-Frame-Options"        = "'DENY'"
+    "gatewayresponse.header.X-XSS-Protection"       = "'1; mode=block'"
+    "gatewayresponse.header.Cache-Control"          = "'no-store'"
+  }
+
   response_templates = {
     "application/json" = "{\"error\":{\"code\":\"custom-5XX-generic\",\"message\":$context.error.messageString},\"requestId\":\"$context.requestId\"}"
   }

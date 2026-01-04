@@ -370,9 +370,17 @@ export interface AwsAPIGatewayGatewayResponse {
 }
 
 export interface Default00GatewayResponse {
-    response_templates: ResponseTemplates;
-    response_type:      string;
-    rest_api_id:        APIID;
+    response_parameters: ResponseParameters;
+    response_templates:  ResponseTemplates;
+    response_type:       string;
+    rest_api_id:         APIID;
+}
+
+export interface ResponseParameters {
+    "gatewayresponse.header.Cache-Control":          string;
+    "gatewayresponse.header.X-Content-Type-Options": string;
+    "gatewayresponse.header.X-Frame-Options":        string;
+    "gatewayresponse.header.X-XSS-Protection":       string;
 }
 
 export interface ResponseTemplates {
@@ -496,14 +504,26 @@ export interface AwsAPIGatewayUsagePlan {
 }
 
 export interface AwsAPIGatewayUsagePlanIOSApp {
-    api_stages:  APIStage[];
-    description: string;
-    name:        string;
+    api_stages:        APIStage[];
+    description:       string;
+    name:              string;
+    quota_settings:    QuotaSetting[];
+    throttle_settings: ThrottleSetting[];
 }
 
 export interface APIStage {
     api_id: APIID;
     stage:  string;
+}
+
+export interface QuotaSetting {
+    limit:  number;
+    period: string;
+}
+
+export interface ThrottleSetting {
+    burst_limit: number;
+    rate_limit:  number;
 }
 
 export interface AwsAPIGatewayUsagePlanKey {
@@ -1630,9 +1650,16 @@ const typeMap: any = {
         { json: "Default500GatewayResponse", js: "Default500GatewayResponse", typ: a(r("Default00GatewayResponse")) },
     ], false),
     "Default00GatewayResponse": o([
+        { json: "response_parameters", js: "response_parameters", typ: r("ResponseParameters") },
         { json: "response_templates", js: "response_templates", typ: r("ResponseTemplates") },
         { json: "response_type", js: "response_type", typ: "" },
         { json: "rest_api_id", js: "rest_api_id", typ: r("APIID") },
+    ], false),
+    "ResponseParameters": o([
+        { json: "gatewayresponse.header.Cache-Control", js: "gatewayresponse.header.Cache-Control", typ: "" },
+        { json: "gatewayresponse.header.X-Content-Type-Options", js: "gatewayresponse.header.X-Content-Type-Options", typ: "" },
+        { json: "gatewayresponse.header.X-Frame-Options", js: "gatewayresponse.header.X-Frame-Options", typ: "" },
+        { json: "gatewayresponse.header.X-XSS-Protection", js: "gatewayresponse.header.X-XSS-Protection", typ: "" },
     ], false),
     "ResponseTemplates": o([
         { json: "application/json", js: "application/json", typ: "" },
@@ -1736,10 +1763,20 @@ const typeMap: any = {
         { json: "api_stages", js: "api_stages", typ: a(r("APIStage")) },
         { json: "description", js: "description", typ: "" },
         { json: "name", js: "name", typ: "" },
+        { json: "quota_settings", js: "quota_settings", typ: a(r("QuotaSetting")) },
+        { json: "throttle_settings", js: "throttle_settings", typ: a(r("ThrottleSetting")) },
     ], false),
     "APIStage": o([
         { json: "api_id", js: "api_id", typ: r("APIID") },
         { json: "stage", js: "stage", typ: "" },
+    ], false),
+    "QuotaSetting": o([
+        { json: "limit", js: "limit", typ: 0 },
+        { json: "period", js: "period", typ: "" },
+    ], false),
+    "ThrottleSetting": o([
+        { json: "burst_limit", js: "burst_limit", typ: 0 },
+        { json: "rate_limit", js: "rate_limit", typ: 0 },
     ], false),
     "AwsAPIGatewayUsagePlanKey": o([
         { json: "iOSApp", js: "iOSApp", typ: a(r("AwsAPIGatewayUsagePlanKeyIOSApp")) },

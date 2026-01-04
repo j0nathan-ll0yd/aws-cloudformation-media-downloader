@@ -3,6 +3,7 @@ import {injectLambdaContext, logger, logMetrics, metrics, MetricUnit} from '#lib
 import type {Context} from 'aws-lambda'
 import {getOptionalEnv} from '#lib/system/env'
 import type {PowertoolsOptions} from '#types/lambda'
+import {securityHeaders} from './securityHeaders'
 
 /**
  * Module-level cold start flag.
@@ -25,6 +26,7 @@ let isColdStart = true
  * - Automatic cold start metric tracking (ALL lambdas)
  * - Optional custom metrics publishing (opt-in via enableCustomMetrics)
  * - Correlation IDs through all logs
+ * - Security headers on all responses (X-Content-Type-Options, X-Frame-Options, etc.)
  *
  * Note: Tracing is now provided by the ADOT Lambda layer and OpenTelemetry.
  * The layer auto-instruments AWS SDK calls - no manual SDK initialization needed.
@@ -38,7 +40,7 @@ export function withPowertools<TEvent, TResult>(
   handler: (event: TEvent, context: Context) => Promise<TResult>,
   options?: PowertoolsOptions
 ): (event: TEvent, context: Context) => Promise<TResult> {
-  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true}))
+  const middyHandler = middy(handler).use(injectLambdaContext(logger, {clearState: true})).use(securityHeaders())
 
   // Check if we should enable full metrics middleware (for custom metrics)
   // Only enable when explicitly requested AND not in test environment
