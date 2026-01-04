@@ -89,10 +89,7 @@ export function isTokenResponse(response: BetterAuthOAuthResponse): response is 
  * @returns The token response with proper typing
  * @throws Error if response is a redirect
  *
- * @example
- * ```typescript
- * const result = assertTokenResponse(rawResult)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/External-Integrations#better-auth | Better Auth}
  */
 export function assertTokenResponse(response: BetterAuthOAuthResponse): BetterAuthTokenResponse {
   if (isRedirectResponse(response)) {

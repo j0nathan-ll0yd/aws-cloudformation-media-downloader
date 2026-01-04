@@ -271,6 +271,20 @@ test('creates issue on cookie expiration', async () => {
 
 ---
 
+## Better Auth
+
+Type helpers for Better Auth OAuth responses in `src/lib/vendor/BetterAuth/helpers.ts`.
+
+### Assert Token Response
+
+```typescript
+import {assertTokenResponse} from '#lib/vendor/BetterAuth/helpers'
+
+const result = assertTokenResponse(rawResult)  // throws if redirect
+```
+
+---
+
 ## Best Practices
 
 1. **Use vendor wrappers** - Never import external libraries directly in Lambda handlers

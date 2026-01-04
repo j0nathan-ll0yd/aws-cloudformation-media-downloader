@@ -5,7 +5,7 @@
  * This rule enforces the conventions documented in docs/wiki/Conventions/Code-Comments.md:
  * - Lambda handler files must have file headers
  * - Exported functions must have JSDoc
- * - \@example tags should be short (5 lines max) or use \@see/\@link instead
+ * - \@example tags should be short (3 lines max) or use \@see/\@link instead
  * - Interfaces and type aliases should have JSDoc
  * - \@param tags must use hyphen format (TSDoc standard)
  *
@@ -21,7 +21,7 @@ const RULE_NAME = 'comment-conventions'
 const SEVERITY = 'HIGH' as const
 
 /** Maximum lines for \@example content before suggesting \@see/\@link */
-const MAX_EXAMPLE_LINES = 5
+const MAX_EXAMPLE_LINES = 3
 
 export const commentConventionsRule: ValidationRule = {
   name: RULE_NAME,

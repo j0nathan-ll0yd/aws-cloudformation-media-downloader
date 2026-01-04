@@ -174,6 +174,27 @@ await tx.update(files).set({status: 'Failed'})  // Error: missing where clause
 
 ---
 
+## Query Instrumentation
+
+Query tracing and metrics in `src/lib/vendor/Drizzle/instrumentation.ts`.
+
+### Usage
+
+```typescript
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
+
+const user = await withQueryMetrics('Users.get', async () => {
+  return db.select().from(users).where(eq(users.id, userId))
+})
+```
+
+The wrapper automatically records:
+- Query duration to CloudWatch metrics
+- X-Ray trace segments via OpenTelemetry
+- Success/failure status and row counts
+
+---
+
 ## Related Patterns
 
 - [Lambda Function Patterns](Lambda-Function-Patterns.md) - Handler patterns

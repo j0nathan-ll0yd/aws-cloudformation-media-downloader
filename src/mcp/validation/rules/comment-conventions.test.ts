@@ -183,12 +183,10 @@ export function processData(input: string): string {
       expect(violations.some((v) => v.message.includes('@example tag too long'))).toBe(true)
     })
 
-    test('should accept @example tag 5 lines or less', () => {
+    test('should accept @example tag 3 lines or less', () => {
       const sourceFile = project.createSourceFile('short-example.ts', `/**
  * Process data
- * @example
- * const result = processData('test')
- * console.log(result)
+ * @example processData('test')
  */
 export function processData(input: string): string {
   return input
