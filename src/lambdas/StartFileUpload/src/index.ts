@@ -8,6 +8,11 @@
  * Input: SQSEvent with DownloadQueueMessage records
  * Output: SQSBatchResponse with item failures for retry
  */
+import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload} from '#entities/queries'
+import {sendMessage} from '#lib/vendor/AWS/SQS'
+import {publishEvent} from '#lib/vendor/AWS/EventBridge'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
+import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
 import type {SqsRecordParams} from '#types/lambda'
@@ -15,11 +20,6 @@ import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
 import {DownloadStatus, FileStatus} from '#types/enums'
-import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload} from '#entities/queries'
-import {sendMessage} from '#lib/vendor/AWS/SQS'
-import {publishEvent} from '#lib/vendor/AWS/EventBridge'
-import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
-import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'

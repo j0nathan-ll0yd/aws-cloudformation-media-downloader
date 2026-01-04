@@ -8,10 +8,10 @@
  * Input: Authenticated or anonymous request
  * Output: APIGatewayProxyResult with file list
  */
+import {getFilesForUser} from '#entities/queries'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
-import {getFilesForUser} from '#entities/queries'
 import {getDefaultFile} from '#config/constants'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'

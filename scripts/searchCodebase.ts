@@ -86,13 +86,11 @@ function applyTypeBoost(results: SearchResult[], query: string): SearchResult[] 
   return results
     .map((r) => {
       let boost = TYPE_BOOSTS[r.type] || 1.0
-
       if (r.type === 'documentation') {
         boost = docBoost
       } else if (r.type.startsWith('typespec')) {
         boost = typespecBoost
       }
-
       return {
         ...r,
         adjustedDistance: r._distance / boost
@@ -133,7 +131,6 @@ export async function search(query: string, options: SearchOptions = {}): Promis
  */
 async function cliSearch(query: string, limit = 5) {
   const results = await search(query, {limit, expand: true})
-
   console.log(`
 Results for query: "${query}"
 `)
