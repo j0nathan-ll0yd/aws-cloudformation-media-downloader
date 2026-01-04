@@ -4,7 +4,7 @@
 
 This document assesses the current AWS Lambda Powertools logging implementation across all Lambda handlers in the Media Downloader project. The assessment evaluates log level consistency, structured data inclusion, sensitive data handling, and correlation ID propagation.
 
-**Key Finding**: Correlation ID propagation is already automatically handled by all middleware wrappers. The logging architecture is well-designed; improvements focus on consistent entry logging patterns and a single sensitive data fix.
+**Key Finding**: The logging architecture is well-designed. Correlation ID propagation is automatically handled by all middleware wrappers via `logger.appendKeys()`, meaning every log line automatically includes correlationId without handlers needing to pass it explicitly. The only issue found was a sensitive data exposure in SendPushNotification.
 
 ---
 
@@ -44,8 +44,8 @@ This document assesses the current AWS Lambda Powertools logging implementation 
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Handler Function                                                    │
-│  - Access correlationId via metadata.correlationId                  │
-│  - Use logDebug('HandlerName <=', {correlationId, ...input})        │
+│  - correlationId already in all logs (via logger.appendKeys)        │
+│  - No need to explicitly pass correlationId to log calls            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,48 +67,42 @@ Extracted from events in priority order (see `src/lib/lambda/correlation.ts`):
 
 ### Audit Matrix
 
-| Lambda | Middleware | Correlation ID | Entry Logging | Sensitive Data | Status |
-|--------|-----------|----------------|---------------|----------------|--------|
-| ApiGatewayAuthorizer | Custom | N/A (authorizer) | Partial | DEBUG-level IP/UA | Document |
-| CleanupExpiredRecords | wrapScheduledHandler | Auto | logInfo | Safe | Good |
-| CloudfrontMiddleware | None (Edge) | N/A | N/A | N/A | Special |
-| DeviceEvent | wrapApiHandler | Auto | logDebug | Safe | Good |
-| ListFiles | wrapOptionalAuthHandler | Auto | Missing | Safe | **Improve** |
-| LoginUser | wrapApiHandler | Auto | Missing | Sanitized | **Improve** |
-| MigrateDSQL | wrapLambdaInvokeHandler | Auto | logInfo | Safe | Good |
-| PruneDevices | wrapScheduledHandler | Auto | logInfo | Safe | Good |
-| RefreshToken | wrapApiHandler | Auto | logInfo | Safe | Good |
-| RegisterDevice | wrapOptionalAuthHandler | Auto | In helpers | Safe | **Improve** |
-| RegisterUser | wrapApiHandler | Auto | logInfo | Sanitized | Good |
-| S3ObjectCreated | wrapEventHandler | Auto | logInfo | Safe | Good |
-| SendPushNotification | wrapSqsBatchHandler | Auto | logDebug | **targetArn** | **Fix** |
-| StartFileUpload | wrapSqsBatchHandler | Auto | Rich | Safe | Reference |
-| UserDelete | wrapAuthenticatedHandler | Auto | logDebug | Safe | Good |
-| UserSubscribe | wrapAuthenticatedHandler | Auto | None | Safe | **Improve** |
-| WebhookFeedly | wrapAuthenticatedHandler | Auto | Rich | Safe | Reference |
+| Lambda | Middleware | Correlation ID | Sensitive Data | Status |
+|--------|-----------|----------------|----------------|--------|
+| ApiGatewayAuthorizer | Custom | N/A (authorizer) | DEBUG-level IP/UA | Good |
+| CleanupExpiredRecords | wrapScheduledHandler | Auto | Safe | Good |
+| CloudfrontMiddleware | None (Edge) | N/A | N/A | Special |
+| DeviceEvent | wrapApiHandler | Auto | Safe | Good |
+| ListFiles | wrapOptionalAuthHandler | Auto | Safe | Good |
+| LoginUser | wrapApiHandler | Auto | Sanitized | Good |
+| MigrateDSQL | wrapLambdaInvokeHandler | Auto | Safe | Good |
+| PruneDevices | wrapScheduledHandler | Auto | Safe | Good |
+| RefreshToken | wrapApiHandler | Auto | Safe | Good |
+| RegisterDevice | wrapOptionalAuthHandler | Auto | Safe | Good |
+| RegisterUser | wrapApiHandler | Auto | Sanitized | Good |
+| S3ObjectCreated | wrapEventHandler | Auto | Safe | Good |
+| SendPushNotification | wrapSqsBatchHandler | Auto | **targetArn** | **Fixed** |
+| StartFileUpload | wrapSqsBatchHandler | Auto | Safe | Good |
+| UserDelete | wrapAuthenticatedHandler | Auto | Safe | Good |
+| UserSubscribe | wrapAuthenticatedHandler | Auto | Safe | Good |
+| WebhookFeedly | wrapAuthenticatedHandler | Auto | Safe | Good |
 
 ### Handler Categories
 
-#### Reference Implementations (Use as Examples)
-- **WebhookFeedly**: Rich structured logging with correlation ID in business logic
-- **StartFileUpload**: Comprehensive entry/exit logging, error classification, metrics
+#### All Handlers - Good
+All handlers properly use middleware wrappers that automatically:
+- Extract correlation ID from incoming events
+- Append correlationId/traceId to all log output via `logger.appendKeys()`
+- Log incoming requests via `logIncomingFixture()`
 
-#### Good (No Changes Needed)
-- RegisterUser, RefreshToken, UserDelete, DeviceEvent, S3ObjectCreated, PruneDevices, CleanupExpiredRecords, MigrateDSQL
-- Middleware handles correlation ID automatically; adequate logging for their purpose
+No additional entry logging is needed since correlationId is automatically included in every log line.
 
-#### Needs Entry Logging
-- **ListFiles**: Has helper function logging but no handler-level entry log with correlationId
-- **LoginUser**: Only logs on success; no entry log
-- **RegisterDevice**: Has helper function logging but no handler-level entry log
-- **UserSubscribe**: No logging at all; needs entry/exit logs
-
-#### Sensitive Data Fix Required
-- **SendPushNotification**: Logs `targetArn` (SNS endpoint ARN containing device token path)
-  - Fix: Remove `targetArn` from log call; `deviceId` is sufficient for debugging
+#### Sensitive Data Fix (Implemented)
+- **SendPushNotification**: Was logging `targetArn` (SNS endpoint ARN containing device token path)
+  - Fixed: Removed `targetArn` from log call; `deviceId` is sufficient for debugging
 
 #### Special Cases
-- **CloudfrontMiddleware**: Lambda@Edge cannot use Powertools layer or middleware
+- **CloudfrontMiddleware**: Lambda@Edge cannot use Powertools layer or middleware (expected limitation)
 - **ApiGatewayAuthorizer**: Logs `clientIp`/`userAgent` at DEBUG level for test request detection; acceptable since DEBUG is not enabled in production
 
 ---
@@ -163,17 +157,17 @@ All logging functions (`logInfo`, `logDebug`, `logError`) in `src/lib/system/log
 
 ### Implemented in This PR
 
-1. **Add entry logging to 4 handlers**: ListFiles, LoginUser, RegisterDevice, UserSubscribe
-   - Pattern: `const {correlationId} = metadata; logDebug('HandlerName <=', {correlationId, ...})`
-
-2. **Fix sensitive data in SendPushNotification**
-   - Remove `targetArn` from log call (line 63)
+1. **Fix sensitive data in SendPushNotification**
+   - Removed `targetArn` from log call (line 63); `deviceId` is sufficient for debugging
 
 ### Future Considerations
 
 1. **LOG_LEVEL for Production**: Consider changing to INFO when system is stable
 2. **Metrics Consistency**: Audit which handlers use `enableCustomMetrics: true`
-3. **CloudfrontMiddleware**: Cannot be improved due to Lambda@Edge restrictions
+
+### Not Needed
+
+- **Entry logging with correlationId**: The middleware already appends correlationId to all logs via `logger.appendKeys()`. Explicitly passing correlationId in log calls is redundant.
 
 ---
 

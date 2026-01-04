@@ -35,9 +35,7 @@ async function getFilesByUser(userId: string): Promise<File[]> {
  *
  * @notExported
  */
-export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus, metadata}) => {
-  const {correlationId} = metadata
-  logDebug('ListFiles <=', {correlationId, userStatus})
+export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus}) => {
   // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   const myResponse = {contents: [] as File[], keyCount: 0}
 

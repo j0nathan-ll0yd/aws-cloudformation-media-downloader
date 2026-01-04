@@ -110,9 +110,7 @@ async function getSubscriptionArnFromEndpointAndTopic(endpointArn: string, topic
  * Unauthenticated users (invalid token) are rejected with 401 by wrapOptionalAuthHandler
  * @notExported
  */
-export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus, metadata}) => {
-  const {correlationId} = metadata
-  logDebug('RegisterDevice <=', {correlationId, userStatus})
+export const handler = withPowertools(wrapOptionalAuthHandler(async ({event, context, userId, userStatus}) => {
   // wrapOptionalAuthHandler already rejected Unauthenticated users with 401
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as DeviceRegistrationRequest
