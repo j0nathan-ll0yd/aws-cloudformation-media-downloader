@@ -13,7 +13,10 @@ const RULE_NAME = 'import-order'
 const SEVERITY = 'MEDIUM' as const
 
 /**
- * Import categories in expected order
+ * Import categories in expected order.
+ *
+ * Note: Order of patterns matters - vendor must come before utilities
+ * since #lib/vendor/ would also match #lib/.
  */
 const IMPORT_CATEGORIES = [
   {name: 'node-builtins', patterns: [/^node:/, /^fs$/, /^path$/, /^url$/]},
@@ -22,7 +25,8 @@ const IMPORT_CATEGORIES = [
   {name: 'entities', patterns: [/#entities\//, /src\/entities\//]},
   {name: 'vendor', patterns: [/#lib\/vendor\//, /src\/lib\/vendor\//]},
   {name: 'types', patterns: [/#types\//, /src\/types\//]},
-  {name: 'utilities', patterns: [/#util\//, /src\/util\//]},
+  // Utilities includes all other internal imports: #lib/, #util/, #config/
+  {name: 'utilities', patterns: [/#lib\//, /src\/lib\//, /#util\//, /src\/util\//, /#config\//, /src\/config\//]},
   {name: 'relative', patterns: [/^\.\//]}
 ]
 

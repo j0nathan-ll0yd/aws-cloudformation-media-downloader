@@ -8,7 +8,6 @@
  * Input: SQSEvent with DownloadQueueMessage records
  * Output: SQSBatchResponse with item failures for retry
  */
-import type {SQSBatchResponse, SQSEvent} from 'aws-lambda'
 import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
@@ -16,20 +15,22 @@ import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTe
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
 import type {File} from '#types/domain-models'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
+import type {SqsRecordParams} from '#types/lambda'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
-import {validateSchema} from '#lib/validation/constraints'
 import {DownloadStatus, FileStatus} from '#types/enums'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
-import {upsertFile} from './file-helpers'
+import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
 import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issue-service'
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createMetadataNotification} from '#lib/domain/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/error-classifier'
 import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
+import {upsertFile} from './file-helpers'
 
 /**
  * Fetch video info with OpenTelemetry tracing and circuit breaker protection.
@@ -397,6 +398,27 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
 }
 
 /**
+ * Process a single SQS record containing a download request.
+ * Validates the message and delegates to processDownloadRequest.
+ * @notExported
+ */
+async function processSqsRecord({record, body}: SqsRecordParams<unknown>): Promise<void> {
+  // SQS provides ApproximateReceiveCount - how many times this message has been received
+  const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
+
+  // Validate body against schema
+  const validationErrors = validateSchema(downloadQueueMessageSchema, body)
+  if (validationErrors) {
+    // Log invalid message format and return (don't throw - malformed messages will never succeed)
+    logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
+    return
+  }
+
+  const message = downloadQueueMessageSchema.parse(body)
+  await processDownloadRequest(message, receiveCount)
+}
+
+/**
  * SQS handler for video download requests.
  *
  * Consumes messages from DownloadQueue (routed via EventBridge from WebhookFeedly).
@@ -407,40 +429,4 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
  * @returns SQSBatchResponse with failed message IDs
  * @notExported
  */
-export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  logInfo('Processing download batch', {recordCount: event.Records.length})
-
-  const batchItemFailures: {itemIdentifier: string}[] = []
-
-  for (const record of event.Records) {
-    // SQS provides ApproximateReceiveCount - how many times this message has been received
-    const receiveCount = parseInt(record.attributes?.ApproximateReceiveCount ?? '1', 10)
-
-    try {
-      // Parse and validate SQS message body
-      const rawMessage = JSON.parse(record.body)
-      const validationErrors = validateSchema(downloadQueueMessageSchema, rawMessage)
-      if (validationErrors) {
-        // Log invalid message format and skip (don't retry - malformed messages will never succeed)
-        logError('Invalid SQS message format - discarding', {messageId: record.messageId, errors: validationErrors.errors})
-        continue
-      }
-      const message = downloadQueueMessageSchema.parse(rawMessage)
-      await processDownloadRequest(message, receiveCount)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      logError('Download request failed', {messageId: record.messageId, error: errorMessage, receiveCount})
-      batchItemFailures.push({itemIdentifier: record.messageId})
-    }
-  }
-
-  if (batchItemFailures.length > 0) {
-    logInfo('Batch completed with failures', {
-      total: event.Records.length,
-      failed: batchItemFailures.length,
-      succeeded: event.Records.length - batchItemFailures.length
-    })
-  }
-
-  return {batchItemFailures}
-}, {enableCustomMetrics: true})
+export const handler = withPowertools(wrapSqsBatchHandler(processSqsRecord), {enableCustomMetrics: true})

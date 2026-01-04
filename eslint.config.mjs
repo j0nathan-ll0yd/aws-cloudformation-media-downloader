@@ -125,7 +125,9 @@ export default [
         require: {FunctionDeclaration: true, MethodDefinition: false, ArrowFunctionExpression: false},
         contexts: ['ExportNamedDeclaration > FunctionDeclaration', 'ExportDefaultDeclaration > FunctionDeclaration'],
         enableFixer: false
-      }]
+      }],
+      // Enforce consistent import order in Lambda handlers
+      'local-rules/import-order': 'warn'
     }
   }
 ]
