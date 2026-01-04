@@ -7,6 +7,8 @@
 
 import {beforeAll} from 'vitest'
 import {getTestDbAsync} from './helpers/postgres-helpers'
+import {logIsolationConfig, validateSchemaIsolation} from './helpers/isolation-validator'
+import {POLLING, TIMEOUTS} from './helpers/timeout-config'
 
 /**
  * Ensure USE_LOCALSTACK is set
@@ -34,20 +36,23 @@ process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'SILENT'
 
 /**
  * Wait for LocalStack to be ready
- * Checks LocalStack health endpoint before running tests
+ * Checks LocalStack health endpoint before running tests.
+ * Uses exponential backoff with environment-aware timeouts.
  */
 async function waitForLocalStack(): Promise<void> {
-  const maxRetries = 30
-  const retryDelay = 1000
   const localstackUrl = 'http://localhost:4566/_localstack/health'
+  const startTime = Date.now()
+  let delay: number = POLLING.initialDelay
+  let attempt = 0
 
-  for (let i = 0; i < maxRetries; i++) {
+  while (Date.now() - startTime < TIMEOUTS.serviceReady) {
+    attempt++
     try {
       const response = await fetch(localstackUrl)
       if (response.ok) {
         const health = await response.json()
         if (process.env.LOG_LEVEL !== 'SILENT') {
-          console.log('LocalStack is ready:', JSON.stringify(health, null, 2))
+          console.log(`LocalStack ready after ${attempt} attempt(s):`, JSON.stringify(health, null, 2))
         }
         return
       }
@@ -55,25 +60,44 @@ async function waitForLocalStack(): Promise<void> {
       // LocalStack not ready yet, continue retrying
     }
 
-    if (i < maxRetries - 1) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelay))
+    // Exponential backoff with jitter
+    const jitter = Math.random() * POLLING.jitterFactor * delay
+    const nextDelay = Math.min(delay + jitter, POLLING.maxDelay)
+
+    if (Date.now() - startTime + nextDelay >= TIMEOUTS.serviceReady) {
+      break
     }
+
+    await new Promise((resolve) => setTimeout(resolve, nextDelay))
+    delay = Math.min(delay * 2, POLLING.maxDelay)
   }
 
-  throw new Error(`LocalStack is not responding after ${maxRetries} attempts. ` + 'Ensure LocalStack is running with: pnpm run localstack:start')
+  const elapsed = Date.now() - startTime
+  throw new Error(`LocalStack not responding after ${elapsed}ms (${attempt} attempts). ` + 'Ensure LocalStack is running with: pnpm run localstack:start')
 }
 
 /**
  * Run health check before tests and initialize database connection
- * - LocalStack health check (skipped in CI)
+ * - Log isolation configuration for debugging
+ * - LocalStack health check (skipped in CI where service is pre-verified)
  * - Initialize database connection with correct search_path for worker isolation
+ * - Validate schema isolation to catch configuration errors early
  */
 beforeAll(async () => {
+  // Log isolation config for debugging CI issues
+  logIsolationConfig()
+
   if (!process.env.CI) {
     await waitForLocalStack()
   }
 
   // Initialize database connection with worker-specific search_path
   // This ensures all postgres-helpers operations use the correct schema
-  await getTestDbAsync()
+  const db = await getTestDbAsync()
+
+  // Validate schema isolation - fail fast if misconfigured
+  const schema = await validateSchemaIsolation(db)
+  if (process.env.LOG_LEVEL !== 'SILENT') {
+    console.log(`[setup] Schema isolation validated: ${schema}`)
+  }
 })
