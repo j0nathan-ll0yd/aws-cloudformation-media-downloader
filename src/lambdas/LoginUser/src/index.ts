@@ -18,7 +18,7 @@ import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGa
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {logInfo} from '#lib/system/logging'
+import {logDebug, logInfo} from '#lib/system/logging'
 
 /**
  * Logs in a User via Sign in with Apple using Better Auth.
@@ -36,7 +36,9 @@ import {logInfo} from '#lib/system/logging'
  *
  * @notExported
  */
-export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
+export const handler = withPowertools(wrapApiHandler(async ({event, context, metadata}) => {
+  const {correlationId} = metadata
+  logDebug('LoginUser <=', {correlationId})
   // 1. Validate request body
   const requestBody = getPayloadFromEvent(event) as UserLoginRequest
   validateRequest(requestBody, userLoginRequestSchema)
