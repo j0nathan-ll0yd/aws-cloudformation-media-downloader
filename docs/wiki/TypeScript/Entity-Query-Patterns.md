@@ -354,14 +354,14 @@ try {
 
 ## Foreign Key Enforcement
 
-Aurora DSQL doesn't enforce foreign keys, so relationship creation validates references:
+Aurora DSQL doesn't enforce foreign keys, so `create*` functions validate references:
 
 ```typescript
 import {createUserFile, createUserDevice} from '#entities/queries'
 import {ForeignKeyViolationError} from '#lib/vendor/Drizzle/fk-enforcement'
 
 try {
-  // These functions validate user/file/device existence before insert
+  // create* functions validate user/file/device existence before insert
   await createUserFile({userId, fileId})
   await createUserDevice({userId, deviceId})
 } catch (error) {
@@ -371,6 +371,8 @@ try {
   }
 }
 ```
+
+**Note**: `upsert*` functions (e.g., `upsertUserFile`, `upsertUserDevice`) do NOT validate FK references. They're designed for scenarios where the caller has already created the parent entities (like RegisterDevice where the device is created immediately before the user-device relationship).
 
 ## Prepared Statements
 

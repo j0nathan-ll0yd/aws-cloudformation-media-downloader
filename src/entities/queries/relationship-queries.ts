@@ -100,26 +100,24 @@ export async function createUserFile(input: CreateUserFileInput): Promise<UserFi
 /**
  * Upserts a user-file relationship (create if not exists).
  * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
- * Validates that both user and file exist before upserting (application-level FK enforcement).
+ *
+ * Note: Unlike createUserFile(), this does NOT validate FK references.
+ * Upserts are typically used in contexts where parent entities have already been created.
+ *
  * @param input - The user-file data to upsert
  * @returns The existing or created user-file row
- * @throws ForeignKeyViolationError if user or file does not exist
  */
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
   const validatedInput = userFileInsertSchema.parse(input)
-  return await withTransaction(async (tx) => {
-    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
-    await assertUserExists(validatedInput.userId)
-    await assertFileExists(validatedInput.fileId)
-    // Try to insert, do nothing on conflict (junction table has no updatable fields)
-    const result = await tx.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
-    // If conflict occurred (no rows returned), fetch existing record
-    if (result.length === 0) {
-      const [existing] = await tx.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
-      return existing
-    }
-    return result[0]
-  })
+  const db = await getDrizzleClient()
+  // Try to insert, do nothing on conflict (junction table has no updatable fields)
+  const result = await db.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
+  // If conflict occurred (no rows returned), fetch existing record
+  if (result.length === 0) {
+    const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
+    return existing
+  }
+  return result[0]
 }
 
 /**
@@ -253,27 +251,26 @@ export async function createUserDevice(input: CreateUserDeviceInput): Promise<Us
 /**
  * Upserts a user-device relationship (create if not exists).
  * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
- * Validates that both user and device exist before upserting (application-level FK enforcement).
+ *
+ * Note: Unlike createUserDevice(), this does NOT validate FK references.
+ * Upserts are typically used in contexts where parent entities have already been created.
+ *
  * @param input - The user-device data to upsert
  * @returns The existing or created user-device row
- * @throws ForeignKeyViolationError if user or device does not exist
  */
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
   const validatedInput = userDeviceInsertSchema.parse(input)
-  return await withTransaction(async (tx) => {
-    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
-    await assertUserExists(validatedInput.userId)
-    await assertDeviceExists(validatedInput.deviceId)
-    // Try to insert, do nothing on conflict (junction table has no updatable fields)
-    const result = await tx.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
-    // If conflict occurred (no rows returned), fetch existing record
-    if (result.length === 0) {
-      const [existing] = await tx.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId)))
-        .limit(1)
-      return existing
-    }
-    return result[0]
-  })
+  const db = await getDrizzleClient()
+  // Try to insert, do nothing on conflict (junction table has no updatable fields)
+  const result = await db.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
+  // If conflict occurred (no rows returned), fetch existing record
+  if (result.length === 0) {
+    const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId))).limit(
+      1
+    )
+    return existing
+  }
+  return result[0]
 }
 
 /**
