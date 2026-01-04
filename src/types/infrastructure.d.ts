@@ -15,6 +15,7 @@ export interface InfrastructureD {
     provider:  Provider;
     resource:  Resource;
     terraform: Terraform[];
+    variable:  Variable;
 }
 
 export interface Data {
@@ -64,8 +65,11 @@ export interface AwsIamPolicyDocument {
     UserDelete:                     PruneDevice[];
     UserSubscribe:                  RegisterDevice[];
     WebhookFeedly:                  APIGatewayAuthorizerInvocationElement[];
-    dsql_access:                    DsqlAAccess[];
-    dsql_admin_access:              DsqlAAccess[];
+    codepipeline_e2e_assume_role:   AssumeRole[];
+    codepipeline_e2e_device_farm:   CodepipelineE2EDeviceFarm[];
+    codepipeline_e2e_s3_access:     CodepipelineE2EDeviceFarm[];
+    dsql_access:                    CodepipelineE2EDeviceFarm[];
+    dsql_admin_access:              CodepipelineE2EDeviceFarm[];
 }
 
 export interface APIGatewayAuthorizerInvocationElement {
@@ -144,11 +148,11 @@ export interface AwsIamPolicyDocumentSendPushNotification {
     statement: Ent[];
 }
 
-export interface DsqlAAccess {
-    statement: DsqlAccessStatement[];
+export interface CodepipelineE2EDeviceFarm {
+    statement: CodepipelineE2EDeviceFarmStatement[];
 }
 
-export interface DsqlAccessStatement {
+export interface CodepipelineE2EDeviceFarmStatement {
     actions:   string[];
     resources: string[];
     sid:       string;
@@ -195,6 +199,7 @@ export interface Local {
     lambda_functions_api?:                  string[];
     lambda_functions_background?:           string[];
     device_event_function_name?:            string;
+    e2e_test_project_name?:                 string;
     download_queue_name?:                   string;
     download_queue_visibility_timeout?:     number;
     event_bus_name?:                        string;
@@ -240,10 +245,16 @@ export interface Output {
     cloudfront_distribution_domain: APIGatewayStage[];
     cloudfront_media_files_domain:  APIGatewayStage[];
     cloudwatch_dashboard_url:       APIGatewayStage[];
+    codepipeline_e2e_arn:           APIGatewayStage[];
+    codepipeline_e2e_console_url:   APIGatewayStage[];
+    device_farm_device_pool_arn:    APIGatewayStage[];
+    device_farm_project_arn:        APIGatewayStage[];
+    device_farm_project_id:         APIGatewayStage[];
     download_queue_arn:             APIGatewayStage[];
     download_queue_url:             APIGatewayStage[];
     dsql_cluster_arn:               APIGatewayStage[];
     dsql_cluster_endpoint:          APIGatewayStage[];
+    e2e_test_artifacts_bucket:      APIGatewayStage[];
     event_bus_arn:                  APIGatewayStage[];
     event_bus_name:                 APIGatewayStage[];
     idempotency_table_arn:          APIGatewayStage[];
@@ -287,6 +298,7 @@ export interface Resource {
     aws_api_gateway_stage:                           AwsAPIGatewayStage;
     aws_api_gateway_usage_plan:                      AwsAPIGatewayUsagePlan;
     aws_api_gateway_usage_plan_key:                  AwsAPIGatewayUsagePlanKey;
+    aws_budgets_budget:                              AwsBudgetsBudget;
     aws_cloudfront_distribution:                     AwsCloudfrontDistribution;
     aws_cloudfront_origin_access_control:            AwsCloudfrontOriginAccessControl;
     aws_cloudwatch_dashboard:                        AwsCloudwatchDashboard;
@@ -295,6 +307,9 @@ export interface Resource {
     aws_cloudwatch_event_target:                     AwsCloudwatchEventTarget;
     aws_cloudwatch_log_group:                        { [key: string]: AwsCloudwatchLogGroup[] };
     aws_cloudwatch_metric_alarm:                     AwsCloudwatchMetricAlarm;
+    aws_codepipeline:                                AwsCodepipeline;
+    aws_devicefarm_device_pool:                      AwsDevicefarmDevicePool;
+    aws_devicefarm_project:                          AwsDevicefarmProject;
     aws_dsql_cluster:                                AwsDsqlCluster;
     aws_dynamodb_table:                              AwsDynamodbTable;
     aws_iam_policy:                                  { [key: string]: AwsIamPolicy[] };
@@ -307,8 +322,11 @@ export interface Resource {
     aws_lambda_permission:                           { [key: string]: AwsLambdaPermission[] };
     aws_s3_bucket:                                   AwsS3Bucket;
     aws_s3_bucket_intelligent_tiering_configuration: AwsS3BucketIntelligentTieringConfiguration;
+    aws_s3_bucket_lifecycle_configuration:           AwsS3BucketLifecycleConfiguration;
     aws_s3_bucket_notification:                      AwsS3BucketNotification;
     aws_s3_bucket_policy:                            AwsS3BucketPolicy;
+    aws_s3_bucket_public_access_block:               AwsS3BucketPublicAccessBlock;
+    aws_s3_bucket_versioning:                        AwsS3BucketVersioning;
     aws_s3_object:                                   AwsS3Object;
     aws_sns_platform_application:                    AwsSnsPlatformApplication;
     aws_sns_topic:                                   AwsSnsTopic;
@@ -550,6 +568,36 @@ export interface AwsAPIGatewayUsagePlanKeyIOSApp {
     key_id:        string;
     key_type:      string;
     usage_plan_id: string;
+}
+
+export interface AwsBudgetsBudget {
+    device_farm: DeviceFarm[];
+}
+
+export interface DeviceFarm {
+    budget_type:       string;
+    cost_filter:       CostFilter[];
+    count:             string;
+    limit_amount:      string;
+    limit_unit:        string;
+    name:              string;
+    notification:      Notification[];
+    tags:              string;
+    time_period_start: string;
+    time_unit:         string;
+}
+
+export interface CostFilter {
+    name:   string;
+    values: string[];
+}
+
+export interface Notification {
+    comparison_operator:        string;
+    notification_type:          string;
+    subscriber_email_addresses: string[];
+    threshold:                  number;
+    threshold_type:             string;
 }
 
 export interface AwsCloudfrontDistribution {
@@ -826,6 +874,83 @@ export interface LambdaErrorsAPIMetricQuery {
     return_data: boolean;
 }
 
+export interface AwsCodepipeline {
+    ios_e2e_tests: AwsCodepipelineIosE2ETest[];
+}
+
+export interface AwsCodepipelineIosE2ETest {
+    artifact_store: ArtifactStore[];
+    name:           string;
+    pipeline_type:  string;
+    role_arn:       string;
+    stage:          Stage[];
+    tags:           string;
+}
+
+export interface ArtifactStore {
+    location: string;
+    type:     string;
+}
+
+export interface Stage {
+    action: ActionElement[];
+    name:   string;
+}
+
+export interface ActionElement {
+    category:          string;
+    configuration:     Configuration;
+    name:              string;
+    output_artifacts?: string[];
+    owner:             string;
+    provider:          string;
+    version:           string;
+    input_artifacts?:  string[];
+}
+
+export interface Configuration {
+    PollForSourceChanges?: string;
+    S3Bucket?:             string;
+    S3ObjectKey?:          string;
+    CustomData?:           string;
+    ExternalEntityLink?:   string;
+    App?:                  string;
+    AppType?:              string;
+    DevicePoolArn?:        string;
+    ProjectId?:            string;
+    Test?:                 string;
+    TestType?:             string;
+}
+
+export interface AwsDevicefarmDevicePool {
+    latest_iphone: LatestIphone[];
+}
+
+export interface LatestIphone {
+    description: string;
+    max_devices: number;
+    name:        string;
+    project_arn: string;
+    rule:        LatestIphoneRule[];
+    tags:        Tags;
+}
+
+export interface LatestIphoneRule {
+    attribute: string;
+    operator:  string;
+    value:     string;
+}
+
+export interface AwsDevicefarmProject {
+    ios_e2e_tests: AwsDevicefarmProjectIosE2ETest[];
+}
+
+export interface AwsDevicefarmProjectIosE2ETest {
+    default_job_timeout_minutes: number;
+    name:                        string;
+    tags:                        string;
+}
+
 export interface AwsDsqlCluster {
     media_downloader: MediaDownloaderElement[];
 }
@@ -998,13 +1123,13 @@ export interface Ffmpeg {
 }
 
 export interface AwsLambdaPermission {
-    action:        Action;
+    action:        ActionEnum;
     function_name: string;
     principal:     PrincipalEnum;
     source_arn?:   string;
 }
 
-export enum Action {
+export enum ActionEnum {
     LambdaInvokeFunction = "lambda:InvokeFunction",
 }
 
@@ -1015,12 +1140,13 @@ export enum PrincipalEnum {
 }
 
 export interface AwsS3Bucket {
-    Files: AwsS3BucketFile[];
+    Files:              File[];
+    e2e_test_artifacts: File[];
 }
 
-export interface AwsS3BucketFile {
+export interface File {
     bucket: string;
-    tags:   Tags;
+    tags:   string;
 }
 
 export interface AwsS3BucketIntelligentTieringConfiguration {
@@ -1036,6 +1162,35 @@ export interface FilesTiering {
 export interface Tiering {
     access_tier: string;
     days:        number;
+}
+
+export interface AwsS3BucketLifecycleConfiguration {
+    e2e_test_artifacts: AwsS3BucketLifecycleConfigurationE2ETestArtifact[];
+}
+
+export interface AwsS3BucketLifecycleConfigurationE2ETestArtifact {
+    bucket: string;
+    rule:   E2ETestArtifactRule[];
+}
+
+export interface E2ETestArtifactRule {
+    expiration:                     Expiration[];
+    filter:                         Filter[];
+    id:                             string;
+    noncurrent_version_expiration?: NoncurrentVersionExpiration[];
+    status:                         string;
+}
+
+export interface Expiration {
+    days: number;
+}
+
+export interface Filter {
+    prefix: string;
+}
+
+export interface NoncurrentVersionExpiration {
+    noncurrent_days: number;
 }
 
 export interface AwsS3BucketNotification {
@@ -1059,6 +1214,31 @@ export interface AwsS3BucketPolicy {
 export interface CloudfrontAccess {
     bucket: string;
     policy: string;
+}
+
+export interface AwsS3BucketPublicAccessBlock {
+    e2e_test_artifacts: AwsS3BucketPublicAccessBlockE2ETestArtifact[];
+}
+
+export interface AwsS3BucketPublicAccessBlockE2ETestArtifact {
+    block_public_acls:       boolean;
+    block_public_policy:     boolean;
+    bucket:                  string;
+    ignore_public_acls:      boolean;
+    restrict_public_buckets: boolean;
+}
+
+export interface AwsS3BucketVersioning {
+    e2e_test_artifacts: AwsS3BucketVersioningE2ETestArtifact[];
+}
+
+export interface AwsS3BucketVersioningE2ETestArtifact {
+    bucket:                   string;
+    versioning_configuration: VersioningConfiguration[];
+}
+
+export interface VersioningConfiguration {
+    status: string;
 }
 
 export interface AwsS3Object {
@@ -1184,6 +1364,16 @@ export interface RequiredProvider {
 export interface AwsClass {
     source:  string;
     version: string;
+}
+
+export interface Variable {
+    budget_notification_email: BudgetNotificationEmail[];
+}
+
+export interface BudgetNotificationEmail {
+    default:     string;
+    description: string;
+    type:        string;
 }
 
 // Converts JSON strings to/from your types
@@ -1358,6 +1548,7 @@ const typeMap: any = {
         { json: "provider", js: "provider", typ: r("Provider") },
         { json: "resource", js: "resource", typ: r("Resource") },
         { json: "terraform", js: "terraform", typ: a(r("Terraform")) },
+        { json: "variable", js: "variable", typ: r("Variable") },
     ], false),
     "Data": o([
         { json: "archive_file", js: "archive_file", typ: m(a(r("ArchiveFile"))) },
@@ -1398,8 +1589,11 @@ const typeMap: any = {
         { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("RegisterDevice")) },
         { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "dsql_access", js: "dsql_access", typ: a(r("DsqlAAccess")) },
-        { json: "dsql_admin_access", js: "dsql_admin_access", typ: a(r("DsqlAAccess")) },
+        { json: "codepipeline_e2e_assume_role", js: "codepipeline_e2e_assume_role", typ: a(r("AssumeRole")) },
+        { json: "codepipeline_e2e_device_farm", js: "codepipeline_e2e_device_farm", typ: a(r("CodepipelineE2EDeviceFarm")) },
+        { json: "codepipeline_e2e_s3_access", js: "codepipeline_e2e_s3_access", typ: a(r("CodepipelineE2EDeviceFarm")) },
+        { json: "dsql_access", js: "dsql_access", typ: a(r("CodepipelineE2EDeviceFarm")) },
+        { json: "dsql_admin_access", js: "dsql_admin_access", typ: a(r("CodepipelineE2EDeviceFarm")) },
     ], false),
     "APIGatewayAuthorizerInvocationElement": o([
         { json: "statement", js: "statement", typ: a(r("Ent")) },
@@ -1461,10 +1655,10 @@ const typeMap: any = {
         { json: "dynamic", js: "dynamic", typ: r("PruneDeviceDynamic") },
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
-    "DsqlAAccess": o([
-        { json: "statement", js: "statement", typ: a(r("DsqlAccessStatement")) },
+    "CodepipelineE2EDeviceFarm": o([
+        { json: "statement", js: "statement", typ: a(r("CodepipelineE2EDeviceFarmStatement")) },
     ], false),
-    "DsqlAccessStatement": o([
+    "CodepipelineE2EDeviceFarmStatement": o([
         { json: "actions", js: "actions", typ: a("") },
         { json: "resources", js: "resources", typ: a("") },
         { json: "sid", js: "sid", typ: "" },
@@ -1502,6 +1696,7 @@ const typeMap: any = {
         { json: "lambda_functions_api", js: "lambda_functions_api", typ: u(undefined, a("")) },
         { json: "lambda_functions_background", js: "lambda_functions_background", typ: u(undefined, a("")) },
         { json: "device_event_function_name", js: "device_event_function_name", typ: u(undefined, "") },
+        { json: "e2e_test_project_name", js: "e2e_test_project_name", typ: u(undefined, "") },
         { json: "download_queue_name", js: "download_queue_name", typ: u(undefined, "") },
         { json: "download_queue_visibility_timeout", js: "download_queue_visibility_timeout", typ: u(undefined, 0) },
         { json: "event_bus_name", js: "event_bus_name", typ: u(undefined, "") },
@@ -1544,10 +1739,16 @@ const typeMap: any = {
         { json: "cloudfront_distribution_domain", js: "cloudfront_distribution_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudfront_media_files_domain", js: "cloudfront_media_files_domain", typ: a(r("APIGatewayStage")) },
         { json: "cloudwatch_dashboard_url", js: "cloudwatch_dashboard_url", typ: a(r("APIGatewayStage")) },
+        { json: "codepipeline_e2e_arn", js: "codepipeline_e2e_arn", typ: a(r("APIGatewayStage")) },
+        { json: "codepipeline_e2e_console_url", js: "codepipeline_e2e_console_url", typ: a(r("APIGatewayStage")) },
+        { json: "device_farm_device_pool_arn", js: "device_farm_device_pool_arn", typ: a(r("APIGatewayStage")) },
+        { json: "device_farm_project_arn", js: "device_farm_project_arn", typ: a(r("APIGatewayStage")) },
+        { json: "device_farm_project_id", js: "device_farm_project_id", typ: a(r("APIGatewayStage")) },
         { json: "download_queue_arn", js: "download_queue_arn", typ: a(r("APIGatewayStage")) },
         { json: "download_queue_url", js: "download_queue_url", typ: a(r("APIGatewayStage")) },
         { json: "dsql_cluster_arn", js: "dsql_cluster_arn", typ: a(r("APIGatewayStage")) },
         { json: "dsql_cluster_endpoint", js: "dsql_cluster_endpoint", typ: a(r("APIGatewayStage")) },
+        { json: "e2e_test_artifacts_bucket", js: "e2e_test_artifacts_bucket", typ: a(r("APIGatewayStage")) },
         { json: "event_bus_arn", js: "event_bus_arn", typ: a(r("APIGatewayStage")) },
         { json: "event_bus_name", js: "event_bus_name", typ: a(r("APIGatewayStage")) },
         { json: "idempotency_table_arn", js: "idempotency_table_arn", typ: a(r("APIGatewayStage")) },
@@ -1586,6 +1787,7 @@ const typeMap: any = {
         { json: "aws_api_gateway_stage", js: "aws_api_gateway_stage", typ: r("AwsAPIGatewayStage") },
         { json: "aws_api_gateway_usage_plan", js: "aws_api_gateway_usage_plan", typ: r("AwsAPIGatewayUsagePlan") },
         { json: "aws_api_gateway_usage_plan_key", js: "aws_api_gateway_usage_plan_key", typ: r("AwsAPIGatewayUsagePlanKey") },
+        { json: "aws_budgets_budget", js: "aws_budgets_budget", typ: r("AwsBudgetsBudget") },
         { json: "aws_cloudfront_distribution", js: "aws_cloudfront_distribution", typ: r("AwsCloudfrontDistribution") },
         { json: "aws_cloudfront_origin_access_control", js: "aws_cloudfront_origin_access_control", typ: r("AwsCloudfrontOriginAccessControl") },
         { json: "aws_cloudwatch_dashboard", js: "aws_cloudwatch_dashboard", typ: r("AwsCloudwatchDashboard") },
@@ -1594,6 +1796,9 @@ const typeMap: any = {
         { json: "aws_cloudwatch_event_target", js: "aws_cloudwatch_event_target", typ: r("AwsCloudwatchEventTarget") },
         { json: "aws_cloudwatch_log_group", js: "aws_cloudwatch_log_group", typ: m(a(r("AwsCloudwatchLogGroup"))) },
         { json: "aws_cloudwatch_metric_alarm", js: "aws_cloudwatch_metric_alarm", typ: r("AwsCloudwatchMetricAlarm") },
+        { json: "aws_codepipeline", js: "aws_codepipeline", typ: r("AwsCodepipeline") },
+        { json: "aws_devicefarm_device_pool", js: "aws_devicefarm_device_pool", typ: r("AwsDevicefarmDevicePool") },
+        { json: "aws_devicefarm_project", js: "aws_devicefarm_project", typ: r("AwsDevicefarmProject") },
         { json: "aws_dsql_cluster", js: "aws_dsql_cluster", typ: r("AwsDsqlCluster") },
         { json: "aws_dynamodb_table", js: "aws_dynamodb_table", typ: r("AwsDynamodbTable") },
         { json: "aws_iam_policy", js: "aws_iam_policy", typ: m(a(r("AwsIamPolicy"))) },
@@ -1606,8 +1811,11 @@ const typeMap: any = {
         { json: "aws_lambda_permission", js: "aws_lambda_permission", typ: m(a(r("AwsLambdaPermission"))) },
         { json: "aws_s3_bucket", js: "aws_s3_bucket", typ: r("AwsS3Bucket") },
         { json: "aws_s3_bucket_intelligent_tiering_configuration", js: "aws_s3_bucket_intelligent_tiering_configuration", typ: r("AwsS3BucketIntelligentTieringConfiguration") },
+        { json: "aws_s3_bucket_lifecycle_configuration", js: "aws_s3_bucket_lifecycle_configuration", typ: r("AwsS3BucketLifecycleConfiguration") },
         { json: "aws_s3_bucket_notification", js: "aws_s3_bucket_notification", typ: r("AwsS3BucketNotification") },
         { json: "aws_s3_bucket_policy", js: "aws_s3_bucket_policy", typ: r("AwsS3BucketPolicy") },
+        { json: "aws_s3_bucket_public_access_block", js: "aws_s3_bucket_public_access_block", typ: r("AwsS3BucketPublicAccessBlock") },
+        { json: "aws_s3_bucket_versioning", js: "aws_s3_bucket_versioning", typ: r("AwsS3BucketVersioning") },
         { json: "aws_s3_object", js: "aws_s3_object", typ: r("AwsS3Object") },
         { json: "aws_sns_platform_application", js: "aws_sns_platform_application", typ: r("AwsSnsPlatformApplication") },
         { json: "aws_sns_topic", js: "aws_sns_topic", typ: r("AwsSnsTopic") },
@@ -1800,6 +2008,32 @@ const typeMap: any = {
         { json: "key_id", js: "key_id", typ: "" },
         { json: "key_type", js: "key_type", typ: "" },
         { json: "usage_plan_id", js: "usage_plan_id", typ: "" },
+    ], false),
+    "AwsBudgetsBudget": o([
+        { json: "device_farm", js: "device_farm", typ: a(r("DeviceFarm")) },
+    ], false),
+    "DeviceFarm": o([
+        { json: "budget_type", js: "budget_type", typ: "" },
+        { json: "cost_filter", js: "cost_filter", typ: a(r("CostFilter")) },
+        { json: "count", js: "count", typ: "" },
+        { json: "limit_amount", js: "limit_amount", typ: "" },
+        { json: "limit_unit", js: "limit_unit", typ: "" },
+        { json: "name", js: "name", typ: "" },
+        { json: "notification", js: "notification", typ: a(r("Notification")) },
+        { json: "tags", js: "tags", typ: "" },
+        { json: "time_period_start", js: "time_period_start", typ: "" },
+        { json: "time_unit", js: "time_unit", typ: "" },
+    ], false),
+    "CostFilter": o([
+        { json: "name", js: "name", typ: "" },
+        { json: "values", js: "values", typ: a("") },
+    ], false),
+    "Notification": o([
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "notification_type", js: "notification_type", typ: "" },
+        { json: "subscriber_email_addresses", js: "subscriber_email_addresses", typ: a("") },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "threshold_type", js: "threshold_type", typ: "" },
     ], false),
     "AwsCloudfrontDistribution": o([
         { json: "MediaFiles", js: "MediaFiles", typ: a(r("MediaFile")) },
@@ -2034,6 +2268,72 @@ const typeMap: any = {
         { json: "label", js: "label", typ: "" },
         { json: "return_data", js: "return_data", typ: true },
     ], false),
+    "AwsCodepipeline": o([
+        { json: "ios_e2e_tests", js: "ios_e2e_tests", typ: a(r("AwsCodepipelineIosE2ETest")) },
+    ], false),
+    "AwsCodepipelineIosE2ETest": o([
+        { json: "artifact_store", js: "artifact_store", typ: a(r("ArtifactStore")) },
+        { json: "name", js: "name", typ: "" },
+        { json: "pipeline_type", js: "pipeline_type", typ: "" },
+        { json: "role_arn", js: "role_arn", typ: "" },
+        { json: "stage", js: "stage", typ: a(r("Stage")) },
+        { json: "tags", js: "tags", typ: "" },
+    ], false),
+    "ArtifactStore": o([
+        { json: "location", js: "location", typ: "" },
+        { json: "type", js: "type", typ: "" },
+    ], false),
+    "Stage": o([
+        { json: "action", js: "action", typ: a(r("ActionElement")) },
+        { json: "name", js: "name", typ: "" },
+    ], false),
+    "ActionElement": o([
+        { json: "category", js: "category", typ: "" },
+        { json: "configuration", js: "configuration", typ: r("Configuration") },
+        { json: "name", js: "name", typ: "" },
+        { json: "output_artifacts", js: "output_artifacts", typ: u(undefined, a("")) },
+        { json: "owner", js: "owner", typ: "" },
+        { json: "provider", js: "provider", typ: "" },
+        { json: "version", js: "version", typ: "" },
+        { json: "input_artifacts", js: "input_artifacts", typ: u(undefined, a("")) },
+    ], false),
+    "Configuration": o([
+        { json: "PollForSourceChanges", js: "PollForSourceChanges", typ: u(undefined, "") },
+        { json: "S3Bucket", js: "S3Bucket", typ: u(undefined, "") },
+        { json: "S3ObjectKey", js: "S3ObjectKey", typ: u(undefined, "") },
+        { json: "CustomData", js: "CustomData", typ: u(undefined, "") },
+        { json: "ExternalEntityLink", js: "ExternalEntityLink", typ: u(undefined, "") },
+        { json: "App", js: "App", typ: u(undefined, "") },
+        { json: "AppType", js: "AppType", typ: u(undefined, "") },
+        { json: "DevicePoolArn", js: "DevicePoolArn", typ: u(undefined, "") },
+        { json: "ProjectId", js: "ProjectId", typ: u(undefined, "") },
+        { json: "Test", js: "Test", typ: u(undefined, "") },
+        { json: "TestType", js: "TestType", typ: u(undefined, "") },
+    ], false),
+    "AwsDevicefarmDevicePool": o([
+        { json: "latest_iphone", js: "latest_iphone", typ: a(r("LatestIphone")) },
+    ], false),
+    "LatestIphone": o([
+        { json: "description", js: "description", typ: "" },
+        { json: "max_devices", js: "max_devices", typ: 0 },
+        { json: "name", js: "name", typ: "" },
+        { json: "project_arn", js: "project_arn", typ: "" },
+        { json: "rule", js: "rule", typ: a(r("LatestIphoneRule")) },
+        { json: "tags", js: "tags", typ: r("Tags") },
+    ], false),
+    "LatestIphoneRule": o([
+        { json: "attribute", js: "attribute", typ: "" },
+        { json: "operator", js: "operator", typ: "" },
+        { json: "value", js: "value", typ: "" },
+    ], false),
+    "AwsDevicefarmProject": o([
+        { json: "ios_e2e_tests", js: "ios_e2e_tests", typ: a(r("AwsDevicefarmProjectIosE2ETest")) },
+    ], false),
+    "AwsDevicefarmProjectIosE2ETest": o([
+        { json: "default_job_timeout_minutes", js: "default_job_timeout_minutes", typ: 0 },
+        { json: "name", js: "name", typ: "" },
+        { json: "tags", js: "tags", typ: "" },
+    ], false),
     "AwsDsqlCluster": o([
         { json: "media_downloader", js: "media_downloader", typ: a(r("MediaDownloaderElement")) },
     ], false),
@@ -2162,17 +2462,18 @@ const typeMap: any = {
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
     ], false),
     "AwsLambdaPermission": o([
-        { json: "action", js: "action", typ: r("Action") },
+        { json: "action", js: "action", typ: r("ActionEnum") },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "principal", js: "principal", typ: r("PrincipalEnum") },
         { json: "source_arn", js: "source_arn", typ: u(undefined, "") },
     ], false),
     "AwsS3Bucket": o([
-        { json: "Files", js: "Files", typ: a(r("AwsS3BucketFile")) },
+        { json: "Files", js: "Files", typ: a(r("File")) },
+        { json: "e2e_test_artifacts", js: "e2e_test_artifacts", typ: a(r("File")) },
     ], false),
-    "AwsS3BucketFile": o([
+    "File": o([
         { json: "bucket", js: "bucket", typ: "" },
-        { json: "tags", js: "tags", typ: r("Tags") },
+        { json: "tags", js: "tags", typ: "" },
     ], false),
     "AwsS3BucketIntelligentTieringConfiguration": o([
         { json: "FilesTiering", js: "FilesTiering", typ: a(r("FilesTiering")) },
@@ -2185,6 +2486,29 @@ const typeMap: any = {
     "Tiering": o([
         { json: "access_tier", js: "access_tier", typ: "" },
         { json: "days", js: "days", typ: 0 },
+    ], false),
+    "AwsS3BucketLifecycleConfiguration": o([
+        { json: "e2e_test_artifacts", js: "e2e_test_artifacts", typ: a(r("AwsS3BucketLifecycleConfigurationE2ETestArtifact")) },
+    ], false),
+    "AwsS3BucketLifecycleConfigurationE2ETestArtifact": o([
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "rule", js: "rule", typ: a(r("E2ETestArtifactRule")) },
+    ], false),
+    "E2ETestArtifactRule": o([
+        { json: "expiration", js: "expiration", typ: a(r("Expiration")) },
+        { json: "filter", js: "filter", typ: a(r("Filter")) },
+        { json: "id", js: "id", typ: "" },
+        { json: "noncurrent_version_expiration", js: "noncurrent_version_expiration", typ: u(undefined, a(r("NoncurrentVersionExpiration"))) },
+        { json: "status", js: "status", typ: "" },
+    ], false),
+    "Expiration": o([
+        { json: "days", js: "days", typ: 0 },
+    ], false),
+    "Filter": o([
+        { json: "prefix", js: "prefix", typ: "" },
+    ], false),
+    "NoncurrentVersionExpiration": o([
+        { json: "noncurrent_days", js: "noncurrent_days", typ: 0 },
     ], false),
     "AwsS3BucketNotification": o([
         { json: "Files", js: "Files", typ: a(r("AwsS3BucketNotificationFile")) },
@@ -2203,6 +2527,26 @@ const typeMap: any = {
     "CloudfrontAccess": o([
         { json: "bucket", js: "bucket", typ: "" },
         { json: "policy", js: "policy", typ: "" },
+    ], false),
+    "AwsS3BucketPublicAccessBlock": o([
+        { json: "e2e_test_artifacts", js: "e2e_test_artifacts", typ: a(r("AwsS3BucketPublicAccessBlockE2ETestArtifact")) },
+    ], false),
+    "AwsS3BucketPublicAccessBlockE2ETestArtifact": o([
+        { json: "block_public_acls", js: "block_public_acls", typ: true },
+        { json: "block_public_policy", js: "block_public_policy", typ: true },
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "ignore_public_acls", js: "ignore_public_acls", typ: true },
+        { json: "restrict_public_buckets", js: "restrict_public_buckets", typ: true },
+    ], false),
+    "AwsS3BucketVersioning": o([
+        { json: "e2e_test_artifacts", js: "e2e_test_artifacts", typ: a(r("AwsS3BucketVersioningE2ETestArtifact")) },
+    ], false),
+    "AwsS3BucketVersioningE2ETestArtifact": o([
+        { json: "bucket", js: "bucket", typ: "" },
+        { json: "versioning_configuration", js: "versioning_configuration", typ: a(r("VersioningConfiguration")) },
+    ], false),
+    "VersioningConfiguration": o([
+        { json: "status", js: "status", typ: "" },
     ], false),
     "AwsS3Object": o([
         { json: "DefaultFile", js: "DefaultFile", typ: a(r("AwsS3ObjectDefaultFile")) },
@@ -2307,6 +2651,14 @@ const typeMap: any = {
         { json: "source", js: "source", typ: "" },
         { json: "version", js: "version", typ: "" },
     ], false),
+    "Variable": o([
+        { json: "budget_notification_email", js: "budget_notification_email", typ: a(r("BudgetNotificationEmail")) },
+    ], false),
+    "BudgetNotificationEmail": o([
+        { json: "default", js: "default", typ: "" },
+        { json: "description", js: "description", typ: "" },
+        { json: "type", js: "type", typ: "" },
+    ], false),
     "Type": [
         "zip",
     ],
@@ -2340,7 +2692,7 @@ const typeMap: any = {
     "Mode": [
         "Active",
     ],
-    "Action": [
+    "ActionEnum": [
         "lambda:InvokeFunction",
     ],
     "PrincipalEnum": [
