@@ -19,7 +19,14 @@ src/entities/queries/
 ├── file-queries.ts          # File and FileDownload operations (14 functions)
 ├── device-queries.ts        # Device operations (8 functions)
 ├── session-queries.ts       # Session, Account, VerificationToken (20 functions)
-└── relationship-queries.ts  # UserFiles, UserDevices (17 functions)
+├── relationship-queries.ts  # UserFiles, UserDevices (17 functions)
+├── prepared-queries.ts      # Performance-critical prepared statements
+└── cascade-operations.ts    # Transaction-wrapped multi-entity operations
+
+src/lib/vendor/Drizzle/
+├── errors.ts                # Typed PostgreSQL error handling
+├── fk-enforcement.ts        # Application-level FK validation
+└── ...                      # Other Drizzle infrastructure
 ```
 
 ## Import Pattern
@@ -315,6 +322,103 @@ const user = await getUser(userId)
 | `deleteSession(id)` | Session ID | `void` |
 | `deleteExpiredSessions()` | None | `void` |
 
+## Error Handling
+
+Use the typed error infrastructure for consistent error handling:
+
+```typescript
+import {isDatabaseError, QueryError, PostgresErrorCode} from '#lib/vendor/Drizzle/errors'
+
+try {
+  await createUser(input)
+} catch (error) {
+  if (isDatabaseError(error)) {
+    const queryError = QueryError.fromDatabaseError(error)
+    if (queryError.isUniqueViolation()) {
+      // Handle duplicate email
+      throw new ConflictError('Email already exists')
+    }
+  }
+  throw error
+}
+```
+
+### PostgreSQL Error Codes
+
+| Code | Name | When It Occurs |
+|------|------|----------------|
+| `23505` | UniqueViolation | Duplicate key insert |
+| `23503` | ForeignKeyViolation | Referenced row not found |
+| `23502` | NotNullViolation | Required field missing |
+| `40001` | SerializationFailure | Transaction conflict (retry) |
+
+## Foreign Key Enforcement
+
+Aurora DSQL doesn't enforce foreign keys, so `create*` functions validate references:
+
+```typescript
+import {createUserFile, createUserDevice} from '#entities/queries'
+import {ForeignKeyViolationError} from '#lib/vendor/Drizzle/fk-enforcement'
+
+try {
+  // create* functions validate user/file/device existence before insert
+  await createUserFile({userId, fileId})
+  await createUserDevice({userId, deviceId})
+} catch (error) {
+  if (error instanceof ForeignKeyViolationError) {
+    // User, file, or device doesn't exist
+    throw new NotFoundError(`${error.table}.${error.column} not found`)
+  }
+}
+```
+
+**Note**: `upsert*` functions (e.g., `upsertUserFile`, `upsertUserDevice`) do NOT validate FK references. They're designed for scenarios where the caller has already created the parent entities (like RegisterDevice where the device is created immediately before the user-device relationship).
+
+## Prepared Statements
+
+Use prepared statements for hot paths (10-15% performance improvement):
+
+```typescript
+import {getFileByKeyPrepared, getUserFilesPrepared, getSessionByTokenPrepared} from '#entities/queries'
+
+// These queries are cached across Lambda invocations
+const file = await getFileByKeyPrepared(s3Key)
+const files = await getUserFilesPrepared(userId)
+const session = await getSessionByTokenPrepared(token)
+```
+
+### When to Use Prepared Statements
+
+| Use Case | Function | Hot Path Lambda |
+|----------|----------|-----------------|
+| File lookup by S3 key | `getFileByKeyPrepared()` | S3ObjectCreated |
+| User's files list | `getUserFilesPrepared()` | ListFiles |
+| Session validation | `getSessionByTokenPrepared()` | ApiGatewayAuthorizer |
+
+## Cascade Operations
+
+Use transaction-wrapped cascade functions for multi-entity deletions:
+
+```typescript
+import {deleteUserCascade, deleteUserRelationships, deleteUserAuthRecords} from '#entities/queries'
+
+// Delete user and ALL related records atomically
+await deleteUserCascade(userId)
+
+// Or partial cleanup
+await deleteUserRelationships(userId)  // Only junction tables
+await deleteUserAuthRecords(userId)    // Only sessions/accounts
+```
+
+### Cascade Order
+
+Children must be deleted before parents:
+
+1. UserFiles, UserDevices (junction tables)
+2. Sessions, Accounts (auth tables)
+3. IdentityProviders (1:1 with user)
+4. Users (parent)
+
 ## Best Practices
 
 1. **Always use barrel import** - Import from `#entities/queries`, not individual files
@@ -322,7 +426,9 @@ const user = await getUser(userId)
 3. **Use upsert for idempotency** - Avoid duplicates with `upsertFile()`, `upsertUserFile()`
 4. **Validate with Zod schemas** - Query functions validate automatically
 5. **Use transactions for atomicity** - Multiple related writes should use `withTransaction()`
-6. **Mock at function level** - Simple `vi.mock()` for testing
+6. **Use prepared statements for hot paths** - Especially in high-traffic Lambda handlers
+7. **Handle FK violations** - Check for `ForeignKeyViolationError` when creating relationships
+8. **Mock at function level** - Simple `vi.mock()` for testing
 
 ## Related Documentation
 

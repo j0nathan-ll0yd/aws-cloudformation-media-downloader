@@ -7,7 +7,8 @@
  * @see src/entities/UserFiles.ts for legacy ElectroDB wrapper (to be deprecated)
  * @see src/entities/UserDevices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
-import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
+import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fk-enforcement'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -80,37 +81,42 @@ export async function getFilesForUser(userId: string): Promise<FileRow[]> {
 
 /**
  * Creates a user-file relationship.
+ * Validates that both user and file exist before creating (application-level FK enforcement).
  * @param input - The user-file data to create
  * @returns The created user-file row
+ * @throws ForeignKeyViolationError if user or file does not exist
  */
 export async function createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
-  // Validate user-file input against schema
   const validatedInput = userFileInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [userFile] = await db.insert(userFiles).values(validatedInput).returning()
-  return userFile
+  return await withTransaction(async (tx) => {
+    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
+    await assertUserExists(validatedInput.userId)
+    await assertFileExists(validatedInput.fileId)
+    const [userFile] = await tx.insert(userFiles).values(validatedInput).returning()
+    return userFile
+  })
 }
 
 /**
  * Upserts a user-file relationship (create if not exists).
  * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
+ *
+ * Note: Unlike createUserFile(), this does NOT validate FK references.
+ * Upserts are typically used in contexts where parent entities have already been created.
+ *
  * @param input - The user-file data to upsert
  * @returns The existing or created user-file row
  */
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
-  // Validate user-file input against schema
   const validatedInput = userFileInsertSchema.parse(input)
   const db = await getDrizzleClient()
-
   // Try to insert, do nothing on conflict (junction table has no updatable fields)
   const result = await db.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
-
   // If conflict occurred (no rows returned), fetch existing record
   if (result.length === 0) {
     const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
     return existing
   }
-
   return result[0]
 }
 
@@ -226,31 +232,37 @@ export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]>
 
 /**
  * Creates a user-device relationship.
+ * Validates that both user and device exist before creating (application-level FK enforcement).
  * @param input - The user-device data to create
  * @returns The created user-device row
+ * @throws ForeignKeyViolationError if user or device does not exist
  */
 export async function createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
-  // Validate user-device input against schema
   const validatedInput = userDeviceInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [userDevice] = await db.insert(userDevices).values(validatedInput).returning()
-  return userDevice
+  return await withTransaction(async (tx) => {
+    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
+    await assertUserExists(validatedInput.userId)
+    await assertDeviceExists(validatedInput.deviceId)
+    const [userDevice] = await tx.insert(userDevices).values(validatedInput).returning()
+    return userDevice
+  })
 }
 
 /**
  * Upserts a user-device relationship (create if not exists).
  * Uses atomic ON CONFLICT DO NOTHING to avoid race conditions.
+ *
+ * Note: Unlike createUserDevice(), this does NOT validate FK references.
+ * Upserts are typically used in contexts where parent entities have already been created.
+ *
  * @param input - The user-device data to upsert
  * @returns The existing or created user-device row
  */
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
-  // Validate user-device input against schema
   const validatedInput = userDeviceInsertSchema.parse(input)
   const db = await getDrizzleClient()
-
   // Try to insert, do nothing on conflict (junction table has no updatable fields)
   const result = await db.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
-
   // If conflict occurred (no rows returned), fetch existing record
   if (result.length === 0) {
     const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId))).limit(
@@ -258,7 +270,6 @@ export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<Us
     )
     return existing
   }
-
   return result[0]
 }
 
