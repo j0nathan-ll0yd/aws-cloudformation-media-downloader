@@ -39,6 +39,7 @@
     "test:mutation": "stryker run",
     "test:mutation:incremental": "stryker run --incremental",
     "test:mutation:auth": "stryker run --mutate 'src/lambdas/{ApiGatewayAuthorizer,LoginUser,RegisterUser,RefreshToken}/**/src/**/*.ts'",
+    "check-secrets": "./bin/check-secrets.sh",
     "validate:docs": "./bin/validate-docs.sh",
     "validate:doc-sync": "./bin/validate-doc-sync.sh",
     "audit:wiki": "./bin/audit-wiki-docs.sh",
