@@ -31,6 +31,7 @@ const enforcePowertools = require('./rules/enforce-powertools.cjs')
 const noDomainLeakage = require('./rules/no-domain-leakage.cjs')
 const strictEnvVars = require('./rules/strict-env-vars.cjs')
 const spacingConventions = require('./rules/spacing-conventions.cjs')
+const importOrder = require('./rules/import-order.cjs')
 
 module.exports = {
   rules: {
@@ -48,6 +49,7 @@ module.exports = {
     'no-domain-leakage': noDomainLeakage,
     'strict-env-vars': strictEnvVars,
     // Phase 4: STYLISTIC (comment conventions)
-    'spacing-conventions': spacingConventions
+    'spacing-conventions': spacingConventions,
+    'import-order': importOrder
   }
 }

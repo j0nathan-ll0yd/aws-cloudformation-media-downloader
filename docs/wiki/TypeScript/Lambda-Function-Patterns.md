@@ -57,7 +57,8 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
 | `wrapAuthenticatedHandler` | Auth-required endpoints | Rejects Unauthenticated + Anonymous → 401 |
 | `wrapOptionalAuthHandler` | Mixed auth endpoints | Rejects only Unauthenticated → 401 |
 | `wrapAuthorizer` | API Gateway authorizers | Propagates `Error('Unauthorized')` → 401 |
-| `wrapEventHandler` | S3/SQS batch processing | Per-record error handling |
+| `wrapEventHandler` | S3 event processing | Per-record error handling |
+| `wrapSqsBatchHandler` | SQS batch processing | Per-record errors → batchItemFailures |
 | `wrapScheduledHandler` | CloudWatch scheduled events | Logs and rethrows errors |
 | `wrapLambdaInvokeHandler` | Lambda-to-Lambda invocation | Logs and rethrows errors |
 
@@ -223,21 +224,26 @@ async function processS3Record({record}: EventHandlerParams<S3EventRecord>) {
 export const handler = withPowertools(wrapEventHandler(processS3Record, {getRecords: s3Records}))
 ```
 
-### SQS Handler
+### SQS Batch Handler
 ```typescript
-import type {EventHandlerParams} from '#types/lambda'
+import type {SqsRecordParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
-import {sqsRecords} from '#util/lambda-helpers'
+import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 
-// Process individual messages - errors logged but don't stop processing
-async function processSQSRecord({record}: EventHandlerParams<SQSRecord>) {
-  const body = JSON.parse(record.body)
+// Process individual records - errors tracked for partial batch failure
+async function processRecord({record, body}: SqsRecordParams<MessageType>): Promise<void> {
+  // body is automatically parsed JSON (unless parseBody: false)
   await handleMessage(body)
 }
 
-export const handler = withPowertools(wrapEventHandler(processSQSRecord, {getRecords: sqsRecords}))
+export const handler = withPowertools(wrapSqsBatchHandler(processRecord))
 ```
+
+**SQS Batch Features:**
+- Returns `SQSBatchResponse` with `batchItemFailures` for partial batch failure support
+- Automatic JSON body parsing (disable with `{parseBody: false}` for raw string body)
+- Per-record correlation ID extraction from message attributes
+- Failed records are retried by SQS without reprocessing successful records
 
 ### Scheduled Event Handler
 ```typescript
@@ -306,8 +312,16 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 | Rule | Method | Severity |
 |------|--------|----------|
 | All handlers must use `withPowertools()` | ESLint `local-rules/enforce-powertools` | HIGH |
+| Import order must follow pattern | ESLint `local-rules/import-order` | MEDIUM |
 | Custom metrics require `{enableCustomMetrics: true}` | MCP `powertools-metrics` | MEDIUM |
 | `singleMetric()` required for unique dimensions | MCP `powertools-metrics` | MEDIUM |
+
+### Exceptions
+
+**Lambda@Edge (CloudfrontMiddleware)**: Cannot use Powertools or handler wrappers due to:
+- Bundle size constraints (~1MB limit for Lambda@Edge)
+- No X-Ray SDK support at edge locations
+- Documented exception in `src/lambdas/CloudfrontMiddleware/src/index.ts:15-16`
 
 ## Best Practices
 

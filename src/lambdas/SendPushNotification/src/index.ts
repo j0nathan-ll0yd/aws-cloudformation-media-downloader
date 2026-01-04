@@ -13,20 +13,20 @@
  * Input: SQSEvent with FileNotificationType records
  * Output: SQSBatchResponse with item failures for retry
  */
-import type {SQSBatchResponse, SQSEvent, SQSRecord} from 'aws-lambda'
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import type {Device} from '#types/domain-models'
 import type {FileNotificationType} from '#types/notification-types'
+import type {SqsRecordParams} from '#types/lambda'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '#lib/validation/constraints'
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {transformToAPNSNotification} from '#lib/domain/notification/transformers'
 import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpoint-cleanup'
-import {appendCorrelationToLogger, extractCorrelationFromSQS} from '#lib/lambda/middleware/correlation'
 
 // Validation now handled by pushNotificationAttributesSchema in processSQSRecord
 
@@ -92,13 +92,9 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
  * Only throws if ALL devices fail (partial success = message processed).
  * @notExported
  */
-async function processSQSRecord(record: SQSRecord): Promise<void> {
-  // Extract and set correlation ID for all subsequent logs
-  const correlationId = extractCorrelationFromSQS(record)
-  appendCorrelationToLogger(correlationId)
-
+async function processSQSRecord({record, messageAttributes}: SqsRecordParams<string>): Promise<void> {
   // Validate message attributes using Zod schema
-  const rawAttributes = {notificationType: record.messageAttributes.notificationType?.stringValue, userId: record.messageAttributes.userId?.stringValue}
+  const rawAttributes = {notificationType: messageAttributes.notificationType?.stringValue, userId: messageAttributes.userId?.stringValue}
   const validationErrors = validateSchema(pushNotificationAttributesSchema, rawAttributes)
   if (validationErrors) {
     logError('Invalid SQS message attributes - discarding', {messageId: record.messageId, errors: validationErrors.errors})
@@ -185,28 +181,4 @@ async function processSQSRecord(record: SQSRecord): Promise<void> {
  *
  * @notExported
  */
-export const handler = withPowertools(async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  logInfo('event <=', {recordCount: event.Records.length})
-
-  const batchItemFailures: {itemIdentifier: string}[] = []
-
-  for (const record of event.Records) {
-    try {
-      await processSQSRecord(record)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logError('Failed to process record', {messageId: record.messageId, error: message})
-      batchItemFailures.push({itemIdentifier: record.messageId})
-    }
-  }
-
-  if (batchItemFailures.length > 0) {
-    logInfo('Batch processing completed with failures', {
-      total: event.Records.length,
-      failed: batchItemFailures.length,
-      succeeded: event.Records.length - batchItemFailures.length
-    })
-  }
-
-  return {batchItemFailures}
-})
+export const handler = withPowertools(wrapSqsBatchHandler(processSQSRecord, {parseBody: false}))
