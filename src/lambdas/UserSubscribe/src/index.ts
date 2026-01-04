@@ -16,6 +16,7 @@ import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {subscribeEndpointToTopic} from '#lib/domain/device/deviceService'
+import {logDebug} from '#lib/system/logging'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic
@@ -26,11 +27,14 @@ import {subscribeEndpointToTopic} from '#lib/domain/device/deviceService'
  *
  * @notExported
  */
-export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context}) => {
+export const handler = withPowertools(wrapAuthenticatedHandler(async ({event, context, metadata}) => {
+  const {correlationId} = metadata
+  logDebug('UserSubscribe <=', {correlationId})
   verifyPlatformConfiguration()
   const requestBody = getPayloadFromEvent(event) as UserSubscriptionRequest
   validateRequest(requestBody, userSubscriptionRequestSchema)
 
   const subscribeResponse = await subscribeEndpointToTopic(requestBody.endpointArn, requestBody.topicArn)
+  logDebug('UserSubscribe =>', {correlationId, subscriptionArn: subscribeResponse.SubscriptionArn})
   return buildValidatedResponse(context, 201, {subscriptionArn: subscribeResponse.SubscriptionArn})
 }))
