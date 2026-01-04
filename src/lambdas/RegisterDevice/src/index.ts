@@ -15,7 +15,7 @@ import {deviceRegistrationRequestSchema, deviceRegistrationResponseSchema} from 
 import type {DeviceRegistrationRequest} from '#types/api-schema'
 import type {Device} from '#types/domainModels'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
-import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/domain/device/deviceService'
+import {getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} from '#lib/services/device/deviceService'
 import {getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, ServiceUnavailableError, UnexpectedError} from '#lib/system/errors'
 import {buildValidatedResponse} from '#lib/lambda/responses'

@@ -25,10 +25,7 @@ import {logDebug} from '#lib/system/logging'
  * @param name - Name for logging (e.g., 'getFilesByUser')
  * @returns Wrapped function with automatic debug logging
  *
- * @example
- * ```typescript
- * const getFiles = withQueryLogging(getFilesForUser, 'getFilesByUser')
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#query-wrapper | Query Wrapper}
  */
 export function withQueryLogging<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
@@ -53,10 +50,7 @@ export function withQueryLogging<TArgs extends unknown[], TResult>(
  * @param name - Name for logging
  * @returns Wrapped function with automatic debug logging
  *
- * @example
- * ```typescript
- * const parseId = withSyncLogging(parseInt, 'parseId')
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#query-wrapper | Query Wrapper}
  */
 export function withSyncLogging<TArgs extends unknown[], TResult>(fn: (...args: TArgs) => TResult, name: string): (...args: TArgs) => TResult {
   return (...args: TArgs): TResult => {

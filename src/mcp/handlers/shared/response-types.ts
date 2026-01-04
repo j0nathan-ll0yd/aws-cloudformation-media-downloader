@@ -43,10 +43,7 @@ export type McpResponse = McpErrorResponse | McpSuccessResponse
  * @param hint - Optional hint for how to resolve the error
  * @returns MCP-compliant error response with isError: true
  *
- * @example
- * ```typescript
- * return createErrorResponse('File not found', 'Check that the file path is correct')
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/MCP/Convention-Tools#response-helpers | Response Helpers}
  */
 export function createErrorResponse(message: string, hint?: string): McpErrorResponse {
   const text = hint ? `Error: ${message}\n\nHint: ${hint}` : `Error: ${message}`
@@ -59,10 +56,7 @@ export function createErrorResponse(message: string, hint?: string): McpErrorRes
  * @param data - The data to include in the response (will be JSON stringified)
  * @returns MCP-compliant success response
  *
- * @example
- * ```typescript
- * return createSuccessResponse({files: [...], count: 10})
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/MCP/Convention-Tools#response-helpers | Response Helpers}
  */
 export function createSuccessResponse<T>(data: T): McpSuccessResponse {
   return {content: [{type: 'text', text: JSON.stringify(data, null, 2)}]}
@@ -74,10 +68,7 @@ export function createSuccessResponse<T>(data: T): McpSuccessResponse {
  * @param text - The text content to return
  * @returns MCP-compliant success response with raw text
  *
- * @example
- * ```typescript
- * return createTextResponse('Operation completed successfully')
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/MCP/Convention-Tools#response-helpers | Response Helpers}
  */
 export function createTextResponse(text: string): McpSuccessResponse {
   return {content: [{type: 'text', text}]}

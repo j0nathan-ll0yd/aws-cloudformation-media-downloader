@@ -27,7 +27,7 @@ import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import {createMetadataNotification} from '#lib/domain/notification/transformers'
+import {createMetadataNotification} from '#lib/services/notification/transformers'
 import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/errorClassifier'
 import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 import {upsertFile} from './file-helpers'

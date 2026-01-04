@@ -67,12 +67,7 @@ export function recordQueryMetric(queryMetrics: QueryMetrics): void {
  * @returns The query result
  * @throws Re-throws any error from the query after recording failure metric
  *
- * @example
- * ```typescript
- * const user = await withQueryMetrics('Users.get', async () => {
- *   return db.select().from(users).where(eq(users.id, userId))
- * })
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Drizzle-Patterns#query-instrumentation | Query Instrumentation}
  */
 export async function withQueryMetrics<T>(queryName: string, queryFn: () => Promise<T>): Promise<T> {
   const span = startSpan(`db:${queryName}`)

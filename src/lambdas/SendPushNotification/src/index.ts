@@ -26,8 +26,8 @@ import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powert
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {transformToAPNSNotification} from '#lib/domain/notification/transformers'
-import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpointCleanup'
+import {transformToAPNSNotification} from '#lib/services/notification/transformers'
+import {cleanupDisabledEndpoints} from '#lib/services/notification/endpointCleanup'
 
 // Validation now handled by pushNotificationAttributesSchema in processSQSRecord
 

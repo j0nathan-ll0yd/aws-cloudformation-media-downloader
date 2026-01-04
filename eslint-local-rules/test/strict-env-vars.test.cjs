@@ -58,22 +58,16 @@ function testProcessEnvAccess() {
   }
 }
 
-// Test case 3: Should allow in test files
+// Test case 3: Should allow in test files (returns empty visitor)
 function testAllowsInTestFiles() {
-  const node = {
-    object: {name: 'process'},
-    property: {name: 'env'}
-  }
-  
   const context = createContext('/src/lambdas/TestFunction/test/index.test.ts')
   const visitor = rule.create(context)
-  visitor.MemberExpression(node)
-  
-  if (context.getErrors().length === 0) {
+
+  // Should return empty object for test files
+  if (Object.keys(visitor).length === 0) {
     console.log('✅ Test 3 passed: Test files allowed')
   } else {
-    console.error('❌ Test 3 failed')
-    console.error(context.getErrors())
+    console.error('❌ Test 3 failed: Expected empty visitor for test files')
     process.exit(1)
   }
 }

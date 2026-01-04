@@ -91,8 +91,16 @@ export default [
       'local-rules/response-helpers': 'warn',
       'local-rules/env-validation': 'error',
       'local-rules/authenticated-handler-enforcement': 'warn',
+      // Phase 3: STRATEGIC
+      'local-rules/enforce-powertools': 'error',
+      'local-rules/strict-env-vars': 'error',
+      'local-rules/no-domain-leakage': 'error',
       // Phase 4: STYLISTIC (comment conventions)
       'local-rules/spacing-conventions': 'warn',
+      // Integration testing
+      'local-rules/integration-test-localstack': 'error',
+      // Mock patterns
+      'local-rules/aws-sdk-mock-pattern': 'warn',
 
       // Drizzle safety rules - prevent accidental bulk operations
       'drizzle/enforce-delete-with-where': ['error', {drizzleObjectName: ['db', 'tx']}],

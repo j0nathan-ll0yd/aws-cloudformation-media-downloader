@@ -32,6 +32,8 @@ const noDomainLeakage = require('./rules/no-domain-leakage.cjs')
 const strictEnvVars = require('./rules/strict-env-vars.cjs')
 const spacingConventions = require('./rules/spacing-conventions.cjs')
 const importOrder = require('./rules/import-order.cjs')
+const integrationTestLocalstack = require('./rules/integration-test-localstack.cjs')
+const awsSdkMockPattern = require('./rules/aws-sdk-mock-pattern.cjs')
 
 module.exports = {
   rules: {
@@ -50,6 +52,10 @@ module.exports = {
     'strict-env-vars': strictEnvVars,
     // Phase 4: STYLISTIC (comment conventions)
     'spacing-conventions': spacingConventions,
-    'import-order': importOrder
+    'import-order': importOrder,
+    // Integration testing
+    'integration-test-localstack': integrationTestLocalstack,
+    // Mock patterns
+    'aws-sdk-mock-pattern': awsSdkMockPattern
   }
 }

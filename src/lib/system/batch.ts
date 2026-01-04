@@ -16,10 +16,7 @@ export type { BatchResultCounts, SeparatedBatchResults }
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Object with succeeded values and failed errors
  *
- * @example
- * ```typescript
- * const {succeeded, failed} = separateBatchResults(results)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function separateBatchResults<T>(results: PromiseSettledResult<T>[]): SeparatedBatchResults<T> {
   const succeeded: T[] = []
@@ -44,10 +41,7 @@ export function separateBatchResults<T>(results: PromiseSettledResult<T>[]): Sep
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Object with successCount and failureCount
  *
- * @example
- * ```typescript
- * const {successCount, failureCount} = countBatchResults(results)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function countBatchResults(results: PromiseSettledResult<unknown>[]): BatchResultCounts {
   const successCount = results.filter((r) => r.status === 'fulfilled').length
@@ -60,10 +54,7 @@ export function countBatchResults(results: PromiseSettledResult<unknown>[]): Bat
  * @param results - Array of PromiseSettledResult from Promise.allSettled
  * @returns Array of error messages from rejected promises
  *
- * @example
- * ```typescript
- * const errors = getFailureMessages(results)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/System-Library#batch-utilities | Batch Utilities}
  */
 export function getFailureMessages(results: PromiseSettledResult<unknown>[]): string[] {
   return results.filter((r): r is PromiseRejectedResult => r.status === 'rejected').map((

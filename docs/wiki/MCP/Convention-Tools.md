@@ -251,6 +251,32 @@ src/mcp/
         └── mock-formatting.ts        # MEDIUM
 ```
 
+---
+
+## Response Helpers
+
+Standard response formatting in `src/mcp/handlers/shared/response-types.ts`.
+
+### Error Response
+
+```typescript
+return createErrorResponse('File not found', 'Check that the file path is correct')
+```
+
+### Success Response
+
+```typescript
+return createSuccessResponse({files: [...], count: 10})
+```
+
+### Text Response
+
+```typescript
+return createTextResponse('Operation completed successfully')
+```
+
+---
+
 ## Related Documentation
 
 - [Dependency Graph Analysis](../Testing/Dependency-Graph-Analysis.md) - build/graph.json usage

@@ -1,16 +1,22 @@
 /**
  * ESLint rule: enforce-powertools
- * 
+ *
  * Ensures all Lambda handlers are wrapped with PowerTools decorators.
- * 
+ *
  * Valid patterns:
  * - export const handler = withPowertools(...)
  * - export const handler = wrapLambdaInvokeHandler(...)
- * 
+ *
  * Invalid patterns:
  * - export const handler = async (event, context) => {...}
  * - export function handler(event, context) {...}
+ *
+ * Excluded:
+ * - CloudfrontMiddleware (Lambda@Edge has bundle size constraints that prevent PowerTools usage)
  */
+
+// Lambda@Edge functions that can't use PowerTools due to bundle size constraints
+const EXCLUDED_LAMBDAS = ['CloudfrontMiddleware']
 
 module.exports = {
   meta: {
@@ -29,6 +35,11 @@ module.exports = {
     // Only check files in src/lambdas/*/src/index.ts
     const filename = context.getFilename()
     if (!filename.includes('/src/lambdas/') || !filename.endsWith('/src/index.ts')) {
+      return {}
+    }
+
+    // Skip Lambda@Edge functions
+    if (EXCLUDED_LAMBDAS.some((lambda) => filename.includes(`/lambdas/${lambda}/`))) {
       return {}
     }
 

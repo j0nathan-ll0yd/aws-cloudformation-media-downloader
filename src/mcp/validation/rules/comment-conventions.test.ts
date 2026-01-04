@@ -78,14 +78,30 @@ export const handler = async () => { return 'ok' }`, {overwrite: true})
   })
 
   describe('exported function JSDoc', () => {
-    test('should detect exported function missing JSDoc', () => {
+    test('should detect exported function missing JSDoc (non-thin wrapper)', () => {
+      // Function with > 5 lines body should require JSDoc
       const sourceFile = project.createSourceFile('no-jsdoc.ts', `export function processData(input: string): string {
-  return input.toUpperCase()
+  const trimmed = input.trim()
+  const lower = trimmed.toLowerCase()
+  const upper = lower.toUpperCase()
+  const result = upper.replace(/\\s+/g, '-')
+  const final = result.substring(0, 50)
+  return final
 }`, {overwrite: true})
 
       const violations = commentConventionsRule.validate(sourceFile, 'src/lib/util/helpers.ts')
 
       expect(violations.some((v) => v.message.includes("'processData' missing JSDoc"))).toBe(true)
+    })
+
+    test('should skip thin wrapper functions (5 lines or fewer)', () => {
+      const sourceFile = project.createSourceFile('thin-fn.ts', `export function processData(input: string): string {
+  return input.toUpperCase()
+}`, {overwrite: true})
+
+      const violations = commentConventionsRule.validate(sourceFile, 'src/lib/util/helpers.ts')
+
+      expect(violations.filter((v) => v.message.includes("'processData' missing JSDoc")).length).toBe(0)
     })
 
     test('should accept exported function with JSDoc', () => {
@@ -103,14 +119,31 @@ export function processData(input: string): string {
       expect(violations.filter((v) => v.message.includes("'processData' missing JSDoc")).length).toBe(0)
     })
 
-    test('should detect exported arrow function missing JSDoc', () => {
+    test('should detect exported arrow function missing JSDoc (non-thin wrapper)', () => {
+      // Function with > 5 lines body should require JSDoc
       const sourceFile = project.createSourceFile('arrow-no-jsdoc.ts', `export const formatDate = (date: Date): string => {
-  return date.toISOString()
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const seconds = date.getSeconds()
+  return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds
 }`, {overwrite: true})
 
       const violations = commentConventionsRule.validate(sourceFile, 'src/util/format.ts')
 
       expect(violations.some((v) => v.message.includes("'formatDate' missing JSDoc"))).toBe(true)
+    })
+
+    test('should skip thin wrapper arrow functions (5 lines or fewer)', () => {
+      const sourceFile = project.createSourceFile('thin-arrow.ts', `export const formatDate = (date: Date): string => {
+  return date.toISOString()
+}`, {overwrite: true})
+
+      const violations = commentConventionsRule.validate(sourceFile, 'src/util/format.ts')
+
+      expect(violations.filter((v) => v.message.includes("'formatDate' missing JSDoc")).length).toBe(0)
     })
 
     test('should accept exported arrow function with JSDoc', () => {
@@ -150,12 +183,10 @@ export function processData(input: string): string {
       expect(violations.some((v) => v.message.includes('@example tag too long'))).toBe(true)
     })
 
-    test('should accept @example tag 5 lines or less', () => {
+    test('should accept @example tag 3 lines or less', () => {
       const sourceFile = project.createSourceFile('short-example.ts', `/**
  * Process data
- * @example
- * const result = processData('test')
- * console.log(result)
+ * @example processData('test')
  */
 export function processData(input: string): string {
   return input

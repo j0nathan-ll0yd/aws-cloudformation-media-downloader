@@ -27,7 +27,7 @@ const snsMock = createSNSMock()
 vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
 const getUserDevicesMock = vi.fn()
-vi.mock('#lib/domain/device/deviceService', () => ({
+vi.mock('#lib/services/device/deviceService', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   subscribeEndpointToTopic: vi.fn(),
   unsubscribeEndpointToTopic: vi.fn()

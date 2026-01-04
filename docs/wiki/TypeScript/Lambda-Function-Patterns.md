@@ -353,6 +353,38 @@ test('processes file', async () => {
 })
 ```
 
+---
+
+## Authentication Helpers
+
+Utilities for Bearer token extraction in `src/lib/lambda/auth-helpers.ts`.
+
+### Extract Required Token
+
+```typescript
+import {extractBearerToken} from '#lib/lambda/auth-helpers'
+
+const token = extractBearerToken(event.headers)  // throws if missing
+```
+
+### Extract Optional Token
+
+```typescript
+import {extractBearerTokenOptional} from '#lib/lambda/auth-helpers'
+
+const token = extractBearerTokenOptional(event.headers)  // null if missing
+```
+
+### Validate Format
+
+```typescript
+import {isValidBearerFormat} from '#lib/lambda/auth-helpers'
+
+isValidBearerFormat('Bearer abc.xyz.123')  // true
+```
+
+---
+
 ## Related Patterns
 
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing via ADOT layer

@@ -28,7 +28,7 @@ const fakeGithubIssueResponse = {
 
 const getUserDevicesMock = vi.fn<() => unknown>()
 const deleteDeviceMock = vi.fn<() => Promise<void>>()
-vi.mock('#lib/domain/device/deviceService', () => ({
+vi.mock('#lib/services/device/deviceService', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   deleteDevice: deleteDeviceMock,
   deleteUserDevice: vi.fn()

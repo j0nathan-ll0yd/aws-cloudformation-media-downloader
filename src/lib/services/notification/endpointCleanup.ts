@@ -10,6 +10,9 @@
  * 2. SNS platform endpoint
  * 3. Device record
  *
+ * This is an application service that orchestrates infrastructure operations (SNS).
+ * It lives outside the domain layer to maintain domain purity.
+ *
  * @see src/lambdas/SendPushNotification for detection
  * @see src/lambdas/PruneDevices for proactive cleanup
  * @see src/types/resilience.ts for type definitions

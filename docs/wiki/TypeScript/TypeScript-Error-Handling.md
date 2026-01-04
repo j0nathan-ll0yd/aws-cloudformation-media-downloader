@@ -171,6 +171,24 @@ try {
 - [ ] Event-driven Lambdas throw errors on failure for retries
 - [ ] Error classes match the semantic meaning (404 for not found, 503 for external service issues)
 
+---
+
+## Error Classification
+
+Unified error classification in `src/lib/domain/error/`.
+
+### Usage
+
+```typescript
+import {classifyError} from '#lib/domain/error'
+
+classifyError(error, 'auth')
+classifyError(error, 'database')
+classifyError(error, 'external-api', {serviceName: 'GitHub'})
+```
+
+---
+
 ## Related Patterns
 
 - [Lambda Function Patterns](Lambda-Function-Patterns.md) - Handler structure

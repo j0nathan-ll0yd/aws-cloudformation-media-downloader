@@ -18,10 +18,7 @@ export type { AuthorizationHeaders }
  * @returns The extracted token string (without 'Bearer ' prefix)
  * @throws UnauthorizedError if header is missing or malformed
  *
- * @example
- * ```typescript
- * const token = extractBearerToken(event.headers)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Function-Patterns#authentication-helpers | Authentication Helpers}
  */
 export function extractBearerToken(headers: AuthorizationHeaders): string {
   const authHeader = headers.Authorization || headers.authorization
@@ -43,10 +40,7 @@ export function extractBearerToken(headers: AuthorizationHeaders): string {
  * @param headers - Request headers object
  * @returns The extracted token string or null if not present
  *
- * @example
- * ```typescript
- * const token = extractBearerTokenOptional(event.headers)
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Function-Patterns#authentication-helpers | Authentication Helpers}
  */
 export function extractBearerTokenOptional(headers: AuthorizationHeaders): string | null {
   const authHeader = headers.Authorization || headers.authorization
@@ -68,10 +62,7 @@ export function extractBearerTokenOptional(headers: AuthorizationHeaders): strin
  * @param authHeader - Authorization header value
  * @returns true if valid Bearer token format
  *
- * @example
- * ```typescript
- * isValidBearerFormat('Bearer abc.xyz.123')  // true
- * ```
+ * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/TypeScript/Lambda-Function-Patterns#authentication-helpers | Authentication Helpers}
  */
 export function isValidBearerFormat(authHeader: string): boolean {
   return /^Bearer\s+[A-Za-z0-9\-_=.]+$/i.test(authHeader)
