@@ -8,15 +8,15 @@
  * Input: Authenticated or anonymous request
  * Output: APIGatewayProxyResult with file list
  */
-import {getFilesForUser} from '#entities/queries'
 import type {File} from '#types/domain-models'
 import {FileStatus, UserStatus} from '#types/enums'
+import {fileListResponseSchema} from '#types/api-schema'
+import {getFilesForUser} from '#entities/queries'
 import {getDefaultFile} from '#config/constants'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
 import {logDebug} from '#lib/system/logging'
-import {fileListResponseSchema} from '#types/api-schema'
 
 // Get files for a user using a single JOIN query (replaces N+1 batch pattern)
 async function getFilesByUser(userId: string): Promise<File[]> {
