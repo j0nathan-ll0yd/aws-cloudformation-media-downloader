@@ -8,9 +8,24 @@ resource "aws_iam_role" "DeviceEvent" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "DeviceEventLogging" {
-  role       = aws_iam_role.DeviceEvent.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "DeviceEventLogging" {
+  name = "DeviceEventLogging"
+  role = aws_iam_role.DeviceEvent.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.device_event_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.device_event_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "DeviceEventXRay" {
@@ -43,7 +58,7 @@ resource "aws_lambda_function" "DeviceEvent" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  depends_on       = [aws_iam_role_policy_attachment.DeviceEventLogging]
+  depends_on       = [aws_iam_role_policy.DeviceEventLogging]
   filename         = data.archive_file.DeviceEvent.output_path
   source_code_hash = data.archive_file.DeviceEvent.output_base64sha256
   layers           = [local.adot_layer_arn]

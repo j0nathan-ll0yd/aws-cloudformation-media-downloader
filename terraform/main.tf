@@ -69,24 +69,6 @@ data "sops_file" "secrets" {
   source_file = "../secrets.enc.yaml"
 }
 
-data "aws_iam_policy_document" "CommonLambdaLogging" {
-  statement {
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    resources = ["arn:aws:logs:*:*:*"]
-  }
-}
-
-resource "aws_iam_policy" "CommonLambdaLogging" {
-  name        = "CommonLambdaLogging"
-  description = "Allows Lambda functions to write to ALL CloudWatch logs"
-  policy      = data.aws_iam_policy_document.CommonLambdaLogging.json
-  tags        = local.common_tags
-}
-
 data "aws_iam_policy_document" "CommonLambdaXRay" {
   statement {
     actions = [

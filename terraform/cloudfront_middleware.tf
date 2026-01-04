@@ -4,15 +4,29 @@ resource "aws_iam_role" "CloudfrontMiddleware" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewareLogging" {
-  role       = aws_iam_role.CloudfrontMiddleware.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "CloudfrontMiddlewareLogging" {
+  name = "CloudfrontMiddlewareLogging"
+  role = aws_iam_role.CloudfrontMiddleware.id
+  # Lambda@Edge logs to log groups in multiple regions with pattern:
+  # /aws/lambda/<source-region>.FunctionName
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/us-east-1.CloudfrontMiddleware",
+        "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/us-east-1.CloudfrontMiddleware:*"
+      ]
+    }]
+  })
 }
 
-resource "aws_iam_role_policy_attachment" "CloudfrontMiddlewareXRay" {
-  role       = aws_iam_role.CloudfrontMiddleware.name
-  policy_arn = aws_iam_policy.CommonLambdaXRay.arn
-}
+# Note: X-Ray policy intentionally omitted - Lambda@Edge does not support X-Ray tracing
 
 provider "aws" {
   alias  = "us_east_1"
