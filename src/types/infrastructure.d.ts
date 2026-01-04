@@ -50,12 +50,11 @@ export interface AwsIamPolicyDocument {
     ApiGatewayAuthorizer:           APIGatewayAuthorizerInvocationElement[];
     ApiGatewayAuthorizerInvocation: APIGatewayAuthorizerInvocationElement[];
     ApiGatewayCloudwatch:           APIGatewayCloudwatch[];
-    CommonLambdaLogging:            APIGatewayAuthorizerInvocationElement[];
     CommonLambdaXRay:               APIGatewayAuthorizerInvocationElement[];
     LambdaAssumeRole:               AssumeRole[];
     LambdaGatewayAssumeRole:        AssumeRole[];
     LamdbaEdgeAssumeRole:           AssumeRole[];
-    MultipartUpload:                APIGatewayAuthorizerInvocationElement[];
+    MultipartUpload:                MultipartUpload[];
     PruneDevices:                   PruneDevice[];
     RegisterDevice:                 RegisterDevice[];
     S3ObjectCreated:                APIGatewayAuthorizerInvocationElement[];
@@ -65,7 +64,8 @@ export interface AwsIamPolicyDocument {
     UserDelete:                     PruneDevice[];
     UserSubscribe:                  RegisterDevice[];
     WebhookFeedly:                  APIGatewayAuthorizerInvocationElement[];
-    dsql_access:                    DsqlAccess[];
+    dsql_access:                    DsqlAAccess[];
+    dsql_admin_access:              DsqlAAccess[];
 }
 
 export interface APIGatewayAuthorizerInvocationElement {
@@ -101,6 +101,22 @@ export interface LambdaAssumeRoleStatement {
     principals: PrincipalElement[];
 }
 
+export interface MultipartUpload {
+    statement: MultipartUploadStatement[];
+}
+
+export interface MultipartUploadStatement {
+    actions:    string[];
+    resources:  string[];
+    condition?: Condition[];
+}
+
+export interface Condition {
+    test:     string;
+    values:   string[];
+    variable: string;
+}
+
 export interface PruneDevice {
     dynamic: PruneDeviceDynamic;
 }
@@ -128,7 +144,7 @@ export interface AwsIamPolicyDocumentSendPushNotification {
     statement: Ent[];
 }
 
-export interface DsqlAccess {
+export interface DsqlAAccess {
     statement: DsqlAccessStatement[];
 }
 
@@ -283,7 +299,7 @@ export interface Resource {
     aws_dynamodb_table:                              AwsDynamodbTable;
     aws_iam_policy:                                  { [key: string]: AwsIamPolicy[] };
     aws_iam_role:                                    { [key: string]: AwsIamRole[] };
-    aws_iam_role_policy:                             AwsIamRolePolicy;
+    aws_iam_role_policy:                             { [key: string]: AwsIamRolePolicy[] };
     aws_iam_role_policy_attachment:                  { [key: string]: AwsIamRolePolicyAttachment[] };
     aws_lambda_event_source_mapping:                 AwsLambdaEventSourceMapping;
     aws_lambda_function:                             AwsLambdaFunction;
@@ -836,11 +852,6 @@ export interface AwsIamRole {
 }
 
 export interface AwsIamRolePolicy {
-    ApiGatewayAuthorizerInvocation: APIGateway[];
-    ApiGatewayCloudwatch:           APIGateway[];
-}
-
-export interface APIGateway {
     name:   string;
     policy: string;
     role:   string;
@@ -1362,12 +1373,11 @@ const typeMap: any = {
         { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "ApiGatewayCloudwatch", js: "ApiGatewayCloudwatch", typ: a(r("APIGatewayCloudwatch")) },
-        { json: "CommonLambdaLogging", js: "CommonLambdaLogging", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "CommonLambdaXRay", js: "CommonLambdaXRay", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
         { json: "LambdaAssumeRole", js: "LambdaAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LambdaGatewayAssumeRole", js: "LambdaGatewayAssumeRole", typ: a(r("AssumeRole")) },
         { json: "LamdbaEdgeAssumeRole", js: "LamdbaEdgeAssumeRole", typ: a(r("AssumeRole")) },
-        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
+        { json: "MultipartUpload", js: "MultipartUpload", typ: a(r("MultipartUpload")) },
         { json: "PruneDevices", js: "PruneDevices", typ: a(r("PruneDevice")) },
         { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("RegisterDevice")) },
         { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
@@ -1377,7 +1387,8 @@ const typeMap: any = {
         { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("RegisterDevice")) },
         { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "dsql_access", js: "dsql_access", typ: a(r("DsqlAccess")) },
+        { json: "dsql_access", js: "dsql_access", typ: a(r("DsqlAAccess")) },
+        { json: "dsql_admin_access", js: "dsql_admin_access", typ: a(r("DsqlAAccess")) },
     ], false),
     "APIGatewayAuthorizerInvocationElement": o([
         { json: "statement", js: "statement", typ: a(r("Ent")) },
@@ -1405,6 +1416,19 @@ const typeMap: any = {
         { json: "actions", js: "actions", typ: a("") },
         { json: "principals", js: "principals", typ: a(r("PrincipalElement")) },
     ], false),
+    "MultipartUpload": o([
+        { json: "statement", js: "statement", typ: a(r("MultipartUploadStatement")) },
+    ], false),
+    "MultipartUploadStatement": o([
+        { json: "actions", js: "actions", typ: a("") },
+        { json: "resources", js: "resources", typ: a("") },
+        { json: "condition", js: "condition", typ: u(undefined, a(r("Condition"))) },
+    ], false),
+    "Condition": o([
+        { json: "test", js: "test", typ: "" },
+        { json: "values", js: "values", typ: a("") },
+        { json: "variable", js: "variable", typ: "" },
+    ], false),
     "PruneDevice": o([
         { json: "dynamic", js: "dynamic", typ: r("PruneDeviceDynamic") },
     ], false),
@@ -1426,7 +1450,7 @@ const typeMap: any = {
         { json: "dynamic", js: "dynamic", typ: r("PruneDeviceDynamic") },
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
-    "DsqlAccess": o([
+    "DsqlAAccess": o([
         { json: "statement", js: "statement", typ: a(r("DsqlAccessStatement")) },
     ], false),
     "DsqlAccessStatement": o([
@@ -1563,7 +1587,7 @@ const typeMap: any = {
         { json: "aws_dynamodb_table", js: "aws_dynamodb_table", typ: r("AwsDynamodbTable") },
         { json: "aws_iam_policy", js: "aws_iam_policy", typ: m(a(r("AwsIamPolicy"))) },
         { json: "aws_iam_role", js: "aws_iam_role", typ: m(a(r("AwsIamRole"))) },
-        { json: "aws_iam_role_policy", js: "aws_iam_role_policy", typ: r("AwsIamRolePolicy") },
+        { json: "aws_iam_role_policy", js: "aws_iam_role_policy", typ: m(a(r("AwsIamRolePolicy"))) },
         { json: "aws_iam_role_policy_attachment", js: "aws_iam_role_policy_attachment", typ: m(a(r("AwsIamRolePolicyAttachment"))) },
         { json: "aws_lambda_event_source_mapping", js: "aws_lambda_event_source_mapping", typ: r("AwsLambdaEventSourceMapping") },
         { json: "aws_lambda_function", js: "aws_lambda_function", typ: r("AwsLambdaFunction") },
@@ -2020,10 +2044,6 @@ const typeMap: any = {
         { json: "tags", js: "tags", typ: r("Tags") },
     ], false),
     "AwsIamRolePolicy": o([
-        { json: "ApiGatewayAuthorizerInvocation", js: "ApiGatewayAuthorizerInvocation", typ: a(r("APIGateway")) },
-        { json: "ApiGatewayCloudwatch", js: "ApiGatewayCloudwatch", typ: a(r("APIGateway")) },
-    ], false),
-    "APIGateway": o([
         { json: "name", js: "name", typ: "" },
         { json: "policy", js: "policy", typ: "" },
         { json: "role", js: "role", typ: "" },

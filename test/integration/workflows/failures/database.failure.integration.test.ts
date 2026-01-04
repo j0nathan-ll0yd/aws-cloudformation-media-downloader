@@ -101,9 +101,9 @@ describe('Database Failure Scenario Tests', () => {
   describe('Constraint Violation Scenarios', () => {
     test('should handle duplicate user-file association gracefully', async () => {
       const userId = crypto.randomUUID()
-      const fileId = 'video-duplicate'
+      const fileId = `video-duplicate-${crypto.randomUUID()}` // Use random ID to avoid CI persistence issues
 
-      await insertUser({userId, email: 'duplicate@example.com'})
+      await insertUser({userId, email: `duplicate-${userId}@example.com`})
       await insertFile({fileId, key: `${fileId}.mp4`, status: FileStatus.Downloaded})
       await linkUserFile(userId, fileId)
 
@@ -115,7 +115,7 @@ describe('Database Failure Scenario Tests', () => {
     })
 
     test('should handle duplicate device registration idempotently', async () => {
-      const deviceId = 'device-duplicate'
+      const deviceId = `device-duplicate-${crypto.randomUUID()}` // Use random ID to avoid CI persistence issues
       const deviceToken = `duplicate-token-${Date.now()}`
       const endpointArn = await createTestEndpoint(platformAppArn, deviceToken)
 
