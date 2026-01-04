@@ -69,16 +69,23 @@ function buildHeaders(options: SecurityHeadersOptions): Record<string, string> {
  */
 export function securityHeaders(options: SecurityHeadersOptions = {}): MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> {
   const headers = buildHeaders(options)
+
+  // Type guard to check if response is an API Gateway response (has statusCode)
+  // This prevents adding headers to SQS, EventBridge, or other non-HTTP responses
+  const isApiGatewayResponse = (response: unknown): response is APIGatewayProxyResult => {
+    return response !== null && typeof response === 'object' && 'statusCode' in response
+  }
+
   return {
     after: async (request) => {
-      if (request.response) {
+      if (request.response && isApiGatewayResponse(request.response)) {
         // Merge headers, with handler headers taking precedence
         request.response.headers = {...headers, ...request.response.headers}
       }
     },
     onError: async (request) => {
       // Also add headers to error responses
-      if (request.response) {
+      if (request.response && isApiGatewayResponse(request.response)) {
         request.response.headers = {...headers, ...request.response.headers}
       }
     }
