@@ -10,7 +10,7 @@ Central registry of all project conventions with their documentation and enforce
 |--------|-------|-------------|
 | **MCP Rules** | 20 | AST-based validation via ts-morph |
 | **ESLint** | 24 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 8 local rules + TSDoc |
-| **Git Hooks** | 4 | Pre-commit, commit-msg, pre-push, post-checkout |
+| **Git Hooks** | 5 | Pre-commit (deps + secrets), commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 8 | Architectural boundary enforcement |
 | **CI Workflows** | 4 | Script validation, type checking, GraphRAG sync, security audit |
 | **Dependabot** | 2 | npm + GitHub Actions ecosystem updates |
@@ -61,6 +61,8 @@ Central registry of all project conventions with their documentation and enforce
 | No Underscore-Prefixed Variables | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP `config-enforcement` |
 | Use pnpm deploy, never tofu apply | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Script enforcement (pre-deploy-check.sh) |
 | Security Audit in CI | [Dependabot Resolution](../Methodologies/Dependabot-Resolution.md) | GitHub Actions + Dependabot |
+| All Secrets Encrypted with SOPS | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | .gitignore + pre-commit hook |
+| Never Commit secrets.yaml | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | .gitignore + pre-commit hook |
 
 ### HIGH Severity
 
@@ -87,6 +89,7 @@ Central registry of all project conventions with their documentation and enforce
 | Database Migrations via SQL Files | [Database Migrations](../Conventions/Database-Migrations.md) | MigrateDSQL Lambda + Terraform |
 | Aurora DSQL CREATE INDEX ASYNC | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
 | Lambda Layer Binary Version Tracking | [Lambda Layers](../Infrastructure/Lambda-Layers.md) | Terraform + Code review |
+| Use getRequiredEnv() for Secret Access | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | ESLint `local-rules/env-validation` |
 
 ### MEDIUM Severity
 
@@ -100,6 +103,8 @@ Central registry of all project conventions with their documentation and enforce
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | camelCase TypeScript File Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review + MCP |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
+| YouTube Cookie Rotation (30-60 days) | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Auto-detection via 403 errors |
+| Document Secret Expiration Dates | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | Manual (runbook) |
 
 ---
 
