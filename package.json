@@ -189,7 +189,8 @@
   "pnpm": {
     "overrides": {
       "qs": ">=6.14.1",
-      "drizzle-zod>zod": "$zod"
+      "drizzle-zod>zod": "$zod",
+      "esbuild": ">=0.25.0"
     }
   }
 }
