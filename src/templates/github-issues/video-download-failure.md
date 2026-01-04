@@ -87,4 +87,14 @@ aws lambda invoke \
 
 ---
 
+## Deduplication
+
+**Fingerprint**: `${fingerprint}`
+**Components**: ${fingerprintSummary}
+
+> This fingerprint is used to prevent duplicate issues. If this error recurs,
+> a comment will be added to this issue instead of creating a new one.
+
+---
+
 This issue was automatically created by the video download monitoring system.
