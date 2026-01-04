@@ -164,13 +164,13 @@
 - Avg Distance (Irrelevant): 0.2291
 - Distance Gap: 0.0260
 
-**Expected Patterns:** StartFileUpload, error-classifier.ts, retry.ts, VideoError
+**Expected Patterns:** StartFileUpload, errorClassifier.ts, retry.ts, VideoError
 
 **Results:**
 | Rank | File | Name | Type | Distance | Relevant |
 |------|------|------|------|----------|----------|
 | 1 | src/lambdas/StartFileUpload/src/index.ts | fetchVideoInfoTraced | function | 0.1523 | Yes |
-| 2 | src/lib/domain/video/error-classifier.ts | classifyVideoError | function | 0.2171 | Yes |
+| 2 | src/lib/domain/video/errorClassifier.ts | classifyVideoError | function | 0.2171 | Yes |
 | 3 | src/lib/vendor/YouTube.ts | fetchVideoInfo | function | 0.2374 | No |
 | 4 | src/lambdas/StartFileUpload/src/index.ts | handleDownloadFailure | function | 0.2399 | Yes |
 | 5 | src/types/events.ts | DownloadFailedDetail | interface | 0.2208 | No |
@@ -206,13 +206,13 @@
 - Avg Distance (Irrelevant): 0.2881
 - Distance Gap: 0.0652
 
-**Expected Patterns:** session-service.ts, session-queries.ts, Session, validateSessionToken
+**Expected Patterns:** sessionService.ts, sessionQueries.ts, Session, validateSessionToken
 
 **Results:**
 | Rank | File | Name | Type | Distance | Relevant |
 |------|------|------|------|----------|----------|
-| 1 | src/lib/domain/auth/session-service.ts | validateSessionToken | function | 0.1955 | Yes |
-| 2 | src/lib/domain/auth/session-service.ts | refreshSession | function | 0.1975 | Yes |
+| 1 | src/lib/domain/auth/sessionService.ts | validateSessionToken | function | 0.1955 | Yes |
+| 2 | src/lib/domain/auth/sessionService.ts | refreshSession | function | 0.1975 | Yes |
 | 3 | src/lambdas/RefreshToken/src/index.ts | handler | variable | 0.2489 | No |
 | 4 | src/types/util.ts | SessionPayload | interface | 0.2756 | Yes |
 | 5 | src/lambdas/ApiGatewayAuthorizer/src/index.ts | getUserIdFromAuthenticationHeader | function | 0.3273 | No |
@@ -227,16 +227,16 @@
 - Avg Distance (Irrelevant): 0.0000
 - Distance Gap: -0.4192
 
-**Expected Patterns:** file-queries.ts, relationship-queries.ts, getFile, UserFiles
+**Expected Patterns:** fileQueries.ts, relationshipQueries.ts, getFile, UserFiles
 
 **Results:**
 | Rank | File | Name | Type | Distance | Relevant |
 |------|------|------|------|----------|----------|
-| 1 | src/entities/queries/file-queries.ts | upsertFile | function | 0.4124 | Yes |
-| 2 | src/entities/queries/file-queries.ts | getFile | function | 0.4130 | Yes |
-| 3 | src/entities/queries/file-queries.ts | getFileStatus | function | 0.4133 | Yes |
-| 4 | src/entities/queries/file-queries.ts | updateFile | function | 0.4258 | Yes |
-| 5 | src/entities/queries/file-queries.ts | updateFileDownload | function | 0.4314 | Yes |
+| 1 | src/entities/queries/fileQueries.ts | upsertFile | function | 0.4124 | Yes |
+| 2 | src/entities/queries/fileQueries.ts | getFile | function | 0.4130 | Yes |
+| 3 | src/entities/queries/fileQueries.ts | getFileStatus | function | 0.4133 | Yes |
+| 4 | src/entities/queries/fileQueries.ts | updateFile | function | 0.4258 | Yes |
+| 5 | src/entities/queries/fileQueries.ts | updateFileDownload | function | 0.4314 | Yes |
 
 ## Recommendations
 

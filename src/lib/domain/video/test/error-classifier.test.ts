@@ -13,7 +13,7 @@ vi.mock('#lib/system/errors', () => ({
 const {CookieExpirationError} = await import('#lib/system/errors')
 const {classifyVideoError, calculateExponentialBackoff, isRetryExhausted} = await import('../errorClassifier')
 
-describe('video-errorClassifier', () => {
+describe('errorClassifier', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-01-15T12:00:00Z'))

@@ -22,13 +22,13 @@ Files in `src/lib/domain/` **cannot** import from:
 ```
 src/lib/domain/
 ├── device/           # Device management logic
-│   └── device-service.ts
+│   └── deviceService.ts
 ├── notification/     # Notification formatting and transformation
 │   └── transformers.ts
 ├── user/             # User management logic
-│   └── user-file-service.ts
+│   └── userFileService.ts
 └── video/            # Video processing logic
-    └── error-classifier.ts
+    └── errorClassifier.ts
 ```
 
 ## What CAN Be Imported
@@ -79,7 +79,7 @@ module.exports = {
 ### Correct Pattern
 
 ```typescript
-// src/lib/domain/video/error-classifier.ts
+// src/lib/domain/video/errorClassifier.ts
 import type {YtDlpVideoInfo} from '#types/youtube'
 
 export function classifyVideoError(error: Error, info?: YtDlpVideoInfo) {
@@ -94,7 +94,7 @@ export function classifyVideoError(error: Error, info?: YtDlpVideoInfo) {
 ### Incorrect Pattern
 
 ```typescript
-// src/lib/domain/video/error-classifier.ts
+// src/lib/domain/video/errorClassifier.ts
 import {invokeLambda} from '#lib/vendor/AWS/Lambda'  // VIOLATION!
 
 export function classifyVideoError(error: Error) {
@@ -135,7 +135,7 @@ When business logic is currently embedded in Lambda handlers, consider extractin
 | Current Location | Extraction Target | Why Domain |
 |-----------------|-------------------|------------|
 | Video URL validation | `domain/video/validators.ts` | Pure string logic, no AWS |
-| Error classification | `domain/video/error-classifier.ts` | Pure pattern matching |
+| Error classification | `domain/video/errorClassifier.ts` | Pure pattern matching |
 | Notification formatting | `domain/notification/formatters.ts` | Pure data transformation |
 | Rate limit calculation | `domain/user/rate-limits.ts` | Pure arithmetic |
 | File status transitions | `domain/file/state-machine.ts` | Pure state logic |
