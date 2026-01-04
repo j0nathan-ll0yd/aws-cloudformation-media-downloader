@@ -267,34 +267,58 @@ resource "null_resource" "DownloadYtDlpBinary" {
 
 resource "null_resource" "DownloadFfmpegBinary" {
   triggers = {
-    # Re-download if ffmpeg binary doesn't exist
-    ffmpeg_exists = fileexists("${path.module}/../layers/ffmpeg/bin/ffmpeg") ? "exists" : "missing"
+    version = fileexists("${path.module}/../layers/ffmpeg/VERSION") ? trimspace(file("${path.module}/../layers/ffmpeg/VERSION")) : "none"
   }
 
   provisioner "local-exec" {
     command = <<-EOT
       set -e
 
-      # ffmpeg now in separate layer directory
+      VERSION="${trimspace(file("${path.module}/../layers/ffmpeg/VERSION"))}"
       LAYER_BIN_DIR="${path.module}/../layers/ffmpeg/bin"
       FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+      FFMPEG_MD5_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5"
 
-      if [ -f "$${LAYER_BIN_DIR}/ffmpeg" ]; then
-        echo "✅ ffmpeg binary already exists, skipping download"
-        exit 0
-      fi
-
-      echo "Downloading ffmpeg static build from John Van Sickle..."
+      echo "Downloading ffmpeg (targeting version $${VERSION})..."
       mkdir -p "$${LAYER_BIN_DIR}"
       cd "$${LAYER_BIN_DIR}"
 
+      # Download archive and checksum
       wget -q "$${FFMPEG_URL}" -O ffmpeg-release-amd64-static.tar.xz
+      wget -q "$${FFMPEG_MD5_URL}" -O ffmpeg-release-amd64-static.tar.xz.md5
+
+      # Verify checksum
+      echo "Verifying checksum..."
+      if command -v md5sum >/dev/null 2>&1; then
+        md5sum -c ffmpeg-release-amd64-static.tar.xz.md5
+      elif command -v md5 >/dev/null 2>&1; then
+        EXPECTED=$(cat ffmpeg-release-amd64-static.tar.xz.md5 | awk '{print $1}')
+        ACTUAL=$(md5 -q ffmpeg-release-amd64-static.tar.xz)
+        if [ "$${EXPECTED}" != "$${ACTUAL}" ]; then
+          echo "ERROR: MD5 checksum mismatch"
+          exit 1
+        fi
+        echo "ffmpeg-release-amd64-static.tar.xz: OK"
+      else
+        echo "WARNING: No compatible checksum utility found, skipping verification"
+      fi
+
+      # Extract and install
       tar xf ffmpeg-release-amd64-static.tar.xz
       mv ffmpeg-*-amd64-static/ffmpeg .
-      rm -rf ffmpeg-*-amd64-static* ffmpeg-release-amd64-static.tar.xz
+      rm -rf ffmpeg-*-amd64-static* ffmpeg-release-amd64-static.tar.xz*
 
       chmod +x ffmpeg
-      echo "✅ ffmpeg downloaded successfully"
+
+      # Verify version on Linux
+      if [ "$(uname -s)" = "Linux" ]; then
+        BINARY_VERSION=$(./ffmpeg -version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+        echo "✅ Installed ffmpeg version: $${BINARY_VERSION}"
+      else
+        echo "⏭️  Skipping version verification (Linux binary, non-Linux host)"
+      fi
+
+      echo "✅ ffmpeg downloaded and verified successfully"
     EOT
   }
 }
@@ -333,7 +357,7 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
   source_code_hash    = data.archive_file.FfmpegLayer.output_base64sha256
   compatible_runtimes = ["nodejs24.x"]
 
-  description = "ffmpeg binary (John Van Sickle static build) for video merging"
+  description = "ffmpeg ${trimspace(file("${path.module}/../layers/ffmpeg/VERSION"))} binary (John Van Sickle static build) for video merging"
 }
 
 resource "aws_lambda_function" "StartFileUpload" {
