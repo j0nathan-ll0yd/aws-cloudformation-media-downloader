@@ -6,6 +6,15 @@
 
 echo "Running pre-commit checks..."
 
+# Check for secrets in staged files (fast - < 1 second)
+echo "Checking for secrets..."
+if ! ./bin/check-secrets.sh; then
+  echo ""
+  echo "Secret detection failed."
+  echo "Fix the issues or use 'git commit --no-verify' to bypass (emergency only)"
+  exit 1
+fi
+
 # Check for dependency violations (fast - usually < 1 second)
 echo "Checking dependency architecture..."
 if ! pnpm run deps:check; then
