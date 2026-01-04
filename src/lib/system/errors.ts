@@ -1,16 +1,34 @@
 import type {Notification} from 'apns2'
+import type {ErrorContext} from '#types/errorContext'
 
+/**
+ * Base error class for Lambda handlers with HTTP status codes and context.
+ * Extends native Error with additional properties for API responses and debugging.
+ */
 export class CustomLambdaError extends Error {
   errors: object | undefined
   statusCode: number | undefined
   code: string | undefined
   override cause?: Error
+  context?: ErrorContext
 
-  constructor(message: string, options?: {cause?: Error}) {
+  constructor(message: string, options?: {cause?: Error; context?: ErrorContext}) {
     super(message)
     if (options?.cause) {
       this.cause = options.cause
     }
+    if (options?.context) {
+      this.context = options.context
+    }
+  }
+
+  /**
+   * Attach or merge error context for debugging and observability.
+   * Returns `this` for method chaining.
+   */
+  withContext(context: ErrorContext): this {
+    this.context = {...this.context, ...context}
+    return this
   }
 }
 

@@ -1,8 +1,12 @@
 import {Octokit} from '@octokit/rest'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import type {Device} from '#types/domainModels'
+import type {IssueResult} from '#types/errorFingerprint'
 import {renderGithubIssueTemplate} from '#lib/integrations/github/templates'
 import {getRequiredEnv} from '#lib/system/env'
+import {extractFingerprintFromError, generateErrorFingerprint} from './errorFingerprint'
+
+export type { IssueResult } from '#types/errorFingerprint'
 
 const owner = 'j0nathan-ll0yd'
 const repo = 'aws-cloudformation-media-downloader'
@@ -32,9 +36,50 @@ async function getOctokitInstance() {
   })
 }
 
-/** Creates GitHub issue when user deletion fails, for manual investigation. */
-export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string) {
+/**
+ * Finds an existing open issue with the given fingerprint label.
+ * Returns the issue number if found, undefined otherwise.
+ */
+async function findExistingIssueByFingerprint(octokit: Octokit, fingerprint: string): Promise<number | undefined> {
+  try {
+    const response = await octokit.rest.issues.listForRepo({owner, repo, state: 'open', labels: fingerprint, per_page: 1})
+
+    if (response.data.length > 0) {
+      logInfo('Found existing issue with fingerprint', {fingerprint, issueNumber: response.data[0].number})
+      return response.data[0].number
+    }
+    return undefined
+  } catch (error) {
+    logError('Failed to search for existing issue', error)
+    return undefined
+  }
+}
+
+/**
+ * Adds a comment to an existing issue noting a duplicate occurrence.
+ */
+async function addCommentToExistingIssue(octokit: Octokit, issueNumber: number, context: string): Promise<void> {
+  try {
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: issueNumber,
+      body: `## Duplicate Occurrence\n\n**Timestamp:** ${new Date().toISOString()}\n\n${context}`
+    })
+    logInfo('Added comment to existing issue', {issueNumber})
+  } catch (error) {
+    logError('Failed to add comment to issue', error)
+  }
+}
+
+/** Creates GitHub issue when user deletion fails (with deduplication). */
+export async function createFailedUserDeletionIssue(userId: string, devices: Device[], error: Error, requestId: string): Promise<IssueResult | null> {
+  // Generate fingerprint for deduplication
+  const fpInput = extractFingerprintFromError(error, 'UserDelete')
+  const {fingerprint, summary} = generateErrorFingerprint(fpInput)
+
   const title = `User Deletion Failed: ${userId}`
+  const timestamp = new Date().toISOString()
   // Pre-compute all values for safe template interpolation
   const deviceCount = devices.length
   const hasDevices = deviceCount > 0
@@ -48,17 +93,29 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
     errorMessage: error.message,
     errorName: error.constructor.name,
     errorStack: error.stack ?? 'No stack trace available',
-    timestamp: new Date().toISOString()
+    timestamp,
+    fingerprint,
+    fingerprintSummary: summary
   })
-
-  const params = {owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix']}
 
   try {
     const octokit = await getOctokitInstance()
+
+    // Check for existing issue with same fingerprint
+    const existingIssue = await findExistingIssueByFingerprint(octokit, fingerprint)
+    if (existingIssue) {
+      const commentContext = `User ID: ${userId}\nRequest ID: ${requestId}\nError: ${error.message}`
+      await addCommentToExistingIssue(octokit, existingIssue, commentContext)
+      const issueUrl = `https://github.com/${owner}/${repo}/issues/${existingIssue}`
+      return {issueNumber: existingIssue, issueUrl, isDuplicate: true}
+    }
+
+    // Create new issue with fingerprint label
+    const params = {owner, repo, title, body, labels: ['bug', 'user-management', 'automated', 'requires-manual-fix', fingerprint]}
     logDebug('createFailedUserDeletionIssue <=', params)
     const response = await octokit.rest.issues.create(params)
     logDebug('createFailedUserDeletionIssue =>', response)
-    return response
+    return {issueNumber: response.data.number, issueUrl: response.data.html_url, isDuplicate: false}
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails
     logError('Failed to create GitHub issue for user deletion failure', githubError)
@@ -66,9 +123,14 @@ export async function createFailedUserDeletionIssue(userId: string, devices: Dev
   }
 }
 
-/** Creates GitHub issue when video download fails permanently. */
-export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string) {
+/** Creates GitHub issue when video download fails permanently (with deduplication). */
+export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: string, error: Error, errorDetails?: string): Promise<IssueResult | null> {
+  // Generate fingerprint for deduplication
+  const fpInput = extractFingerprintFromError(error, 'StartFileUpload', `video:${fileId}`)
+  const {fingerprint, summary} = generateErrorFingerprint(fpInput)
+
   const title = `Video Download Failed: ${fileId}`
+  const timestamp = new Date().toISOString()
   // Pre-compute all values for safe template interpolation
   const body = renderGithubIssueTemplate('video-download-failure', {
     fileId,
@@ -78,17 +140,29 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
     errorStack: error.stack ?? 'No stack trace available',
     errorDetails: errorDetails ?? '',
     hasErrorDetails: !!errorDetails,
-    timestamp: new Date().toISOString()
+    timestamp,
+    fingerprint,
+    fingerprintSummary: summary
   })
-
-  const params = {owner, repo, title, body, labels: ['bug', 'video-download', 'automated']}
 
   try {
     const octokit = await getOctokitInstance()
+
+    // Check for existing issue with same fingerprint
+    const existingIssue = await findExistingIssueByFingerprint(octokit, fingerprint)
+    if (existingIssue) {
+      const commentContext = `File ID: ${fileId}\nFile URL: ${fileUrl}\nError: ${error.message}`
+      await addCommentToExistingIssue(octokit, existingIssue, commentContext)
+      const issueUrl = `https://github.com/${owner}/${repo}/issues/${existingIssue}`
+      return {issueNumber: existingIssue, issueUrl, isDuplicate: true}
+    }
+
+    // Create new issue with fingerprint label
+    const params = {owner, repo, title, body, labels: ['bug', 'video-download', 'automated', fingerprint]}
     logDebug('createVideoDownloadFailureIssue <=', params)
     const response = await octokit.rest.issues.create(params)
     logDebug('createVideoDownloadFailureIssue =>', response)
-    return response
+    return {issueNumber: response.data.number, issueUrl: response.data.html_url, isDuplicate: false}
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails
     logError('Failed to create GitHub issue for video download failure', githubError)
@@ -96,9 +170,13 @@ export async function createVideoDownloadFailureIssue(fileId: string, fileUrl: s
   }
 }
 
-/** Creates priority GitHub issue when YouTube cookies expire and need refresh. */
-export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error) {
+/** Creates priority GitHub issue when YouTube cookies expire (with deduplication). */
+export async function createCookieExpirationIssue(fileId: string, fileUrl: string, error: Error): Promise<IssueResult | null> {
+  // Use static fingerprint for cookie expiration (always same issue)
+  const {fingerprint, summary} = generateErrorFingerprint({errorType: 'CookieExpiration', context: 'youtube-cookies'})
+
   const title = '🍪 YouTube Cookie Expiration Detected'
+  const timestamp = new Date().toISOString()
   // Pre-compute all values for safe template interpolation
   const body = renderGithubIssueTemplate('cookie-expiration', {
     fileId,
@@ -106,17 +184,30 @@ export async function createCookieExpirationIssue(fileId: string, fileUrl: strin
     errorMessage: error.message,
     errorName: error.constructor.name,
     errorStack: error.stack ?? 'No stack trace available',
-    timestamp: new Date().toISOString()
+    timestamp,
+    fingerprint,
+    fingerprintSummary: summary
   })
-
-  const params = {owner, repo, title, body, labels: ['cookie-expiration', 'requires-manual-fix', 'automated', 'priority']}
 
   try {
     const octokit = await getOctokitInstance()
+
+    // Check for existing issue (cookie issues should always dedupe)
+    const existingIssue = await findExistingIssueByFingerprint(octokit, fingerprint)
+    if (existingIssue) {
+      const commentContext = `File ID: ${fileId}\nFile URL: ${fileUrl}\nError: ${error.message}`
+      await addCommentToExistingIssue(octokit, existingIssue, commentContext)
+      const issueUrl = `https://github.com/${owner}/${repo}/issues/${existingIssue}`
+      logInfo('Added occurrence to existing cookie issue', {issueNumber: existingIssue})
+      return {issueNumber: existingIssue, issueUrl, isDuplicate: true}
+    }
+
+    // Create new issue with fingerprint label
+    const params = {owner, repo, title, body, labels: ['cookie-expiration', 'requires-manual-fix', 'automated', 'priority', fingerprint]}
     logDebug('createCookieExpirationIssue <=', params)
     const response = await octokit.rest.issues.create(params)
     logInfo('Created GitHub issue for cookie expiration', {issueNumber: response.data.number, issueUrl: response.data.html_url})
-    return response
+    return {issueNumber: response.data.number, issueUrl: response.data.html_url, isDuplicate: false}
   } catch (githubError) {
     // Don't fail the Lambda if GitHub issue creation fails
     logError('Failed to create GitHub issue for cookie expiration', githubError)

@@ -2,20 +2,24 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {Device} from '#types/domainModels'
 
 // Use vi.hoisted() to define mocks before vi.mock hoists
-const {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
+const {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
   const mockIssuesCreate = vi.fn<(params: object) => Promise<{status: number; data: {id: number; number: number; html_url: string}}>>()
+  const mockIssuesListForRepo = vi.fn<
+    (params: object) => Promise<{data: Array<{number: number; title: string; labels: Array<{name: string}>}>}>
+  >()
+  const mockIssuesCreateComment = vi.fn<(params: object) => Promise<{data: {id: number}}>>()
 
   class MockOctokit {
-    public rest: {issues: {create: typeof mockIssuesCreate}}
+    public rest: {issues: {create: typeof mockIssuesCreate; listForRepo: typeof mockIssuesListForRepo; createComment: typeof mockIssuesCreateComment}}
     constructor() {
-      this.rest = {issues: {create: mockIssuesCreate}}
+      this.rest = {issues: {create: mockIssuesCreate, listForRepo: mockIssuesListForRepo, createComment: mockIssuesCreateComment}}
     }
   }
 
   const mockRenderGithubIssueTemplate = vi.fn<(templateName: string, data: object) => string>()
   mockRenderGithubIssueTemplate.mockImplementation((templateName: string) => `Rendered template: ${templateName}`)
 
-  return {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate}
+  return {mockIssuesCreate, mockIssuesListForRepo, mockIssuesCreateComment, MockOctokit, mockRenderGithubIssueTemplate}
 })
 
 vi.mock('@octokit/rest', () => ({Octokit: MockOctokit}))
@@ -27,6 +31,8 @@ describe('#Util:GithubHelper', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.GITHUB_PERSONAL_TOKEN = 'test-token'
+    // Default: no existing issues
+    mockIssuesListForRepo.mockResolvedValue({data: []})
   })
 
   describe('#createFailedUserDeletionIssue', () => {
@@ -48,8 +54,9 @@ describe('#Util:GithubHelper', () => {
       const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
 
       expect(response).not.toBeNull()
-      expect(response?.status).toEqual(201)
-      expect(response?.data.id).toEqual(1234)
+      expect(response?.issueNumber).toEqual(42)
+      expect(response?.issueUrl).toEqual('https://github.com/owner/repo/issues/42')
+      expect(response?.isDuplicate).toBe(false)
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
@@ -59,6 +66,32 @@ describe('#Util:GithubHelper', () => {
           labels: expect.arrayContaining(['bug', 'user-management', 'automated', 'requires-manual-fix'])
         })
       )
+    })
+
+    test('should add comment to existing issue if duplicate', async () => {
+      const userId = 'test-user-123'
+      const device: Device = {
+        deviceId: 'device-123',
+        name: 'iPhone',
+        systemName: 'iOS',
+        systemVersion: '17.0',
+        token: 'device-token',
+        endpointArn: 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS/test/abc123'
+      }
+      const error = new Error('DynamoDB deletion failed')
+      const requestId = 'req-123'
+
+      // Mock existing issue found
+      mockIssuesListForRepo.mockResolvedValue({data: [{number: 99, title: 'Existing issue', labels: []}]})
+      mockIssuesCreateComment.mockResolvedValue({data: {id: 123}})
+
+      const response = await createFailedUserDeletionIssue(userId, [device], error, requestId)
+
+      expect(response).not.toBeNull()
+      expect(response?.issueNumber).toEqual(99)
+      expect(response?.isDuplicate).toBe(true)
+      expect(mockIssuesCreate).not.toHaveBeenCalled()
+      expect(mockIssuesCreateComment).toHaveBeenCalled()
     })
 
     test('should return null when GitHub API fails', async () => {
@@ -94,8 +127,9 @@ describe('#Util:GithubHelper', () => {
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error, errorDetails)
 
       expect(response).not.toBeNull()
-      expect(response?.status).toEqual(201)
-      expect(response?.data.id).toEqual(5678)
+      expect(response?.issueNumber).toEqual(43)
+      expect(response?.issueUrl).toEqual('https://github.com/owner/repo/issues/43')
+      expect(response?.isDuplicate).toBe(false)
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
@@ -117,8 +151,25 @@ describe('#Util:GithubHelper', () => {
       const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error)
 
       expect(response).not.toBeNull()
-      expect(response?.status).toEqual(201)
-      expect(response?.data.id).toEqual(9012)
+      expect(response?.issueNumber).toEqual(44)
+      expect(response?.isDuplicate).toBe(false)
+    })
+
+    test('should add comment to existing issue if duplicate', async () => {
+      const fileId = 'video-123'
+      const fileUrl = 'https://www.youtube.com/watch?v=test123'
+      const error = new Error('yt-dlp extraction failed')
+
+      // Mock existing issue found
+      mockIssuesListForRepo.mockResolvedValue({data: [{number: 88, title: 'Existing issue', labels: []}]})
+      mockIssuesCreateComment.mockResolvedValue({data: {id: 456}})
+
+      const response = await createVideoDownloadFailureIssue(fileId, fileUrl, error)
+
+      expect(response).not.toBeNull()
+      expect(response?.issueNumber).toEqual(88)
+      expect(response?.isDuplicate).toBe(true)
+      expect(mockIssuesCreate).not.toHaveBeenCalled()
     })
 
     test('should return null when GitHub API fails', async () => {
@@ -145,8 +196,9 @@ describe('#Util:GithubHelper', () => {
       const response = await createCookieExpirationIssue(fileId, fileUrl, error)
 
       expect(response).not.toBeNull()
-      expect(response?.status).toEqual(201)
-      expect(response?.data.id).toEqual(3456)
+      expect(response?.issueNumber).toEqual(45)
+      expect(response?.issueUrl).toEqual('https://github.com/owner/repo/issues/45')
+      expect(response?.isDuplicate).toBe(false)
       expect(mockIssuesCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'j0nathan-ll0yd',
@@ -156,6 +208,23 @@ describe('#Util:GithubHelper', () => {
           labels: expect.arrayContaining(['cookie-expiration', 'requires-manual-fix', 'automated', 'priority'])
         })
       )
+    })
+
+    test('should add comment to existing cookie issue if duplicate', async () => {
+      const fileId = 'video-789'
+      const fileUrl = 'https://www.youtube.com/watch?v=test789'
+      const error = new Error('Sign in to confirm you are not a bot')
+
+      // Mock existing issue found
+      mockIssuesListForRepo.mockResolvedValue({data: [{number: 77, title: 'Cookie issue', labels: []}]})
+      mockIssuesCreateComment.mockResolvedValue({data: {id: 789}})
+
+      const response = await createCookieExpirationIssue(fileId, fileUrl, error)
+
+      expect(response).not.toBeNull()
+      expect(response?.issueNumber).toEqual(77)
+      expect(response?.isDuplicate).toBe(true)
+      expect(mockIssuesCreate).not.toHaveBeenCalled()
     })
 
     test('should return null when GitHub API fails', async () => {
