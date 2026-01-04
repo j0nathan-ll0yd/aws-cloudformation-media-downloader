@@ -7,6 +7,7 @@
  * @see src/lib/vendor/YouTube.ts - YouTube/yt-dlp integration
  */
 
+import type {BaseErrorClassification} from './errorClassification'
 import type {YtDlpVideoInfo} from './youtube'
 
 /**
@@ -20,19 +21,14 @@ export type VideoErrorCategory =
   | 'permanent' // Deleted, geo-blocked, private - no retry
 
 /**
- * Result of classifying a video download error
+ * Result of classifying a video download error.
+ * Extends BaseErrorClassification with video-specific category and timing.
  */
-export interface VideoErrorClassification {
+export interface VideoErrorClassification extends BaseErrorClassification {
   /** The category of error determining retry behavior */
   category: VideoErrorCategory
-  /** Whether this error is retryable */
-  retryable: boolean
   /** Unix timestamp (seconds) for when to retry, undefined if not retryable */
   retryAfter?: number
-  /** Override default max retries for this category */
-  maxRetries?: number
-  /** Human-readable reason for the classification */
-  reason: string
 }
 
 /**
