@@ -10,7 +10,7 @@
  */
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
 import type {Device} from '#types/domainModels'
-import {deleteDevice, getUserDevices} from '#lib/domain/device/deviceService'
+import {deleteDevice, getUserDevices} from '#lib/services/device/deviceService'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
 import {buildValidatedResponse} from '#lib/lambda/responses'

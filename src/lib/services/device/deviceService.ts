@@ -1,8 +1,11 @@
 /**
- * Device Helper Functions
+ * Device Service
  *
  * Shared utilities for device management across multiple Lambda functions.
  * Handles device registration, unregistration, and SNS subscriptions.
+ *
+ * This is an application service that orchestrates infrastructure operations (SNS).
+ * It lives outside the domain layer to maintain domain purity.
  */
 import {deleteDevice as deleteDeviceQuery, deleteUserDevice as deleteUserDeviceQuery, getUserDevicesByUserId} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'

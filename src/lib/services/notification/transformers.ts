@@ -1,3 +1,9 @@
+/**
+ * Notification Transformers
+ *
+ * Transforms domain objects into AWS-specific message formats for SQS and SNS/APNS.
+ * This is an adapter layer that bridges domain models to infrastructure message formats.
+ */
 import type {File} from '#types/domainModels'
 import type {DownloadReadyNotification, MetadataNotification} from '#types/notificationTypes'
 import type {YtDlpVideoInfo} from '#types/youtube'

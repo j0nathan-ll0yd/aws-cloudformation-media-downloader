@@ -30,7 +30,7 @@ describe('validation exports', () => {
   describe('allRules', () => {
     test('should export array of rules', () => {
       expect(Array.isArray(allRules)).toBe(true)
-      expect(allRules.length).toBe(20)
+      expect(allRules.length).toBe(21)
     })
 
     test('should contain all expected rules', () => {

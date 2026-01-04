@@ -33,9 +33,14 @@ module.exports = {
       return {}
     }
 
+    // Allow test files to set process.env for test setup
+    if (filename.includes('.test.') || filename.includes('.spec.') || filename.includes('/test/')) {
+      return {}
+    }
+
     return {
       MemberExpression(node) {
-        // Check for process.env access
+        // Check for process.env.SOMETHING access
         if (
           node.object.type === 'MemberExpression' &&
           node.object.object.name === 'process' &&
@@ -46,17 +51,9 @@ module.exports = {
             messageId: 'directEnvAccess'
           })
         }
-        
+
         // Also catch direct process.env patterns
-        if (
-          node.object.name === 'process' &&
-          node.property.name === 'env'
-        ) {
-          // Allow if it's in a test file
-          if (filename.includes('.test.') || filename.includes('.spec.')) {
-            return
-          }
-          
+        if (node.object.name === 'process' && node.property.name === 'env') {
           context.report({
             node,
             messageId: 'directEnvAccess'

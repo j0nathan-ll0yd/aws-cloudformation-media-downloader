@@ -8,8 +8,8 @@ Central registry of all project conventions with their documentation and enforce
 
 | Method | Count | Description |
 |--------|-------|-------------|
-| **MCP Rules** | 20 | AST-based validation via ts-morph |
-| **ESLint** | 24 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 8 local rules + TSDoc |
+| **MCP Rules** | 21 | AST-based validation via ts-morph |
+| **ESLint** | 26 | Linting rules including 9 JSDoc rules + 2 Drizzle safety rules + 10 local rules + TSDoc |
 | **Git Hooks** | 5 | Pre-commit (deps + secrets), commit-msg, pre-push, post-checkout |
 | **Dependency Cruiser** | 8 | Architectural boundary enforcement |
 | **CI Workflows** | 4 | Script validation, type checking, GraphRAG sync, security audit |
@@ -31,6 +31,7 @@ Central registry of all project conventions with their documentation and enforce
 | types-location | types | HIGH | [Type Definitions](../TypeScript/Type-Definitions.md) |
 | batch-retry | batch | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
 | scan-pagination | scan | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
+| aurora-dsql-async-index | async-index | HIGH | [Database Migrations](../Conventions/Database-Migrations.md) |
 | doc-sync | docs | HIGH | [MCP Convention Tools](../MCP/Convention-Tools.md) |
 | naming-conventions | naming | HIGH | [Naming Conventions](../Conventions/Naming-Conventions.md) |
 | authenticated-handler-enforcement | auth | HIGH | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) |
@@ -68,7 +69,7 @@ Central registry of all project conventions with their documentation and enforce
 
 | Convention | Documentation | Enforcement |
 |------------|---------------|-------------|
-| Integration Tests Use LocalStack | [LocalStack Testing](../Integration/LocalStack-Testing.md) | Code review + [Integration Test Audit](../Testing/Integration-Test-Audit.md) |
+| Integration Tests Use LocalStack | [LocalStack Testing](../Integration/LocalStack-Testing.md) | ESLint `integration-test-localstack` |
 | Only Mock External Services in Integration Tests | [Coverage Philosophy](../Testing/Coverage-Philosophy.md) | Code review |
 | Branch-First PR Workflow | [Git Workflow](../Conventions/Git-Workflow.md) | Git hook `pre-push` |
 | Authenticated Handler Wrappers | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP + ESLint |
@@ -87,7 +88,7 @@ Central registry of all project conventions with their documentation and enforce
 | ManagedBy Tag on All Resources | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Audit script (aws-audit.sh) |
 | Post-Deploy State Verification | [Drift Prevention](../Infrastructure/Drift-Prevention.md) | Manual (`pnpm run state:verify`) |
 | Database Migrations via SQL Files | [Database Migrations](../Conventions/Database-Migrations.md) | MigrateDSQL Lambda + Terraform |
-| Aurora DSQL CREATE INDEX ASYNC | [Database Migrations](../Conventions/Database-Migrations.md) | Code review |
+| Aurora DSQL CREATE INDEX ASYNC | [Database Migrations](../Conventions/Database-Migrations.md) | MCP `aurora-dsql-async-index` |
 | Lambda Layer Binary Version Tracking | [Lambda Layers](../Infrastructure/Lambda-Layers.md) | Terraform + Code review |
 | Use getRequiredEnv() for Secret Access | [Secret-Rotation-Runbook](../Security/Secret-Rotation-Runbook.md) | ESLint `local-rules/env-validation` |
 
@@ -99,7 +100,7 @@ Central registry of all project conventions with their documentation and enforce
 | ResponseStatus Enum | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | Mock Return Formatting | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | MCP |
 | PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
-| AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | Code review |
+| AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | ESLint `aws-sdk-mock-pattern` |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
 | camelCase TypeScript File Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review + MCP |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
@@ -113,24 +114,27 @@ Central registry of all project conventions with their documentation and enforce
 | Convention | Current | Proposed | Priority |
 |------------|---------|----------|----------|
 | ~~Migrations as Single Source of Truth~~ | ~~Code review~~ | ~~MCP rule: detect schema changes outside migrations~~ | ✅ Implemented |
-| Aurora DSQL CREATE INDEX ASYNC | Code review | MCP rule: validate migration files | MEDIUM |
-| AWS SDK Mock Pattern | Code review | ESLint rule extension | MEDIUM |
+| ~~Aurora DSQL CREATE INDEX ASYNC~~ | ~~Code review~~ | ~~MCP rule: validate migration files~~ | ✅ Implemented |
+| ~~AWS SDK Mock Pattern~~ | ~~Code review~~ | ~~ESLint rule extension~~ | ✅ Implemented |
 | Terraform Lambda Environment | Manual review | MCP rule for `merge(common_lambda_env, ...)` | MEDIUM |
 | Template File Organization | Code review | MCP rule for embedded templates | LOW |
 
 ---
 
-## Phase 3 Rules (Defined, Not Yet Enabled)
+## Phase 3 Rules (Defined, Selectively Enabled)
 
-These ESLint rules are defined in `eslint-local-rules/` but not yet enabled in `eslint.config.mjs`:
+These ESLint rules are defined in `eslint-local-rules/`:
 
-| Rule | ESLint Name | Purpose | Blocker |
-|------|-------------|---------|---------|
-| PowerTools Enforcement | `local-rules/enforce-powertools` | Require Lambda handlers wrapped with PowerTools | Existing code migration needed |
-| Domain Layer Purity | `local-rules/no-domain-leakage` | Prevent domain layer from importing outer layers | Need domain layer boundary definition |
-| Strict Env Vars | `local-rules/strict-env-vars` | Forbid direct `process.env` in handlers | Migration to `getRequiredEnv()` needed |
+| Rule | ESLint Name | Purpose | Status |
+|------|-------------|---------|--------|
+| PowerTools Enforcement | `local-rules/enforce-powertools` | Require Lambda handlers wrapped with PowerTools | ✅ Enabled (excludes Lambda@Edge) |
+| Domain Layer Purity | `local-rules/no-domain-leakage` | Prevent domain layer from importing outer layers | ✅ Enabled (AWS SDK files moved to services layer) |
+| Strict Env Vars | `local-rules/strict-env-vars` | Forbid direct `process.env` in handlers | ✅ Enabled (excludes test files) |
 
-**Activation Path**: Each rule requires migrating existing code to comply before enabling. Track migration progress via GitHub issues.
+**Notes**:
+- PowerTools Enforcement excludes `CloudfrontMiddleware` (Lambda@Edge has bundle size constraints)
+- Domain Layer Purity: AWS SDK-dependent services moved from `src/lib/domain/` to `src/lib/services/`
+- Strict Env Vars excludes test files that need to set `process.env` for test setup
 
 ---
 

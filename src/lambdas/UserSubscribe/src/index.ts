@@ -15,7 +15,7 @@ import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
-import {subscribeEndpointToTopic} from '#lib/domain/device/deviceService'
+import {subscribeEndpointToTopic} from '#lib/services/device/deviceService'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

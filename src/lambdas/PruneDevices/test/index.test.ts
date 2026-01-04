@@ -46,7 +46,7 @@ const fakeDevices = [
 
 vi.mock('#entities/queries', () => ({getAllDevices: vi.fn(), deleteUserDevicesByDeviceId: vi.fn()}))
 
-vi.mock('#lib/domain/device/deviceService', () => ({deleteDevice: vi.fn()}))
+vi.mock('#lib/services/device/deviceService', () => ({deleteDevice: vi.fn()}))
 
 // Use vi.hoisted() to define mock classes before vi.mock hoists
 const {sendMock, MockApnsClient, MockNotification} = vi.hoisted(() => {
@@ -106,7 +106,7 @@ function getSuccessfulResponseForDevice(arrayIndex: number) {
 
 const {handler} = await import('./../src')
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
-import {deleteDevice} from '#lib/domain/device/deviceService'
+import {deleteDevice} from '#lib/services/device/deviceService'
 
 describe('#PruneDevices', () => {
   const event = createScheduledEvent()

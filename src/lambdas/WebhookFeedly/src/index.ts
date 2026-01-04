@@ -27,7 +27,7 @@ import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
+import {createDownloadReadyNotification} from '#lib/services/notification/transformers'
 import {associateFileToUser} from '#lib/domain/user/userFileService'
 
 // Add file and download tracking records
