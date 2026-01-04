@@ -152,9 +152,15 @@ describe('Event Chain E2E Integration Tests', () => {
         {EventBusName: TEST_EVENT_BUS, Source: 'media-downloader', DetailType: 'SomeOtherEvent', Detail: JSON.stringify({test: 'data'}), Time: new Date()}
       ])
 
-      // Should not receive any messages (short timeout)
-      const messages = await waitForMessages(queueUrl, 1, 3000)
-      expect(messages.length).toBe(0)
+      // Should not receive any messages (short timeout - expected to timeout)
+      // waitForMessages throws on timeout, so we expect zero messages
+      let unexpectedMessages: typeof import('@aws-sdk/client-sqs').Message[] = []
+      try {
+        unexpectedMessages = await waitForMessages(queueUrl, 1, 3000)
+      } catch {
+        // Expected - no messages should arrive for non-matching event type
+      }
+      expect(unexpectedMessages.length).toBe(0)
 
       // Now publish a matching event
       await publishDownloadRequestedEvent(TEST_EVENT_BUS, 'filter-test', 'https://youtube.com/test', 'filter-corr')
