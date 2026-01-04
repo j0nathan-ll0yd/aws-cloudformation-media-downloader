@@ -13,6 +13,78 @@ However, not all npm packages support ESM natively. This guide documents our app
 
 ---
 
+## Current Status (January 2026)
+
+### Migration Completeness: 100%
+
+Production code (`src/`) uses **pure ESM** with zero CommonJS patterns. All Lambda handlers, entity queries, and library code use `import`/`export` syntax exclusively.
+
+| Configuration | Value | Status |
+|---------------|-------|--------|
+| package.json `type` | `"module"` | ✅ |
+| package.json `sideEffects` | `false` | ✅ |
+| tsconfig `module` | `"esnext"` | ✅ |
+| tsconfig `verbatimModuleSyntax` | `true` | ✅ |
+| esbuild `format` | `"esm"` | ✅ |
+| Lambda output extension | `.mjs` | ✅ |
+
+### Bundle Size Metrics
+
+All Lambda bundles are well within configured limits:
+
+| Lambda | Size | Status |
+|--------|------|--------|
+| CloudfrontMiddleware | 48 KB | ✅ Smallest |
+| DeviceEvent | 56 KB | ✅ |
+| UserSubscribe | 364 KB | ✅ |
+| CleanupExpiredRecords | 440 KB | ✅ |
+| S3ObjectCreated | 440 KB | ✅ |
+| MigrateDSQL | 452 KB | ✅ |
+| UserDelete | 544 KB | ✅ |
+| ListFiles | 748 KB | ✅ |
+| SendPushNotification | 748 KB | ✅ |
+| ApiGatewayAuthorizer | 752 KB | ✅ |
+| RefreshToken | 752 KB | ✅ |
+| RegisterDevice | 756 KB | ✅ |
+| WebhookFeedly | 800 KB | ✅ |
+| StartFileUpload | 880 KB | ✅ |
+| PruneDevices | 1.0 MB | ✅ Includes apns2 |
+| LoginUser | 1.3 MB | ✅ Largest |
+| RegisterUser | 1.3 MB | ✅ |
+
+### CommonJS Remnants (Justified)
+
+These CommonJS files exist for valid tooling requirements:
+
+| Location | Count | Justification |
+|----------|-------|---------------|
+| `eslint-local-rules/*.cjs` | 12 files | ESLint plugin architecture requires CommonJS module.exports |
+| `.dependency-cruiser.cjs` | 1 file | dependency-cruiser requires CJS configuration format |
+| `eslint.config.mjs` (uses `createRequire`) | Bridge | Correct ESM-to-CJS bridge pattern for loading ESLint rules |
+
+**Production code has ZERO CommonJS patterns.**
+
+### Tree-Shaking Verification
+
+- ✅ `treeShaking: true` enabled in esbuild configuration
+- ✅ `sideEffects: false` declared in package.json
+- ✅ AWS SDK packages externalized (11 packages)
+- ✅ Selective barrel exports in `src/entities/queries/index.ts`
+- ✅ Proper `mainFields: ['module', 'main']` resolution order
+- ✅ ESM export conditions: `['module', 'import']`
+
+### Dynamic Import Usage
+
+The following packages use dynamic imports for ESM compatibility:
+
+| Package | Location | Pattern |
+|---------|----------|---------|
+| `apns2` | `src/lambdas/PruneDevices/src/index.ts` | `await import('apns2')` |
+
+This is the correct pattern for CJS-only packages used in specific functions.
+
+---
+
 ## Architecture Decision: The `createRequire` Shim
 
 ### What We Use
