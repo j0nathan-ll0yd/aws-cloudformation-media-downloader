@@ -1110,11 +1110,11 @@ export interface DownloadQueueEventBridge {
 }
 
 export interface NullResource {
-    DownloadFfmpegBinary: DownloadFfmpegBinary[];
-    DownloadYtDlpBinary:  DownloadYtDLPBinary[];
+    DownloadFfmpegBinary: DownloadBinary[];
+    DownloadYtDlpBinary:  DownloadBinary[];
 }
 
-export interface DownloadFfmpegBinary {
+export interface DownloadBinary {
     provisioner: Provisioner;
     triggers:    DownloadFfmpegBinaryTriggers;
 }
@@ -1128,15 +1128,6 @@ export interface LocalExec {
 }
 
 export interface DownloadFfmpegBinaryTriggers {
-    ffmpeg_exists: string;
-}
-
-export interface DownloadYtDLPBinary {
-    provisioner: Provisioner;
-    triggers:    DownloadYtDLPBinaryTriggers;
-}
-
-export interface DownloadYtDLPBinaryTriggers {
     version: string;
 }
 
@@ -2224,10 +2215,10 @@ const typeMap: any = {
         { json: "queue_url", js: "queue_url", typ: "" },
     ], false),
     "NullResource": o([
-        { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadFfmpegBinary")) },
-        { json: "DownloadYtDlpBinary", js: "DownloadYtDlpBinary", typ: a(r("DownloadYtDLPBinary")) },
+        { json: "DownloadFfmpegBinary", js: "DownloadFfmpegBinary", typ: a(r("DownloadBinary")) },
+        { json: "DownloadYtDlpBinary", js: "DownloadYtDlpBinary", typ: a(r("DownloadBinary")) },
     ], false),
-    "DownloadFfmpegBinary": o([
+    "DownloadBinary": o([
         { json: "provisioner", js: "provisioner", typ: r("Provisioner") },
         { json: "triggers", js: "triggers", typ: r("DownloadFfmpegBinaryTriggers") },
     ], false),
@@ -2238,13 +2229,6 @@ const typeMap: any = {
         { json: "command", js: "command", typ: "" },
     ], false),
     "DownloadFfmpegBinaryTriggers": o([
-        { json: "ffmpeg_exists", js: "ffmpeg_exists", typ: "" },
-    ], false),
-    "DownloadYtDLPBinary": o([
-        { json: "provisioner", js: "provisioner", typ: r("Provisioner") },
-        { json: "triggers", js: "triggers", typ: r("DownloadYtDLPBinaryTriggers") },
-    ], false),
-    "DownloadYtDLPBinaryTriggers": o([
         { json: "version", js: "version", typ: "" },
     ], false),
     "TimeSleep": o([
