@@ -53,10 +53,17 @@ NEVER explain removed code in comments. Delete outdated comments about previous 
 ## JSDoc/TSDoc Standards
 
 ### Required For
-- All exported functions
+- All exported functions with business logic
 - All internal helper functions (with `@notExported` tag)
 - All interfaces and type aliases
 - Lambda handler entry points (with `@label` tag)
+
+### NOT Required For (Self-Documenting)
+- **AWS vendor wrapper files** (`src/lib/vendor/AWS/*.ts`) - These are thin pass-through wrappers by design
+- **Thin wrapper functions** (5 lines or fewer body)
+- **Simple utility functions** with self-documenting signatures (e.g., `stringAttribute(value: string): MessageAttributeValue`)
+- **Functions with c8 ignore comments** that already explain purpose (e.g., `/* c8 ignore start - Pure AWS SDK wrapper */`)
+- **Re-export barrel files** (index.ts with only exports)
 
 ### Format
 

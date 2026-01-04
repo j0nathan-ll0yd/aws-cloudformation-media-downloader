@@ -34,7 +34,7 @@ export const commentConventionsRule: ValidationRule = {
     'src/types/*.ts',
     'src/util/*.ts'
   ],
-  excludes: ['**/*.test.ts', '**/node_modules/**', 'src/mcp/**/*.ts', '**/api-schema/**', '**/*.fixture.ts'],
+  excludes: ['**/*.test.ts', '**/node_modules/**', 'src/mcp/**/*.ts', '**/api-schema/**', '**/*.fixture.ts', 'src/lib/vendor/AWS/*.ts'],
 
   validate(sourceFile: SourceFile, filePath: string): Violation[] {
     const violations: Violation[] = []
@@ -101,6 +101,28 @@ function validateLambdaFileHeader(sourceFile: SourceFile, filePath: string): Vio
   return violations
 }
 
+/** Maximum body lines for a function to be considered a "thin wrapper" */
+const MAX_THIN_WRAPPER_LINES = 5
+
+/**
+ * Check if a function is a thin wrapper that doesn't require JSDoc.
+ * Criteria: Function body is 5 lines or fewer (self-documenting via typed signature)
+ *
+ * Per Code-Comments.md, JSDoc is NOT required for:
+ * - Thin AWS SDK wrappers (5 lines or fewer, single SDK call)
+ * - Simple utility functions with self-documenting signatures
+ * - Functions with c8 ignore comments that explain purpose
+ */
+function isThinWrapper(fn: {getBodyText(): string | undefined}): boolean {
+  const bodyText = fn.getBodyText()
+  if (!bodyText) {
+    return false
+  }
+
+  const bodyLines = bodyText.split('\n').filter((line) => line.trim().length > 0)
+  return bodyLines.length <= MAX_THIN_WRAPPER_LINES
+}
+
 /**
  * Validate exported functions have JSDoc
  */
@@ -109,7 +131,7 @@ function validateExportedFunctionsJSDoc(sourceFile: SourceFile): Violation[] {
 
   // Check exported function declarations
   for (const fn of sourceFile.getFunctions()) {
-    if (fn.isExported() && !fn.getJsDocs().length) {
+    if (fn.isExported() && !fn.getJsDocs().length && !isThinWrapper(fn)) {
       violations.push(
         createViolation(RULE_NAME, 'MEDIUM', fn.getStartLineNumber(), `Exported function '${fn.getName() || 'anonymous'}' missing JSDoc`, {
           suggestion: 'Add JSDoc with @param and @returns tags'
@@ -141,6 +163,12 @@ function validateExportedFunctionsJSDoc(sourceFile: SourceFile): Violation[] {
 
         const kind = initializer.getKind()
         if (kind === SyntaxKind.ArrowFunction || kind === SyntaxKind.FunctionExpression) {
+          // Check if this is a thin wrapper (< 5 lines body)
+          const arrowFn = initializer.asKind(SyntaxKind.ArrowFunction) || initializer.asKind(SyntaxKind.FunctionExpression)
+          if (arrowFn && isThinWrapper({getBodyText: () => arrowFn.getBody()?.getText()})) {
+            continue
+          }
+
           // Check for JSDoc
           const jsDocs = varStatement.getJsDocs()
           if (jsDocs.length === 0) {
