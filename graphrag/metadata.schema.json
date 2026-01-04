@@ -40,7 +40,7 @@
       "items": {
         "$ref": "#/definitions/entityRelationship"
       },
-      "description": "Relationships between ElectroDB entities"
+      "description": "Relationships between database entities"
     },
     "lambdaInvocations": {
       "type": "array",

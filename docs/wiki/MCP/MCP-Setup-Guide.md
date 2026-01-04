@@ -34,7 +34,7 @@ The MCP server acts as an intelligent API for your codebase, translating high-le
 ## Available Query Types
 
 ### 1. Entity Queries
-- **Schema**: Get ElectroDB entity definitions
+- **Schema**: Get Drizzle ORM entity definitions
 - **Relationships**: Understand entity associations
 - **Collections**: Learn about JOIN-like queries
 

@@ -56,9 +56,9 @@ npm update jest @jest/globals @types/jest
 # Check migration guide for config changes
 ```
 
-### ElectroDB Updates
+### Drizzle ORM Updates
 ```bash
-npm update electrodb
+npm update drizzle-orm drizzle-kit
 # Test all entity queries
 ```
 

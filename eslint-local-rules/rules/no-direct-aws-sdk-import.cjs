@@ -72,12 +72,12 @@ module.exports = {
     // Allow imports in vendor directories and integration test helpers
     // - lib/vendor/AWS/ - AWS SDK wrappers
     // - lib/vendor/Powertools/ - AWS Lambda Powertools wrappers
-    // - lib/vendor/ElectroDB/ - ElectroDB service (needs DynamoDB client)
+    // - lib/vendor/Drizzle/ - Drizzle ORM wrapper (needs Aurora DSQL client)
     // - test/integration/helpers/ - LocalStack setup (needs direct client access)
     if (
       filename.includes('lib/vendor/AWS') ||
       filename.includes('lib/vendor/Powertools') ||
-      filename.includes('lib/vendor/ElectroDB') ||
+      filename.includes('lib/vendor/Drizzle') ||
       filename.includes('test/integration/helpers')
     ) {
       return {}

@@ -17,7 +17,7 @@ This project demonstrates production-grade serverless architecture that exceeds 
 2. AWS Lambda organization patterns (monorepo vs multi-repo)
 3. SST Framework AWS serverless infrastructure as code
 4. Terraform vs CDK vs SST comparison
-5. DynamoDB single-table design ElectroDB best practices
+5. Aurora DSQL Drizzle ORM best practices
 6. DynamoDB vs Aurora Serverless comparison
 7. AWS Lambda testing best practices LocalStack integration
 8. Webpack vs esbuild serverless Lambda bundling
@@ -32,7 +32,7 @@ This project demonstrates production-grade serverless architecture that exceeds 
 17. AWS X-Ray Lambda tracing serverless observability
 18. AWS SDK v3 modular imports Lambda bundle optimization
 19. Serverless IAM least privilege permissions per Lambda
-20. DynamoDB ElectroDB alternatives (Dynamoose, TypeDORM)
+20. Aurora DSQL ORM alternatives (Prisma, TypeORM)
 21. Serverless S3 transfer acceleration large file upload
 22. Serverless SQS Lambda dead letter queue patterns
 23. Better Auth serverless Lambda authentication patterns
@@ -111,10 +111,6 @@ This project demonstrates production-grade serverless architecture that exceeds 
 - Could benefit from Terraform modules for repeated patterns
 
 ### 3. Database Architecture - EXCELLENT (Industry-Leading)
-
-> **Note (January 2026)**: This project has migrated from DynamoDB/ElectroDB to **Aurora DSQL with Drizzle ORM**.
-> This assessment section describes the original architecture; the new architecture offers similar benefits with
-> native PostgreSQL compatibility and serverless scaling.
 
 | Aspect | Current Implementation | Industry Best Practice | Assessment |
 |--------|---------------------|----------------------|------------|
@@ -206,7 +202,7 @@ The project uses AWS Lambda Powertools for TypeScript (`src/lib/vendor/Powertool
 **Your Security Innovations:**
 1. **`.npmrc` lifecycle script protection**: Blocks AI-targeted typosquatting attacks - this is ahead of industry practices
 2. **Per-Lambda IAM roles**: Each function has exactly the permissions it needs
-3. **Better Auth integration**: Enterprise-grade authentication with ElectroDB adapter
+3. **Better Auth integration**: Enterprise-grade authentication with Aurora DSQL adapter
 
 **Industry Alignment:**
 - Matches [14 AWS Lambda Security Best Practices](https://www.ranthebuilder.cloud/post/14-aws-lambda-security-best-practices-for-building-secure-serverless-applications)
@@ -249,7 +245,7 @@ The project uses AWS Lambda Powertools for TypeScript (`src/lib/vendor/Powertool
 |--------|--------------|---------------------|
 | TypeScript | Full strict mode | Mixed (some JS) |
 | Testing | Comprehensive | Basic examples |
-| ORM | ElectroDB | Direct SDK calls |
+| ORM | Drizzle | Direct SDK calls |
 | **Winner** | Your project | - |
 
 ### vs [aws-samples/serverless-samples](https://github.com/aws-samples/serverless-samples)
@@ -354,11 +350,11 @@ Your requirements:
 
 OpenTofu provides the flexibility you need. SST would abstract away too much control.
 
-### ElectroDB vs Alternatives: Correct Choice
-Per industry comparison, ElectroDB offers:
-- Best type inference
-- Native single-table support
-- Collections for JOIN-like queries
+### Database ORM: Drizzle ORM with Aurora DSQL
+Drizzle ORM with Aurora DSQL offers:
+- Native ESM support
+- PostgreSQL compatibility
+- Serverless scaling without single-table design constraints
 
 ### esbuild: Migration Complete ✅
 esbuild is now the project bundler, providing:
@@ -393,9 +389,8 @@ esbuild is now the project bundler, providing:
 - [Lumigo: Mono-Repo vs One-Per-Service](https://lumigo.io/blog/mono-repo-vs-one-per-service/)
 
 ### Database & ORM
-- [Alex DeBrie: The What, Why, and When of Single-Table Design](https://www.alexdebrie.com/posts/dynamodb-single-table/)
-- [ElectroDB Documentation](https://electrodb.dev/en/core-concepts/introduction/)
-- [DEV.to: DynamoDB wrapper comparison](https://dev.to/thomasaribart/an-in-depth-comparison-of-the-most-popular-dynamodb-wrappers-5b73)
+- [Drizzle ORM Documentation](https://orm.drizzle.team/)
+- [AWS Aurora DSQL](https://aws.amazon.com/rds/aurora/dsql/)
 
 ### Testing
 - [AWS Blog: Enhance local testing with LocalStack](https://aws.amazon.com/blogs/compute/enhance-the-local-testing-experience-for-serverless-applications-with-localstack/)
@@ -423,7 +418,7 @@ This project represents **production-grade serverless architecture** that exceed
 2. **Observability**: Add AWS Lambda Powertools for structured logging, metrics, and tracing
 3. **Webhook reliability**: Add idempotency handling with Powertools
 
-The architecture choices (DynamoDB, ElectroDB, OpenTofu, single-table design) are optimal for the use case and should not be changed.
+The architecture choices (Aurora DSQL, Drizzle ORM, OpenTofu) are optimal for the use case and represent modern serverless best practices.
 
 ---
 

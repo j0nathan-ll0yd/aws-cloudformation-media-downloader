@@ -75,7 +75,7 @@ vi.mock('#entities/queries', () => ({
 
 **Why**:
 - Shows complete dependency tree
-- Critical for Jest tests (need to mock ALL transitive deps)
+- Critical for Vitest tests (need to mock ALL transitive deps)
 - Prevents "missing mock" test failures
 - Automated (regenerated on every build)
 

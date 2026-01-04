@@ -439,12 +439,12 @@ Re-index the codebase into the semantic vector database (LanceDB).
 
 ### apply_convention
 
-Automatically apply architectural conventions to code (AWS SDK wrappers, ElectroDB mocks, response helpers, etc.).
+Automatically apply architectural conventions to code (AWS SDK wrappers, entity mocks, response helpers, etc.).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | file | string | Yes | File path to apply conventions to |
-| convention | string | Yes | Convention to apply: aws-sdk-wrapper, electrodb-mock, response-helper, env-validation, powertools, all |
+| convention | string | Yes | Convention to apply: aws-sdk-wrapper, entity-mock, response-helper, env-validation, powertools, all |
 | dryRun | boolean | No | Preview changes without applying them (default: false) |
 
 **Conventions**:

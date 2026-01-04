@@ -1,5 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {
@@ -43,7 +43,7 @@ const existingUserDevices = [createMockUserDevice({userId: fakeUserId})]
 const testEndpointArn = 'arn:aws:sns:us-west-2:123456789012:endpoint/APNS_SANDBOX/MediaDownloader/test-endpoint'
 
 describe('#RegisterDevice', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: CustomAPIGatewayRequestAuthorizerEvent
 
   beforeEach(() => {

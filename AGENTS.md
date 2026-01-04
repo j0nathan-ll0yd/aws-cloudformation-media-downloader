@@ -273,20 +273,20 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 | ApiGatewayAuthorizer | API Gateway | All authenticated routes | Authorize API requests via Better Auth |
 | CleanupExpiredRecords | CloudWatch Events | Daily schedule (3 AM UTC) | Clean expired records |
 | CloudfrontMiddleware | CloudFront | Edge requests | Edge processing for CDN |
-| DeviceEvent | API Gateway | POST /events | Log client-side device events |
+| DeviceEvent | API Gateway | POST /device/event | Log client-side device events |
 | ListFiles | API Gateway | GET /files | List user's available files |
-| LoginUser | API Gateway | POST /auth/login | Authenticate user |
+| LoginUser | API Gateway | POST /user/login | Authenticate user |
 | MigrateDSQL | Manual | CLI invocation | Run Drizzle migrations on Aurora DSQL |
 | PruneDevices | CloudWatch Events | Daily schedule | Clean inactive devices |
-| RefreshToken | API Gateway | POST /auth/refresh | Refresh authentication token |
-| RegisterDevice | API Gateway | POST /devices | Register iOS device for push |
-| RegisterUser | API Gateway | POST /auth/register | Register new user |
+| RefreshToken | API Gateway | POST /user/refresh | Refresh authentication token |
+| RegisterDevice | API Gateway | POST /device/register | Register iOS device for push |
+| RegisterUser | API Gateway | POST /user/register | Register new user |
 | S3ObjectCreated | S3 Event | s3:ObjectCreated | Handle uploaded files, notify users |
 | SendPushNotification | SQS | S3ObjectCreated | Send APNS notifications |
 | StartFileUpload | SQS | DownloadQueue (via EventBridge) | Download video from YouTube to S3 |
-| UserDelete | API Gateway | DELETE /users | Delete user and cascade |
-| UserSubscribe | API Gateway | POST /subscriptions | Manage user topic subscriptions |
-| WebhookFeedly | API Gateway | POST /webhooks/feedly | Process Feedly articles, publish events |
+| UserDelete | API Gateway | DELETE /user | Delete user and cascade |
+| UserSubscribe | API Gateway | POST /user/subscribe | Manage user topic subscriptions |
+| WebhookFeedly | API Gateway | POST /feedly | Process Feedly articles, publish events |
 
 ### Data Access Patterns
 

@@ -23,8 +23,8 @@ MCP Tool: validate_pattern
 Query: all
 ```
 
-This runs all 18 AST validation rules:
-- 5 CRITICAL rules (must fix before commit)
+This runs all 20 AST validation rules:
+- 7 CRITICAL rules (must fix before commit)
 - 9 HIGH rules (should fix)
 - 4 MEDIUM rules (recommended)
 
@@ -44,7 +44,7 @@ For each violation, use the apply convention tool:
 
 ```
 MCP Tool: apply_convention
-Convention: [aws-sdk-wrapper | electrodb-mock | response-helper | env-validation | powertools]
+Convention: [aws-sdk-wrapper | entity-mock | response-helper | env-validation | powertools]
 File: [path to file]
 DryRun: true (preview first)
 ```
@@ -65,7 +65,7 @@ For each fix suggestion:
 | Rule | Description | Fix |
 |------|-------------|-----|
 | `aws-sdk-direct-import` | No direct AWS SDK imports | Use vendor wrappers from `#lib/vendor/AWS/` |
-| `electrodb-direct-import` | No direct ElectroDB imports | Use entity helpers |
+| `entity-direct-import` | No direct entity module imports | Use `#entities/queries` |
 | `env-var-module-level` | No module-level `getRequiredEnv()` | Move to inside functions |
 | `vendor-bypass` | No bypassing vendor encapsulation | Always use wrapper methods |
 | `secrets-in-code` | No hardcoded secrets | Use SOPS or environment |

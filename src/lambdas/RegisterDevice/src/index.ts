@@ -49,7 +49,7 @@ async function createPlatformEndpointFromToken(token: string) {
  *
  * @param userId - The userId
  * @param deviceId - The UUID of the device (either iOS or Android)
- * @returns The upsert response from ElectroDB
+ * @returns The upserted user-device record
  * @notExported
  */
 async function upsertUserDevices(userId: string, deviceId: string) {
@@ -60,10 +60,10 @@ async function upsertUserDevices(userId: string, deviceId: string) {
 }
 
 /**
- * Store the device details independent of the user (e.g. iPhone, Android) and stores it to DynamoDB.
+ * Store the device details independent of the user (e.g. iPhone, Android).
  *
  * @param device - The Device details (e.g. endpointArn)
- * @returns The upsert response from ElectroDB
+ * @returns The upserted device record
  * @notExported
  */
 async function upsertDevice(device: Device) {

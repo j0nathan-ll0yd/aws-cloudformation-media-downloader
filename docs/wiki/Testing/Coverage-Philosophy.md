@@ -217,7 +217,7 @@ test/integration/workflows/
 ❌ Many integration tests for CRUD
 
 ## Related Patterns
-- [Jest ESM Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking dependencies
+- [Vitest Mocking Strategy](Vitest-Mocking-Strategy.md) - Mocking dependencies
 - [Mock Type Annotations](Mock-Type-Annotations.md) - Type-safe mocking
 - [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) - What to test
 

@@ -96,9 +96,9 @@ async function applyEntityMock(filePath: string, dryRun: boolean): Promise<Apply
   const content = readFileSync(filePath, 'utf-8')
   const newContent = content
 
-  // Check for manual entity mocks (not using createEntityMock or legacy createElectroDBEntityMock)
+  // Check for manual entity mocks (not using proper vi.mock patterns)
   const manualMockPattern = /jest\.unstable_mockModule\(['"]#entities\/(\w+)['"]/g
-  const helperImportExists = content.includes('createEntityMock') || content.includes('createElectroDBEntityMock')
+  const helperImportExists = content.includes('createEntityMock')
 
   const matches = [...content.matchAll(manualMockPattern)]
 
@@ -113,7 +113,7 @@ async function applyEntityMock(filePath: string, dryRun: boolean): Promise<Apply
   }
 
   // Check for mock defined inside jest.unstable_mockModule (wrong pattern)
-  const wrongPatternRegex = /jest\.unstable_mockModule\([^)]+,\s*\(\)\s*=>\s*create(Entity|ElectroDBEntity)Mock/g
+  const wrongPatternRegex = /jest\.unstable_mockModule\([^)]+,\s*\(\)\s*=>\s*createEntityMock/g
   if (wrongPatternRegex.test(content)) {
     changes.push('Detected createEntityMock inside mock factory (wrong pattern)')
     changes.push('Mock must be created BEFORE jest.unstable_mockModule call')

@@ -1,13 +1,13 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {CloudFrontRequestEvent} from 'aws-lambda'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {createCloudFrontRequestEvent} from '#test/helpers/event-factories'
 import * as crypto from 'crypto'
 
 const {handler} = await import('./../src')
 
 describe('#CloudfrontMiddleware', () => {
-  const context = testContext
+  const context = createMockContext()
   const apiKeyHeaderName = 'X-API-Key'
   const apiKeyQueryStringName = 'ApiKey'
   const apiKeyValue = crypto.randomBytes(24).toString('hex')

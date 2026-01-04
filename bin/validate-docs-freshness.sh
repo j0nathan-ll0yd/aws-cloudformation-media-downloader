@@ -4,7 +4,7 @@
 # Validates that generated documentation is newer than source files
 # Usage: pnpm run validate:docs-freshness or ./bin/validate-docs-freshness.sh
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

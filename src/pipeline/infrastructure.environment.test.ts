@@ -36,7 +36,7 @@ const excludedSourceVariables: Record<string, number> = {
   // Lambda function names referenced as strings (not env vars)
   StartFileUpload: 1, // Lambda function name in invoke calls
   // Query/ORM library keywords
-  RightJoin: 1, // ElectroDB/SQL join type
+  RightJoin: 1, // SQL join type
   Using: 1, // Query keyword
   // CloudWatch metric names (used as string literals, not env vars)
   CookieAuthenticationFailure: 1,
@@ -166,7 +166,7 @@ function isSemverConstant(variable: string): boolean {
 }
 
 // Patterns that indicate library operation types or domain literals, not environment variables
-// These are verb+noun patterns commonly used in ORMs and libraries (e.g., ElectroDB)
+// These are verb+noun patterns commonly used in ORMs and libraries (e.g., Drizzle)
 const operationTypePatterns = [
   /^(Create|Delete|Update|Get|Put|Scan|Query|Batch|Find|List|Remove|Insert|Upsert)(One|Many|Item|Items|All)?$/,
   /Notification$/, // Type literals like MetadataNotification, DownloadReadyNotification

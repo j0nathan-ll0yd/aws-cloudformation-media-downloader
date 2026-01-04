@@ -240,10 +240,10 @@ See [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) for compreh
 
 ## Migration from Legacy Entity Imports
 
-If you see legacy ElectroDB-style imports, migrate to query functions:
+If you see legacy entity-style imports, migrate to query functions:
 
 ```typescript
-// ❌ LEGACY - ElectroDB entity style
+// ❌ LEGACY - Entity wrapper style
 import {Users} from '#entities/Users'
 const result = await Users.get({id: userId}).go()
 const user = result.data
@@ -255,8 +255,8 @@ const user = await getUser(userId)
 
 ### Key Differences
 
-| Aspect | Legacy (ElectroDB) | Current (Drizzle Queries) |
-|--------|-------------------|---------------------------|
+| Aspect | Legacy (Entity Wrapper) | Current (Drizzle Queries) |
+|--------|-------------------------|---------------------------|
 | Return type | `{data: T \| null}` | `T \| null` |
 | Method chaining | `.get({id}).go()` | `getUser(id)` |
 | Mocking | Complex entity mock | Simple function mock |

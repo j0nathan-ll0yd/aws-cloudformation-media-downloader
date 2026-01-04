@@ -232,5 +232,5 @@ Both CI and local development use the **same scripts**, ensuring:
 ## See Also
 
 - [Coverage Philosophy](./Coverage-Philosophy.md)
-- [Jest ESM Mocking Strategy](./Vitest-Mocking-Strategy.md)
+- [Vitest Mocking Strategy](./Vitest-Mocking-Strategy.md)
 - [LocalStack Testing](../Integration/LocalStack-Testing.md)

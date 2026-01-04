@@ -24,7 +24,7 @@ import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
 
@@ -45,6 +45,9 @@ import {logInfo} from '#lib/system/logging'
  * @notExported
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayEvent>): Promise<APIGatewayProxyResult> => {
+  // Track registration attempt
+  metrics.addMetric('RegistrationAttempt', MetricUnit.Count, 1)
+
   // 1. Validate request
   const requestBody = getPayloadFromEvent(event) as UserRegistrationRequest
   validateRequest(requestBody, userRegistrationRequestSchema)
@@ -90,6 +93,12 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
     })
   }
 
+  // Track successful registration
+  metrics.addMetric('RegistrationSuccess', MetricUnit.Count, 1)
+  if (isNewUser) {
+    metrics.addMetric('NewUserRegistration', MetricUnit.Count, 1)
+  }
+
   logInfo('RegisterUser: Better Auth sign-in/registration successful', {
     userId: result.user?.id,
     sessionToken: result.token ? 'present' : 'missing',
@@ -103,4 +112,4 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
     sessionId: result.session?.id || '',
     userId: result.user?.id || ''
   }, userRegistrationResponseSchema)
-}))
+}), {enableCustomMetrics: true})

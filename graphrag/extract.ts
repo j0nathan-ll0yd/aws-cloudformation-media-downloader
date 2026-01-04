@@ -323,7 +323,7 @@ function extractExternalServices(deps: string[], externalServices: ServiceMetada
   for (const dep of deps) {
     // Match src/lib/vendor/* patterns (non-AWS)
     const vendorMatch = dep.match(/src\/lib\/vendor\/(\w+)/)
-    if (vendorMatch && vendorMatch[1] !== 'AWS' && vendorMatch[1] !== 'ElectroDB' && vendorMatch[1] !== 'Drizzle') {
+    if (vendorMatch && vendorMatch[1] !== 'AWS' && vendorMatch[1] !== 'Drizzle') {
       const vendorName = vendorMatch[1]
       // Check explicit mapping first
       if (vendorToService[vendorName]) {

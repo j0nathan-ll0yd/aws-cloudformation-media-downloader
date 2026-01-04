@@ -2,7 +2,7 @@
  * Batch Retry Rule
  * HIGH: Detect batch operations without retry handling
  *
- * ElectroDB batch operations can return unprocessed items.
+ * DynamoDB batch operations can return unprocessed items.
  * This rule enforces using retryUnprocessed() wrapper for reliability.
  */
 

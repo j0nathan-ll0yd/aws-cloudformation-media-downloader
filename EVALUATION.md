@@ -8,7 +8,7 @@
 
 This project (`aws-cloudformation-media-downloader`) represents a highly mature, production-grade serverless application. Far exceeding typical "hobbyist" implementation of media downloaders, it exhibits architectural patterns usually reserved for enterprise-scale distributed systems.
 
-The codebase is currently in a transitional phase, moving from a standard DynamoDB (ElectroDB) pattern to a cutting-edge Serverless Aurora DSQL (Drizzle ORM) architecture. This transition is being executed with remarkable discipline regarding vendor encapsulation and type safety.
+The codebase uses a cutting-edge Serverless Aurora DSQL (Drizzle ORM) architecture. The architecture is implemented with remarkable discipline regarding vendor encapsulation and type safety.
 
 A standout feature is the project's **"AI-First" design philosophy**. The inclusion of `AGENTS.md`, `repomix` integration, convention tracking, and semantic search capabilities (`lancedb`) makes this repository uniquely optimized for autonomous AI development agents.
 
@@ -47,14 +47,14 @@ Compared to top GitHub repositories for "serverless video downloader" and "aws l
 3.  **Encapsulation**: The isolation of external dependencies makes the codebase resilient to breaking changes in upstream libraries (e.g., AWS SDK v3 upgrades).
 
 ### Weaknesses (Opportunities)
-1.  **Transitional Complexity**: The coexistence of ElectroDB (legacy) and Drizzle (new) creates temporary cognitive load.
+1.  **Documentation Maintenance**: Wiki documentation requires ongoing maintenance to stay synchronized with code changes.
 2.  **Cold Starts**: While mitigated by `arm64` and layers, Lambda cold starts with heavy layers (`ffmpeg`) can still impact latency for synchronous endpoints.
 3.  **DSQL Maturity**: Aurora DSQL is a newer service; relying on it introduces "bleeding edge" risks regarding regional availability and feature parity.
 
 ## 5. Roadmap & Recommendations
 
 ### Phase 1: Consolidation (Immediate)
--   **Complete DSQL Migration**: Deprecate and remove all ElectroDB artifacts. Ensure all entities are fully ported to Drizzle.
+-   **Documentation Sync**: Ensure all documentation accurately reflects the Drizzle ORM architecture.
 -   **Unified Error Handling**: Standardize error classes across the new domain modules to ensure consistent API Gateway responses.
 
 ### Phase 2: Performance & Scale (Short Term)

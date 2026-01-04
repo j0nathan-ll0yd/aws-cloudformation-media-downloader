@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import type {APIGatewayProxyEvent} from 'aws-lambda'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import type {SessionPayload} from '#types/util'
@@ -15,7 +15,7 @@ vi.mock('#lib/domain/auth/sessionService', () => ({
 const {handler} = await import('./../src')
 
 describe('#RefreshToken', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: APIGatewayProxyEvent
   const fakeUserId = DEFAULT_USER_ID
   const fakeSessionId = DEFAULT_SESSION_ID

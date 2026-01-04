@@ -1,17 +1,12 @@
 /**
- * Native Drizzle Query Modules - Barrel Export
+ * Drizzle Query Modules - Barrel Export
  *
- * This module exports all native Drizzle ORM query functions.
- * Use these instead of the legacy ElectroDB-style entity wrappers.
- *
- * Migration Guide:
- * - Old: `await Users.get({id}).go()` -\> `{data: user | null}`
- * - New: `await getUser(id)` -\> `user | null`
+ * This module exports all Drizzle ORM query functions.
+ * These are the primary interface for all database operations.
  *
  * Benefits:
- * - 67% less code (no chainable API boilerplate)
  * - Direct SQL with JOINs (no N+1 queries)
- * - Standard function signatures (easier to mock)
+ * - Standard function signatures (easy to mock)
  * - Full TypeScript inference
  */
 

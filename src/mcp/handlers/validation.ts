@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '../../..')
 
-export type ValidationQueryType = 'all' | 'aws-sdk' | 'electrodb' | 'imports' | 'response' | 'rules' | 'summary'
+export type ValidationQueryType = 'all' | 'aws-sdk' | 'entity' | 'imports' | 'response' | 'rules' | 'summary'
 
 export interface ValidationQueryArgs {
   file?: string
@@ -77,24 +77,24 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
       }
     }
 
-    case 'electrodb': {
+    case 'entity': {
       if (!file) {
-        return createErrorResponse('File path required', 'Validates ElectroDB mocking patterns in test files (CRITICAL rule)')
+        return createErrorResponse('File path required', 'Validates entity mocking patterns in test files (CRITICAL rule)')
       }
 
       const filePath = path.isAbsolute(file) ? file : path.join(projectRoot, file)
-      const result = await validateFile(filePath, {projectRoot, rules: ['electrodb-mocking']})
+      const result = await validateFile(filePath, {projectRoot, rules: ['entity-mocking']})
 
       return {
         file: result.file,
-        rule: 'electrodb-mocking',
+        rule: 'entity-mocking',
         severity: 'CRITICAL',
         valid: result.valid,
         violations: result.violations,
-        skipped: result.skipped.includes('electrodb-mocking') ? 'Rule skipped: Not a test file or no entity mocks' : undefined,
+        skipped: result.skipped.includes('entity-mocking') ? 'Rule skipped: Not a test file or no entity mocks' : undefined,
         message: result.valid
-          ? 'ElectroDB entities are mocked correctly using createElectroDBEntityMock().'
-          : 'CRITICAL: Manual entity mocks detected. Use createElectroDBEntityMock() helper.'
+          ? 'Entities are mocked correctly using vi.fn() with #entities/queries.'
+          : 'CRITICAL: Legacy entity mocks detected. Use vi.fn() with #entities/queries.'
       }
     }
 
@@ -173,6 +173,6 @@ export async function handleValidationQuery(args: ValidationQueryArgs) {
     }
 
     default:
-      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: all, aws-sdk, electrodb, imports, response, rules, summary')
+      return createErrorResponse(`Unknown query: ${query}`, 'Available queries: all, aws-sdk, entity, imports, response, rules, summary')
   }
 }

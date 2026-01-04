@@ -6,7 +6,7 @@
  * 1. Use Promise.allSettled instead of Promise.all for cascade operations
  * 2. Delete child entities before parent entities
  *
- * Supports both legacy ElectroDB patterns and native Drizzle query functions.
+ * Supports both legacy entity patterns and native Drizzle query functions.
  */
 
 import type {SourceFile} from 'ts-morph'
@@ -19,10 +19,10 @@ const SEVERITY = 'CRITICAL' as const
 
 /**
  * Deletion patterns that indicate cascade operations
- * Includes both legacy ElectroDB and native Drizzle query function patterns
+ * Includes both legacy entity patterns and native Drizzle query function patterns
  */
 const DELETE_PATTERNS = [
-  // Legacy ElectroDB patterns
+  // Legacy entity patterns
   '.delete(',
   '.remove(',
   'batchWrite',
@@ -63,7 +63,7 @@ const FUNCTION_HIERARCHY: Record<string, string[]> = {
 
 /**
  * Pre-compiled regexes for entity deletion detection (performance optimization)
- * Supports both legacy ElectroDB and native Drizzle patterns
+ * Supports both legacy entity and native Drizzle patterns
  */
 const ENTITY_DELETE_REGEXES: Record<string, RegExp> = Object.fromEntries(
   [...Object.keys(ENTITY_HIERARCHY), ...Object.values(ENTITY_HIERARCHY).flat()].map((entity) => [entity, new RegExp(`\\b${entity}\\.(delete|remove)`)])
@@ -125,7 +125,7 @@ export const cascadeSafetyRule: ValidationRule = {
     // Check for deletion order violations in await expressions
     const awaitExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.AwaitExpression)
 
-    // Track legacy ElectroDB entity deletions
+    // Track legacy entity deletions
     const entityDeleteSequence: Array<{entity: string; line: number}> = []
     // Track native Drizzle function deletions
     const functionDeleteSequence: Array<{fn: string; line: number}> = []
@@ -133,7 +133,7 @@ export const cascadeSafetyRule: ValidationRule = {
     for (const awaitExpr of awaitExpressions) {
       const text = awaitExpr.getText()
 
-      // Check for legacy ElectroDB entity deletions
+      // Check for legacy entity deletions
       for (const [parent, children] of Object.entries(ENTITY_HIERARCHY)) {
         if (ENTITY_DELETE_REGEXES[parent].test(text)) {
           entityDeleteSequence.push({entity: parent, line: awaitExpr.getStartLineNumber()})

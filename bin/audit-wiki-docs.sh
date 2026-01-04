@@ -14,7 +14,7 @@
 #   - docs/wiki-audit-report.md (human-readable)
 #   - docs/wiki-audit-results.json (machine-readable for CI)
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

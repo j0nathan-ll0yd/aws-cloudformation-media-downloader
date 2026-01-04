@@ -82,14 +82,3 @@ export function createSuccessResponse<T>(data: T): McpSuccessResponse {
 export function createTextResponse(text: string): McpSuccessResponse {
   return {content: [{type: 'text', text}]}
 }
-
-/**
- * Wrap an existing result object in MCP response format
- * Maintains backwards compatibility while adding proper typing
- *
- * @param result - The result object to wrap
- * @returns MCP-compliant response
- */
-export function wrapResponse<T>(result: T): McpSuccessResponse {
-  return createSuccessResponse(result)
-}

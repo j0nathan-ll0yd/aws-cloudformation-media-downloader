@@ -75,7 +75,6 @@ export const rulesByName: Record<string, ValidationRule> = {
   'drizzle-orm': drizzleOrmEncapsulationRule, // alias
   'entity-mocking': entityMockingRule,
   entity: entityMockingRule, // alias
-  electrodb: entityMockingRule, // legacy alias
   'config-enforcement': configEnforcementRule,
   config: configEnforcementRule, // alias
   'env-validation': envValidationRule,

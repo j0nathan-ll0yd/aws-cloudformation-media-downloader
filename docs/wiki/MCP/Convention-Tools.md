@@ -14,7 +14,7 @@ The MCP server provides 5 tools for convention querying and code validation:
 | `query_conventions` | Search project conventions | Understanding rules before coding |
 | `validate_pattern` | AST-based code validation | Checking code against conventions |
 | `apply_convention` | Auto-fix convention violations | Automated refactoring |
-| `check_coverage` | Mock analysis for tests | Identifying required Jest mocks |
+| `check_coverage` | Mock analysis for tests | Identifying required Vitest mocks |
 | `lambda_impact` | Dependency impact analysis | Understanding change scope |
 | `suggest_tests` | Test scaffolding generation | Creating new test files |
 
@@ -54,7 +54,7 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 - `summary` - Concise validation summary
 - **CRITICAL Rules:**
   - `aws-sdk` - Check AWS SDK encapsulation
-  - `electrodb` - Check ElectroDB mocking patterns
+  - `entity` - Check entity mocking patterns
   - `config` - Check for configuration drift
   - `env` - Check environment variable validation
   - `cascade` - Check cascade deletion safety
@@ -75,7 +75,7 @@ Validate TypeScript files against project conventions using AST analysis (ts-mor
 | Rule | Alias | Severity | Description |
 |------|-------|----------|-------------|
 | aws-sdk-encapsulation | aws-sdk | CRITICAL | No direct AWS SDK imports outside src/lib/vendor/AWS/ |
-| electrodb-mocking | electrodb | CRITICAL | Test files must use createElectroDBEntityMock() |
+| entity-mocking | entity | CRITICAL | Test files must use createEntityMock() for Drizzle entities |
 | config-enforcement | config | CRITICAL | Detects configuration drift (e.g., ESLint allowing underscore vars) |
 | env-validation | env | CRITICAL | Raw process.env access must use getRequiredEnv() wrapper |
 | cascade-safety | cascade | CRITICAL | Promise.all with delete operations must use Promise.allSettled |
@@ -107,7 +107,7 @@ validate_pattern({ query: "rules" })
 
 ### check_coverage
 
-Analyze which dependencies need mocking for Jest tests using build/graph.json.
+Analyze which dependencies need mocking for Vitest tests using build/graph.json.
 
 **Query Types:**
 - `required` - List all dependencies that need mocking
@@ -116,7 +116,7 @@ Analyze which dependencies need mocking for Jest tests using build/graph.json.
 - `summary` - Quick summary of mock requirements
 
 **Dependency Categories:**
-- **Entities**: ElectroDB entities (use createElectroDBEntityMock)
+- **Entities**: Drizzle query functions (use createEntityMock)
 - **Vendors**: AWS SDK wrappers (lib/vendor/AWS/*)
 - **Utilities**: Shared helpers (util/*)
 - **External**: Third-party packages
@@ -181,7 +181,7 @@ Automatically apply conventions to code files, reducing manual refactoring effor
 | Convention | Effect | Status |
 |------------|--------|--------|
 | `aws-sdk-wrapper` | Replaces direct AWS SDK imports with vendor wrapper imports | Auto-fix |
-| `electrodb-mock` | Generates correct ElectroDB mock setup | Guidance |
+| `entity-mock` | Generates correct entity mock setup for Drizzle queries | Guidance |
 | `response-helper` | Suggests response helper replacements | Guidance |
 | `env-validation` | Suggests getRequiredEnv() replacements | Guidance |
 | `powertools` | Suggests withPowertools() wrapper usage | Guidance |

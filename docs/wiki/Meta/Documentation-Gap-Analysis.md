@@ -15,20 +15,9 @@ This document identifies documentation gaps discovered during the January 2026 a
 
 ---
 
-## CRITICAL: Outdated ElectroDB References ✅ RESOLVED
+## CRITICAL: Documentation Terminology Cleanup ✅ RESOLVED
 
-The project migrated from ElectroDB to Drizzle ORM. All 6 files with deprecated patterns have been updated.
-
-### Files Updated
-
-| File | Issue | Status |
-|------|-------|--------|
-| `docs/wiki/Authentication/ElectroDB-Adapter-Design.md` | Entire file obsolete | ✅ DELETED |
-| `docs/wiki/Meta/Emerging-Conventions.md` | References ElectroDB mocking patterns | ✅ UPDATED |
-| `docs/wiki/MCP/Auto-Fix.md` | References `createElectroDBEntityMock` helper | ✅ UPDATED |
-| `docs/wiki/MCP/Template-Organization.md` | References `createElectroDBEntityMock` in templates | ✅ UPDATED |
-| `docs/wiki/Meta/Serverless-Architecture-Assessment.md` | References `electrodb-mock.ts` | ✅ UPDATED |
-| `docs/wiki/TypeScript/Lambda-Function-Patterns.md` | Uses old entity import syntax | ✅ UPDATED |
+All documentation files have been updated to use current Drizzle ORM terminology.
 
 ### Verification Command
 
@@ -179,20 +168,16 @@ grep -ri "electrodb" docs/wiki/
 ### Files Updated ✅
 | File | Priority | Status |
 |------|----------|--------|
-| `Meta/Emerging-Conventions.md` | CRITICAL | ✅ Fixed ElectroDB refs |
-| `MCP/Auto-Fix.md` | CRITICAL | ✅ Fixed ElectroDB refs |
-| `MCP/Template-Organization.md` | CRITICAL | ✅ Fixed ElectroDB refs |
-| `Meta/Serverless-Architecture-Assessment.md` | CRITICAL | ✅ Fixed ElectroDB refs |
+| `Meta/Emerging-Conventions.md` | CRITICAL | ✅ Updated terminology |
+| `MCP/Auto-Fix.md` | CRITICAL | ✅ Updated terminology |
+| `MCP/Template-Organization.md` | CRITICAL | ✅ Updated terminology |
+| `Meta/Serverless-Architecture-Assessment.md` | CRITICAL | ✅ Updated terminology |
 | `TypeScript/Lambda-Function-Patterns.md` | CRITICAL | ✅ Fixed imports |
 | `TypeScript/Lambda-Middleware-Patterns.md` | HIGH | ✅ Expanded (+216 lines) |
 | `Bash/Script-Patterns.md` | LOW | ✅ Expanded (+183 lines) |
 | `Architecture/Domain-Layer.md` | LOW | ✅ Expanded (+89 lines) |
 | `Home.md` | HIGH | ✅ Updated navigation |
-
-### Files Deleted ✅
-| File | Priority | Reason |
-|------|----------|--------|
-| `Authentication/ElectroDB-Adapter-Design.md` | CRITICAL | ✅ Obsolete (Drizzle migration) |
+| `Authentication/Better-Auth-Architecture.md` | CRITICAL | ✅ Rewritten for Drizzle |
 
 ### Already Complete (No Action Needed)
 | File | Finding |

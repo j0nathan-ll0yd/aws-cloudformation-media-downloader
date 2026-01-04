@@ -6,7 +6,7 @@
  * using standard vi.mock() patterns with vi.fn() for each function.
  *
  * This rule validates that entity query mocks are properly structured.
- * Using legacy ElectroDB-style mocks will cause test failures when the
+ * Using deprecated legacy-style mocks will cause test failures when the
  * entity layer changes. Correct mocking is critical for test reliability.
  */
 
@@ -18,15 +18,12 @@ import type {ValidationRule, Violation} from '../types'
 const RULE_NAME = 'entity-mocking'
 const SEVERITY = 'CRITICAL' as const
 
-/**
- * Legacy entity names (no longer used directly, kept for backwards compatibility detection)
- * @deprecated These entity wrappers have been replaced by native Drizzle query functions
- */
+/** Entity names used to detect deprecated import patterns in tests */
 const LEGACY_ENTITY_NAMES = ['Users', 'Files', 'Devices', 'UserFiles', 'UserDevices', 'Sessions', 'Accounts', 'Verifications', 'FileDownloads']
 
 export const entityMockingRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Test files should mock #entities/queries with vi.fn() for each query function. Legacy ElectroDB-style entity mocks are deprecated.',
+  description: 'Test files should mock #entities/queries with vi.fn() for each query function. Legacy entity module mocks are deprecated.',
   severity: SEVERITY,
   appliesTo: ['src/**/*.test.ts', 'test/**/*.ts'],
   excludes: ['test/helpers/**/*.ts'],
@@ -73,7 +70,7 @@ export const entityMockingRule: ValidationRule = {
           // Check if using deprecated createEntityMock helper
           if (args.length > 1) {
             const mockImpl = args[1].getText()
-            if (mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')) {
+            if (mockImpl.includes('createEntityMock')) {
               violations.push(
                 createViolation(RULE_NAME, SEVERITY, call.getStartLineNumber(),
                   'createEntityMock() helper is deprecated. Use direct vi.fn() mocks with #entities/queries.', {
@@ -90,6 +87,3 @@ export const entityMockingRule: ValidationRule = {
     return violations
   }
 }
-
-/** @deprecated Use entityMockingRule instead */
-export const electrodbMockingRule = entityMockingRule

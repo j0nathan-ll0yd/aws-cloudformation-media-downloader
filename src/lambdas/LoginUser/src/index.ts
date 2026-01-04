@@ -16,7 +16,7 @@ import {userLoginRequestSchema, userLoginResponseSchema} from '#types/api-schema
 import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
-import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logInfo} from '#lib/system/logging'
 
@@ -37,6 +37,9 @@ import {logInfo} from '#lib/system/logging'
  * @notExported
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
+  // Track login attempt
+  metrics.addMetric('LoginAttempt', MetricUnit.Count, 1)
+
   // 1. Validate request body
   const requestBody = getPayloadFromEvent(event) as UserLoginRequest
   validateRequest(requestBody, userLoginRequestSchema)
@@ -65,6 +68,9 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
   // Assert token response (throws if redirect)
   const result = assertTokenResponse(rawResult)
 
+  // Track successful login
+  metrics.addMetric('LoginSuccess', MetricUnit.Count, 1)
+
   logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
   // 3. Return session token (Better Auth format)
@@ -74,4 +80,4 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
     sessionId: result.session?.id || '',
     userId: result.user?.id || ''
   }, userLoginResponseSchema)
-}))
+}), {enableCustomMetrics: true})

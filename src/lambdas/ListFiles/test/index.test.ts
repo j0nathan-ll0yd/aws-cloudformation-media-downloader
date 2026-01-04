@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {FileStatus} from '#types/enums'
@@ -25,7 +25,7 @@ function createMockFile(fileId: string, status: FileStatus, publishDate: string)
 }
 
 describe('#ListFiles', () => {
-  const context = testContext
+  const context = createMockContext()
   let event: CustomAPIGatewayRequestAuthorizerEvent
   beforeEach(() => {
     vi.clearAllMocks()

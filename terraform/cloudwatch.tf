@@ -327,8 +327,23 @@ output "cloudwatch_dashboard_url" {
 }
 
 # =============================================================================
+# SNS Topic for Operations Alerts
+# Subscribe your email/Slack/PagerDuty manually after deployment
+# =============================================================================
+
+resource "aws_sns_topic" "OperationsAlerts" {
+  name = "${local.project_name}-operations-alerts"
+  tags = local.common_tags
+}
+
+output "operations_alerts_sns_topic_arn" {
+  description = "SNS topic ARN for operations alerts - subscribe manually to receive notifications"
+  value       = aws_sns_topic.OperationsAlerts.arn
+}
+
+# =============================================================================
 # CloudWatch Alarms
-# Note: SNS notification actions deferred - add alarm_actions when SNS configured
+# All alarms notify via SNS topic above
 # =============================================================================
 
 # Lambda Errors Alarm (API) - triggers when total errors across API Lambdas exceed threshold
@@ -363,7 +378,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsApi" {
     }
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # Lambda Errors Alarm (Background) - triggers when total errors across background Lambdas exceed threshold
@@ -398,7 +414,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaErrorsBackground" {
     }
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # Lambda Throttles Alarm (API) - any throttle is concerning
@@ -433,7 +450,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesApi" {
     }
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # Lambda Throttles Alarm (Background) - any throttle is concerning
@@ -468,7 +486,8 @@ resource "aws_cloudwatch_metric_alarm" "LambdaThrottlesBackground" {
     }
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # SQS DLQ Alarm - any message in DLQ requires investigation
@@ -488,7 +507,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsDlqMessages" {
     QueueName = aws_sqs_queue.SendPushNotificationDLQ.name
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # SQS Queue Age Alarm - messages shouldn't be stuck in queue
@@ -508,7 +528,8 @@ resource "aws_cloudwatch_metric_alarm" "SqsQueueAge" {
     QueueName = aws_sqs_queue.SendPushNotification.name
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # =============================================================================
@@ -534,7 +555,8 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeFailedInvocations" {
     RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
 
 # EventBridge Throttled Alarm
@@ -555,5 +577,6 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
     RuleName = aws_cloudwatch_event_rule.DownloadRequested.name
   }
 
-  # alarm_actions = [] # Add SNS topic ARN when configured
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }

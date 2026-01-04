@@ -1,7 +1,7 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import type {SQSEvent} from 'aws-lambda'
 import {PublishCommand} from '@aws-sdk/client-sns'
-import {testContext} from '#util/vitest-setup'
+import {createMockContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 import {createPushNotificationEvent} from '#test/helpers/event-factories'
@@ -47,7 +47,7 @@ describe('#SendPushNotification', () => {
     // Configure SNS mock to return success using factory
     snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
-    const result = await handler(event, testContext)
+    const result = await handler(event, createMockContext())
 
     expect(result).toEqual({batchItemFailures: []})
     // Use aws-sdk-client-mock-vitest matchers for type-safe assertions with parameter verification
@@ -61,7 +61,7 @@ describe('#SendPushNotification', () => {
   test('should exit gracefully if no devices exist', async () => {
     vi.mocked(getUserDevicesByUserId).mockResolvedValue([])
 
-    const result = await handler(event, testContext)
+    const result = await handler(event, createMockContext())
 
     expect(result).toEqual({batchItemFailures: []})
     // Verify SNS was NOT called using the negative matcher
@@ -77,7 +77,7 @@ describe('#SendPushNotification', () => {
       dataType: 'String'
     }
 
-    const result = await handler(modifiedEvent, testContext)
+    const result = await handler(modifiedEvent, createMockContext())
 
     expect(result).toEqual({batchItemFailures: []})
     expect(snsMock).not.toHaveReceivedCommand(PublishCommand)
@@ -87,7 +87,7 @@ describe('#SendPushNotification', () => {
     test('getUserDevicesByUserId returns no data', async () => {
       vi.mocked(getUserDevicesByUserId).mockResolvedValue([])
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       expect(result).toEqual({batchItemFailures: []})
     })
@@ -96,7 +96,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getUserDevicesByUserId).mockResolvedValue(getUserDevicesByUserIdResponse)
       vi.mocked(getDevice).mockResolvedValue(null)
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       expect(result).toEqual({batchItemFailures: [{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}]})
       expect(snsMock).not.toHaveReceivedCommand(PublishCommand)
@@ -107,7 +107,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
       snsMock.on(PublishCommand).rejects(new Error('SNS service unavailable'))
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       expect(result.batchItemFailures).toEqual([{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}])
     })
@@ -115,7 +115,7 @@ describe('#SendPushNotification', () => {
     test('should return batch failure when getUserDevicesByUserId throws', async () => {
       vi.mocked(getUserDevicesByUserId).mockRejectedValue(new Error('Database timeout'))
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       expect(result.batchItemFailures).toEqual([{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}])
     })
@@ -131,7 +131,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
       snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       expect(result.batchItemFailures).toEqual([])
       expect(snsMock).toHaveReceivedCommandTimes(PublishCommand, 2)
@@ -148,7 +148,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
       snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
-      const result = await handler(multiRecordEvent, testContext)
+      const result = await handler(multiRecordEvent, createMockContext())
 
       expect(result.batchItemFailures).toEqual([])
       expect(snsMock).toHaveReceivedCommandTimes(PublishCommand, 2)
@@ -164,7 +164,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getDevice).mockResolvedValueOnce(getDeviceResponse).mockResolvedValueOnce(null)
       snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       // Partial success = message processed successfully (1 of 2 succeeded)
       expect(result.batchItemFailures).toEqual([])
@@ -176,7 +176,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getUserDevicesByUserId).mockResolvedValue(getUserDevicesByUserIdResponse)
       vi.mocked(getDevice).mockResolvedValue(deviceWithNoArn)
 
-      const result = await handler(event, testContext)
+      const result = await handler(event, createMockContext())
 
       // Device without ARN counts as failure, and it's the only device, so batch fails
       expect(result.batchItemFailures).toEqual([{itemIdentifier: 'ef8f6d44-a3e3-4bf1-9e0f-07576bcb111f'}])
@@ -195,7 +195,7 @@ describe('#SendPushNotification', () => {
       vi.mocked(getDevice).mockResolvedValue(getDeviceResponse)
       snsMock.on(PublishCommand).resolves(createSNSPublishResponse())
 
-      const result = await handler(multiRecordEvent, testContext)
+      const result = await handler(multiRecordEvent, createMockContext())
 
       expect(result.batchItemFailures).toEqual([])
       expect(snsMock).toHaveReceivedCommandTimes(PublishCommand, 1)

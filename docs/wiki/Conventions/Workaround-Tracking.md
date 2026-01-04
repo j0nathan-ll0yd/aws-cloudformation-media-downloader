@@ -120,7 +120,6 @@ jobs:
 | Workaround | Upstream Issue | Our Tracking | Status |
 |------------|---------------|--------------|--------|
 | OTEL deprecation suppression | opentelemetry-js#4173 | #216 | Active |
-| ElectroDB CJS shim | electrodb#xxx | #xxx | Active |
 
 ## Benefits
 

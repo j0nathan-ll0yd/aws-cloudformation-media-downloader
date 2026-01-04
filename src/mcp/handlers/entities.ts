@@ -2,8 +2,7 @@
  * Entity query handler for MCP server
  * Provides entity schemas and relationships
  *
- * Note: Entities now use Drizzle ORM with Aurora DSQL internally.
- * The handler name is kept for backwards compatibility.
+ * Uses Drizzle ORM with Aurora DSQL for all entity operations.
  *
  * Data is dynamically loaded from:
  * - src/entities/ directory (Entity discovery)
@@ -12,9 +11,6 @@
 
 import {getEntityInfo, getLambdaConfigs} from './data-loader.js'
 import {createErrorResponse, createSuccessResponse} from './shared/response-types.js'
-
-// Re-export with old name for backwards compatibility
-export { handleEntityQuery as handleElectroDBQuery }
 
 /** Handles MCP queries for entity schema and relationship information. */
 export async function handleEntityQuery(args: {entity?: string; query: string}) {

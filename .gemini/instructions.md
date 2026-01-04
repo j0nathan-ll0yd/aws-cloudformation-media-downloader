@@ -43,7 +43,7 @@ pnpm run ci:local           # Fast local CI (~2-3 min)
 
 ## Architecture
 
-- **Database**: Aurora DSQL with Drizzle ORM (NOT DynamoDB/ElectroDB)
+- **Database**: Aurora DSQL with Drizzle ORM
 - **Entities**: `src/entities/queries/` for all database operations
 - **Vendor wrappers**: `src/lib/vendor/AWS/`, `src/lib/vendor/Drizzle/`
 - **Testing**: Vitest (NOT Jest)

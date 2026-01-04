@@ -16,16 +16,16 @@ View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/a
 
 ### Authentication & Authorization
 - **Better Auth 1.4.3**: Modern authentication framework with session management
-- **First-in-class ElectroDB Adapter**: Custom DynamoDB adapter for Better Auth
+- **Drizzle Adapter**: Official Better Auth adapter for Aurora DSQL
 - **Apple Sign In**: OAuth provider with ID token flow (eliminates 200-500ms latency)
 - **Session-based Auth**: 30-day sessions with automatic refresh
 - **Custom Authorizer**: Query-based API tokens for Feedly integration
 
 ### Database & ORM
-- **DynamoDB**: AWS NoSQL database with single-table design
-- **ElectroDB**: Type-safe ORM with optimized GSI queries
+- **Aurora DSQL**: AWS serverless PostgreSQL-compatible database
+- **Drizzle ORM**: Type-safe ORM with native query functions
 - **Entities**: Users, Sessions, Accounts, VerificationTokens, Files, Devices
-- **Collections**: JOIN-like queries across entity boundaries
+- **Query Functions**: Type-safe database operations
 
 ### AWS Services
 - **Lambda**: Serverless compute (all business logic)
@@ -36,9 +36,9 @@ View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/a
 - **X-Ray**: Distributed tracing (optional)
 
 ### Development & Testing
-- **Jest**: Unit testing with ESM support
+- **Vitest**: Unit testing with ESM support
 - **LocalStack**: Local AWS service emulation for integration tests
-- **Webpack**: Lambda function bundling with externals optimization
+- **esbuild**: Lambda function bundling with tree shaking
 - **TSDoc**: API documentation generation
 - **Fixture Logging**: Production request/response capture for test generation
 
@@ -48,7 +48,7 @@ View the [AWS Architecture Diagram](https://gitdiagram.com/repo/j0nathan-ll0yd/a
 - **Cookie Authentication**: Bypass YouTube bot detection
 
 ### Notable Features
-- **First ElectroDB adapter for Better Auth** (potential npm package)
+- **Better Auth with Drizzle adapter** for Aurora DSQL authentication
 - **Automated fixture extraction from CloudWatch** for test generation
 - **pnpm lifecycle script protection** against supply chain attacks
 - **Convention capture system** for institutional knowledge preservation
@@ -66,7 +66,7 @@ The end result is a generic backend infrastructure that could support any number
 * **API Access**: View downloaded videos via authenticated REST API
 * **Push Notifications**: Register for and dispatch push notifications to the iOS App
 * **Custom Authorization**: Custom authorizer Lambda supporting query-based API tokens (Feedly integration)
-* **Database**: DynamoDB single-table design with ElectroDB ORM for type-safe queries
+* **Database**: Aurora DSQL with Drizzle ORM for type-safe queries
 
 I share this for any engineer to be able to build a basic backend and iOS App for a future pet project.
 

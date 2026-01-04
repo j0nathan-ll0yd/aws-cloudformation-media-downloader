@@ -440,8 +440,8 @@ attribute {
 ### Mock Setup Comments (Recommended)
 
 ```typescript
-// Mock [EntityName] entity ([purpose])
-const mockEntity = createElectroDBEntityMock({queryIndexes: ['byUser']})
+// Mock [EntityName] queries ([purpose])
+vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn()}))
 ```
 
 ---

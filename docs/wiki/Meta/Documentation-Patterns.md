@@ -49,7 +49,7 @@ Please see AGENTS.md in the repository root for comprehensive project documentat
 
 For comprehensive documentation on testing patterns, see the wiki:
 
-- [Jest ESM Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
 - [Lazy Initialization Pattern](../Testing/Lazy-Initialization-Pattern.md)
 
 This keeps documentation centralized and avoids duplication.

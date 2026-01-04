@@ -340,8 +340,8 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 
 ```typescript
 // Mock all dependencies first
-jest.unstable_mockModule('../../../lib/vendor/AWS/S3', () => ({
-  createS3Upload: jest.fn()
+vi.mock('#lib/vendor/AWS/S3', () => ({
+  createS3Upload: vi.fn()
 }))
 
 // Import handler after mocks
@@ -358,7 +358,7 @@ test('processes file', async () => {
 - [X-Ray Integration](../AWS/X-Ray-Integration.md) - Tracing via ADOT layer
 - [CloudWatch Logging](../AWS/CloudWatch-Logging.md) - Structured logging
 - [Error Handling](TypeScript-Error-Handling.md)
-- [Jest ESM Mocking](../Testing/Vitest-Mocking-Strategy.md)
+- [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md)
 
 ---
 

@@ -1,6 +1,6 @@
 /**
  * @fixture valid
- * @rule electrodb-mocking
+ * @rule entity-mocking
  * @description Test file without entity imports (allowed)
  * @expectedViolations 0
  * @simulatedPath src/util/test/helpers.test.ts

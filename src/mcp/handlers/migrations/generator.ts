@@ -77,7 +77,7 @@ const AWS_SDK_MAPPING: Record<string, {wrapper: string; functions: string[]}> = 
  * Get violations for a specific convention
  */
 async function getViolations(convention: string, scope?: string[]): Promise<Violation[]> {
-  const result = await handleValidationQuery({query: convention === 'all' ? 'all' : convention as 'aws-sdk' | 'electrodb' | 'imports' | 'response'})
+  const result = await handleValidationQuery({query: convention === 'all' ? 'all' : convention as 'aws-sdk' | 'entity' | 'imports' | 'response'})
   if ('violations' in result) {
     let violations = result.violations as Violation[]
     // Filter by scope if provided

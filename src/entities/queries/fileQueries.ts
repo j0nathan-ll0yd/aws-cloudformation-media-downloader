@@ -1,10 +1,7 @@
 /**
- * File Queries - Native Drizzle ORM queries for file operations.
- *
- * Replaces the ElectroDB-style Files entity wrapper with direct Drizzle queries.
+ * File Queries - Drizzle ORM queries for file operations.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
- * @see src/entities/Files.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, files} from '#lib/vendor/Drizzle/schema'

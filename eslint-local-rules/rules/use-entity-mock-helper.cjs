@@ -2,8 +2,8 @@
  * use-entity-mock-helper
  * WARN: Legacy entity mocking patterns are deprecated
  *
- * With native Drizzle query functions, tests should mock #entities/queries directly
- * using vi.fn() for each function. Legacy ElectroDB-style entity mocks are deprecated.
+ * With Drizzle query functions, tests should mock #entities/queries directly
+ * using vi.fn() for each function. Legacy entity module mocks are deprecated.
  *
  * Mirrors: src/mcp/validation/rules/entity-mocking.ts
  */
@@ -69,7 +69,7 @@ module.exports = {
                 const sourceCode = context.sourceCode || context.getSourceCode()
                 const mockImpl = sourceCode.getText(node.arguments[1])
 
-                if (mockImpl.includes('createEntityMock') || mockImpl.includes('createElectroDBEntityMock')) {
+                if (mockImpl.includes('createEntityMock')) {
                   context.report({
                     node,
                     messageId: 'deprecatedHelper'

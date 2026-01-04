@@ -47,7 +47,7 @@ Add this to your Claude Desktop configuration (`~/Library/Application Support/Cl
 ## Available Tools
 
 ### 1. query_entities
-Query ElectroDB entity schemas and relationships.
+Query entity schemas and relationships (uses Drizzle ORM with Aurora DSQL).
 
 ```typescript
 // Examples:
@@ -121,12 +121,12 @@ Validate code against project conventions using AST analysis.
 validate_pattern({ query: "rules" })                    // List all validation rules
 validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "all" }) // Full validation
 validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "aws-sdk" }) // Check SDK encapsulation
-validate_pattern({ file: "src/lambdas/ListFiles/test/index.test.ts", query: "electrodb" }) // Check ElectroDB mocking
+validate_pattern({ file: "src/lambdas/ListFiles/test/index.test.ts", query: "entity" }) // Check entity mocking
 validate_pattern({ file: "src/lambdas/ListFiles/src/index.ts", query: "summary" }) // Concise summary
 ```
 
 ### 7. check_coverage
-Analyze which dependencies need mocking for Jest tests.
+Analyze which dependencies need mocking for Vitest tests.
 
 ```typescript
 // Examples:
