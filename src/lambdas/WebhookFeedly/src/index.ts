@@ -12,6 +12,7 @@ import {createFile, createFileDownload, getFile as getFileRecord} from '#entitie
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import type {SendMessageRequest} from '#lib/vendor/AWS/SQS'
 import {publishEventWithRetry} from '#lib/vendor/AWS/EventBridge'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {createPersistenceStore, defaultIdempotencyConfig, makeIdempotent} from '#lib/vendor/Powertools/idempotency'
 import {getVideoID} from '#lib/vendor/YouTube'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
@@ -90,30 +91,44 @@ async function sendFileNotification(file: File, userId: string) {
  */
 async function processWebhookRequest(input: WebhookProcessingInput): Promise<WebhookProcessingResult> {
   const {fileId, userId, articleURL, correlationId} = input
+  const span = startSpan('webhook-process')
+  addAnnotation(span, 'fileId', fileId)
+  addAnnotation(span, 'correlationId', correlationId)
+  addMetadata(span, 'userId', userId)
 
-  // Parallelize independent operations for ~60% latency reduction
-  // Use Promise.allSettled to handle partial failures gracefully
-  const [assocResult, fileResult] = await Promise.allSettled([associateFileToUser(fileId, userId), getFile(fileId)])
-  const file = fileResult.status === 'fulfilled' ? fileResult.value : undefined
-  if (assocResult.status === 'rejected') {
-    logError('Failed to associate file to user', {fileId, userId, error: assocResult.reason})
-  }
-
-  if (file && file.status == FileStatus.Downloaded) {
-    // File already downloaded - send notification to user
-    await sendFileNotification(file, userId)
-    return {statusCode: 200, status: ResponseStatus.Dispatched}
-  } else {
-    if (!file) {
-      // New file - create Files and FileDownloads records with correlationId
-      await addFile(fileId, articleURL, correlationId)
+  try {
+    // Parallelize independent operations for ~60% latency reduction
+    // Use Promise.allSettled to handle partial failures gracefully
+    const [assocResult, fileResult] = await Promise.allSettled([associateFileToUser(fileId, userId), getFile(fileId)])
+    const file = fileResult.status === 'fulfilled' ? fileResult.value : undefined
+    if (assocResult.status === 'rejected') {
+      logError('Failed to associate file to user', {fileId, userId, error: assocResult.reason})
     }
-    // Publish DownloadRequested event to EventBridge with retry on transient failures
-    // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
-    const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
-    await publishEventWithRetry('DownloadRequested', eventDetail, {correlationId})
-    logInfo('Published DownloadRequested event', {fileId, correlationId})
-    return {statusCode: 202, status: ResponseStatus.Accepted}
+
+    if (file && file.status == FileStatus.Downloaded) {
+      // File already downloaded - send notification to user
+      await sendFileNotification(file, userId)
+      addMetadata(span, 'action', 'dispatched')
+      endSpan(span)
+      return {statusCode: 200, status: ResponseStatus.Dispatched}
+    } else {
+      if (!file) {
+        // New file - create Files and FileDownloads records with correlationId
+        await addFile(fileId, articleURL, correlationId)
+        addMetadata(span, 'newFile', true)
+      }
+      // Publish DownloadRequested event to EventBridge with retry on transient failures
+      // EventBridge routes to DownloadQueue -> StartFileUpload Lambda
+      const eventDetail: DownloadRequestedDetail = {fileId, userId, sourceUrl: articleURL, correlationId, requestedAt: new Date().toISOString()}
+      await publishEventWithRetry('DownloadRequested', eventDetail, {correlationId})
+      logInfo('Published DownloadRequested event', {fileId, correlationId})
+      addMetadata(span, 'action', 'accepted')
+      endSpan(span)
+      return {statusCode: 202, status: ResponseStatus.Accepted}
+    }
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
   }
 }
 
