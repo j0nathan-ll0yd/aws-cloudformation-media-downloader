@@ -10,13 +10,13 @@
 
 import type {APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda'
 import type {ApiHandlerParams} from '#types/lambda'
+import {userLoginResponseSchema} from '#types/api-schema'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
 import {UnauthorizedError} from '#lib/system/errors'
-import {userLoginResponseSchema} from '#types/api-schema'
 
 /**
  * Lambda handler for refreshing session tokens.
