@@ -1,6 +1,7 @@
 import type {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {z} from 'zod'
 import {CustomLambdaError} from '#lib/system/errors'
+import {emitErrorMetrics} from '#lib/system/errorMetrics'
 import {logDebug, logError} from '#lib/system/logging'
 import {validateResponse} from '#lib/lambda/middleware/apiGateway'
 import type {ErrorContext, RequestInfo} from '#types/errorContext'
@@ -105,6 +106,9 @@ export function buildErrorResponse(context: Context, error: Error | unknown, met
     // Log with full context
     logError('buildErrorResponse', {message: error.message, errorType: error.constructor.name, statusCode, context: errorContext})
 
+    // Emit error metrics
+    emitErrorMetrics(error, context.functionName)
+
     return formatResponse(context, statusCode, message, undefined, errorCode)
   }
 
@@ -114,11 +118,19 @@ export function buildErrorResponse(context: Context, error: Error | unknown, met
     const statusCode = errorObj.status || errorObj.statusCode || 500
     const message = errorObj.message || getErrorMessage(error)
     logError('buildErrorResponse (object)', {error: errorObj, context: errorContext})
+    // Emit metrics for object errors
+    const plainError = new Error(message)
+    plainError.name = 'ObjectError'
+    emitErrorMetrics(plainError, context.functionName)
     return formatResponse(context, statusCode, message)
   }
 
   // Fallback for unknown error types
   logError('buildErrorResponse (unknown)', {error: String(error), context: errorContext})
+  // Emit metrics for unknown errors
+  const unknownError = new Error(getErrorMessage(error))
+  unknownError.name = 'UnknownError'
+  emitErrorMetrics(unknownError, context.functionName)
   return formatResponse(context, 500, getErrorMessage(error))
 }
 

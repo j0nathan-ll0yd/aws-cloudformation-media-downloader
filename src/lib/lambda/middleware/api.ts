@@ -2,6 +2,7 @@ import type {ApiHandlerParams, AuthenticatedApiParams, OptionalAuthApiParams, Wr
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
+import {emitSuccessMetrics} from '#lib/system/errorMetrics'
 import {buildErrorResponse} from '../responses'
 import {getUserDetailsFromEvent} from '../context'
 import {extractCorrelationId} from '../correlation'
@@ -26,6 +27,10 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
     logIncomingFixture(event)
     try {
       const result = await handler({event, context, metadata: {traceId, correlationId}})
+      // Emit success metrics for 2xx responses
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        emitSuccessMetrics(context.functionName)
+      }
       logOutgoingFixture(result)
       return result
     } catch (error) {
@@ -67,6 +72,10 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
 
       // At this point, userStatus is Authenticated, so userId is guaranteed
       const result = await handler({event, context, metadata: {traceId, correlationId}, userId: userId as string})
+      // Emit success metrics for 2xx responses
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        emitSuccessMetrics(context.functionName)
+      }
       logOutgoingFixture(result)
       return result
     } catch (error) {
@@ -110,6 +119,10 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
 
       // Allow Anonymous and Authenticated through
       const result = await handler({event, context, metadata: {traceId, correlationId}, userId, userStatus})
+      // Emit success metrics for 2xx responses
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        emitSuccessMetrics(context.functionName)
+      }
       logOutgoingFixture(result)
       return result
     } catch (error) {
