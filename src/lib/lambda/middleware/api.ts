@@ -1,6 +1,6 @@
 import type {ApiHandlerParams, AuthenticatedApiParams, OptionalAuthApiParams, WrapperMetadata} from '#types/lambda'
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {logIncomingFixture, logOutgoingFixture} from '#lib/system/observability'
 import {buildErrorResponse} from '../responses'
 import {getUserDetailsFromEvent} from '../context'

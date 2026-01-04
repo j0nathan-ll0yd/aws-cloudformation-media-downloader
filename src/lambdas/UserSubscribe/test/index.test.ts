@@ -1,7 +1,7 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createAPIGatewayEvent, createSubscribeBody} from '#test/helpers/event-factories'
 import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'

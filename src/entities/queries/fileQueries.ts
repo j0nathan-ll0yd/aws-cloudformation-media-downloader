@@ -10,7 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {fileDownloads, files} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {fileDownloadInsertSchema, fileDownloadUpdateSchema, fileInsertSchema, fileUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {fileDownloadInsertSchema, fileDownloadUpdateSchema, fileInsertSchema, fileUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 export type FileRow = InferSelectModel<typeof files>
 export type FileDownloadRow = InferSelectModel<typeof fileDownloads>

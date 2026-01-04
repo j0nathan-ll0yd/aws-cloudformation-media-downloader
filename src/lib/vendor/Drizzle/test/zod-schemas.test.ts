@@ -13,8 +13,8 @@ import {
   userFileInsertSchema,
   userInsertSchema,
   userSelectSchema
-} from '../zod-schemas'
-import {DownloadStatus, FileStatus} from '#types/shared-primitives'
+} from '../zodSchemas'
+import {DownloadStatus, FileStatus} from '#types/sharedPrimitives'
 
 describe('Drizzle Zod Schemas', () => {
   describe('userInsertSchema', () => {

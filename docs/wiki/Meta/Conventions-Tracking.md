@@ -97,6 +97,7 @@ Central registry of all project conventions with their documentation and enforce
 | PowerTools Metrics | [Lambda Function Patterns](../TypeScript/Lambda-Function-Patterns.md) | MCP |
 | AWS SDK Mock Pattern | [Vitest Mocking Strategy](../Testing/Vitest-Mocking-Strategy.md) | Code review |
 | Lambda Directory Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review |
+| camelCase TypeScript File Naming | [Naming Conventions](../Conventions/Naming-Conventions.md) | Code review + MCP |
 | GraphRAG Synchronization | [GraphRAG Automation](../Infrastructure/GraphRAG-Automation.md) | GitHub Actions |
 
 ---

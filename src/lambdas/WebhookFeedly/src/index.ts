@@ -17,16 +17,17 @@ import {getVideoID} from '#lib/vendor/YouTube'
 import {DownloadStatus, FileStatus, ResponseStatus} from '#types/enums'
 import {feedlyWebhookRequestSchema, webhookResponseSchema} from '#types/api-schema'
 import type {FeedlyWebhookRequest} from '#types/api-schema'
-import type {File} from '#types/domain-models'
+import type {File} from '#types/domainModels'
 import type {DownloadRequestedDetail} from '#types/events'
-import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import type {WebhookProcessingInput, WebhookProcessingResult} from '#types/lambda'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {getRequiredEnv} from '#lib/system/env'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createDownloadReadyNotification} from '#lib/domain/notification/transformers'
-import {associateFileToUser} from '#lib/domain/user/user-file-service'
+import {associateFileToUser} from '#lib/domain/user/userFileService'
 
 // Add file and download tracking records
 async function addFile(fileId: string, sourceUrl?: string, correlationId?: string) {
@@ -76,18 +77,6 @@ async function sendFileNotification(file: File, userId: string) {
   const sendMessageResponse = await sendMessage(sendMessageParams)
   logDebug('sendMessage =>', sendMessageResponse)
   return sendMessageResponse
-}
-
-interface WebhookProcessingInput {
-  fileId: string
-  userId: string
-  articleURL: string
-  correlationId: string
-}
-
-interface WebhookProcessingResult {
-  statusCode: number
-  status: ResponseStatus
 }
 
 /**

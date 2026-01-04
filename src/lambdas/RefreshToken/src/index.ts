@@ -15,7 +15,7 @@ import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logInfo} from '#lib/system/logging'
-import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
+import {refreshSession, validateSessionToken} from '#lib/domain/auth/sessionService'
 import {extractBearerToken} from '#lib/lambda/auth-helpers'
 
 /**

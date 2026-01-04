@@ -14,7 +14,7 @@ vi.mock('#lib/system/logging', () => ({logDebug: vi.fn()}))
 vi.mock('#lib/vendor/AWS/SNS', () => ({deleteEndpoint: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn()}))
 
 // Import after mocking
-const {deleteUserDevice, deleteDevice, getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} = await import('../device-service')
+const {deleteUserDevice, deleteDevice, getUserDevices, subscribeEndpointToTopic, unsubscribeEndpointToTopic} = await import('../deviceService')
 import {deleteDevice as deleteDeviceQuery, deleteUserDevice as deleteUserDeviceQuery, getUserDevicesByUserId} from '#entities/queries'
 import {deleteEndpoint, subscribe, unsubscribe} from '#lib/vendor/AWS/SNS'
 import {logDebug} from '#lib/system/logging'

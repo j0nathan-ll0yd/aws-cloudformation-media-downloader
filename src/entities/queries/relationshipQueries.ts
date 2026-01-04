@@ -8,13 +8,13 @@
  * @see src/entities/UserDevices.ts for legacy ElectroDB wrapper (to be deprecated)
  */
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
-import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fk-enforcement'
+import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {userDeviceInsertSchema, userFileInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
-import type {FileRow} from './file-queries'
-import type {DeviceRow} from './device-queries'
+import {userDeviceInsertSchema, userFileInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
+import type {FileRow} from './fileQueries'
+import type {DeviceRow} from './deviceQueries'
 
 export type UserFileRow = InferSelectModel<typeof userFiles>
 export type UserDeviceRow = InferSelectModel<typeof userDevices>

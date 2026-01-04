@@ -25,7 +25,7 @@ const VENDOR_SUGGESTIONS: Record<string, string> = {
   'drizzle-orm': 'lib/vendor/Drizzle/types (for operators like eq, and, or) or lib/vendor/Drizzle/client (for getDrizzleClient)',
   'drizzle-orm/pg-core': 'lib/vendor/Drizzle/schema',
   'drizzle-orm/postgres-js': 'lib/vendor/Drizzle/client',
-  'drizzle-zod': 'lib/vendor/Drizzle/zod-schemas (for generated Zod schemas) or lib/vendor/Drizzle (for factory functions)',
+  'drizzle-zod': 'lib/vendor/Drizzle/zodSchemas (for generated Zod schemas) or lib/vendor/Drizzle (for factory functions)',
   postgres: 'lib/vendor/Drizzle/client (postgres driver is encapsulated there)'
 }
 

@@ -18,7 +18,7 @@ vi.mock('./../schema', () => ({users: {id: 'id'}, files: {fileId: 'fileId'}, dev
 vi.mock('drizzle-orm', () => ({eq: vi.fn((col: unknown, val: unknown) => ({col, val})), inArray: vi.fn((col: unknown, vals: unknown[]) => ({col, vals}))}))
 
 const {assertUserExists, assertFileExists, assertDeviceExists, assertUsersExist, assertFilesExist, ForeignKeyViolationError} = await import(
-  './../fk-enforcement'
+  './../fkEnforcement'
 )
 
 describe('FK Enforcement', () => {

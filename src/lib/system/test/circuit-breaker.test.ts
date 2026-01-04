@@ -12,7 +12,7 @@ vi.mock('#lib/system/logging', () => ({logDebug: vi.fn(), logInfo: vi.fn()}))
 vi.mock('#lib/lambda/middleware/powertools', () => ({metrics: {addMetric: vi.fn()}, MetricUnit: {Count: 'Count'}}))
 
 // Import after mocking
-const {CircuitBreaker, CircuitBreakerOpenError, youtubeCircuitBreaker} = await import('../circuit-breaker')
+const {CircuitBreaker, CircuitBreakerOpenError, youtubeCircuitBreaker} = await import('../circuitBreaker')
 import {metrics} from '#lib/lambda/middleware/powertools'
 import {logInfo} from '#lib/system/logging'
 

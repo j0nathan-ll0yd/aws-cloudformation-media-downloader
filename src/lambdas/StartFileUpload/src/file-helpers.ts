@@ -5,7 +5,7 @@
  */
 import {upsertFile as upsertFileRecord} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
-import type {File} from '#types/domain-models'
+import type {File} from '#types/domainModels'
 
 /**
  * Upserts a File object in the database.

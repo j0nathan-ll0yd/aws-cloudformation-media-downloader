@@ -43,13 +43,13 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ├── src/
 │   ├── entities/          # Entity query functions (Drizzle ORM with Aurora DSQL)
 │   │   └── queries/       # Native Drizzle query modules
-│   │       ├── user-queries.ts       # User operations (create, get, update, delete)
-│   │       ├── file-queries.ts       # File and FileDownload operations
-│   │       ├── device-queries.ts     # Device operations
-│   │       ├── session-queries.ts    # Session, Account, VerificationToken operations
-│   │       ├── relationship-queries.ts # UserFiles, UserDevices operations
-│   │       ├── prepared-queries.ts   # Performance-critical prepared statements
-│   │       ├── cascade-operations.ts # Transaction-wrapped multi-entity operations
+│   │       ├── userQueries.ts        # User operations (create, get, update, delete)
+│   │       ├── fileQueries.ts        # File and FileDownload operations
+│   │       ├── deviceQueries.ts      # Device operations
+│   │       ├── sessionQueries.ts     # Session, Account, VerificationToken operations
+│   │       ├── relationshipQueries.ts # UserFiles, UserDevices operations
+│   │       ├── preparedQueries.ts    # Performance-critical prepared statements
+│   │       ├── cascadeOperations.ts  # Transaction-wrapped multi-entity operations
 │   │       └── index.ts              # Barrel export for all queries
 │   ├── lambdas/           # Lambda functions (each subdirectory = one Lambda)
 │   │   └── [lambda-name]/
@@ -426,11 +426,11 @@ The following patterns have caused issues in this project and should be avoided:
 
 | File | Contents |
 |------|----------|
-| `domain-models.d.ts` | User, File, Device, IdentityProvider |
-| `request-types.d.ts` | *Input types for API requests |
-| `notification-types.d.ts` | Push notification payloads |
-| `persistence-types.d.ts` | Relationship types (UserDevice, UserFile) |
-| `infrastructure-types.d.ts` | AWS/API Gateway types |
+| `domainModels.d.ts` | User, File, Device, IdentityProvider |
+| `requestTypes.d.ts` | *Input types for API requests |
+| `notificationTypes.d.ts` | Push notification payloads |
+| `persistenceTypes.d.ts` | Relationship types (UserDevice, UserFile) |
+| `infrastructureTypes.d.ts` | AWS/API Gateway types |
 | `enums.ts` | FileStatus, UserStatus, ResponseStatus |
 
 ### Enum Values (PascalCase)

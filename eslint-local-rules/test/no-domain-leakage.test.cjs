@@ -17,7 +17,7 @@ function createContext(filename = '/src/lib/domain/user-service.ts') {
 // Test case 1: Valid import from types
 function testValidTypeImport() {
   const node = {
-    source: {value: '#types/domain-models'}
+    source: {value: '#types/domainModels'}
   }
   
   const context = createContext()

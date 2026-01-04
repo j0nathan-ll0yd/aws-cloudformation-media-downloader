@@ -10,12 +10,12 @@
  */
 import {userSubscriptionRequestSchema} from '#types/api-schema'
 import type {UserSubscriptionRequest} from '#types/api-schema'
-import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {verifyPlatformConfiguration} from '#lib/lambda/context'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
-import {subscribeEndpointToTopic} from '#lib/domain/device/device-service'
+import {subscribeEndpointToTopic} from '#lib/domain/device/deviceService'
 
 /**
  * Subscribes an endpoint (a client device) to an SNS topic

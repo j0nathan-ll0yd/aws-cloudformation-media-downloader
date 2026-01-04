@@ -23,7 +23,7 @@ function getSuggestedTypeFile(filePath: string): string {
   if (filePath.includes('lambda-helpers')) {
     return 'src/types/lambda.ts'
   }
-  if (filePath.includes('video-error-classifier') || filePath.includes('YouTube')) {
+  if (filePath.includes('video-errorClassifier') || filePath.includes('YouTube')) {
     return 'src/types/video.ts'
   }
   if (filePath.includes('retry') || filePath.includes('better-auth')) {

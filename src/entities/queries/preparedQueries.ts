@@ -14,8 +14,8 @@
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {files, sessions, userFiles} from '#lib/vendor/Drizzle/schema'
 import {eq, sql} from '#lib/vendor/Drizzle/types'
-import type {FileRow} from './file-queries'
-import type {SessionRow} from './session-queries'
+import type {FileRow} from './fileQueries'
+import type {SessionRow} from './sessionQueries'
 
 // Lazy initialization pattern for Lambda cold starts
 // These are cached at module scope and reused across invocations

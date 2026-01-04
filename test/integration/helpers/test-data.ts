@@ -7,8 +7,8 @@
 
 import type {APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent, S3Event, ScheduledEvent, SQSEvent} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
-import type {Device, File, User} from '#types/domain-models'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {Device, File, User} from '#types/domainModels'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 /**
  * Creates a mock file object with sensible defaults

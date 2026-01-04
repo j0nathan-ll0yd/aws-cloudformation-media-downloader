@@ -13,9 +13,9 @@ import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import {downloadVideoToS3, fetchVideoInfo} from '#lib/vendor/YouTube'
-import type {File} from '#types/domain-models'
+import type {File} from '#types/domainModels'
 import type {DownloadCompletedDetail, DownloadFailedDetail} from '#types/events'
-import type {SqsRecordParams} from '#types/lambda'
+import type {DownloadFailureResult, SqsRecordParams} from '#types/lambda'
 import type {FetchVideoInfoResult, VideoErrorClassification} from '#types/video'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {downloadQueueMessageSchema, type ValidatedDownloadQueueMessage} from '#types/schemas'
@@ -23,13 +23,13 @@ import {DownloadStatus, FileStatus} from '#types/enums'
 import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
-import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issue-service'
+import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {createMetadataNotification} from '#lib/domain/notification/transformers'
-import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/error-classifier'
-import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
+import {classifyVideoError, isRetryExhausted} from '#lib/domain/video/errorClassifier'
+import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 import {upsertFile} from './file-helpers'
 
 /**
@@ -155,17 +155,6 @@ async function dispatchMetadataNotifications(fileId: string, videoInfo: YtDlpVid
   const failed = results.filter((r) => r.status === 'rejected').length
 
   logInfo('Dispatched MetadataNotifications', {fileId, succeeded: userIds.length - failed, failed})
-}
-
-/**
- * Result of handling a download failure.
- * Used to determine whether to throw (causing SQS retry) or return success.
- */
-interface DownloadFailureResult {
-  /** Whether the error is retryable via SQS visibility timeout */
-  shouldRetry: boolean
-  /** Error classification details */
-  classification: VideoErrorClassification
 }
 
 /**

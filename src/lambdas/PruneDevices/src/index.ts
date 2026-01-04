@@ -9,9 +9,9 @@
  * Output: PruneDevicesResult with deletion counts
  */
 import {deleteUserDevicesByDeviceId, getAllDevices} from '#entities/queries'
-import type {Device} from '#types/domain-models'
+import type {Device} from '#types/domainModels'
 import type {ApplePushNotificationResponse, PruneDevicesResult} from '#types/lambda'
-import {deleteDevice} from '#lib/domain/device/device-service'
+import {deleteDevice} from '#lib/domain/device/deviceService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {Apns2Error, UnexpectedError} from '#lib/system/errors'
 import {withPowertools} from '#lib/lambda/middleware/powertools'

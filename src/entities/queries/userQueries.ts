@@ -11,7 +11,7 @@ import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
 import {eq} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 export type UserRow = InferSelectModel<typeof users>
 export type IdentityProviderRow = InferSelectModel<typeof identityProviders>

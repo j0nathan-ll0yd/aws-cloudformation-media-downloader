@@ -27,7 +27,7 @@ const getUsagePlansResponse = createGetUsagePlansResponse()
 const getUsageResponse = createGetUsageResponse()
 
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
-vi.mock('#lib/domain/auth/session-service', () => ({validateSessionToken: validateSessionTokenMock}))
+vi.mock('#lib/domain/auth/sessionService', () => ({validateSessionToken: validateSessionTokenMock}))
 
 const {handler} = await import('./../src')
 

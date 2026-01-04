@@ -7,12 +7,12 @@
  * @see src/types/domain-models.d.ts for domain type definitions
  * @see src/entities/queries/ for Drizzle row types
  */
-import type {UserRow} from '#entities/queries/user-queries'
-import type {FileRow} from '#entities/queries/file-queries'
-import type {DeviceRow} from '#entities/queries/device-queries'
-import type {UserDeviceRow, UserFileRow} from '#entities/queries/relationship-queries'
-import type {Device, File, User} from '#types/domain-models'
-import type {UserDevice, UserFile} from '#types/persistence-types'
+import type {UserRow} from '#entities/queries/userQueries'
+import type {FileRow} from '#entities/queries/fileQueries'
+import type {DeviceRow} from '#entities/queries/deviceQueries'
+import type {UserDeviceRow, UserFileRow} from '#entities/queries/relationshipQueries'
+import type {Device, File, User} from '#types/domainModels'
+import type {UserDevice, UserFile} from '#types/persistenceTypes'
 import {FileStatus} from '#types/enums'
 
 /**

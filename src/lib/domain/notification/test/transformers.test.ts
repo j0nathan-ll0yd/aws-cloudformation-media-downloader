@@ -1,5 +1,5 @@
 import {describe, expect, test, vi} from 'vitest'
-import type {File} from '#types/domain-models'
+import type {File} from '#types/domainModels'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import {FileStatus} from '#types/enums'
 

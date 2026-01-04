@@ -59,3 +59,18 @@ export interface DownloadReadyNotification {
   /** CloudFront URL for streaming (uses transfer acceleration) */
   url: string
 }
+
+/**
+ * Result of sending a notification to a single device.
+ * Used by SendPushNotification handler to track delivery status.
+ */
+export interface DeviceNotificationResult {
+  /** Device ID that was targeted */
+  deviceId: string
+  /** Whether the notification was successfully sent */
+  success: boolean
+  /** Error message if sending failed */
+  error?: string
+  /** Whether the APNS endpoint is disabled (device unregistered) */
+  endpointDisabled?: boolean
+}

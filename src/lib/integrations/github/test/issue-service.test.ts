@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
-import type {Device} from '#types/domain-models'
+import type {Device} from '#types/domainModels'
 
 // Use vi.hoisted() to define mocks before vi.mock hoists
 const {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoisted(() => {
@@ -21,7 +21,7 @@ const {mockIssuesCreate, MockOctokit, mockRenderGithubIssueTemplate} = vi.hoiste
 vi.mock('@octokit/rest', () => ({Octokit: MockOctokit}))
 vi.mock('../templates', () => ({renderGithubIssueTemplate: mockRenderGithubIssueTemplate}))
 
-const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('../issue-service')
+const {createFailedUserDeletionIssue, createVideoDownloadFailureIssue, createCookieExpirationIssue} = await import('../issueService')
 
 describe('#Util:GithubHelper', () => {
   beforeEach(() => {

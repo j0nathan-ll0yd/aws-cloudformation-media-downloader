@@ -9,10 +9,10 @@
  * Output: APIGatewayProxyResult confirming deletion
  */
 import {deleteUser as deleteUserRecord, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
-import type {Device} from '#types/domain-models'
-import {deleteDevice, getUserDevices} from '#lib/domain/device/device-service'
+import type {Device} from '#types/domainModels'
+import {deleteDevice, getUserDevices} from '#lib/domain/device/deviceService'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
-import {createFailedUserDeletionIssue} from '#lib/integrations/github/issue-service'
+import {createFailedUserDeletionIssue} from '#lib/integrations/github/issueService'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'

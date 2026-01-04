@@ -22,7 +22,7 @@ import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAu
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
-import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
+import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/apiGateway'
 import {buildValidatedResponse} from '#lib/lambda/responses'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'

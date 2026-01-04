@@ -1,5 +1,5 @@
 import {type Mock, vi} from 'vitest'
-import type {SignInSocialParams, SignInSocialResult} from '#types/better-auth'
+import type {SignInSocialParams, SignInSocialResult} from '#types/betterAuth'
 
 /**
  * Session result from Better Auth's getSession API method.
