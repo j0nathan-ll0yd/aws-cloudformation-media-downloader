@@ -42,9 +42,24 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedly" {
   policy_arn = aws_iam_policy.WebhookFeedly.arn
 }
 
-resource "aws_iam_role_policy_attachment" "WebhookFeedlyLogging" {
-  role       = aws_iam_role.WebhookFeedly.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "WebhookFeedlyLogging" {
+  name = "WebhookFeedlyLogging"
+  role = aws_iam_role.WebhookFeedly.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.webhook_feedly_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.webhook_feedly_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "WebhookFeedlyXRay" {
@@ -172,7 +187,12 @@ data "aws_iam_policy_document" "MultipartUpload" {
   }
   statement {
     actions   = ["cloudwatch:PutMetricData"]
-    resources = ["*"]
+    resources = ["*"] # CloudWatch metrics have no resource ARN; scoped by namespace condition
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["MediaDownloader"]
+    }
   }
 }
 
@@ -193,9 +213,24 @@ resource "aws_iam_role_policy_attachment" "StartFileUpload" {
   policy_arn = aws_iam_policy.StartFileUpload.arn
 }
 
-resource "aws_iam_role_policy_attachment" "StartFileUploadLogging" {
-  role       = aws_iam_role.StartFileUpload.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "StartFileUploadLogging" {
+  name = "StartFileUploadLogging"
+  role = aws_iam_role.StartFileUpload.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.start_file_upload_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.start_file_upload_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "StartFileUploadXRay" {

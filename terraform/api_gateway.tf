@@ -122,12 +122,6 @@ data "aws_iam_policy_document" "ApiGatewayCloudwatch" {
   }
 }
 
-resource "aws_iam_role_policy" "ApiGatewayCloudwatch" {
-  name   = "ApiGatewayCloudwatch"
-  role   = aws_iam_role.ApiGatewayCloudwatch.id
-  policy = data.aws_iam_policy_document.CommonLambdaLogging.json
-}
-
 resource "aws_api_gateway_account" "Main" {
   cloudwatch_role_arn = aws_iam_role.ApiGatewayCloudwatch.arn
 }

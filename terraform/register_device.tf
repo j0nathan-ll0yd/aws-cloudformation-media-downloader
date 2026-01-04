@@ -34,9 +34,24 @@ resource "aws_iam_role_policy_attachment" "RegisterDevice" {
   policy_arn = aws_iam_policy.RegisterDevice.arn
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterDeviceLogging" {
-  role       = aws_iam_role.RegisterDevice.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "RegisterDeviceLogging" {
+  name = "RegisterDeviceLogging"
+  role = aws_iam_role.RegisterDevice.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.register_device_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.register_device_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterDeviceXRay" {
@@ -141,8 +156,20 @@ resource "aws_iam_role" "SNSLoggingRole" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "SNSLoggingRolePolicy" {
-  role       = aws_iam_role.SNSLoggingRole.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "SNSLoggingRolePolicy" {
+  name = "SNSLoggingRolePolicy"
+  role = aws_iam_role.SNSLoggingRole.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = ["arn:aws:logs:*:*:log-group:sns/*"]
+    }]
+  })
 }
 

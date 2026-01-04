@@ -9,11 +9,11 @@ resource "aws_dsql_cluster" "media_downloader" {
   })
 }
 
-# IAM policy for Lambda DSQL access
+# IAM policy for Lambda DSQL access (read/write operations)
 data "aws_iam_policy_document" "dsql_access" {
   statement {
     sid       = "DSQLConnect"
-    actions   = ["dsql:DbConnectAdmin"]
+    actions   = ["dsql:DbConnect"]
     resources = [aws_dsql_cluster.media_downloader.arn]
   }
 }
@@ -22,6 +22,22 @@ resource "aws_iam_policy" "LambdaDSQLAccess" {
   name        = "LambdaDSQLAccess"
   description = "Allows Lambda functions to connect to Aurora DSQL"
   policy      = data.aws_iam_policy_document.dsql_access.json
+  tags        = local.common_tags
+}
+
+# IAM policy for Lambda DSQL admin access (migrations only)
+data "aws_iam_policy_document" "dsql_admin_access" {
+  statement {
+    sid       = "DSQLConnectAdmin"
+    actions   = ["dsql:DbConnectAdmin"]
+    resources = [aws_dsql_cluster.media_downloader.arn]
+  }
+}
+
+resource "aws_iam_policy" "LambdaDSQLAdminAccess" {
+  name        = "LambdaDSQLAdminAccess"
+  description = "Allows Lambda functions admin access to Aurora DSQL (migrations only)"
+  policy      = data.aws_iam_policy_document.dsql_admin_access.json
   tags        = local.common_tags
 }
 

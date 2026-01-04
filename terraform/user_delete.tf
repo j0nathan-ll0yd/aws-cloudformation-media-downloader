@@ -29,9 +29,24 @@ resource "aws_iam_role_policy_attachment" "UserDelete" {
   policy_arn = aws_iam_policy.UserDelete.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserDeleteLogging" {
-  role       = aws_iam_role.UserDelete.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "UserDeleteLogging" {
+  name = "UserDeleteLogging"
+  role = aws_iam_role.UserDelete.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.user_delete_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.user_delete_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "UserDeleteXRay" {

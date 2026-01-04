@@ -29,9 +29,24 @@ resource "aws_iam_role_policy_attachment" "PruneDevices" {
   policy_arn = aws_iam_policy.PruneDevices.arn
 }
 
-resource "aws_iam_role_policy_attachment" "PruneDevicesLogging" {
-  role       = aws_iam_role.PruneDevices.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "PruneDevicesLogging" {
+  name = "PruneDevicesLogging"
+  role = aws_iam_role.PruneDevices.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.prune_devices_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.prune_devices_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {

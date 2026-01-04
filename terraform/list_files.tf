@@ -8,9 +8,24 @@ resource "aws_iam_role" "ListFiles" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "ListFilesLogging" {
-  role       = aws_iam_role.ListFiles.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "ListFilesLogging" {
+  name = "ListFilesLogging"
+  role = aws_iam_role.ListFiles.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.list_files_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.list_files_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
@@ -50,7 +65,7 @@ resource "aws_lambda_function" "ListFiles" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   memory_size      = 512
-  depends_on       = [aws_iam_role_policy_attachment.ListFilesLogging]
+  depends_on       = [aws_iam_role_policy.ListFilesLogging]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256
   layers           = [local.adot_layer_arn]
