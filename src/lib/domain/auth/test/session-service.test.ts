@@ -11,7 +11,7 @@ import {UnauthorizedError} from '#lib/system/errors'
 vi.mock('#entities/queries', () => ({getSessionByToken: vi.fn(), updateSession: vi.fn()}))
 
 // Import after mocking
-const {validateSessionToken, refreshSession} = await import('../session-service')
+const {validateSessionToken, refreshSession} = await import('../sessionService')
 import {getSessionByToken, updateSession} from '#entities/queries'
 
 /**

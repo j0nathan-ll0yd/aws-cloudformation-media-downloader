@@ -1,7 +1,7 @@
 import {getOptionalEnv} from '#lib/system/env'
 import {logDebug} from '#lib/system/logging'
 import {ServiceUnavailableError} from '#lib/system/errors'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {UserEventDetails} from '#types/util'
 import {UserStatus} from '#types/enums'
 

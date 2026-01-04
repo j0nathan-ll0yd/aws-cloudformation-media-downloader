@@ -10,7 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {eq, lt} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {accountInsertSchema, sessionInsertSchema, sessionUpdateSchema, verificationInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 export type SessionRow = InferSelectModel<typeof sessions>
 export type AccountRow = InferSelectModel<typeof accounts>

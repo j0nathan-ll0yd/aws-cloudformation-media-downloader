@@ -14,7 +14,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
   describe('securityHeaders', () => {
     describe('default headers', () => {
       it('should add default security headers to response', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -29,7 +29,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should NOT add CORS headers (mobile-only API)', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -45,7 +45,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
     describe('security configuration', () => {
       it('should use configured frameOptions', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders({frameOptions: 'SAMEORIGIN'})
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -56,7 +56,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should add Content-Security-Policy when configured', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders({csp: "default-src 'self'; script-src 'self' 'unsafe-inline'"})
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -69,7 +69,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
     describe('custom headers', () => {
       it('should add custom headers', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders({customHeaders: {'X-Custom-Header': 'custom-value', 'X-Another-Header': 'another-value'}})
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -81,7 +81,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should allow custom headers to override defaults', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders({customHeaders: {'Cache-Control': 'max-age=3600'}})
 
         const request = createMockRequest({statusCode: 200, body: '{}'})
@@ -94,7 +94,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
     describe('handler header precedence', () => {
       it('should not override headers set by handler', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest({
@@ -115,7 +115,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
     describe('error response handling', () => {
       it('should add headers to error responses', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest({statusCode: 500, body: JSON.stringify({error: 'Internal Server Error'})})
@@ -128,7 +128,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should add headers to 4xx error responses', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest({statusCode: 400, body: JSON.stringify({error: 'Bad Request'})})
@@ -142,7 +142,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
 
     describe('edge cases', () => {
       it('should handle undefined response', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request = createMockRequest()
@@ -154,7 +154,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should handle response without headers', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders()
 
         const request: {response: {statusCode: number; body: string; headers?: Record<string, string>}} = {response: {statusCode: 200, body: '{}'}}
@@ -165,7 +165,7 @@ describe('Lambda:Middleware:SecurityHeaders', () => {
       })
 
       it('should handle empty options', async () => {
-        const {securityHeaders} = await import('../../middleware/security-headers')
+        const {securityHeaders} = await import('../../middleware/securityHeaders')
         const middleware = securityHeaders({})
 
         const request = createMockRequest({statusCode: 200, body: '{}'})

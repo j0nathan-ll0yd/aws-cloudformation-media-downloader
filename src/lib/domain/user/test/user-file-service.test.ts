@@ -11,7 +11,7 @@ vi.mock('#entities/queries', () => ({createUserFile: vi.fn()}))
 vi.mock('#lib/system/logging', () => ({logDebug: vi.fn()}))
 
 // Import after mocking
-const {associateFileToUser} = await import('../user-file-service')
+const {associateFileToUser} = await import('../userFileService')
 import {createUserFile} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
 

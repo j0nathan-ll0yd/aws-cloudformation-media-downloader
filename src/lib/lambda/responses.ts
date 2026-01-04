@@ -2,7 +2,7 @@ import type {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from '
 import type {z} from 'zod'
 import {CustomLambdaError} from '#lib/system/errors'
 import {logDebug, logError} from '#lib/system/logging'
-import {validateResponse} from '#lib/lambda/middleware/api-gateway'
+import {validateResponse} from '#lib/lambda/middleware/apiGateway'
 
 /**
  * Extracts a human-readable message from an unknown error value.

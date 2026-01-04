@@ -125,8 +125,8 @@ import {APIGatewayProxyEvent} from 'aws-lambda'`, {overwrite: true})
     })
 
     test('should allow entity query imports', () => {
-      const sourceFile = project.createSourceFile('test-entities.ts', `import {getUser} from '#entities/queries/user-queries'
-import {getFile} from '#entities/queries/file-queries'`, {overwrite: true})
+      const sourceFile = project.createSourceFile('test-entities.ts', `import {getUser} from '#entities/queries/userQueries'
+import {getFile} from '#entities/queries/fileQueries'`, {overwrite: true})
 
       const violations = drizzleOrmEncapsulationRule.validate(sourceFile, 'src/lambdas/Test/src/index.ts')
 

@@ -15,7 +15,7 @@
 
 import type {APIGatewayProxyEvent, Context, S3Event, SQSEvent} from 'aws-lambda'
 import {randomUUID} from 'crypto'
-import type {CorrelationContext} from '#types/infrastructure-types'
+import type {CorrelationContext} from '#types/infrastructureTypes'
 
 export type { CorrelationContext }
 

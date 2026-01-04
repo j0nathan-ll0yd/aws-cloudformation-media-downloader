@@ -1,5 +1,5 @@
-import type {File} from '#types/domain-models'
-import type {DownloadReadyNotification, MetadataNotification} from '#types/notification-types'
+import type {File} from '#types/domainModels'
+import type {DownloadReadyNotification, MetadataNotification} from '#types/notificationTypes'
 import type {YtDlpVideoInfo} from '#types/youtube'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
 import {stringAttribute} from '#lib/vendor/AWS/SQS'

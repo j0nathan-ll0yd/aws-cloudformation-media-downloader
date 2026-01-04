@@ -16,8 +16,8 @@
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
-import type {Device} from '#types/domain-models'
-import type {FileNotificationType} from '#types/notification-types'
+import type {Device} from '#types/domainModels'
+import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import type {SqsRecordParams} from '#types/lambda'
 import {pushNotificationAttributesSchema} from '#types/schemas'
 import {validateSchema} from '#lib/validation/constraints'
@@ -26,19 +26,9 @@ import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {transformToAPNSNotification} from '#lib/domain/notification/transformers'
-import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpoint-cleanup'
+import {cleanupDisabledEndpoints} from '#lib/domain/notification/endpointCleanup'
 
 // Validation now handled by pushNotificationAttributesSchema in processSQSRecord
-
-/**
- * Result of sending a notification to a single device
- */
-interface DeviceNotificationResult {
-  deviceId: string
-  success: boolean
-  error?: string
-  endpointDisabled?: boolean
-}
 
 // Get device IDs for a user
 async function getDeviceIdsForUser(userId: string): Promise<string[]> {

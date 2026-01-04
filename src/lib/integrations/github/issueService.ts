@@ -1,6 +1,6 @@
 import {Octokit} from '@octokit/rest'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
-import type {Device} from '#types/domain-models'
+import type {Device} from '#types/domainModels'
 import {renderGithubIssueTemplate} from '#lib/integrations/github/templates'
 import {getRequiredEnv} from '#lib/system/env'
 

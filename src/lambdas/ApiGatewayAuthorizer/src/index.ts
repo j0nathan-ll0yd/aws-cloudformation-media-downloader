@@ -11,7 +11,7 @@
 import type {APIGatewayRequestAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import {getApiKeys, getUsage, getUsagePlans} from '#lib/vendor/AWS/ApiGateway'
 import type {ApiKey, UsagePlan} from '#lib/vendor/AWS/ApiGateway'
-import {validateSessionToken} from '#lib/domain/auth/session-service'
+import {validateSessionToken} from '#lib/domain/auth/sessionService'
 import {getOptionalEnv, getRequiredEnv} from '#lib/system/env'
 import {providerFailureErrorMessage, UnexpectedError} from '#lib/system/errors'
 import {withPowertools} from '#lib/lambda/middleware/powertools'

@@ -8,7 +8,7 @@
  */
 import {createInsertSchema, createSelectSchema, createUpdateSchema} from 'drizzle-zod'
 import {accounts, devices, fileDownloads, files, identityProviders, sessions, userDevices, userFiles, users, verification} from './schema'
-import {downloadStatusZodSchema, fileStatusZodSchema} from '#types/shared-primitives'
+import {downloadStatusZodSchema, fileStatusZodSchema} from '#types/sharedPrimitives'
 
 // User schemas
 export const userInsertSchema = createInsertSchema(users)

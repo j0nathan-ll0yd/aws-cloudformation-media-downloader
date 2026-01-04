@@ -3,7 +3,7 @@
  *
  * Type definitions for video download, error classification, and yt-dlp integration.
  *
- * @see src/util/video-error-classifier.ts - Error classification implementation
+ * @see src/lib/domain/video/errorClassifier.ts - Error classification implementation
  * @see src/lib/vendor/YouTube.ts - YouTube/yt-dlp integration
  */
 

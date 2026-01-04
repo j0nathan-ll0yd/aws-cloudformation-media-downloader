@@ -15,8 +15,9 @@
 
 import type {APIGatewayRequestAuthorizerEvent, CloudFrontResponse, CloudFrontResultResponse, Context, ScheduledEvent} from 'aws-lambda'
 import type {CloudFrontCustomOrigin, CloudFrontRequest} from 'aws-lambda/common/cloudfront'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from './infrastructure-types'
-import type {UserStatus} from './enums'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from './infrastructureTypes'
+import type {ResponseStatus, UserStatus} from './enums'
+import type {VideoErrorClassification} from './video'
 
 // ============================================================================
 // Wrapper Parameter Types
@@ -372,4 +373,64 @@ export interface MigrationResult {
   skipped: string[]
   /** Error messages for failed migrations */
   errors: string[]
+}
+
+/**
+ * Migration file metadata.
+ * Used by MigrateDSQL Lambda to track migration files.
+ */
+export interface MigrationFile {
+  /** Semantic version of the migration */
+  version: string
+  /** Human-readable name of the migration */
+  name: string
+  /** Full filename of the migration file */
+  filename: string
+  /** Raw SQL content of the migration */
+  sql: string
+}
+
+// ============================================================================
+// Download Types
+// ============================================================================
+
+/**
+ * Result of handling a download failure.
+ * Used to determine whether to throw (causing SQS retry) or return success.
+ */
+export interface DownloadFailureResult {
+  /** Whether the error is retryable via SQS visibility timeout */
+  shouldRetry: boolean
+  /** Error classification details */
+  classification: VideoErrorClassification
+}
+
+// ============================================================================
+// Webhook Types
+// ============================================================================
+
+/**
+ * Input for webhook processing.
+ * Internal type for WebhookFeedly handler.
+ */
+export interface WebhookProcessingInput {
+  /** YouTube video ID */
+  fileId: string
+  /** User ID who requested the download */
+  userId: string
+  /** Original YouTube URL */
+  articleURL: string
+  /** Correlation ID for tracing */
+  correlationId: string
+}
+
+/**
+ * Result of webhook processing.
+ * Returned by WebhookFeedly handler.
+ */
+export interface WebhookProcessingResult {
+  /** HTTP status code to return */
+  statusCode: number
+  /** Response status enum value */
+  status: ResponseStatus
 }

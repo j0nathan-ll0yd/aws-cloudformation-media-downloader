@@ -17,7 +17,7 @@ const QUERY_EXPANSIONS: Record<string, string[]> = {
   'device registration': ['RegisterDevice', 'createDevice', 'upsertDevice', 'deviceToken'],
   'video download': ['StartFileUpload', 'yt-dlp', 'downloadVideoToS3', 'YouTube'],
   retry: ['retryWithBackoff', 'exponential backoff', 'circuit breaker', 'error classification'],
-  session: ['validateSessionToken', 'session-service', 'refreshSession', 'Better Auth'],
+  session: ['validateSessionToken', 'sessionService', 'refreshSession', 'Better Auth'],
   'api response': ['formatResponse', 'buildErrorResponse', 'responses.ts', 'APIGatewayProxyResult']
 }
 

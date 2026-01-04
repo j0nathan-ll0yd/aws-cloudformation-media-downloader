@@ -1,5 +1,5 @@
 import type {z} from 'zod'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {ValidationError} from '#lib/system/errors'
 import {logDebug, logError} from '#lib/system/logging'
 import {getOptionalEnv} from '#lib/system/env'

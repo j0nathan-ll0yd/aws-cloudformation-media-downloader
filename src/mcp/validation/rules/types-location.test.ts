@@ -209,10 +209,10 @@ export interface ValidationRule { name: string }`, {overwrite: true})
       expect(violations[0].suggestion).toContain('src/types/lambda.ts')
     })
 
-    test('should suggest video.ts for video-error-classifier file', () => {
+    test('should suggest video.ts for errorClassifier file', () => {
       const sourceFile = project.createSourceFile('test-suggestion-video.ts', 'export type VideoError = { message: string }', {overwrite: true})
 
-      const violations = typesLocationRule.validate(sourceFile, 'src/util/video-error-classifier.ts')
+      const violations = typesLocationRule.validate(sourceFile, 'src/lib/domain/video/errorClassifier.ts')
 
       expect(violations[0].suggestion).toContain('video.ts')
     })

@@ -530,7 +530,7 @@ function wrapSqsBatchHandler<TBody = unknown>(
 ```typescript
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
-import type {NotificationPayload} from '#types/notification-types'
+import type {NotificationPayload} from '#types/notificationTypes'
 
 export const handler = withPowertools(
   wrapSqsBatchHandler<NotificationPayload>(async ({body, messageAttributes}) => {

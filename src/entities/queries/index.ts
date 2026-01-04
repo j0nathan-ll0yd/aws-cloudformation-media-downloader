@@ -29,7 +29,7 @@ export {
   type UpdateUserInput,
   type UserItem,
   type UserRow
-} from './user-queries'
+} from './userQueries'
 
 // File queries
 export {
@@ -51,7 +51,7 @@ export {
   type UpdateFileInput,
   upsertFile,
   upsertFileDownload
-} from './file-queries'
+} from './fileQueries'
 
 // Device queries
 export {
@@ -65,7 +65,7 @@ export {
   updateDevice,
   type UpdateDeviceInput,
   upsertDevice
-} from './device-queries'
+} from './deviceQueries'
 
 // Session queries
 export {
@@ -94,7 +94,7 @@ export {
   updateSession,
   type UpdateSessionInput,
   type VerificationRow
-} from './session-queries'
+} from './sessionQueries'
 
 // Relationship queries
 export {
@@ -121,10 +121,10 @@ export {
   upsertUserFile,
   type UserDeviceRow,
   type UserFileRow
-} from './relationship-queries'
+} from './relationshipQueries'
 
 // Prepared queries (performance-critical paths)
-export { getFileByKeyPrepared, getSessionByTokenPrepared, getUserFilesPrepared, resetPreparedStatements } from './prepared-queries'
+export { getFileByKeyPrepared, getSessionByTokenPrepared, getUserFilesPrepared, resetPreparedStatements } from './preparedQueries'
 
 // Cascade operations (transaction-wrapped multi-entity operations)
-export { deleteUserAuthRecords, deleteUserCascade, deleteUserRelationships } from './cascade-operations'
+export { deleteUserAuthRecords, deleteUserCascade, deleteUserRelationships } from './cascadeOperations'

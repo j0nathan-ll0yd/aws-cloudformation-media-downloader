@@ -10,7 +10,7 @@ import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
 import {devices} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
-import {deviceInsertSchema, deviceUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {deviceInsertSchema, deviceUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 export type DeviceRow = InferSelectModel<typeof devices>
 

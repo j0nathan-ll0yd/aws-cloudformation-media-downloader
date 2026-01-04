@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {FileStatus} from '#types/enums'
 import {createMockFile as createMockFileBase} from '#test/helpers/entity-fixtures'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'

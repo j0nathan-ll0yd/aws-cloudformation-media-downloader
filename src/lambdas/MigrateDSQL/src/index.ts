@@ -17,20 +17,13 @@ import {dirname, join} from 'path'
 import {fileURLToPath} from 'url'
 import {sql} from '#lib/vendor/Drizzle/types'
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
-import type {MigrationResult} from '#types/lambda'
+import type {MigrationFile, MigrationResult} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapLambdaInvokeHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-
-interface MigrationFile {
-  version: string
-  name: string
-  filename: string
-  sql: string
-}
 
 /**
  * Loads migration files from the migrations directory.

@@ -7,7 +7,7 @@ import type {SessionPayload} from '#types/util'
 
 const validateSessionTokenMock = vi.fn<(token: string) => Promise<SessionPayload>>()
 const refreshSessionMock = vi.fn<(sessionId: string) => Promise<{expiresAt: number}>>()
-vi.mock('#lib/domain/auth/session-service', () => ({
+vi.mock('#lib/domain/auth/sessionService', () => ({
   validateSessionToken: validateSessionTokenMock, // fmt: multiline
   refreshSession: refreshSessionMock
 }))

@@ -50,14 +50,14 @@ const TEST_QUERIES: Array<{query: string; expectedPatterns: string[]}> = [
       'src/lib/system/errors.ts',
       'src/lib/lambda/responses.ts',
       'src/lib/lambda/middleware/api.ts',
-      'error-classifier.ts'
+      'errorClassifier.ts'
     ]
   },
   {
     query: 'authentication flow',
     expectedPatterns: [
       'ApiGatewayAuthorizer',
-      'session-service.ts',
+      'sessionService.ts',
       'LoginUser',
       'RegisterUser',
       'RefreshToken',
@@ -78,7 +78,7 @@ const TEST_QUERIES: Array<{query: string; expectedPatterns: string[]}> = [
     expectedPatterns: [
       'RegisterDevice',
       'device-queries.ts',
-      'device-service.ts',
+      'deviceService.ts',
       'Device'
     ]
   },
@@ -95,7 +95,7 @@ const TEST_QUERIES: Array<{query: string; expectedPatterns: string[]}> = [
     query: 'push notification',
     expectedPatterns: [
       'SendPushNotification',
-      'device-service.ts',
+      'deviceService.ts',
       'APNS',
       'notification'
     ]
@@ -104,7 +104,7 @@ const TEST_QUERIES: Array<{query: string; expectedPatterns: string[]}> = [
     query: 'video download retry',
     expectedPatterns: [
       'StartFileUpload',
-      'error-classifier.ts',
+      'errorClassifier.ts',
       'retry.ts',
       'VideoError'
     ]
@@ -121,7 +121,7 @@ const TEST_QUERIES: Array<{query: string; expectedPatterns: string[]}> = [
   {
     query: 'user session management',
     expectedPatterns: [
-      'session-service.ts',
+      'sessionService.ts',
       'session-queries.ts',
       'Session',
       'validateSessionToken'

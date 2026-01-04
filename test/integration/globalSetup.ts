@@ -17,7 +17,8 @@ import postgres from 'postgres'
 // Create more schemas than maxWorkers to handle edge cases where Vitest
 // assigns higher pool IDs (e.g., for the main thread, test shuffling, or
 // internal coordination threads). Vitest may use pool IDs beyond maxWorkers.
-const MAX_WORKERS = 12
+// Set to 20 to safely cover all possible pool IDs with margin.
+const MAX_WORKERS = 20
 
 /**
  * Get schema prefix for CI isolation.
@@ -183,8 +184,9 @@ export async function setup(): Promise<void> {
 
   try {
     // Create schemas and tables for each worker BEFORE any tests run
-    for (let i = 1; i <= MAX_WORKERS; i++) {
-      const schemaName = `${prefix}worker_${i}`
+    // Use parallel creation for faster setup (reduces flaky test failures)
+    const createSchema = async (workerId: number) => {
+      const schemaName = `${prefix}worker_${workerId}`
       log(`[globalSetup] Creating schema: ${schemaName}`)
 
       // Create the schema
@@ -208,6 +210,11 @@ export async function setup(): Promise<void> {
 
       log(`[globalSetup] Schema ${schemaName} ready with ${schemaStatements.length} tables`)
     }
+
+    // Create all schemas in parallel for faster setup
+    // This ensures all schemas are ready before any tests start
+    const workerIds = Array.from({length: MAX_WORKERS}, (_, i) => i + 1)
+    await Promise.all(workerIds.map(createSchema))
 
     log(`[globalSetup] All ${MAX_WORKERS} worker schemas created successfully`)
   } catch (error) {

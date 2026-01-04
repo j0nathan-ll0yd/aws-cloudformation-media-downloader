@@ -6,8 +6,8 @@
  */
 import {deleteDevice as deleteDeviceQuery, deleteUserDevice as deleteUserDeviceQuery, getUserDevicesByUserId} from '#entities/queries'
 import {logDebug} from '#lib/system/logging'
-import type {UserDevice} from '#types/persistence-types'
-import type {Device} from '#types/domain-models'
+import type {UserDevice} from '#types/persistenceTypes'
+import type {Device} from '#types/domainModels'
 import {deleteEndpoint, subscribe, unsubscribe} from '#lib/vendor/AWS/SNS'
 
 /**

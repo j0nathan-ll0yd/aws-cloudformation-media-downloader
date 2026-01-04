@@ -25,10 +25,10 @@ vi.mock('#entities/queries',
   () => ({getFileDownload: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
 
 // Mock GitHub issue creation (for permanent failures)
-vi.mock('#lib/integrations/github/issue-service', () => ({createCookieExpirationIssue: vi.fn(), createVideoDownloadFailureIssue: vi.fn()}))
+vi.mock('#lib/integrations/github/issueService', () => ({createCookieExpirationIssue: vi.fn(), createVideoDownloadFailureIssue: vi.fn()}))
 
 // Mock circuit breaker - pass through to wrapped function in tests
-vi.mock('#lib/system/circuit-breaker',
+vi.mock('#lib/system/circuitBreaker',
   () => ({
     youtubeCircuitBreaker: {
       execute: vi.fn(<T>(operation: () => Promise<T>) => operation()),

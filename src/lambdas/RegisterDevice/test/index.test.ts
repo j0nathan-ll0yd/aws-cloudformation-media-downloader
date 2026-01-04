@@ -1,7 +1,7 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {
   CreatePlatformEndpointCommand,
   DeleteEndpointCommand,
@@ -27,7 +27,7 @@ const snsMock = createSNSMock()
 vi.mock('#entities/queries', () => ({upsertDevice: vi.fn(), upsertUserDevice: vi.fn()}))
 
 const getUserDevicesMock = vi.fn()
-vi.mock('#lib/domain/device/device-service', () => ({
+vi.mock('#lib/domain/device/deviceService', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   subscribeEndpointToTopic: vi.fn(),
   unsubscribeEndpointToTopic: vi.fn()

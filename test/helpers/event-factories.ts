@@ -9,7 +9,7 @@
  */
 
 import type {APIGatewayRequestAuthorizerEvent, CloudFrontRequestEvent, S3Event, S3EventRecord, ScheduledEvent, SQSEvent, SQSRecord} from 'aws-lambda'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 /**
  * Default values for consistent test data

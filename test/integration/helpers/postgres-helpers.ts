@@ -14,7 +14,7 @@ import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {eq, sql} from 'drizzle-orm'
 import {devices, files, userDevices, userFiles, users} from '#lib/vendor/Drizzle/schema'
-import type {Device, File, User} from '#types/domain-models'
+import type {Device, File, User} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
 import {createMockDevice, createMockFile, createMockUser} from './test-data'
 

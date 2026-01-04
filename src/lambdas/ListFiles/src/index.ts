@@ -9,7 +9,7 @@
  * Output: APIGatewayProxyResult with file list
  */
 import {getFilesForUser} from '#entities/queries'
-import type {File} from '#types/domain-models'
+import type {File} from '#types/domainModels'
 import {FileStatus, UserStatus} from '#types/enums'
 import {fileListResponseSchema} from '#types/api-schema'
 import {getDefaultFile} from '#config/constants'

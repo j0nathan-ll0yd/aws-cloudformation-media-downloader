@@ -32,7 +32,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
   describe('validateResponse', () => {
     it('should pass silently for valid response', async () => {
       process.env.NODE_ENV = 'development'
-      const {validateResponse} = await import('../api-gateway')
+      const {validateResponse} = await import('../apiGateway')
 
       const validResponse = {id: '123', name: 'Test'}
       expect(() => validateResponse(validResponse, testResponseSchema)).not.toThrow()
@@ -40,7 +40,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
 
     it('should throw ValidationError in NODE_ENV=development for invalid response', async () => {
       process.env.NODE_ENV = 'development'
-      const {validateResponse} = await import('../api-gateway')
+      const {validateResponse} = await import('../apiGateway')
 
       const invalidResponse = {id: 123, name: 'Test'} // id should be string
       expect(() => validateResponse(invalidResponse, testResponseSchema)).toThrow('Response validation failed')
@@ -48,7 +48,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
 
     it('should throw ValidationError in NODE_ENV=test for invalid response', async () => {
       process.env.NODE_ENV = 'test'
-      const {validateResponse} = await import('../api-gateway')
+      const {validateResponse} = await import('../apiGateway')
 
       const invalidResponse = {id: '123'} // missing required name
       expect(() => validateResponse(invalidResponse, testResponseSchema)).toThrow('Response validation failed')
@@ -56,7 +56,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
 
     it('should not throw in NODE_ENV=production for invalid response', async () => {
       process.env.NODE_ENV = 'production'
-      const {validateResponse} = await import('../api-gateway')
+      const {validateResponse} = await import('../apiGateway')
 
       const invalidResponse = {id: 123, name: 'Test'}
       // In production, validation failures are logged as warnings but don't throw
@@ -65,7 +65,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
 
     it('should not throw when NODE_ENV is empty for invalid response', async () => {
       delete process.env.NODE_ENV
-      const {validateResponse} = await import('../api-gateway')
+      const {validateResponse} = await import('../apiGateway')
 
       const invalidResponse = {id: 123}
       // When NODE_ENV is empty, defaults to production behavior (warning, no throw)

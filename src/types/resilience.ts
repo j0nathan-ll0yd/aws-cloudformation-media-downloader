@@ -4,7 +4,7 @@
  * Type definitions for resilience patterns used throughout the application,
  * including circuit breakers, retry configurations, and failure handling.
  *
- * @see src/lib/system/circuit-breaker.ts for circuit breaker implementation
+ * @see src/lib/system/circuitBreaker.ts for circuit breaker implementation
  * @see src/lib/system/retry.ts for retry utilities
  */
 

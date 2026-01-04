@@ -106,11 +106,11 @@ export async function discoverLambdas(): Promise<string[]> {
  * Entity names are derived from Drizzle schema tables
  */
 const QUERY_FILE_TO_ENTITIES: Record<string, string[]> = {
-  'user-queries.ts': ['Users'],
-  'file-queries.ts': ['Files', 'FileDownloads'],
-  'device-queries.ts': ['Devices'],
-  'session-queries.ts': ['Sessions', 'Accounts', 'VerificationTokens'],
-  'relationship-queries.ts': ['UserFiles', 'UserDevices']
+  'userQueries.ts': ['Users'],
+  'fileQueries.ts': ['Files', 'FileDownloads'],
+  'deviceQueries.ts': ['Devices'],
+  'sessionQueries.ts': ['Sessions', 'Accounts', 'VerificationTokens'],
+  'relationshipQueries.ts': ['UserFiles', 'UserDevices']
 }
 
 /**

@@ -17,7 +17,7 @@ process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import type {Context} from 'aws-lambda'
 import {FileStatus, UserStatus} from '#types/enums'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 
 // Test helpers
 import {createMockContext} from '../helpers/lambda-context'
@@ -41,7 +41,7 @@ import {createTestEndpoint, createTestPlatformApplication, deleteTestPlatformApp
 
 // Mock GitHub helpers - must use vi.hoisted for ESM (external API - keep mocked)
 const {createFailedUserDeletionIssueMock} = vi.hoisted(() => ({createFailedUserDeletionIssueMock: vi.fn()}))
-vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
+vi.mock('#lib/integrations/github/issueService', () => ({createFailedUserDeletionIssue: createFailedUserDeletionIssueMock}))
 
 const {handler} = await import('#lambdas/UserDelete/src/index')
 

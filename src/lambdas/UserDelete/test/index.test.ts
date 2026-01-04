@@ -1,7 +1,7 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testContext} from '#util/vitest-setup'
 import {v4 as uuidv4} from 'uuid'
-import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructure-types'
+import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
 import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
@@ -28,7 +28,7 @@ const fakeGithubIssueResponse = {
 
 const getUserDevicesMock = vi.fn<() => unknown>()
 const deleteDeviceMock = vi.fn<() => Promise<void>>()
-vi.mock('#lib/domain/device/device-service', () => ({
+vi.mock('#lib/domain/device/deviceService', () => ({
   getUserDevices: getUserDevicesMock, // fmt: multiline
   deleteDevice: deleteDeviceMock,
   deleteUserDevice: vi.fn()
@@ -36,7 +36,7 @@ vi.mock('#lib/domain/device/device-service', () => ({
 
 vi.mock('#entities/queries', () => ({deleteUser: vi.fn(), deleteUserDevicesByUserId: vi.fn(), deleteUserFilesByUserId: vi.fn(), getDevicesBatch: vi.fn()}))
 
-vi.mock('#lib/integrations/github/issue-service', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))
+vi.mock('#lib/integrations/github/issueService', () => ({createFailedUserDeletionIssue: vi.fn().mockReturnValue(fakeGithubIssueResponse)}))
 
 const {handler} = await import('./../src')
 import {deleteUser, deleteUserDevicesByUserId, deleteUserFilesByUserId, getDevicesBatch} from '#entities/queries'
