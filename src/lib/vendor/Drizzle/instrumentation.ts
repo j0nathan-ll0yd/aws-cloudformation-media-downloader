@@ -1,13 +1,16 @@
 /**
  * Drizzle ORM Query Instrumentation
  *
- * Provides metrics for database query performance monitoring.
- * Uses AWS Powertools Metrics for CloudWatch embedded metrics format (EMF).
+ * Provides metrics and tracing for database query performance monitoring.
+ * Uses AWS Powertools Metrics for CloudWatch embedded metrics format (EMF)
+ * and OpenTelemetry for X-Ray distributed tracing.
  *
  * @see src/lib/vendor/Powertools for metrics configuration
+ * @see src/lib/vendor/OpenTelemetry for tracing configuration
  */
 
 import {metrics, MetricUnit} from '../Powertools'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '../OpenTelemetry'
 import {logDebug} from '#lib/system/logging'
 
 /**
@@ -53,10 +56,11 @@ export function recordQueryMetric(queryMetrics: QueryMetrics): void {
 }
 
 /**
- * Wraps a query function with automatic timing and metrics.
+ * Wraps a query function with automatic timing, metrics, and X-Ray tracing.
  *
  * Captures execution time, success/failure, and optional row count.
  * Metrics are recorded to CloudWatch using embedded metrics format.
+ * Spans are recorded to X-Ray via OpenTelemetry for distributed tracing.
  *
  * @param queryName - Name for the query in metrics (e.g., 'Users.get')
  * @param queryFn - Async function that executes the query
@@ -71,17 +75,30 @@ export function recordQueryMetric(queryMetrics: QueryMetrics): void {
  * ```
  */
 export async function withQueryMetrics<T>(queryName: string, queryFn: () => Promise<T>): Promise<T> {
+  const span = startSpan(`db:${queryName}`)
+  addAnnotation(span, 'query', queryName)
   const start = performance.now()
+
   try {
     const result = await queryFn()
     const duration = performance.now() - start
+    const rowCount = Array.isArray(result) ? result.length : undefined
 
-    recordQueryMetric({queryName, duration, success: true, rowCount: Array.isArray(result) ? result.length : undefined})
+    recordQueryMetric({queryName, duration, success: true, rowCount})
+    addMetadata(span, 'duration', duration)
+    addMetadata(span, 'success', true)
+    if (rowCount !== undefined) {
+      addMetadata(span, 'rowCount', rowCount)
+    }
+    endSpan(span)
 
     return result
   } catch (error) {
     const duration = performance.now() - start
     recordQueryMetric({queryName, duration, success: false})
+    addMetadata(span, 'duration', duration)
+    addMetadata(span, 'success', false)
+    endSpan(span, error as Error)
     throw error
   }
 }

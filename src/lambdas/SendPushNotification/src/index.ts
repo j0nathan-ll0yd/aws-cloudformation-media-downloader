@@ -16,6 +16,7 @@
 import {getDevice as getDeviceRecord, getUserDevicesByUserId} from '#entities/queries'
 import {publishSnsEvent} from '#lib/vendor/AWS/SNS'
 import type {PublishInput} from '#lib/vendor/AWS/SNS'
+import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
 import type {Device} from '#types/domainModels'
 import type {DeviceNotificationResult, FileNotificationType} from '#types/notificationTypes'
 import type {SqsRecordParams} from '#types/lambda'
@@ -94,71 +95,92 @@ async function processSQSRecord({record, messageAttributes}: SqsRecordParams<str
   const validatedAttrs = pushNotificationAttributesSchema.parse(rawAttributes)
   const notificationType = validatedAttrs.notificationType as FileNotificationType
   const userId = validatedAttrs.userId
-  const deviceIds = await getDeviceIdsForUser(userId)
-  if (deviceIds.length == 0) {
-    logInfo('No devices registered for user', userId)
-    return
-  }
 
-  logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
+  const span = startSpan('send-push')
+  addAnnotation(span, 'userId', userId)
+  addAnnotation(span, 'notificationType', notificationType)
 
-  // Process all devices in parallel with individual error handling
-  const results = await Promise.allSettled(deviceIds.map(async (deviceId) => {
-    const device = await getDevice(deviceId)
-    return sendNotificationToDevice(device, record.body, notificationType)
-  }))
+  try {
+    const deviceIds = await getDeviceIdsForUser(userId)
+    addMetadata(span, 'deviceCount', deviceIds.length)
 
-  // Collect results
-  const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
-    if (result.status === 'fulfilled') {
-      return result.value
+    if (deviceIds.length == 0) {
+      logInfo('No devices registered for user', userId)
+      endSpan(span)
+      return
     }
-    return {deviceId: deviceIds[index], success: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
-  })
 
-  const succeeded = deviceResults.filter((r) => r.success)
-  const failed = deviceResults.filter((r) => !r.success)
-  const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
+    logInfo('Sending notifications to devices', {userId, deviceCount: deviceIds.length})
 
-  // Emit metrics for observability
-  metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
-  if (failed.length > 0) {
-    metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
-  }
-  if (disabledEndpoints.length > 0) {
-    metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
-  }
+    // Process all devices in parallel with individual error handling
+    const results = await Promise.allSettled(deviceIds.map(async (deviceId) => {
+      const device = await getDevice(deviceId)
+      return sendNotificationToDevice(device, record.body, notificationType)
+    }))
 
-  // Log results
-  if (failed.length > 0) {
-    logInfo('Push notification results', {
-      userId,
-      total: deviceIds.length,
-      succeeded: succeeded.length,
-      failed: failed.length,
-      disabledEndpoints: disabledEndpoints.length
+    // Collect results
+    const deviceResults: DeviceNotificationResult[] = results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      }
+      return {deviceId: deviceIds[index], success: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason)}
     })
 
-    failed.forEach((r) => {
-      logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
-    })
-  }
+    const succeeded = deviceResults.filter((r) => r.success)
+    const failed = deviceResults.filter((r) => !r.success)
+    const disabledEndpoints = deviceResults.filter((r) => r.endpointDisabled)
 
-  // Clean up disabled endpoints (best-effort, don't fail the message)
-  if (disabledEndpoints.length > 0) {
-    logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
+    // Emit metrics for observability
+    metrics.addMetric('PushNotificationsSent', MetricUnit.Count, succeeded.length)
+    addMetadata(span, 'notificationsSent', succeeded.length)
+    addMetadata(span, 'notificationsFailed', failed.length)
+    addMetadata(span, 'disabledEndpoints', disabledEndpoints.length)
 
-    // Run cleanup asynchronously (fire-and-forget to not block message processing)
-    // Errors are logged within cleanupDisabledEndpoints, won't affect message success
-    cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err) => {
-      logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
-    })
-  }
+    if (failed.length > 0) {
+      metrics.addMetric('PushNotificationsFailed', MetricUnit.Count, failed.length)
+    }
+    if (disabledEndpoints.length > 0) {
+      metrics.addMetric('DisabledEndpointsDetected', MetricUnit.Count, disabledEndpoints.length)
+    }
 
-  // Only fail the SQS message if ALL devices failed
-  // Partial success = message processed successfully (don't retry for succeeded devices)
-  if (succeeded.length === 0 && failed.length > 0) {
-    throw new Error(`All ${failed.length} device notifications failed`)
+    // Log results
+    if (failed.length > 0) {
+      logInfo('Push notification results', {
+        userId,
+        total: deviceIds.length,
+        succeeded: succeeded.length,
+        failed: failed.length,
+        disabledEndpoints: disabledEndpoints.length
+      })
+
+      failed.forEach((r) => {
+        logError('Device notification failed', {deviceId: r.deviceId, error: r.error, endpointDisabled: r.endpointDisabled})
+      })
+    }
+
+    // Clean up disabled endpoints (best-effort, don't fail the message)
+    if (disabledEndpoints.length > 0) {
+      logInfo('Cleaning up disabled endpoints', {userId, deviceIds: disabledEndpoints.map((r) => r.deviceId)})
+
+      // Run cleanup asynchronously (fire-and-forget to not block message processing)
+      // Errors are logged within cleanupDisabledEndpoints, won't affect message success
+      cleanupDisabledEndpoints(disabledEndpoints.map((r) => r.deviceId)).catch((err) => {
+        logError('Async endpoint cleanup failed', {error: err instanceof Error ? err.message : String(err)})
+      })
+    }
+
+    // Only fail the SQS message if ALL devices failed
+    // Partial success = message processed successfully (don't retry for succeeded devices)
+    if (succeeded.length === 0 && failed.length > 0) {
+      const error = new Error(`All ${failed.length} device notifications failed`)
+      endSpan(span, error)
+      throw error
+    }
+
+    endSpan(span)
+  } catch (error) {
+    endSpan(span, error as Error)
+    throw error
   }
 }
 
