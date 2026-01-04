@@ -36,3 +36,28 @@ export interface UserEventDetails {
   userId?: string
   userStatus: UserStatus
 }
+
+/**
+ * Result of separating Promise.allSettled outcomes.
+ * @see src/lib/system/batch.ts
+ */
+export interface SeparatedBatchResults<T> {
+  succeeded: T[]
+  failed: Error[]
+}
+
+/**
+ * Counts of success/failure from Promise.allSettled.
+ * @see src/lib/system/batch.ts
+ */
+export interface BatchResultCounts {
+  successCount: number
+  failureCount: number
+}
+
+/**
+ * Headers object type with optional Authorization header.
+ * Supports both capitalized and lowercase forms.
+ * @see src/lib/lambda/auth-helpers.ts
+ */
+export type AuthorizationHeaders = Record<string, string | undefined> & {Authorization?: string; authorization?: string}

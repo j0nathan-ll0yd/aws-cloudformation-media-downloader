@@ -11,6 +11,7 @@
  */
 
 import {getAuth} from '#lib/vendor/BetterAuth/config'
+import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
 import {userLoginRequestSchema, userLoginResponseSchema} from '#types/api-schema'
 import type {UserLoginRequest} from '#types/api-schema'
 import {getPayloadFromEvent, validateRequest} from '#lib/lambda/middleware/api-gateway'
@@ -61,28 +62,15 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
     }
   })
 
-  // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
-  // Since we're using ID token authentication, we expect a token response
-  if ('url' in rawResult && rawResult.url) {
-    throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
-  }
-
-  // Type narrow to token response
-  const result = rawResult as {
-    redirect: boolean
-    token: string
-    url: undefined
-    user: {id: string; createdAt: Date; email: string; name: string}
-    session?: {id: string; expiresAt: number}
-  }
+  // Assert token response (throws if redirect)
+  const result = assertTokenResponse(rawResult)
 
   logInfo('LoginUser: Better Auth sign-in successful', {userId: result.user?.id, sessionToken: result.token ? 'present' : 'missing'})
 
   // 3. Return session token (Better Auth format)
-  const expiresAtMs = result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000
   return buildValidatedResponse(context, 200, {
     token: result.token,
-    expiresAt: new Date(expiresAtMs).toISOString(),
+    expiresAt: getSessionExpirationISO(result.session),
     sessionId: result.session?.id || '',
     userId: result.user?.id || ''
   }, userLoginResponseSchema)

@@ -13,7 +13,10 @@ src/lib/system/
 ├── errors.ts            # Custom error types with HTTP status codes
 ├── env.ts               # Environment variable utilities
 ├── observability.ts     # Tracing and metrics helpers
-└── logging.ts           # Structured logging functions
+├── logging.ts           # Structured logging functions
+├── query-wrapper.ts     # Query logging wrapper utilities
+├── batch.ts             # Promise.allSettled result processing
+└── time.ts              # Time constants and date helpers
 ```
 
 ## Circuit Breaker
@@ -294,6 +297,196 @@ See [PII Protection](PII-Protection.md) for configuration details.
 
 ---
 
+## Query Wrapper
+
+Higher-order functions that wrap async operations with automatic debug logging.
+
+### Basic Usage
+
+```typescript
+import {withQueryLogging} from '#lib/system/query-wrapper'
+import {getFilesForUser} from '#entities/queries'
+
+// Wrap a query function with automatic logging
+const getFiles = withQueryLogging(
+  (userId: string) => getFilesForUser(userId),
+  'getFilesByUser'
+)
+
+// When called, automatically logs:
+// DEBUG: getFilesByUser <= "user123"
+// DEBUG: getFilesByUser => [{fileId: "abc"}, ...]
+const files = await getFiles('user123')
+```
+
+### Sync Wrapper
+
+For synchronous operations:
+
+```typescript
+import {withSyncLogging} from '#lib/system/query-wrapper'
+
+const parseConfig = withSyncLogging(
+  (json: string) => JSON.parse(json),
+  'parseConfig'
+)
+```
+
+### Why Use This
+
+Eliminates repetitive logging boilerplate like:
+
+```typescript
+// ❌ Before - repeated in 30+ handlers
+async function getFilesByUser(userId: string): Promise<File[]> {
+  logDebug('getFilesByUser <=', userId)
+  const files = await getFilesForUser(userId)
+  logDebug('getFilesByUser =>', files)
+  return files
+}
+
+// ✅ After - one-liner
+const getFilesByUser = withQueryLogging(getFilesForUser, 'getFilesByUser')
+```
+
+---
+
+## Batch Processing
+
+Utilities for processing `Promise.allSettled` results.
+
+### Separating Results
+
+```typescript
+import {separateBatchResults} from '#lib/system/batch'
+
+const results = await Promise.allSettled(operations)
+const {succeeded, failed} = separateBatchResults(results)
+
+// succeeded: T[] - values from fulfilled promises
+// failed: Error[] - Error objects from rejected promises
+```
+
+### Counting Results
+
+```typescript
+import {countBatchResults} from '#lib/system/batch'
+
+const results = await Promise.allSettled(operations)
+const {successCount, failureCount} = countBatchResults(results)
+
+metrics.addMetric('OperationsSucceeded', MetricUnit.Count, successCount)
+metrics.addMetric('OperationsFailed', MetricUnit.Count, failureCount)
+```
+
+### Getting Failure Messages
+
+```typescript
+import {getFailureMessages} from '#lib/system/batch'
+
+const results = await Promise.allSettled(operations)
+const errorMessages = getFailureMessages(results)
+// Returns string[] of error messages from rejected promises
+```
+
+### Convenience Checks
+
+```typescript
+import {allSucceeded, anyFailed} from '#lib/system/batch'
+
+const results = await Promise.allSettled(operations)
+
+if (allSucceeded(results)) {
+  logInfo('All operations completed successfully')
+}
+
+if (anyFailed(results)) {
+  logWarn('Some operations failed', {failures: getFailureMessages(results)})
+}
+```
+
+---
+
+## Time Constants
+
+Common time durations and date manipulation utilities.
+
+### Time Constants
+
+```typescript
+import {TIME} from '#lib/system/time'
+
+// Seconds
+TIME.MINUTE_SEC  // 60
+TIME.HOUR_SEC    // 3600
+TIME.DAY_SEC     // 86400
+TIME.WEEK_SEC    // 604800
+TIME.MONTH_SEC   // 2592000 (30 days)
+
+// Milliseconds
+TIME.MINUTE_MS   // 60000
+TIME.HOUR_MS     // 3600000
+TIME.DAY_MS      // 86400000
+TIME.WEEK_MS     // 604800000
+TIME.MONTH_MS    // 2592000000
+```
+
+### Date Helpers
+
+```typescript
+import {secondsAgo, secondsFromNow, millisecondsAgo, millisecondsFromNow} from '#lib/system/time'
+
+// Get a Date 24 hours ago
+const cutoff = secondsAgo(TIME.DAY_SEC)
+
+// Get a Date 1 hour from now
+const expiration = secondsFromNow(TIME.HOUR_SEC)
+
+// Millisecond precision
+const recentlyActive = millisecondsAgo(5000) // 5 seconds ago
+```
+
+### Timestamp Conversion
+
+```typescript
+import {unixToISOString, unixToDate, msToISOString, nowISO} from '#lib/system/time'
+
+// Unix timestamp (seconds) to ISO string
+const iso = unixToISOString(1718452800)  // "2024-06-15T12:00:00.000Z"
+
+// Unix timestamp to Date
+const date = unixToDate(1718452800)
+
+// Milliseconds to ISO string
+const isoMs = msToISOString(Date.now())
+
+// Current time as ISO string
+const now = nowISO()
+```
+
+### Date Checks
+
+```typescript
+import {isPast, isFuture, isExpired} from '#lib/system/time'
+
+// Check if a Date is in the past
+if (isPast(session.expiresAt)) {
+  throw new UnauthorizedError('Session expired')
+}
+
+// Check if a Date is in the future
+if (isFuture(subscription.startDate)) {
+  throw new ValidationError('Subscription not yet active')
+}
+
+// Check if Unix timestamp (seconds) is expired
+if (isExpired(tokenExpSec)) {
+  throw new UnauthorizedError('Token expired')
+}
+```
+
+---
+
 ## Integration with Lambda Handlers
 
 ### Typical Handler Pattern
@@ -382,6 +575,9 @@ describe('CircuitBreaker', () => {
 4. **Use structured logging** - Include context objects, not string concatenation
 5. **Protect PII in logs** - Never log raw emails, names, or tokens
 6. **Add jitter to retries** - Prevents thundering herd problems
+7. **Use TIME constants** - Avoid magic numbers like `24 * 60 * 60`
+8. **Use batch utilities** - Consistent Promise.allSettled result handling
+9. **Wrap queries with logging** - Use `withQueryLogging` for debug tracing
 
 ## Related Documentation
 

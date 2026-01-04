@@ -132,7 +132,6 @@ function scanDependencyCruiser(): EnforcementSource {
 
 function matchEnforcementToConventions(conventions: Convention[], sources: EnforcementSource[]): Convention[] {
   const enriched = conventions.map((conv) => ({...conv, enforcement: [...conv.enforcement]}))
-
   for (const source of sources) {
     for (const rule of source.rules) {
       // Try to match rule to convention
@@ -154,7 +153,6 @@ function matchEnforcementToConventions(conventions: Convention[], sources: Enfor
       }
     }
   }
-
   return enriched
 }
 

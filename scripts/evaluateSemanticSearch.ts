@@ -198,7 +198,6 @@ function calculateMetrics(
  */
 async function runSearch(query: string, limit = 5): Promise<SearchResult[]> {
   const results = await search(query, {limit, expand: true})
-
   return results.map((r) => ({
     filePath: r.filePath,
     name: r.name,

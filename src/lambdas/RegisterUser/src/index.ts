@@ -18,6 +18,7 @@
 import type {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda'
 import {updateUser} from '#entities/queries'
 import {getAuth} from '#lib/vendor/BetterAuth/config'
+import {assertTokenResponse, getSessionExpirationISO} from '#lib/vendor/BetterAuth/helpers'
 import {userRegistrationRequestSchema, userRegistrationResponseSchema} from '#types/api-schema'
 import type {UserRegistrationRequest} from '#types/api-schema'
 import type {ApiHandlerParams} from '#types/lambda'
@@ -70,20 +71,8 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
     }
   })
 
-  // Better Auth returns a redirect response for OAuth flows or a token response for ID token flows
-  // Since we're using ID token authentication, we expect a token response
-  if ('url' in rawResult && rawResult.url) {
-    throw new Error('Unexpected redirect response from Better Auth - ID token flow should not redirect')
-  }
-
-  // Type narrow to token response
-  const result = rawResult as {
-    redirect: boolean
-    token: string
-    url: undefined
-    user: {id: string; createdAt: Date; email: string; name: string}
-    session?: {id: string; expiresAt: number}
-  }
+  // Assert token response (throws if redirect)
+  const result = assertTokenResponse(rawResult)
 
   // 3. Check if this is a new user and update with name from iOS app
   // Apple's ID token doesn't include first/last name for privacy reasons
@@ -108,10 +97,9 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   })
 
   // 4. Return session token (Better Auth format)
-  const expiresAtMs = result.session?.expiresAt || Date.now() + 30 * 24 * 60 * 60 * 1000
   return buildValidatedResponse(context, 200, {
     token: result.token,
-    expiresAt: new Date(expiresAtMs).toISOString(),
+    expiresAt: getSessionExpirationISO(result.session),
     sessionId: result.session?.id || '',
     userId: result.user?.id || ''
   }, userRegistrationResponseSchema)

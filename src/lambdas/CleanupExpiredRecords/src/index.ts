@@ -17,10 +17,9 @@ import {DownloadStatus} from '#types/enums'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapScheduledHandler} from '#lib/lambda/middleware/internal'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
+import {secondsAgo, TIME} from '#lib/system/time'
 
 export type { CleanupResult }
-
-const TWENTY_FOUR_HOURS_SEC = 24 * 60 * 60
 
 /**
  * Deletes completed or failed FileDownloads older than 24 hours.
@@ -28,7 +27,7 @@ const TWENTY_FOUR_HOURS_SEC = 24 * 60 * 60
  */
 async function cleanupFileDownloads(): Promise<number> {
   const db = await getDrizzleClient()
-  const cutoffTime = new Date(Date.now() - TWENTY_FOUR_HOURS_SEC * 1000)
+  const cutoffTime = secondsAgo(TIME.DAY_SEC)
 
   const result = await db.delete(fileDownloads).where(
     and(or(eq(fileDownloads.status, DownloadStatus.Completed), eq(fileDownloads.status, DownloadStatus.Failed)), lt(fileDownloads.updatedAt, cutoffTime))

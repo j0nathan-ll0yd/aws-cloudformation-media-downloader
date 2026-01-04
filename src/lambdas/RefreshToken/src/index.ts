@@ -16,7 +16,7 @@ import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 import {logDebug, logInfo} from '#lib/system/logging'
 import {refreshSession, validateSessionToken} from '#lib/domain/auth/session-service'
-import {UnauthorizedError} from '#lib/system/errors'
+import {extractBearerToken} from '#lib/lambda/auth-helpers'
 
 /**
  * Lambda handler for refreshing session tokens.
@@ -29,19 +29,8 @@ import {UnauthorizedError} from '#lib/system/errors'
  * @returns API Gateway proxy result with refreshed session info
  */
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams<APIGatewayProxyEvent>): Promise<APIGatewayProxyResult> => {
-  // Extract and validate Authorization header
-  const authHeader = event.headers?.Authorization || event.headers?.authorization
-  if (!authHeader) {
-    throw new UnauthorizedError('Missing Authorization header')
-  }
-
-  // Extract token from Bearer format
-  const tokenMatch = authHeader.match(/^Bearer (.+)$/)
-  if (!tokenMatch) {
-    throw new UnauthorizedError('Invalid Authorization header format')
-  }
-
-  const token = tokenMatch[1]
+  // Extract Bearer token from Authorization header
+  const token = extractBearerToken(event.headers || {})
 
   // Validate the session token
   logDebug('RefreshToken: validating session token')
