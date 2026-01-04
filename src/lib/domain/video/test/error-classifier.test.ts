@@ -30,6 +30,8 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(false)
         expect(result.retryAfter).toBeUndefined()
         expect(result.maxRetries).toBe(0)
+        expect(result.createIssue).toBe(true)
+        expect(result.issuePriority).toBe('high')
       })
     })
 
@@ -46,6 +48,7 @@ describe('errorClassifier', () => {
         expect(result.retryAfter).toBe(futureTimestamp + 300) // +5 min buffer
         expect(result.maxRetries).toBe(3)
         expect(result.reason).toContain('scheduled for release')
+        expect(result.createIssue).toBe(false)
       })
 
       it('should not classify video with past release_timestamp as scheduled', () => {
@@ -66,6 +69,7 @@ describe('errorClassifier', () => {
         expect(result.category).toBe('scheduled')
         expect(result.retryable).toBe(true)
         expect(result.retryAfter).toBeDefined()
+        expect(result.createIssue).toBe(false)
       })
     })
 
@@ -81,6 +85,7 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(true)
         expect(result.retryAfter).toBe(futureTimestamp + 300)
         expect(result.maxRetries).toBe(10)
+        expect(result.createIssue).toBe(false)
       })
 
       it('should classify upcoming livestream without release_timestamp using backoff', () => {
@@ -93,6 +98,7 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(true)
         expect(result.retryAfter).toBeDefined()
         expect(result.reason).toContain('retrying with backoff')
+        expect(result.createIssue).toBe(false)
       })
     })
 
@@ -115,6 +121,7 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(true)
         expect(result.retryAfter).toBeDefined()
         expect(result.maxRetries).toBe(5)
+        expect(result.createIssue).toBe(false)
       })
     })
 
@@ -136,6 +143,8 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(false)
         expect(result.retryAfter).toBeUndefined()
         expect(result.maxRetries).toBe(0)
+        expect(result.createIssue).toBe(true)
+        expect(result.issuePriority).toBe('normal')
       })
     })
 
@@ -149,6 +158,7 @@ describe('errorClassifier', () => {
         expect(result.retryable).toBe(true)
         expect(result.retryAfter).toBeDefined()
         expect(result.reason).toContain('Unknown error')
+        expect(result.createIssue).toBe(false)
       })
     })
   })

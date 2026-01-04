@@ -131,7 +131,9 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       category: 'cookie_expired',
       retryable: false,
       maxRetries: DEFAULT_MAX_RETRIES.cookie_expired,
-      reason: 'YouTube cookie expired or bot detection triggered. Manual cookie refresh required.'
+      reason: 'YouTube cookie expired or bot detection triggered. Manual cookie refresh required.',
+      createIssue: true,
+      issuePriority: 'high'
     }
   }
 
@@ -146,7 +148,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       maxRetries: DEFAULT_MAX_RETRIES.livestream_upcoming,
       reason: videoInfo?.release_timestamp
         ? `Livestream scheduled for ${new Date(videoInfo.release_timestamp * 1000).toISOString()}`
-        : 'Livestream not yet started, retrying with backoff'
+        : 'Livestream not yet started, retrying with backoff',
+      createIssue: false
     }
   }
 
@@ -158,7 +161,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       retryable: true,
       retryAfter: releaseTime + RETRY_BUFFER_SECONDS,
       maxRetries: DEFAULT_MAX_RETRIES.scheduled,
-      reason: `Video scheduled for release at ${new Date(releaseTime * 1000).toISOString()}`
+      reason: `Video scheduled for release at ${new Date(releaseTime * 1000).toISOString()}`,
+      createIssue: false
     }
   }
 
@@ -170,7 +174,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       retryable: true,
       retryAfter: calculateExponentialBackoff(retryCount),
       maxRetries: DEFAULT_MAX_RETRIES.scheduled,
-      reason: 'Video appears to be scheduled content based on error message'
+      reason: 'Video appears to be scheduled content based on error message',
+      createIssue: false
     }
   }
 
@@ -181,7 +186,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       retryable: true,
       retryAfter: calculateExponentialBackoff(retryCount),
       maxRetries: DEFAULT_MAX_RETRIES.transient,
-      reason: `Transient error detected: ${errorMessage.substring(0, 100)}`
+      reason: `Transient error detected: ${errorMessage.substring(0, 100)}`,
+      createIssue: false
     }
   }
 
@@ -191,7 +197,9 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
       category: 'permanent',
       retryable: false,
       maxRetries: DEFAULT_MAX_RETRIES.permanent,
-      reason: `Permanent failure: ${errorMessage.substring(0, 200)}`
+      reason: `Permanent failure: ${errorMessage.substring(0, 200)}`,
+      createIssue: true,
+      issuePriority: 'normal'
     }
   }
 
@@ -202,7 +210,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
     retryable: true,
     retryAfter: calculateExponentialBackoff(retryCount),
     maxRetries: DEFAULT_MAX_RETRIES.transient,
-    reason: `Unknown error, treating as transient: ${errorMessage.substring(0, 100)}`
+    reason: `Unknown error, treating as transient: ${errorMessage.substring(0, 100)}`,
+    createIssue: false
   }
 }
 

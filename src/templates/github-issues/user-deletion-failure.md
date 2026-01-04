@@ -78,3 +78,13 @@ This issue was automatically created by the user management system. Deletion fai
 - Permission issues
 - Orphaned resources
 - DynamoDB conditional check failures
+
+---
+
+## Deduplication
+
+**Fingerprint**: `${fingerprint}`
+**Components**: ${fingerprintSummary}
+
+> This fingerprint is used to prevent duplicate issues. If this error recurs,
+> a comment will be added to this issue instead of creating a new one.
