@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This security audit evaluated five critical areas of the codebase:
+This security audit evaluated six critical areas of the codebase:
 
 | Area | Status | Findings |
 |------|--------|----------|
@@ -17,6 +17,7 @@ This security audit evaluated five critical areas of the codebase:
 | IAM Policies | SECURE | Follows least privilege |
 | Authentication | SECURE | Properly implemented |
 | OWASP Top 10 | 4 ISSUES | 1 HIGH, 2 MEDIUM, 1 LOW |
+| Secret Rotation | NEEDS IMPROVEMENT | No automated rotation |
 
 ---
 
@@ -230,6 +231,46 @@ if (!parseResult.success) {
 
 ---
 
+## 6. Secret Rotation Assessment
+
+### Status: NEEDS IMPROVEMENT
+
+### Findings
+
+**Current State:**
+- All secrets properly encrypted with SOPS (AGE encryption)
+- No automated rotation for any secrets
+- Limited expiration tracking (only APNS has documented dates)
+
+**Secret Expiration Tracking:**
+
+| Secret | Expiration | Status |
+|--------|------------|--------|
+| APNS Signing Key | 2027-01-03 | Documented |
+| APNS Certificate | 2027-01-03 | Documented |
+| GitHub PAT | Varies | Check GitHub settings |
+| YouTube Cookies | ~30-60 days | Auto-detected via 403 errors |
+| Better Auth Secret | No expiry | Rotate on compromise only |
+| Sign In With Apple | No expiry | Rotate as needed |
+
+**Positive Observations:**
+- YouTube cookie expiration is automatically detected
+- GitHub issues are created when cookies expire
+- SOPS encryption prevents accidental secret exposure
+
+**Gaps Identified:**
+1. No calendar reminders for APNS certificate renewal
+2. GitHub PAT expiration not tracked
+3. No documentation for rotation procedures (now addressed)
+
+### Remediation
+
+1. **Created**: [Secret-Rotation-Runbook.md](Secret-Rotation-Runbook.md) with detailed procedures
+2. **Recommended**: Set calendar reminder for APNS renewal (2026-12-01)
+3. **Recommended**: Configure GitHub PAT with 90-day expiration
+
+---
+
 ## Recommendations Summary
 
 | Priority | Finding | Action |
@@ -237,6 +278,7 @@ if (!parseResult.success) {
 | HIGH | Remote test bypass | Add production guard |
 | MEDIUM | Wildcard CORS | Remove CORS headers |
 | MEDIUM | Dynamic function | Use safe interpolation |
+| MEDIUM | Secret rotation docs | Document procedures (DONE) |
 | LOW | SQS validation | Add Zod schemas |
 
 ---
