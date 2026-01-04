@@ -29,7 +29,8 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildErrorResponse(context, error)
+      const apiEvent = event as CustomAPIGatewayRequestAuthorizerEvent
+      const errorResult = buildErrorResponse(context, error, {traceId, correlationId}, {path: apiEvent.path, httpMethod: apiEvent.httpMethod})
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -69,7 +70,14 @@ export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthori
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildErrorResponse(context, error)
+      const apiEvent = event as CustomAPIGatewayRequestAuthorizerEvent
+      // Re-extract userId for error context (getUserDetailsFromEvent doesn't throw)
+      const {userId: errorUserId} = getUserDetailsFromEvent(apiEvent)
+      const errorResult = buildErrorResponse(context, error, {traceId, correlationId}, {
+        userId: errorUserId,
+        path: apiEvent.path,
+        httpMethod: apiEvent.httpMethod
+      })
       logOutgoingFixture(errorResult)
       return errorResult
     }
@@ -105,7 +113,14 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
       logOutgoingFixture(result)
       return result
     } catch (error) {
-      const errorResult = buildErrorResponse(context, error)
+      const apiEvent = event as CustomAPIGatewayRequestAuthorizerEvent
+      // Re-extract userId for error context (getUserDetailsFromEvent doesn't throw)
+      const {userId: errorUserId} = getUserDetailsFromEvent(apiEvent)
+      const errorResult = buildErrorResponse(context, error, {traceId, correlationId}, {
+        userId: errorUserId,
+        path: apiEvent.path,
+        httpMethod: apiEvent.httpMethod
+      })
       logOutgoingFixture(errorResult)
       return errorResult
     }

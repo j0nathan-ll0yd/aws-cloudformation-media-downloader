@@ -3,6 +3,8 @@ import type {z} from 'zod'
 import {CustomLambdaError} from '#lib/system/errors'
 import {logDebug, logError} from '#lib/system/logging'
 import {validateResponse} from '#lib/lambda/middleware/apiGateway'
+import type {ErrorContext, RequestInfo} from '#types/errorContext'
+import type {WrapperMetadata} from '#types/lambda'
 
 /**
  * Extracts a human-readable message from an unknown error value.
@@ -73,15 +75,36 @@ function formatResponse(
  *
  * @param context - AWS Lambda context for request ID
  * @param error - Error instance or unknown error value
+ * @param metadata - Optional tracing metadata (correlationId, traceId)
+ * @param requestInfo - Optional request information for context enrichment
  * @returns Formatted API Gateway error response
  */
-export function buildErrorResponse(context: Context, error: Error | unknown): APIGatewayProxyResult {
+export function buildErrorResponse(context: Context, error: Error | unknown, metadata?: WrapperMetadata, requestInfo?: RequestInfo): APIGatewayProxyResult {
+  // Build error context for debugging and observability
+  const errorContext: ErrorContext = {
+    correlationId: metadata?.correlationId,
+    traceId: metadata?.traceId || context.awsRequestId,
+    userId: requestInfo?.userId,
+    lambdaName: context.functionName,
+    timestamp: new Date().toISOString(),
+    path: requestInfo?.path,
+    httpMethod: requestInfo?.httpMethod
+  }
+
   // Handle Error instances
   if (error instanceof Error) {
+    // Attach context to CustomLambdaError for downstream logging
+    if (error instanceof CustomLambdaError) {
+      error.withContext(errorContext)
+    }
+
     const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
     const message = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
     const errorCode = error instanceof CustomLambdaError ? error.code : undefined
-    logError('buildErrorResponse', JSON.stringify(error))
+
+    // Log with full context
+    logError('buildErrorResponse', {message: error.message, errorType: error.constructor.name, statusCode, context: errorContext})
+
     return formatResponse(context, statusCode, message, undefined, errorCode)
   }
 
@@ -90,12 +113,12 @@ export function buildErrorResponse(context: Context, error: Error | unknown): AP
     const errorObj = error as {status?: number; statusCode?: number; message?: string}
     const statusCode = errorObj.status || errorObj.statusCode || 500
     const message = errorObj.message || getErrorMessage(error)
-    logError('buildErrorResponse (object)', JSON.stringify(error))
+    logError('buildErrorResponse (object)', {error: errorObj, context: errorContext})
     return formatResponse(context, statusCode, message)
   }
 
   // Fallback for unknown error types
-  logError('buildErrorResponse (unknown)', String(error))
+  logError('buildErrorResponse (unknown)', {error: String(error), context: errorContext})
   return formatResponse(context, 500, getErrorMessage(error))
 }
 
