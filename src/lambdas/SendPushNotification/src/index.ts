@@ -60,7 +60,7 @@ async function sendNotificationToDevice(device: Device, messageBody: string, not
     return {deviceId: device.deviceId, success: false, error: 'No endpoint ARN configured'}
   }
   try {
-    logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId, targetArn})
+    logInfo(`Sending ${notificationType} to device`, {deviceId: device.deviceId})
     const publishParams = transformToAPNSNotification(messageBody, targetArn) as PublishInput
     logDebug('publishSnsEvent <=', publishParams)
     const publishResponse = await publishSnsEvent(publishParams)
