@@ -8,9 +8,24 @@ resource "aws_iam_role" "SendPushNotification" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "SendPushNotificationLogging" {
-  role       = aws_iam_role.SendPushNotification.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "SendPushNotificationLogging" {
+  name = "SendPushNotificationLogging"
+  role = aws_iam_role.SendPushNotification.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.send_push_notification_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.send_push_notification_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "SendPushNotificationXRay" {
@@ -80,7 +95,7 @@ resource "aws_lambda_function" "SendPushNotification" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  depends_on       = [aws_iam_role_policy_attachment.SendPushNotificationLogging]
+  depends_on       = [aws_iam_role_policy.SendPushNotificationLogging]
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   layers           = [local.adot_layer_arn]

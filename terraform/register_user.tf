@@ -8,9 +8,24 @@ resource "aws_iam_role" "RegisterUser" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "RegisterUserLogging" {
-  role       = aws_iam_role.RegisterUser.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "RegisterUserLogging" {
+  name = "RegisterUserLogging"
+  role = aws_iam_role.RegisterUser.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.register_user_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.register_user_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "RegisterUserXRay" {
@@ -49,7 +64,7 @@ resource "aws_lambda_function" "RegisterUser" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   timeout          = 10
-  depends_on       = [aws_iam_role_policy_attachment.RegisterUserLogging]
+  depends_on       = [aws_iam_role_policy.RegisterUserLogging]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = data.archive_file.RegisterUser.output_base64sha256
   layers           = [local.adot_layer_arn]

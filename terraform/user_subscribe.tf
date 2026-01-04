@@ -29,9 +29,24 @@ resource "aws_iam_role_policy_attachment" "UserSubscribe" {
   policy_arn = aws_iam_policy.UserSubscribe.arn
 }
 
-resource "aws_iam_role_policy_attachment" "UserSubscribeLogging" {
-  role       = aws_iam_role.UserSubscribe.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "UserSubscribeLogging" {
+  name = "UserSubscribeLogging"
+  role = aws_iam_role.UserSubscribe.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.user_subscribe_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.user_subscribe_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "UserSubscribeXRay" {

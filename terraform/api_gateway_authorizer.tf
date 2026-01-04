@@ -27,9 +27,24 @@ resource "aws_cloudwatch_log_group" "ApiGatewayAuthorizer" {
   tags              = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerLogging" {
-  role       = aws_iam_role.ApiGatewayAuthorizer.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "ApiGatewayAuthorizerLogging" {
+  name = "ApiGatewayAuthorizerLogging"
+  role = aws_iam_role.ApiGatewayAuthorizer.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.api_gateway_authorizer_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.api_gateway_authorizer_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerXRay" {
@@ -75,7 +90,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
   timeout       = 10
   depends_on = [
     aws_iam_role_policy_attachment.ApiGatewayAuthorizer,
-    aws_iam_role_policy_attachment.ApiGatewayAuthorizerLogging
+    aws_iam_role_policy.ApiGatewayAuthorizerLogging
   ]
   filename         = data.archive_file.ApiGatewayAuthorizer.output_path
   source_code_hash = data.archive_file.ApiGatewayAuthorizer.output_base64sha256

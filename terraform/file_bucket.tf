@@ -136,7 +136,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  depends_on       = [aws_iam_role_policy_attachment.S3ObjectCreated]
+  depends_on       = [aws_iam_role_policy.S3ObjectCreatedLogging]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
   layers           = [local.adot_layer_arn]
@@ -181,9 +181,24 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreated" {
   policy_arn = aws_iam_policy.S3ObjectCreated.arn
 }
 
-resource "aws_iam_role_policy_attachment" "S3ObjectCreatedLogging" {
-  role       = aws_iam_role.S3ObjectCreated.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "S3ObjectCreatedLogging" {
+  name = "S3ObjectCreatedLogging"
+  role = aws_iam_role.S3ObjectCreated.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.s3_object_created_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.s3_object_created_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedXRay" {

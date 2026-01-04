@@ -14,9 +14,24 @@ resource "aws_iam_role" "MigrateDSQL" {
   tags               = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "MigrateDSQL" {
-  role       = aws_iam_role.MigrateDSQL.name
-  policy_arn = aws_iam_policy.CommonLambdaLogging.arn
+resource "aws_iam_role_policy" "MigrateDSQLLogging" {
+  name = "MigrateDSQLLogging"
+  role = aws_iam_role.MigrateDSQL.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = [
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.migrate_dsql_function_name}",
+        "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.migrate_dsql_function_name}:*"
+      ]
+    }]
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "MigrateDSQLXRay" {
@@ -26,7 +41,7 @@ resource "aws_iam_role_policy_attachment" "MigrateDSQLXRay" {
 
 resource "aws_iam_role_policy_attachment" "MigrateDSQLDSQL" {
   role       = aws_iam_role.MigrateDSQL.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLAdminAccess.arn
 }
 
 resource "aws_cloudwatch_log_group" "MigrateDSQL" {
@@ -50,7 +65,7 @@ resource "aws_lambda_function" "MigrateDSQL" {
   architectures    = [local.lambda_architecture]
   timeout          = 300 # 5 minutes for complex migrations
   memory_size      = 256
-  depends_on       = [aws_iam_role_policy_attachment.MigrateDSQL]
+  depends_on       = [aws_iam_role_policy.MigrateDSQLLogging]
   filename         = data.archive_file.MigrateDSQL.output_path
   source_code_hash = data.archive_file.MigrateDSQL.output_base64sha256
   layers           = [local.adot_layer_arn]
