@@ -45,6 +45,7 @@ main() {
 
   # Load environment variables
   set -a
+  # shellcheck source=/dev/null
   source "${PROJECT_ROOT}/.env"
   set +a
 

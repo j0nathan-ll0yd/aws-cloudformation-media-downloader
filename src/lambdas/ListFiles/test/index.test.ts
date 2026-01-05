@@ -1,9 +1,8 @@
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
-import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {FileStatus} from '#types/enums'
-import {createMockFile as createMockFileBase} from '#test/helpers/entity-fixtures'
+import {createMockFile as createMockFileBase, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 
 // Set DefaultFile env vars BEFORE importing handler (required by constants.ts at module level)
@@ -12,7 +11,7 @@ process.env.DEFAULT_FILE_NAME = 'test-default-file.mp4'
 process.env.DEFAULT_FILE_URL = 'https://example.com/test-default-file.mp4'
 process.env.DEFAULT_FILE_CONTENT_TYPE = 'video/mp4'
 
-const fakeUserId = uuidv4()
+const fakeUserId = DEFAULT_USER_ID
 
 vi.mock('#entities/queries', () => ({getFilesForUser: vi.fn()}))
 

@@ -1,14 +1,13 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
-import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
-import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {createMockDevice, createMockUserDevice, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {DeleteEndpointCommand, SubscribeCommand, UnsubscribeCommand} from '@aws-sdk/client-sns'
 import {createAPIGatewayEvent} from '#test/helpers/event-factories'
 import {createSNSMetadataResponse, createSNSSubscribeResponse} from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-const fakeUserId = uuidv4()
+const fakeUserId = DEFAULT_USER_ID
 const fakeDevice1 = createMockDevice({deviceId: '67C431DE-37D2-4BBA-9055-E9D2766517E1'})
 const fakeDevice2 = createMockDevice({deviceId: 'C51C57D9-8898-4584-94D8-81D49B21EB2A', name: 'iPhone 2'})
 const fakeUserDevicesResponse = [

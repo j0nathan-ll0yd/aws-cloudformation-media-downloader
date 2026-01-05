@@ -22,7 +22,7 @@ Core development conventions that apply universally:
 TypeScript-specific patterns and best practices:
 
 - [Lambda Function Patterns](TypeScript/Lambda-Function-Patterns.md) - Handler organization
-- [Lambda Reference Index](TypeScript/Lambda-Reference-Index.md) - All 18 Lambda functions reference
+- [Lambda Reference Index](TypeScript/Lambda-Reference-Index.md) - All 17 Lambda functions reference
 - [Lambda Middleware Patterns](TypeScript/Lambda-Middleware-Patterns.md) - Wrapper functions
 - [Entity Query Patterns](TypeScript/Entity-Query-Patterns.md) - Drizzle ORM query functions
 - [System Library](TypeScript/System-Library.md) - Circuit breaker, retry, errors

@@ -18,10 +18,6 @@ error() {
   exit "${2:-1}"
 }
 
-# Directory resolution
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
 main() {
   # Configuration
   local DAYS_BACK=${1:-7}
@@ -51,7 +47,8 @@ main() {
     echo "Processing ${LAMBDA_NAME}..."
 
     local LOG_GROUP="/aws/lambda/${LAMBDA_NAME}"
-    local OUTPUT_FILE="${OUTPUT_DIR}/${LAMBDA_NAME}-$(date +%Y%m%d).json"
+    local OUTPUT_FILE
+    OUTPUT_FILE="${OUTPUT_DIR}/${LAMBDA_NAME}-$(date +%Y%m%d).json"
 
     # Check if log group exists
     if ! aws logs describe-log-groups --log-group-name-prefix "${LOG_GROUP}" --query 'logGroups[0].logGroupName' --output text 2> /dev/null | grep -q "${LOG_GROUP}"; then

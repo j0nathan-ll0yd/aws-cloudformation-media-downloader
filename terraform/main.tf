@@ -28,6 +28,9 @@ data "aws_caller_identity" "current" {}
 # Layer version list: https://aws-otel.github.io/docs/getting-started/lambda/lambda-js#lambda-layer
 # AWS-managed layer published in account 901920570463
 locals {
+  # Project name used for resource naming
+  project_name = "media-downloader"
+
   # Lambda architecture: arm64 (Graviton2) for 20% cost savings and 13-24% faster cold starts
   # Exception: StartFileUpload uses x86_64 for yt-dlp/ffmpeg binary compatibility
   lambda_architecture = "arm64"

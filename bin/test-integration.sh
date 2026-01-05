@@ -9,6 +9,7 @@ set -euo pipefail # Exit on error, undefined vars, pipe failures
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.localstack.yml"
+POSTGRES_COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.test.yml"
 LOCALSTACK_HEALTH_URL="http://localhost:4566/_localstack/health"
 MAX_HEALTH_RETRIES=30
 HEALTH_RETRY_DELAY=1
@@ -20,7 +21,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Error handler
+# Error handler (available for future use)
+# shellcheck disable=SC2329
 error() {
   echo -e "${RED}✗${NC} Error: $1" >&2
   exit "${2:-1}"
@@ -54,6 +56,32 @@ check_localstack_health() {
 
   echo ""
   echo -e "${RED}Error: LocalStack failed to become healthy after ${MAX_HEALTH_RETRIES} seconds${NC}"
+  return 1
+}
+
+# Function to check PostgreSQL health
+check_postgres_health() {
+  local retry_count=0
+
+  echo -e "${YELLOW}Waiting for PostgreSQL to be ready...${NC}"
+
+  while [ $retry_count -lt $MAX_HEALTH_RETRIES ]; do
+    if docker exec media-downloader-test-db pg_isready -U test -d media_downloader_test > /dev/null 2>&1; then
+      echo -e "${GREEN}✓${NC} PostgreSQL is healthy"
+      echo ""
+      return 0
+    fi
+
+    retry_count=$((retry_count + 1))
+
+    if [ $retry_count -lt $MAX_HEALTH_RETRIES ]; then
+      echo -n "."
+      sleep $HEALTH_RETRY_DELAY
+    fi
+  done
+
+  echo ""
+  echo -e "${RED}Error: PostgreSQL failed to become healthy after ${MAX_HEALTH_RETRIES} seconds${NC}"
   return 1
 }
 
@@ -106,8 +134,30 @@ main() {
   echo -e "${GREEN}✓${NC} Docker and docker compose are available"
   echo ""
 
-  # Start LocalStack if requested
+  # Start services if requested
   if [ "$start_localstack" = true ]; then
+    # Start PostgreSQL for database tests
+    echo -e "${YELLOW}Starting PostgreSQL...${NC}"
+    if docker ps | grep -q "media-downloader-test-db"; then
+      echo -e "${BLUE}➜${NC} PostgreSQL is already running"
+      echo ""
+    else
+      echo -e "${BLUE}➜${NC} Starting PostgreSQL container..."
+      docker compose -f "$POSTGRES_COMPOSE_FILE" up -d
+      echo ""
+    fi
+
+    # Wait for PostgreSQL to be healthy
+    if ! check_postgres_health; then
+      echo -e "${RED}PostgreSQL health check failed${NC}"
+      echo ""
+      echo "Troubleshooting:"
+      echo "  1. Check PostgreSQL logs: docker logs media-downloader-test-db"
+      echo "  2. Restart PostgreSQL: docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml up -d"
+      exit 1
+    fi
+
+    # Start LocalStack for AWS services
     echo -e "${YELLOW}Starting LocalStack...${NC}"
 
     # Check if LocalStack is already running
@@ -131,8 +181,21 @@ main() {
       exit 1
     fi
   else
-    echo -e "${YELLOW}Skipping LocalStack startup (--no-start flag)${NC}"
+    echo -e "${YELLOW}Skipping service startup (--no-start flag)${NC}"
     echo ""
+
+    # Verify PostgreSQL is running
+    if ! docker ps | grep -q "media-downloader-test-db"; then
+      echo -e "${RED}Error: PostgreSQL is not running${NC}"
+      echo "Start PostgreSQL with: docker compose -f docker-compose.test.yml up -d"
+      exit 1
+    fi
+
+    # Check PostgreSQL health
+    if ! check_postgres_health; then
+      echo -e "${RED}PostgreSQL is running but not healthy${NC}"
+      exit 1
+    fi
 
     # Verify LocalStack is running
     if ! docker ps | grep -q "aws-media-downloader-localstack"; then
@@ -141,7 +204,7 @@ main() {
       exit 1
     fi
 
-    # Check health
+    # Check LocalStack health
     if ! check_localstack_health; then
       echo -e "${RED}LocalStack is running but not healthy${NC}"
       exit 1
@@ -172,14 +235,16 @@ main() {
 
   # Cleanup if requested
   if [ "$cleanup_after" = true ]; then
-    echo -e "${YELLOW}Stopping LocalStack...${NC}"
+    echo -e "${YELLOW}Stopping services...${NC}"
     docker compose -f "$COMPOSE_FILE" down
-    echo -e "${GREEN}✓${NC} LocalStack stopped"
+    docker compose -f "$POSTGRES_COMPOSE_FILE" down
+    echo -e "${GREEN}✓${NC} LocalStack and PostgreSQL stopped"
     echo ""
   else
-    echo -e "${BLUE}➜${NC} LocalStack is still running"
-    echo "To stop: pnpm run localstack:stop"
-    echo "To view logs: pnpm run localstack:logs"
+    echo -e "${BLUE}➜${NC} Services are still running"
+    echo "To stop LocalStack: pnpm run localstack:stop"
+    echo "To stop PostgreSQL: docker compose -f docker-compose.test.yml down"
+    echo "To view LocalStack logs: pnpm run localstack:logs"
     echo ""
   fi
 

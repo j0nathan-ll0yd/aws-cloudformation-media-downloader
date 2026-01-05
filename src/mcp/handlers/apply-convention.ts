@@ -12,7 +12,7 @@
  * - powertools: Wrap handlers with withPowertools
  */
 
-import {existsSync, readFileSync, writeFileSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {Project, SyntaxKind} from 'ts-morph'
@@ -83,8 +83,13 @@ async function applyAwsSdkWrapper(filePath: string, dryRun: boolean): Promise<Ap
 }
 
 /**
+ * Legacy entity module names that should be mocked via #entities/queries
+ */
+const LEGACY_ENTITY_MODULES = ['Users', 'Files', 'Devices', 'Sessions', 'Accounts', 'UserFiles', 'UserDevices', 'FileDownloads', 'VerificationTokens']
+
+/**
  * Apply entity mock convention
- * Fixes mock patterns to use createEntityMock correctly
+ * Fixes legacy entity module mocks to use #entities/queries pattern
  */
 async function applyEntityMock(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
@@ -93,93 +98,162 @@ async function applyEntityMock(filePath: string, dryRun: boolean): Promise<Apply
     return {file: filePath, convention: 'entity-mock', applied: false, changes: ['File is not a test file - skipping'], dryRun}
   }
 
-  const content = readFileSync(filePath, 'utf-8')
-  const newContent = content
+  const project = new Project({tsConfigFilePath: join(projectRoot, 'tsconfig.json')})
+  const sourceFile = project.addSourceFileAtPath(filePath)
+  let modified = false
 
-  // Check for manual entity mocks (not using proper vi.mock patterns)
-  const manualMockPattern = /jest\.unstable_mockModule\(['"]#entities\/(\w+)['"]/g
-  const helperImportExists = content.includes('createEntityMock')
+  // Find vi.mock calls with legacy entity module patterns
+  const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
 
-  const matches = [...content.matchAll(manualMockPattern)]
+  for (const call of callExpressions) {
+    const expr = call.getExpression()
 
-  if (matches.length > 0 && !helperImportExists) {
-    changes.push('Detected manual entity mocks without createEntityMock helper')
-    changes.push('Manual fix required:')
-    changes.push("1. Import: import {createEntityMock} from '#test/helpers/entity-mock'")
-    changes.push('2. Create mock: const entityMock = createEntityMock()')
-    changes.push('3. Use in unstable_mockModule: ({Entity: entityMock.entity})')
+    // Check for vi.mock('#entities/EntityName') pattern
+    if (expr.getKind() === SyntaxKind.PropertyAccessExpression) {
+      const propAccess = expr.asKind(SyntaxKind.PropertyAccessExpression)
+      if (propAccess?.getName() === 'mock' && propAccess.getExpression().getText() === 'vi') {
+        const args = call.getArguments()
+        if (args.length > 0) {
+          const moduleArg = args[0].getText().replace(/['"]/g, '')
 
-    return {file: filePath, convention: 'entity-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - complex refactoring required'}
+          // Check if it's a legacy entity module
+          for (const entity of LEGACY_ENTITY_MODULES) {
+            if (moduleArg === `#entities/${entity}`) {
+              changes.push(`Found legacy entity mock: vi.mock('${moduleArg}')`)
+              changes.push(`  → Should use: vi.mock('#entities/queries', () => ({...}))`)
+              changes.push('')
+              changes.push('Manual fix required:')
+              changes.push("1. Change import path to '#entities/queries'")
+              changes.push('2. Update mock factory to return specific query functions')
+              changes.push('Example:')
+              changes.push("  vi.mock('#entities/queries', () => ({getUser: vi.fn(), createUser: vi.fn()}))")
+              modified = true
+            }
+          }
+        }
+      }
+    }
   }
 
-  // Check for mock defined inside jest.unstable_mockModule (wrong pattern)
-  const wrongPatternRegex = /jest\.unstable_mockModule\([^)]+,\s*\(\)\s*=>\s*createEntityMock/g
-  if (wrongPatternRegex.test(content)) {
-    changes.push('Detected createEntityMock inside mock factory (wrong pattern)')
-    changes.push('Mock must be created BEFORE jest.unstable_mockModule call')
-    changes.push('Correct pattern:')
-    changes.push('  const entityMock = createEntityMock()')
-    changes.push("  jest.unstable_mockModule('#entities/X', () => ({X: entityMock.entity}))")
-
-    return {file: filePath, convention: 'entity-mock', applied: false, changes, dryRun, error: 'Auto-fix not available - manual reordering required'}
+  if (modified) {
+    return {
+      file: filePath,
+      convention: 'entity-mock',
+      applied: false,
+      changes,
+      dryRun,
+      error: 'Auto-fix not available - requires mapping entity modules to query functions. Manual fix required.'
+    }
   }
 
-  const applied = newContent !== content
-  if (applied && !dryRun) {
-    writeFileSync(filePath, newContent)
-  }
-
-  return {file: filePath, convention: 'entity-mock', applied, changes: applied ? changes : ['No issues found - file follows convention'], dryRun}
+  return {file: filePath, convention: 'entity-mock', applied: false, changes: ['No legacy entity mocks found - file follows convention'], dryRun}
 }
 
 /**
  * Apply response helper convention
- * Replaces raw response objects with buildApiResponse
+ * Replaces raw response objects with response() helper
  */
 async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
 
-  if (!filePath.includes('/lambdas/')) {
+  if (!filePath.includes('/lambdas/') || !filePath.endsWith('index.ts')) {
     return {file: filePath, convention: 'response-helper', applied: false, changes: ['File is not a Lambda handler - skipping'], dryRun}
   }
 
   const project = new Project({tsConfigFilePath: join(projectRoot, 'tsconfig.json')})
-
   const sourceFile = project.addSourceFileAtPath(filePath)
+  let modified = false
 
-  // Check if buildApiResponse is imported
-  const hasResponseImport = sourceFile.getImportDeclarations().some((imp) =>
-    imp.getModuleSpecifierValue().includes('responses') && imp.getNamedImports().some((n) => n.getName() === 'buildApiResponse')
-  )
+  // Check if response helper is already imported
+  const hasResponseImport = sourceFile.getImportDeclarations().some((imp) => {
+    const specifier = imp.getModuleSpecifierValue()
+    return specifier.includes('#lib/lambda/responses') || specifier.includes('lib/lambda/responses')
+  })
 
-  // Find raw response objects
+  // Find raw response objects: return {statusCode: X, body: JSON.stringify(...)}
   const returnStatements = sourceFile.getDescendantsOfKind(SyntaxKind.ReturnStatement)
-  const rawResponses: string[] = []
+  const rawResponses: {lineNumber: number; statusCode: string; bodyText: string; node: typeof returnStatements[0]}[] = []
 
   for (const ret of returnStatements) {
     const expr = ret.getExpression()
     if (expr?.getKind() === SyntaxKind.ObjectLiteralExpression) {
-      const text = expr.getText()
-      if (text.includes('statusCode') && text.includes('body')) {
-        rawResponses.push(`Line ${ret.getStartLineNumber()}: ${text.substring(0, 50)}...`)
+      const objLit = expr.asKind(SyntaxKind.ObjectLiteralExpression)
+      if (!objLit) {
+        continue
+      }
+
+      const props = objLit.getProperties()
+      let statusCode: string | null = null
+      let bodyText: string | null = null
+
+      for (const prop of props) {
+        if (prop.getKind() === SyntaxKind.PropertyAssignment) {
+          const assignment = prop.asKind(SyntaxKind.PropertyAssignment)
+          const name = assignment?.getName()
+          const initializer = assignment?.getInitializer()
+
+          if (name === 'statusCode' && initializer) {
+            statusCode = initializer.getText()
+          }
+          if (name === 'body' && initializer) {
+            // Check if body is JSON.stringify(...)
+            if (initializer.getText().startsWith('JSON.stringify')) {
+              // Extract the argument to JSON.stringify
+              const callExpr = initializer.asKind(SyntaxKind.CallExpression)
+              if (callExpr) {
+                const args = callExpr.getArguments()
+                if (args.length > 0) {
+                  bodyText = args[0].getText()
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (statusCode && bodyText) {
+        rawResponses.push({lineNumber: ret.getStartLineNumber(), statusCode, bodyText, node: ret})
       }
     }
   }
 
   if (rawResponses.length > 0) {
-    changes.push(`Found ${rawResponses.length} raw response object(s):`)
-    changes.push(...rawResponses.map((r) => `  - ${r}`))
+    for (const rawResponse of rawResponses) {
+      changes.push(`Line ${rawResponse.lineNumber}: Found raw response with statusCode ${rawResponse.statusCode}`)
 
-    if (!hasResponseImport) {
-      changes.push("Add import: import {buildApiResponse} from '#lib/lambda/responses'")
+      // Auto-fix: Replace with response(statusCode, data)
+      const newReturn = `return response(${rawResponse.statusCode}, ${rawResponse.bodyText})`
+      rawResponse.node.replaceWithText(newReturn)
+      modified = true
+      changes.push(`  → Replaced with: response(${rawResponse.statusCode}, ...)`)
     }
-    changes.push('Replace: return {statusCode: X, body: JSON.stringify(data)}')
-    changes.push('With: return buildApiResponse(context, X, data)')
 
-    return {file: filePath, convention: 'response-helper', applied: false, changes, dryRun, error: 'Auto-fix not available - manual replacement required'}
+    // Add import if needed
+    if (!hasResponseImport) {
+      const lastImport = sourceFile.getImportDeclarations().pop()
+      if (lastImport) {
+        lastImport.getParent().insertStatements(lastImport.getChildIndex() + 1, "import {response} from '#lib/lambda/responses'")
+      } else {
+        sourceFile.insertStatements(0, "import {response} from '#lib/lambda/responses'")
+      }
+      changes.push("Added import: import {response} from '#lib/lambda/responses'")
+    }
+
+    if (!dryRun) {
+      sourceFile.saveSync()
+    }
+
+    changes.push('')
+    changes.push(`Replaced ${rawResponses.length} raw response object(s) with response() helper`)
   }
 
-  return {file: filePath, convention: 'response-helper', applied: false, changes: ['No raw response objects found - file follows convention'], dryRun}
+  return {
+    file: filePath,
+    convention: 'response-helper',
+    applied: modified,
+    changes: modified ? changes : ['No raw response objects found - file follows convention'],
+    dryRun
+  }
 }
 
 /**
@@ -189,39 +263,82 @@ async function applyResponseHelper(filePath: string, dryRun: boolean): Promise<A
 async function applyEnvValidation(filePath: string, dryRun: boolean): Promise<ApplyResult> {
   const changes: string[] = []
 
-  if (!filePath.includes('/lambdas/') && !filePath.includes('/util/')) {
-    return {file: filePath, convention: 'env-validation', applied: false, changes: ['File is not a Lambda or utility - skipping'], dryRun}
+  if (!filePath.includes('/lambdas/') && !filePath.includes('/lib/')) {
+    return {file: filePath, convention: 'env-validation', applied: false, changes: ['File is not a Lambda or library - skipping'], dryRun}
   }
 
-  const content = readFileSync(filePath, 'utf-8')
-
-  // Skip env-validation.ts itself
-  if (filePath.includes('env-validation')) {
-    return {file: filePath, convention: 'env-validation', applied: false, changes: ['Skipping env-validation utility itself'], dryRun}
+  // Skip env.ts itself and test files
+  if (filePath.includes('/system/env') || filePath.includes('.test.')) {
+    return {file: filePath, convention: 'env-validation', applied: false, changes: ['Skipping env utility or test file'], dryRun}
   }
 
-  // Find direct process.env access
-  const envPattern = /process\.env\.(\w+)/g
-  const matches = [...content.matchAll(envPattern)]
+  const project = new Project({tsConfigFilePath: join(projectRoot, 'tsconfig.json')})
+  const sourceFile = project.addSourceFileAtPath(filePath)
+  let modified = false
 
-  // Filter out AWS runtime vars
-  const awsRuntimeVars = ['AWS_REGION', 'AWS_LAMBDA_FUNCTION_NAME', 'AWS_EXECUTION_ENV']
-  const directAccesses = matches.filter((m) => !awsRuntimeVars.includes(m[1]))
+  // AWS runtime vars that should not be replaced (they're set by Lambda runtime)
+  const awsRuntimeVars = new Set(['AWS_REGION', 'AWS_LAMBDA_FUNCTION_NAME', 'AWS_EXECUTION_ENV', 'NODE_ENV', 'LOG_LEVEL'])
 
-  if (directAccesses.length > 0) {
-    changes.push(`Found ${directAccesses.length} direct process.env access(es):`)
-    for (const match of directAccesses) {
-      changes.push(`  - process.env.${match[1]}`)
+  // Find process.env.VAR_NAME access patterns
+  const propertyAccesses = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
+
+  const varsToReplace: string[] = []
+
+  for (const access of propertyAccesses) {
+    const expr = access.getExpression()
+
+    // Check for process.env.VAR pattern
+    if (expr.getKind() === SyntaxKind.PropertyAccessExpression) {
+      const innerAccess = expr.asKind(SyntaxKind.PropertyAccessExpression)
+      if (innerAccess?.getName() === 'env' && innerAccess.getExpression().getText() === 'process') {
+        const varName = access.getName()
+
+        // Skip AWS runtime vars
+        if (!awsRuntimeVars.has(varName)) {
+          varsToReplace.push(varName)
+          changes.push(`Found: process.env.${varName}`)
+
+          // Auto-fix: Replace process.env.VAR with getRequiredEnv('VAR')
+          access.replaceWithText(`getRequiredEnv('${varName}')`)
+          modified = true
+        }
+      }
     }
-    changes.push('')
-    changes.push("Add import: import {getRequiredEnv} from '#lib/system/env'")
-    changes.push(`Replace: process.env.VAR_NAME`)
-    changes.push(`With: getRequiredEnv('VAR_NAME')`)
-
-    return {file: filePath, convention: 'env-validation', applied: false, changes, dryRun, error: 'Auto-fix not available - manual replacement required'}
   }
 
-  return {file: filePath, convention: 'env-validation', applied: false, changes: ['No direct process.env access found - file follows convention'], dryRun}
+  // Add import if we made changes and import doesn't exist
+  if (modified) {
+    const hasEnvImport = sourceFile.getImportDeclarations().some((imp) => {
+      const specifier = imp.getModuleSpecifierValue()
+      return specifier.includes('#lib/system/env') || specifier.includes('lib/system/env')
+    })
+
+    if (!hasEnvImport) {
+      // Add import at the top after other imports
+      const lastImport = sourceFile.getImportDeclarations().pop()
+      if (lastImport) {
+        lastImport.getParent().insertStatements(lastImport.getChildIndex() + 1, "import {getRequiredEnv} from '#lib/system/env'")
+      } else {
+        sourceFile.insertStatements(0, "import {getRequiredEnv} from '#lib/system/env'")
+      }
+      changes.push("Added import: import {getRequiredEnv} from '#lib/system/env'")
+    }
+
+    if (!dryRun) {
+      sourceFile.saveSync()
+    }
+
+    changes.push('')
+    changes.push(`Replaced ${varsToReplace.length} process.env access(es) with getRequiredEnv()`)
+  }
+
+  return {
+    file: filePath,
+    convention: 'env-validation',
+    applied: modified,
+    changes: modified ? changes : ['No direct process.env access found - file follows convention'],
+    dryRun
+  }
 }
 
 /**

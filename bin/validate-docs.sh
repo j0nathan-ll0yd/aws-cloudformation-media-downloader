@@ -13,7 +13,6 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Error handler
@@ -32,20 +31,22 @@ main() {
 
   # Check AGENTS.md for pnpm run commands (supports camelCase like registerDevice)
   if [ -f "AGENTS.md" ]; then
-    for script in $(grep -oE 'pnpm run [a-zA-Z:-]+' AGENTS.md 2> /dev/null | sed 's/pnpm run //' | sort -u); do
+    while IFS= read -r script; do
+      [ -z "$script" ] && continue
       if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
         MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
       fi
-    done
+    done < <(grep -oE 'pnpm run [a-zA-Z:-]+' AGENTS.md 2> /dev/null | sed 's/pnpm run //' | sort -u)
   fi
 
   # Check README.md for pnpm/npm run commands (supports camelCase like registerDevice)
   if [ -f "README.md" ]; then
-    for script in $(grep -oE '(pnpm|npm) run [a-zA-Z:-]+' README.md 2> /dev/null | sed 's/.*run //' | sort -u); do
+    while IFS= read -r script; do
+      [ -z "$script" ] && continue
       if ! jq -e ".scripts[\"$script\"]" package.json > /dev/null 2>&1; then
         MISSING_SCRIPTS="$MISSING_SCRIPTS $script"
       fi
-    done
+    done < <(grep -oE '(pnpm|npm) run [a-zA-Z:-]+' README.md 2> /dev/null | sed 's/.*run //' | sort -u)
   fi
 
   if [ -n "$MISSING_SCRIPTS" ]; then

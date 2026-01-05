@@ -27,7 +27,7 @@ describe('Lambda:Middleware:SQS', () => {
     }
   })
 
-  const mockContext = {awsRequestId: 'test-request-id'} as Context
+  const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
   type TestBody = {id: string; value: number}
 

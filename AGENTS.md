@@ -70,8 +70,8 @@ AWS Serverless media downloader service built with OpenTofu and TypeScript. Down
 ├── types/                 # TypeScript type definitions
 ├── util/                  # Shared utility functions
 ├── docs/
-│   ├── wiki/              # All documentation and style guides
-│   └── conventions-tracking.md  # Project-specific conventions
+│   └── wiki/              # All documentation and style guides
+│       └── Meta/Conventions-Tracking.md  # Project-specific conventions
 └── build/graph.json       # Code graph (ts-morph) - READ THIS
 ```
 
@@ -107,15 +107,15 @@ graph TD
     SQS --> SendPushNotification[SendPushNotification Lambda]
 
     %% Data Stores
-    ListFiles --> DDB[(DynamoDB)]
-    LoginUser --> DDB
-    RegisterDevice --> DDB
-    RegisterUser --> DDB
-    WebhookFeedly --> DDB
-    UserDelete --> DDB
-    PruneDevices --> DDB
-    S3ObjectCreated --> DDB
-    StartFileUpload --> DDB
+    ListFiles --> DSQL[(Aurora DSQL)]
+    LoginUser --> DSQL
+    RegisterDevice --> DSQL
+    RegisterUser --> DSQL
+    WebhookFeedly --> DSQL
+    UserDelete --> DSQL
+    PruneDevices --> DSQL
+    S3ObjectCreated --> DSQL
+    StartFileUpload --> DSQL
 
     StartFileUpload --> S3Storage[(S3 Storage)]
     WebhookFeedly --> S3Storage
@@ -290,13 +290,13 @@ The MCP server (`src/mcp/`) and GraphRAG (`graphrag/`) use shared data sources f
 
 ### Data Access Patterns
 
-| Pattern | Entity | Access Method | Index Used |
-|---------|--------|--------------|------------|
-| User's files | UserFiles → Files | Query by userId | GSI1 |
-| User's devices | UserDevices → Devices | Query by userId | GSI1 |
-| File's users | UserFiles | Query by fileId | GSI2 |
-| Device lookup | Devices | Get by deviceId | Primary |
-| User resources | Collections.userResources | Batch query | GSI1 |
+| Pattern | Entity | Access Method | Query Strategy |
+|---------|--------|--------------|----------------|
+| User's files | UserFiles → Files | Query by userId | JOIN on userId |
+| User's devices | UserDevices → Devices | Query by userId | JOIN on userId |
+| File's users | UserFiles | Query by fileId | JOIN on fileId |
+| Device lookup | Devices | Get by deviceId | Primary key |
+| User resources | getUserResources() | Transaction query | Multi-table JOIN |
 
 ## Critical Project-Specific Rules
 
@@ -575,7 +575,7 @@ Then drag `repomix-output.xml` into the Claude Code conversation or copy relevan
 - Lambda memory allocation: Optimize for cold starts
 - S3 transfer acceleration: For large media files
 - API Gateway caching: Reduce Lambda invocations
-- DynamoDB indexes: Query optimization
+- Aurora DSQL: Serverless PostgreSQL with automatic scaling
 - Webpack externals: Reduce bundle size
 
 ## Support Resources

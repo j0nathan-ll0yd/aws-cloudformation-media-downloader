@@ -29,7 +29,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Error handler
+# Error handler (used by sourcing scripts)
+# shellcheck disable=SC2329
 error() {
   echo -e "${RED}✗${NC} Error: $1" >&2
   exit "${2:-1}"
@@ -55,6 +56,7 @@ run_cmd() {
   fi
 }
 
+# shellcheck disable=SC2329
 run_cmd_verbose() {
   local desc="$1"
   shift

@@ -96,11 +96,10 @@ main() {
   IAM_PATTERN="(ListFiles|LoginUser|RegisterUser|RegisterDevice|WebhookFeedly|S3ObjectCreated|SendPushNotification|StartFileUpload|PruneDevices|ApiGatewayAuthorizer|CloudfrontMiddleware|UserDelete|UserSubscribe|RefreshToken|LogClientEvent|FileCoordinator|ApiGatewayCloudwatch|SNSLogging)"
   DYNAMODB_PATTERN="(MediaDownloader|Idempotency)"
   S3_PATTERN="(media-downloader|lifegames)"
-  CLOUDFRONT_PATTERN="(MediaDownloader|media)"
 
   # Temporary files for comparison
   TMP_DIR=$(mktemp -d)
-  trap "rm -rf $TMP_DIR" EXIT
+  trap 'rm -rf "$TMP_DIR"' EXIT
 
   echo -e "${BLUE}AWS Infrastructure Audit${NC}"
   echo "========================="
@@ -109,6 +108,7 @@ main() {
   # Load environment variables
   if [[ -f "${PROJECT_ROOT}/.env" ]]; then
     set -a
+    # shellcheck source=/dev/null
     source "${PROJECT_ROOT}/.env"
     set +a
   fi
@@ -235,7 +235,6 @@ main() {
   # Find duplicates (names with numeric suffixes that shouldn't have them)
   DUPLICATE_LAMBDAS=$(grep -E "${LAMBDA_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_lambdas_all.txt" 2> /dev/null || true)
   DUPLICATE_ROLES=$(grep -E "${IAM_PATTERN}[_-][0-9]+" "$TMP_DIR/aws_roles_all.txt" 2> /dev/null || true)
-  DUPLICATE_CLOUDFRONT=$(awk -F'\t' '{print $2}' "$TMP_DIR/aws_cloudfront.txt" 2> /dev/null | grep -E "(OfflineMedia|MediaDownloader)" | sort | uniq -d || true)
 
   if [[ -n "$DUPLICATE_LAMBDAS" ]]; then
     echo -e "${RED}Potential duplicate Lambdas:${NC}"
@@ -261,16 +260,16 @@ main() {
 
   if [[ "$CLOUDFRONT_COUNT" -gt 2 ]]; then
     echo -e "${RED}Multiple CloudFront distributions found (expected 2):${NC}"
-    cat "$TMP_DIR/aws_cloudfront.txt" | while read -r id comment; do
+    while read -r id comment; do
       echo "  - $id ($comment)"
-    done
+    done < "$TMP_DIR/aws_cloudfront.txt"
   fi
 
   if [[ "$APIGW_COUNT" -gt 1 ]]; then
     echo -e "${RED}Multiple API Gateways found (expected 1):${NC}"
-    cat "$TMP_DIR/aws_apigw.txt" | while read -r id name; do
+    while read -r id name; do
       echo "  - $id ($name)"
-    done
+    done < "$TMP_DIR/aws_apigw.txt"
   fi
   echo ""
 

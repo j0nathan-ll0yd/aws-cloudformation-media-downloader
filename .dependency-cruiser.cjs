@@ -74,7 +74,7 @@ module.exports = {
           '^scripts/',
           '\\.d\\.ts$',
           '^src/mcp/test/fixtures/',
-          '^src/types/schemas\\.ts$',
+          '^src/types/', // Type files imported via #types alias
         ],
       },
       to: {},

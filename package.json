@@ -72,6 +72,7 @@
     "mcp:server": "node --import tsx src/mcp/server.ts",
     "mcp:inspect": "pnpm exec mcp-inspector src/mcp/server.ts",
     "graphrag:extract": "node --import tsx graphrag/extract.ts",
+    "graphrag:validate": "node --import tsx graphrag/validate-metadata.ts",
     "graphrag:query": "pnpm dlx tsx graphrag/query.ts",
     "db:export": "drizzle-kit export --sql --dialect postgresql",
     "db:generate": "drizzle-kit generate",

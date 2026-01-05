@@ -3,7 +3,7 @@ import {createMockContext} from '#util/vitest-setup'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {createBetterAuthMock} from '#test/helpers/better-auth-mock'
 import {createAPIGatewayEvent, createLoginUserBody} from '#test/helpers/event-factories'
-import {v4 as uuidv4} from 'uuid'
+import {DEFAULT_SESSION_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 
 // Mock Better Auth API - now exports getAuth as async function
 const authMock = createBetterAuthMock()
@@ -21,10 +21,10 @@ describe('#LoginUser', () => {
   })
 
   test('should successfully login a user via Better Auth', async () => {
-    // Mock Better Auth sign-in response
-    const userId = uuidv4()
-    const sessionId = uuidv4()
-    const token = uuidv4()
+    // Mock Better Auth sign-in response using consistent test fixtures
+    const userId = DEFAULT_USER_ID
+    const sessionId = DEFAULT_SESSION_ID
+    const token = 'mock-auth-token-for-testing'
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000
 
     authMock.mocks.signInSocial.mockResolvedValue({

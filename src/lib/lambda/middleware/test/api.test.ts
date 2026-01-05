@@ -28,7 +28,7 @@ describe('Lambda:Middleware:API', () => {
   })
 
   describe('wrapApiHandler', () => {
-    const mockContext = {awsRequestId: 'test-request-id'} as Context
+    const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type TestEvent = any
@@ -101,7 +101,7 @@ describe('Lambda:Middleware:API', () => {
   })
 
   describe('wrapAuthenticatedHandler', () => {
-    const mockContext = {awsRequestId: 'test-request-id'} as Context
+    const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type TestEvent = any
@@ -198,7 +198,7 @@ describe('Lambda:Middleware:API', () => {
   })
 
   describe('wrapOptionalAuthHandler', () => {
-    const mockContext = {awsRequestId: 'test-request-id'} as Context
+    const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type TestEvent = any

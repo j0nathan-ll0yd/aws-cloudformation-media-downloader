@@ -30,7 +30,8 @@ fi
 # Function to get clean page title from filename
 get_page_title() {
     local filename="$1"
-    local basename=$(basename "$filename" .md)
+    local basename
+    basename=$(basename "$filename" .md)
 
     # Convert filename to title
     echo "$basename" | sed -E 's/-/ /g' | sed -E 's/\b(\w)/\u\1/g'
@@ -48,7 +49,8 @@ process_directory() {
             continue
         fi
 
-        local basename=$(basename "$file" .md)
+        local basename
+        basename=$(basename "$file" .md)
 
         # Skip special wiki files
         if [[ "$basename" =~ ^_(Footer|Sidebar)$ ]]; then
@@ -69,7 +71,8 @@ process_directory() {
         fi
 
         # Get page title
-        local title=$(get_page_title "$file")
+        local title
+        title=$(get_page_title "$file")
 
         # Special handling for Home.md
         if [[ "$basename" == "Home" ]]; then
@@ -87,7 +90,8 @@ process_directory() {
             continue
         fi
 
-        local dirname=$(basename "$subdir")
+        local dirname
+        dirname=$(basename "$subdir")
 
         # Skip hidden directories
         if [[ "$dirname" =~ ^\. ]]; then
@@ -112,7 +116,8 @@ process_directory() {
         esac
 
         # Add category title
-        local category_title=$(get_page_title "$dirname")
+        local category_title
+        category_title=$(get_page_title "$dirname")
         echo "${indent}**$emoji $category_title**" >> "$SIDEBAR_FILE"
 
         # Process files in subdirectory
@@ -151,7 +156,8 @@ EOF
             continue
         fi
 
-        local basename=$(basename "$file" .md)
+        local basename
+        basename=$(basename "$file" .md)
 
         # Skip special files and already added files
         if [[ "$basename" =~ ^_(Footer|Sidebar)$ ]] || \
@@ -160,7 +166,8 @@ EOF
             continue
         fi
 
-        local title=$(get_page_title "$file")
+        local title
+        title=$(get_page_title "$file")
         echo "- [$title]($basename)" >> "$SIDEBAR_FILE"
     done
 
@@ -170,7 +177,8 @@ EOF
             continue
         fi
 
-        local dirname=$(basename "$dir")
+        local dirname
+        dirname=$(basename "$dir")
 
         # Skip hidden directories
         if [[ "$dirname" =~ ^\. ]]; then
@@ -194,7 +202,8 @@ EOF
         esac
 
         # Add category section
-        local category_title=$(get_page_title "$dirname")
+        local category_title
+        category_title=$(get_page_title "$dirname")
         echo "### $emoji $category_title" >> "$SIDEBAR_FILE"
         echo "" >> "$SIDEBAR_FILE"
 
@@ -204,8 +213,10 @@ EOF
                 continue
             fi
 
-            local basename=$(basename "$file" .md)
-            local title=$(get_page_title "$file")
+            local basename
+            local title
+            basename=$(basename "$file" .md)
+            title=$(get_page_title "$file")
             # GitHub Wiki has flat namespace - use basename only
             echo "- [$title]($basename)" >> "$SIDEBAR_FILE"
         done
@@ -216,7 +227,8 @@ EOF
                 continue
             fi
 
-            local subdirname=$(basename "$subdir")
+            local subdirname
+            subdirname=$(basename "$subdir")
             echo "  - **$(get_page_title "$subdirname")**" >> "$SIDEBAR_FILE"
 
             for file in "$subdir"/*.md; do
@@ -224,8 +236,10 @@ EOF
                     continue
                 fi
 
-                local basename=$(basename "$file" .md)
-                local title=$(get_page_title "$file")
+                local basename
+                local title
+                basename=$(basename "$file" .md)
+                title=$(get_page_title "$file")
                 # GitHub Wiki has flat namespace - use basename only
                 echo "    - [$title]($basename)" >> "$SIDEBAR_FILE"
             done

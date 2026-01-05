@@ -2,14 +2,13 @@ import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vites
 import type {SQSEvent} from 'aws-lambda'
 import {PublishCommand} from '@aws-sdk/client-sns'
 import {createMockContext} from '#util/vitest-setup'
-import {v4 as uuidv4} from 'uuid'
-import {createMockDevice, createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {createMockDevice, createMockUserDevice, DEFAULT_DEVICE_ID, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {createPushNotificationEvent} from '#test/helpers/event-factories'
 import {createSNSPublishResponse} from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-const fakeUserId = '4722a099-bd68-4dd7-842e-0c1127638dd9'
-const fakeDeviceId = uuidv4()
+const fakeUserId = DEFAULT_USER_ID
+const fakeDeviceId = DEFAULT_DEVICE_ID
 const getDeviceResponse = createMockDevice({deviceId: fakeDeviceId})
 const getUserDevicesByUserIdResponse = [createMockUserDevice({deviceId: fakeDeviceId, userId: fakeUserId})]
 
