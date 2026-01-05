@@ -2,9 +2,11 @@
  * PowerTools Metrics Rule
  * MEDIUM: Validates correct usage of PowerTools metrics
  *
- * This rule validates that:
- * 1. Files using metrics.addMetric() have `\{enableCustomMetrics: true\}` in withPowertools()
- * 2. Warns when addDimension() is used without singleMetric()
+ * This rule validates that addDimension() is used with singleMetric() to avoid
+ * dimension pollution across metrics.
+ *
+ * Note: enableCustomMetrics is no longer needed - withPowertools() auto-detects
+ * and flushes metrics when present using hasStoredMetrics().
  *
  * @see docs/wiki/TypeScript/Lambda-Function-Patterns.md
  */
@@ -18,7 +20,7 @@ const SEVERITY = 'MEDIUM' as const
 
 export const powertoolsMetricsRule: ValidationRule = {
   name: RULE_NAME,
-  description: 'Validates correct usage of PowerTools metrics including enableCustomMetrics flag',
+  description: 'Validates correct usage of PowerTools metrics (addDimension with singleMetric)',
   severity: SEVERITY,
   appliesTo: ['src/lambdas/*/src/**/*.ts'],
   excludes: ['**/*.test.ts', '**/*.fixture.ts'],
@@ -31,29 +33,10 @@ export const powertoolsMetricsRule: ValidationRule = {
     // Check if file uses metrics.addMetric
     const usesAddMetric = /metrics\.addMetric\s*\(/.test(text)
     const usesSingleMetric = /metrics\.singleMetric\s*\(/.test(text)
-    const usesWithPowertools = /withPowertools\s*\(/.test(text)
 
     if (!usesAddMetric && !usesSingleMetric) {
       // No metrics usage, skip validation
       return violations
-    }
-
-    // Check if enableCustomMetrics is set
-    const hasEnableCustomMetrics = /enableCustomMetrics\s*:\s*true/.test(text)
-
-    if (usesAddMetric && usesWithPowertools && !hasEnableCustomMetrics) {
-      // Find the line where withPowertools is called
-      const withPowertoolsMatch = text.match(/withPowertools\s*\(/)
-      const lineNumber = withPowertoolsMatch
-        ? text.substring(0, withPowertoolsMatch.index).split('\n').length
-        : 1
-
-      violations.push(
-        createViolation(RULE_NAME, 'HIGH', lineNumber, 'Lambda uses metrics.addMetric() but withPowertools() is missing {enableCustomMetrics: true}', {
-          suggestion: 'Add {enableCustomMetrics: true} as the second argument to withPowertools()',
-          codeSnippet: 'withPowertools(handler, {enableCustomMetrics: true})'
-        })
-      )
     }
 
     // Check for addDimension without singleMetric pattern

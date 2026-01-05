@@ -57,4 +57,4 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   logInfo('RefreshToken: session refreshed successfully', {sessionId: sessionPayload.sessionId, expiresAt})
 
   return buildValidatedResponse(context, 200, responseData, userLoginResponseSchema)
-}), {enableCustomMetrics: true})
+}))

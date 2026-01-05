@@ -163,7 +163,6 @@ All logging functions (`logInfo`, `logDebug`, `logError`) in `src/lib/system/log
 ### Future Considerations
 
 1. **LOG_LEVEL for Production**: Consider changing to INFO when system is stable
-2. **Metrics Consistency**: Audit which handlers use `enableCustomMetrics: true`
 
 ### Not Needed
 

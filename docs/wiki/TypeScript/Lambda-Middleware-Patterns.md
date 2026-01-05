@@ -686,21 +686,13 @@ Is this a scheduled CloudWatch event?
 - Logger initialization with correlation ID
 - Cold start metric tracking (automatic)
 - X-Ray tracing integration
-- Metrics flushing (when `enableCustomMetrics: true`)
+- Auto-flush custom metrics when present (via `hasStoredMetrics()`)
 
 **Signature**:
 ```typescript
 function withPowertools<TEvent, TResult>(
-  handler: (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult>,
-  options?: PowertoolsOptions
+  handler: (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<TResult>
-```
-
-**Options**:
-```typescript
-interface PowertoolsOptions {
-  enableCustomMetrics?: boolean  // Enable Powertools metrics middleware (default: false)
-}
 ```
 
 **Example**:
@@ -708,17 +700,17 @@ interface PowertoolsOptions {
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
 
-// Basic usage - cold start tracking only
+// Basic usage - cold start and custom metrics auto-flushed
 export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
   return buildValidatedResponse(context, 200, {data: 'result'})
 }))
 
-// With custom metrics enabled
+// With custom metrics - no configuration needed
 export const handler = withPowertools(wrapScheduledHandler(async ({event, context}) => {
   const count = await processRecords()
   metrics.addMetric('RecordsProcessed', MetricUnit.Count, count)
   return {processed: count}
-}), {enableCustomMetrics: true})
+}))
 ```
 
 ---

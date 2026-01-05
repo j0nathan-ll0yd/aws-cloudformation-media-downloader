@@ -1,6 +1,9 @@
 /**
  * Unit tests for powertools-metrics rule
  * MEDIUM: Validate PowerTools metrics usage patterns
+ *
+ * Note: enableCustomMetrics validation was removed - withPowertools() now
+ * auto-detects and flushes metrics using hasStoredMetrics().
  */
 
 import {beforeAll, describe, expect, test} from 'vitest'
@@ -34,24 +37,18 @@ describe('powertools-metrics rule', () => {
     })
   })
 
-  describe('enableCustomMetrics validation', () => {
+  describe('no metrics usage', () => {
     test('passes when no metrics are used', () => {
       const {sourceFile, metadata} = loadFixture('valid/powertools-no-metrics')
       const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
       expect(violations).toHaveLength(0)
     })
 
-    test('passes when metrics.addMetric and enableCustomMetrics are both present', () => {
+    test('passes when metrics.addMetric is used (auto-flushed by withPowertools)', () => {
       const {sourceFile, metadata} = loadFixture('valid/powertools-with-custom-metrics')
       const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
+      // No enableCustomMetrics check anymore - should pass
       expect(violations).toHaveLength(0)
-    })
-
-    test('fails when metrics.addMetric is used without enableCustomMetrics', () => {
-      const {sourceFile, metadata} = loadFixture('invalid/powertools-missing-enable')
-      const violations = powertoolsMetricsRule.validate(sourceFile, metadata.simulatedPath!)
-      expect(violations.length).toBeGreaterThanOrEqual(1)
-      expect(violations[0].message).toContain('enableCustomMetrics')
     })
   })
 

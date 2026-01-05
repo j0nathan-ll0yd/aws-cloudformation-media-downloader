@@ -112,4 +112,4 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
     sessionId: result.session?.id || '',
     userId: result.user?.id || ''
   }, userRegistrationResponseSchema)
-}), {enableCustomMetrics: true})
+}))

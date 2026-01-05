@@ -67,20 +67,16 @@ All wrappers provide:
 - Fixture logging for test data extraction
 - `WrapperMetadata` with traceId passed to handler
 
-### Powertools Wrapper Options
+### Powertools Wrapper
 
 ```typescript
-// Default - cold start metrics tracked automatically for ALL lambdas
+// Cold start and custom metrics are auto-tracked for ALL lambdas
 export const handler = withPowertools(wrapAuthorizer(...))
-
-// Enable full metrics middleware for lambdas that publish custom metrics
-export const handler = withPowertools(wrapScheduledHandler(...), {enableCustomMetrics: true})
 ```
 
-**Cold Start Tracking**: All lambdas automatically track cold start metrics. For lambdas without
-`enableCustomMetrics`, this is done via manual tracking to avoid "No application metrics" warnings.
+**Cold Start Tracking**: All lambdas automatically track cold start metrics.
 
-**Custom Metrics**: Set `enableCustomMetrics: true` for lambdas that publish custom metrics:
+**Custom Metrics**: Simply use `metrics.addMetric()` - metrics are auto-flushed when present:
 
 ```typescript
 import {metrics, MetricUnit} from '#lib/lambda/middleware/powertools'
@@ -313,7 +309,6 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 |------|--------|----------|
 | All handlers must use `withPowertools()` | ESLint `local-rules/enforce-powertools` | HIGH |
 | Import order must follow pattern | ESLint `local-rules/import-order` | MEDIUM |
-| Custom metrics require `{enableCustomMetrics: true}` | MCP `powertools-metrics` | MEDIUM |
 | `singleMetric()` required for unique dimensions | MCP `powertools-metrics` | MEDIUM |
 
 ### Exceptions
@@ -333,8 +328,8 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers
 ✅ Read environment variables inside functions, not at module scope
-✅ Cold start metrics are tracked automatically for all lambdas (no option needed)
-✅ Use `{enableCustomMetrics: true}` only if using Powertools `metrics.addMetric()` API
+✅ Cold start metrics are tracked automatically for all lambdas
+✅ Custom metrics are auto-flushed when present (no configuration needed)
 
 ## Testing
 
