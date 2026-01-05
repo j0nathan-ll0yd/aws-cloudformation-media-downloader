@@ -1,6 +1,5 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
-import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import {
   CreatePlatformEndpointCommand,
@@ -10,7 +9,7 @@ import {
   UnsubscribeCommand
 } from '@aws-sdk/client-sns'
 import {createAPIGatewayEvent, createRegisterDeviceBody} from '#test/helpers/event-factories'
-import {createMockUserDevice} from '#test/helpers/entity-fixtures'
+import {createMockUserDevice, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {
   createSNSEndpointResponse,
   createSNSMetadataResponse,
@@ -19,7 +18,7 @@ import {
 } from '#test/helpers/aws-response-factories'
 import {createSNSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-const fakeUserId = uuidv4()
+const fakeUserId = DEFAULT_USER_ID
 
 // Create SNS mock using helper - injects into vendor client factory
 const snsMock = createSNSMock()

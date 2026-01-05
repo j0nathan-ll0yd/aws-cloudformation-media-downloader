@@ -178,96 +178,135 @@ async function discoverTypeSpecModels(): Promise<TypeSpecModelMetadata[]> {
 }
 
 /**
+ * Operation name to Lambda handler mapping
+ * TypeSpec doesn't encode which Lambda handles each operation, so we maintain this mapping
+ */
+const OPERATION_TO_HANDLER: Record<string, string> = {
+  listFiles: 'ListFiles',
+  registerDevice: 'RegisterDevice',
+  logClientEvent: 'DeviceEvent',
+  processFeedlyWebhook: 'WebhookFeedly',
+  registerUser: 'RegisterUser',
+  loginUser: 'LoginUser',
+  refreshToken: 'RefreshToken',
+  deleteUser: 'UserDelete',
+  subscribeUser: 'UserSubscribe'
+}
+
+/**
+ * Parse TypeSpec interface blocks and extract endpoints
+ */
+function parseTypeSpecInterface(content: string, interfaceMatch: RegExpMatchArray): TypeSpecEndpointMetadata[] {
+  const endpoints: TypeSpecEndpointMetadata[] = []
+
+  // Extract base route from interface decorators
+  const interfaceStartIndex = interfaceMatch.index!
+  const beforeInterface = content.slice(Math.max(0, interfaceStartIndex - 200), interfaceStartIndex)
+  const baseRouteMatch = beforeInterface.match(/@route\("([^"]+)"\)\s*(?:@\w+(?:\([^)]*\))?\s*)*$/s)
+  const baseRoute = baseRouteMatch?.[1] || ''
+
+  // Find interface body
+  const interfaceStart = content.indexOf('{', interfaceStartIndex)
+  let braceCount = 1
+  let interfaceEnd = interfaceStart + 1
+  while (braceCount > 0 && interfaceEnd < content.length) {
+    if (content[interfaceEnd] === '{') braceCount++
+    if (content[interfaceEnd] === '}') braceCount--
+    interfaceEnd++
+  }
+  const interfaceBody = content.slice(interfaceStart + 1, interfaceEnd - 1)
+
+  // Parse each operation in the interface using a simpler approach:
+  // Find method names that are followed by ( and have HTTP decorators before them
+  const methodPattern = /(\w+)\s*\(/g
+  const skipWords = new Set(['header', 'body', 'doc', 'statusCode', 'if', 'return', 'expect', 'summary', 'route', 'tag'])
+
+  let methodMatch
+  while ((methodMatch = methodPattern.exec(interfaceBody)) !== null) {
+    const operationName = methodMatch[1]
+
+    // Skip decorator function names and common non-method words
+    if (skipWords.has(operationName.toLowerCase())) continue
+
+    // Look backwards for HTTP method decorators in the preceding context
+    const beforeMethod = interfaceBody.slice(Math.max(0, methodMatch.index - 300), methodMatch.index)
+
+    // Must have an HTTP method decorator
+    let method = ''
+    if (beforeMethod.includes('@get')) method = 'GET'
+    else if (beforeMethod.includes('@post')) method = 'POST'
+    else if (beforeMethod.includes('@delete')) method = 'DELETE'
+    else if (beforeMethod.includes('@put')) method = 'PUT'
+    else if (beforeMethod.includes('@patch')) method = 'PATCH'
+
+    if (!method) continue
+
+    // Check if this is a known operation
+    const handler = OPERATION_TO_HANDLER[operationName]
+    if (!handler) continue
+
+    // Extract sub-route if present (looks for @route closest to the method)
+    const subRouteMatch = beforeMethod.match(/@route\("([^"]+)"\)(?![\s\S]*@route)/)
+    const subRoute = subRouteMatch?.[1] || ''
+    const fullRoute = subRoute ? `${baseRoute}${subRoute}` : baseRoute
+
+    // Extract summary
+    const summaryMatch = beforeMethod.match(/@summary\("([^"]+)"\)/)
+    const description = summaryMatch?.[1]
+
+    // Extract request model from @body parameter - look forward from method name
+    const afterMethod = interfaceBody.slice(methodMatch.index, methodMatch.index + 500)
+    const signatureEnd = afterMethod.indexOf(')')
+    const signature = afterMethod.slice(0, signatureEnd)
+    const bodyParamMatch = signature.match(/@body\s+\w+:\s*(\w+)/)
+    const requestModel = bodyParamMatch?.[1]
+
+    // Extract response model from return type - look for ApiResponse<Model>
+    let responseModel: string | undefined
+    const colonAfterSignature = afterMethod.indexOf(':', signatureEnd)
+    if (colonAfterSignature !== -1) {
+      const returnType = afterMethod.slice(colonAfterSignature, colonAfterSignature + 200)
+      const responseMatch = returnType.match(/ApiResponse<(\w+)>/)
+      responseModel = responseMatch?.[1]
+    }
+
+    endpoints.push({
+      name: operationName,
+      route: fullRoute,
+      method,
+      handler,
+      ...(requestModel && {requestModel}),
+      ...(responseModel && {responseModel}),
+      ...(description && {description})
+    })
+  }
+
+  return endpoints
+}
+
+/**
  * Discover TypeSpec API endpoints from tsp/operations/operations.tsp
  *
- * Uses hardcoded endpoint definitions since TypeSpec syntax is complex to parse.
- * This is maintained in sync with tsp/operations/operations.tsp.
+ * Parses the TypeSpec file to extract:
+ * - Interface base routes from `@route` decorators
+ * - HTTP methods from `@get`, `@post`, `@delete` decorators
+ * - Operation names and summaries
+ * - Request/response models from `@body` parameters
  */
 async function discoverTypeSpecEndpoints(): Promise<TypeSpecEndpointMetadata[]> {
-  // All endpoint definitions based on operations.tsp
-  // These map directly to TypeSpec interface operations
-  return [
-    // Files interface
-    {
-      name: 'listFiles',
-      route: '/files',
-      method: 'GET',
-      handler: 'ListFiles',
-      responseModel: 'FileListResponse',
-      description: 'List available files for authenticated user'
-    },
-    // Devices interface
-    {
-      name: 'registerDevice',
-      route: '/device/register',
-      method: 'POST',
-      handler: 'RegisterDevice',
-      requestModel: 'DeviceRegistrationRequest',
-      responseModel: 'DeviceRegistrationResponse',
-      description: 'Register device for push notifications'
-    },
-    {
-      name: 'logClientEvent',
-      route: '/device/event',
-      method: 'POST',
-      handler: 'DeviceEvent',
-      requestModel: 'ClientEventRequest',
-      description: 'Log client-side device events'
-    },
-    // Webhooks interface
-    {
-      name: 'processFeedlyWebhook',
-      route: '/feedly',
-      method: 'POST',
-      handler: 'WebhookFeedly',
-      requestModel: 'FeedlyWebhookRequest',
-      responseModel: 'WebhookResponse',
-      description: 'Process Feedly webhook'
-    },
-    // Authentication interface
-    {
-      name: 'registerUser',
-      route: '/user/register',
-      method: 'POST',
-      handler: 'RegisterUser',
-      requestModel: 'UserRegistrationRequest',
-      responseModel: 'UserRegistrationResponse',
-      description: 'Register new user'
-    },
-    {
-      name: 'loginUser',
-      route: '/user/login',
-      method: 'POST',
-      handler: 'LoginUser',
-      requestModel: 'UserLoginRequest',
-      responseModel: 'UserLoginResponse',
-      description: 'Login existing user'
-    },
-    {
-      name: 'refreshToken',
-      route: '/user/refresh',
-      method: 'POST',
-      handler: 'RefreshToken',
-      responseModel: 'TokenRefreshResponse',
-      description: 'Refresh authentication token'
-    },
-    {
-      name: 'deleteUser',
-      route: '/user',
-      method: 'DELETE',
-      handler: 'UserDelete',
-      description: 'Delete user account'
-    },
-    {
-      name: 'subscribeUser',
-      route: '/user/subscribe',
-      method: 'POST',
-      handler: 'UserSubscribe',
-      requestModel: 'UserSubscriptionRequest',
-      responseModel: 'UserSubscriptionResponse',
-      description: 'Subscribe user to topic'
-    }
-  ]
+  const operationsPath = path.join(projectRoot, 'tsp', 'operations', 'operations.tsp')
+  const content = await fs.readFile(operationsPath, 'utf-8')
+  const endpoints: TypeSpecEndpointMetadata[] = []
+
+  // Find all interface definitions
+  const interfaceRegex = /interface\s+(\w+)\s*\{/g
+  let match
+  while ((match = interfaceRegex.exec(content)) !== null) {
+    const interfaceEndpoints = parseTypeSpecInterface(content, match)
+    endpoints.push(...interfaceEndpoints)
+  }
+
+  return endpoints
 }
 
 /**

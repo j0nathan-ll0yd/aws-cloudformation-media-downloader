@@ -208,6 +208,7 @@ export interface Local {
     common_lambda_env?:                     CommonLambdaEnv;
     common_tags?:                           CommonTags;
     lambda_architecture?:                   string;
+    project_name?:                          string;
     migrate_dsql_function_name?:            string;
     prune_devices_function_name?:           string;
     refresh_token_function_name?:           string;
@@ -1522,6 +1523,7 @@ const typeMap: any = {
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
         { json: "common_tags", js: "common_tags", typ: u(undefined, r("CommonTags")) },
         { json: "lambda_architecture", js: "lambda_architecture", typ: u(undefined, "") },
+        { json: "project_name", js: "project_name", typ: u(undefined, "") },
         { json: "migrate_dsql_function_name", js: "migrate_dsql_function_name", typ: u(undefined, "") },
         { json: "prune_devices_function_name", js: "prune_devices_function_name", typ: u(undefined, "") },
         { json: "refresh_token_function_name", js: "refresh_token_function_name", typ: u(undefined, "") },

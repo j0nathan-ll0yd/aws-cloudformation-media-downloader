@@ -5,11 +5,11 @@
 
   "entityValidation": {
     "documentedIn": "AGENTS.md",
-    "sourceDirectory": "src/entities",
+    "sourceDirectory": "src/entities/queries",
     "pattern": "*.ts",
     "excludePatterns": ["*.test.ts", "index.ts"],
     "assertion": "count-match",
-    "description": "Entity count in AGENTS.md project structure must match src/entities/*.ts files"
+    "description": "Entity query count in AGENTS.md project structure must match src/entities/queries/*.ts files"
   },
 
   "lambdaValidation": {
@@ -79,9 +79,9 @@
   "relationshipValidations": [
     {
       "source": "graphrag/metadata.json",
-      "target": "src/entities",
+      "target": "src/entities/queries",
       "assertion": "entities-documented",
-      "description": "All entities in src/entities must appear in graphrag metadata entityRelationships"
+      "description": "All entities in src/entities/queries must appear in graphrag metadata entityRelationships"
     }
   ],
 
@@ -113,8 +113,8 @@
 
   "autoFixSuggestions": {
     "entityCountMismatch": {
-      "command": "find src/entities -name '*.ts' ! -name '*.test.ts' ! -name 'index.ts' -exec basename {} \\;",
-      "action": "Update AGENTS.md project structure to include all entity files",
+      "command": "find src/entities/queries -name '*.ts' ! -name '*.test.ts' ! -name 'index.ts' -exec basename {} \\;",
+      "action": "Update AGENTS.md project structure to include all entity query files",
       "severity": "HIGH"
     },
     "lambdaCountMismatch": {

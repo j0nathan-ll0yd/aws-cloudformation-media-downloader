@@ -1,16 +1,15 @@
 import {afterAll, afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {createMockContext} from '#util/vitest-setup'
-import {v4 as uuidv4} from 'uuid'
 import type {CustomAPIGatewayRequestAuthorizerEvent} from '#types/infrastructureTypes'
 import type {PutEventsResponse} from '@aws-sdk/client-eventbridge'
 import type {MediaDownloaderEventType} from '#types/events'
-import {createMockFile, createMockFileDownload, createMockUserFile} from '#test/helpers/entity-fixtures'
+import {createMockFile, createMockFileDownload, createMockUserFile, DEFAULT_USER_ID} from '#test/helpers/entity-fixtures'
 import {createAPIGatewayEvent, createFeedlyWebhookBody} from '#test/helpers/event-factories'
 import {SendMessageCommand} from '@aws-sdk/client-sqs'
 import {createEventBridgePutEventsResponse, createSQSSendMessageResponse} from '#test/helpers/aws-response-factories'
 import {createSQSMock, resetAllAwsMocks} from '#test/helpers/aws-sdk-mock'
 
-const fakeUserId = uuidv4()
+const fakeUserId = DEFAULT_USER_ID
 
 // Create SQS mock using helper - injects into vendor client factory
 const sqsMock = createSQSMock()

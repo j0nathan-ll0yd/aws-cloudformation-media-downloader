@@ -607,7 +607,7 @@
         "name": "listFiles",
         "route": "/files",
         "method": "GET",
-        "description": "List available files for authenticated user"
+        "description": "List available files"
       }
     },
     {
@@ -627,7 +627,7 @@
         "name": "logClientEvent",
         "route": "/device/event",
         "method": "POST",
-        "description": "Log client-side device events"
+        "description": "Log client event"
       }
     },
     {
@@ -667,7 +667,7 @@
         "name": "refreshToken",
         "route": "/user/refresh",
         "method": "POST",
-        "description": "Refresh authentication token"
+        "description": "Refresh session token"
       }
     },
     {
@@ -687,7 +687,7 @@
         "name": "subscribeUser",
         "route": "/user/subscribe",
         "method": "POST",
-        "description": "Subscribe user to topic"
+        "description": "Subscribe to notifications"
       }
     }
   ],
@@ -708,24 +708,9 @@
       "relationship": "implemented_by"
     },
     {
-      "source": "apiendpoint:registerDevice",
-      "target": "apimodel:DeviceRegistrationRequest",
-      "relationship": "accepts"
-    },
-    {
-      "source": "apiendpoint:registerDevice",
-      "target": "apimodel:DeviceRegistrationResponse",
-      "relationship": "returns"
-    },
-    {
       "source": "apiendpoint:logClientEvent",
       "target": "lambda:DeviceEvent",
       "relationship": "implemented_by"
-    },
-    {
-      "source": "apiendpoint:logClientEvent",
-      "target": "apimodel:ClientEventRequest",
-      "relationship": "accepts"
     },
     {
       "source": "apiendpoint:processFeedlyWebhook",
@@ -733,39 +718,14 @@
       "relationship": "implemented_by"
     },
     {
-      "source": "apiendpoint:processFeedlyWebhook",
-      "target": "apimodel:FeedlyWebhookRequest",
-      "relationship": "accepts"
-    },
-    {
-      "source": "apiendpoint:processFeedlyWebhook",
-      "target": "apimodel:WebhookResponse",
-      "relationship": "returns"
-    },
-    {
       "source": "apiendpoint:registerUser",
       "target": "lambda:RegisterUser",
       "relationship": "implemented_by"
     },
     {
-      "source": "apiendpoint:registerUser",
-      "target": "apimodel:UserRegistrationRequest",
-      "relationship": "accepts"
-    },
-    {
-      "source": "apiendpoint:registerUser",
-      "target": "apimodel:UserRegistrationResponse",
-      "relationship": "returns"
-    },
-    {
       "source": "apiendpoint:loginUser",
       "target": "lambda:LoginUser",
       "relationship": "implemented_by"
-    },
-    {
-      "source": "apiendpoint:loginUser",
-      "target": "apimodel:UserLoginRequest",
-      "relationship": "accepts"
     },
     {
       "source": "apiendpoint:loginUser",
@@ -791,16 +751,6 @@
       "source": "apiendpoint:subscribeUser",
       "target": "lambda:UserSubscribe",
       "relationship": "implemented_by"
-    },
-    {
-      "source": "apiendpoint:subscribeUser",
-      "target": "apimodel:UserSubscriptionRequest",
-      "relationship": "accepts"
-    },
-    {
-      "source": "apiendpoint:subscribeUser",
-      "target": "apimodel:UserSubscriptionResponse",
-      "relationship": "returns"
     },
     {
       "source": "lambda:LoginUser",
