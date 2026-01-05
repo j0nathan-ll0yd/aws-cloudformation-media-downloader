@@ -34,7 +34,7 @@ describe('Lambda:Middleware:Validation', () => {
   type TestBody = z.infer<typeof testSchema>
 
   describe('wrapValidatedHandler', () => {
-    const mockContext = {awsRequestId: 'test-request-id'} as Context
+    const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type TestEvent = any
@@ -167,7 +167,7 @@ describe('Lambda:Middleware:Validation', () => {
   })
 
   describe('wrapAuthenticatedValidatedHandler', () => {
-    const mockContext = {awsRequestId: 'test-request-id'} as Context
+    const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type TestEvent = any

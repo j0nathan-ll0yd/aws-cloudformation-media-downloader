@@ -27,7 +27,7 @@ describe('Lambda:Middleware:ResponseValidation', () => {
   })
 
   const testResponseSchema = z.object({id: z.string(), name: z.string()})
-  const mockContext = {awsRequestId: 'test-request-id'} as Context
+  const mockContext = {awsRequestId: 'test-request-id', functionName: 'TestHandler'} as Context
 
   describe('validateResponse', () => {
     it('should pass silently for valid response', async () => {
