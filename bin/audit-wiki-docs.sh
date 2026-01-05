@@ -217,6 +217,10 @@ detect_orphan_pages() {
     fi
   done < <(find docs/wiki -name "*.md" 2> /dev/null)
 
+  # Clean up temp files before function exits
+  rm -f "$visited_file" "$queue_file"
+  trap - EXIT
+
   if [ "$orphan_count" -eq 0 ]; then
     echo -e "  ${GREEN}OK${NC} - No orphan pages detected"
   else
