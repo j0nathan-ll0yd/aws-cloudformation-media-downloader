@@ -108,6 +108,7 @@ main() {
   # Load environment variables
   if [[ -f "${PROJECT_ROOT}/.env" ]]; then
     set -a
+    # shellcheck source=/dev/null
     source "${PROJECT_ROOT}/.env"
     set +a
   fi

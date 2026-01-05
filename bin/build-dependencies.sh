@@ -24,6 +24,7 @@ main() {
   # Load environment variables from .env if it exists
   if [ -f "${PROJECT_ROOT}/.env" ]; then
     set -a
+    # shellcheck source=/dev/null
     source "${PROJECT_ROOT}/.env"
     set +a
   fi

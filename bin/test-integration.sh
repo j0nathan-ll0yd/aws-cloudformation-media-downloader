@@ -20,7 +20,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Error handler
+# Error handler (available for future use)
+# shellcheck disable=SC2329
 error() {
   echo -e "${RED}✗${NC} Error: $1" >&2
   exit "${2:-1}"

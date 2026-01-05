@@ -103,6 +103,7 @@ validate_code_paths() {
     # Skip files in code blocks and extract backtick-wrapped paths
     while IFS= read -r line_content; do
       # Extract paths from backticks
+      # shellcheck disable=SC2016 # Backticks in pattern are intentional
       while IFS= read -r path; do
         [ -z "$path" ] && continue
 

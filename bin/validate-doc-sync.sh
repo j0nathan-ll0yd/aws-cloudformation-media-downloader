@@ -55,7 +55,7 @@ main() {
   # Count query files listed in AGENTS.md between entities/ and lambdas/ sections
   # Each query file is listed with │   │       ├── or │   │       └──
   # Count all .ts files (queries, operations, etc.) excluding index.ts
-  DOCUMENTED_QUERY_COUNT=$(awk '/entities\/.*query functions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.(ts)' | grep -v 'index\.ts' | wc -l | tr -d ' ')
+  DOCUMENTED_QUERY_COUNT=$(awk '/entities\/.*query functions/,/lambdas\/.*Lambda/' AGENTS.md 2> /dev/null | grep -E '│.*\.(ts)' | grep -vc 'index\.ts' || echo 0)
 
   if [ "$QUERY_FILE_COUNT" -ne "$DOCUMENTED_QUERY_COUNT" ]; then
     echo -e "${RED}MISMATCH${NC}"
@@ -72,7 +72,7 @@ main() {
 
   # Count rows in Lambda Trigger Patterns table (lines starting with | and uppercase letter, excluding header)
   # Skip lines containing "Trigger Type" or "---" (header/separator rows)
-  TRIGGER_TABLE_COUNT=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -v '\-\-\-' | wc -l | tr -d ' ')
+  TRIGGER_TABLE_COUNT=$(awk '/### Lambda Trigger Patterns/,/### Data Access/' AGENTS.md 2> /dev/null | grep -E '^\| [A-Z]' | grep -v 'Trigger Type' | grep -vc '\-\-\-' || echo 0)
 
   if [ "$LAMBDA_COUNT" -ne "$TRIGGER_TABLE_COUNT" ]; then
     echo -e "${RED}MISMATCH${NC}"
@@ -306,6 +306,7 @@ main() {
     # Extract backtick-wrapped paths and check if they exist
     while IFS= read -r line_content; do
       # Look for paths that start with common prefixes
+      # shellcheck disable=SC2016 # Backticks in pattern are intentional
       while IFS= read -r path; do
         [ -z "$path" ] && continue
 

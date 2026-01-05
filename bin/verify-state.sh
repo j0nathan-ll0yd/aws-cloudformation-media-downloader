@@ -40,6 +40,7 @@ main() {
   # Load environment variables
   if [[ -f "${PROJECT_ROOT}/.env" ]]; then
     set -a
+    # shellcheck source=/dev/null
     source "${PROJECT_ROOT}/.env"
     set +a
   fi
@@ -49,9 +50,9 @@ main() {
   # Count resources in state
   echo -e "${YELLOW}[1/3] Analyzing state file...${NC}"
 
-  AWS_RESOURCES=$(tofu state list 2> /dev/null | grep -E "^aws_" | wc -l | tr -d ' ')
-  DATA_SOURCES=$(tofu state list 2> /dev/null | grep -E "^data\." | wc -l | tr -d ' ')
-  LOCAL_RESOURCES=$(tofu state list 2> /dev/null | grep -E "^local_" | wc -l | tr -d ' ')
+  AWS_RESOURCES=$(tofu state list 2> /dev/null | grep -cE "^aws_" || echo 0)
+  DATA_SOURCES=$(tofu state list 2> /dev/null | grep -cE "^data\." || echo 0)
+  LOCAL_RESOURCES=$(tofu state list 2> /dev/null | grep -cE "^local_" || echo 0)
 
   echo "  AWS resources:   ${AWS_RESOURCES}"
   echo "  Data sources:    ${DATA_SOURCES}"
