@@ -131,9 +131,11 @@ export const namingConventionsRule: ValidationRule = {
         }
 
         // Check string value is PascalCase if present
+        // Skip numeric values (e.g., PostgreSQL error codes like '23505')
         if (initializer) {
           const value = initializer.getText().replace(/['"]/g, '')
-          if (value && !isPascalCase(value) && value !== memberName.toLowerCase()) {
+          const isNumericCode = /^\d+$/.test(value)
+          if (value && !isPascalCase(value) && value !== memberName.toLowerCase() && !isNumericCode) {
             violations.push(
               createViolation(RULE_NAME, 'MEDIUM', memberLine, `Enum value '${value}' for '${enumName}.${memberName}' should be PascalCase`, {
                 suggestion: `Use value '${toPascalCase(value)}'`

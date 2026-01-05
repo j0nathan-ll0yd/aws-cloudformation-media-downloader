@@ -14,7 +14,7 @@ pnpm run generate:llms
 
 ## Workflow
 
-### Step 1: Detect New Components
+### Step 1: Detect New ComponentsYes
 
 Scan for Lambdas and Entities not in metadata:
 

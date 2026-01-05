@@ -31,9 +31,9 @@ const EXPECTED_COUNTS = {
   // Entity files in src/entities (excluding index.ts and test files)
   entities: 10,
   // Lambda directories in src/lambdas
-  lambdas: 16,
+  lambdas: 17,
   // MCP validation rules in src/mcp/validation/rules (including this rule)
-  mcpRules: 20
+  mcpRules: 21
 }
 
 /**
