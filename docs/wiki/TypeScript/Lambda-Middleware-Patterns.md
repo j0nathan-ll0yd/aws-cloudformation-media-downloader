@@ -590,7 +590,7 @@ export const handler = middy(wrapApiHandler(async ({event, context}) => {
 
 **Use for**: Adding CORS and security headers to all responses.
 
-**File**: `src/lib/lambda/middleware/security-headers.ts`
+**File**: `src/lib/lambda/middleware/securityHeaders.ts`
 
 **What it provides**:
 - Default CORS headers (configurable)
@@ -605,7 +605,7 @@ export const handler = middy(wrapApiHandler(async ({event, context}) => {
 **Example**:
 ```typescript
 import middy from '@middy/core'
-import {securityHeaders} from '#lib/lambda/middleware/security-headers'
+import {securityHeaders} from '#lib/lambda/middleware/securityHeaders'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
 
 export const handler = middy(wrapApiHandler(async ({event, context}) => {
@@ -752,7 +752,7 @@ export const handler = withPowertools(wrapApiHandler(async ({context}) => {
 
 ### Type exports
 
-**File**: `src/lib/lambda/middleware/api-gateway.ts`
+**File**: `src/lib/lambda/middleware/apiGateway.ts`
 
 **Exports**:
 ```typescript
@@ -837,9 +837,8 @@ function wrapEventHandler<TRecord>(
 
 **Example**:
 ```typescript
-import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
+import {wrapEventHandler, s3Records, sqsRecords} from '#lib/lambda/middleware/legacy'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {s3Records, sqsRecords} from '#util/lambda-helpers'
 
 // S3 event handler
 export const handler = withPowertools(wrapEventHandler(
@@ -867,10 +866,10 @@ export const handler = withPowertools(wrapEventHandler(
 | File | Purpose | Key Exports |
 |------|---------|-------------|
 | `api.ts` | API handler wrappers | `wrapApiHandler`, `wrapAuthenticatedHandler`, `wrapOptionalAuthHandler` |
-| `api-gateway.ts` | Type definitions | `CustomAPIGatewayRequestAuthorizerEvent` |
+| `apiGateway.ts` | Type definitions | `CustomAPIGatewayRequestAuthorizerEvent` |
 | `validation.ts` | Request validation | `wrapValidatedHandler`, `wrapAuthenticatedValidatedHandler` |
 | `sanitization.ts` | XSS/injection protection | `sanitizeInput` |
-| `security-headers.ts` | CORS and security | `securityHeaders` |
+| `securityHeaders.ts` | CORS and security | `securityHeaders` |
 | `sqs.ts` | SQS batch processing | `wrapSqsBatchHandler` |
 | `powertools.ts` | Observability | `withPowertools`, `metrics`, `MetricUnit` |
 | `correlation.ts` | Correlation IDs | `correlationMiddleware`, `getCorrelationId` |

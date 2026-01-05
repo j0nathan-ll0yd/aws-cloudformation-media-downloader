@@ -88,14 +88,14 @@ afterAll(async () => {
 
 **Use for**: Runtime validation of database insert and update operations.
 
-**File**: `src/lib/vendor/Drizzle/zod-schemas.ts`
+**File**: `src/lib/vendor/Drizzle/zodSchemas.ts`
 
 The project uses `drizzle-zod` to generate Zod validation schemas from Drizzle table definitions. All entity query functions validate input before database operations.
 
 ### Importing Schemas
 
 ```typescript
-import {userInsertSchema, fileSelectSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {userInsertSchema, fileSelectSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 // Validate insert data
 const validatedUser = userInsertSchema.parse(userData)
@@ -119,7 +119,7 @@ Each table has three schema variants:
 Use factory functions for custom validation rules:
 
 ```typescript
-import {createInsertSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {createInsertSchema} from '#lib/vendor/Drizzle/zodSchemas'
 import {files} from '#lib/vendor/Drizzle/schema'
 
 const customFileSchema = createInsertSchema(files, {

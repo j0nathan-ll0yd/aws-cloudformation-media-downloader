@@ -36,13 +36,14 @@ Imports must follow this exact order with **NO blank lines between groups**:
 ```typescript
 import {randomUUID} from 'node:crypto'
 import type {APIGatewayProxyResult, Context} from 'aws-lambda'
-import {Files} from '#entities/Files'
-import {UserFiles} from '#entities/UserFiles'
+import {getFilesForUser, createUserFile} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
+import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import type {File} from '#types/domainModels'
 import {FileStatus} from '#types/enums'
-import {buildApiResponse, withPowertools, wrapAuthenticatedHandler} from '#util/lambda-helpers'
-import {logDebug, logInfo} from '#util/logging'
+import {logDebug, logInfo} from '#lib/system/logging'
 ```
 
 Note: All imports in a single contiguous block with no blank lines.

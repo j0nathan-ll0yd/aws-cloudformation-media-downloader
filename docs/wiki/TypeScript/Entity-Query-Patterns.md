@@ -199,7 +199,7 @@ const user = await withTransaction(async (tx) => {
 All create/update functions validate input against Zod schemas:
 
 ```typescript
-import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {userInsertSchema, userUpdateSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 // Validation happens automatically in query functions
 const user = await createUser(input)  // Throws ZodError if invalid

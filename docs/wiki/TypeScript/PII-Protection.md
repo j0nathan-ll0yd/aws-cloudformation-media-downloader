@@ -27,7 +27,7 @@ This centralized function:
 
 ### Integration Points
 
-1. **Runtime Debug Logging** (`src/util/logging.ts`)
+1. **Runtime Debug Logging** (`src/lib/system/logging.ts`)
    ```typescript
    export function logDebug(message: string, data?: string | object): void {
      // Automatically sanitizes objects
@@ -35,7 +35,7 @@ This centralized function:
    }
    ```
 
-2. **Test Fixture Generation** (`src/util/lambda-helpers.ts`)
+2. **Test Fixture Generation** (`src/lib/lambda/middleware/api.ts`)
    ```typescript
    export function logIncomingFixture(event: unknown): void {
      console.log(JSON.stringify({
@@ -69,7 +69,7 @@ The following fields are **automatically redacted** (case-insensitive):
 ### ✅ Automatic Protection (All Logging Functions)
 
 ```typescript
-import {logInfo, logDebug, logError} from '#util/logging'
+import {logInfo, logDebug, logError} from '#lib/system/logging'
 
 // PII is automatically sanitized in ALL logging functions
 logInfo('User data', {

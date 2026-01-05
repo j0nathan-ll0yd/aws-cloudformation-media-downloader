@@ -2,7 +2,7 @@
 
 ## Quick Reference
 - **When to use**: Protecting against cascading failures from external services
-- **Location**: `src/lib/system/circuit-breaker.ts`
+- **Location**: `src/lib/system/circuitBreaker.ts`
 - **Related**: [Lambda Function Patterns](Lambda-Function-Patterns.md)
 
 ## Overview
@@ -15,7 +15,7 @@ Resilience patterns prevent cascading failures when external services (YouTube, 
 
 **Use for**: Protecting calls to external services that may fail or become slow.
 
-**File**: `src/lib/system/circuit-breaker.ts`
+**File**: `src/lib/system/circuitBreaker.ts`
 
 **Signature**:
 ```typescript
@@ -29,7 +29,7 @@ class CircuitBreaker {
 
 **Example**:
 ```typescript
-import {CircuitBreaker, CircuitBreakerOpenError} from '#lib/system/circuit-breaker'
+import {CircuitBreaker, CircuitBreakerOpenError} from '#lib/system/circuitBreaker'
 
 // Create a circuit breaker for an external service
 const apiBreaker = new CircuitBreaker({
@@ -62,10 +62,10 @@ try {
 
 **Use for**: YouTube/yt-dlp operations (pre-configured).
 
-**File**: `src/lib/system/circuit-breaker.ts`
+**File**: `src/lib/system/circuitBreaker.ts`
 
 ```typescript
-import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
+import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 
 // Use the pre-configured YouTube circuit breaker
 const videoInfo = await youtubeCircuitBreaker.execute(() => fetchVideoInfo(videoId))

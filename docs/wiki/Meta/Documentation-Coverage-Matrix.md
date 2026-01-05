@@ -67,7 +67,7 @@ All 18 Lambda functions have TSDoc comments in their handlers. Wiki references a
 
 | File | Purpose | TSDoc | Wiki Page |
 |------|---------|-------|-----------|
-| circuit-breaker.ts | Resilience pattern | Yes | Resilience-Patterns (partial) |
+| circuitBreaker.ts | Resilience pattern | Yes | Resilience-Patterns (partial) |
 | retry.ts | Retry utilities | Yes | None (GAP) |
 | errors.ts | Error types | Yes | TypeScript-Error-Handling (partial) |
 | env.ts | Environment utilities | Yes | Lambda-Environment-Variables (partial) |

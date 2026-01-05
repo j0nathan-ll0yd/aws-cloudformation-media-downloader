@@ -89,31 +89,33 @@ vi.mocked(updateFileDownload).mockResolvedValue(mockFileDownloadRow())
 - Requires importing mocked functions after vi.mock
 - Order-dependent setup
 
-### Pattern 3: Drizzle Entity Mock Factory
+### Pattern 3: Query Function Mocking (RECOMMENDED)
 
-**When to use:** Tests that need full entity behavior (get/create/update/delete)
+**When to use:** Tests that need entity query behavior (get/create/update/delete)
 
 ```typescript
-// Using createDrizzleEntityMock from test/helpers/drizzle-mock.ts
-const usersMock = createDrizzleEntityMock<UserItem>({
-  queryIndexes: ['byEmail', 'byAppleDeviceId']
-})
+// Mock the queries module
+vi.mock('#entities/queries', () => ({
+  getUser: vi.fn(),
+  createUser: vi.fn(),
+  updateUser: vi.fn()
+}))
 
-vi.mock('#entities/Users', () => ({Users: usersMock.entity}))
+import {getUser, createUser} from '#entities/queries'
 
-// Set up return values
-usersMock.mocks.get.mockResolvedValue({data: mockUser})
-usersMock.mocks.query.byEmail!.go.mockResolvedValue({data: [mockUser]})
+// Set up return values using mocked functions
+vi.mocked(getUser).mockResolvedValue(mockUser)
+vi.mocked(createUser).mockResolvedValue(mockUser)
 ```
 
 **Pros:**
-- Comprehensive entity mocking
-- Type-safe generic factory
-- Supports all entity operations
+- Simple, direct function mocking
+- Type-safe via `vi.mocked()`
+- Aligns with current Drizzle ORM architecture
 
 **Cons:**
-- More complex setup
-- Requires understanding of factory structure
+- Requires importing mocked functions after vi.mock
+- Order-dependent setup
 
 ### Pattern 4: Better Auth Mocking
 

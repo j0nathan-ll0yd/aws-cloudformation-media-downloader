@@ -7,7 +7,7 @@
 
 ## The Rule
 
-**NEVER import third-party libraries directly in Lambda handlers or business logic. Always use vendor wrappers in `lib/vendor/`.**
+**NEVER import third-party libraries directly in Lambda handlers or business logic. Always use vendor wrappers in `src/lib/vendor/`.**
 
 This applies to:
 - AWS SDK (`@aws-sdk/*`)
@@ -20,10 +20,10 @@ This applies to:
 
 | Library | Wrapper Location | Purpose |
 |---------|------------------|---------|
-| AWS SDK | `lib/vendor/AWS/` | S3, DynamoDB, SNS, SQS, Lambda |
-| Drizzle ORM | `lib/vendor/Drizzle/` | Aurora DSQL database access |
-| Better Auth | `lib/vendor/BetterAuth/` | Authentication framework |
-| yt-dlp | `lib/vendor/YouTube.ts` | Video download wrapper |
+| AWS SDK | `src/lib/vendor/AWS/` | S3, DynamoDB, SNS, SQS, Lambda |
+| Drizzle ORM | `src/lib/vendor/Drizzle/` | Aurora DSQL database access |
+| Better Auth | `src/lib/vendor/BetterAuth/` | Authentication framework |
+| yt-dlp | `src/lib/vendor/YouTube.ts` | Video download wrapper |
 
 ## Examples
 
@@ -100,7 +100,7 @@ import {users, files} from '#lib/vendor/Drizzle/schema'
 import {eq, and} from '#lib/vendor/Drizzle/types'
 
 // FK checks: Import foreign key enforcement
-import {assertUserExists} from '#lib/vendor/Drizzle/fk-enforcement'
+import {assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'
 ```
 
 #### Type Utilities
@@ -124,7 +124,7 @@ type UpdateUserInput = Partial<Omit<InsertModel<typeof users>, 'userId'>>
 ## Vendor Wrapper Pattern
 
 ```typescript
-// lib/vendor/AWS/S3.ts
+// src/lib/vendor/AWS/S3.ts
 import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'
 import {captureAWSClient} from './XRay'
 
@@ -184,7 +184,7 @@ jest.unstable_mockModule('#lib/vendor/AWS/S3', () => ({
 
 ## Adding New Vendors
 
-1. Create wrapper in `lib/vendor/{VendorName}/`
+1. Create wrapper in `src/lib/vendor/{VendorName}/`
 2. Implement lazy initialization pattern
 3. Add environment detection if needed
 4. Add X-Ray instrumentation for AWS services

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document analyzes the relationship between TypeSpec-generated API schemas (`src/types/api-schema/schemas.ts`) and Drizzle-Zod entity schemas (`src/lib/vendor/Drizzle/zod-schemas.ts`) to determine consolidation opportunities.
+This document analyzes the relationship between TypeSpec-generated API schemas (`src/types/api-schema/schemas.ts`) and Drizzle-Zod entity schemas (`src/lib/vendor/Drizzle/zodSchemas.ts`) to determine consolidation opportunities.
 
 ## Current Schema Sources
 
@@ -14,7 +14,7 @@ This document analyzes the relationship between TypeSpec-generated API schemas (
 ### Drizzle-Zod Entity Schemas
 - **Source**: Auto-generated from Drizzle table definitions
 - **Purpose**: Database insert/update validation
-- **Location**: `src/lib/vendor/Drizzle/zod-schemas.ts`
+- **Location**: `src/lib/vendor/Drizzle/zodSchemas.ts`
 
 ## Schema Comparison
 
@@ -130,7 +130,7 @@ z.object({
 Use `.pick()` and `.extend()` on drizzle-zod schemas to create API schemas:
 
 ```typescript
-import {fileSelectSchema} from '#lib/vendor/Drizzle/zod-schemas'
+import {fileSelectSchema} from '#lib/vendor/Drizzle/zodSchemas'
 
 export const fileApiSchema = fileSelectSchema
   .partial()  // Make all optional
@@ -221,7 +221,7 @@ The following actions were taken to improve schema validation:
 
 1. **Response validation added** - Lambda handlers now validate responses using TypeSpec-generated API schemas via `buildValidatedResponse()`
 
-2. **Shared primitives created** - `src/types/shared-primitives.ts` derives Zod schemas from TypeScript enums, eliminating duplication:
+2. **Shared primitives created** - `src/types/sharedPrimitives.ts` derives Zod schemas from TypeScript enums, eliminating duplication:
    - `fileStatusZodSchema` from `FileStatus` enum
    - `downloadStatusZodSchema` from `DownloadStatus` enum
    - `responseStatusZodSchema` from `ResponseStatus` enum
@@ -239,7 +239,7 @@ The following actions were taken to improve schema validation:
 | API Requests | TypeSpec (`api-schema/schemas.ts`) | Validate incoming request payloads |
 | API Responses | TypeSpec (`api-schema/schemas.ts`) | Validate outgoing response shapes |
 | Database Writes | Drizzle-Zod + Enum refinements | Validate entity inserts/updates |
-| Status Enums | Shared primitives (`shared-primitives.ts`) | Single source of truth for enum values |
+| Status Enums | Shared primitives (`sharedPrimitives.ts`) | Single source of truth for enum values |
 
 ## Future Considerations
 
