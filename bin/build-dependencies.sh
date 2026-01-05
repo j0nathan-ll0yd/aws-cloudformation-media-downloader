@@ -7,9 +7,7 @@ set -euo pipefail
 
 # Color definitions
 RED='\033[0;31m'
-GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Error handler
@@ -30,15 +28,15 @@ main() {
     set +a
   fi
 
-  local infrastructure_files_list="${PROJECT_ROOT}/terraform/*.tf"
+  local infrastructure_files=("${PROJECT_ROOT}"/terraform/*.tf)
   local types_file_path="${PROJECT_ROOT}/src/types/infrastructure.d.ts"
   local infrastructure_hcl_file_path="${PROJECT_ROOT}/build/infrastructure.tf"
   local infrastructure_json_file_path="${PROJECT_ROOT}/build/infrastructure.json"
 
-  echo "infrastructure_files_list = $infrastructure_files_list"
+  echo "infrastructure_files = ${infrastructure_files[*]}"
 
   echo 'Concatenating infrastructure files'
-  cat ${infrastructure_files_list} > "${infrastructure_hcl_file_path}"
+  cat "${infrastructure_files[@]}" > "${infrastructure_hcl_file_path}"
 
   echo 'Converting HCL to JSON (via hcl2json)'
   hcl2json < "$infrastructure_hcl_file_path" > "$infrastructure_json_file_path"

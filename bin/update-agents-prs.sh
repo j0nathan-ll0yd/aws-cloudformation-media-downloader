@@ -63,9 +63,11 @@ main() {
   PRS=$(echo "$PRS" | head -5)
 
   # Generate the section content
+  local date_today
+  date_today=$(date +%Y-%m-%d)
   local SECTION_CONTENT="## Recent Significant PRs
 
-_Auto-updated by CI - last updated: $(date +%Y-%m-%d)_
+_Auto-updated by CI - last updated: ${date_today}_
 
 $PRS"
 

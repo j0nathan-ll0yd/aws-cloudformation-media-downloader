@@ -37,7 +37,6 @@ TOTAL_PAGES=0
 BROKEN_LINKS=()
 STALE_CODE_REFS=()
 ORPHAN_PAGES=()
-LINKED_PAGES=()
 ERRORS=""
 
 # =============================================================================
@@ -144,14 +143,17 @@ detect_orphan_pages() {
   local orphan_count=0
 
   # Use temp files for bash 3 compatibility (no associative arrays)
-  local visited_file=$(mktemp)
-  local queue_file=$(mktemp)
-  trap "rm -f $visited_file $queue_file" EXIT
+  local visited_file
+  local queue_file
+  visited_file=$(mktemp)
+  queue_file=$(mktemp)
+  trap 'rm -f "$visited_file" "$queue_file"' EXIT
 
   # Get all pages linked from a file
   get_linked_pages() {
     local file="$1"
-    local dir=$(dirname "$file")
+    local dir
+    dir=$(dirname "$file")
 
     awk 'BEGIN{c=0; bt=sprintf("%c",96); pat="^" bt bt bt} $0 ~ pat {c=1-c; next} c==0{print}' "$file" 2> /dev/null |
       grep -oE '\]\([^)]+\.md[^)]*\)' |
@@ -229,8 +231,6 @@ detect_orphan_pages
 echo -e "${YELLOW}[4/4] Validating import aliases in code blocks...${NC}"
 
 validate_import_aliases() {
-  local invalid_count=0
-
   # Map import alias to actual path (bash 3 compatible)
   get_alias_path() {
     case "$1" in
