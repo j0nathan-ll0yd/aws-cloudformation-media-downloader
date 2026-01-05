@@ -37,7 +37,7 @@ success() {
 
 check_staged_files() {
   local staged_files
-  staged_files=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || echo "")
+  staged_files=$(git diff --cached --name-only --diff-filter=ACM 2> /dev/null || echo "")
 
   if [ -z "$staged_files" ]; then
     success "No staged files to check"
@@ -89,27 +89,27 @@ check_staged_files() {
   for file in $staged_files; do
     if [ -f "${PROJECT_ROOT}/${file}" ]; then
       # Skip binary files, encrypted files, and test fixtures
-      if file "${PROJECT_ROOT}/${file}" 2>/dev/null | grep -q "text" && \
-         ! echo "$file" | grep -qE "\.(enc|encrypted)\." && \
-         ! echo "$file" | grep -qE "^test/fixtures/"; then
+      if file "${PROJECT_ROOT}/${file}" 2> /dev/null | grep -q "text" &&
+        ! echo "$file" | grep -qE "\.(enc|encrypted)\." &&
+        ! echo "$file" | grep -qE "^test/fixtures/"; then
 
         # Pattern: Potential API keys or tokens (long alphanumeric strings after common key names)
         if grep -nE "(api[_-]?key|api[_-]?token|secret[_-]?key|private[_-]?key|auth[_-]?token)\s*[:=]\s*['\"][A-Za-z0-9_\-]{32,}['\"]" \
-             "${PROJECT_ROOT}/${file}" 2>/dev/null | \
-           grep -vE "(placeholder|example|test|mock|fake|dummy|YOUR_)" > /dev/null; then
+          "${PROJECT_ROOT}/${file}" 2> /dev/null |
+          grep -vE "(placeholder|example|test|mock|fake|dummy|YOUR_)" > /dev/null; then
           warn "Potential hardcoded secret in $file"
           found_secrets=1
         fi
 
         # Pattern: AWS access keys
-        if grep -nE "AKIA[A-Z0-9]{16}" "${PROJECT_ROOT}/${file}" 2>/dev/null > /dev/null; then
+        if grep -nE "AKIA[A-Z0-9]{16}" "${PROJECT_ROOT}/${file}" 2> /dev/null > /dev/null; then
           error "AWS Access Key ID found in $file"
           found_secrets=1
         fi
 
         # Pattern: GitHub tokens
-        if grep -nE "ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}" "${PROJECT_ROOT}/${file}" 2>/dev/null | \
-           grep -vE "(test|mock|fake)" > /dev/null; then
+        if grep -nE "ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}" "${PROJECT_ROOT}/${file}" 2> /dev/null |
+          grep -vE "(test|mock|fake)" > /dev/null; then
           error "GitHub token found in $file"
           found_secrets=1
         fi
