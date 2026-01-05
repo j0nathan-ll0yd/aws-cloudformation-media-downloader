@@ -16,6 +16,7 @@
 import type {APIGatewayProxyEvent, Context, S3Event, SQSEvent} from 'aws-lambda'
 import {randomUUID} from 'crypto'
 import type {CorrelationContext} from '#types/infrastructureTypes'
+import {logDebug} from '#lib/system/logging'
 
 export type { CorrelationContext }
 
@@ -83,10 +84,13 @@ function extractFromSQS(event: SQSEvent): string | undefined {
 
 /**
  * Extracts correlation ID from API Gateway headers.
- * Supports both X-Correlation-ID and x-correlation-id (case-insensitive).
+ * Only uses custom X-Correlation-ID header if provided by client.
+ * Does NOT fall back to X-Amzn-Trace-Id (that's for traceId, not correlationId).
+ * If no custom header, returns undefined to allow UUID generation.
  */
 function extractFromAPIGateway(event: APIGatewayProxyEvent): string | undefined {
   const headers = event.headers || {}
+  // Only use custom correlation header - don't conflate with X-Ray trace ID
   return headers['X-Correlation-ID'] || headers['x-correlation-id'] || headers['X-Correlation-Id']
 }
 
@@ -113,6 +117,7 @@ function extractFromEventBridge(event: EventBridgeEvent): string | undefined {
 export function extractCorrelationId(event: unknown, context: Context): CorrelationContext {
   const traceId = context.awsRequestId
   let correlationId: string | undefined
+  logDebug('extractCorrelationId', {event, context})
 
   // Try SQS message body first (EventBridge routed through SQS)
   if (isSQSEvent(event)) {
