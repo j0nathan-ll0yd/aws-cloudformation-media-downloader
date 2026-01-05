@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update ffmpeg Lambda layer binary
-# Usage: ./scripts/update-ffmpeg.sh [--check-only]
+# Usage: ./bin/update-ffmpeg.sh [--check-only]
 #
 # Note: ffmpeg updates are infrequent. John Van Sickle's builds don't have
 # a releases API, so this script helps with manual version management.
@@ -20,7 +20,7 @@ NC='\033[0m'
 check_only=false
 [[ "${1:-}" == "--check-only" ]] && check_only=true
 
-current_version=$(cat "$VERSION_FILE" 2>/dev/null || echo "none")
+current_version=$(cat "$VERSION_FILE" 2> /dev/null || echo "none")
 
 echo "ffmpeg layer update check"
 echo "========================="
@@ -34,7 +34,7 @@ if $check_only; then
   exit 0
 fi
 
-read -p "Enter new version (or press Enter to skip): " new_version
+read -rp "Enter new version (or press Enter to skip): " new_version
 if [[ -n "$new_version" ]]; then
   echo "$new_version" > "$VERSION_FILE"
   echo -e "${GREEN}Updated VERSION to $new_version${NC}"
