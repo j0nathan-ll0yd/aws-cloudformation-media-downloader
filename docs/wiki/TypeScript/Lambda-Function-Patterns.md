@@ -21,7 +21,8 @@ import {uploadToS3} from '#lib/vendor/AWS/S3'
 import type {FileRow} from '#entities/queries'
 
 // 5. Utilities
-import {logInfo, response} from '#util/lambda-helpers'
+import {logInfo} from '#lib/system/logging'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 // ❌ NEVER import AWS SDK directly - use vendor wrappers
 ```
@@ -33,7 +34,7 @@ Lambda handlers use wrapper functions that eliminate boilerplate and ensure cons
 ```typescript
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 // Helper functions first
 async function processFile(fileId: string): Promise<void> {
@@ -44,7 +45,7 @@ async function processFile(fileId: string): Promise<void> {
 // Handler with wrappers - business logic only, no try-catch needed
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   await processFile(event.fileId)
-  return response(context, 200, {success: true})
+  return buildValidatedResponse(context, 200, {success: true})
   // Errors automatically converted to 500 responses
 }))
 ```
@@ -95,17 +96,19 @@ Metrics are batched and flushed automatically by the middleware at request end.
 
 ## Response Format (REQUIRED)
 
-**Mandatory**: ALWAYS use the `buildApiResponse` helper function from `lambda-helpers.ts`. Never return raw API Gateway response objects.
+**Mandatory**: ALWAYS use the `buildValidatedResponse` helper function from `#lib/lambda/responses`. Never return raw API Gateway response objects.
 
 ```typescript
-// ✅ CORRECT - Use buildApiResponse helper
-return buildApiResponse(context, 200, {
+import {buildValidatedResponse, buildErrorResponse} from '#lib/lambda/responses'
+
+// ✅ CORRECT - Use buildValidatedResponse for success
+return buildValidatedResponse(context, 200, {
   data: result,
   requestId: context.awsRequestId
 })
 
-// ✅ CORRECT - Use buildApiResponse for errors
-return buildApiResponse(context, error as Error)
+// ✅ CORRECT - Use buildErrorResponse for errors
+return buildErrorResponse(context, error)
 
 // ❌ WRONG - Never return raw objects
 return {
@@ -146,12 +149,12 @@ export const handler = wrapApiHandler(async ({event, context}: ApiHandlerParams)
 import type {ApiHandlerParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 // Public endpoints - no authentication required
 export const handler = withPowertools(wrapApiHandler(async ({event, context}: ApiHandlerParams) => {
   // Business logic - just throw errors, wrapper handles conversion
-  return response(context, 200, {data: result})
+  return buildValidatedResponse(context, 200, {data: result})
 }))
 ```
 
@@ -160,14 +163,14 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
 import type {AuthenticatedApiParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapAuthenticatedHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 // Authenticated endpoints - userId guaranteed by wrapper
 // Rejects both Unauthenticated AND Anonymous users with 401
 export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, userId}: AuthenticatedApiParams) => {
   // userId is guaranteed to be a string - no need to check
   await deleteUser(userId)
-  return response(context, 204)
+  return buildValidatedResponse(context, 204)
 }))
 ```
 
@@ -176,7 +179,7 @@ export const handler = withPowertools(wrapAuthenticatedHandler(async ({context, 
 import type {OptionalAuthApiParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapOptionalAuthHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 import {UserStatus} from '#types/enums'
 
 // Optional auth endpoints - allows anonymous but rejects invalid tokens
@@ -184,10 +187,10 @@ import {UserStatus} from '#types/enums'
 // Anonymous users (no token) are allowed
 export const handler = withPowertools(wrapOptionalAuthHandler(async ({context, userId, userStatus}: OptionalAuthApiParams) => {
   if (userStatus === UserStatus.Anonymous) {
-    return response(context, 200, {demo: true})
+    return buildValidatedResponse(context, 200, {demo: true})
   }
   // userId is defined when Authenticated
-  return response(context, 200, {userId})
+  return buildValidatedResponse(context, 200, {userId})
 }))
 ```
 
@@ -208,8 +211,7 @@ export const handler = withPowertools(wrapAuthorizer(async ({event}: AuthorizerP
 ```typescript
 import type {EventHandlerParams} from '#types/lambda'
 import {withPowertools} from '#lib/lambda/middleware/powertools'
-import {wrapEventHandler} from '#lib/lambda/middleware/legacy'
-import {s3Records} from '#util/lambda-helpers'
+import {wrapEventHandler, s3Records} from '#lib/lambda/middleware/legacy'
 
 // Process individual records - errors don't stop other records
 async function processS3Record({record}: EventHandlerParams<S3EventRecord>) {
@@ -291,7 +293,7 @@ This is acceptable because:
 ### Helper Functions
 
 ```typescript
-import {getRequiredEnv, getOptionalEnv, getOptionalEnvNumber} from '#util/env-validation'
+import {getRequiredEnv, getOptionalEnv, getOptionalEnvNumber} from '#lib/system/env'
 
 // Required - throws if missing
 const apiKey = getRequiredEnv('API_KEY')
@@ -323,7 +325,7 @@ const batchSize = getOptionalEnvNumber('BATCH_SIZE', 5)
 ✅ Use `withPowertools` wrapper for all Lambda handlers (provides logging, cold start tracking, tracing)
 ✅ Use appropriate handler wrapper (`wrapApiHandler`, `wrapAuthenticatedHandler`, etc.)
 ✅ Use vendor wrappers for AWS SDK (never import AWS SDK directly)
-✅ Return responses using `response()` helper
+✅ Return responses using `buildValidatedResponse()` helper
 ✅ Throw errors instead of manual try-catch (wrapper handles it)
 ✅ Keep handler at bottom of file
 ✅ Define record processing functions separately for event handlers

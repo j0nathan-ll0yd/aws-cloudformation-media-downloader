@@ -82,7 +82,7 @@ return buildApiResponse(200, {data})
 const config = process.env.CONFIG
 
 // With this:
-import {getRequiredEnv} from '#util/env-validation'
+import {getRequiredEnv} from '#lib/system/env'
 const config = getRequiredEnv('CONFIG')
 ```
 
@@ -95,7 +95,7 @@ const config = getRequiredEnv('CONFIG')
 **Guidance**:
 ```typescript
 // Wrap handler with:
-import {withPowertools} from '#util/lambda-helpers'
+import {withPowertools} from '#lib/lambda/middleware/powertools'
 
 export const handler = withPowertools(async (event, context) => {
   // Handler logic

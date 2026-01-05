@@ -55,7 +55,6 @@ Complete reference for all shell scripts in the project.
 |--------|---------|-------|
 | `bin/aws-audit.sh` | Comprehensive AWS infrastructure audit | `./bin/aws-audit.sh` |
 | `bin/auto-update-graphrag.sh` | Auto-update knowledge graph | `./bin/auto-update-graphrag.sh` |
-| `bin/sync-examples.sh` | Sync example configurations | `./bin/sync-examples.sh` |
 
 ## Script Details
 

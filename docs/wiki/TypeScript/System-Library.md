@@ -8,7 +8,7 @@ The system library provides foundational utilities used across Lambda handlers:
 
 ```
 src/lib/system/
-├── circuit-breaker.ts   # Resilience pattern for external services
+├── circuitBreaker.ts    # Resilience pattern for external services
 ├── retry.ts             # Retry with exponential backoff
 ├── errors.ts            # Custom error types with HTTP status codes
 ├── env.ts               # Environment variable utilities
@@ -26,7 +26,7 @@ Prevents cascading failures when external services (YouTube, APNS) are degraded.
 ### Basic Usage
 
 ```typescript
-import {CircuitBreaker} from '#lib/system/circuit-breaker'
+import {CircuitBreaker} from '#lib/system/circuitBreaker'
 
 const breaker = new CircuitBreaker({
   name: 'youtube',
@@ -45,7 +45,7 @@ async function downloadVideo(url: string) {
 ### Pre-configured Breakers
 
 ```typescript
-import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
+import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 
 // YouTube-specific configuration
 const result = await youtubeCircuitBreaker.execute(async () => {
@@ -64,7 +64,7 @@ const result = await youtubeCircuitBreaker.execute(async () => {
 ### Handling Open Circuit
 
 ```typescript
-import {CircuitBreakerOpenError} from '#lib/system/circuit-breaker'
+import {CircuitBreakerOpenError} from '#lib/system/circuitBreaker'
 
 try {
   await breaker.execute(operation)
@@ -189,7 +189,7 @@ Safe environment variable access with validation.
 ### Required Environment Variables
 
 ```typescript
-import {getRequiredEnv} from '#util/env-validation'
+import {getRequiredEnv} from '#lib/system/env'
 
 // Throws if not set - use inside functions, not at module level
 async function handler() {
@@ -200,7 +200,7 @@ async function handler() {
 ### Optional Environment Variables
 
 ```typescript
-import {getOptionalEnv, getOptionalEnvNumber} from '#util/env-validation'
+import {getOptionalEnv, getOptionalEnvNumber} from '#lib/system/env'
 
 // String with default
 const host = getOptionalEnv('APNS_HOST', 'api.sandbox.push.apple.com')
@@ -494,10 +494,11 @@ if (isExpired(tokenExpSec)) {
 ```typescript
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {getRequiredEnv} from '#util/env-validation'
+import {buildValidatedResponse} from '#lib/lambda/responses'
+import {getRequiredEnv} from '#lib/system/env'
 import {logInfo} from '#lib/system/logging'
 import {ValidationError} from '#lib/system/errors'
-import {youtubeCircuitBreaker} from '#lib/system/circuit-breaker'
+import {youtubeCircuitBreaker} from '#lib/system/circuitBreaker'
 
 export const handler = withPowertools(wrapApiHandler(async ({event, context}) => {
   const bucketName = getRequiredEnv('BUCKET_NAME')
@@ -512,7 +513,7 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}) =>
 
   logInfo('Download complete', {fileId: result.fileId})
 
-  return response(context, 200, result)
+  return buildValidatedResponse(context, 200, result)
 }))
 ```
 
@@ -541,7 +542,7 @@ vi.mock('#lib/system/logging', () => ({
 ### Testing Circuit Breaker
 
 ```typescript
-import {CircuitBreaker} from '#lib/system/circuit-breaker'
+import {CircuitBreaker} from '#lib/system/circuitBreaker'
 
 describe('CircuitBreaker', () => {
   let breaker: CircuitBreaker

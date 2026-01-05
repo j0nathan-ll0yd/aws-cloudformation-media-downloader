@@ -103,7 +103,7 @@ CREATE TABLE user_files (
 );
 ```
 
-Use application-layer validation in `src/lib/vendor/Drizzle/fk-enforcement.ts`.
+Use application-layer validation in `src/lib/vendor/Drizzle/fkEnforcement.ts`.
 
 ## Integration Testing
 

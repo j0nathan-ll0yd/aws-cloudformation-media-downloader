@@ -54,12 +54,12 @@ Use `withPowertools` wrapper for observability (handles logging, metrics):
 ```typescript
 import {withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapApiHandler} from '#lib/lambda/middleware/api'
-import {response} from '#util/lambda-helpers'
+import {buildValidatedResponse} from '#lib/lambda/responses'
 
 export const handler = withPowertools(wrapApiHandler(async ({event, context, metadata}) => {
   // metadata.traceId available for correlation
   // ADOT automatically traces AWS SDK calls
-  return response(context, 200, data)
+  return buildValidatedResponse(context, 200, data)
 }))
 ```
 
