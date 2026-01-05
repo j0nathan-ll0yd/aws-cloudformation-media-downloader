@@ -33,9 +33,6 @@ export function getUserDetailsFromEvent(event: CustomAPIGatewayRequestAuthorizer
   } else {
     userStatus = UserStatus.Anonymous
   }
-  logDebug('getUserDetailsFromEvent.userId', userId)
-  logDebug('getUserDetailsFromEvent.userId.typeof', typeof userId)
-  logDebug('getUserDetailsFromEvent.authHeader', authHeader)
-  logDebug('getUserDetailsFromEvent.userStatus', userStatus.toString())
+  logDebug('getUserDetailsFromEvent', {userId, hasAuthHeader: !!authHeader, userStatus: UserStatus[userStatus]})
   return {userId, userStatus} as UserEventDetails
 }
