@@ -1,16 +1,16 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Process raw CloudWatch fixtures into clean test fixtures
  * - Deduplicates similar payloads
  * - Separates incoming/outgoing fixtures
  * - Formats for test consumption
  *
- * Usage: node bin/process-fixtures.js [--input <dir>] [--output <dir>]
+ * Usage: pnpm run process-fixtures [--input <dir>] [--output <dir>]
  */
 
-import fs from 'fs/promises'
-import path from 'path'
-import {fileURLToPath} from 'url'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -19,12 +19,25 @@ const DEFAULT_INPUT_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'raw')
 const DEFAULT_OUTPUT_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'api-contracts')
 
 /**
+ * Represents a raw fixture with marker and data
+ */
+interface RawFixture {
+  __FIXTURE_MARKER__: 'INCOMING' | 'OUTGOING'
+  data: FixtureData
+}
+
+/**
+ * Fixture data can be any JSON-serializable object
+ */
+type FixtureData = Record<string, unknown>
+
+/**
  * Calculate structural similarity between two objects
  * Returns 0-1 score (1 = identical structure)
  */
-function calculateSimilarity(obj1, obj2) {
-  const keys1 = new Set(Object.keys(obj1 || {}))
-  const keys2 = new Set(Object.keys(obj2 || {}))
+function calculateSimilarity(obj1: FixtureData | null | undefined, obj2: FixtureData | null | undefined): number {
+  const keys1 = new Set(Object.keys(obj1 ?? {}))
+  const keys2 = new Set(Object.keys(obj2 ?? {}))
 
   const intersection = new Set([...keys1].filter((k) => keys2.has(k)))
   const union = new Set([...keys1, ...keys2])
@@ -38,12 +51,12 @@ function calculateSimilarity(obj1, obj2) {
 
   for (const key of intersection) {
     comparableValues++
-    const val1 = obj1[key]
-    const val2 = obj2[key]
+    const val1 = obj1?.[key]
+    const val2 = obj2?.[key]
 
     if (typeof val1 === typeof val2) {
       if (typeof val1 === 'object' && val1 !== null && val2 !== null) {
-        valueSimilarity += calculateSimilarity(val1, val2)
+        valueSimilarity += calculateSimilarity(val1 as FixtureData, val2 as FixtureData)
       } else {
         valueSimilarity += 1
       }
@@ -59,24 +72,21 @@ function calculateSimilarity(obj1, obj2) {
  * Deduplicate fixtures by structural similarity
  * Keeps most recent fixture for each unique structure
  */
-function deduplicateFixtures(fixtures, similarityThreshold = 0.9) {
-  const unique = []
-
+function deduplicateFixtures(fixtures: RawFixture[], similarityThreshold = 0.9): RawFixture[] {
+  const unique: RawFixture[] = []
   for (const fixture of fixtures) {
     const isDuplicate = unique.some((existing) => calculateSimilarity(fixture.data, existing.data) >= similarityThreshold)
-
     if (!isDuplicate) {
       unique.push(fixture)
     }
   }
-
   return unique
 }
 
 /**
  * Process a raw fixture file
  */
-async function processFixtureFile(inputPath, outputDir) {
+async function processFixtureFile(inputPath: string, outputDir: string): Promise<void> {
   const filename = path.basename(inputPath)
   // Extract Lambda/service name (handles both regular Lambdas and BetterAuth)
   const lambdaName = filename.split('-')[0]
@@ -87,21 +97,21 @@ async function processFixtureFile(inputPath, outputDir) {
   const lines = rawContent.trim().split('\n').filter(Boolean)
 
   if (lines.length === 0) {
-    console.log(`  ℹ️  No fixtures found in ${filename}`)
+    console.log(`  Info: No fixtures found in ${filename}`)
     return
   }
 
-  const fixtures = lines.map((line) => JSON.parse(line))
+  const fixtures: RawFixture[] = lines.map((line) => JSON.parse(line) as RawFixture)
 
   const incoming = fixtures.filter((f) => f.__FIXTURE_MARKER__ === 'INCOMING')
   const outgoing = fixtures.filter((f) => f.__FIXTURE_MARKER__ === 'OUTGOING')
 
-  console.log(`  📥 ${incoming.length} incoming, 📤 ${outgoing.length} outgoing`)
+  console.log(`  Incoming: ${incoming.length}, Outgoing: ${outgoing.length}`)
 
   const uniqueIncoming = deduplicateFixtures(incoming)
   const uniqueOutgoing = deduplicateFixtures(outgoing)
 
-  console.log(`  ✨ Deduplicated to ${uniqueIncoming.length} incoming, ${uniqueOutgoing.length} outgoing`)
+  console.log(`  Deduplicated to ${uniqueIncoming.length} incoming, ${uniqueOutgoing.length} outgoing`)
 
   const lambdaOutputDir = path.join(outputDir, lambdaName)
   await fs.mkdir(lambdaOutputDir, {recursive: true})
@@ -109,20 +119,20 @@ async function processFixtureFile(inputPath, outputDir) {
   if (uniqueIncoming.length > 0) {
     const incomingPath = path.join(lambdaOutputDir, 'incoming.json')
     await fs.writeFile(incomingPath, JSON.stringify(uniqueIncoming.map((f) => f.data), null, 2))
-    console.log(`  ✅ Wrote ${incomingPath}`)
+    console.log(`  Wrote ${incomingPath}`)
   }
 
   if (uniqueOutgoing.length > 0) {
     const outgoingPath = path.join(lambdaOutputDir, 'outgoing.json')
     await fs.writeFile(outgoingPath, JSON.stringify(uniqueOutgoing.map((f) => f.data), null, 2))
-    console.log(`  ✅ Wrote ${outgoingPath}`)
+    console.log(`  Wrote ${outgoingPath}`)
   }
 }
 
 /**
  * Main processing function
  */
-async function main() {
+async function main(): Promise<void> {
   const args = process.argv.slice(2)
   let inputDir = DEFAULT_INPUT_DIR
   let outputDir = DEFAULT_OUTPUT_DIR
@@ -158,7 +168,7 @@ async function main() {
     }
 
     console.log('')
-    console.log('✅ Processing complete!')
+    console.log('Processing complete!')
     console.log(`Fixtures saved to: ${outputDir}`)
   } catch (error) {
     console.error('Error processing fixtures:', error)

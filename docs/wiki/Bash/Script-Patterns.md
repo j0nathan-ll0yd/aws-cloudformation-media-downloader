@@ -109,6 +109,56 @@ done
 
 ---
 
+## When to Use Bash vs TypeScript
+
+The project uses two directories for scripts:
+- **`bin/`** - Bash scripts for CLI orchestration
+- **`scripts/`** - TypeScript files for complex transformations
+
+### Use Bash (bin/) when:
+- Script primarily orchestrates external CLI commands (aws, tofu, curl, pnpm)
+- Script uses shell text processing tools (grep, sed, awk, jq)
+- Script manages CI/CD workflows with multiple steps
+- Script is a wrapper around multiple external commands
+- No complex business logic or data transformations needed
+- Exit codes are sufficient for error handling
+
+### Use TypeScript (scripts/) when:
+- Script involves AST parsing (ts-morph)
+- Script generates complex output files (HTML, JSON schemas)
+- Script requires type safety for correctness
+- Script has complex data transformations with interfaces
+- Script needs unit tests with Vitest
+- Script uses npm libraries for core functionality
+- Custom error classes or structured error handling needed
+
+### Decision Criteria Table
+
+| Factor | Favor Bash | Favor TypeScript |
+|--------|------------|------------------|
+| Primary purpose | Orchestrating CLI commands | Complex data transformations |
+| Dependencies | External tools (curl, aws, tofu) | npm libraries (ts-morph, lancedb) |
+| Type safety | Not needed | Required for correctness |
+| Testing | Shell assertions sufficient | Unit tests with mocking needed |
+| Error handling | Exit codes sufficient | Custom error classes needed |
+| Data structures | Simple strings/arrays | Complex objects/interfaces |
+| AST manipulation | Never | Always |
+| File generation | Simple templates | Complex structured output |
+
+### Examples
+
+**Bash is appropriate for:**
+- `ci-local.sh` - Orchestrates 15+ pnpm commands
+- `aws-audit.sh` - Runs aws CLI and tofu commands
+- `update-yt-dlp.sh` - curl + version comparison
+
+**TypeScript is appropriate for:**
+- `generateDependencyGraph.ts` - ts-morph AST analysis
+- `validateConventions.ts` - MCP validation rules
+- `processFixtures.ts` - Complex data transformation with types
+
+---
+
 ## Project Scripts Reference
 
 The project has 20+ scripts in `bin/` covering CI, testing, documentation, and maintenance:
@@ -148,6 +198,7 @@ The project has 20+ scripts in `bin/` covering CI, testing, documentation, and m
 |--------|---------|--------------|
 | `update-youtube-cookies.sh` | Cookie refresh | Interactive, AWS Secrets |
 | `update-yt-dlp.sh` | yt-dlp updates | Lambda layer management |
+| `update-ffmpeg.sh` | ffmpeg updates | Lambda layer management |
 | `update-agents-prs.sh` | AI agent context | PR history for AGENTS.md |
 
 ---
