@@ -39,7 +39,7 @@ resource "aws_iam_role_policy_attachment" "CleanupExpiredRecordsXRay" {
 
 resource "aws_iam_role_policy_attachment" "CleanupExpiredRecordsDSQL" {
   role       = aws_iam_role.CleanupExpiredRecords.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_cloudwatch_log_group" "CleanupExpiredRecords" {
@@ -74,6 +74,7 @@ resource "aws_lambda_function" "CleanupExpiredRecords" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.cleanup_expired_records_function_name
+      DSQL_ACCESS_LEVEL = "readwrite"
     })
   }
 

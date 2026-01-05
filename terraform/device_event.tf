@@ -33,6 +33,11 @@ resource "aws_iam_role_policy_attachment" "DeviceEventXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "DeviceEventDSQL" {
+  role       = aws_iam_role.DeviceEvent.name
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
+}
+
 resource "aws_lambda_permission" "DeviceEvent" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.DeviceEvent.function_name
@@ -70,6 +75,7 @@ resource "aws_lambda_function" "DeviceEvent" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.device_event_function_name
+      DSQL_ACCESS_LEVEL = "readwrite"
     })
   }
 

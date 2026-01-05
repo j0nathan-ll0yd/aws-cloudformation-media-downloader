@@ -54,7 +54,7 @@ resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerXRay" {
 
 resource "aws_iam_role_policy_attachment" "ApiGatewayAuthorizerDSQL" {
   role       = aws_iam_role.ApiGatewayAuthorizer.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 data "aws_iam_policy_document" "ApiGatewayAuthorizer" {
@@ -107,6 +107,7 @@ resource "aws_lambda_function" "ApiGatewayAuthorizer" {
       MULTI_AUTHENTICATION_PATH_PARTS = "device/register,device/event,files",
       RESERVED_CLIENT_IP              = "104.1.88.244"
       OTEL_SERVICE_NAME               = local.api_gateway_authorizer_function_name
+      DSQL_ACCESS_LEVEL               = "readwrite"
     })
   }
 

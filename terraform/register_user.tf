@@ -35,7 +35,7 @@ resource "aws_iam_role_policy_attachment" "RegisterUserXRay" {
 
 resource "aws_iam_role_policy_attachment" "RegisterUserDSQL" {
   role       = aws_iam_role.RegisterUser.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_lambda_permission" "RegisterUser" {
@@ -79,6 +79,7 @@ resource "aws_lambda_function" "RegisterUser" {
       SIGN_IN_WITH_APPLE_CONFIG = data.sops_file.secrets.data["signInWithApple.config"]
       BETTER_AUTH_SECRET        = data.sops_file.secrets.data["platform.key"]
       OTEL_SERVICE_NAME         = local.register_user_function_name
+      DSQL_ACCESS_LEVEL         = "readwrite"
     })
   }
 

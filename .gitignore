@@ -59,3 +59,4 @@ reports/stryker-incremental.json
 reports/mutation/
 *.webm
 stryker.log
+build/lambdas/*.zip

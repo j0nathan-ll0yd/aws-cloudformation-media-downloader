@@ -35,7 +35,7 @@ resource "aws_iam_role_policy_attachment" "ListFilesXRay" {
 
 resource "aws_iam_role_policy_attachment" "ListFilesDSQL" {
   role       = aws_iam_role.ListFiles.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadOnly.arn
 }
 
 resource "aws_lambda_permission" "ListFiles" {
@@ -81,6 +81,7 @@ resource "aws_lambda_function" "ListFiles" {
       DEFAULT_FILE_URL          = "https://${aws_s3_object.DefaultFile.bucket}.s3.amazonaws.com/${aws_s3_object.DefaultFile.key}"
       DEFAULT_FILE_CONTENT_TYPE = aws_s3_object.DefaultFile.content_type
       OTEL_SERVICE_NAME         = local.list_files_function_name
+      DSQL_ACCESS_LEVEL         = "readonly"
     })
   }
 

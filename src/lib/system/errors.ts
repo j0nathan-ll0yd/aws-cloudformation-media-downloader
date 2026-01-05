@@ -95,6 +95,22 @@ export class UnexpectedError extends CustomLambdaError {
   }
 }
 
+// Database operation failed - sanitizes SQL queries from client response
+export class DatabaseError extends CustomLambdaError {
+  queryName: string
+  originalMessage: string
+
+  constructor(queryName: string, originalError: Error) {
+    // Sanitize message - never expose SQL to clients
+    super('Database operation failed', {cause: originalError})
+    this.name = 'DatabaseError'
+    this.code = 'DATABASE_ERROR'
+    this.statusCode = 500
+    this.queryName = queryName
+    this.originalMessage = originalError.message
+  }
+}
+
 // Cookie expiration or bot detection error from YouTube
 export class CookieExpirationError extends CustomLambdaError {
   constructor(message: string, statusCode = 403, cause?: Error) {

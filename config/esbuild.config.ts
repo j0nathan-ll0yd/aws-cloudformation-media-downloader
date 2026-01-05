@@ -30,6 +30,16 @@ async function build() {
   const startTime = Date.now()
   console.log(`Building ${lambdaEntryFiles.length} Lambda functions...`)
 
+  // Delete stale zip files so Terraform regenerates them from fresh build output
+  // This prevents Terraform from using cached zips with old code
+  const staleZips = glob.sync('./build/lambdas/*.zip')
+  if (staleZips.length > 0) {
+    for (const zipFile of staleZips) {
+      fs.unlinkSync(zipFile)
+    }
+    console.log(`Deleted ${staleZips.length} stale zip files`)
+  }
+
   // Ensure build directories exist
   fs.mkdirSync('build/lambdas', {recursive: true})
   if (isAnalyze) {

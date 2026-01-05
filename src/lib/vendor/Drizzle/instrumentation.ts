@@ -11,7 +11,8 @@
 
 import {metrics, MetricUnit} from '../Powertools'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '../OpenTelemetry'
-import {logDebug} from '#lib/system/logging'
+import {logDebug, logError} from '#lib/system/logging'
+import {DatabaseError} from '#lib/system/errors'
 
 /**
  * Metrics collected for each query execution.
@@ -94,7 +95,42 @@ export async function withQueryMetrics<T>(queryName: string, queryFn: () => Prom
     addMetadata(span, 'duration', duration)
     addMetadata(span, 'success', false)
     endSpan(span, error as Error)
-    throw error
+
+    // Log full error details for debugging (including SQL for ops troubleshooting)
+    const originalError = error instanceof Error ? error : new Error(String(error))
+    // Extract postgres-specific error properties (code, detail, hint, severity, etc.)
+    const pgError = error as {
+      code?: string
+      detail?: string
+      hint?: string
+      severity?: string
+      where?: string
+      constraint?: string
+      routine?: string
+      cause?: unknown
+    }
+    // Also get all enumerable properties for debugging
+    const errorProps = Object.fromEntries(Object.entries(error as object).filter(([, v]) => v !== undefined))
+    logError('database query failed', {
+      queryName,
+      duration,
+      errorName: originalError.name,
+      errorMessage: originalError.message,
+      // PostgreSQL error fields
+      pgCode: pgError.code,
+      pgDetail: pgError.detail,
+      pgHint: pgError.hint,
+      pgSeverity: pgError.severity,
+      pgWhere: pgError.where,
+      pgConstraint: pgError.constraint,
+      pgRoutine: pgError.routine,
+      pgCause: pgError.cause,
+      // All error properties for debugging
+      errorProps
+    })
+
+    // Wrap in DatabaseError to sanitize client response
+    throw new DatabaseError(queryName, originalError)
   }
 }
 
