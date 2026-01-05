@@ -1,9 +1,12 @@
 /**
  * Device Queries - Drizzle ORM queries for device operations.
+ * All queries are instrumented with withQueryMetrics for CloudWatch metrics and X-Ray tracing.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
+ * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
 import {devices} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -20,9 +23,11 @@ export type UpdateDeviceInput = Partial<Omit<InferInsertModel<typeof devices>, '
  * @returns The device row or null if not found
  */
 export async function getDevice(deviceId: string): Promise<DeviceRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Devices.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(devices).where(eq(devices.deviceId, deviceId)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -31,11 +36,13 @@ export async function getDevice(deviceId: string): Promise<DeviceRow | null> {
  * @returns Array of device rows
  */
 export async function getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]> {
-  if (deviceIds.length === 0) {
-    return []
-  }
-  const db = await getDrizzleClient()
-  return await db.select().from(devices).where(inArray(devices.deviceId, deviceIds))
+  return withQueryMetrics('Devices.getBatch', async () => {
+    if (deviceIds.length === 0) {
+      return []
+    }
+    const db = await getDrizzleClient()
+    return await db.select().from(devices).where(inArray(devices.deviceId, deviceIds))
+  })
 }
 
 /**
@@ -44,11 +51,13 @@ export async function getDevicesBatch(deviceIds: string[]): Promise<DeviceRow[]>
  * @returns The created device row
  */
 export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow> {
-  // Validate device input against schema
-  const validatedInput = deviceInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [device] = await db.insert(devices).values(validatedInput).returning()
-  return device
+  return withQueryMetrics('Devices.create', async () => {
+    // Validate device input against schema
+    const validatedInput = deviceInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [device] = await db.insert(devices).values(validatedInput).returning()
+    return device
+  })
 }
 
 /**
@@ -58,14 +67,16 @@ export async function createDevice(input: CreateDeviceInput): Promise<DeviceRow>
  * @returns The created or updated device row
  */
 export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow> {
-  // Validate device input against schema
-  const validatedInput = deviceInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [result] = await db.insert(devices).values(validatedInput).onConflictDoUpdate({
-    target: devices.deviceId,
-    set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
-  }).returning()
-  return result
+  return withQueryMetrics('Devices.upsert', async () => {
+    // Validate device input against schema
+    const validatedInput = deviceInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [result] = await db.insert(devices).values(validatedInput).onConflictDoUpdate({
+      target: devices.deviceId,
+      set: {name: input.name, token: input.token, systemVersion: input.systemVersion, systemName: input.systemName, endpointArn: input.endpointArn}
+    }).returning()
+    return result
+  })
 }
 
 /**
@@ -75,11 +86,13 @@ export async function upsertDevice(input: CreateDeviceInput): Promise<DeviceRow>
  * @returns The updated device row
  */
 export async function updateDevice(deviceId: string, data: UpdateDeviceInput): Promise<DeviceRow> {
-  // Validate partial update data against schema
-  const validatedData = deviceUpdateSchema.partial().parse(data)
-  const db = await getDrizzleClient()
-  const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
-  return updated
+  return withQueryMetrics('Devices.update', async () => {
+    // Validate partial update data against schema
+    const validatedData = deviceUpdateSchema.partial().parse(data)
+    const db = await getDrizzleClient()
+    const [updated] = await db.update(devices).set(validatedData).where(eq(devices.deviceId, deviceId)).returning()
+    return updated
+  })
 }
 
 /**
@@ -87,8 +100,10 @@ export async function updateDevice(deviceId: string, data: UpdateDeviceInput): P
  * @param deviceId - The device's unique identifier
  */
 export async function deleteDevice(deviceId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(devices).where(eq(devices.deviceId, deviceId))
+  return withQueryMetrics('Devices.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(devices).where(eq(devices.deviceId, deviceId))
+  })
 }
 
 /**
@@ -96,6 +111,8 @@ export async function deleteDevice(deviceId: string): Promise<void> {
  * @returns Array of all device rows
  */
 export async function getAllDevices(): Promise<DeviceRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(devices)
+  return withQueryMetrics('Devices.getAll', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(devices)
+  })
 }

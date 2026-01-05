@@ -1,9 +1,12 @@
 /**
  * File Queries - Drizzle ORM queries for file operations.
+ * All queries are instrumented with withQueryMetrics for CloudWatch metrics and X-Ray tracing.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
+ * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
 import {fileDownloads, files} from '#lib/vendor/Drizzle/schema'
 import {eq, inArray} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -26,9 +29,11 @@ export type UpdateFileDownloadInput = Partial<Omit<InferInsertModel<typeof fileD
  * @returns The file row or null if not found
  */
 export async function getFile(fileId: string): Promise<FileRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(files).where(eq(files.fileId, fileId)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Files.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(files).where(eq(files.fileId, fileId)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -38,9 +43,11 @@ export async function getFile(fileId: string): Promise<FileRow | null> {
  * @returns The file status or null if not found
  */
 export async function getFileStatus(fileId: string): Promise<string | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select({status: files.status}).from(files).where(eq(files.fileId, fileId)).limit(1)
-  return result.length > 0 ? result[0].status : null
+  return withQueryMetrics('Files.getStatus', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select({status: files.status}).from(files).where(eq(files.fileId, fileId)).limit(1)
+    return result.length > 0 ? result[0].status : null
+  })
 }
 
 /**
@@ -49,11 +56,13 @@ export async function getFileStatus(fileId: string): Promise<string | null> {
  * @returns Array of file rows
  */
 export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
-  if (fileIds.length === 0) {
-    return []
-  }
-  const db = await getDrizzleClient()
-  return await db.select().from(files).where(inArray(files.fileId, fileIds))
+  return withQueryMetrics('Files.getBatch', async () => {
+    if (fileIds.length === 0) {
+      return []
+    }
+    const db = await getDrizzleClient()
+    return await db.select().from(files).where(inArray(files.fileId, fileIds))
+  })
 }
 
 /**
@@ -62,8 +71,10 @@ export async function getFilesBatch(fileIds: string[]): Promise<FileRow[]> {
  * @returns Array of files matching the key
  */
 export async function getFilesByKey(key: string): Promise<FileRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(files).where(eq(files.key, key))
+  return withQueryMetrics('Files.getByKey', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(files).where(eq(files.key, key))
+  })
 }
 
 /**
@@ -72,11 +83,13 @@ export async function getFilesByKey(key: string): Promise<FileRow[]> {
  * @returns The created file row
  */
 export async function createFile(input: CreateFileInput): Promise<FileRow> {
-  // Validate file input against schema
-  const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
-  const db = await getDrizzleClient()
-  const [file] = await db.insert(files).values(validatedInput).returning()
-  return file
+  return withQueryMetrics('Files.create', async () => {
+    // Validate file input against schema
+    const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
+    const db = await getDrizzleClient()
+    const [file] = await db.insert(files).values(validatedInput).returning()
+    return file
+  })
 }
 
 /**
@@ -86,25 +99,27 @@ export async function createFile(input: CreateFileInput): Promise<FileRow> {
  * @returns The created or updated file row
  */
 export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
-  // Validate file input against schema
-  const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
-  const db = await getDrizzleClient()
-  const [result] = await db.insert(files).values(validatedInput).onConflictDoUpdate({
-    target: files.fileId,
-    set: {
-      size: input.size ?? 0,
-      authorName: input.authorName,
-      authorUser: input.authorUser,
-      publishDate: input.publishDate,
-      description: input.description,
-      key: input.key,
-      url: input.url,
-      contentType: input.contentType,
-      title: input.title,
-      status: input.status
-    }
-  }).returning()
-  return result
+  return withQueryMetrics('Files.upsert', async () => {
+    // Validate file input against schema
+    const validatedInput = fileInsertSchema.parse({...input, size: input.size ?? 0})
+    const db = await getDrizzleClient()
+    const [result] = await db.insert(files).values(validatedInput).onConflictDoUpdate({
+      target: files.fileId,
+      set: {
+        size: input.size ?? 0,
+        authorName: input.authorName,
+        authorUser: input.authorUser,
+        publishDate: input.publishDate,
+        description: input.description,
+        key: input.key,
+        url: input.url,
+        contentType: input.contentType,
+        title: input.title,
+        status: input.status
+      }
+    }).returning()
+    return result
+  })
 }
 
 /**
@@ -114,11 +129,13 @@ export async function upsertFile(input: CreateFileInput): Promise<FileRow> {
  * @returns The updated file row
  */
 export async function updateFile(fileId: string, data: UpdateFileInput): Promise<FileRow> {
-  // Validate partial update data against schema
-  const validatedData = fileUpdateSchema.partial().parse(data)
-  const db = await getDrizzleClient()
-  const [updated] = await db.update(files).set(validatedData).where(eq(files.fileId, fileId)).returning()
-  return updated
+  return withQueryMetrics('Files.update', async () => {
+    // Validate partial update data against schema
+    const validatedData = fileUpdateSchema.partial().parse(data)
+    const db = await getDrizzleClient()
+    const [updated] = await db.update(files).set(validatedData).where(eq(files.fileId, fileId)).returning()
+    return updated
+  })
 }
 
 /**
@@ -126,8 +143,10 @@ export async function updateFile(fileId: string, data: UpdateFileInput): Promise
  * @param fileId - The file's unique identifier
  */
 export async function deleteFile(fileId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(files).where(eq(files.fileId, fileId))
+  return withQueryMetrics('Files.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(files).where(eq(files.fileId, fileId))
+  })
 }
 
 // FileDownload Operations
@@ -138,9 +157,11 @@ export async function deleteFile(fileId: string): Promise<void> {
  * @returns The file download row or null if not found
  */
 export async function getFileDownload(fileId: string): Promise<FileDownloadRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, fileId)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('FileDownloads.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(fileDownloads).where(eq(fileDownloads.fileId, fileId)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -149,11 +170,13 @@ export async function getFileDownload(fileId: string): Promise<FileDownloadRow |
  * @returns The created file download row
  */
 export async function createFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
-  // Validate file download input against schema
-  const validatedInput = fileDownloadInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [download] = await db.insert(fileDownloads).values(validatedInput).returning()
-  return download
+  return withQueryMetrics('FileDownloads.create', async () => {
+    // Validate file download input against schema
+    const validatedInput = fileDownloadInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [download] = await db.insert(fileDownloads).values(validatedInput).returning()
+    return download
+  })
 }
 
 /**
@@ -163,25 +186,27 @@ export async function createFileDownload(input: CreateFileDownloadInput): Promis
  * @returns The created or updated file download row
  */
 export async function upsertFileDownload(input: CreateFileDownloadInput): Promise<FileDownloadRow> {
-  // Validate file download input against schema
-  const validatedInput = fileDownloadInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [result] = await db.insert(fileDownloads).values(validatedInput).onConflictDoUpdate({
-    target: fileDownloads.fileId,
-    set: {
-      status: input.status,
-      retryCount: input.retryCount,
-      maxRetries: input.maxRetries,
-      retryAfter: input.retryAfter,
-      errorCategory: input.errorCategory,
-      lastError: input.lastError,
-      scheduledReleaseTime: input.scheduledReleaseTime,
-      sourceUrl: input.sourceUrl,
-      correlationId: input.correlationId,
-      updatedAt: new Date()
-    }
-  }).returning()
-  return result
+  return withQueryMetrics('FileDownloads.upsert', async () => {
+    // Validate file download input against schema
+    const validatedInput = fileDownloadInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [result] = await db.insert(fileDownloads).values(validatedInput).onConflictDoUpdate({
+      target: fileDownloads.fileId,
+      set: {
+        status: input.status,
+        retryCount: input.retryCount,
+        maxRetries: input.maxRetries,
+        retryAfter: input.retryAfter,
+        errorCategory: input.errorCategory,
+        lastError: input.lastError,
+        scheduledReleaseTime: input.scheduledReleaseTime,
+        sourceUrl: input.sourceUrl,
+        correlationId: input.correlationId,
+        updatedAt: new Date()
+      }
+    }).returning()
+    return result
+  })
 }
 
 /**
@@ -191,11 +216,13 @@ export async function upsertFileDownload(input: CreateFileDownloadInput): Promis
  * @returns The updated file download row
  */
 export async function updateFileDownload(fileId: string, data: UpdateFileDownloadInput): Promise<FileDownloadRow> {
-  // Validate partial update data against schema
-  const validatedData = fileDownloadUpdateSchema.partial().parse(data)
-  const db = await getDrizzleClient()
-  const [updated] = await db.update(fileDownloads).set({...validatedData, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
-  return updated
+  return withQueryMetrics('FileDownloads.update', async () => {
+    // Validate partial update data against schema
+    const validatedData = fileDownloadUpdateSchema.partial().parse(data)
+    const db = await getDrizzleClient()
+    const [updated] = await db.update(fileDownloads).set({...validatedData, updatedAt: new Date()}).where(eq(fileDownloads.fileId, fileId)).returning()
+    return updated
+  })
 }
 
 /**
@@ -203,6 +230,8 @@ export async function updateFileDownload(fileId: string, data: UpdateFileDownloa
  * @param fileId - The file's unique identifier
  */
 export async function deleteFileDownload(fileId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(fileDownloads).where(eq(fileDownloads.fileId, fileId))
+  return withQueryMetrics('FileDownloads.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(fileDownloads).where(eq(fileDownloads.fileId, fileId))
+  })
 }

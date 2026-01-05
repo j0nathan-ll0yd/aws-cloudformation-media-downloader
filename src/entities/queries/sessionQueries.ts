@@ -1,9 +1,12 @@
 /**
  * Session Queries - Drizzle ORM queries for session operations.
+ * All queries are instrumented with withQueryMetrics for CloudWatch metrics and X-Ray tracing.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
+ * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {getDrizzleClient} from '#lib/vendor/Drizzle/client'
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
 import {accounts, sessions, verification} from '#lib/vendor/Drizzle/schema'
 import {eq, lt} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -29,9 +32,11 @@ export type CreateVerificationInput = Omit<InferInsertModel<typeof verification>
  * @returns The session row or null if not found
  */
 export async function getSession(id: string): Promise<SessionRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Sessions.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -40,9 +45,11 @@ export async function getSession(id: string): Promise<SessionRow | null> {
  * @returns The session row or null if not found
  */
 export async function getSessionByToken(token: string): Promise<SessionRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Sessions.getByToken', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -51,8 +58,10 @@ export async function getSessionByToken(token: string): Promise<SessionRow | nul
  * @returns Array of session rows for the user
  */
 export async function getSessionsByUserId(userId: string): Promise<SessionRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(sessions).where(eq(sessions.userId, userId))
+  return withQueryMetrics('Sessions.getByUserId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(sessions).where(eq(sessions.userId, userId))
+  })
 }
 
 /**
@@ -61,11 +70,13 @@ export async function getSessionsByUserId(userId: string): Promise<SessionRow[]>
  * @returns The created session row
  */
 export async function createSession(input: CreateSessionInput): Promise<SessionRow> {
-  // Validate session input against schema
-  const validatedInput = sessionInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [session] = await db.insert(sessions).values(validatedInput).returning()
-  return session
+  return withQueryMetrics('Sessions.create', async () => {
+    // Validate session input against schema
+    const validatedInput = sessionInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [session] = await db.insert(sessions).values(validatedInput).returning()
+    return session
+  })
 }
 
 /**
@@ -75,11 +86,13 @@ export async function createSession(input: CreateSessionInput): Promise<SessionR
  * @returns The updated session row
  */
 export async function updateSession(id: string, data: UpdateSessionInput): Promise<SessionRow> {
-  // Validate partial update data against schema
-  const validatedData = sessionUpdateSchema.partial().parse(data)
-  const db = await getDrizzleClient()
-  const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
-  return updated
+  return withQueryMetrics('Sessions.update', async () => {
+    // Validate partial update data against schema
+    const validatedData = sessionUpdateSchema.partial().parse(data)
+    const db = await getDrizzleClient()
+    const [updated] = await db.update(sessions).set({...validatedData, updatedAt: new Date()}).where(eq(sessions.id, id)).returning()
+    return updated
+  })
 }
 
 /**
@@ -87,8 +100,10 @@ export async function updateSession(id: string, data: UpdateSessionInput): Promi
  * @param id - The session's unique identifier
  */
 export async function deleteSession(id: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(sessions).where(eq(sessions.id, id))
+  return withQueryMetrics('Sessions.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(sessions).where(eq(sessions.id, id))
+  })
 }
 
 /**
@@ -96,16 +111,20 @@ export async function deleteSession(id: string): Promise<void> {
  * @param userId - The user's unique identifier
  */
 export async function deleteSessionsByUserId(userId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(sessions).where(eq(sessions.userId, userId))
+  return withQueryMetrics('Sessions.deleteByUserId', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(sessions).where(eq(sessions.userId, userId))
+  })
 }
 
 /**
  * Deletes expired sessions.
  */
 export async function deleteExpiredSessions(): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(sessions).where(lt(sessions.expiresAt, new Date()))
+  return withQueryMetrics('Sessions.deleteExpired', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(sessions).where(lt(sessions.expiresAt, new Date()))
+  })
 }
 
 // Account Operations
@@ -116,9 +135,11 @@ export async function deleteExpiredSessions(): Promise<void> {
  * @returns The account row or null if not found
  */
 export async function getAccount(id: string): Promise<AccountRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Accounts.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -127,8 +148,10 @@ export async function getAccount(id: string): Promise<AccountRow | null> {
  * @returns Array of account rows for the user
  */
 export async function getAccountsByUserId(userId: string): Promise<AccountRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(accounts).where(eq(accounts.userId, userId))
+  return withQueryMetrics('Accounts.getByUserId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(accounts).where(eq(accounts.userId, userId))
+  })
 }
 
 /**
@@ -137,11 +160,13 @@ export async function getAccountsByUserId(userId: string): Promise<AccountRow[]>
  * @returns The created account row
  */
 export async function createAccount(input: CreateAccountInput): Promise<AccountRow> {
-  // Validate account input against schema
-  const validatedInput = accountInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [account] = await db.insert(accounts).values(validatedInput).returning()
-  return account
+  return withQueryMetrics('Accounts.create', async () => {
+    // Validate account input against schema
+    const validatedInput = accountInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [account] = await db.insert(accounts).values(validatedInput).returning()
+    return account
+  })
 }
 
 /**
@@ -149,8 +174,10 @@ export async function createAccount(input: CreateAccountInput): Promise<AccountR
  * @param id - The account's unique identifier
  */
 export async function deleteAccount(id: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(accounts).where(eq(accounts.id, id))
+  return withQueryMetrics('Accounts.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(accounts).where(eq(accounts.id, id))
+  })
 }
 
 /**
@@ -158,8 +185,10 @@ export async function deleteAccount(id: string): Promise<void> {
  * @param userId - The user's unique identifier
  */
 export async function deleteAccountsByUserId(userId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(accounts).where(eq(accounts.userId, userId))
+  return withQueryMetrics('Accounts.deleteByUserId', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(accounts).where(eq(accounts.userId, userId))
+  })
 }
 
 // Verification Operations
@@ -170,9 +199,11 @@ export async function deleteAccountsByUserId(userId: string): Promise<void> {
  * @returns The verification row or null if not found
  */
 export async function getVerificationByIdentifier(identifier: string): Promise<VerificationRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('Verifications.getByIdentifier', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(verification).where(eq(verification.identifier, identifier)).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -181,11 +212,13 @@ export async function getVerificationByIdentifier(identifier: string): Promise<V
  * @returns The created verification row
  */
 export async function createVerification(input: CreateVerificationInput): Promise<VerificationRow> {
-  // Validate verification input against schema
-  const validatedInput = verificationInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  const [token] = await db.insert(verification).values(validatedInput).returning()
-  return token
+  return withQueryMetrics('Verifications.create', async () => {
+    // Validate verification input against schema
+    const validatedInput = verificationInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    const [token] = await db.insert(verification).values(validatedInput).returning()
+    return token
+  })
 }
 
 /**
@@ -193,14 +226,18 @@ export async function createVerification(input: CreateVerificationInput): Promis
  * @param id - The verification token's unique identifier
  */
 export async function deleteVerification(id: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(verification).where(eq(verification.id, id))
+  return withQueryMetrics('Verifications.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(verification).where(eq(verification.id, id))
+  })
 }
 
 /**
  * Deletes expired verification tokens.
  */
 export async function deleteExpiredVerifications(): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(verification).where(lt(verification.expiresAt, new Date()))
+  return withQueryMetrics('Verifications.deleteExpired', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(verification).where(lt(verification.expiresAt, new Date()))
+  })
 }
