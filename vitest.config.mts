@@ -18,7 +18,6 @@ export default defineConfig({
     testTimeout: 10000,
     pool: 'threads',
     maxWorkers,
-    minWorkers: 1,
     coverage: {
       enabled: true,
       include: ['src/**/*.ts'],
