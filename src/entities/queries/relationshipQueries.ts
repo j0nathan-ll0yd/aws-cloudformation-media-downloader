@@ -1,10 +1,13 @@
 /**
  * Relationship Queries - Drizzle ORM queries for user-file and user-device relationships.
+ * All queries are instrumented with withQueryMetrics for CloudWatch metrics and X-Ray tracing.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
+ * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
 import {assertDeviceExists, assertFileExists, assertUserExists} from '#lib/vendor/Drizzle/fkEnforcement'
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
 import {devices, files, userDevices, userFiles} from '#lib/vendor/Drizzle/schema'
 import {and, eq, inArray, or} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -27,9 +30,11 @@ export type CreateUserDeviceInput = Omit<InferInsertModel<typeof userDevices>, '
  * @returns The user-file row or null if not found
  */
 export async function getUserFile(userId: string, fileId: string): Promise<UserFileRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('UserFiles.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId))).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -38,8 +43,10 @@ export async function getUserFile(userId: string, fileId: string): Promise<UserF
  * @returns Array of user-file rows
  */
 export async function getUserFilesByUserId(userId: string): Promise<UserFileRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(userFiles).where(eq(userFiles.userId, userId))
+  return withQueryMetrics('UserFiles.getByUserId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(userFiles).where(eq(userFiles.userId, userId))
+  })
 }
 
 /**
@@ -49,9 +56,11 @@ export async function getUserFilesByUserId(userId: string): Promise<UserFileRow[
  * @returns Array of file IDs
  */
 export async function getUserFileIdsByUserId(userId: string): Promise<string[]> {
-  const db = await getDrizzleClient()
-  const result = await db.select({fileId: userFiles.fileId}).from(userFiles).where(eq(userFiles.userId, userId))
-  return result.map((r) => r.fileId)
+  return withQueryMetrics('UserFiles.getIdsByUserId', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select({fileId: userFiles.fileId}).from(userFiles).where(eq(userFiles.userId, userId))
+    return result.map((r) => r.fileId)
+  })
 }
 
 /**
@@ -60,8 +69,10 @@ export async function getUserFileIdsByUserId(userId: string): Promise<string[]> 
  * @returns Array of user-file rows
  */
 export async function getUserFilesByFileId(fileId: string): Promise<UserFileRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(userFiles).where(eq(userFiles.fileId, fileId))
+  return withQueryMetrics('UserFiles.getByFileId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(userFiles).where(eq(userFiles.fileId, fileId))
+  })
 }
 
 /**
@@ -70,9 +81,11 @@ export async function getUserFilesByFileId(fileId: string): Promise<UserFileRow[
  * @returns Array of file rows
  */
 export async function getFilesForUser(userId: string): Promise<FileRow[]> {
-  const db = await getDrizzleClient()
-  const result = await db.select({file: files}).from(userFiles).innerJoin(files, eq(userFiles.fileId, files.fileId)).where(eq(userFiles.userId, userId))
-  return result.map((r) => r.file)
+  return withQueryMetrics('UserFiles.getFilesForUser', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select({file: files}).from(userFiles).innerJoin(files, eq(userFiles.fileId, files.fileId)).where(eq(userFiles.userId, userId))
+    return result.map((r) => r.file)
+  })
 }
 
 /**
@@ -83,13 +96,15 @@ export async function getFilesForUser(userId: string): Promise<FileRow[]> {
  * @throws ForeignKeyViolationError if user or file does not exist
  */
 export async function createUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
-  const validatedInput = userFileInsertSchema.parse(input)
-  return await withTransaction(async (tx) => {
-    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
-    await assertUserExists(validatedInput.userId)
-    await assertFileExists(validatedInput.fileId)
-    const [userFile] = await tx.insert(userFiles).values(validatedInput).returning()
-    return userFile
+  return withQueryMetrics('UserFiles.create', async () => {
+    const validatedInput = userFileInsertSchema.parse(input)
+    return await withTransaction(async (tx) => {
+      // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
+      await assertUserExists(validatedInput.userId)
+      await assertFileExists(validatedInput.fileId)
+      const [userFile] = await tx.insert(userFiles).values(validatedInput).returning()
+      return userFile
+    })
   })
 }
 
@@ -104,16 +119,18 @@ export async function createUserFile(input: CreateUserFileInput): Promise<UserFi
  * @returns The existing or created user-file row
  */
 export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFileRow> {
-  const validatedInput = userFileInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  // Try to insert, do nothing on conflict (junction table has no updatable fields)
-  const result = await db.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
-  // If conflict occurred (no rows returned), fetch existing record
-  if (result.length === 0) {
-    const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
-    return existing
-  }
-  return result[0]
+  return withQueryMetrics('UserFiles.upsert', async () => {
+    const validatedInput = userFileInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    // Try to insert, do nothing on conflict (junction table has no updatable fields)
+    const result = await db.insert(userFiles).values(validatedInput).onConflictDoNothing({target: [userFiles.userId, userFiles.fileId]}).returning()
+    // If conflict occurred (no rows returned), fetch existing record
+    if (result.length === 0) {
+      const [existing] = await db.select().from(userFiles).where(and(eq(userFiles.userId, input.userId), eq(userFiles.fileId, input.fileId))).limit(1)
+      return existing
+    }
+    return result[0]
+  })
 }
 
 /**
@@ -122,8 +139,10 @@ export async function upsertUserFile(input: CreateUserFileInput): Promise<UserFi
  * @param fileId - The file's unique identifier
  */
 export async function deleteUserFile(userId: string, fileId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
+  return withQueryMetrics('UserFiles.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(userFiles).where(and(eq(userFiles.userId, userId), eq(userFiles.fileId, fileId)))
+  })
 }
 
 /**
@@ -131,8 +150,10 @@ export async function deleteUserFile(userId: string, fileId: string): Promise<vo
  * @param userId - The user's unique identifier
  */
 export async function deleteUserFilesByUserId(userId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(userFiles).where(eq(userFiles.userId, userId))
+  return withQueryMetrics('UserFiles.deleteByUserId', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(userFiles).where(eq(userFiles.userId, userId))
+  })
 }
 
 /**
@@ -141,16 +162,18 @@ export async function deleteUserFilesByUserId(userId: string): Promise<void> {
  * @param keys - Array of userId/fileId pairs to delete
  */
 export async function deleteUserFilesBatch(keys: Array<{userId: string; fileId: string}>): Promise<void> {
-  if (keys.length === 0) {
-    return
-  }
+  return withQueryMetrics('UserFiles.deleteBatch', async () => {
+    if (keys.length === 0) {
+      return
+    }
 
-  const db = await getDrizzleClient()
+    const db = await getDrizzleClient()
 
-  // Build OR conditions for composite key matching
-  const conditions = keys.map((k) => and(eq(userFiles.userId, k.userId), eq(userFiles.fileId, k.fileId)))
+    // Build OR conditions for composite key matching
+    const conditions = keys.map((k) => and(eq(userFiles.userId, k.userId), eq(userFiles.fileId, k.fileId)))
 
-  await db.delete(userFiles).where(or(...conditions))
+    await db.delete(userFiles).where(or(...conditions))
+  })
 }
 
 // UserDevice Operations
@@ -162,9 +185,11 @@ export async function deleteUserFilesBatch(keys: Array<{userId: string; fileId: 
  * @returns The user-device row or null if not found
  */
 export async function getUserDevice(userId: string, deviceId: string): Promise<UserDeviceRow | null> {
-  const db = await getDrizzleClient()
-  const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId))).limit(1)
-  return result.length > 0 ? result[0] : null
+  return withQueryMetrics('UserDevices.get', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select().from(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId))).limit(1)
+    return result.length > 0 ? result[0] : null
+  })
 }
 
 /**
@@ -173,8 +198,10 @@ export async function getUserDevice(userId: string, deviceId: string): Promise<U
  * @returns Array of user-device rows
  */
 export async function getUserDevicesByUserId(userId: string): Promise<UserDeviceRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+  return withQueryMetrics('UserDevices.getByUserId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(userDevices).where(eq(userDevices.userId, userId))
+  })
 }
 
 /**
@@ -184,9 +211,11 @@ export async function getUserDevicesByUserId(userId: string): Promise<UserDevice
  * @returns Array of device IDs
  */
 export async function getUserDeviceIdsByUserId(userId: string): Promise<string[]> {
-  const db = await getDrizzleClient()
-  const result = await db.select({deviceId: userDevices.deviceId}).from(userDevices).where(eq(userDevices.userId, userId))
-  return result.map((r) => r.deviceId)
+  return withQueryMetrics('UserDevices.getIdsByUserId', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select({deviceId: userDevices.deviceId}).from(userDevices).where(eq(userDevices.userId, userId))
+    return result.map((r) => r.deviceId)
+  })
 }
 
 /**
@@ -195,8 +224,10 @@ export async function getUserDeviceIdsByUserId(userId: string): Promise<string[]
  * @returns Array of user-device rows
  */
 export async function getUserDevicesByDeviceId(deviceId: string): Promise<UserDeviceRow[]> {
-  const db = await getDrizzleClient()
-  return await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
+  return withQueryMetrics('UserDevices.getByDeviceId', async () => {
+    const db = await getDrizzleClient()
+    return await db.select().from(userDevices).where(eq(userDevices.deviceId, deviceId))
+  })
 }
 
 /**
@@ -205,11 +236,13 @@ export async function getUserDevicesByDeviceId(deviceId: string): Promise<UserDe
  * @returns Array of device rows
  */
 export async function getDevicesForUser(userId: string): Promise<DeviceRow[]> {
-  const db = await getDrizzleClient()
-  const result = await db.select({device: devices}).from(userDevices).innerJoin(devices, eq(userDevices.deviceId, devices.deviceId)).where(
-    eq(userDevices.userId, userId)
-  )
-  return result.map((r) => r.device)
+  return withQueryMetrics('UserDevices.getDevicesForUser', async () => {
+    const db = await getDrizzleClient()
+    const result = await db.select({device: devices}).from(userDevices).innerJoin(devices, eq(userDevices.deviceId, devices.deviceId)).where(
+      eq(userDevices.userId, userId)
+    )
+    return result.map((r) => r.device)
+  })
 }
 
 /**
@@ -218,12 +251,14 @@ export async function getDevicesForUser(userId: string): Promise<DeviceRow[]> {
  * @returns Array of device IDs
  */
 export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]> {
-  if (userIds.length === 0) {
-    return []
-  }
-  const db = await getDrizzleClient()
-  const result = await db.select({deviceId: userDevices.deviceId}).from(userDevices).where(inArray(userDevices.userId, userIds))
-  return result.map((r) => r.deviceId)
+  return withQueryMetrics('UserDevices.getIdsForUsers', async () => {
+    if (userIds.length === 0) {
+      return []
+    }
+    const db = await getDrizzleClient()
+    const result = await db.select({deviceId: userDevices.deviceId}).from(userDevices).where(inArray(userDevices.userId, userIds))
+    return result.map((r) => r.deviceId)
+  })
 }
 
 /**
@@ -234,13 +269,15 @@ export async function getDeviceIdsForUsers(userIds: string[]): Promise<string[]>
  * @throws ForeignKeyViolationError if user or device does not exist
  */
 export async function createUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
-  const validatedInput = userDeviceInsertSchema.parse(input)
-  return await withTransaction(async (tx) => {
-    // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
-    await assertUserExists(validatedInput.userId)
-    await assertDeviceExists(validatedInput.deviceId)
-    const [userDevice] = await tx.insert(userDevices).values(validatedInput).returning()
-    return userDevice
+  return withQueryMetrics('UserDevices.create', async () => {
+    const validatedInput = userDeviceInsertSchema.parse(input)
+    return await withTransaction(async (tx) => {
+      // Validate FK references exist (Aurora DSQL doesn't enforce FKs)
+      await assertUserExists(validatedInput.userId)
+      await assertDeviceExists(validatedInput.deviceId)
+      const [userDevice] = await tx.insert(userDevices).values(validatedInput).returning()
+      return userDevice
+    })
   })
 }
 
@@ -255,18 +292,19 @@ export async function createUserDevice(input: CreateUserDeviceInput): Promise<Us
  * @returns The existing or created user-device row
  */
 export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<UserDeviceRow> {
-  const validatedInput = userDeviceInsertSchema.parse(input)
-  const db = await getDrizzleClient()
-  // Try to insert, do nothing on conflict (junction table has no updatable fields)
-  const result = await db.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
-  // If conflict occurred (no rows returned), fetch existing record
-  if (result.length === 0) {
-    const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId))).limit(
-      1
-    )
-    return existing
-  }
-  return result[0]
+  return withQueryMetrics('UserDevices.upsert', async () => {
+    const validatedInput = userDeviceInsertSchema.parse(input)
+    const db = await getDrizzleClient()
+    // Try to insert, do nothing on conflict (junction table has no updatable fields)
+    const result = await db.insert(userDevices).values(validatedInput).onConflictDoNothing({target: [userDevices.userId, userDevices.deviceId]}).returning()
+    // If conflict occurred (no rows returned), fetch existing record
+    if (result.length === 0) {
+      const [existing] = await db.select().from(userDevices).where(and(eq(userDevices.userId, input.userId), eq(userDevices.deviceId, input.deviceId)))
+        .limit(1)
+      return existing
+    }
+    return result[0]
+  })
 }
 
 /**
@@ -275,8 +313,10 @@ export async function upsertUserDevice(input: CreateUserDeviceInput): Promise<Us
  * @param deviceId - The device's unique identifier
  */
 export async function deleteUserDevice(userId: string, deviceId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId)))
+  return withQueryMetrics('UserDevices.delete', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(userDevices).where(and(eq(userDevices.userId, userId), eq(userDevices.deviceId, deviceId)))
+  })
 }
 
 /**
@@ -284,8 +324,10 @@ export async function deleteUserDevice(userId: string, deviceId: string): Promis
  * @param userId - The user's unique identifier
  */
 export async function deleteUserDevicesByUserId(userId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(userDevices).where(eq(userDevices.userId, userId))
+  return withQueryMetrics('UserDevices.deleteByUserId', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(userDevices).where(eq(userDevices.userId, userId))
+  })
 }
 
 /**
@@ -293,6 +335,8 @@ export async function deleteUserDevicesByUserId(userId: string): Promise<void> {
  * @param deviceId - The device's unique identifier
  */
 export async function deleteUserDevicesByDeviceId(deviceId: string): Promise<void> {
-  const db = await getDrizzleClient()
-  await db.delete(userDevices).where(eq(userDevices.deviceId, deviceId))
+  return withQueryMetrics('UserDevices.deleteByDeviceId', async () => {
+    const db = await getDrizzleClient()
+    await db.delete(userDevices).where(eq(userDevices.deviceId, deviceId))
+  })
 }

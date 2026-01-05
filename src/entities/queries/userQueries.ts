@@ -2,10 +2,13 @@
  * User Queries - Drizzle ORM queries for user operations.
  *
  * Uses LEFT JOINs to fetch identity providers efficiently (no N+1 queries).
+ * All queries are instrumented with withQueryMetrics for CloudWatch metrics and X-Ray tracing.
  *
  * @see src/lib/vendor/Drizzle/schema.ts for table definitions
+ * @see src/lib/vendor/Drizzle/instrumentation.ts for query metrics
  */
 import {getDrizzleClient, withTransaction} from '#lib/vendor/Drizzle/client'
+import {withQueryMetrics} from '#lib/vendor/Drizzle/instrumentation'
 import {identityProviders, users} from '#lib/vendor/Drizzle/schema'
 import {eq} from '#lib/vendor/Drizzle/types'
 import type {InferInsertModel, InferSelectModel} from '#lib/vendor/Drizzle/types'
@@ -61,17 +64,19 @@ function transformIdp(idp: IdentityProviderRow | null): IdentityProviderData | u
  * @returns The user with identity provider data, or null if not found
  */
 export async function getUser(id: string): Promise<UserItem | null> {
-  const db = await getDrizzleClient()
+  return withQueryMetrics('Users.get', async () => {
+    const db = await getDrizzleClient()
 
-  const result = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
-    .where(eq(users.id, id)).limit(1)
+    const result = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
+      .where(eq(users.id, id)).limit(1)
 
-  if (result.length === 0) {
-    return null
-  }
+    if (result.length === 0) {
+      return null
+    }
 
-  const {user, idp} = result[0]
-  return {...user, identityProviders: transformIdp(idp)}
+    const {user, idp} = result[0]
+    return {...user, identityProviders: transformIdp(idp)}
+  })
 }
 
 /**
@@ -80,10 +85,12 @@ export async function getUser(id: string): Promise<UserItem | null> {
  * @returns Array of users matching the email with their identity providers
  */
 export async function getUsersByEmail(email: string): Promise<UserItem[]> {
-  const db = await getDrizzleClient()
-  const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
-    .where(eq(users.email, email))
-  return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
+  return withQueryMetrics('Users.getByEmail', async () => {
+    const db = await getDrizzleClient()
+    const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
+      .where(eq(users.email, email))
+    return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
+  })
 }
 
 /**
@@ -92,10 +99,12 @@ export async function getUsersByEmail(email: string): Promise<UserItem[]> {
  * @returns Array of users matching the device ID with their identity providers
  */
 export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<UserItem[]> {
-  const db = await getDrizzleClient()
-  const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
-    .where(eq(users.appleDeviceId, appleDeviceId))
-  return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
+  return withQueryMetrics('Users.getByAppleDeviceId', async () => {
+    const db = await getDrizzleClient()
+    const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
+      .where(eq(users.appleDeviceId, appleDeviceId))
+    return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
+  })
 }
 
 /**
@@ -106,25 +115,27 @@ export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<Us
  * @returns The created user with identity provider data
  */
 export async function createUser(input: CreateUserInput): Promise<UserItem> {
-  // Validate user input against schema
-  const validatedUser = userInsertSchema.parse(input)
-  const {identityProviders: idpData, ...userData} = {...validatedUser, identityProviders: input.identityProviders}
-  return await withTransaction(async (tx) => {
-    const [user] = await tx.insert(users).values({...userData, updatedAt: new Date()}).returning()
-    if (idpData) {
-      await tx.insert(identityProviders).values({
-        userId: user.id,
-        providerUserId: idpData.userId,
-        email: idpData.email,
-        emailVerified: idpData.emailVerified,
-        isPrivateEmail: idpData.isPrivateEmail,
-        accessToken: idpData.accessToken,
-        refreshToken: idpData.refreshToken,
-        tokenType: idpData.tokenType,
-        expiresAt: idpData.expiresAt
-      })
-    }
-    return {...user, identityProviders: idpData}
+  return withQueryMetrics('Users.create', async () => {
+    // Validate user input against schema
+    const validatedUser = userInsertSchema.parse(input)
+    const {identityProviders: idpData, ...userData} = {...validatedUser, identityProviders: input.identityProviders}
+    return await withTransaction(async (tx) => {
+      const [user] = await tx.insert(users).values({...userData, updatedAt: new Date()}).returning()
+      if (idpData) {
+        await tx.insert(identityProviders).values({
+          userId: user.id,
+          providerUserId: idpData.userId,
+          email: idpData.email,
+          emailVerified: idpData.emailVerified,
+          isPrivateEmail: idpData.isPrivateEmail,
+          accessToken: idpData.accessToken,
+          refreshToken: idpData.refreshToken,
+          tokenType: idpData.tokenType,
+          expiresAt: idpData.expiresAt
+        })
+      }
+      return {...user, identityProviders: idpData}
+    })
   })
 }
 
@@ -135,15 +146,17 @@ export async function createUser(input: CreateUserInput): Promise<UserItem> {
  * @returns The updated user with identity provider data
  */
 export async function updateUser(id: string, data: UpdateUserInput): Promise<UserItem> {
-  // Validate partial update data against schema
-  const validatedData = userUpdateSchema.partial().parse(data)
-  const db = await getDrizzleClient()
-  const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
+  return withQueryMetrics('Users.update', async () => {
+    // Validate partial update data against schema
+    const validatedData = userUpdateSchema.partial().parse(data)
+    const db = await getDrizzleClient()
+    const [updated] = await db.update(users).set({...validatedData, updatedAt: new Date()}).where(eq(users.id, id)).returning()
 
-  // Fetch identity provider with separate query (only 1 user, not N+1)
-  const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, id)).limit(1)
+    // Fetch identity provider with separate query (only 1 user, not N+1)
+    const idpResult = await db.select().from(identityProviders).where(eq(identityProviders.userId, id)).limit(1)
 
-  return {...updated, identityProviders: transformIdp(idpResult[0] ?? null)}
+    return {...updated, identityProviders: transformIdp(idpResult[0] ?? null)}
+  })
 }
 
 /**
@@ -154,8 +167,10 @@ export async function updateUser(id: string, data: UpdateUserInput): Promise<Use
  * @param id - The user's UUID
  */
 export async function deleteUser(id: string): Promise<void> {
-  await withTransaction(async (tx) => {
-    await tx.delete(identityProviders).where(eq(identityProviders.userId, id))
-    await tx.delete(users).where(eq(users.id, id))
+  return withQueryMetrics('Users.delete', async () => {
+    await withTransaction(async (tx) => {
+      await tx.delete(identityProviders).where(eq(identityProviders.userId, id))
+      await tx.delete(users).where(eq(users.id, id))
+    })
   })
 }
