@@ -1,7 +1,7 @@
 /**
  * Unit tests for Powertools Middleware
  *
- * Tests the withPowertools wrapper and cold start tracking.
+ * Tests the withPowertools wrapper with auto-detection metrics.
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
@@ -11,8 +11,7 @@ vi.mock('#lib/vendor/Powertools',
   () => ({
     injectLambdaContext: vi.fn(() => ({id: 'inject-context-middleware'})),
     logger: {appendKeys: vi.fn()},
-    logMetrics: vi.fn(() => ({id: 'log-metrics-middleware'})),
-    metrics: {addMetric: vi.fn(), publishStoredMetrics: vi.fn()},
+    metrics: {addMetric: vi.fn(), publishStoredMetrics: vi.fn(), hasStoredMetrics: vi.fn()},
     MetricUnit: {Count: 'Count'}
   }))
 
@@ -20,7 +19,7 @@ vi.mock('#lib/system/env', () => ({getOptionalEnv: vi.fn()}))
 
 vi.mock('@middy/core', () => ({
   default: vi.fn((handler) => {
-    const middlewares: Array<{before?: () => Promise<void>}> = []
+    const middlewares: Array<{before?: () => Promise<void>; after?: () => Promise<void>; onError?: () => Promise<void>}> = []
     const mockMiddy = {
       use: vi.fn((middleware) => {
         middlewares.push(middleware)
@@ -30,12 +29,22 @@ vi.mock('@middy/core', () => ({
         middlewares.push({before: fn})
         return mockMiddy
       }),
+      after: vi.fn((fn) => {
+        middlewares.push({after: fn})
+        return mockMiddy
+      }),
+      onError: vi.fn((fn) => {
+        middlewares.push({onError: fn})
+        return mockMiddy
+      }),
       _handler: handler,
       _middlewares: middlewares
     }
     return mockMiddy
   })
 }))
+
+type MiddlewareHooks = {before?: () => Promise<void>; after?: () => Promise<void>; onError?: () => Promise<void>}
 
 // Fresh import for each test
 async function importPowertools() {
@@ -45,14 +54,13 @@ async function importPowertools() {
     () => ({
       injectLambdaContext: vi.fn(() => ({id: 'inject-context-middleware'})),
       logger: {appendKeys: vi.fn()},
-      logMetrics: vi.fn(() => ({id: 'log-metrics-middleware'})),
-      metrics: {addMetric: vi.fn(), publishStoredMetrics: vi.fn()},
+      metrics: {addMetric: vi.fn(), publishStoredMetrics: vi.fn(), hasStoredMetrics: vi.fn()},
       MetricUnit: {Count: 'Count'}
     }))
   vi.mock('#lib/system/env', () => ({getOptionalEnv: vi.fn()}))
   vi.mock('@middy/core', () => ({
     default: vi.fn((handler) => {
-      const middlewares: Array<{before?: () => Promise<void>}> = []
+      const middlewares: Array<MiddlewareHooks> = []
       const mockMiddy = {
         use: vi.fn((middleware) => {
           middlewares.push(middleware)
@@ -60,6 +68,14 @@ async function importPowertools() {
         }),
         before: vi.fn((fn) => {
           middlewares.push({before: fn})
+          return mockMiddy
+        }),
+        after: vi.fn((fn) => {
+          middlewares.push({after: fn})
+          return mockMiddy
+        }),
+        onError: vi.fn((fn) => {
+          middlewares.push({onError: fn})
           return mockMiddy
         }),
         _handler: handler,
@@ -91,46 +107,54 @@ describe('Powertools Middleware', () => {
       expect(typeof wrapped).toBe('object') // Middy returns an object
     })
 
-    it('should use manual cold start tracking by default', async () => {
+    it('should add before middleware for cold start tracking', async () => {
       const {withPowertools} = await importPowertools()
       const {getOptionalEnv} = await import('#lib/system/env')
       vi.mocked(getOptionalEnv).mockReturnValue('development')
 
       const handler = vi.fn().mockResolvedValue('result')
-      withPowertools(handler)
+      const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
 
-      // Should NOT call logMetrics for non-custom metrics
-      const {logMetrics} = await import('#lib/vendor/Powertools')
-      expect(logMetrics).not.toHaveBeenCalled()
+      // Should have a before middleware for cold start
+      const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
+      expect(beforeMiddleware).toBeDefined()
     })
 
-    it('should enable full metrics when enableCustomMetrics is true and not in test', async () => {
+    it('should add after and onError middleware in non-test environment', async () => {
       const {withPowertools} = await importPowertools()
       const {getOptionalEnv} = await import('#lib/system/env')
       vi.mocked(getOptionalEnv).mockReturnValue('production')
 
       const handler = vi.fn().mockResolvedValue('result')
-      withPowertools(handler, {enableCustomMetrics: true})
+      const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
 
-      const {logMetrics} = await import('#lib/vendor/Powertools')
-      expect(logMetrics).toHaveBeenCalled()
+      // In production: should have 2 after and 2 onError middlewares
+      // (securityHeaders + our metrics publishing)
+      const afterMiddlewares = wrapped._middlewares.filter((m) => m.after)
+      const onErrorMiddlewares = wrapped._middlewares.filter((m) => m.onError)
+      expect(afterMiddlewares).toHaveLength(2)
+      expect(onErrorMiddlewares).toHaveLength(2)
     })
 
-    it('should NOT enable full metrics when in test environment', async () => {
+    it('should NOT add metrics after/onError middleware in test environment', async () => {
       const {withPowertools} = await importPowertools()
       const {getOptionalEnv} = await import('#lib/system/env')
       vi.mocked(getOptionalEnv).mockReturnValue('test')
 
       const handler = vi.fn().mockResolvedValue('result')
-      withPowertools(handler, {enableCustomMetrics: true})
+      const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
 
-      const {logMetrics} = await import('#lib/vendor/Powertools')
-      expect(logMetrics).not.toHaveBeenCalled()
+      // In test env: securityHeaders has after/onError, but our metrics middleware should NOT be added
+      // So we should have exactly 1 after and 1 onError (from securityHeaders only)
+      const afterMiddlewares = wrapped._middlewares.filter((m) => m.after)
+      const onErrorMiddlewares = wrapped._middlewares.filter((m) => m.onError)
+      expect(afterMiddlewares).toHaveLength(1) // securityHeaders only
+      expect(onErrorMiddlewares).toHaveLength(1) // securityHeaders only
     })
   })
 
   describe('cold start tracking', () => {
-    it('should track cold start on first invocation', async () => {
+    it('should add cold start metric on first invocation', async () => {
       const {withPowertools} = await importPowertools()
       const {getOptionalEnv} = await import('#lib/system/env')
       vi.mocked(getOptionalEnv).mockReturnValue('development')
@@ -141,7 +165,7 @@ describe('Powertools Middleware', () => {
 
       try {
         const handler = vi.fn().mockResolvedValue('result')
-        const wrapped = withPowertools(handler) as unknown as {_middlewares: Array<{before?: () => Promise<void>}>}
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
 
         // Find the before middleware (cold start tracking)
         const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
@@ -153,8 +177,8 @@ describe('Powertools Middleware', () => {
           await beforeMiddleware.before()
         }
 
+        // Cold start metric should be added (publishing happens in after hook)
         expect(metrics.addMetric).toHaveBeenCalledWith('ColdStart', 'Count', 1)
-        expect(metrics.publishStoredMetrics).toHaveBeenCalled()
       } finally {
         // Restore original LOG_LEVEL
         if (originalLogLevel !== undefined) {
@@ -176,7 +200,7 @@ describe('Powertools Middleware', () => {
 
       try {
         const handler = vi.fn().mockResolvedValue('result')
-        const wrapped = withPowertools(handler) as unknown as {_middlewares: Array<{before?: () => Promise<void>}>}
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
 
         // Find the before middleware (cold start tracking)
         const beforeMiddleware = wrapped._middlewares.find((m) => m.before)
@@ -190,9 +214,148 @@ describe('Powertools Middleware', () => {
 
         // Metrics should NOT be called when SILENT
         expect(metrics.addMetric).not.toHaveBeenCalled()
-        expect(metrics.publishStoredMetrics).not.toHaveBeenCalled()
       } finally {
         // Restore original LOG_LEVEL
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
+      }
+    })
+  })
+
+  describe('auto-detection metrics publishing', () => {
+    // Helper to find the LAST middleware with a given hook (ours, not securityHeaders)
+    const findLastMiddleware = (middlewares: MiddlewareHooks[], hook: 'after' | 'onError') => {
+      const matching = middlewares.filter((m) => m[hook])
+      return matching[matching.length - 1]
+    }
+
+    it('should publish metrics in after hook when hasStoredMetrics returns true', async () => {
+      const {withPowertools} = await importPowertools()
+      const {getOptionalEnv} = await import('#lib/system/env')
+      vi.mocked(getOptionalEnv).mockReturnValue('production')
+
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'INFO'
+
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
+
+        const {metrics} = await import('#lib/vendor/Powertools')
+        vi.mocked(metrics.hasStoredMetrics).mockReturnValue(true)
+
+        // Find and execute the LAST after middleware (ours, not securityHeaders)
+        const afterMiddleware = findLastMiddleware(wrapped._middlewares, 'after')
+        expect(afterMiddleware).toBeDefined()
+        if (afterMiddleware?.after) {
+          await afterMiddleware.after()
+        }
+
+        expect(metrics.hasStoredMetrics).toHaveBeenCalled()
+        expect(metrics.publishStoredMetrics).toHaveBeenCalled()
+      } finally {
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
+      }
+    })
+
+    it('should NOT publish metrics when hasStoredMetrics returns false', async () => {
+      const {withPowertools} = await importPowertools()
+      const {getOptionalEnv} = await import('#lib/system/env')
+      vi.mocked(getOptionalEnv).mockReturnValue('production')
+
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'INFO'
+
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
+
+        const {metrics} = await import('#lib/vendor/Powertools')
+        vi.mocked(metrics.hasStoredMetrics).mockReturnValue(false)
+
+        // Find and execute the LAST after middleware (ours, not securityHeaders)
+        const afterMiddleware = findLastMiddleware(wrapped._middlewares, 'after')
+        expect(afterMiddleware).toBeDefined()
+        if (afterMiddleware?.after) {
+          await afterMiddleware.after()
+        }
+
+        expect(metrics.hasStoredMetrics).toHaveBeenCalled()
+        expect(metrics.publishStoredMetrics).not.toHaveBeenCalled()
+      } finally {
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
+      }
+    })
+
+    it('should publish metrics in onError hook when hasStoredMetrics returns true', async () => {
+      const {withPowertools} = await importPowertools()
+      const {getOptionalEnv} = await import('#lib/system/env')
+      vi.mocked(getOptionalEnv).mockReturnValue('production')
+
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'INFO'
+
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
+
+        const {metrics} = await import('#lib/vendor/Powertools')
+        vi.mocked(metrics.hasStoredMetrics).mockReturnValue(true)
+
+        // Find and execute the LAST onError middleware (ours, not securityHeaders)
+        const onErrorMiddleware = findLastMiddleware(wrapped._middlewares, 'onError')
+        expect(onErrorMiddleware).toBeDefined()
+        if (onErrorMiddleware?.onError) {
+          await onErrorMiddleware.onError()
+        }
+
+        expect(metrics.hasStoredMetrics).toHaveBeenCalled()
+        expect(metrics.publishStoredMetrics).toHaveBeenCalled()
+      } finally {
+        if (originalLogLevel !== undefined) {
+          process.env.LOG_LEVEL = originalLogLevel
+        } else {
+          delete process.env.LOG_LEVEL
+        }
+      }
+    })
+
+    it('should NOT publish metrics when LOG_LEVEL is SILENT', async () => {
+      const {withPowertools} = await importPowertools()
+      const {getOptionalEnv} = await import('#lib/system/env')
+      vi.mocked(getOptionalEnv).mockReturnValue('production')
+
+      const originalLogLevel = process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = 'SILENT'
+
+      try {
+        const handler = vi.fn().mockResolvedValue('result')
+        const wrapped = withPowertools(handler) as unknown as {_middlewares: MiddlewareHooks[]}
+
+        const {metrics} = await import('#lib/vendor/Powertools')
+        vi.mocked(metrics.hasStoredMetrics).mockReturnValue(true)
+
+        // Find and execute the LAST after middleware (ours, not securityHeaders)
+        const afterMiddleware = findLastMiddleware(wrapped._middlewares, 'after')
+        expect(afterMiddleware).toBeDefined()
+        if (afterMiddleware?.after) {
+          await afterMiddleware.after()
+        }
+
+        // Should NOT publish even if metrics exist when SILENT
+        expect(metrics.publishStoredMetrics).not.toHaveBeenCalled()
+      } finally {
         if (originalLogLevel !== undefined) {
           process.env.LOG_LEVEL = originalLogLevel
         } else {

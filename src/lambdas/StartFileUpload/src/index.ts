@@ -418,4 +418,4 @@ async function processSqsRecord({record, body}: SqsRecordParams<unknown>): Promi
  * @returns SQSBatchResponse with failed message IDs
  * @notExported
  */
-export const handler = withPowertools(wrapSqsBatchHandler(processSqsRecord), {enableCustomMetrics: true})
+export const handler = withPowertools(wrapSqsBatchHandler(processSqsRecord))
