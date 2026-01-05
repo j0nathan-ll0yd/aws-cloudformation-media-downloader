@@ -21,7 +21,6 @@ export default defineConfig({
     hookTimeout: 60000, // Allow 60s for beforeAll/afterAll hooks (schema creation may retry up to 30s)
     pool: 'threads',
     maxWorkers,
-    minWorkers: 1,
     globalSetup: './test/integration/globalSetup.ts',
     setupFiles: ['./test/integration/setup.ts'],
     // Retry flaky tests in CI (up to 2 retries = 3 total attempts)
