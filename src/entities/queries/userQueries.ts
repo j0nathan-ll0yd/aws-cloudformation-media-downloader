@@ -94,20 +94,6 @@ export async function getUsersByEmail(email: string): Promise<UserItem[]> {
 }
 
 /**
- * Finds users by Apple device ID with identity providers (single JOIN query).
- * @param appleDeviceId - The Apple device identifier
- * @returns Array of users matching the device ID with their identity providers
- */
-export async function getUsersByAppleDeviceId(appleDeviceId: string): Promise<UserItem[]> {
-  return withQueryMetrics('Users.getByAppleDeviceId', async () => {
-    const db = await getDrizzleClient()
-    const results = await db.select({user: users, idp: identityProviders}).from(users).leftJoin(identityProviders, eq(users.id, identityProviders.userId))
-      .where(eq(users.appleDeviceId, appleDeviceId))
-    return results.map(({user, idp}) => ({...user, identityProviders: transformIdp(idp)}))
-  })
-}
-
-/**
  * Creates a new user with optional identity provider.
  * Uses a transaction to ensure atomicity - if identity provider insert fails,
  * the user insert is rolled back.

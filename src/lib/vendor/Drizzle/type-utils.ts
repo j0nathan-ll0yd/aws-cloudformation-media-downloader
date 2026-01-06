@@ -30,7 +30,6 @@ export function toUser(row: UserRow): User {
     image: row.image ?? undefined,
     firstName: row.firstName ?? undefined,
     lastName: row.lastName ?? undefined,
-    appleDeviceId: row.appleDeviceId ?? undefined,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   }

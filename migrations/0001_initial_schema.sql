@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 -- Users table - Better Auth core table
 -- NOTE: Nullable columns use DEFAULT NULL for Better Auth compatibility
 -- (Better Auth sends DEFAULT in INSERT for columns without values)
+-- NOTE: apple_device_id was removed from schema (unused, architectural mismatch)
+-- but Aurora DSQL doesn't support ALTER TABLE DROP COLUMN, so existing
+-- databases may still have this column. It's harmless as nullable/unused.
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
@@ -26,7 +29,6 @@ CREATE TABLE IF NOT EXISTS users (
   image TEXT DEFAULT NULL,
   first_name TEXT DEFAULT NULL,
   last_name TEXT DEFAULT NULL,
-  apple_device_id TEXT DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

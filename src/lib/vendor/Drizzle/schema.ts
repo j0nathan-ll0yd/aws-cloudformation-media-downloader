@@ -25,7 +25,6 @@ import {boolean, index, integer, pgTable, primaryKey, text, timestamp, unique, u
  *
  * Indexes:
  * - usersEmailIdx: Lookup by email (login flow)
- * - usersAppleDeviceIdx: Lookup by Apple device ID (token refresh)
  */
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -35,12 +34,10 @@ export const users = pgTable('users', {
   image: text('image'),
   firstName: text('first_name'),
   lastName: text('last_name'),
-  appleDeviceId: text('apple_device_id'),
   createdAt: timestamp('created_at', {withTimezone: true}).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', {withTimezone: true}).defaultNow().notNull()
 }, (table) => [
-  index('users_email_idx').on(table.email),
-  index('users_apple_device_idx').on(table.appleDeviceId)
+  index('users_email_idx').on(table.email)
 ])
 
 /**

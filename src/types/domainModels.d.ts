@@ -34,8 +34,6 @@ export interface User {
   firstName?: string
   /** User's last name (optional, from Apple ID) */
   lastName?: string
-  /** Apple device ID for Sign In With Apple lookup */
-  appleDeviceId?: string
   /** Timestamp when user was created */
   createdAt?: Date
   /** Timestamp when user was last updated */

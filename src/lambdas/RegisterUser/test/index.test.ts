@@ -38,7 +38,6 @@ describe('#RegisterUser', () => {
       image: null,
       firstName: null,
       lastName: null,
-      appleDeviceId: null,
       createdAt: new Date(),
       updatedAt: new Date()
     })

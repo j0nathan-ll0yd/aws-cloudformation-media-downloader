@@ -61,7 +61,7 @@ export function createMockDevice(partial?: Partial<Device>): Partial<Device> {
  * Creates a mock User record with sensible defaults
  * @param partial - Partial user data to override defaults
  */
-export function createMockUser(partial?: Partial<User> & {appleDeviceId?: string; userId?: string}): Partial<User> & {appleDeviceId?: string} {
+export function createMockUser(partial?: Partial<User> & {userId?: string}): Partial<User> {
   // Support both 'id' (domain type) and 'userId' (legacy tests) for backwards compatibility
   const id = partial?.id || partial?.userId || `user-${Math.random().toString(36).substring(7)}`
   return {
@@ -70,7 +70,6 @@ export function createMockUser(partial?: Partial<User> & {appleDeviceId?: string
     emailVerified: partial?.emailVerified ?? true,
     firstName: partial?.firstName || 'Test',
     lastName: partial?.lastName || 'User',
-    appleDeviceId: partial?.appleDeviceId,
     ...partial
   }
 }

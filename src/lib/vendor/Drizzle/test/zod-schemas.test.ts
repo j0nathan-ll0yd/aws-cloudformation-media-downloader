@@ -30,8 +30,7 @@ describe('Drizzle Zod Schemas', () => {
         name: 'Test User',
         image: 'https://example.com/avatar.png',
         firstName: 'Test',
-        lastName: 'User',
-        appleDeviceId: 'apple-device-123'
+        lastName: 'User'
       })
       expect(result.success).toBe(true)
     })
@@ -57,7 +56,6 @@ describe('Drizzle Zod Schemas', () => {
         image: null,
         firstName: 'Test',
         lastName: 'User',
-        appleDeviceId: null,
         createdAt: new Date(),
         updatedAt: new Date()
       })
