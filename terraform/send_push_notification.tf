@@ -89,7 +89,7 @@ data "archive_file" "SendPushNotification" {
 }
 
 resource "aws_lambda_function" "SendPushNotification" {
-  description      = "Records an event from a client environment (e.g. App or Web)."
+  description      = "Sends push notifications to user devices via SNS/APNS."
   function_name    = local.send_push_notification_function_name
   role             = aws_iam_role.SendPushNotification.arn
   handler          = "index.handler"
@@ -99,6 +99,8 @@ resource "aws_lambda_function" "SendPushNotification" {
   filename         = data.archive_file.SendPushNotification.output_path
   source_code_hash = data.archive_file.SendPushNotification.output_base64sha256
   layers           = [local.adot_layer_arn]
+  timeout          = local.default_lambda_timeout
+  memory_size      = 512
 
   tracing_config {
     mode = "Active"

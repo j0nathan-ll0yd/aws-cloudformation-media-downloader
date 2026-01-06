@@ -84,6 +84,7 @@ resource "aws_lambda_function" "UserDelete" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.UserDelete]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256

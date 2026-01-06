@@ -63,7 +63,7 @@ resource "aws_lambda_function" "RegisterUser" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  timeout          = 10
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy.RegisterUserLogging]
   filename         = data.archive_file.RegisterUser.output_path
   source_code_hash = data.archive_file.RegisterUser.output_base64sha256

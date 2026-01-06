@@ -136,6 +136,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy.S3ObjectCreatedLogging]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256

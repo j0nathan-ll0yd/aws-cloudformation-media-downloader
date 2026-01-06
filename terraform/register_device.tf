@@ -89,7 +89,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  timeout          = 10
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevice]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256

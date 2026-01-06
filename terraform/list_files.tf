@@ -65,6 +65,7 @@ resource "aws_lambda_function" "ListFiles" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   memory_size      = 512
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy.ListFilesLogging]
   filename         = data.archive_file.ListFiles.output_path
   source_code_hash = data.archive_file.ListFiles.output_base64sha256

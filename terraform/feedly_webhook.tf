@@ -98,6 +98,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   memory_size      = 512
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
