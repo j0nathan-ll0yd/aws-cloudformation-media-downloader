@@ -16,15 +16,64 @@ const YTDLP_CONFIG = {
   COOKIES_SOURCE: '/opt/cookies/youtube-cookies.txt',
   /** Cookies destination path (writable in Lambda) */
   COOKIES_DEST: '/tmp/youtube-cookies.txt',
-  /** Common extractor args to work around YouTube restrictions */
-  EXTRACTOR_ARGS: 'youtube:player_client=default',
+  /**
+   * Use mweb client with PO token - recommended for bot detection bypass.
+   * The bgutil plugin (when installed via PYTHONPATH) will automatically
+   * generate PO tokens for this client.
+   * @see https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+   */
+  EXTRACTOR_ARGS: 'youtube:player_client=mweb',
   /** Format selection: best mp4 video + m4a audio, fallback to best mp4 or best available */
   FORMAT_SELECTOR: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
   /** Output container format */
   MERGE_FORMAT: 'mp4',
   /** Number of concurrent fragment downloads for speed */
-  CONCURRENT_FRAGMENTS: '4'
+  CONCURRENT_FRAGMENTS: '4',
+  /** bgutil plugin path in Lambda layer (set via PYTHONPATH env var) */
+  PLUGIN_PATH: '/opt/python'
 } as const
+
+/**
+ * Cookie error patterns categorized by severity.
+ * - bot_detection: YouTube has detected automated access, requires PO tokens or fresh cookies
+ * - cookie_expired: Session cookies have expired, needs cookie refresh
+ * - rate_limited: Too many requests, may need to slow down or wait
+ */
+const COOKIE_ERROR_PATTERNS = {
+  bot_detection: [
+    "Sign in to confirm you're not a bot",
+    'This helps protect our community',
+    'bot detection',
+    'confirm your human',
+    'confirm you are human'
+  ],
+  cookie_expired: [
+    'HTTP Error 403',
+    'Forbidden',
+    'cookies have expired',
+    'session expired',
+    'login required'
+  ],
+  rate_limited: ['HTTP Error 429', 'Too many requests', 'rate limit', 'temporarily blocked']
+} as const
+
+/** Cookie error severity type */
+export type CookieErrorSeverity = 'bot_detection' | 'cookie_expired' | 'rate_limited' | null
+
+/**
+ * Classify a cookie-related error by severity
+ * @param errorMessage - Error message from yt-dlp
+ * @returns The error severity category, or null if not a cookie error
+ */
+export function classifyCookieError(errorMessage: string): CookieErrorSeverity {
+  const lowerMessage = errorMessage.toLowerCase()
+  for (const [severity, patterns] of Object.entries(COOKIE_ERROR_PATTERNS)) {
+    if (patterns.some((p) => lowerMessage.includes(p.toLowerCase()))) {
+      return severity as CookieErrorSeverity
+    }
+  }
+  return null
+}
 
 /**
  * Check if an error message indicates cookie expiration or bot detection
@@ -32,17 +81,7 @@ const YTDLP_CONFIG = {
  * @returns true if error is related to cookie expiration
  */
 export function isCookieExpirationError(errorMessage: string): boolean {
-  const cookieErrorPatterns = [
-    "Sign in to confirm you're not a bot",
-    'Sign in to confirm',
-    'bot detection',
-    'cookies',
-    'This helps protect our community',
-    'HTTP Error 403',
-    'Forbidden'
-  ]
-  const lowerMessage = errorMessage.toLowerCase()
-  return cookieErrorPatterns.some((pattern) => lowerMessage.includes(pattern.toLowerCase()))
+  return classifyCookieError(errorMessage) !== null
 }
 
 import type {FetchVideoInfoResult} from '#types/video'
@@ -133,6 +172,10 @@ export async function fetchVideoInfo(uri: string): Promise<FetchVideoInfoResult>
     const cookieError = isCookieExpirationError(err.message)
     if (cookieError) {
       logError('Cookie expiration detected', {message: err.message})
+      // Track auth failure with error type for CloudWatch alarm
+      const errorSeverity = classifyCookieError(err.message)
+      metrics.addDimension('ErrorType', errorSeverity || 'unknown')
+      metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
     }
 
     return {success: false, error: err, isCookieError: cookieError}
@@ -343,12 +386,20 @@ export async function downloadVideoToS3(uri: string, bucket: string, key: string
 
     // Re-throw CookieExpirationError without wrapping
     if (error instanceof CookieExpirationError) {
+      // Track auth failure with error type for CloudWatch alarm
+      const errorSeverity = classifyCookieError(error.message)
+      metrics.addDimension('ErrorType', errorSeverity || 'unknown')
+      metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
       throw error
     }
 
     // Check if error message contains cookie expiration indicators
     const message = error instanceof Error ? error.message : String(error)
     if (isCookieExpirationError(message)) {
+      // Track auth failure with error type for CloudWatch alarm
+      const errorSeverity = classifyCookieError(message)
+      metrics.addDimension('ErrorType', errorSeverity || 'unknown')
+      metrics.addMetric('YouTubeAuthFailure', MetricUnit.Count, 1)
       throw new CookieExpirationError(`YouTube cookie expiration or bot detection: ${message}`)
     }
 

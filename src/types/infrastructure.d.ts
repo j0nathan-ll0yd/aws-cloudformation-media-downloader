@@ -737,15 +737,18 @@ export interface AwsCloudwatchLogGroup {
 }
 
 export interface AwsCloudwatchMetricAlarm {
-    DownloadDLQMessages:          Age[];
-    EventBridgeFailedInvocations: EventBridge[];
-    EventBridgeThrottled:         EventBridge[];
-    LambdaErrorsApi:              Lambda[];
-    LambdaErrorsBackground:       Lambda[];
-    LambdaThrottlesApi:           Lambda[];
-    LambdaThrottlesBackground:    Lambda[];
-    SqsDlqMessages:               Age[];
-    SqsQueueAge:                  Age[];
+    DownloadDLQMessages:             Age[];
+    EventBridgeFailedInvocations:    EventBridge[];
+    EventBridgeThrottled:            EventBridge[];
+    LambdaErrorsApi:                 Lambda[];
+    LambdaErrorsBackground:          Lambda[];
+    LambdaThrottlesApi:              Lambda[];
+    LambdaThrottlesBackground:       Lambda[];
+    SqsDlqMessages:                  Age[];
+    SqsQueueAge:                     Age[];
+    YouTubeAuthFailureBotDetection:  YouTubeAuthFailure[];
+    YouTubeAuthFailureCookieExpired: YouTubeAuthFailure[];
+    YouTubeAuthFailureRateLimited:   YouTubeAuthFailure[];
 }
 
 export interface Age {
@@ -832,6 +835,26 @@ export interface LambdaErrorsAPIMetricQuery {
     id:          string;
     label:       string;
     return_data: boolean;
+}
+
+export interface YouTubeAuthFailure {
+    alarm_actions:       string[];
+    alarm_description:   string;
+    alarm_name:          string;
+    comparison_operator: string;
+    dimensions:          YouTubeAuthFailureBotDetectionDimensions;
+    evaluation_periods:  number;
+    metric_name:         string;
+    namespace:           string;
+    ok_actions:          string[];
+    period:              number;
+    statistic:           string;
+    threshold:           number;
+    treat_missing_data:  string;
+}
+
+export interface YouTubeAuthFailureBotDetectionDimensions {
+    ErrorType: string;
 }
 
 export interface AwsDsqlCluster {
@@ -930,7 +953,7 @@ export interface CleanupExpiredRecordElement {
     filename:                        string;
     function_name:                   string;
     handler:                         Handler;
-    layers:                          Layer[];
+    layers:                          string[];
     role:                            string;
     runtime:                         Runtime;
     source_code_hash:                string;
@@ -957,13 +980,6 @@ export interface EphemeralStorage {
 
 export enum Handler {
     IndexHandler = "index.handler",
-}
-
-export enum Layer {
-    AwsLambdaLayerVersionFfmpegArn = "${aws_lambda_layer_version.Ffmpeg.arn}",
-    AwsLambdaLayerVersionYtDLPArn = "${aws_lambda_layer_version.YtDlp.arn}",
-    LocalAdotLayerArn = "${local.adot_layer_arn}",
-    LocalAdotLayerArnX8664 = "${local.adot_layer_arn_x86_64}",
 }
 
 export enum Runtime {
@@ -993,11 +1009,12 @@ export interface CloudfrontMiddleware {
 }
 
 export interface AwsLambdaLayerVersion {
-    Ffmpeg: Ffmpeg[];
-    YtDlp:  Ffmpeg[];
+    Bgutil: Bgutil[];
+    Ffmpeg: Bgutil[];
+    YtDlp:  Bgutil[];
 }
 
-export interface Ffmpeg {
+export interface Bgutil {
     compatible_runtimes: Runtime[];
     description:         string;
     filename:            string;
@@ -1974,6 +1991,9 @@ const typeMap: any = {
         { json: "LambdaThrottlesBackground", js: "LambdaThrottlesBackground", typ: a(r("Lambda")) },
         { json: "SqsDlqMessages", js: "SqsDlqMessages", typ: a(r("Age")) },
         { json: "SqsQueueAge", js: "SqsQueueAge", typ: a(r("Age")) },
+        { json: "YouTubeAuthFailureBotDetection", js: "YouTubeAuthFailureBotDetection", typ: a(r("YouTubeAuthFailure")) },
+        { json: "YouTubeAuthFailureCookieExpired", js: "YouTubeAuthFailureCookieExpired", typ: a(r("YouTubeAuthFailure")) },
+        { json: "YouTubeAuthFailureRateLimited", js: "YouTubeAuthFailureRateLimited", typ: a(r("YouTubeAuthFailure")) },
     ], false),
     "Age": o([
         { json: "alarm_description", js: "alarm_description", typ: "" },
@@ -2049,6 +2069,24 @@ const typeMap: any = {
         { json: "id", js: "id", typ: "" },
         { json: "label", js: "label", typ: "" },
         { json: "return_data", js: "return_data", typ: true },
+    ], false),
+    "YouTubeAuthFailure": o([
+        { json: "alarm_actions", js: "alarm_actions", typ: a("") },
+        { json: "alarm_description", js: "alarm_description", typ: "" },
+        { json: "alarm_name", js: "alarm_name", typ: "" },
+        { json: "comparison_operator", js: "comparison_operator", typ: "" },
+        { json: "dimensions", js: "dimensions", typ: r("YouTubeAuthFailureBotDetectionDimensions") },
+        { json: "evaluation_periods", js: "evaluation_periods", typ: 0 },
+        { json: "metric_name", js: "metric_name", typ: "" },
+        { json: "namespace", js: "namespace", typ: "" },
+        { json: "ok_actions", js: "ok_actions", typ: a("") },
+        { json: "period", js: "period", typ: 0 },
+        { json: "statistic", js: "statistic", typ: "" },
+        { json: "threshold", js: "threshold", typ: 0 },
+        { json: "treat_missing_data", js: "treat_missing_data", typ: "" },
+    ], false),
+    "YouTubeAuthFailureBotDetectionDimensions": o([
+        { json: "ErrorType", js: "ErrorType", typ: "" },
     ], false),
     "AwsDsqlCluster": o([
         { json: "media_downloader", js: "media_downloader", typ: a(r("MediaDownloaderClass")) },
@@ -2133,7 +2171,7 @@ const typeMap: any = {
         { json: "filename", js: "filename", typ: "" },
         { json: "function_name", js: "function_name", typ: "" },
         { json: "handler", js: "handler", typ: r("Handler") },
-        { json: "layers", js: "layers", typ: a(r("Layer")) },
+        { json: "layers", js: "layers", typ: a("") },
         { json: "role", js: "role", typ: "" },
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
@@ -2167,10 +2205,11 @@ const typeMap: any = {
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
     ], false),
     "AwsLambdaLayerVersion": o([
-        { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Ffmpeg")) },
-        { json: "YtDlp", js: "YtDlp", typ: a(r("Ffmpeg")) },
+        { json: "Bgutil", js: "Bgutil", typ: a(r("Bgutil")) },
+        { json: "Ffmpeg", js: "Ffmpeg", typ: a(r("Bgutil")) },
+        { json: "YtDlp", js: "YtDlp", typ: a(r("Bgutil")) },
     ], false),
-    "Ffmpeg": o([
+    "Bgutil": o([
         { json: "compatible_runtimes", js: "compatible_runtimes", typ: a(r("Runtime")) },
         { json: "description", js: "description", typ: "" },
         { json: "filename", js: "filename", typ: "" },
@@ -2343,12 +2382,6 @@ const typeMap: any = {
     ],
     "Handler": [
         "index.handler",
-    ],
-    "Layer": [
-        "${aws_lambda_layer_version.Ffmpeg.arn}",
-        "${aws_lambda_layer_version.YtDlp.arn}",
-        "${local.adot_layer_arn}",
-        "${local.adot_layer_arn_x86_64}",
     ],
     "Runtime": [
         "nodejs24.x",
