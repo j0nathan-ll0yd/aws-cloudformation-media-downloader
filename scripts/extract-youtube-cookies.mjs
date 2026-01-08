@@ -13,6 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
 const STATE_DIR = join(PROJECT_ROOT, 'playwright-state')
 const COOKIES_OUTPUT = join(PROJECT_ROOT, 'layers/yt-dlp/cookies/youtube-cookies.txt')
+const SCREENSHOTS_DIR = join(PROJECT_ROOT, 'playwright-screenshots')
 
 /** Convert browser cookies to Netscape cookie format */
 function toNetscapeFormat(cookies) {
@@ -33,6 +34,63 @@ function toNetscapeFormat(cookies) {
   return header + lines.join('\n') + '\n'
 }
 
+/** Save screenshot for debugging */
+async function saveScreenshot(page, name) {
+  if (!existsSync(SCREENSHOTS_DIR)) {
+    mkdirSync(SCREENSHOTS_DIR, {recursive: true})
+  }
+  const path = join(SCREENSHOTS_DIR, `${name}-${Date.now()}.png`)
+  await page.screenshot({path, fullPage: true})
+  console.log(`Screenshot saved: ${path}`)
+  return path
+}
+
+/** Check for common Google login challenges */
+async function detectLoginChallenge(page) {
+  const challenges = [
+    {selector: '[data-challengetype]', name: 'verification-challenge'},
+    {selector: '#captchaimg', name: 'captcha'},
+    {selector: 'iframe[src*="recaptcha"]', name: 'recaptcha'},
+    {selector: '[data-sendmethod]', name: 'phone-verification'},
+    {selector: '#identifierNext[disabled]', name: 'rate-limited'},
+    {selector: 'div[data-error-code]', name: 'error-message'},
+    {selector: '#headingText:has-text("Verify")', name: 'verify-prompt'},
+    {selector: '#headingText:has-text("Confirm")', name: 'confirm-prompt'},
+    {selector: '#headingText:has-text("Choose an account")', name: 'account-chooser'}
+  ]
+
+  for (const {selector, name} of challenges) {
+    try {
+      const visible = await page.locator(selector).first().isVisible({timeout: 1000})
+      if (visible) {
+        return name
+      }
+    } catch {
+      // Selector not found, continue
+    }
+  }
+  return null
+}
+
+/** Handle account chooser screen */
+async function handleAccountChooser(page, email) {
+  console.log('Account chooser detected, selecting account...')
+  // Try to click on the account matching our email
+  const accountSelector = `div[data-email="${email}"]`
+  const accountExists = await page.locator(accountSelector).isVisible({timeout: 3000}).catch(() => false)
+  if (accountExists) {
+    await page.click(accountSelector)
+    return true
+  }
+  // Otherwise click "Use another account"
+  const useAnother = await page.locator('div:has-text("Use another account")').first().isVisible({timeout: 3000}).catch(() => false)
+  if (useAnother) {
+    await page.locator('div:has-text("Use another account")').first().click()
+    return true
+  }
+  return false
+}
+
 /** Main extraction function */
 async function extractCookies() {
   console.log('Starting YouTube cookie extraction...')
@@ -46,7 +104,15 @@ async function extractCookies() {
     mkdirSync(cookiesDir, {recursive: true})
   }
 
-  const browser = await chromium.launchPersistentContext(STATE_DIR, {headless: true, args: ['--disable-blink-features=AutomationControlled']})
+  const browser = await chromium.launchPersistentContext(STATE_DIR, {
+    headless: true,
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      '--disable-dev-shm-usage',
+      '--no-sandbox'
+    ],
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  })
   const page = await browser.newPage()
 
   try {
@@ -66,22 +132,74 @@ async function extractCookies() {
       // Click sign in button
       await page.click('a[href*="accounts.google.com"]')
       await page.waitForURL(/accounts\.google\.com/, {timeout: 30000})
+      await saveScreenshot(page, '01-login-page')
 
-      // Enter email
-      console.log('Entering email...')
-      await page.fill('input[type="email"]', process.env.YOUTUBE_EMAIL)
-      await page.click('#identifierNext')
+      // Check for account chooser first
+      const challenge = await detectLoginChallenge(page)
+      if (challenge === 'account-chooser') {
+        await handleAccountChooser(page, process.env.YOUTUBE_EMAIL)
+        await page.waitForTimeout(2000)
+      }
 
-      // Wait and enter password
-      await page.waitForSelector('input[type="password"]', {state: 'visible', timeout: 30000})
-      console.log('Entering password...')
-      await page.fill('input[type="password"]', process.env.YOUTUBE_PASSWORD)
+      // Enter email if email field is visible
+      const emailFieldVisible = await page.locator('input[type="email"]').isVisible({timeout: 5000}).catch(() => false)
+      if (emailFieldVisible) {
+        console.log('Entering email...')
+        await page.fill('input[type="email"]', process.env.YOUTUBE_EMAIL)
+        await page.click('#identifierNext')
+        await page.waitForTimeout(3000) // Wait for transition
+      }
+
+      await saveScreenshot(page, '02-after-email')
+
+      // Check for challenges after email entry
+      const postEmailChallenge = await detectLoginChallenge(page)
+      if (postEmailChallenge) {
+        console.error(`Login challenge detected: ${postEmailChallenge}`)
+        await saveScreenshot(page, `03-challenge-${postEmailChallenge}`)
+        throw new Error(`Google login requires ${postEmailChallenge}. Manual intervention needed.`)
+      }
+
+      // Wait for password field with multiple selector attempts
+      console.log('Waiting for password field...')
+      const passwordSelectors = [
+        'input[type="password"]',
+        'input[name="Passwd"]',
+        'input[aria-label="Enter your password"]'
+      ]
+
+      let passwordFieldFound = false
+      for (const selector of passwordSelectors) {
+        try {
+          await page.waitForSelector(selector, {state: 'visible', timeout: 10000})
+          passwordFieldFound = true
+          console.log(`Password field found with selector: ${selector}`)
+
+          console.log('Entering password...')
+          await page.fill(selector, process.env.YOUTUBE_PASSWORD)
+          break
+        } catch {
+          console.log(`Password selector not found: ${selector}`)
+        }
+      }
+
+      if (!passwordFieldFound) {
+        await saveScreenshot(page, '03-no-password-field')
+        // Log page content for debugging
+        const pageTitle = await page.title()
+        const pageUrl = page.url()
+        console.error(`Page state - Title: ${pageTitle}, URL: ${pageUrl}`)
+        throw new Error('Password field not found. Google may be showing a challenge page.')
+      }
+
       await page.click('#passwordNext')
+      await saveScreenshot(page, '04-after-password')
 
       // Wait for redirect back to YouTube
       console.log('Waiting for login completion...')
       await page.waitForURL(/youtube\.com/, {timeout: 60000})
       await page.waitForTimeout(3000) // Additional wait for session to settle
+      await saveScreenshot(page, '05-logged-in')
     } else {
       console.log('Already logged in, refreshing session...')
       await page.goto('https://www.youtube.com/feed/subscriptions', {waitUntil: 'networkidle'})

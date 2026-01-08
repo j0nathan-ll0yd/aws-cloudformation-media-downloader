@@ -151,6 +151,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+      - name: Upload debug screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: playwright-screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Notify on failure
         if: failure()
         run: |

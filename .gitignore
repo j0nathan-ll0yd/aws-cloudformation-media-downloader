@@ -65,3 +65,4 @@ reports/mutation/
 *.webm
 stryker.log
 build/lambdas/*.zip
+playwright-screenshots/
