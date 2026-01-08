@@ -64,8 +64,9 @@ export interface AwsIamPolicyDocument {
     UserDelete:                     PruneDevice[];
     UserSubscribe:                  RegisterDevice[];
     WebhookFeedly:                  APIGatewayAuthorizerInvocationElement[];
-    dsql_access:                    DsqlAAccess[];
-    dsql_admin_access:              DsqlAAccess[];
+    dsql_admin:                     Dsql[];
+    dsql_readonly:                  Dsql[];
+    dsql_readwrite:                 Dsql[];
 }
 
 export interface APIGatewayAuthorizerInvocationElement {
@@ -144,11 +145,11 @@ export interface AwsIamPolicyDocumentSendPushNotification {
     statement: Ent[];
 }
 
-export interface DsqlAAccess {
-    statement: DsqlAccessStatement[];
+export interface Dsql {
+    statement: DsqlAdminStatement[];
 }
 
-export interface DsqlAccessStatement {
+export interface DsqlAdminStatement {
     actions:   string[];
     resources: string[];
     sid:       string;
@@ -207,6 +208,7 @@ export interface Local {
     adot_layer_arn_x86_64?:                 string;
     common_lambda_env?:                     CommonLambdaEnv;
     common_tags?:                           CommonTags;
+    default_lambda_timeout?:                number;
     lambda_architecture?:                   string;
     project_name?:                          string;
     migrate_dsql_function_name?:            string;
@@ -700,12 +702,12 @@ export interface DownloadRequested {
 }
 
 export interface AwsCloudwatchEventTarget {
-    CleanupExpiredRecords:  CleanupExpiredRecord[];
+    CleanupExpiredRecords:  AwsCloudwatchEventTargetCleanupExpiredRecord[];
     DownloadRequestedToSQS: DownloadRequestedToSQ[];
-    PruneDevices:           CleanupExpiredRecord[];
+    PruneDevices:           AwsCloudwatchEventTargetCleanupExpiredRecord[];
 }
 
-export interface CleanupExpiredRecord {
+export interface AwsCloudwatchEventTargetCleanupExpiredRecord {
     arn:  string;
     rule: string;
 }
@@ -926,27 +928,77 @@ export interface SendPushNotification {
 }
 
 export interface AwsLambdaFunction {
-    ApiGatewayAuthorizer:  CleanupExpiredRecordElement[];
-    CleanupExpiredRecords: CleanupExpiredRecordElement[];
+    ApiGatewayAuthorizer:  DeviceEventElement[];
+    CleanupExpiredRecords: LoginUserElement[];
     CloudfrontMiddleware:  CloudfrontMiddleware[];
-    DeviceEvent:           CleanupExpiredRecordElement[];
-    ListFiles:             CleanupExpiredRecordElement[];
-    LoginUser:             CleanupExpiredRecordElement[];
-    MigrateDSQL:           CleanupExpiredRecordElement[];
-    PruneDevices:          CleanupExpiredRecordElement[];
-    RefreshToken:          CleanupExpiredRecordElement[];
-    RegisterDevice:        CleanupExpiredRecordElement[];
-    RegisterUser:          CleanupExpiredRecordElement[];
-    S3ObjectCreated:       CleanupExpiredRecordElement[];
-    SendPushNotification:  CleanupExpiredRecordElement[];
-    StartFileUpload:       CleanupExpiredRecordElement[];
-    UserDelete:            CleanupExpiredRecordElement[];
-    UserSubscribe:         CleanupExpiredRecordElement[];
-    WebhookFeedly:         CleanupExpiredRecordElement[];
+    DeviceEvent:           DeviceEventElement[];
+    ListFiles:             DeviceEventElement[];
+    LoginUser:             LoginUserElement[];
+    MigrateDSQL:           LoginUserElement[];
+    PruneDevices:          LoginUserElement[];
+    RefreshToken:          LoginUserElement[];
+    RegisterDevice:        DeviceEventElement[];
+    RegisterUser:          DeviceEventElement[];
+    S3ObjectCreated:       DeviceEventElement[];
+    SendPushNotification:  DeviceEventElement[];
+    StartFileUpload:       LoginUserElement[];
+    UserDelete:            DeviceEventElement[];
+    UserSubscribe:         DeviceEventElement[];
+    WebhookFeedly:         DeviceEventElement[];
 }
 
-export interface CleanupExpiredRecordElement {
-    architectures:                   Architecture[];
+export interface DeviceEventElement {
+    architectures:    Architecture[];
+    depends_on:       string[];
+    description:      string;
+    environment:      Environment[];
+    filename:         string;
+    function_name:    string;
+    handler:          Handler;
+    layers:           Layer[];
+    role:             string;
+    runtime:          Runtime;
+    source_code_hash: string;
+    tags:             string;
+    timeout:          Timeout;
+    tracing_config:   TracingConfig[];
+    memory_size?:     number;
+}
+
+export enum Architecture {
+    LocalLambdaArchitecture = "${local.lambda_architecture}",
+}
+
+export interface Environment {
+    variables: string;
+}
+
+export enum Handler {
+    IndexHandler = "index.handler",
+}
+
+export enum Layer {
+    LocalAdotLayerArn = "${local.adot_layer_arn}",
+}
+
+export enum Runtime {
+    Nodejs24X = "nodejs24.x",
+}
+
+export enum Timeout {
+    LocalDefaultLambdaTimeout = "${local.default_lambda_timeout}",
+}
+
+export interface TracingConfig {
+    mode: Mode;
+}
+
+export enum Mode {
+    Active = "Active",
+}
+
+export interface LoginUserElement {
+    architectures:                   string[];
     depends_on:                      string[];
     description:                     string;
     environment:                     Environment[];
@@ -958,40 +1010,15 @@ export interface CleanupExpiredRecordElement {
     runtime:                         Runtime;
     source_code_hash:                string;
     tags:                            string;
-    timeout?:                        number;
+    timeout:                         number;
     tracing_config:                  TracingConfig[];
     memory_size?:                    number;
     ephemeral_storage?:              EphemeralStorage[];
     reserved_concurrent_executions?: number;
 }
 
-export enum Architecture {
-    LocalLambdaArchitecture = "${local.lambda_architecture}",
-    X8664 = "x86_64",
-}
-
-export interface Environment {
-    variables: string;
-}
-
 export interface EphemeralStorage {
     size: number;
-}
-
-export enum Handler {
-    IndexHandler = "index.handler",
-}
-
-export enum Runtime {
-    Nodejs24X = "nodejs24.x",
-}
-
-export interface TracingConfig {
-    mode: Mode;
-}
-
-export enum Mode {
-    Active = "Active",
 }
 
 export interface CloudfrontMiddleware {
@@ -1423,8 +1450,9 @@ const typeMap: any = {
         { json: "UserDelete", js: "UserDelete", typ: a(r("PruneDevice")) },
         { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("RegisterDevice")) },
         { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("APIGatewayAuthorizerInvocationElement")) },
-        { json: "dsql_access", js: "dsql_access", typ: a(r("DsqlAAccess")) },
-        { json: "dsql_admin_access", js: "dsql_admin_access", typ: a(r("DsqlAAccess")) },
+        { json: "dsql_admin", js: "dsql_admin", typ: a(r("Dsql")) },
+        { json: "dsql_readonly", js: "dsql_readonly", typ: a(r("Dsql")) },
+        { json: "dsql_readwrite", js: "dsql_readwrite", typ: a(r("Dsql")) },
     ], false),
     "APIGatewayAuthorizerInvocationElement": o([
         { json: "statement", js: "statement", typ: a(r("Ent")) },
@@ -1486,10 +1514,10 @@ const typeMap: any = {
         { json: "dynamic", js: "dynamic", typ: r("PruneDeviceDynamic") },
         { json: "statement", js: "statement", typ: a(r("Ent")) },
     ], false),
-    "DsqlAAccess": o([
-        { json: "statement", js: "statement", typ: a(r("DsqlAccessStatement")) },
+    "Dsql": o([
+        { json: "statement", js: "statement", typ: a(r("DsqlAdminStatement")) },
     ], false),
-    "DsqlAccessStatement": o([
+    "DsqlAdminStatement": o([
         { json: "actions", js: "actions", typ: a("") },
         { json: "resources", js: "resources", typ: a("") },
         { json: "sid", js: "sid", typ: "" },
@@ -1539,6 +1567,7 @@ const typeMap: any = {
         { json: "adot_layer_arn_x86_64", js: "adot_layer_arn_x86_64", typ: u(undefined, "") },
         { json: "common_lambda_env", js: "common_lambda_env", typ: u(undefined, r("CommonLambdaEnv")) },
         { json: "common_tags", js: "common_tags", typ: u(undefined, r("CommonTags")) },
+        { json: "default_lambda_timeout", js: "default_lambda_timeout", typ: u(undefined, 0) },
         { json: "lambda_architecture", js: "lambda_architecture", typ: u(undefined, "") },
         { json: "project_name", js: "project_name", typ: u(undefined, "") },
         { json: "migrate_dsql_function_name", js: "migrate_dsql_function_name", typ: u(undefined, "") },
@@ -1951,11 +1980,11 @@ const typeMap: any = {
         { json: "name", js: "name", typ: "" },
     ], false),
     "AwsCloudwatchEventTarget": o([
-        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("CleanupExpiredRecord")) },
+        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("AwsCloudwatchEventTargetCleanupExpiredRecord")) },
         { json: "DownloadRequestedToSQS", js: "DownloadRequestedToSQS", typ: a(r("DownloadRequestedToSQ")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("CleanupExpiredRecord")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("AwsCloudwatchEventTargetCleanupExpiredRecord")) },
     ], false),
-    "CleanupExpiredRecord": o([
+    "AwsCloudwatchEventTargetCleanupExpiredRecord": o([
         { json: "arn", js: "arn", typ: "" },
         { json: "rule", js: "rule", typ: "" },
     ], false),
@@ -2145,26 +2174,49 @@ const typeMap: any = {
         { json: "batch_size", js: "batch_size", typ: u(undefined, 0) },
     ], false),
     "AwsLambdaFunction": o([
-        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("CleanupExpiredRecordElement")) },
+        { json: "ApiGatewayAuthorizer", js: "ApiGatewayAuthorizer", typ: a(r("DeviceEventElement")) },
+        { json: "CleanupExpiredRecords", js: "CleanupExpiredRecords", typ: a(r("LoginUserElement")) },
         { json: "CloudfrontMiddleware", js: "CloudfrontMiddleware", typ: a(r("CloudfrontMiddleware")) },
-        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "ListFiles", js: "ListFiles", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "LoginUser", js: "LoginUser", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "MigrateDSQL", js: "MigrateDSQL", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "PruneDevices", js: "PruneDevices", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "RefreshToken", js: "RefreshToken", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "RegisterUser", js: "RegisterUser", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "UserDelete", js: "UserDelete", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("CleanupExpiredRecordElement")) },
-        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("CleanupExpiredRecordElement")) },
+        { json: "DeviceEvent", js: "DeviceEvent", typ: a(r("DeviceEventElement")) },
+        { json: "ListFiles", js: "ListFiles", typ: a(r("DeviceEventElement")) },
+        { json: "LoginUser", js: "LoginUser", typ: a(r("LoginUserElement")) },
+        { json: "MigrateDSQL", js: "MigrateDSQL", typ: a(r("LoginUserElement")) },
+        { json: "PruneDevices", js: "PruneDevices", typ: a(r("LoginUserElement")) },
+        { json: "RefreshToken", js: "RefreshToken", typ: a(r("LoginUserElement")) },
+        { json: "RegisterDevice", js: "RegisterDevice", typ: a(r("DeviceEventElement")) },
+        { json: "RegisterUser", js: "RegisterUser", typ: a(r("DeviceEventElement")) },
+        { json: "S3ObjectCreated", js: "S3ObjectCreated", typ: a(r("DeviceEventElement")) },
+        { json: "SendPushNotification", js: "SendPushNotification", typ: a(r("DeviceEventElement")) },
+        { json: "StartFileUpload", js: "StartFileUpload", typ: a(r("LoginUserElement")) },
+        { json: "UserDelete", js: "UserDelete", typ: a(r("DeviceEventElement")) },
+        { json: "UserSubscribe", js: "UserSubscribe", typ: a(r("DeviceEventElement")) },
+        { json: "WebhookFeedly", js: "WebhookFeedly", typ: a(r("DeviceEventElement")) },
     ], false),
-    "CleanupExpiredRecordElement": o([
+    "DeviceEventElement": o([
         { json: "architectures", js: "architectures", typ: a(r("Architecture")) },
+        { json: "depends_on", js: "depends_on", typ: a("") },
+        { json: "description", js: "description", typ: "" },
+        { json: "environment", js: "environment", typ: a(r("Environment")) },
+        { json: "filename", js: "filename", typ: "" },
+        { json: "function_name", js: "function_name", typ: "" },
+        { json: "handler", js: "handler", typ: r("Handler") },
+        { json: "layers", js: "layers", typ: a(r("Layer")) },
+        { json: "role", js: "role", typ: "" },
+        { json: "runtime", js: "runtime", typ: r("Runtime") },
+        { json: "source_code_hash", js: "source_code_hash", typ: "" },
+        { json: "tags", js: "tags", typ: "" },
+        { json: "timeout", js: "timeout", typ: r("Timeout") },
+        { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
+        { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
+    ], false),
+    "Environment": o([
+        { json: "variables", js: "variables", typ: "" },
+    ], false),
+    "TracingConfig": o([
+        { json: "mode", js: "mode", typ: r("Mode") },
+    ], false),
+    "LoginUserElement": o([
+        { json: "architectures", js: "architectures", typ: a("") },
         { json: "depends_on", js: "depends_on", typ: a("") },
         { json: "description", js: "description", typ: "" },
         { json: "environment", js: "environment", typ: a(r("Environment")) },
@@ -2176,20 +2228,14 @@ const typeMap: any = {
         { json: "runtime", js: "runtime", typ: r("Runtime") },
         { json: "source_code_hash", js: "source_code_hash", typ: "" },
         { json: "tags", js: "tags", typ: "" },
-        { json: "timeout", js: "timeout", typ: u(undefined, 0) },
+        { json: "timeout", js: "timeout", typ: 0 },
         { json: "tracing_config", js: "tracing_config", typ: a(r("TracingConfig")) },
         { json: "memory_size", js: "memory_size", typ: u(undefined, 0) },
         { json: "ephemeral_storage", js: "ephemeral_storage", typ: u(undefined, a(r("EphemeralStorage"))) },
         { json: "reserved_concurrent_executions", js: "reserved_concurrent_executions", typ: u(undefined, 0) },
     ], false),
-    "Environment": o([
-        { json: "variables", js: "variables", typ: "" },
-    ], false),
     "EphemeralStorage": o([
         { json: "size", js: "size", typ: 0 },
-    ], false),
-    "TracingConfig": o([
-        { json: "mode", js: "mode", typ: r("Mode") },
     ], false),
     "CloudfrontMiddleware": o([
         { json: "description", js: "description", typ: "" },
@@ -2378,13 +2424,18 @@ const typeMap: any = {
     ],
     "Architecture": [
         "${local.lambda_architecture}",
-        "x86_64",
     ],
     "Handler": [
         "index.handler",
     ],
+    "Layer": [
+        "${local.adot_layer_arn}",
+    ],
     "Runtime": [
         "nodejs24.x",
+    ],
+    "Timeout": [
+        "${local.default_lambda_timeout}",
     ],
     "Mode": [
         "Active",

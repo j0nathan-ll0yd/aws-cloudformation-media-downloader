@@ -22,7 +22,15 @@ const downloadVideoToS3Mock = vi.fn<(url: string, bucket: string, key: string) =
 vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
 vi.mock('#entities/queries',
-  () => ({getFile: vi.fn(), getFileDownload: vi.fn(), updateFile: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
+  () => ({
+    getFile: vi.fn(),
+    getFileDownload: vi.fn(),
+    updateFile: vi.fn(),
+    updateFileDownload: vi.fn(),
+    createFileDownload: vi.fn(),
+    getUserFilesByFileId: vi.fn(),
+    upsertFile: vi.fn()
+  }))
 
 // Mock GitHub issue creation (for permanent failures) and auto-close (for recovery)
 vi.mock('#lib/integrations/github/issueService',
