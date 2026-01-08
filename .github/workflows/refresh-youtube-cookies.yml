@@ -154,6 +154,13 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: |
+          # Ensure required labels exist before creating issue
+          for label in "bug" "automation" "cookie-expiration"; do
+            if ! gh label list --json name --jq '.[].name' | grep -q "^${label}$"; then
+              gh label create "${label}" --description "Auto-created" --color "d73a4a" 2>/dev/null || true
+            fi
+          done
+
           gh issue create \
             --title "YouTube cookie refresh failed" \
             --body "The automated cookie refresh workflow failed. Manual intervention required.
@@ -171,6 +178,6 @@ jobs:
           - Try generating an App Password for the account" \
             --label "bug" \
             --label "automation" \
-            --label "cookies"
+            --label "cookie-expiration"
         env:
           GH_TOKEN: ${{ github.token }}
