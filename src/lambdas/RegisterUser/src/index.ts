@@ -84,7 +84,8 @@ export const handler = withPowertools(wrapApiHandler(async ({event, context}: Ap
   const isNewUser = !result.user?.createdAt || Date.now() - new Date(result.user.createdAt).getTime() < 5000
 
   if (isNewUser && (requestBody.firstName || requestBody.lastName)) {
-    await updateUser(result.user.id, {firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''})
+    const fullName = [requestBody.firstName, requestBody.lastName].filter(Boolean).join(' ')
+    await updateUser(result.user.id, {name: fullName, firstName: requestBody.firstName || '', lastName: requestBody.lastName || ''})
 
     logInfo('RegisterUser: Updated new user with name from iOS app', {
       userId: result.user.id,

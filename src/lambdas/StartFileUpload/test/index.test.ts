@@ -22,7 +22,7 @@ const downloadVideoToS3Mock = vi.fn<(url: string, bucket: string, key: string) =
 vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downloadVideoToS3: downloadVideoToS3Mock}))
 
 vi.mock('#entities/queries',
-  () => ({getFileDownload: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
+  () => ({getFile: vi.fn(), getFileDownload: vi.fn(), updateFile: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
 
 // Mock GitHub issue creation (for permanent failures) and auto-close (for recovery)
 vi.mock('#lib/integrations/github/issueService',
@@ -53,7 +53,7 @@ vi.mock('#lib/system/circuitBreaker',
   }))
 
 const {handler} = await import('./../src')
-import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload, upsertFile} from '#entities/queries'
+import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload, upsertFile} from '#entities/queries'
 
 describe('#StartFileUpload', () => {
   const context = createMockContext()
@@ -86,7 +86,9 @@ describe('#StartFileUpload', () => {
     // Create SQS event with download queue message
     event = createDownloadQueueEvent('YcuKhcqzt7w', {messageId: 'test-message-id-123'})
 
+    vi.mocked(getFile).mockResolvedValue(null)
     vi.mocked(getFileDownload).mockResolvedValue(null)
+    vi.mocked(updateFile).mockResolvedValue(mockFileRow())
     vi.mocked(updateFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(upsertFile).mockResolvedValue(mockFileRow())

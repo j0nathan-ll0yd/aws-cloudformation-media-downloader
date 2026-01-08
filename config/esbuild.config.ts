@@ -102,6 +102,20 @@ async function build() {
       console.log(`    Copied ${migrationFiles.length} migration files`)
     }
 
+    // Copy GitHub issue templates for Lambdas that create issues
+    // StartFileUpload: cookie expiration, video download failure
+    // UserDelete: user deletion failure
+    const lambdasNeedingTemplates = ['StartFileUpload', 'UserDelete']
+    if (lambdasNeedingTemplates.includes(functionName)) {
+      const templatesDir = `${lambdaDir}/templates/github-issues`
+      fs.mkdirSync(templatesDir, {recursive: true})
+      const templateFiles = fs.readdirSync('src/templates/github-issues').filter((f: string) => f.endsWith('.md'))
+      for (const file of templateFiles) {
+        fs.copyFileSync(`src/templates/github-issues/${file}`, `${templatesDir}/${file}`)
+      }
+      console.log(`    Copied ${templateFiles.length} template files`)
+    }
+
     // Write metafile for bundle analysis
     if (result.metafile && isAnalyze) {
       fs.writeFileSync(`build/reports/${functionName}-meta.json`, JSON.stringify(result.metafile, null, 2))

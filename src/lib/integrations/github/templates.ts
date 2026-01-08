@@ -1,10 +1,30 @@
-import {readFileSync} from 'fs'
-import {dirname, join} from 'path'
-import {fileURLToPath} from 'url'
+import {existsSync, readFileSync} from 'fs'
+import {join} from 'path'
 
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+/**
+ * Get the template path, checking multiple locations.
+ * In Lambda: /var/task/templates/github-issues/<name>.md (copied by esbuild)
+ * In development/test: src/templates/github-issues/<name>.md
+ */
+function getTemplatePath(templateName: string): string {
+  const basePath = process.cwd()
+  const fileName = `${templateName}.md`
+
+  // Lambda path (templates copied to build output by esbuild config)
+  const lambdaPath = join(basePath, 'templates/github-issues', fileName)
+  if (existsSync(lambdaPath)) {
+    return lambdaPath
+  }
+
+  // Development/test path (source location)
+  const devPath = join(basePath, 'src/templates/github-issues', fileName)
+  if (existsSync(devPath)) {
+    return devPath
+  }
+
+  // Fallback - let readFileSync throw a more descriptive error
+  return lambdaPath
+}
 
 /**
  * Render a GitHub issue template with variable interpolation.
@@ -20,8 +40,7 @@ const __dirname = dirname(__filename)
  * @returns Rendered template string
  */
 export function renderGithubIssueTemplate(templateName: string, data: Record<string, unknown>): string {
-  // Use relative path from the new location (src/lib/integrations/github) to templates (src/templates)
-  const templatePath = join(__dirname, '../../../templates/github-issues', `${templateName}.md`)
+  const templatePath = getTemplatePath(templateName)
   let template = readFileSync(templatePath, 'utf-8')
 
   // Safe explicit variable replacement - no dynamic code execution
