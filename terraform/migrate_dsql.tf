@@ -76,9 +76,9 @@ resource "aws_lambda_function" "MigrateDSQL" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      OTEL_SERVICE_NAME   = local.migrate_dsql_function_name
-      DSQL_ACCESS_LEVEL   = "admin"
-      AWS_ACCOUNT_ID      = data.aws_caller_identity.current.account_id
+      OTEL_SERVICE_NAME = local.migrate_dsql_function_name
+      DSQL_ACCESS_LEVEL = "admin"
+      AWS_ACCOUNT_ID    = data.aws_caller_identity.current.account_id
     })
   }
 
