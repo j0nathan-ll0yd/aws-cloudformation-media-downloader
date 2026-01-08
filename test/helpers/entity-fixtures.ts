@@ -44,7 +44,6 @@ export interface UserRow {
   image: string | null
   firstName: string | null
   lastName: string | null
-  appleDeviceId: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -186,7 +185,6 @@ export function createMockUser(overrides: Partial<UserRow> = {}): UserRow {
     image: null,
     firstName: 'Test',
     lastName: 'User',
-    appleDeviceId: 'apple-device-id-123',
     createdAt: now,
     updatedAt: now,
     ...overrides

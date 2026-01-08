@@ -8,7 +8,7 @@
  * Input: SQSEvent with DownloadQueueMessage records
  * Output: SQSBatchResponse with item failures for retry
  */
-import {createFileDownload, getFileDownload, getUserFilesByFileId, updateFileDownload} from '#entities/queries'
+import {createFileDownload, getFile, getFileDownload, getUserFilesByFileId, updateFile, updateFileDownload} from '#entities/queries'
 import {sendMessage} from '#lib/vendor/AWS/SQS'
 import {publishEvent} from '#lib/vendor/AWS/EventBridge'
 import {addAnnotation, addMetadata, endSpan, startSpan} from '#lib/vendor/OpenTelemetry'
@@ -226,9 +226,13 @@ async function handleDownloadFailure(
   // Handle permanent failures or retry exhaustion
   await updateDownloadState(fileId, DownloadStatus.Failed, classification, newRetryCount)
 
-  // Also update File entity to reflect permanent failure
+  // Update File entity status to Failed (only if file record exists)
+  // We can't upsert with just fileId+status since schema requires all fields
   try {
-    await upsertFile({fileId, status: FileStatus.Failed} as File)
+    const existingFile = await getFile(fileId)
+    if (existingFile) {
+      await updateFile(fileId, {status: FileStatus.Failed})
+    }
   } catch (updateError) {
     const message = updateError instanceof Error ? updateError.message : String(updateError)
     logDebug('Failed to update File entity status', message)

@@ -61,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "RegisterDeviceXRay" {
 
 resource "aws_iam_role_policy_attachment" "RegisterDeviceDSQL" {
   role       = aws_iam_role.RegisterDevice.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_lambda_permission" "RegisterDevice" {
@@ -89,7 +89,7 @@ resource "aws_lambda_function" "RegisterDevice" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
-  timeout          = 10
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.RegisterDevice]
   filename         = data.archive_file.RegisterDevice.output_path
   source_code_hash = data.archive_file.RegisterDevice.output_base64sha256
@@ -104,6 +104,7 @@ resource "aws_lambda_function" "RegisterDevice" {
       PLATFORM_APPLICATION_ARN    = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       PUSH_NOTIFICATION_TOPIC_ARN = aws_sns_topic.PushNotifications.arn
       OTEL_SERVICE_NAME           = local.register_device_function_name
+      DSQL_ACCESS_LEVEL           = "readwrite"
     })
   }
 

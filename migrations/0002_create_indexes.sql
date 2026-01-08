@@ -7,7 +7,7 @@
 
 -- Users table indexes
 CREATE INDEX ASYNC IF NOT EXISTS users_email_idx ON users(email);
-CREATE INDEX ASYNC IF NOT EXISTS users_apple_device_idx ON users(apple_device_id);
+-- NOTE: users_apple_device_idx removed (apple_device_id column deprecated)
 
 -- Files table indexes
 CREATE INDEX ASYNC IF NOT EXISTS files_key_idx ON files(key);

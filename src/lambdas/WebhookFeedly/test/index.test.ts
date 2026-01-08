@@ -14,7 +14,7 @@ const fakeUserId = DEFAULT_USER_ID
 // Create SQS mock using helper - injects into vendor client factory
 const sqsMock = createSQSMock()
 
-vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), createUserFile: vi.fn(), createFileDownload: vi.fn()}))
+vi.mock('#entities/queries', () => ({getFile: vi.fn(), createFile: vi.fn(), upsertUserFile: vi.fn(), createFileDownload: vi.fn()}))
 
 // Mock EventBridge vendor wrapper (has retry logic that can cause test timeouts)
 import type {PublishEventOptions} from '#lib/vendor/AWS/EventBridge'
@@ -61,7 +61,7 @@ const feedlyWebhookBody = {
 }
 
 const {handler} = await import('./../src')
-import {createFile, createFileDownload, createUserFile, getFile} from '#entities/queries'
+import {createFile, createFileDownload, getFile, upsertUserFile} from '#entities/queries'
 
 // Mock return value factories using shared fixtures
 const mockFileRow = () => createMockFile({fileId: 'test-file-id', status: 'Queued', size: 0, url: null})
@@ -86,7 +86,7 @@ describe('#WebhookFeedly', () => {
 
     vi.mocked(createFileDownload).mockResolvedValue(mockFileDownloadRow())
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
-    vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+    vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
     vi.mocked(getFile).mockResolvedValue(null)
   })
 
@@ -103,7 +103,7 @@ describe('#WebhookFeedly', () => {
     event.body = JSON.stringify(feedlyWebhookBody)
     vi.mocked(getFile).mockResolvedValue(null)
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
-    vi.mocked(createUserFile).mockRejectedValue(new Error('Update failed'))
+    vi.mocked(upsertUserFile).mockRejectedValue(new Error('Update failed'))
     const output = await handler(event, context)
     // Handler uses Promise.allSettled and continues even if association fails
     expect(output.statusCode).toEqual(202)
@@ -145,7 +145,7 @@ describe('#WebhookFeedly', () => {
     event.body = JSON.stringify(feedlyWebhookBody)
     vi.mocked(getFile).mockResolvedValue(null)
     vi.mocked(createFile).mockResolvedValue(mockFileRow())
-    vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+    vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
     const output = await handler(event, context)
     expect(output.statusCode).toEqual(202)
     const body = JSON.parse(output.body)
@@ -160,7 +160,7 @@ describe('#WebhookFeedly', () => {
     test('should send notification and return 200 when file is already downloaded', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       event.body = JSON.stringify(feedlyWebhookBody)
-      vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+      vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       // Return an already-downloaded file
       vi.mocked(getFile).mockResolvedValue(
         createMockFile({fileId: 'wRG7lAGdRII', status: 'Downloaded', size: 50000000, url: 'https://example.com/wRG7lAGdRII.mp4'})
@@ -182,7 +182,7 @@ describe('#WebhookFeedly', () => {
     test('should skip file creation but publish event for existing queued file', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       event.body = JSON.stringify(feedlyWebhookBody)
-      vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+      vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is still queued
       vi.mocked(getFile).mockResolvedValue(createMockFile({fileId: 'wRG7lAGdRII', status: 'Queued', size: 0, url: null}))
       const output = await handler(event, context)
@@ -196,7 +196,7 @@ describe('#WebhookFeedly', () => {
     test('should skip file creation for existing downloading file', async () => {
       event.requestContext.authorizer!.principalId = fakeUserId
       event.body = JSON.stringify(feedlyWebhookBody)
-      vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+      vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       // Return an existing file that is currently downloading
       vi.mocked(getFile).mockResolvedValue(createMockFile({fileId: 'wRG7lAGdRII', status: 'Downloading', size: 0, url: null}))
       const output = await handler(event, context)
@@ -211,7 +211,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockResolvedValue(mockFileRow())
-      vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+      vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       publishEventWithRetryMock.mockRejectedValue(new Error('EventBridge failure'))
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
@@ -224,7 +224,7 @@ describe('#WebhookFeedly', () => {
       event.body = JSON.stringify(feedlyWebhookBody)
       vi.mocked(getFile).mockResolvedValue(null)
       vi.mocked(createFile).mockRejectedValue(new Error('DynamoDB write failed'))
-      vi.mocked(createUserFile).mockResolvedValue(mockUserFileRow())
+      vi.mocked(upsertUserFile).mockResolvedValue(mockUserFileRow())
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(500)
       const body = JSON.parse(output.body)

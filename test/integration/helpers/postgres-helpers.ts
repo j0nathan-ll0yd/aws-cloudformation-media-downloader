@@ -303,7 +303,7 @@ export async function deleteFile(fileId: string): Promise<void> {
  * Insert a user record into PostgreSQL
  * Accepts either 'id' (domain type) or 'userId' (legacy tests) for backwards compatibility
  */
-export async function insertUser(userData: Partial<User> & {appleDeviceId?: string; userId?: string}): Promise<void> {
+export async function insertUser(userData: Partial<User> & {userId?: string}): Promise<void> {
   const db = getTestDb()
   const schema = getWorkerSchema()
 
@@ -317,8 +317,7 @@ export async function insertUser(userData: Partial<User> & {appleDeviceId?: stri
     emailVerified: defaults.emailVerified ?? false,
     name: defaults.name,
     firstName: defaults.firstName,
-    lastName: defaults.lastName,
-    appleDeviceId: defaults.appleDeviceId
+    lastName: defaults.lastName
   })
 }
 

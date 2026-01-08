@@ -136,6 +136,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy.S3ObjectCreatedLogging]
   filename         = data.archive_file.S3ObjectCreated.output_path
   source_code_hash = data.archive_file.S3ObjectCreated.output_base64sha256
@@ -149,6 +150,7 @@ resource "aws_lambda_function" "S3ObjectCreated" {
     variables = merge(local.common_lambda_env, {
       SNS_QUEUE_URL     = aws_sqs_queue.SendPushNotification.id
       OTEL_SERVICE_NAME = local.s3_object_created_function_name
+      DSQL_ACCESS_LEVEL = "readonly"
     })
   }
 
@@ -208,5 +210,5 @@ resource "aws_iam_role_policy_attachment" "S3ObjectCreatedXRay" {
 
 resource "aws_iam_role_policy_attachment" "S3ObjectCreatedDSQL" {
   role       = aws_iam_role.S3ObjectCreated.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadOnly.arn
 }

@@ -1,11 +1,31 @@
 import type {APIGatewayProxyEventHeaders, APIGatewayProxyResult, Context} from 'aws-lambda'
 import type {z} from 'zod'
-import {CustomLambdaError} from '#lib/system/errors'
+import {CustomLambdaError, DatabaseError} from '#lib/system/errors'
 import {emitErrorMetrics} from '#lib/system/errorMetrics'
 import {logDebug, logError} from '#lib/system/logging'
 import {validateResponse} from '#lib/lambda/middleware/apiGateway'
 import type {ErrorContext, RequestInfo} from '#types/errorContext'
 import type {WrapperMetadata} from '#types/lambda'
+
+/** SQL patterns that should never appear in client responses */
+const SQL_PATTERNS = [
+  /\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE)\b.*\b(FROM|INTO|SET|TABLE|WHERE)\b/i,
+  /\bFailed query:/i,
+  /\bparams?:\s*[^,]+,/i
+]
+
+/**
+ * Sanitizes error messages to prevent SQL query leakage to clients.
+ * Returns a generic message if SQL patterns are detected.
+ */
+function sanitizeErrorMessage(message: string): string {
+  for (const pattern of SQL_PATTERNS) {
+    if (pattern.test(message)) {
+      return 'Database operation failed'
+    }
+  }
+  return message
+}
 
 /**
  * Extracts a human-readable message from an unknown error value.
@@ -95,10 +115,27 @@ export function buildErrorResponse(context: Context, error: Error | unknown, met
     }
 
     const statusCode = error instanceof CustomLambdaError ? (error.statusCode || 500) : 500
-    const message = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
     const errorCode = error instanceof CustomLambdaError ? error.code : undefined
 
-    // Log with full context
+    // Handle DatabaseError specially - log full details, return sanitized message
+    if (error instanceof DatabaseError) {
+      logError('buildErrorResponse', {
+        message: error.message,
+        errorType: 'DatabaseError',
+        queryName: error.queryName,
+        originalMessage: error.originalMessage,
+        statusCode,
+        context: errorContext
+      })
+      emitErrorMetrics(error, context.functionName)
+      return formatResponse(context, statusCode, error.message, undefined, errorCode)
+    }
+
+    // For other errors, sanitize message to prevent SQL leakage
+    const rawMessage = error instanceof CustomLambdaError ? (error.errors || error.message) : error.message
+    const message = typeof rawMessage === 'string' ? sanitizeErrorMessage(rawMessage) : rawMessage
+
+    // Log with full context (original message for debugging)
     logError('buildErrorResponse', {message: error.message, errorType: error.constructor.name, statusCode, context: errorContext})
 
     // Emit error metrics
@@ -111,22 +148,24 @@ export function buildErrorResponse(context: Context, error: Error | unknown, met
   if (error && typeof error === 'object') {
     const errorObj = error as {status?: number; statusCode?: number; message?: string}
     const statusCode = errorObj.status || errorObj.statusCode || 500
-    const message = errorObj.message || getErrorMessage(error)
+    const rawMessage = errorObj.message || getErrorMessage(error)
+    const message = sanitizeErrorMessage(rawMessage)
     logError('buildErrorResponse (object)', {error: errorObj, context: errorContext})
     // Emit metrics for object errors
-    const plainError = new Error(message)
+    const plainError = new Error(rawMessage)
     plainError.name = 'ObjectError'
     emitErrorMetrics(plainError, context.functionName)
     return formatResponse(context, statusCode, message)
   }
 
   // Fallback for unknown error types
+  const rawUnknownMessage = getErrorMessage(error)
   logError('buildErrorResponse (unknown)', {error: String(error), context: errorContext})
   // Emit metrics for unknown errors
-  const unknownError = new Error(getErrorMessage(error))
+  const unknownError = new Error(rawUnknownMessage)
   unknownError.name = 'UnknownError'
   emitErrorMetrics(unknownError, context.functionName)
-  return formatResponse(context, 500, getErrorMessage(error))
+  return formatResponse(context, 500, sanitizeErrorMessage(rawUnknownMessage))
 }
 
 /**

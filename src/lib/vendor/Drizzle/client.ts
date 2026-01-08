@@ -11,6 +11,7 @@
  * - Token refresh before expiration (15 min validity, refresh at 12 min)
  * - Connection caching for Lambda reuse
  * - Public endpoint (no VPC required)
+ * - Three-tier access levels (readonly, readwrite, admin)
  */
 import {DsqlSigner} from '@aws-sdk/dsql-signer'
 import {drizzle} from 'drizzle-orm/postgres-js'
@@ -75,6 +76,40 @@ const TOKEN_REFRESH_BUFFER_MS = 3 * 60 * 1000
 const TOKEN_VALIDITY_MS = 15 * 60 * 1000
 
 /**
+ * Access level for Aurora DSQL connections.
+ * - readonly: SELECT only (uses app_readonly PostgreSQL role)
+ * - readwrite: Full DML (uses app_readwrite PostgreSQL role)
+ * - admin: Full DDL/DML (uses built-in admin user)
+ */
+export type DSQLAccessLevel = 'readonly' | 'readwrite' | 'admin'
+
+/**
+ * Gets the DSQL access level from environment variable.
+ * Defaults to 'admin' for backward compatibility during migration.
+ */
+function getDSQLAccessLevel(): DSQLAccessLevel {
+  const level = getOptionalEnv('DSQL_ACCESS_LEVEL', 'admin')
+  if (level === 'readonly' || level === 'readwrite' || level === 'admin') {
+    return level
+  }
+  return 'admin'
+}
+
+/**
+ * Maps access level to PostgreSQL username.
+ */
+function getPostgresUsername(accessLevel: DSQLAccessLevel): string {
+  switch (accessLevel) {
+    case 'readonly':
+      return 'app_readonly'
+    case 'readwrite':
+      return 'app_readwrite'
+    case 'admin':
+      return 'admin'
+  }
+}
+
+/**
  * Gets a Drizzle client configured for Aurora DSQL with IAM authentication.
  *
  * This function handles:
@@ -118,15 +153,20 @@ export async function getDrizzleClient(): Promise<PostgresJsDatabase<typeof sche
   // Production mode: use Aurora DSQL with IAM authentication
   const endpoint = getRequiredEnv('DSQL_CLUSTER_ENDPOINT')
   const region = getOptionalEnv('DSQL_REGION', getRequiredEnv('AWS_REGION'))
+  const accessLevel = getDSQLAccessLevel()
 
   const signer = new DsqlSigner({hostname: endpoint, region})
-  const token = await signer.getDbConnectAdminAuthToken()
+  // Admin uses getDbConnectAdminAuthToken(), others use getDbConnectAuthToken()
+  const token = accessLevel === 'admin'
+    ? await signer.getDbConnectAdminAuthToken()
+    : await signer.getDbConnectAuthToken()
+  const username = getPostgresUsername(accessLevel)
 
   cachedSql = postgres({
     host: endpoint,
     port: 5432,
     database: 'postgres',
-    username: 'admin',
+    username,
     password: token,
     ssl: 'require',
     max: 1,

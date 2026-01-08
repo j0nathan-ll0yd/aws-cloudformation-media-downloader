@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "WebhookFeedlyXRay" {
 
 resource "aws_iam_role_policy_attachment" "WebhookFeedlyDSQL" {
   role       = aws_iam_role.WebhookFeedly.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_lambda_permission" "WebhookFeedly" {
@@ -98,6 +98,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
   memory_size      = 512
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.WebhookFeedly]
   filename         = data.archive_file.WebhookFeedly.output_path
   source_code_hash = data.archive_file.WebhookFeedly.output_base64sha256
@@ -113,6 +114,7 @@ resource "aws_lambda_function" "WebhookFeedly" {
       IDEMPOTENCY_TABLE_NAME = aws_dynamodb_table.IdempotencyTable.name
       EVENT_BUS_NAME         = aws_cloudwatch_event_bus.MediaDownloader.name
       OTEL_SERVICE_NAME      = local.webhook_feedly_function_name
+      DSQL_ACCESS_LEVEL      = "readwrite"
     })
   }
 
@@ -240,7 +242,7 @@ resource "aws_iam_role_policy_attachment" "StartFileUploadXRay" {
 
 resource "aws_iam_role_policy_attachment" "StartFileUploadDSQL" {
   role       = aws_iam_role.StartFileUpload.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 data "archive_file" "StartFileUpload" {
@@ -453,6 +455,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       PYTHONPATH            = "/opt/python" # bgutil plugin path for PO token generation
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.start_file_upload_function_name
+      DSQL_ACCESS_LEVEL     = "readwrite"
     })
   }
 

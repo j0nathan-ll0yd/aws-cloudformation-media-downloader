@@ -11,7 +11,7 @@
     "ListFiles": 1048576,
     "LoginUser": 2097152,
     "MigrateDSQL": 2097152,
-    "PruneDevices": 1048576,
+    "PruneDevices": 1153434,
     "RefreshToken": 1048576,
     "RegisterDevice": 1048576,
     "RegisterUser": 2097152,

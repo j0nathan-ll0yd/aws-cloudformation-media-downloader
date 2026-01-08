@@ -38,7 +38,6 @@ describe('#RegisterUser', () => {
       image: null,
       firstName: null,
       lastName: null,
-      appleDeviceId: null,
       createdAt: new Date(),
       updatedAt: new Date()
     })
@@ -88,8 +87,8 @@ describe('#RegisterUser', () => {
       expect.objectContaining({body: expect.objectContaining({provider: 'apple', idToken: expect.objectContaining({token: expect.any(String)})})})
     )
 
-    // Verify name was updated for new user
-    expect(vi.mocked(updateUser)).toHaveBeenCalledWith(userId, {firstName: 'Jonathan', lastName: 'Lloyd'})
+    // Verify name was updated for new user (name = firstName + lastName)
+    expect(vi.mocked(updateUser)).toHaveBeenCalledWith(userId, {name: 'Jonathan Lloyd', firstName: 'Jonathan', lastName: 'Lloyd'})
   })
 
   test('should successfully login an existing user via Better Auth without updating name', async () => {
@@ -159,6 +158,27 @@ describe('#RegisterUser', () => {
 
       const output = await handler(event, context)
       expect(output.statusCode).toEqual(200)
+      // updateUser should not be called when no name fields provided
+      expect(vi.mocked(updateUser)).not.toHaveBeenCalled()
+    })
+
+    test('should handle only firstName provided (no lastName)', async () => {
+      const userId = uuidv4()
+      authMock.mocks.signInSocial.mockResolvedValue({
+        user: {id: userId, email: 'test@example.com', createdAt: new Date().toISOString()},
+        session: {id: uuidv4(), expiresAt: Date.now() + 86400000},
+        token: uuidv4()
+      })
+      event = createAPIGatewayEvent({
+        path: '/registerUser',
+        httpMethod: 'POST',
+        body: JSON.stringify({idToken: mockIdToken, firstName: 'Jonathan'})
+      }) as unknown as APIGatewayEvent
+
+      const output = await handler(event, context)
+      expect(output.statusCode).toEqual(200)
+      // name should be just firstName when lastName is missing
+      expect(vi.mocked(updateUser)).toHaveBeenCalledWith(userId, {name: 'Jonathan', firstName: 'Jonathan', lastName: ''})
     })
 
     test('should handle updateUser database failure gracefully', async () => {

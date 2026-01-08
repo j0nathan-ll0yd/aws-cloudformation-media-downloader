@@ -56,7 +56,7 @@ resource "aws_iam_role_policy_attachment" "PruneDevicesXRay" {
 
 resource "aws_iam_role_policy_attachment" "PruneDevicesDSQL" {
   role       = aws_iam_role.PruneDevices.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_cloudwatch_event_target" "PruneDevices" {
@@ -116,6 +116,7 @@ resource "aws_lambda_function" "PruneDevices" {
       APNS_DEFAULT_TOPIC = data.sops_file.secrets.data["apns.staging.defaultTopic"]
       APNS_HOST          = "api.sandbox.push.apple.com"
       OTEL_SERVICE_NAME  = local.prune_devices_function_name
+      DSQL_ACCESS_LEVEL  = "readwrite"
     })
   }
 

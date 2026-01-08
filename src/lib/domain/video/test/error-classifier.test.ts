@@ -33,6 +33,25 @@ describe('errorClassifier', () => {
         expect(result.createIssue).toBe(true)
         expect(result.issuePriority).toBe('high')
       })
+
+      it.each([
+        ["ERROR: [youtube] TEh7Ui-Fm0k: Sign in to confirm you're not a bot"],
+        ['Sign in to confirm you are not a bot'],
+        ['Bot detection triggered'],
+        ['This helps protect our community'],
+        ['Cookie expiration detected'],
+        ['YouTube cookies have expired']
+      ])('should classify regular Error with message "%s" as cookie_expired via pattern matching', (errorMessage) => {
+        const error = new Error(errorMessage)
+
+        const result = classifyVideoError(error)
+
+        expect(result.category).toBe('cookie_expired')
+        expect(result.retryable).toBe(false)
+        expect(result.maxRetries).toBe(0)
+        expect(result.createIssue).toBe(true)
+        expect(result.issuePriority).toBe('high')
+      })
     })
 
     describe('scheduled video errors', () => {

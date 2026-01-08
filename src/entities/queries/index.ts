@@ -16,7 +16,6 @@ export {
   type CreateUserInput,
   deleteUser,
   getUser,
-  getUsersByAppleDeviceId,
   getUsersByEmail,
   type IdentityProviderData,
   type IdentityProviderRow,

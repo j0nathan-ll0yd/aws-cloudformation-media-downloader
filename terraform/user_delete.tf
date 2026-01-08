@@ -56,7 +56,7 @@ resource "aws_iam_role_policy_attachment" "UserDeleteXRay" {
 
 resource "aws_iam_role_policy_attachment" "UserDeleteDSQL" {
   role       = aws_iam_role.UserDelete.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_lambda_permission" "UserDelete" {
@@ -84,6 +84,7 @@ resource "aws_lambda_function" "UserDelete" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.UserDelete]
   filename         = data.archive_file.UserDelete.output_path
   source_code_hash = data.archive_file.UserDelete.output_base64sha256
@@ -97,6 +98,7 @@ resource "aws_lambda_function" "UserDelete" {
     variables = merge(local.common_lambda_env, {
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.user_delete_function_name
+      DSQL_ACCESS_LEVEL     = "readwrite"
     })
   }
 

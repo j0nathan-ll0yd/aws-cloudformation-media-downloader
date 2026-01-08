@@ -117,9 +117,20 @@ describe('Correlation ID Extraction', () => {
         expect(result.correlationId).toBe('api-corr-mixed')
       })
 
-      it('should generate UUID when API Gateway has no correlation header', () => {
+      it('should NOT use X-Amzn-Trace-Id as correlationId (different semantic purpose)', () => {
+        // X-Amzn-Trace-Id is for X-Ray tracing (traceId), not business correlation (correlationId)
+        const apiEvent = createAPIGatewayEvent({path: '/test', headers: {'X-Amzn-Trace-Id': 'Root=1-abc123-def456'}})
+
+        const result = extractCorrelationId(apiEvent, mockContext)
+
+        // Should generate UUID, NOT use X-Amzn-Trace-Id
+        expect(result.correlationId).not.toBe('Root=1-abc123-def456')
+        expect(result.correlationId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+      })
+
+      it('should generate UUID when API Gateway has no X-Correlation-ID header', () => {
         const apiEvent = createAPIGatewayEvent({path: '/test'})
-        // Remove default headers to test the fallback
+        // Remove all headers to test the UUID fallback
         apiEvent.headers = {}
 
         const result = extractCorrelationId(apiEvent, mockContext)

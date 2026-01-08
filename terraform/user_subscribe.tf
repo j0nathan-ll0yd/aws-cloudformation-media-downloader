@@ -54,6 +54,11 @@ resource "aws_iam_role_policy_attachment" "UserSubscribeXRay" {
   policy_arn = aws_iam_policy.CommonLambdaXRay.arn
 }
 
+resource "aws_iam_role_policy_attachment" "UserSubscribeDSQL" {
+  role       = aws_iam_role.UserSubscribe.name
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
+}
+
 resource "aws_lambda_permission" "UserSubscribe" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.UserSubscribe.function_name
@@ -79,6 +84,7 @@ resource "aws_lambda_function" "UserSubscribe" {
   handler          = "index.handler"
   runtime          = "nodejs24.x"
   architectures    = [local.lambda_architecture]
+  timeout          = local.default_lambda_timeout
   depends_on       = [aws_iam_role_policy_attachment.UserSubscribe]
   filename         = data.archive_file.UserSubscribe.output_path
   source_code_hash = data.archive_file.UserSubscribe.output_base64sha256
@@ -92,6 +98,7 @@ resource "aws_lambda_function" "UserSubscribe" {
     variables = merge(local.common_lambda_env, {
       PLATFORM_APPLICATION_ARN = length(aws_sns_platform_application.OfflineMediaDownloader) == 1 ? aws_sns_platform_application.OfflineMediaDownloader[0].arn : ""
       OTEL_SERVICE_NAME        = local.user_subscribe_function_name
+      DSQL_ACCESS_LEVEL        = "readwrite"
     })
   }
 

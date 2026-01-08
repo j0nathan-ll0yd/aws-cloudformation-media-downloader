@@ -35,7 +35,7 @@ resource "aws_iam_role_policy_attachment" "RefreshTokenXRay" {
 
 resource "aws_iam_role_policy_attachment" "RefreshTokenDSQL" {
   role       = aws_iam_role.RefreshToken.name
-  policy_arn = aws_iam_policy.LambdaDSQLAccess.arn
+  policy_arn = aws_iam_policy.LambdaDSQLReadWrite.arn
 }
 
 resource "aws_lambda_permission" "RefreshToken" {
@@ -76,6 +76,7 @@ resource "aws_lambda_function" "RefreshToken" {
   environment {
     variables = merge(local.common_lambda_env, {
       OTEL_SERVICE_NAME = local.refresh_token_function_name
+      DSQL_ACCESS_LEVEL = "readwrite"
     })
   }
 

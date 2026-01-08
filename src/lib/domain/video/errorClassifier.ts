@@ -1,6 +1,17 @@
 import {CookieExpirationError} from '#lib/system/errors'
 import type {SchedulingVideoInfo, VideoErrorCategory, VideoErrorClassification} from '#types/video'
 
+/** Patterns indicating cookie expiration or bot detection (requires manual intervention) */
+const COOKIE_EXPIRATION_PATTERNS = [
+  "sign in to confirm you're not a bot",
+  'sign in to confirm',
+  'bot detection',
+  'this helps protect our community',
+  'cookie expiration',
+  'cookie expired',
+  'cookies have expired'
+]
+
 /** Patterns indicating permanent failures that should not be retried */
 const PERMANENT_ERROR_PATTERNS = [
   'this video is private',
@@ -126,7 +137,8 @@ export function classifyVideoError(error: Error, videoInfo?: SchedulingVideoInfo
   const errorMessage = error.message || ''
 
   // Priority 1: Cookie expiration (requires manual intervention)
-  if (error instanceof CookieExpirationError) {
+  // Check both error instance and message patterns
+  if (error instanceof CookieExpirationError || matchesPattern(errorMessage, COOKIE_EXPIRATION_PATTERNS)) {
     return {
       category: 'cookie_expired',
       retryable: false,

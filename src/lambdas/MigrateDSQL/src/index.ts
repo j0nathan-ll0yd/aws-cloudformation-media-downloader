@@ -9,6 +9,7 @@
  * - Uses same IAM auth as production Lambdas
  * - Reads migrations from bundled SQL files
  * - Supports CREATE INDEX ASYNC for DSQL compatibility
+ * - Supports \${VAR_NAME} substitution for environment variables (e.g., AWS_ACCOUNT_ID)
  *
  * @see docs/wiki/Conventions/Database-Migrations.md
  */
@@ -24,6 +25,25 @@ import {logDebug, logError, logInfo} from '#lib/system/logging'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+/**
+ * Substitutes environment variables in SQL content.
+ * Supports \${VAR_NAME} syntax for variables like AWS_ACCOUNT_ID.
+ * @param sqlContent - Raw SQL content with placeholders
+ * @returns SQL content with environment variables substituted
+ */
+function substituteEnvVars(sqlContent: string): string {
+  // Match ${VAR_NAME} pattern
+  return sqlContent.replace(/\$\{(\w+)\}/g, (_, varName: string) => {
+    // Dynamic lookup is intentional - migration files can reference any env var
+    // eslint-disable-next-line local-rules/env-validation, local-rules/strict-env-vars
+    const value = process.env[varName]
+    if (!value) {
+      throw new Error(`Environment variable ${varName} is required but not set`)
+    }
+    return value
+  })
+}
 
 /**
  * Loads migration files from the migrations directory.
@@ -101,8 +121,42 @@ function splitStatements(sqlContent: string): string[] {
 }
 
 /**
+ * Error messages that indicate ignorable conditions in migrations.
+ * postgres-js wraps errors without exposing the PostgreSQL error code,
+ * so we match on the error message text instead.
+ */
+const IGNORABLE_ERROR_PATTERNS = [
+  /already exists/i, // 42710: duplicate_object (role/table/etc already exists)
+  /does not exist/i // 42704: undefined_object (for DROP IF EXISTS on non-existent objects)
+]
+
+/**
+ * Checks if an error is a PostgreSQL error that can be safely ignored.
+ * @param error - The error to check
+ * @returns true if the error should be ignored
+ */
+function isIgnorableError(error: unknown): boolean {
+  const errorObj = error as {message?: string; cause?: {message?: string}}
+
+  // Check the error message and cause message for ignorable patterns
+  const messagesToCheck = [errorObj.message, errorObj.cause?.message].filter(Boolean)
+
+  for (const message of messagesToCheck) {
+    for (const pattern of IGNORABLE_ERROR_PATTERNS) {
+      if (pattern.test(message as string)) {
+        logDebug('Ignoring migration error', {pattern: pattern.source, message})
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+/**
  * Applies a single migration and records it.
  * Splits the SQL into individual statements and executes them sequentially.
+ * Some PostgreSQL errors (duplicate role, undefined role) are ignored for idempotency.
  * @param migration - The migration file to apply
  */
 async function applyMigration(migration: MigrationFile): Promise<void> {
@@ -110,14 +164,24 @@ async function applyMigration(migration: MigrationFile): Promise<void> {
 
   logInfo('Applying migration', {version: migration.version, name: migration.name})
 
+  // Substitute environment variables (e.g., ${AWS_ACCOUNT_ID})
+  const processedSql = substituteEnvVars(migration.sql)
+
   // Split SQL into individual statements
-  const statements = splitStatements(migration.sql)
+  const statements = splitStatements(processedSql)
   logDebug('Migration statements', {count: statements.length})
 
   // Execute each statement sequentially
   for (const statement of statements) {
     logDebug('Executing statement', {statement: statement.substring(0, 100) + '...'})
-    await db.execute(sql.raw(statement))
+    try {
+      await db.execute(sql.raw(statement))
+    } catch (error) {
+      if (isIgnorableError(error)) {
+        continue
+      }
+      throw error
+    }
   }
 
   // Record the migration as applied

@@ -9,6 +9,7 @@ import {extractCorrelationId} from '../correlation'
 import {UserStatus} from '#types/enums'
 import {UnauthorizedError} from '#lib/system/errors'
 import {logger} from '#lib/vendor/Powertools'
+import {logDebug} from '#lib/system/logging'
 
 /**
  * Wraps an API Gateway handler with automatic error handling and fixture logging.
@@ -22,7 +23,10 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: ApiHandlerParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    // Check for valid metadata (must have both traceId and correlationId), not just truthy
+    // Middy/Lambda runtime may pass {signal: {}} which is truthy but not valid metadata
+    const hasValidMetadata = metadata && typeof metadata.traceId === 'string' && typeof metadata.correlationId === 'string'
+    const {traceId, correlationId} = hasValidMetadata ? metadata : extractCorrelationId(event, context)
     logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
@@ -54,8 +58,12 @@ export function wrapApiHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
 export function wrapAuthenticatedHandler<TEvent = CustomAPIGatewayRequestAuthorizerEvent>(
   handler: (params: AuthenticatedApiParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
+  logDebug('wrapAuthenticatedHandler')
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    // Check for valid metadata (must have both traceId and correlationId), not just truthy
+    // Middy/Lambda runtime may pass {signal: {}} which is truthy but not valid metadata
+    const hasValidMetadata = metadata && typeof metadata.traceId === 'string' && typeof metadata.correlationId === 'string'
+    const {traceId, correlationId} = hasValidMetadata ? metadata : extractCorrelationId(event, context)
     logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {
@@ -106,7 +114,10 @@ export function wrapOptionalAuthHandler<TEvent = CustomAPIGatewayRequestAuthoriz
   handler: (params: OptionalAuthApiParams<TEvent>) => Promise<APIGatewayProxyResult>
 ): (event: TEvent, context: Context, metadata?: WrapperMetadata) => Promise<APIGatewayProxyResult> {
   return async (event: TEvent, context: Context, metadata?: WrapperMetadata): Promise<APIGatewayProxyResult> => {
-    const {traceId, correlationId} = metadata || extractCorrelationId(event, context)
+    // Check for valid metadata (must have both traceId and correlationId), not just truthy
+    // Middy/Lambda runtime may pass {signal: {}} which is truthy but not valid metadata
+    const hasValidMetadata = metadata && typeof metadata.traceId === 'string' && typeof metadata.correlationId === 'string'
+    const {traceId, correlationId} = hasValidMetadata ? metadata : extractCorrelationId(event, context)
     logger.appendKeys({correlationId, traceId})
     logIncomingFixture(event)
     try {

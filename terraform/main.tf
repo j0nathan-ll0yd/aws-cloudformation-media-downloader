@@ -31,6 +31,10 @@ locals {
   # Project name used for resource naming
   project_name = "media-downloader"
 
+  # Default Lambda timeout in seconds
+  # 30s accommodates DSQL cold start (~2-3s) + connection (~1s) + queries
+  default_lambda_timeout = 30
+
   # Lambda architecture: arm64 (Graviton2) for 20% cost savings and 13-24% faster cold starts
   # Exception: StartFileUpload uses x86_64 for yt-dlp/ffmpeg binary compatibility
   lambda_architecture = "arm64"

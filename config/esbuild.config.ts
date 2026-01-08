@@ -30,6 +30,16 @@ async function build() {
   const startTime = Date.now()
   console.log(`Building ${lambdaEntryFiles.length} Lambda functions...`)
 
+  // Delete stale zip files so Terraform regenerates them from fresh build output
+  // This prevents Terraform from using cached zips with old code
+  const staleZips = glob.sync('./build/lambdas/*.zip')
+  if (staleZips.length > 0) {
+    for (const zipFile of staleZips) {
+      fs.unlinkSync(zipFile)
+    }
+    console.log(`Deleted ${staleZips.length} stale zip files`)
+  }
+
   // Ensure build directories exist
   fs.mkdirSync('build/lambdas', {recursive: true})
   if (isAnalyze) {
@@ -90,6 +100,20 @@ async function build() {
         fs.copyFileSync(`migrations/${file}`, `${migrationsDir}/${file}`)
       }
       console.log(`    Copied ${migrationFiles.length} migration files`)
+    }
+
+    // Copy GitHub issue templates for Lambdas that create issues
+    // StartFileUpload: cookie expiration, video download failure
+    // UserDelete: user deletion failure
+    const lambdasNeedingTemplates = ['StartFileUpload', 'UserDelete']
+    if (lambdasNeedingTemplates.includes(functionName)) {
+      const templatesDir = `${lambdaDir}/templates/github-issues`
+      fs.mkdirSync(templatesDir, {recursive: true})
+      const templateFiles = fs.readdirSync('src/templates/github-issues').filter((f: string) => f.endsWith('.md'))
+      for (const file of templateFiles) {
+        fs.copyFileSync(`src/templates/github-issues/${file}`, `${templatesDir}/${file}`)
+      }
+      console.log(`    Copied ${templateFiles.length} template files`)
     }
 
     // Write metafile for bundle analysis
