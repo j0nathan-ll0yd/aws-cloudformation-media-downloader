@@ -580,3 +580,74 @@ resource "aws_cloudwatch_metric_alarm" "EventBridgeThrottled" {
   alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
   ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
 }
+
+# =============================================================================
+# YouTube Cookie Authentication Alarms
+# Monitors authentication failures that may indicate cookie expiration
+# =============================================================================
+
+# YouTube Auth Failure Alarm (Bot Detection)
+# Triggers when YouTube detects automated access, requires cookie refresh
+resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureBotDetection" {
+  alarm_name          = "MediaDownloader-YouTube-Auth-BotDetection"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "YouTubeAuthFailure"
+  namespace           = "MediaDownloader"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 3
+  alarm_description   = "Multiple YouTube bot detection failures - cookies may need refresh. Run: pnpm run update-cookies"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ErrorType = "bot_detection"
+  }
+
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+}
+
+# YouTube Auth Failure Alarm (Cookie Expired)
+# Triggers when cookies have expired and need refresh
+resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureCookieExpired" {
+  alarm_name          = "MediaDownloader-YouTube-Auth-CookieExpired"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "YouTubeAuthFailure"
+  namespace           = "MediaDownloader"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 2
+  alarm_description   = "YouTube cookies have expired - run: pnpm run update-cookies && pnpm run deploy"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ErrorType = "cookie_expired"
+  }
+
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+}
+
+# YouTube Auth Failure Alarm (Rate Limited)
+# Triggers when YouTube is rate limiting requests
+resource "aws_cloudwatch_metric_alarm" "YouTubeAuthFailureRateLimited" {
+  alarm_name          = "MediaDownloader-YouTube-Auth-RateLimited"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "YouTubeAuthFailure"
+  namespace           = "MediaDownloader"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "YouTube rate limiting detected - reduce download frequency or wait before retrying"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ErrorType = "rate_limited"
+  }
+
+  alarm_actions = [aws_sns_topic.OperationsAlerts.arn]
+  ok_actions    = [aws_sns_topic.OperationsAlerts.arn]
+}
