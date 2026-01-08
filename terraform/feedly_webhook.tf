@@ -397,6 +397,24 @@ resource "aws_lambda_layer_version" "Ffmpeg" {
   description = "ffmpeg ${trimspace(file("${path.module}/../layers/ffmpeg/VERSION"))} binary (John Van Sickle static build) for video merging"
 }
 
+# bgutil layer (Python PO token provider for YouTube bot detection bypass)
+# Must be built before deploy with: pnpm run build:bgutil-layer
+# @see https://github.com/Brainicism/bgutil-ytdlp-pot-provider
+data "archive_file" "BgutilLayer" {
+  type        = "zip"
+  source_dir  = "./../layers/bgutil/build"
+  output_path = "./../build/layers/bgutil.zip"
+}
+
+resource "aws_lambda_layer_version" "Bgutil" {
+  filename            = data.archive_file.BgutilLayer.output_path
+  layer_name          = "bgutil-pot-provider"
+  source_code_hash    = data.archive_file.BgutilLayer.output_base64sha256
+  compatible_runtimes = ["nodejs24.x"]
+
+  description = "bgutil-ytdlp-pot-provider for PO token generation to bypass YouTube bot detection"
+}
+
 resource "aws_lambda_function" "StartFileUpload" {
   description                    = "Downloads videos to temp file then streams to S3 using yt-dlp"
   function_name                  = local.start_file_upload_function_name
@@ -413,7 +431,8 @@ resource "aws_lambda_function" "StartFileUpload" {
   layers = [
     aws_lambda_layer_version.YtDlp.arn,
     aws_lambda_layer_version.Ffmpeg.arn,
-    local.adot_layer_arn_x86_64 # Must use x86_64 ADOT layer to match Lambda architecture
+    aws_lambda_layer_version.Bgutil.arn, # PO token provider for YouTube bot detection bypass
+    local.adot_layer_arn_x86_64          # Must use x86_64 ADOT layer to match Lambda architecture
   ]
 
   # 10GB ephemeral storage for temp file downloads (handles 1+ hour 1080p videos)
@@ -433,6 +452,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       EVENT_BUS_NAME        = aws_cloudwatch_event_bus.MediaDownloader.name
       YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
       PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      PYTHONPATH            = "/opt/python" # bgutil plugin path for PO token generation
       GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME     = local.start_file_upload_function_name
       DSQL_ACCESS_LEVEL     = "readwrite"

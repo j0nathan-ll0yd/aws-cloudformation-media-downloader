@@ -24,8 +24,13 @@ vi.mock('#lib/vendor/YouTube', () => ({fetchVideoInfo: fetchVideoInfoMock, downl
 vi.mock('#entities/queries',
   () => ({getFileDownload: vi.fn(), updateFileDownload: vi.fn(), createFileDownload: vi.fn(), getUserFilesByFileId: vi.fn(), upsertFile: vi.fn()}))
 
-// Mock GitHub issue creation (for permanent failures)
-vi.mock('#lib/integrations/github/issueService', () => ({createCookieExpirationIssue: vi.fn(), createVideoDownloadFailureIssue: vi.fn()}))
+// Mock GitHub issue creation (for permanent failures) and auto-close (for recovery)
+vi.mock('#lib/integrations/github/issueService',
+  () => ({
+    createCookieExpirationIssue: vi.fn(),
+    createVideoDownloadFailureIssue: vi.fn(),
+    closeCookieExpirationIssueIfResolved: vi.fn().mockResolvedValue(undefined)
+  }))
 
 // Mock circuit breaker - pass through to wrapped function in tests
 vi.mock('#lib/system/circuitBreaker',

@@ -27,6 +27,11 @@ terraform/.terraform
 .python-version
 layers/yt-dlp/bin/ffmpeg
 layers/ffmpeg/bin/ffmpeg
+layers/bgutil/build/
+layers/bgutil/bgutil-layer.zip
+
+# Playwright browser state (contains session data)
+playwright-state/
 
 # pnpm
 .pnpm-store

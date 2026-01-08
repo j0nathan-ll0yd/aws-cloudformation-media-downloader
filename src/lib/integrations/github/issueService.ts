@@ -214,3 +214,38 @@ export async function createCookieExpirationIssue(fileId: string, fileUrl: strin
     return null
   }
 }
+
+/**
+ * Auto-close cookie expiration issue when YouTube authentication recovers.
+ * Called after a successful video download to close any open cookie issues.
+ * This implements self-healing by closing issues when the problem is resolved.
+ */
+export async function closeCookieExpirationIssueIfResolved(): Promise<void> {
+  // Use same fingerprint as createCookieExpirationIssue for consistency
+  const {fingerprint} = generateErrorFingerprint({errorType: 'CookieExpiration', context: 'youtube-cookies'})
+  try {
+    const octokit = await getOctokitInstance()
+    const existingIssue = await findExistingIssueByFingerprint(octokit, fingerprint)
+
+    if (existingIssue) {
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: existingIssue,
+        body: `## Automatically Resolved
+
+YouTube authentication succeeded. Closing this issue.
+
+**Timestamp:** ${new Date().toISOString()}
+**Resolution:** Cookies + PO tokens working`
+      })
+
+      await octokit.rest.issues.update({owner, repo, issue_number: existingIssue, state: 'closed'})
+
+      logInfo('Closed resolved cookie expiration issue', {issueNumber: existingIssue})
+    }
+  } catch (error) {
+    // Don't fail Lambda if GitHub API fails - this is best-effort
+    logError('Failed to close cookie expiration issue', error)
+  }
+}

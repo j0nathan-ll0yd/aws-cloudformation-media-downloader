@@ -23,7 +23,7 @@ import {DownloadStatus, FileStatus} from '#types/enums'
 import {validateSchema} from '#lib/validation/constraints'
 import {getRequiredEnv} from '#lib/system/env'
 import {UnexpectedError} from '#lib/system/errors'
-import {createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
+import {closeCookieExpirationIssueIfResolved, createCookieExpirationIssue, createVideoDownloadFailureIssue} from '#lib/integrations/github/issueService'
 import {metrics, MetricUnit, withPowertools} from '#lib/lambda/middleware/powertools'
 import {wrapSqsBatchHandler} from '#lib/lambda/middleware/sqs'
 import {logDebug, logError, logInfo} from '#lib/system/logging'
@@ -383,6 +383,13 @@ async function processDownloadRequest(message: ValidatedDownloadQueueMessage, re
   await publishEvent('DownloadCompleted', completedDetail, {correlationId})
 
   metrics.addMetric('LambdaExecutionSuccess', MetricUnit.Count, 1)
+
+  // Asynchronously close any open cookie expiration issues (self-healing)
+  // Don't await - this is best-effort and shouldn't block the response
+  closeCookieExpirationIssueIfResolved().catch(() => {
+    // Ignore errors - this is non-critical
+  })
+
   logInfo('Download completed successfully', {fileId, correlationId, fileSize: uploadResult.fileSize})
 }
 
