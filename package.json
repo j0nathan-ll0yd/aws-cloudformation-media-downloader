@@ -184,6 +184,8 @@
     "glob": "^13.0.0",
     "husky": "^9.1.7",
     "mock-jwks": "^3.3.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "quicktype": "^23.2.6",
     "repomix": "^1.11.0",
     "ts-morph": "^27.0.2",
