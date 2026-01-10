@@ -11,6 +11,7 @@ locals {
     "LoginUser",
     "PruneDevices",
     "RefreshToken",
+    "RefreshYouTubeCookies",
     "RegisterDevice",
     "RegisterUser",
     "S3ObjectCreated",
@@ -38,6 +39,7 @@ locals {
   lambda_functions_background = [
     "CloudfrontMiddleware",
     "PruneDevices",
+    "RefreshYouTubeCookies",
     "S3ObjectCreated",
     "SendPushNotification",
     "StartFileUpload"
@@ -314,6 +316,98 @@ resource "aws_cloudwatch_dashboard" "Main" {
             ["AWS/Lambda", "Invocations", "FunctionName", "StartFileUpload", { label = "3. StartFileUpload" }],
             ["AWS/Lambda", "Invocations", "FunctionName", "S3ObjectCreated", { label = "4. S3ObjectCreated" }],
             ["AWS/Lambda", "Invocations", "FunctionName", "SendPushNotification", { label = "5. SendPushNotification" }]
+          ]
+        }
+      },
+      # Row 7: YouTube Reliability Metrics
+      {
+        type   = "metric"
+        x      = 0
+        y      = 36
+        width  = 12
+        height = 6
+        properties = {
+          title  = "YouTube Player Client Success/Failure"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["MediaDownloader", "YouTubeClientSuccess", "PlayerClient", "mweb", { label = "mweb Success", color = "#2ca02c" }],
+            ["MediaDownloader", "YouTubeClientSuccess", "PlayerClient", "android_vr", { label = "android_vr Success", color = "#98df8a" }],
+            ["MediaDownloader", "YouTubeClientSuccess", "PlayerClient", "ios", { label = "ios Success", color = "#d4edda" }],
+            ["MediaDownloader", "YouTubeClientFailure", "PlayerClient", "mweb", { label = "mweb Failure", color = "#d62728" }],
+            ["MediaDownloader", "YouTubeClientFailure", "PlayerClient", "android_vr", { label = "android_vr Failure", color = "#ff9896" }],
+            ["MediaDownloader", "YouTubeClientFailure", "PlayerClient", "ios", { label = "ios Failure", color = "#ffcccc" }]
+          ]
+        }
+      },
+      # Row 7: YouTube Format Fallback Metrics
+      {
+        type   = "metric"
+        x      = 12
+        y      = 36
+        width  = 12
+        height = 6
+        properties = {
+          title  = "YouTube Format Fallback (SABR Bypass)"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["MediaDownloader", "YouTubeFormatSuccess", "FormatSelector", "primary", { label = "Primary Format Success", color = "#2ca02c" }],
+            ["MediaDownloader", "YouTubeFormatSuccess", "FormatSelector", "fallback", { label = "Fallback Format Success", color = "#ff7f0e" }],
+            ["MediaDownloader", "YouTubeFormatFailure", "FormatSelector", "primary", { label = "Primary Format Failure", color = "#d62728" }],
+            ["MediaDownloader", "YouTubeFormatFailure", "FormatSelector", "fallback", { label = "Fallback Format Failure", color = "#9467bd" }]
+          ]
+        }
+      },
+      # Row 8: YouTube Auth Failures by Type
+      {
+        type   = "metric"
+        x      = 0
+        y      = 42
+        width  = 12
+        height = 6
+        properties = {
+          title  = "YouTube Authentication Failures"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["MediaDownloader", "YouTubeAuthFailure", "ErrorType", "bot_detection", { label = "Bot Detection", color = "#d62728" }],
+            ["MediaDownloader", "YouTubeAuthFailure", "ErrorType", "cookie_expired", { label = "Cookie Expired", color = "#ff7f0e" }],
+            ["MediaDownloader", "YouTubeAuthFailure", "ErrorType", "rate_limited", { label = "Rate Limited", color = "#9467bd" }]
+          ]
+          annotations = {
+            horizontal = [
+              {
+                label = "Alert Threshold"
+                value = 3
+                color = "#d62728"
+              }
+            ]
+          }
+        }
+      },
+      # Row 8: Video Download Metrics
+      {
+        type   = "metric"
+        x      = 12
+        y      = 42
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Video Download Performance"
+          region = data.aws_region.current.id
+          stat   = "Sum"
+          period = 300
+          view   = "timeSeries"
+          metrics = [
+            ["MediaDownloader", "VideoDownloadSuccess", { label = "Download Success", color = "#2ca02c" }],
+            ["MediaDownloader", "VideoDownloadFailure", { label = "Download Failure", color = "#d62728" }]
           ]
         }
       }

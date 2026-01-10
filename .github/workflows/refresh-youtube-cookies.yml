@@ -119,6 +119,49 @@ jobs:
             echo "Cookies extracted successfully with Firefox fallback"
           fi
 
+      - name: Configure AWS credentials
+        if: steps.check.outputs.skip != 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Push cookies to Secrets Manager
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          # Determine which browser was used
+          if [ "${{ steps.chromium_extract.outcome }}" == "success" ]; then
+            BROWSER_USED="chromium-stealth"
+          else
+            BROWSER_USED="firefox-fallback"
+          fi
+
+          # Read the cookie file
+          COOKIES=$(cat layers/yt-dlp/cookies/youtube-cookies.txt)
+          COOKIE_COUNT=$(grep -c $'\t' layers/yt-dlp/cookies/youtube-cookies.txt || echo 0)
+          EXTRACTED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Create JSON payload
+          SECRET_VALUE=$(jq -n \
+            --arg cookies "$COOKIES" \
+            --arg extractedAt "$EXTRACTED_AT" \
+            --argjson cookieCount "$COOKIE_COUNT" \
+            --arg browserUsed "$BROWSER_USED" \
+            --arg userAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
+            --argjson isAuthenticated true \
+            '{cookies: $cookies, extractedAt: $extractedAt, cookieCount: $cookieCount, browserUsed: $browserUsed, userAgent: $userAgent, isAuthenticated: $isAuthenticated}')
+
+          # Push to Secrets Manager
+          aws secretsmanager put-secret-value \
+            --secret-id "LifeGames-MediaDownloader/youtube-cookies" \
+            --secret-string "$SECRET_VALUE"
+
+          echo "Cookies pushed to Secrets Manager"
+          echo "  Cookie count: ${COOKIE_COUNT}"
+          echo "  Browser used: ${BROWSER_USED}"
+          echo "  Extracted at: ${EXTRACTED_AT}"
+
       - name: Ensure required labels exist
         if: steps.check.outputs.skip != 'true'
         run: |

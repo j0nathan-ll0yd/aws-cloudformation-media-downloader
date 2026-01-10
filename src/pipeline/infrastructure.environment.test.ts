@@ -74,12 +74,15 @@ const excludedSourceVariables: Record<string, number> = {
   HTTPS_PROXY: 1,
   UNDICI_NO_WASM_SIMD: 1,
   POWERTOOLS_METRICS_DISABLED: 1,
+  // Python/Plugin infrastructure variables (set by Terraform, not source code)
+  PYTHONPATH: 1, // bgutil plugin path for PO token generation
   // OpenTelemetry infrastructure variables (set by ADOT layer, not in source)
   OTEL_SERVICE_NAME: 1,
   OTEL_EXPORTER_OTLP_COMPRESSION: 1,
   OTEL_EXPORTER_OTLP_HEADERS: 1,
   OTEL_EXPORTER_OTLP_TIMEOUT: 1,
   // AWS Lambda runtime environment variables (set by AWS, not in source)
+  AWS_ACCOUNT_ID: 1, // AWS account ID (set by Terraform)
   AWS_EXECUTION_ENV: 1,
   AWS_LAMBDA_BENCHMARK_MODE: 1,
   AWS_LAMBDA_FUNCTION_NAME: 1,
@@ -88,6 +91,7 @@ const excludedSourceVariables: Record<string, number> = {
   AWS_SDK_UA_APP_ID: 1,
   // DSQL/Aurora connection variables (set by Terraform/runtime, not source code env vars)
   AWS_LOGIN_CACHE_DIRECTORY: 1, // Drizzle connection caching
+  DSQL_ACCESS_LEVEL: 1, // Aurora DSQL access level (readonly/readwrite)
   DSQL_CLUSTER_ENDPOINT: 1, // Aurora DSQL endpoint
   DSQL_REGION: 1, // Aurora DSQL region
   TEST_DATABASE_URL: 1, // Test database URL (integration tests only)
