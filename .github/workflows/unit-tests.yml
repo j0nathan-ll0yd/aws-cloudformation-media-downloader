@@ -20,22 +20,22 @@ jobs:
         run: pnpm run typespec:check
 
       - name: Generate API documentation
-        run: pnpm run document-api
+        run: pnpm run document:api
 
       - name: Validate API path alignment
-        run: pnpm run validate:api-paths
+        run: pnpm run validate:api:paths
 
       - name: Validate documented scripts exist
         run: ./bin/validate-docs.sh
 
       - name: Validate documentation sync
-        run: pnpm run validate:doc-sync
+        run: pnpm run validate:doc:sync
 
       - name: Audit wiki documentation
         run: pnpm run audit:wiki
 
       - name: Validate docs freshness
-        run: pnpm run validate:docs-freshness
+        run: pnpm run validate:docs:freshness
 
       - name: Security audit
         run: pnpm audit --audit-level=high
@@ -56,10 +56,10 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Check types
-        run: pnpm run check-types
+        run: pnpm run check:types
 
       - name: Check test types
-        run: pnpm run check-test-types
+        run: pnpm run check:test:types
 
       - name: Lint code
         run: pnpm run lint
@@ -71,7 +71,7 @@ jobs:
         run: shellcheck --severity=error bin/*.sh .github/scripts/*.sh
 
       - name: Test ESLint local rules
-        run: pnpm run test:eslint-rules
+        run: pnpm run test:eslint:rules
 
       - name: Check Terraform formatting
         run: |
@@ -96,7 +96,7 @@ jobs:
           cache-build: 'true'
 
       - name: Check bundle sizes
-        run: pnpm run check:bundle-size
+        run: pnpm run check:bundle:size
 
       - name: Validate GraphRAG synchronization
         run: pnpm run validate:graphrag

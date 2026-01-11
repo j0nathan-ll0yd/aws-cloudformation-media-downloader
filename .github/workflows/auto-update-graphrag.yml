@@ -21,7 +21,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Generate dependency graph
-        run: pnpm run generate-graph
+        run: pnpm run generate:graph
 
       - name: Update GraphRAG knowledge graph
         run: pnpm run graphrag:extract

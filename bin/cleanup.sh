@@ -97,20 +97,20 @@ main() {
   run_cmd "Dependencies installed" pnpm install --frozen-lockfile
 
   log_step $((++STEP)) "Generating dependency graph..."
-  run_cmd "Dependency graph generated" pnpm run --silent generate-graph
+  run_cmd "Dependency graph generated" pnpm run --silent generate:graph
 
   log_step $((++STEP)) "Building Terraform types..."
-  run_cmd "Terraform types built" pnpm run --silent build-dependencies
+  run_cmd "Terraform types built" pnpm run --silent build:dependencies
 
   log_step $((++STEP)) "Building Lambda bundles..."
   run_cmd "Lambda bundles built" pnpm run --silent build
 
   # Phase 2: Type Checking
   log_step $((++STEP)) "Checking TypeScript types..."
-  run_cmd "TypeScript types valid" pnpm run --silent check-types
+  run_cmd "TypeScript types valid" pnpm run --silent check:types
 
   log_step $((++STEP)) "Checking test types..."
-  run_cmd "Test types valid" pnpm run --silent check-test-types
+  run_cmd "Test types valid" pnpm run --silent check:test:types
 
   # Phase 3: Formatting
   if [ "$CHECK_ONLY" = true ]; then
@@ -133,7 +133,7 @@ main() {
     run_cmd "Lint check passed" pnpm run --silent lint
   else
     log_step $((++STEP)) "Linting (with auto-fix)..."
-    run_cmd "Lint passed" pnpm run --silent lint-fix
+    run_cmd "Lint passed" pnpm run --silent lint:fix
   fi
 
   # Optional: GitHub workflows lint (skip if actionlint not installed)
@@ -146,7 +146,7 @@ main() {
   fi
 
   log_step $((++STEP)) "Testing ESLint rules..."
-  run_cmd "ESLint rules valid" pnpm run --silent test:eslint-rules
+  run_cmd "ESLint rules valid" pnpm run --silent test:eslint:rules
 
   # Phase 5: Validation
   log_step $((++STEP)) "Validating conventions..."

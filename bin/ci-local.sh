@@ -104,7 +104,7 @@ main() {
 
   # Step 4: Build dependencies (Terraform types)
   echo -e "${YELLOW}[4/17] Building dependencies (Terraform types)...${NC}"
-  pnpm run build-dependencies
+  pnpm run build:dependencies
   echo -e "${GREEN}  Build dependencies complete${NC}"
   echo ""
 
@@ -116,8 +116,8 @@ main() {
 
   # Step 6: Type checking
   echo -e "${YELLOW}[6/17] Running type checks...${NC}"
-  pnpm run check-types
-  pnpm run check-test-types
+  pnpm run check:types
+  pnpm run check:test:types
   echo -e "${GREEN}  Type checks passed${NC}"
   echo ""
 
@@ -171,7 +171,7 @@ main() {
 
   # Step 10: ESLint local rules tests
   echo -e "${YELLOW}[10/17] Testing ESLint local rules...${NC}"
-  pnpm run test:eslint-rules
+  pnpm run test:eslint:rules
   echo -e "${GREEN}  ESLint local rules tests passed${NC}"
   echo ""
 

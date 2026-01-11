@@ -18,7 +18,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
 
       - name: Generate dependency graph
-        run: pnpm run generate-graph
+        run: pnpm run generate:graph
 
       - name: Check dependency rules
         run: pnpm run deps:check
