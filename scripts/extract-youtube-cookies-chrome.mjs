@@ -73,7 +73,7 @@ function prompt(question) {
 
 // Upload cookies to Secrets Manager
 async function uploadToSecretsManager(cookies, netscapeCookies) {
-  const secretId = 'LifeGames-MediaDownloader/youtube-cookies'
+  const secretId = 'media-downloader/youtube-cookies'
   const region = 'us-west-2'
 
   const payload = {

@@ -154,7 +154,7 @@ jobs:
 
           # Push to Secrets Manager
           aws secretsmanager put-secret-value \
-            --secret-id "LifeGames-MediaDownloader/youtube-cookies" \
+            --secret-id "media-downloader/youtube-cookies" \
             --secret-string "$SECRET_VALUE"
 
           echo "Cookies pushed to Secrets Manager"
