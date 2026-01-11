@@ -21,7 +21,6 @@ import * as readline from 'readline'
 // Find Chrome executable based on OS
 function findChromeExecutable() {
   const platform = process.platform
-
   if (platform === 'darwin') {
     // macOS
     return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -41,7 +40,6 @@ function convertToNetscapeFormat(cookies) {
     '# Extracted by extract-youtube-cookies-chrome.mjs',
     ''
   ]
-
   for (const cookie of cookies) {
     const domain = cookie.domain.startsWith('.') ? cookie.domain : `.${cookie.domain}`
     const includeSubdomains = domain.startsWith('.') ? 'TRUE' : 'FALSE'
@@ -50,14 +48,12 @@ function convertToNetscapeFormat(cookies) {
 
     lines.push(`${domain}\t${includeSubdomains}\t${cookie.path}\t${secure}\t${expiry}\t${cookie.name}\t${cookie.value}`)
   }
-
   return lines.join('\n')
 }
 
 // Prompt user for input
 function prompt(question) {
   const rl = readline.createInterface({input: process.stdin, output: process.stdout})
-
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
       rl.close()
@@ -69,7 +65,6 @@ function prompt(question) {
 // Save cookies to Lambda layer file
 async function saveCookiesToLayer(netscapeCookies, cookieCount) {
   const cookiePath = path.join(process.cwd(), 'layers/yt-dlp/cookies/youtube-cookies.txt')
-
   try {
     await fs.promises.writeFile(cookiePath, netscapeCookies, 'utf-8')
     console.log('\n✓ Cookies saved to Lambda layer')
