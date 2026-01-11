@@ -96,13 +96,13 @@ When validators report stale docs:
 
 ```bash
 # TSDoc (source API documentation)
-pnpm run document-source
+pnpm run document:source
 
 # OpenAPI (from TypeSpec)
-pnpm run document-api
+pnpm run document:api
 
 # Terraform docs
-pnpm run document-terraform
+pnpm run document:terraform
 
 # Or regenerate all with cleanup
 pnpm run cleanup

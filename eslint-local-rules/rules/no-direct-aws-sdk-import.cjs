@@ -30,14 +30,13 @@ const VENDOR_SUGGESTIONS = {
   '@aws-sdk/client-lambda': 'lib/vendor/AWS/Lambda',
   '@aws-sdk/client-sns': 'lib/vendor/AWS/SNS',
   '@aws-sdk/client-sqs': 'lib/vendor/AWS/SQS',
-  '@aws-sdk/client-cloudwatch-logs': 'lib/vendor/AWS/CloudWatch',
-  '@aws-sdk/client-secrets-manager': 'lib/vendor/AWS/SecretsManager',
+  '@aws-sdk/client-eventbridge': 'lib/vendor/AWS/EventBridge',
+  '@aws-sdk/client-api-gateway': 'lib/vendor/AWS/ApiGateway',
   // AWS Lambda Powertools
   '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/tracer': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',
-  '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency',
-  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser'
+  '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency'
 }
 
 function getSuggestion(moduleSpecifier) {

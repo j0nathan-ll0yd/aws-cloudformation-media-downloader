@@ -522,16 +522,16 @@ resource "aws_lambda_function" "StartFileUpload" {
 
   environment {
     variables = merge(local.common_lambda_env, {
-      BUCKET                    = aws_s3_bucket.Files.id
-      CLOUDFRONT_DOMAIN         = aws_cloudfront_distribution.MediaFiles.domain_name
-      SNS_QUEUE_URL             = aws_sqs_queue.SendPushNotification.id
-      EVENT_BUS_NAME            = aws_cloudwatch_event_bus.MediaDownloader.name
-      YTDLP_BINARY_PATH         = "/opt/bin/yt-dlp_linux"
-      PATH                      = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
-      PYTHONPATH                = "/opt/python" # bgutil plugin path for PO token generation
-      GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
-      OTEL_SERVICE_NAME = local.start_file_upload_function_name
-      DSQL_ACCESS_LEVEL = "readwrite"
+      BUCKET                = aws_s3_bucket.Files.id
+      CLOUDFRONT_DOMAIN     = aws_cloudfront_distribution.MediaFiles.domain_name
+      SNS_QUEUE_URL         = aws_sqs_queue.SendPushNotification.id
+      EVENT_BUS_NAME        = aws_cloudwatch_event_bus.MediaDownloader.name
+      YTDLP_BINARY_PATH     = "/opt/bin/yt-dlp_linux"
+      PATH                  = "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin"
+      PYTHONPATH            = "/opt/python" # bgutil plugin path for PO token generation
+      GITHUB_PERSONAL_TOKEN = data.sops_file.secrets.data["github.issue.token"]
+      OTEL_SERVICE_NAME     = local.start_file_upload_function_name
+      DSQL_ACCESS_LEVEL     = "readwrite"
     })
   }
 

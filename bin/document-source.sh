@@ -43,7 +43,7 @@ main() {
 
   # retrieve or rebuild the files
   git checkout "${test_file_path}"
-  pnpm run build-dependencies
+  pnpm run build:dependencies
 }
 
 main "$@"

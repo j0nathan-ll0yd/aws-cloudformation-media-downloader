@@ -57,7 +57,7 @@ Files that are consumed by tools rather than humans:
 
 These can be regenerated on demand with:
 ```bash
-pnpm run document-source  # Regenerate TSDoc
+pnpm run document:source  # Regenerate TSDoc
 pnpm run generate:llms    # Regenerate llms-full.txt
 ```
 

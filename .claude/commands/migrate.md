@@ -245,7 +245,7 @@ pnpm run ci:local:full
 pnpm run test:integration
 
 # Verify in staging environment
-pnpm run test-remote-list
+pnpm run test:remote:list
 ```
 
 ## Migration Templates

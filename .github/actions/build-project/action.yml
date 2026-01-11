@@ -23,7 +23,7 @@ runs:
 
     - name: Build dependencies
       shell: bash
-      run: pnpm run build-dependencies
+      run: pnpm run build:dependencies
 
     - name: Webpack Build
       shell: bash

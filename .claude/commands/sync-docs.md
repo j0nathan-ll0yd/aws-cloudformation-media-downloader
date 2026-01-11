@@ -336,13 +336,13 @@ Compare output with `graphrag/metadata.json` and add missing entries.
 
 ```bash
 # TypeDoc for source documentation
-pnpm run document-source
+pnpm run document:source
 
 # Terraform documentation
-pnpm run document-terraform
+pnpm run document:terraform
 
 # API documentation from TypeSpec
-pnpm run document-api
+pnpm run document:api
 ```
 
 ### Validate with MCP Tools

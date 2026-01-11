@@ -41,15 +41,14 @@ const VENDOR_SUGGESTIONS: Record<string, string> = {
   '@aws-sdk/client-lambda': 'lib/vendor/AWS/Lambda',
   '@aws-sdk/client-sns': 'lib/vendor/AWS/SNS',
   '@aws-sdk/client-sqs': 'lib/vendor/AWS/SQS',
-  '@aws-sdk/client-cloudwatch-logs': 'lib/vendor/AWS/CloudWatch',
+  '@aws-sdk/client-eventbridge': 'lib/vendor/AWS/EventBridge',
+  '@aws-sdk/client-api-gateway': 'lib/vendor/AWS/ApiGateway',
   // AWS Lambda Powertools
   '@aws-lambda-powertools/logger': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/metrics': 'lib/vendor/Powertools',
   '@aws-lambda-powertools/idempotency': 'lib/vendor/Powertools/idempotency',
-  '@aws-lambda-powertools/parser': 'lib/vendor/Powertools/parser',
   // OpenTelemetry
-  '@opentelemetry/api': 'lib/vendor/OpenTelemetry',
-  '@opentelemetry/sdk-trace-node': 'lib/vendor/OpenTelemetry/sdk'
+  '@opentelemetry/api': 'lib/vendor/OpenTelemetry'
 }
 
 function getSuggestion(moduleSpecifier: string): string {

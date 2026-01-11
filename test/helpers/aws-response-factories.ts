@@ -7,7 +7,7 @@
  * @see {@link https://github.com/j0nathan-ll0yd/aws-cloudformation-media-downloader/wiki/Vitest-Mocking-Strategy#aws-response-factories | Usage Examples}
  */
 
-import {v4 as uuidv4} from 'uuid'
+import {randomUUID} from 'node:crypto'
 
 // ============================================================================
 // Constants
@@ -31,7 +31,7 @@ export interface SNSSubscribeResponseOptions {
  */
 export function createSNSSubscribeResponse(options: SNSSubscribeResponseOptions = {}) {
   const {topicArn = `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:PushNotifications`} = options
-  return {SubscriptionArn: options.subscriptionArn ?? `${topicArn}:${uuidv4()}`}
+  return {SubscriptionArn: options.subscriptionArn ?? `${topicArn}:${randomUUID()}`}
 }
 
 export interface SNSMetadataResponseOptions {
@@ -43,7 +43,7 @@ export interface SNSMetadataResponseOptions {
  * Used by: RegisterDevice, UserSubscribe, UserDelete, PruneDevices
  */
 export function createSNSMetadataResponse(options: SNSMetadataResponseOptions = {}) {
-  return {$metadata: {requestId: options.requestId ?? uuidv4()}}
+  return {$metadata: {requestId: options.requestId ?? randomUUID()}}
 }
 
 export interface SNSEndpointResponseOptions {
@@ -61,7 +61,7 @@ export function createSNSEndpointResponse(options: SNSEndpointResponseOptions = 
   const {
     platform = 'APNS_SANDBOX',
     appName = 'MediaDownloader',
-    endpointId = uuidv4()
+    endpointId = randomUUID()
   } = options
 
   return {EndpointArn: options.endpointArn ?? `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:endpoint/${platform}/${appName}/${endpointId}`}
@@ -91,10 +91,10 @@ export interface SNSSubscriptionListResponseOptions {
  */
 export function createSNSSubscriptionListResponse(options: SNSSubscriptionListResponseOptions = {}) {
   const topicArn = `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:PushNotifications`
-  const defaultEndpointArn = `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:endpoint/APNS_SANDBOX/MediaDownloader/${uuidv4()}`
+  const defaultEndpointArn = `arn:aws:sns:${DEFAULT_REGION}:${DEFAULT_ACCOUNT_ID}:endpoint/APNS_SANDBOX/MediaDownloader/${randomUUID()}`
 
   const defaultSubscription: SNSSubscriptionOptions = {
-    SubscriptionArn: `${topicArn}:${uuidv4()}`,
+    SubscriptionArn: `${topicArn}:${randomUUID()}`,
     Owner: DEFAULT_ACCOUNT_ID,
     Protocol: 'application',
     Endpoint: defaultEndpointArn,
@@ -104,7 +104,7 @@ export function createSNSSubscriptionListResponse(options: SNSSubscriptionListRe
   // Merge provided subscriptions with defaults
   const subscriptions =
     options.subscriptions?.map((sub) => ({
-      SubscriptionArn: sub.SubscriptionArn ?? `${topicArn}:${uuidv4()}`,
+      SubscriptionArn: sub.SubscriptionArn ?? `${topicArn}:${randomUUID()}`,
       Owner: sub.Owner ?? DEFAULT_ACCOUNT_ID,
       Protocol: sub.Protocol ?? 'application',
       Endpoint: sub.Endpoint ?? defaultEndpointArn,
@@ -123,7 +123,7 @@ export interface SNSPublishResponseOptions {
  * Used by: SendPushNotification
  */
 export function createSNSPublishResponse(options: SNSPublishResponseOptions = {}) {
-  return {MessageId: options.messageId ?? uuidv4()}
+  return {MessageId: options.messageId ?? randomUUID()}
 }
 
 // ============================================================================
@@ -140,7 +140,7 @@ export interface SQSSendMessageResponseOptions {
  * Used by: StartFileUpload, WebhookFeedly, S3ObjectCreated
  */
 export function createSQSSendMessageResponse(options: SQSSendMessageResponseOptions = {}) {
-  return {MessageId: options.messageId ?? `msg-${uuidv4().slice(0, 8)}`}
+  return {MessageId: options.messageId ?? `msg-${randomUUID().slice(0, 8)}`}
 }
 
 // ============================================================================
@@ -165,12 +165,12 @@ export interface EventBridgePutEventsResponseOptions {
 export function createEventBridgePutEventsResponse(options: EventBridgePutEventsResponseOptions = {}) {
   const {failedEntryCount = 0, entries} = options
 
-  const defaultEntries: EventBridgeEntryOptions[] = entries ?? [{eventId: `event-${uuidv4().slice(0, 8)}`}]
+  const defaultEntries: EventBridgeEntryOptions[] = entries ?? [{eventId: `event-${randomUUID().slice(0, 8)}`}]
 
   return {
     FailedEntryCount: failedEntryCount,
     Entries: defaultEntries.map((entry) => ({
-      EventId: entry.eventId ?? `event-${uuidv4().slice(0, 8)}`,
+      EventId: entry.eventId ?? `event-${randomUUID().slice(0, 8)}`,
       ...(entry.errorCode && {ErrorCode: entry.errorCode}),
       ...(entry.errorMessage && {ErrorMessage: entry.errorMessage})
     }))

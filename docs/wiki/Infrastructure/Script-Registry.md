@@ -90,19 +90,19 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 ## Remote Testing Scripts
 
-### `pnpm run test-remote-list`
+### `pnpm run test:remote:list`
 **Purpose**: Test ListFiles Lambda against production API
 **Dependencies**: AWS credentials, jq
 **CI Coverage**: No (requires production)
 **Notes**: Validates API Gateway → Lambda → DynamoDB flow
 
-### `pnpm run test-remote-hook`
+### `pnpm run test:remote:hook`
 **Purpose**: Test Feedly webhook against production API
 **Dependencies**: AWS credentials, jq
 **CI Coverage**: No (requires production)
 **Notes**: Tests webhook authentication and processing
 
-### `pnpm run test-remote-registerDevice`
+### `pnpm run test:remote:register:device`
 **Purpose**: Test RegisterDevice Lambda against production API
 **Dependencies**: AWS credentials, jq
 **CI Coverage**: No (requires production)
@@ -162,19 +162,19 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 
 ## Documentation Scripts
 
-### `pnpm run document-source`
+### `pnpm run document:source`
 **Purpose**: Generate TypeDoc documentation
 **Dependencies**: TypeDoc, shell access
 **CI Coverage**: No
 **Notes**: Creates HTML documentation from TSDoc comments
 
-### `pnpm run document-terraform`
+### `pnpm run document:terraform`
 **Purpose**: Generate Terraform/OpenTofu documentation
 **Dependencies**: terraform-docs CLI
 **CI Coverage**: No
 **Notes**: Updates `docs/terraform.md`
 
-### `pnpm run document-api`
+### `pnpm run document:api`
 **Purpose**: Generate API documentation from TypeSpec
 **Dependencies**: TypeSpec CLI, shell access
 **CI Coverage**: No
@@ -212,7 +212,7 @@ Scripts documented in `AGENTS.md` and `README.md` are automatically validated ag
 **CI Coverage**: No
 **Notes**: Required when YouTube cookies expire
 
-### `pnpm run update-yt-dlp`
+### `pnpm run update:ytdlp`
 **Purpose**: Update yt-dlp binary in Lambda layer
 **Dependencies**: Docker, shell access
 **CI Coverage**: No

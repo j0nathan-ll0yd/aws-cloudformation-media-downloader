@@ -47,5 +47,5 @@ This reference appears in the generated OpenAPI documentation.
 ## Development Workflow
 
 1. **Edit examples** directly in this directory
-2. **Regenerate docs**: `pnpm run document-api`
+2. **Regenerate docs**: `pnpm run document:api`
 3. **Verify changes**: Check `docs/api/openapi.yaml`
