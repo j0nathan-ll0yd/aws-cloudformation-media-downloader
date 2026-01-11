@@ -26,12 +26,8 @@ const awsSdkExternals = [
 ]
 
 // Lambda layer externals - these come from deployed layers, not bundled
-const layerExternals = [
-  'puppeteer-core', // RefreshYouTubeCookies: Puppeteer in Lambda layer
-  'puppeteer-extra', // RefreshYouTubeCookies: Puppeteer with plugin support
-  'puppeteer-extra-plugin-stealth', // RefreshYouTubeCookies: Bot detection evasion
-  '@sparticuz/chromium' // RefreshYouTubeCookies: Chromium binary in Lambda layer
-]
+// Note: Playwright externals removed after RefreshYouTubeCookies Lambda cleanup
+const layerExternals: string[] = []
 
 const isAnalyze = process.env['ANALYZE'] === 'true'
 

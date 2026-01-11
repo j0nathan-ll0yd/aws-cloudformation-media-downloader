@@ -2,20 +2,6 @@
  * yt-dlp video information types
  */
 
-/**
- * Result from RefreshYouTubeCookies Lambda
- */
-export interface RefreshCookiesResult {
-  success: boolean
-  cookieCount: number
-  extractedAt: string
-  errors: string[]
-  isAuthenticated: boolean
-  browserUsed: string
-  sessionRefreshed: boolean
-  requiresLogin: boolean
-}
-
 export interface YtDlpVideoInfo {
   id: string
   title: string

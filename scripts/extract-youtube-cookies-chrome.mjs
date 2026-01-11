@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console, process */
 /**
  * Extract YouTube cookies using Chrome browser
  *
@@ -58,10 +59,7 @@ function convertToNetscapeFormat(cookies) {
 
 // Prompt user for input
 function prompt(question) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
+  const rl = readline.createInterface({input: process.stdin, output: process.stdout})
 
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
@@ -178,17 +176,15 @@ async function main() {
 
     // Filter to relevant domains
     const relevantDomains = ['.youtube.com', '.google.com', '.googlevideo.com', 'youtube.com', 'google.com']
-    const youtubeCookies = allCookies.filter(c =>
-      relevantDomains.some(d => c.domain.endsWith(d) || c.domain === d.slice(1) || c.domain === d)
-    )
+    const youtubeCookies = allCookies.filter((c) => relevantDomains.some((d) => c.domain.endsWith(d) || c.domain === d.slice(1) || c.domain === d))
 
     console.log(`  Total cookies: ${allCookies.length}`)
     console.log(`  YouTube/Google cookies: ${youtubeCookies.length}`)
 
     // Check for auth cookies
     const authCookieNames = ['SID', 'SSID', 'HSID', 'APISID', 'SAPISID', 'LOGIN_INFO']
-    const cookieNames = youtubeCookies.map(c => c.name)
-    const authCookiesFound = authCookieNames.filter(name => cookieNames.includes(name))
+    const cookieNames = youtubeCookies.map((c) => c.name)
+    const authCookiesFound = authCookieNames.filter((name) => cookieNames.includes(name))
 
     console.log(`  Auth cookies found: ${authCookiesFound.length} (${authCookiesFound.join(', ')})`)
 
@@ -213,7 +209,6 @@ async function main() {
     console.log('  1. Merge PR #340')
     console.log('  2. Run: pnpm run deploy')
     console.log('  3. The Lambda will use these cookies for YouTube downloads')
-
   } catch (error) {
     console.error('\n✗ Error:', error.message)
     process.exit(1)

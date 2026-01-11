@@ -3,6 +3,19 @@ locals {
   start_file_upload_function_name = "StartFileUpload"
 }
 
+# =============================================================================
+# Secrets Manager - YouTube Cookies Storage
+# Used by StartFileUpload Lambda for yt-dlp authentication.
+# Populated manually via: pnpm run extract-cookies:chrome
+# =============================================================================
+
+resource "aws_secretsmanager_secret" "YouTubeCookies" {
+  name                    = "${local.project_name}/youtube-cookies"
+  description             = "YouTube cookies for yt-dlp authentication (populated manually)"
+  recovery_window_in_days = 0 # Immediate deletion for dev/test cycles
+  tags                    = local.common_tags
+}
+
 resource "aws_iam_role" "WebhookFeedly" {
   name               = local.webhook_feedly_function_name
   assume_role_policy = data.aws_iam_policy_document.LambdaGatewayAssumeRole.json
@@ -537,7 +550,7 @@ resource "aws_lambda_function" "StartFileUpload" {
       GITHUB_PERSONAL_TOKEN     = data.sops_file.secrets.data["github.issue.token"]
       OTEL_SERVICE_NAME         = local.start_file_upload_function_name
       DSQL_ACCESS_LEVEL         = "readwrite"
-      YOUTUBE_COOKIES_SECRET_ID = aws_secretsmanager_secret.YouTubeCookies.id # Fresh cookies from RefreshYouTubeCookies
+      YOUTUBE_COOKIES_SECRET_ID = aws_secretsmanager_secret.YouTubeCookies.id # Manual cookies from extract-cookies:chrome
     })
   }
 

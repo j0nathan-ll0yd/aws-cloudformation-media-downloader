@@ -82,15 +82,6 @@
       }
     },
     {
-      "id": "lambda:RefreshYouTubeCookies",
-      "type": "Lambda",
-      "properties": {
-        "name": "RefreshYouTubeCookies",
-        "trigger": "CloudWatch Events",
-        "purpose": "Refresh YouTube session cookies from Secrets Manager"
-      }
-    },
-    {
       "id": "lambda:RegisterDevice",
       "type": "Lambda",
       "properties": {
@@ -869,16 +860,6 @@
     {
       "source": "service:API Gateway",
       "target": "lambda:RefreshToken",
-      "relationship": "triggers"
-    },
-    {
-      "source": "lambda:RefreshYouTubeCookies",
-      "target": "service:SecretsManager",
-      "relationship": "uses"
-    },
-    {
-      "source": "service:CloudWatch",
-      "target": "lambda:RefreshYouTubeCookies",
       "relationship": "triggers"
     },
     {
