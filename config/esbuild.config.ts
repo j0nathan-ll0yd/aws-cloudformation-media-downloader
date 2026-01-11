@@ -25,10 +25,6 @@ const awsSdkExternals = [
   '@aws-sdk/util-dynamodb'
 ]
 
-// Lambda layer externals - these come from deployed layers, not bundled
-// Note: Playwright externals removed after RefreshYouTubeCookies Lambda cleanup
-const layerExternals: string[] = []
-
 const isAnalyze = process.env['ANALYZE'] === 'true'
 
 async function build() {
@@ -70,7 +66,7 @@ async function build() {
       format: 'esm', // ESM for Node.js 24
       outfile: `${lambdaDir}/index.mjs`,
       outExtension: {'.js': '.mjs'}, // Explicit .mjs extension
-      external: [...awsSdkExternals, ...layerExternals],
+      external: awsSdkExternals,
       minify: true,
       legalComments: 'none', // Strip license comments from minified output
       drop: ['debugger'], // Remove debugger statements in production
